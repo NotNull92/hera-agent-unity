@@ -51,7 +51,7 @@ namespace HeraAgent
                     "Wrap batch asset edits in StartAssetEditing/StopAssetEditing — otherwise every CreateAsset/ImportAsset triggers its own refresh and the loop takes 10x+ longer.",
                     "class-AssetDatabase"),
                 new PitfallEntry(
-                    "Refresh() during play mode is blocked by Unity. Use 'hera-agent-unity-pro editor refresh --force' or call from edit mode.",
+                    "Refresh() during play mode is blocked by Unity. Use 'hera-agent-unity editor refresh --force' or call from edit mode.",
                     "class-AssetDatabase"),
                 new PitfallEntry(
                     "SaveAssets() does not flush in-memory ScriptableObject changes that were not modified via SerializedObject. Call EditorUtility.SetDirty(obj) first.",
@@ -99,7 +99,7 @@ namespace HeraAgent
             ["UnityEngine.Debug"] = new[]
             {
                 new PitfallEntry(
-                    "In an exec-style context, prefer 'return value;' over Debug.Log — the CLI surfaces return values as JSON. Debug.Log only appears in the editor console (readable via 'hera-agent-unity-pro console').",
+                    "In an exec-style context, prefer 'return value;' over Debug.Log — the CLI surfaces return values as JSON. Debug.Log only appears in the editor console (readable via 'hera-agent-unity console').",
                     "class-Debug"),
             },
             ["UnityEditor.SerializedObject"] = new[]

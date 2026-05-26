@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NotNull92/hera-agent-unity-pro/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
 
 func TestBatchCmd_Success(t *testing.T) {

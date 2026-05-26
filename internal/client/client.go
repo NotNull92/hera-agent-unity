@@ -49,6 +49,30 @@ type CommandRequest struct {
 	Params  interface{} `json:"params"`
 }
 
+// BatchCommandItem is a single command inside a batch request.
+type BatchCommandItem struct {
+	Command string      `json:"command"`
+	Params  interface{} `json:"params,omitempty"`
+}
+
+// BatchOptions controls batch execution behavior.
+type BatchOptions struct {
+	FailFast bool `json:"fail_fast"`
+}
+
+// BatchCommandRequest sends multiple commands in one HTTP call.
+type BatchCommandRequest struct {
+	Commands []BatchCommandItem `json:"commands"`
+	Options  BatchOptions       `json:"options"`
+}
+
+// BatchCommandResponse is the JSON body returned by POST /commands.
+type BatchCommandResponse struct {
+	Results   []CommandResponse `json:"results"`
+	Completed int               `json:"completed"`
+	Failed    int               `json:"failed"`
+}
+
 // CommandResponse is the JSON body returned by Unity.
 // Data is raw JSON so callers can unmarshal into any shape.
 // Timings carries optional phase measurements (e.g. compile_ms, execute_ms, total_ms).
@@ -320,6 +344,62 @@ func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*C
 			Success: true,
 			Message: string(respBody),
 		}, nil
+	}
+
+	return &result, nil
+}
+
+// SendBatch sends multiple commands to Unity in a single HTTP request.
+// Timeout is derived from the command count (30s base + 15s per command, 5min cap).
+func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*BatchCommandResponse, error) {
+	batchTimeout := 30 * time.Second
+	if n := len(req.Commands); n > 0 {
+		if calculated := time.Duration(n) * 15 * time.Second; calculated > batchTimeout {
+			batchTimeout = calculated
+		}
+	}
+	const maxTimeout = 5 * time.Minute
+	if batchTimeout > maxTimeout {
+		batchTimeout = maxTimeout
+	}
+	ctx, cancel := context.WithTimeout(ctx, batchTimeout)
+	defer cancel()
+
+	body, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("marshal batch request: %v", err)
+	}
+
+	url := fmt.Sprintf("http://127.0.0.1:%d/commands", inst.Port)
+
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("Content-Type", "application/json")
+
+	resp, err := sharedHTTPClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("cannot connect to Unity at port %d: %v", inst.Port, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		respBody, _ := io.ReadAll(resp.Body)
+		if len(respBody) > 0 {
+			return nil, fmt.Errorf("HTTP %d from Unity: %s", resp.StatusCode, string(respBody))
+		}
+		return nil, fmt.Errorf("HTTP %d from Unity (batch)", resp.StatusCode)
+	}
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil || len(respBody) == 0 {
+		return nil, fmt.Errorf("connection closed before response for batch")
+	}
+
+	var result BatchCommandResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, fmt.Errorf("unmarshal batch response: %v", err)
 	}
 
 	return &result, nil

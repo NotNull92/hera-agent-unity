@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -69,6 +70,8 @@ func Execute() error {
 		return nil
 	case "update":
 		return updateCmd(subArgs)
+	case "install":
+		return installCmd()
 	case "uninstall":
 		return uninstallCmd()
 	case "status":
@@ -123,6 +126,8 @@ func Execute() error {
 	var resp *client.CommandResponse
 
 	switch category {
+	case "batch":
+		return batchCmd(context.Background(), subArgs, client.SendBatch, resolve)
 	case "editor":
 		resp, err = editorCmd(subArgs, send, resolve)
 	case "test":
@@ -217,6 +222,10 @@ func printTimings(resp *client.CommandResponse) {
 // sendFn is the function signature for sending a command to Unity.
 // Injected into each command function so they can be tested without a real Unity connection.
 type sendFn func(command string, params interface{}) (*client.CommandResponse, error)
+
+// sendBatchFn is the function signature for sending a batch command to Unity.
+// Injected so batchCmd can be tested without a real Unity connection.
+type sendBatchFn func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error)
 
 func printResponse(resp *client.CommandResponse) {
 	if !resp.Success {

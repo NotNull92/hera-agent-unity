@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/NotNull92/hera-agent-unity-pro/internal/client"
-	"github.com/NotNull92/hera-agent-unity-pro/internal/tui"
+	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/tui"
 )
 
 // sendBatchFn is injected for testing.

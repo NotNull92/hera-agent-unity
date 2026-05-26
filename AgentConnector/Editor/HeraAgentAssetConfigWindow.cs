@@ -11,11 +11,11 @@ using UnityEditor.UIElements;
 namespace HeraAgent.Editor
 {
     /// <summary>
-    /// Hera Agent Pro — Hera Settings Editor Window (UIToolkit).
+    /// Hera Agent Unity — Hera Settings Editor Window (UIToolkit).
     /// A pure-Unity EditorWindow with no third-party dependencies.
-    /// Shares asset-config.json with hera-agent-unity-pro.
+    /// Shares asset-config.json with the hera-agent-unity CLI.
     ///
-    /// Menu: Tools / Hera Agent Pro / Hera Settings
+    /// Menu: Tools / Hera Agent Unity / Hera Settings
     /// </summary>
     public class HeraAgentAssetConfigWindow : EditorWindow
     {
@@ -128,7 +128,7 @@ namespace HeraAgent.Editor
         //  ENTRY POINTS
         // ═══════════════════════════════════════════════════════════
 
-        [MenuItem("Tools/Hera Agent Pro/Hera Settings")]
+        [MenuItem("Tools/Hera Agent Unity/Hera Settings")]
         public static void ShowWindow()
         {
             var wnd = GetWindow<HeraAgentAssetConfigWindow>(
@@ -140,7 +140,7 @@ namespace HeraAgent.Editor
             wnd.position = new Rect(wnd.position.x, wnd.position.y, 800, 720);
         }
 
-        [MenuItem("Tools/Hera Agent Pro/Hera Settings", true)]
+        [MenuItem("Tools/Hera Agent Unity/Hera Settings", true)]
         private static bool ValidateShowWindow()
         {
             return IsHeraAgentInstalled();
@@ -149,7 +149,7 @@ namespace HeraAgent.Editor
         private static bool IsHeraAgentInstalled()
         {
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var configDir = Path.Combine(home, ".hera-agent-unity-pro");
+            var configDir = Path.Combine(home, ".hera-agent-unity");
             return Directory.Exists(configDir);
         }
 
@@ -1083,14 +1083,14 @@ namespace HeraAgent.Editor
             iconLbl.style.marginBottom = 16;
             root.Add(iconLbl);
 
-            var titleLbl = new Label("Hera Agent Pro is not installed");
+            var titleLbl = new Label("Hera Agent Unity is not installed");
             titleLbl.style.fontSize = 16;
             titleLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
             titleLbl.style.color = ColorTextPrimary;
             titleLbl.style.marginBottom = 8;
             root.Add(titleLbl);
 
-            var descLbl = new Label("Hera Agent Pro has not been commissioned yet.\nInstall the CLI and run it once to populate this catalog.");
+            var descLbl = new Label("Hera Agent Unity has not been commissioned yet.\nInstall the CLI and run it once to populate this catalog.");
             descLbl.style.fontSize = 11;
             descLbl.style.color = ColorMuted;
             descLbl.style.whiteSpace = WhiteSpace.Normal;
@@ -1117,7 +1117,7 @@ namespace HeraAgent.Editor
             cmdBox.style.borderLeftColor = ColorBorder;
             cmdBox.style.borderRightColor = ColorBorder;
 
-            var cmdLbl = new Label("$ hera-agent-unity-pro setup");
+            var cmdLbl = new Label("$ hera-agent-unity asset-config");
             cmdLbl.style.fontSize = 11;
             cmdLbl.style.color = ColorAmber;
             cmdLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
@@ -1133,7 +1133,7 @@ namespace HeraAgent.Editor
         private static string GetConfigPath()
         {
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            return Path.Combine(home, ".hera-agent-unity-pro", "asset-config.json");
+            return Path.Combine(home, ".hera-agent-unity", "asset-config.json");
         }
 
         private void LoadConfig()

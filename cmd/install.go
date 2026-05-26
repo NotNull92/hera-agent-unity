@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/NotNull92/hera-agent-unity-pro/internal/tui"
+	"github.com/NotNull92/hera-agent-unity/internal/tui"
 )
 
 func installCmd() error {
@@ -71,23 +71,6 @@ func installCmd() error {
 	// Step 8: Print success
 	printInstallSuccess(installPath, exe)
 	return nil
-}
-
-func getInstallPaths() (dir, bin string) {
-	switch runtime.GOOS {
-	case "windows":
-		home, _ := os.UserHomeDir()
-		// WindowsApps is on the default user PATH in Windows 10+, so installing
-		// here avoids touching the PATH registry (and the env-block staleness
-		// problems that come with it). See docs/issues/path-stale-env-block.md.
-		dir = filepath.Join(home, "AppData", "Local", "Microsoft", "WindowsApps")
-		bin = filepath.Join(dir, "hera-agent-unity.exe")
-	default:
-		home, _ := os.UserHomeDir()
-		dir = filepath.Join(home, ".local", "bin")
-		bin = filepath.Join(dir, "hera-agent-unity")
-	}
-	return
 }
 
 // legacyInstallDirs returns pre-WindowsApps install locations that may still
