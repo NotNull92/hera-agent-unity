@@ -505,13 +505,38 @@ func readExecFileIfPresent(args []string) ([]string, error) {
 }
 
 // readStdinIfPiped reads stdin when piped and prepends it as the first positional arg.
+//
+// Stdin is only consumed when:
+//   - no positional arg is already present (positional takes precedence per docs), AND
+//   - stdin looks like a real data source: a named pipe (`echo ... | hera-agent-unity`)
+//     or a regular file redirect (`hera-agent-unity exec < code.cs`).
+//
+// In non-TTY shells where stdin is open but will never deliver data — Cursor's
+// shell, bash `$(...)` capture, compound `cmd1; hera-agent-unity exec ...`, CI
+// runners with detached stdin — io.ReadAll(os.Stdin) would otherwise block forever
+// waiting for EOF. The mode guard prevents that.
 func readStdinIfPiped(args []string) []string {
+	// Positional arg (the code) wins over stdin per documented precedence,
+	// so there is no reason to even probe stdin if one is already present.
+	for _, a := range args {
+		if !strings.HasPrefix(a, "--") {
+			return args
+		}
+	}
+
 	info, err := os.Stdin.Stat()
 	if err != nil {
 		return args
 	}
-	if info.Mode()&os.ModeCharDevice != 0 {
+	mode := info.Mode()
+	if mode&os.ModeCharDevice != 0 {
 		return args // interactive terminal, not piped
+	}
+	// Only read when stdin has an actual data source: a pipe or a regular file.
+	// Anything else (detached, /dev/null on some platforms, closed socket) is
+	// treated as "no stdin" rather than blocked on indefinitely.
+	if mode&os.ModeNamedPipe == 0 && !mode.IsRegular() {
+		return args
 	}
 	data, err := io.ReadAll(os.Stdin)
 	if err != nil || len(data) == 0 {
@@ -958,15 +983,23 @@ Does NOT require Unity to be running. Use this first when 'hera-agent-unity' is
 not found, points at the wrong copy, or can't see your Unity Editor.
 
 Options:
-  --json           Emit structured envelope (binary, shell, unity) for agents.
-  --agent-rules    Print the Quick Rules + Pitfalls subset of AGENT.md so
-                   you can append it to your project's AI rules file
-                   (CLAUDE.md / AGENTS.md / .cursor/rules / ...).
+  --json                   Emit structured envelope (binary, shell, unity)
+                           for agents.
+  --agent-rules            Print the Quick Rules + Pitfalls subset of AGENT.md
+                           so you can append it to your project's AI rules file
+                           (CLAUDE.md / AGENTS.md / .cursor/rules / ...).
+  --format <name>          Output format for --agent-rules:
+                             markdown (default) — Claude / Codex / Copilot /
+                                                  Continue.dev all accept it
+                             cursor             — prepends YAML frontmatter so
+                                                  the file is a valid .mdc
+                                                  Cursor will actually load
 
 Examples:
   hera-agent-unity doctor
   hera-agent-unity doctor --json
   hera-agent-unity doctor --agent-rules >> CLAUDE.md
+  hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
 
 Environment:
   HERA_AGENT_NO_PATH_CHECK=1   Silence the implicit per-command PATH warning.
