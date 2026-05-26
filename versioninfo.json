@@ -3,13 +3,13 @@
     "FileVersion": {
       "Major": 0,
       "Minor": 0,
-      "Patch": 33,
+      "Patch": 1,
       "Build": 0
     },
     "ProductVersion": {
       "Major": 0,
       "Minor": 0,
-      "Patch": 33,
+      "Patch": 1,
       "Build": 0
     },
     "FileFlagsMask": "3f",
@@ -21,12 +21,12 @@
   "StringFileInfo": {
     "CompanyName": "NotNull92",
     "FileDescription": "hera-agent-unity — CLI bridge to Unity Editor",
-    "FileVersion": "0.0.33",
+    "FileVersion": "0.0.1",
     "InternalName": "hera-agent-unity",
-    "LegalCopyright": "Copyright (c) 2026 NotNull92. All rights reserved.",
+    "LegalCopyright": "Copyright (c) 2026 NotNull92. MIT License.",
     "OriginalFilename": "hera-agent-unity.exe",
     "ProductName": "hera-agent-unity",
-    "ProductVersion": "0.0.33"
+    "ProductVersion": "0.0.1"
   },
   "VarFileInfo": {
     "Translation": {
@@ -34,6 +34,6 @@
       "CharsetID": "04B0"
     }
   },
-  "IconPath": "docs/assets/hera_pro.ico",
+  "IconPath": "docs/assets/hera.ico",
   "ManifestPath": ""
 }

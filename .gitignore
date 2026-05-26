@@ -1,4 +1,5 @@
-hera-agent
+hera-agent-unity
+hera-agent-unity-*
 *.exe
 .env
 .DS_Store
