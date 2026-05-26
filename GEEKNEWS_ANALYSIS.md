@@ -1,7 +1,7 @@
 # GeekNews 포스팅 적합성 분석 보고서
 
 **작성일**: 2026-05-20
-**대상**: hera-agent (Lite/Pro/Landing 3개 레포)
+**대상**: hera-agent-unity (Lite/Pro/Landing 3개 레포)
 **비교 대상**: oh-my-openagent (code-yeongyu/oh-my-openagent)
 
 ---
@@ -35,9 +35,9 @@
 
 ---
 
-## 2. hera-agent 3개 레포 현재 상태
+## 2. hera-agent-unity 3개 레포 현재 상태
 
-### 2-1. hera-agent (Lite) — Public
+### 2-1. hera-agent-unity (Lite) — Public
 
 | 항목 | 수치/상태 |
 |:---|:---|
@@ -53,11 +53,11 @@
 | **CHANGELOG** | ✅ Keep a Changelog 형식, 상세 (v0.0.1 ~ v0.0.9) |
 | **CI/CD** | ✅ ci.yml (build/vet/test/lint/format), release.yml (6플랫폼 cross-compile) |
 | **Documentation** | ✅ docs/ 10개 문서 (ARCHITECTURE, COMMANDS, CSHARP_CONNECTOR, CUSTOM_TOOLS, DEVELOPMENT, GO_CLI, INDEX, SUGGESTIONS, TROUBLESHOOTING) |
-| **Demo/GIF** | ✅ **6개 GIF** (docs/video/): install-status-uninstall, UPM-scene, status-connected, claude-code-scene-transition, move-scene, find-hera-agent |
+| **Demo/GIF** | ✅ **6개 GIF** (docs/video/): install-status-uninstall, UPM-scene, status-connected, claude-code-scene-transition, move-scene, find-hera-agent-unity |
 | **README** | ✅ 영어/한국어双语, Author 섹션, Architecture 다이어그램 |
-| **Landing Page** | ✅ 별도 gh-pages (hera-agent-landing) |
+| **Landing Page** | ✅ 별도 gh-pages (hera-agent-unity-landing) |
 
-### 2-2. hera-agent-pro — Private
+### 2-2. hera-agent-unity-pro — Private
 
 | 항목 | 수치/상태 |
 |:---|:---|
@@ -72,7 +72,7 @@
 | **Demo/GIF** | ❌ **GIF 없음** (assets/에 PNG/ICO만) |
 | **README** | ✅ 영어 단일, Pro 전용 배지(CI, Unity 6000.0+), Lite 링크 |
 
-### 2-3. hera-agent-landing — Public (gh-pages)
+### 2-3. hera-agent-unity-landing — Public (gh-pages)
 
 | 항목 | 상태 |
 |:---|:---|
@@ -102,9 +102,9 @@
 4. **TypeScript 기반** — Node.js/npm 의존성, oh-my-openagent는 무겁음
 5. **OpenCode 전용** — VS Code/Cursor 외 에이전트 지원은 제한적
 
-### 3-3. hera-agent의 차별화 포인트
+### 3-3. hera-agent-unity의 차별화 포인트
 
-| 차원 | oh-my-openagent | hera-agent |
+| 차원 | oh-my-openagent | hera-agent-unity |
 |:---|:---|:---|
 | **타겟** | 범용 코딩 에이전트 | Unity 개발자 전용 |
 | **런타임 의존성** | Node.js, npm, Python | **Zero** (단일 Go 바이너리) |
@@ -117,7 +117,7 @@
 | **라이선스** | SUL-1.0 (Semi-Open) | **MIT (Lite)** |
 | **Demo 품질** | 정적 이미지 | **6개 실제 GIF** |
 
-**핵심 메시지**: oh-my-openagent가 "코딩 에이전트의 운영체제"라면, hera-agent는 "Unity 에디터의 CLI 리모컨"이다. 완전히 다른 카테고리.
+**핵심 메시지**: oh-my-openagent가 "코딩 에이전트의 운영체제"라면, hera-agent-unity는 "Unity 에디터의 CLI 리모컨"이다. 완전히 다른 카테고리.
 
 ---
 
@@ -125,7 +125,7 @@
 
 ### 4-1. 보스의 철학 기준 점검
 
-| 기준 | hera-agent Lite | 평가 |
+| 기준 | hera-agent-unity Lite | 평가 |
 |:---|:---|:---|
 | **Demo GIF** | ✅ 6개 GIF (설치, UPM, 상태, Claude Code 연동, 씬 전환, 에이전트 발견) | **통과** |
 | **버전** | v0.0.23 (23번 릴리스, 3주간) | **통과** — 빠른 iteration |
@@ -163,7 +163,7 @@
 |:---|:---|:---|:---|
 | 4 | **Discord/커뮤니티 채널** | Landing에 링크만 있음 | 실제 활동 중인 Discord 서버 운영. Issue 대신 Discord로 초기 피드백 유도 |
 | 5 | **GeekNews용 한글 요약본** | README.ko.md는 있음 | GeekNews 포맷에 맞는 "왜 만들었나" 스토리텔링용 요약 필요 |
-| 6 | **Benchmark 수치** | Landing에 "Benchmark" 섹션 있음 | 실제 측정 데이터 채우기 (예: MCP vs hera-agent 설치 시간, 토큰 사용량 비교) |
+| 6 | **Benchmark 수치** | Landing에 "Benchmark" 섹션 있음 | 실제 측정 데이터 채우기 (예: MCP vs hera-agent-unity 설치 시간, 토큰 사용량 비교) |
 | 7 | **YouTube 데모 영상** | IndieAlchemist 채널 있음 | 1~2분 짧은 데모 영상 (GIF보다 임팩트 큼) |
 
 #### P2 — 중기 개선 (1개월 내)

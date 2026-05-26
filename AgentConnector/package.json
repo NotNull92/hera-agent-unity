@@ -1,8 +1,8 @@
 {
-  "name": "com.notnull92.hera-agent",
+  "name": "com.notnull92.hera-agent-unity-unity",
   "version": "0.0.19",
-  "displayName": "Hera Agent Lite",
-  "description": "Lightweight version of Hera Agent. Control Unity Editor from your terminal with zero setup. Direct HTTP bridge for CLI commands, runtime C# execution, and custom tool dispatch.",
+  "displayName": "Hera Agent Unity",
+  "description": "CLI bridge to Unity Editor. Control Unity from your terminal with zero setup. Direct HTTP bridge for CLI commands, runtime C# execution, and custom tool dispatch.",
   "unity": "6000.0",
   "author": {
     "name": "NotNull92",

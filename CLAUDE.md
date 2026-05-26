@@ -1,4 +1,4 @@
-# hera-agent
+# hera-agent-unity
 
 CLI tool to control Unity Editor from the command line.
 
@@ -99,7 +99,7 @@ CLI(Go)와 Connector(C#)는 독립 버전. 변경된 쪽만 올린다.
 ### 작업 마무리 시
 
 - Verification 항목 전부 실행
-- 변경한 기능은 Unity가 열려 있으면 `hera-agent`로 직접 실행해서 동작 확인
+- 변경한 기능은 Unity가 열려 있으면 `hera-agent-unity`로 직접 실행해서 동작 확인
 - 로컬 임시 파일(테스트용 스크립트, 디버깅 출력 등) 정리
 - 관련 없는 변경은 별도 커밋으로 분리
 
@@ -109,7 +109,7 @@ Commit all unstaged changes before finishing. Unrelated changes should be commit
 
 ## 실행 규칙
 
-`go run .`은 테스트 목적일 때만 사용. CLI 기능 실행은 반드시 설치된 바이너리 `hera-agent`로.
+`go run .`은 테스트 목적일 때만 사용. CLI 기능 실행은 반드시 설치된 바이너리 `hera-agent-unity`로.
 
 ## 릴리스 플로우
 
@@ -121,7 +121,7 @@ Commit all unstaged changes before finishing. Unrelated changes should be commit
 4. CLI 변경 있으면 새 tag push
 5. CI(CI + Release) 완료 대기 (`gh run watch --exit-status`, background)
 6. `go clean -cache -testcache`로 빌드/테스트 캐시 전부 정리
-7. 둘 다 성공하면 `hera-agent update`로 설치된 CLI 업데이트
+7. 둘 다 성공하면 `hera-agent-unity update`로 설치된 CLI 업데이트
 
 ## CI
 

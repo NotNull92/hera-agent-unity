@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/NotNull92/hera-agent/internal/assetconfig"
-	"github.com/NotNull92/hera-agent/internal/tui"
+	"github.com/NotNull92/hera-agent-unity-unity/internal/assetconfig"
+	"github.com/NotNull92/hera-agent-unity-unity/internal/tui"
 	"github.com/charmbracelet/bubbletea"
 )
 
@@ -207,7 +207,7 @@ func assetConfigDetect() error {
 	if tui.ColorEnabled() {
 		fmt.Println(tui.InfoStyle.Render("Asset detection requires Unity to be running."))
 		fmt.Println(tui.InfoStyle.Render("With Unity open, run:"))
-		fmt.Println("  " + tui.PathStyle.Render("hera-agent asset-config detect"))
+		fmt.Println("  " + tui.PathStyle.Render("hera-agent-unity-unity asset-config detect"))
 		fmt.Println()
 		fmt.Printf("%s %s\n",
 			tui.LabelStyle.Render("Config path:"),
@@ -217,7 +217,7 @@ func assetConfigDetect() error {
 
 	fmt.Println("Asset detection requires Unity to be running.")
 	fmt.Println("With Unity open, run:")
-	fmt.Println("  hera-agent asset-config detect")
+	fmt.Println("  hera-agent-unity-unity asset-config detect")
 	fmt.Println()
 	fmt.Printf("Config path: %s\n", assetconfig.ConfigFilePath())
 	return nil
@@ -234,7 +234,7 @@ func assetConfigGet(id string) error {
 }
 
 func printAssetConfigHelp() {
-	fmt.Print(`Usage: hera-agent asset-config [subcommand]
+	fmt.Print(`Usage: hera-agent-unity-unity-unity asset-config [subcommand]
 
 Interactive TUI:
   asset-config                  Launch interactive checkbox UI (Space to toggle)
@@ -256,10 +256,10 @@ Available Assets:
   dotween_pro                   DOTween Pro
 
 Examples:
-  hera-agent asset-config
-  hera-agent asset-config enable dotween
-  hera-agent asset-config list
-  hera-agent asset-config toggle odin_inspector
+  hera-agent-unity-unity asset-config
+  hera-agent-unity-unity asset-config enable dotween
+  hera-agent-unity-unity asset-config list
+  hera-agent-unity-unity asset-config toggle odin_inspector
 
 TUI Controls:
   ↑/k          Move up

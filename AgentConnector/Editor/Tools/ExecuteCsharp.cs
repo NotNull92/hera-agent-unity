@@ -219,7 +219,7 @@ namespace HeraAgent.Tools
         private static CompileResult CompileToBytes(string source, string cscOverride, string dotnetOverride)
         {
             var utf8 = new UTF8Encoding(false);
-            var tmpDir = Path.Combine(Path.GetTempPath(), "hera-agent-exec");
+            var tmpDir = Path.Combine(Path.GetTempPath(), "hera-agent-unity-exec");
             Directory.CreateDirectory(tmpDir);
 
             var id = Guid.NewGuid().ToString("N").Substring(0, 8);
@@ -373,7 +373,7 @@ namespace HeraAgent.Tools
                 if (alcType != null)
                 {
                     var ctor = alcType.GetConstructor(new[] { typeof(string), typeof(bool) });
-                    var alc = ctor?.Invoke(new object[] { "hera-agent-exec-" + id, true });
+                    var alc = ctor?.Invoke(new object[] { "hera-agent-unity-exec-" + id, true });
                     var loadMethod = alcType.GetMethod("LoadFromStream", new[] { typeof(Stream) });
                     if (alc != null && loadMethod != null)
                     {

@@ -12,7 +12,7 @@ namespace HeraAgent
     public static class Heartbeat
     {
         static readonly string s_Dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".hera-agent", "instances");
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".hera-agent-unity-unity", "instances");
 
         static double s_LastWrite;
         const double INTERVAL = 0.5;

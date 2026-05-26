@@ -13,7 +13,7 @@ namespace HeraAgent.Editor
     /// <summary>
     /// Hera Agent Pro — Hera Settings Editor Window (UIToolkit).
     /// A pure-Unity EditorWindow with no third-party dependencies.
-    /// Shares asset-config.json with hera-agent-pro.
+    /// Shares asset-config.json with hera-agent-unity-pro.
     ///
     /// Menu: Tools / Hera Agent Pro / Hera Settings
     /// </summary>
@@ -149,7 +149,7 @@ namespace HeraAgent.Editor
         private static bool IsHeraAgentInstalled()
         {
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var configDir = Path.Combine(home, ".hera-agent-pro");
+            var configDir = Path.Combine(home, ".hera-agent-unity-unity-pro");
             return Directory.Exists(configDir);
         }
 
@@ -1117,7 +1117,7 @@ namespace HeraAgent.Editor
             cmdBox.style.borderLeftColor = ColorBorder;
             cmdBox.style.borderRightColor = ColorBorder;
 
-            var cmdLbl = new Label("$ hera-agent-pro setup");
+            var cmdLbl = new Label("$ hera-agent-unity-pro setup");
             cmdLbl.style.fontSize = 11;
             cmdLbl.style.color = ColorAmber;
             cmdLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
@@ -1133,7 +1133,7 @@ namespace HeraAgent.Editor
         private static string GetConfigPath()
         {
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            return Path.Combine(home, ".hera-agent-pro", "asset-config.json");
+            return Path.Combine(home, ".hera-agent-unity-unity-pro", "asset-config.json");
         }
 
         private void LoadConfig()

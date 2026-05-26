@@ -13,7 +13,7 @@ func removeFromPATH(installDir string) error {
 	// directory that's on the default user PATH. Removing it would break every
 	// Store-app alias on the system. Leave it alone.
 	//
-	// Only legacy hera-agent PATH entries (from pre-WindowsApps installs)
+	// Only legacy hera-agent-unity-unity PATH entries (from pre-WindowsApps installs)
 	// need cleanup.
 	legacyDir, _ := legacyInstallPaths()
 	if legacyDir == "" {
@@ -39,7 +39,7 @@ func removeFromPATH(installDir string) error {
 }
 
 func removeBinaryAndDir(exe, installDir string) (deferred bool, err error) {
-	binPath := filepath.Join(installDir, "hera-agent.exe")
+	binPath := filepath.Join(installDir, "hera-agent-unity-unity.exe")
 
 	// Remove the binary in installDir (WindowsApps). If it is the running
 	// executable Windows locks it, so scheduleDelete falls back to a
@@ -51,7 +51,7 @@ func removeBinaryAndDir(exe, installDir string) (deferred bool, err error) {
 	}
 
 	// Sweep stale artifacts left by `update`: the rename-dance backup
-	// (hera-agent.exe.bak) and any partial download (hera-agent-*.tmp).
+	// (hera-agent-unity-unity.exe.bak) and any partial download (hera-agent-unity-unity-*.tmp).
 	// Without this they accumulate forever and surface in 'doctor' as
 	// confusing duplicates after the user already ran uninstall.
 	if sweepArtifacts(installDir) {
@@ -61,7 +61,7 @@ func removeBinaryAndDir(exe, installDir string) (deferred bool, err error) {
 	// installDir is WindowsApps (a shared OS directory) — never remove it.
 	// We only own the binary and its sidecars inside.
 
-	// Clean up the legacy install location (%LOCALAPPDATA%\hera-agent)
+	// Clean up the legacy install location (%LOCALAPPDATA%\hera-agent-unity-unity)
 	// for users who installed before v0.0.6. RemoveAll instead of Remove
 	// because .bak / .tmp leftovers leave the directory non-empty.
 	legacyDir, _ := legacyInstallPaths()
@@ -86,7 +86,7 @@ func removeBinaryAndDir(exe, installDir string) (deferred bool, err error) {
 }
 
 func sweepArtifacts(dir string) (anyDeferred bool) {
-	patterns := []string{"hera-agent.exe.bak", "hera-agent-*.tmp"}
+	patterns := []string{"hera-agent-unity-unity.exe.bak", "hera-agent-unity-unity-*.tmp"}
 	for _, pat := range patterns {
 		matches, _ := filepath.Glob(filepath.Join(dir, pat))
 		for _, m := range matches {

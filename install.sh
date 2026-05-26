@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-REPO="NotNull92/hera-agent"
+REPO="NotNull92/hera-agent-unity-unity"
 
 OS="$(uname -s | tr '[:upper:]' '[:lower:]')"
 case "$OS" in
@@ -36,11 +36,11 @@ printf '%s\n' "${GOLD}  ╠═╣ ║╣  ╠╦╝ ╠═╣   ╠═╣ ║ �
 printf '%s\n' "${GOLD}  ╩ ╩ ╚═╝ ╩╚═ ╩ ╩   ╩ ╩ ╚═╝ ╚═╝ ╝╚╝  ╩    ╚══ ╚╩╝  ╩  ╚═╝${RESET}"
 echo ""
 
-URL="https://github.com/${REPO}/releases/latest/download/hera-agent-${OS}-${ARCH}"
+URL="https://github.com/${REPO}/releases/latest/download/hera-agent-unity-unity-${OS}-${ARCH}"
 
-echo "Downloading hera-agent for ${OS}/${ARCH}..."
-curl -fsSL "$URL" -o "$INSTALL_DIR/hera-agent"
-chmod +x "$INSTALL_DIR/hera-agent"
+echo "Downloading hera-agent-unity-unity for ${OS}/${ARCH}..."
+curl -fsSL "$URL" -o "$INSTALL_DIR/hera-agent-unity-unity-unity"
+chmod +x "$INSTALL_DIR/hera-agent-unity-unity-unity"
 
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
@@ -58,12 +58,12 @@ case ":$PATH:" in
     echo "Added $INSTALL_DIR to PATH (restart shell to apply)" ;;
 esac
 
-echo "Installed hera-agent to $INSTALL_DIR/hera-agent"
+echo "Installed hera-agent-unity-unity to $INSTALL_DIR/hera-agent-unity-unity-unity"
 echo
 echo "Next, get your AI agent to use it:"
 echo "  - Discover: ask Claude Code CLI or Codex in any terminal:"
-echo '      "Check whether the hera-agent CLI tool is installed and explore its capabilities."'
+echo '      "Check whether the hera-agent-unity-unity CLI tool is installed and explore its capabilities."'
 echo "  - Lock in (recommended): add to your project's CLAUDE.md / AGENTS.md:"
-echo '      "For any Unity work, always use hera-agent."'
+echo '      "For any Unity work, always use hera-agent-unity-unity."'
 echo
-"$INSTALL_DIR/hera-agent" version
+"$INSTALL_DIR/hera-agent-unity-unity-unity" version

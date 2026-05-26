@@ -14,7 +14,7 @@ namespace HeraAgent.TestRunner
     public static class RunTests
     {
         internal static readonly string StatusDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".hera-agent", "status");
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".hera-agent-unity-unity", "status");
 
         public class Parameters
         {

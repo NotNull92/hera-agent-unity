@@ -1,4 +1,4 @@
-module github.com/NotNull92/hera-agent
+module github.com/NotNull92/hera-agent-unity
 
 go 1.24.3
 

@@ -26,7 +26,7 @@ func writeInstanceFiles(t *testing.T, files map[string]Instance) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	dir := filepath.Join(home, ".hera-agent", "instances")
+	dir := filepath.Join(home, ".hera-agent-unity-unity", "instances")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatalf("failed to create instances dir: %v", err)
 	}
@@ -119,7 +119,7 @@ func TestFindActiveByPort_PicksLatestTimestamp(t *testing.T) {
 // --- FindByPort tests (exact lookup, includes stopped) ---
 
 // TestFindByPort_ReturnsStoppedInstance verifies that FindByPort returns
-// stopped instances, so `hera-agent status` can display them.
+// stopped instances, so `hera-agent-unity-unity status` can display them.
 func TestFindByPort_ReturnsStoppedInstance(t *testing.T) {
 	stubIsProcessDead(t, map[int]bool{})
 
@@ -217,7 +217,7 @@ func TestScanInstances_RemovesDeadPID(t *testing.T) {
 	}
 
 	// Verify the dead file was actually deleted
-	deadPath := filepath.Join(home, ".hera-agent", "instances", "dead.json")
+	deadPath := filepath.Join(home, ".hera-agent-unity-unity", "instances", "dead.json")
 	if _, err := os.Stat(deadPath); !os.IsNotExist(err) {
 		t.Error("dead.json should have been deleted")
 	}
@@ -249,7 +249,7 @@ func TestScanInstances_KeepsOnPermissionError(t *testing.T) {
 	}
 
 	// Verify the file was NOT deleted
-	fp := filepath.Join(home, ".hera-agent", "instances", "eperm.json")
+	fp := filepath.Join(home, ".hera-agent-unity-unity", "instances", "eperm.json")
 	if _, err := os.Stat(fp); err != nil {
 		t.Error("eperm.json should have been preserved")
 	}

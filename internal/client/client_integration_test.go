@@ -5,7 +5,7 @@ package client_test
 import (
 	"testing"
 
-	"github.com/NotNull92/hera-agent/internal/client"
+	"github.com/NotNull92/hera-agent-unity-unity/internal/client"
 )
 
 func TestDiscoverInstance(t *testing.T) {

@@ -10,7 +10,7 @@ assignees: ''
 What would you like to know?
 
 ## Context
-Provide any relevant context (OS, Unity version, hera-agent version, etc.).
+Provide any relevant context (OS, Unity version, hera-agent-unity version, etc.).
 
 ## What I've Tried
 Describe what you've already tried or read.

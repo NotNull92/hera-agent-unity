@@ -12,7 +12,7 @@ A clear and concise description of the bug.
 ## Environment
 - OS: (e.g., macOS 14, Windows 11, Ubuntu 22.04)
 - Unity version: (e.g., 6000.0.25f1)
-- hera-agent version: (e.g., v0.0.7)
+- hera-agent-unity version: (e.g., v0.0.7)
 - Installation method: (e.g., install.sh, go install, manual)
 
 ## Steps to Reproduce

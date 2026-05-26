@@ -80,7 +80,7 @@ func Execute() error {
 | `buildParams()` | Converts `--key value` pairs into a map. Supports `--params '{"k":"v"}'` for raw JSON. |
 | `parseSubFlags()` | Extracts `--flag` and `--flag value` pairs from subcommand args. Boolean flags get `"true"`. |
 | `splitArgs()` | Separates global flags (`--port`, `--project`, `--timeout`) from subcommand args. |
-| `readStdinIfPiped()` | Reads stdin when piped (e.g., `echo 'code' \| hera-agent exec`). Detects pipe via `os.ModeCharDevice`. |
+| `readStdinIfPiped()` | Reads stdin when piped (e.g., `echo 'code' \| hera-agent-unity-unity exec`). Detects pipe via `os.ModeCharDevice`. |
 
 ### Parameter Type Coercion
 
@@ -122,7 +122,7 @@ func Execute() error {
 | Mode | Flow |
 |:---|:---|
 | EditMode | Synchronous execution. Direct response. |
-| PlayMode | Asynchronous. Returns `"running"` immediately. CLI polls `~/.hera-agent/status/test-results-<port>.json` for results. |
+| PlayMode | Asynchronous. Returns `"running"` immediately. CLI polls `~/.hera-agent-unity-unity/status/test-results-<port>.json` for results. |
 
 ### update.go
 
@@ -135,7 +135,7 @@ func Execute() error {
 ### version_check.go
 
 - Checks GitHub API every 12 hours
-- Caches result in `~/.hera-agent/version-check.json`
+- Caches result in `~/.hera-agent-unity-unity/version-check.json`
 - Prints update notice to stderr if newer version exists
 
 ---

@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/NotNull92/hera-agent/internal/client"
+	"github.com/NotNull92/hera-agent-unity-unity/internal/client"
 )
 
 func TestEditorCmd_Play(t *testing.T) {

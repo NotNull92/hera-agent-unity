@@ -3,7 +3,7 @@ package cmd
 import (
 	"testing"
 
-	"github.com/NotNull92/hera-agent/internal/client"
+	"github.com/NotNull92/hera-agent-unity-unity/internal/client"
 )
 
 func mockSend(wantCmd string, t *testing.T) (sendFn, *map[string]interface{}) {

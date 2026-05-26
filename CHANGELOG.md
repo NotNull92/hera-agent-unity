@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Install flow: AI agent discovery prompt and rule anchoring after installation
-- Porting guide for synchronizing changes with hera-agent-pro
+- Porting guide for synchronizing changes with hera-agent-unity-pro
 
 ### Changed
 - README banner updated to `hera_lite.png`
@@ -71,9 +71,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Install/uninstall commands
 
 ### Changed
-- Rebrand from `unity-agent-cli` to `hera-agent`
+- Rebrand from `unity-agent-cli` to `hera-agent-unity`
 - README elevated to brand manifesto tone
-- Release binary names unified to `hera-agent-*`
+- Release binary names unified to `hera-agent-unity-*`
 - Connector displayName changed to `Hera Agent Lite`
 
 ## [0.0.1] - 2025-05-07

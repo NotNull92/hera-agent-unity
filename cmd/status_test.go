@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NotNull92/hera-agent/internal/client"
+	"github.com/NotNull92/hera-agent-unity-unity/internal/client"
 )
 
 func writeInstanceFile(t *testing.T, inst client.Instance) string {
@@ -15,7 +15,7 @@ func writeInstanceFile(t *testing.T, inst client.Instance) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	dir := filepath.Join(home, ".hera-agent", "instances")
+	dir := filepath.Join(home, ".hera-agent-unity-unity", "instances")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatalf("failed to create instances dir: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestReadStatus_InvalidJSON(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	dir := filepath.Join(home, ".hera-agent", "instances")
+	dir := filepath.Join(home, ".hera-agent-unity-unity", "instances")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatalf("failed to create dir: %v", err)
 	}

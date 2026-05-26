@@ -1,5 +1,5 @@
 {
-  "project": "hera-agent",
+  "project": "hera-agent-unity",
   "description": "CLI tool to control Unity Editor from the command line.",
   "lastUpdated": "2026-05-14",
   "current": {
@@ -15,12 +15,12 @@
       "summary": "v0.0.8 릴리즈 — Old Money TUI 완성 + install 서브커맨드 제거",
       "details": [
         "tag v0.0.8 푸시 → Release 워크플로우(25850166130) cross-compile + GitHub Release 성공",
-        "go clean -cache -testcache 후 hera-agent update로 v0.0.7 → v0.0.8 검증",
-        "echo n | hera-agent uninstall로 BrandBanner 노출 + Decommissioning cancelled 정상 동작 확인",
-        "묶음 변경 (v0.0.7 ~ v0.0.8 사이 15 커밋): BrandBanner ASCII 워드마크 (Go + install.ps1 + install.sh), hera-agent install 서브커맨드 제거, asset-config TUI Old Money 팔레트 통일, uninstall flow Old Money 톤, status/asset-config TTY 가드, install.ps1 PS 5.1 호환 + Write-Error shadowing + $env:Path escape fix"
+        "go clean -cache -testcache 후 hera-agent-unity update로 v0.0.7 → v0.0.8 검증",
+        "echo n | hera-agent-unity uninstall로 BrandBanner 노출 + Decommissioning cancelled 정상 동작 확인",
+        "묶음 변경 (v0.0.7 ~ v0.0.8 사이 15 커밋): BrandBanner ASCII 워드마크 (Go + install.ps1 + install.sh), hera-agent-unity install 서브커맨드 제거, asset-config TUI Old Money 팔레트 통일, uninstall flow Old Money 톤, status/asset-config TTY 가드, install.ps1 PS 5.1 호환 + Write-Error shadowing + $env:Path escape fix"
       ],
       "breaking": true,
-      "migration": "hera-agent install 서브커맨드 호출하던 스크립트는 README의 irm | iex (Windows) 또는 curl | sh (Unix) bootstrap 경로로 이전 필요. 일반 사용자 영향 없음.",
+      "migration": "hera-agent-unity install 서브커맨드 호출하던 스크립트는 README의 irm | iex (Windows) 또는 curl | sh (Unix) bootstrap 경로로 이전 필요. 일반 사용자 영향 없음.",
       "commits": ["v0.0.8 tag"]
     },
     {
@@ -31,19 +31,19 @@
         "install.ps1: 'Hera Agent — Commissioning' + 'Establishing your estate...' 두 줄 → 3줄 box-drawing 워드마크 (Antique Gold Bold). 기존 $ansiOk 가드가 NO_COLOR / VT 미지원 환경에서 자동 plain fallback",
         "install.sh: 기존엔 헤더 없이 'Downloading...'으로 바로 시작. 동일 3줄 배너 추가. printf '\\033[1;38;2;201;162;39m'로 24-bit ANSI Gold + [ -t 1 ] / NO_COLOR 가드로 파이프·CI plain fallback"
       ],
-      "rationale": "hera-agent install 서브커맨드 제거(9c53889) 후 사용자가 보는 install 출력은 100% install.ps1 (irm | iex) / install.sh (curl | sh) bootstrap에서 나옴. Go 측 BrandBanner()와 톤을 맞춰야 irm 사용자도 워드마크를 볼 수 있음. 실제 사용자 보고: 'Hera Agent — Commissioning만 나오고 ASCII Art 안 나옴'.",
+      "rationale": "hera-agent-unity install 서브커맨드 제거(9c53889) 후 사용자가 보는 install 출력은 100% install.ps1 (irm | iex) / install.sh (curl | sh) bootstrap에서 나옴. Go 측 BrandBanner()와 톤을 맞춰야 irm 사용자도 워드마크를 볼 수 있음. 실제 사용자 보고: 'Hera Agent — Commissioning만 나오고 ASCII Art 안 나옴'.",
       "commits": ["ae271b7"]
     },
     {
       "date": "2026-05-14",
       "type": "refactor",
-      "summary": "hera-agent install 서브커맨드 제거 (Lite는 install.ps1 / install.sh 부트스트랩만 사용)",
+      "summary": "hera-agent-unity install 서브커맨드 제거 (Lite는 install.ps1 / install.sh 부트스트랩만 사용)",
       "details": [
         "cmd/install.go 전체 삭제 (257줄): installCmd + printInstallHeader/Step/Error/Success + copyFile + addToPATH* + appendLineIfNotExists + cleanupLegacyInstall",
         "cmd/paths.go 신설 (cross-platform): getInstallPaths만 — uninstall이 install 위치를 알기 위해 필요",
         "cmd/paths_windows.go 신설 (//go:build windows): legacyInstallPaths + runPowerShellWithArgs — uninstall_windows.go에서만 호출",
         "cmd/root.go switch에서 'install' 케이스 제거",
-        "docs/issues/path-stale-env-block.md: 'hera-agent install 성공 메시지' → 'install.ps1 성공 메시지'로 갱신",
+        "docs/issues/path-stale-env-block.md: 'hera-agent-unity install 성공 메시지' → 'install.ps1 성공 메시지'로 갱신",
         "install.ps1 / install.sh / uninstall* / tui.BrandBanner 등 다른 경로는 변경 없음"
       ],
       "rationale": "Lite에서 install은 README의 irm | iex (install.ps1) 및 curl | sh (install.sh) bootstrap 경로만으로 충분. CLI 서브커맨드로 install을 다시 노출할 필요 없음. 또한 cmd/install.go의 addToPATHWindows가 PowerShell -Command + extra arg 패턴을 잘못 써서 v0.0.6 이후 Windows에서 PATH 단계가 exit 1로 실패하던 잠재 이슈도 함께 해소.",
@@ -58,7 +58,7 @@
       "summary": "install/uninstall 헤더를 'HERA AGENT LITE' ASCII 워드마크로 교체",
       "details": [
         "internal/tui/style.go: BrandBanner() 추가 — 3줄 box-drawing 워드마크, TitleStyle(Antique Gold)로 렌더",
-        "hera-agent-pro의 BrandBanner 패턴을 동일 적용 — PRO 세 글자만 LITE 네 글자로 교체, HERA AGENT 부분은 그대로",
+        "hera-agent-unity-pro의 BrandBanner 패턴을 동일 적용 — PRO 세 글자만 LITE 네 글자로 교체, HERA AGENT 부분은 그대로",
         "cmd/install.go printInstallHeader: 텍스트 두 줄(TitleStyle 'Hera Agent — Commissioning' + InfoStyle 'Establishing your estate...') → tui.BrandBanner() 한 호출로 교체",
         "cmd/uninstall.go printUninstallHeader: 동일 패턴 교체 ('Hera Agent — Decommissioning' + 'Releasing your estate...' → BrandBanner)",
         "성공/실패 메시지·확인 프롬프트·스타일 상수 등 다른 카피는 변경 없음"
@@ -87,8 +87,8 @@
       "type": "refactor",
       "summary": "uninstall flow Old Money 톤·tui 적용 (install과 패럴렐)",
       "details": [
-        "헤더: 'hera-agent uninstall / Removing hera-agent...' → 'Hera Agent — Decommissioning / Releasing your estate...'",
-        "확인 프롬프트: 'permanently remove ... Continue?' → 'dissolve hera-agent and all its records. Proceed?'",
+        "헤더: 'hera-agent-unity uninstall / Removing hera-agent-unity...' → 'Hera Agent — Decommissioning / Releasing your estate...'",
+        "확인 프롬프트: 'permanently remove ... Continue?' → 'dissolve hera-agent-unity and all its records. Proceed?'",
         "성공 메시지: 'completely removed / No trace remains' → 'Your instrument has been released / No trace remains upon the estate' + BoxAccent 박스로 감싸 install 성공 박스와 시각 일관",
         "printUninstallHeader/Warn/Done/Success가 tui 패키지 스타일 사용 (TitleStyle, InfoStyle, LabelStyle, WarningStyle, CheckStyle, SuccessStyle, BoxAccent)"
       ],
@@ -157,8 +157,8 @@
       "summary": "install 후 AI agent 활용 안내 — Discover 프롬프트 + 프로젝트 규칙 고정",
       "details": [
         "README.md / README.ko.md Quick Start step 3 'Let your AI agent take over' 추가",
-        "Discover 안내: 'Check whether the hera-agent CLI tool is installed and explore its capabilities.' (한글: 'hera-agent cli 도구 설치되어 있는지 확인하고 파악해')",
-        "Lock in 안내: 프로젝트 CLAUDE.md / AGENTS.md에 '유니티 작업의 경우 반드시 hera-agent를 사용해' 규칙 고정 권장",
+        "Discover 안내: 'Check whether the hera-agent-unity CLI tool is installed and explore its capabilities.' (한글: 'hera-agent-unity cli 도구 설치되어 있는지 확인하고 파악해')",
+        "Lock in 안내: 프로젝트 CLAUDE.md / AGENTS.md에 '유니티 작업의 경우 반드시 hera-agent-unity를 사용해' 규칙 고정 권장",
         "install.ps1 / install.sh 마지막 출력에 동일 두 줄 안내",
         "cmd/install.go printInstallSuccess에 동일 메시지 통합"
       ],
@@ -168,7 +168,7 @@
     {
       "date": "2026-05-13",
       "type": "docs",
-      "summary": "hera-agent-pro 동기화 가이드 신설",
+      "summary": "hera-agent-unity-pro 동기화 가이드 신설",
       "details": [
         "docs/porting/pro-sync-2026-05-13.md 신설",
         "v0.0.4~v0.0.7의 install/uninstall UX 개편을 Pro에 이식하기 위한 구현 가이드 (Part A: WindowsApps 이전, Part B: AI agent 활용 안내)",
@@ -192,10 +192,10 @@
       "release": { "cli": "v0.0.6" },
       "summary": "Windows install 위치를 WindowsApps로 이전 — IDE/Unity 재시작 강요 해소",
       "details": [
-        "installDir: %LOCALAPPDATA%\\hera-agent → %LOCALAPPDATA%\\Microsoft\\WindowsApps (OS가 기본 PATH에 포함)",
+        "installDir: %LOCALAPPDATA%\\hera-agent-unity → %LOCALAPPDATA%\\Microsoft\\WindowsApps (OS가 기본 PATH에 포함)",
         "install.ps1: PATH 레지스트리 등록 제거. legacy 디렉토리·PATH 항목 자동 마이그레이션.",
         "cmd/install.go: getInstallPaths, addToPATHWindows, cleanupLegacyInstall 갱신",
-        "cmd/uninstall_windows.go: WindowsApps 보존하면서 hera-agent.exe만 제거, legacy 위치 동반 정리, removeFromPATH 실제 레지스트리 갱신 구현",
+        "cmd/uninstall_windows.go: WindowsApps 보존하면서 hera-agent-unity.exe만 제거, legacy 위치 동반 정리, removeFromPATH 실제 레지스트리 갱신 구현",
         "성공 메시지: 막힌 세션용 한 줄 PATH 패치 명령 안내",
         "docs/issues/path-stale-env-block.md 문서화"
       ],
@@ -219,8 +219,8 @@
       "release": { "cli": "v0.0.4" },
       "summary": "Windows PATH 더블 백슬래시 버그 + IDE 인식 누락 안내",
       "details": [
-        "install.ps1: '$env:LOCALAPPDATA\\\\hera-agent' → '\\hera-agent' (PS 더블쿼트에서 \\는 이스케이프가 아님)",
-        "PATH 정규화 마이그레이션: 기존에 박힌 \\\\hera-agent 항목을 제거하고 \\hera-agent 단일 prepend",
+        "install.ps1: '$env:LOCALAPPDATA\\\\hera-agent-unity' → '\\hera-agent-unity' (PS 더블쿼트에서 \\는 이스케이프가 아님)",
+        "PATH 정규화 마이그레이션: 기존에 박힌 \\\\hera-agent-unity 항목을 제거하고 \\hera-agent-unity 단일 prepend",
         "cmd/install.go addToPATHWindows에 동일 로직 적용 (-notlike 패턴 매치 실패 해소)",
         "성공 메시지: IDE/터미널 앱 자체 재시작 명시"
       ],
@@ -248,7 +248,7 @@
         "asmdef rename: UnityCliConnector.Editor → HeraAgent.Editor (+ TestRunner)",
         "파일 rename: UnityCliToolAttribute.cs, UnityCliToolInterfaces.cs, asmdef 2개 (+ .meta)",
         "README/docs/cmd help/CLAUDE.md 예제 코드 갱신",
-        ".gitignore: unity-cli → hera-agent (실 빌드 산출물 반영)",
+        ".gitignore: unity-cli → hera-agent-unity (실 빌드 산출물 반영)",
         "docs/DEVELOPMENT.md의 미사용 UNITY_AGENT_CLI_PORT 블록 제거",
         "Debug.Log 내부 [UnityCliConnector] 프리픽스 → [Hera]로 통일 완료"
       ],
@@ -277,8 +277,8 @@
       "type": "feat",
       "summary": "install/uninstall 명령어 추가 + 릴리즈 바이너리명 통일",
       "details": [
-        "hera-agent install/uninstall 서브커맨드",
-        "릴리즈 바이너리명 hera-agent-*로 일관화"
+        "hera-agent-unity install/uninstall 서브커맨드",
+        "릴리즈 바이너리명 hera-agent-unity-*로 일관화"
       ],
       "commits": ["cb02bbc", "2d0354b"]
     },
@@ -286,7 +286,7 @@
       "date": "2026-05-13",
       "type": "rebrand",
       "release": { "cli": "v0.0.1" },
-      "summary": "unity-agent-cli → hera-agent 브랜드 전환",
+      "summary": "unity-agent-cli → hera-agent-unity 브랜드 전환",
       "details": [
         "프로젝트명·패키지 ID·displayName 일괄 변경",
         "README 브랜드 매니페스토 톤으로 재작성"

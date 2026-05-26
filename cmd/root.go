@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NotNull92/hera-agent/internal/client"
+	"github.com/NotNull92/hera-agent-unity-unity/internal/client"
 )
 
 var Version = "dev"
@@ -65,7 +65,7 @@ func Execute() error {
 		}
 		return nil
 	case "version", "--version", "-v":
-		fmt.Println("hera-agent " + Version)
+		fmt.Println("hera-agent-unity-unity " + Version)
 		return nil
 	case "update":
 		return updateCmd(subArgs)
@@ -115,7 +115,7 @@ func Execute() error {
 			return nil, err
 		}
 		if command == "exec" {
-			fmt.Fprintln(os.Stderr, "[hera-agent] compiling...")
+			fmt.Fprintln(os.Stderr, "[hera-agent-unity-unity] compiling...")
 		}
 		return sendWithProgress(inst, command, params, timeout, flagVerbose)
 	}
@@ -189,7 +189,7 @@ func sendWithProgress(inst *client.Instance, command string, params interface{},
 				return
 			case t := <-ticker.C:
 				elapsed := int(t.Sub(start).Seconds())
-				fmt.Fprintf(os.Stderr, "[hera-agent] %s in progress... (%ds)\n", command, elapsed)
+				fmt.Fprintf(os.Stderr, "[hera-agent-unity-unity] %s in progress... (%ds)\n", command, elapsed)
 			}
 		}
 	}()
@@ -211,7 +211,7 @@ func printTimings(resp *client.CommandResponse) {
 	for _, k := range keys {
 		parts = append(parts, fmt.Sprintf("%s=%dms", k, resp.Timings[k]))
 	}
-	fmt.Fprintf(os.Stderr, "[hera-agent] timings: %s\n", strings.Join(parts, " "))
+	fmt.Fprintf(os.Stderr, "[hera-agent-unity-unity] timings: %s\n", strings.Join(parts, " "))
 }
 
 // sendFn is the function signature for sending a command to Unity.
@@ -239,7 +239,7 @@ func printResponse(resp *client.CommandResponse) {
 		return
 	}
 	if resp.AgentHint != "" {
-		fmt.Fprintf(os.Stderr, "[hera-agent] hint: %s\n", resp.AgentHint)
+		fmt.Fprintf(os.Stderr, "[hera-agent-unity-unity] hint: %s\n", resp.AgentHint)
 	}
 
 	if len(resp.Data) > 0 && string(resp.Data) != "null" {
@@ -412,9 +412,9 @@ func splitArgs(args []string) (flags, commands []string) {
 }
 
 func printHelp() {
-	fmt.Print(`hera-agent ` + Version + ` — Control Unity Editor from the command line
+	fmt.Print(`hera-agent-unity-unity ` + Version + ` — Control Unity Editor from the command line
 
-Usage: hera-agent <command> [subcommand] [options]
+Usage: hera-agent-unity-unity <command> [subcommand] [options]
 
 Editor Control:
   editor play [--wait]          Enter play mode (--wait blocks until fully entered)
@@ -537,7 +537,7 @@ Global Options:
   --timeout <ms>      Request timeout in ms (default: 60000)
   --verbose           Print progress + per-phase timings to stderr
 
-Use "hera-agent <command> --help" for more information about a command.
+Use "hera-agent-unity-unity <command> --help" for more information about a command.
 
 Notes:
   - Unity must be open with the Connector package installed
@@ -550,7 +550,7 @@ Notes:
 func printTopicHelp(topic string) {
 	switch topic {
 	case "editor":
-		fmt.Print(`Usage: hera-agent editor <play|stop|pause|refresh> [options]
+		fmt.Print(`Usage: hera-agent-unity-unity editor <play|stop|pause|refresh> [options]
 
 Subcommands:
   play [--wait]       Enter play mode
@@ -564,13 +564,13 @@ Subcommands:
     --force           Allow refresh during play mode and force asset update.
 
 Examples:
-  hera-agent editor play --wait
-  hera-agent editor stop
-  hera-agent editor refresh --compile
-  hera-agent editor refresh --force
+  hera-agent-unity-unity editor play --wait
+  hera-agent-unity-unity editor stop
+  hera-agent-unity-unity editor refresh --compile
+  hera-agent-unity-unity editor refresh --force
 `)
 	case "console":
-		fmt.Print(`Usage: hera-agent console [options]
+		fmt.Print(`Usage: hera-agent-unity-unity console [options]
 
 Read Unity console log entries.
 
@@ -583,14 +583,14 @@ Options:
   --clear              Clear console
 
 Examples:
-  hera-agent console
-  hera-agent console --lines 20 --type error,warning,log
-  hera-agent console --stacktrace user
-  hera-agent console --type error --stacktrace full
-  hera-agent console --clear
+  hera-agent-unity-unity console
+  hera-agent-unity-unity console --lines 20 --type error,warning,log
+  hera-agent-unity-unity console --stacktrace user
+  hera-agent-unity-unity console --type error --stacktrace full
+  hera-agent-unity-unity console --clear
 `)
 	case "exec":
-		fmt.Print(`Usage: hera-agent exec "<code>" [options]
+		fmt.Print(`Usage: hera-agent-unity-unity exec "<code>" [options]
 
 Execute C# code inside Unity Editor. Full access to UnityEngine,
 UnityEditor, and all loaded assemblies.
@@ -610,16 +610,16 @@ Default usings: System, System.Collections.Generic, System.IO, System.Linq,
   UnityEditorInternal
 
 Examples:
-  hera-agent exec "return 1+1;"
-  hera-agent exec "return Application.dataPath;"
-  echo 'return EditorSceneManager.GetActiveScene().name;' | hera-agent exec
-  echo 'Debug.Log("hello"); return null;' | hera-agent exec
-  hera-agent exec "return World.All.Count;" --usings Unity.Entities
-  hera-agent exec --file scripts/probe.cs
+  hera-agent-unity-unity exec "return 1+1;"
+  hera-agent-unity-unity exec "return Application.dataPath;"
+  echo 'return EditorSceneManager.GetActiveScene().name;' | hera-agent-unity-unity exec
+  echo 'Debug.Log("hello"); return null;' | hera-agent-unity-unity exec
+  hera-agent-unity-unity exec "return World.All.Count;" --usings Unity.Entities
+  hera-agent-unity-unity exec --file scripts/probe.cs
 
 Stdin:
   Pipe code via stdin to avoid shell escaping issues.
-  echo '<code>' | hera-agent exec [--usings ns1,ns2]
+  echo '<code>' | hera-agent-unity-unity exec [--usings ns1,ns2]
 
 File:
   --file <path> reads code from disk. Skipped if stdin or a positional code
@@ -629,7 +629,7 @@ Notes:
   - Use 'return' for output, 'return null;' for void operations
 `)
 	case "scene":
-		fmt.Print(`Usage: hera-agent scene <action> [target] [options]
+		fmt.Print(`Usage: hera-agent-unity-unity scene <action> [target] [options]
 
 Actions:
   info                          Show active scene + all loaded scenes (name, path, dirty)
@@ -643,30 +643,30 @@ Target resolution:
   Names are resolved through AssetDatabase by exact filename match.
 
 Examples:
-  hera-agent scene info
-  hera-agent scene load Assets/Scenes/Main.unity
-  hera-agent scene load Main --mode additive
-  hera-agent scene save
-  hera-agent scene close Lobby
+  hera-agent-unity-unity scene info
+  hera-agent-unity-unity scene load Assets/Scenes/Main.unity
+  hera-agent-unity-unity scene load Main --mode additive
+  hera-agent-unity-unity scene save
+  hera-agent-unity-unity scene close Lobby
 
 Notes:
   - load --mode single fails if the active scene has unsaved changes.
   - close fails if the target scene is dirty; save first.
 `)
 	case "menu":
-		fmt.Print(`Usage: hera-agent menu "<path>"
+		fmt.Print(`Usage: hera-agent-unity-unity menu "<path>"
 
 Execute a Unity menu item by its path.
 
 Examples:
-  hera-agent menu "File/Save Project"
-  hera-agent menu "Assets/Refresh"
-  hera-agent menu "Window/General/Console"
+  hera-agent-unity-unity menu "File/Save Project"
+  hera-agent-unity-unity menu "Assets/Refresh"
+  hera-agent-unity-unity menu "Window/General/Console"
 
 Note: File/Quit is blocked for safety.
 `)
 	case "screenshot":
-		fmt.Print(`Usage: hera-agent screenshot [options]
+		fmt.Print(`Usage: hera-agent-unity-unity screenshot [options]
 
 Capture a screenshot of the Unity editor.
 
@@ -678,25 +678,25 @@ Options:
                         (default: Screenshots/screenshot.png)
 
 Examples:
-  hera-agent screenshot
-  hera-agent screenshot --view game
-  hera-agent screenshot --view scene --width 3840 --height 2160
-  hera-agent screenshot --output_path captures/my_scene.png
+  hera-agent-unity-unity screenshot
+  hera-agent-unity-unity screenshot --view game
+  hera-agent-unity-unity screenshot --view scene --width 3840 --height 2160
+  hera-agent-unity-unity screenshot --output_path captures/my_scene.png
 `)
 	case "reserialize":
-		fmt.Print(`Usage: hera-agent reserialize [path...]
+		fmt.Print(`Usage: hera-agent-unity-unity reserialize [path...]
 
 Force Unity to reserialize assets through its own YAML serializer.
 Run after editing .prefab, .unity, .asset, or .mat files as text.
 No arguments = reserialize the entire project.
 
 Examples:
-  hera-agent reserialize
-  hera-agent reserialize Assets/Prefabs/Player.prefab
-  hera-agent reserialize Assets/Scenes/Main.unity Assets/Scenes/Lobby.unity
+  hera-agent-unity-unity reserialize
+  hera-agent-unity-unity reserialize Assets/Prefabs/Player.prefab
+  hera-agent-unity-unity reserialize Assets/Scenes/Main.unity Assets/Scenes/Lobby.unity
 `)
 	case "profiler":
-		fmt.Print(`Usage: hera-agent profiler <subcommand> [options]
+		fmt.Print(`Usage: hera-agent-unity-unity profiler <subcommand> [options]
 
 Subcommands:
   hierarchy             Top-level profiler samples (last frame)
@@ -717,13 +717,13 @@ Subcommands:
   clear                 Clear all captured frames
 
 Examples:
-  hera-agent profiler hierarchy --depth 3
-  hera-agent profiler hierarchy --root SimulationSystem --depth 3
-  hera-agent profiler hierarchy --frames 30 --min 0.5 --sort self
-  hera-agent profiler enable
+  hera-agent-unity-unity profiler hierarchy --depth 3
+  hera-agent-unity-unity profiler hierarchy --root SimulationSystem --depth 3
+  hera-agent-unity-unity profiler hierarchy --frames 30 --min 0.5 --sort self
+  hera-agent-unity-unity profiler enable
 `)
 	case "test":
-		fmt.Print(`Usage: hera-agent test [options]
+		fmt.Print(`Usage: hera-agent-unity-unity test [options]
 
 Run Unity tests via the Test Runner API.
 
@@ -738,13 +738,13 @@ PlayMode tests return immediately and poll a results file (domain reload safe).
 Requires the Unity Test Framework package (com.unity.test-framework).
 
 Examples:
-  hera-agent test
-  hera-agent test --mode PlayMode
-  hera-agent test --filter MyNamespace.MyTests
-  hera-agent test --mode EditMode --filter MyNamespace.MyTests.SpecificTest
+  hera-agent-unity-unity test
+  hera-agent-unity-unity test --mode PlayMode
+  hera-agent-unity-unity test --filter MyNamespace.MyTests
+  hera-agent-unity-unity test --mode EditMode --filter MyNamespace.MyTests.SpecificTest
 `)
 	case "log":
-		fmt.Print(`Usage: hera-agent log "<message>" [--level <log|warning|error>]
+		fmt.Print(`Usage: hera-agent-unity-unity log "<message>" [--level <log|warning|error>]
 
 Write a message to the Unity console. Faster than 'exec "Debug.Log(...)"'
 because there's no C# compile step.
@@ -753,12 +753,12 @@ Options:
   --level <log|warning|error>    Log level (default: log)
 
 Examples:
-  hera-agent log "checkpoint A"
-  hera-agent log "missing prefab" --level warning
-  hera-agent log "build failed" --level error
+  hera-agent-unity-unity log "checkpoint A"
+  hera-agent-unity-unity log "missing prefab" --level warning
+  hera-agent-unity-unity log "build failed" --level error
 `)
 	case "list":
-		fmt.Print(`Usage: hera-agent list [options]
+		fmt.Print(`Usage: hera-agent-unity-unity list [options]
 
 List registered tools (built-in + custom).
 
@@ -770,12 +770,12 @@ Options:
   --tool <name>      Full schema for a single tool
 
 Examples:
-  hera-agent list
-  hera-agent list --names
-  hera-agent list --tool exec
+  hera-agent-unity-unity list
+  hera-agent-unity-unity list --names
+  hera-agent-unity-unity list --tool exec
 `)
 	case "ping":
-		fmt.Print(`Usage: hera-agent ping
+		fmt.Print(`Usage: hera-agent-unity-unity ping
 
 Token-cheap liveness probe. Reads the heartbeat file only — no Unity HTTP
 round-trip and no instance discovery beyond filesystem scan.
@@ -786,40 +786,40 @@ Exit code: 0 when alive within 3s; 1 otherwise.
 Use 'status' for the richer human-readable view.
 
 Examples:
-  hera-agent ping
-  hera-agent ping --port 8090
+  hera-agent-unity-unity ping
+  hera-agent-unity-unity ping --port 8090
 `)
 	case "status":
-		fmt.Print(`Usage: hera-agent status
+		fmt.Print(`Usage: hera-agent-unity-unity status
 
 Show the current Unity Editor state: port, project path, version, PID.
 Reports "not responding" if heartbeat is older than 3 seconds.
 
 Example:
-  hera-agent status
+  hera-agent-unity-unity status
 `)
 	case "doctor":
-		fmt.Print(`Usage: hera-agent doctor
+		fmt.Print(`Usage: hera-agent-unity-unity doctor
 
-Run a self-diagnostic. Reports the running binary path, what 'hera-agent'
+Run a self-diagnostic. Reports the running binary path, what 'hera-agent-unity-unity'
 resolves to on PATH, duplicate installs, shell-specific gotchas, and any
 Unity instances visible to the Connector.
 
-Does NOT require Unity to be running. Use this first when 'hera-agent' is
+Does NOT require Unity to be running. Use this first when 'hera-agent-unity-unity' is
 not found, points at the wrong copy, or can't see your Unity Editor.
 
 Options:
   --json   Emit structured envelope (binary, shell, unity) for agents.
 
 Examples:
-  hera-agent doctor
-  hera-agent doctor --json
+  hera-agent-unity-unity doctor
+  hera-agent-unity-unity doctor --json
 
 Environment:
   HERA_AGENT_NO_PATH_CHECK=1   Silence the implicit per-command PATH warning.
 `)
 	case "update":
-		fmt.Print(`Usage: hera-agent update [options]
+		fmt.Print(`Usage: hera-agent-unity-unity update [options]
 
 Update the CLI binary to the latest release from GitHub.
 
@@ -827,14 +827,14 @@ Options:
   --check              Check for updates without installing
 
 Examples:
-  hera-agent update
-  hera-agent update --check
+  hera-agent-unity-unity update
+  hera-agent-unity-unity update --check
 `)
 
 	case "asset-config":
 		printAssetConfigHelp()
 	case "custom-tools", "custom", "tools":
-		fmt.Print(`How to write custom tools for hera-agent
+		fmt.Print(`How to write custom tools for hera-agent-unity-unity
 
 Custom tools are C# classes that run inside Unity Editor. The CLI
 discovers them automatically via reflection.
@@ -877,23 +877,23 @@ Rules:
 
 CLI Installation:
   # Linux / macOS
-  curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent/main/install.sh | sh
+  curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity-unity/main/install.sh | sh
 
   # Windows (PowerShell)
-  irm https://raw.githubusercontent.com/NotNull92/hera-agent/main/install.ps1 | iex
+  irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity-unity/main/install.ps1 | iex
 
   # Go install (any platform)
-  go install github.com/NotNull92/hera-agent@latest
+  go install github.com/NotNull92/hera-agent-unity-unity@latest
 
 Unity Setup:
   1. Window → Package Manager → + → Add package from git URL
-  2. Paste: https://github.com/NotNull92/hera-agent.git?path=AgentConnector
+  2. Paste: https://github.com/NotNull92/hera-agent-unity-unity.git?path=AgentConnector
   The Connector starts automatically when Unity opens.
 
 Verify:
-  hera-agent list
+  hera-agent-unity-unity list
 `)
 	default:
-		fmt.Printf("Unknown help topic: %s\n\nUse \"hera-agent --help\" for available commands.\n", topic)
+		fmt.Printf("Unknown help topic: %s\n\nUse \"hera-agent-unity-unity --help\" for available commands.\n", topic)
 	}
 }

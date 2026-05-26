@@ -9,7 +9,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/NotNull92/hera-agent-pro/internal/tui"
+	"github.com/NotNull92/hera-agent-unity-unity-pro/internal/tui"
 )
 
 func installCmd() error {
@@ -81,18 +81,18 @@ func getInstallPaths() (dir, bin string) {
 		// here avoids touching the PATH registry (and the env-block staleness
 		// problems that come with it). See docs/issues/path-stale-env-block.md.
 		dir = filepath.Join(home, "AppData", "Local", "Microsoft", "WindowsApps")
-		bin = filepath.Join(dir, "hera-agent-pro.exe")
+		bin = filepath.Join(dir, "hera-agent-unity-unity.exe")
 	default:
 		home, _ := os.UserHomeDir()
 		dir = filepath.Join(home, ".local", "bin")
-		bin = filepath.Join(dir, "hera-agent-pro")
+		bin = filepath.Join(dir, "hera-agent-unity-unity")
 	}
 	return
 }
 
 // legacyInstallDirs returns pre-WindowsApps install locations that may still
 // hold leftover binaries / PATH entries from older versions:
-//   - %LOCALAPPDATA%\hera-agent-pro       (post-rebrand, pre-WindowsApps)
+//   - %LOCALAPPDATA%\hera-agent-unity-unity       (post-rebrand, pre-WindowsApps)
 //   - %LOCALAPPDATA%\unity-agent-cli-pro  (pre-rebrand)
 //
 // Returns nil on non-Windows platforms.
@@ -102,7 +102,7 @@ func legacyInstallDirs() []string {
 	}
 	home, _ := os.UserHomeDir()
 	return []string{
-		filepath.Join(home, "AppData", "Local", "hera-agent-pro"),
+		filepath.Join(home, "AppData", "Local", "hera-agent-unity-unity"),
 		filepath.Join(home, "AppData", "Local", "unity-agent-cli-pro"),
 	}
 }
@@ -113,7 +113,7 @@ func cleanupLegacyInstall(currentExe string) {
 	for _, dir := range legacyInstallDirs() {
 		// Try both possible binary names (post-rebrand and pre-rebrand)
 		candidates := []string{
-			filepath.Join(dir, "hera-agent-pro.exe"),
+			filepath.Join(dir, "hera-agent-unity-unity.exe"),
 			filepath.Join(dir, "unity-agent-cli-pro.exe"),
 		}
 		for _, bin := range candidates {
@@ -158,7 +158,7 @@ func addToPATH(installDir string) error {
 
 // addToPATHWindows does NOT register installDir — WindowsApps is already on the
 // default user PATH. Its only job is to scrub legacy entries (variants of
-// %LOCALAPPDATA%\hera-agent-pro and %LOCALAPPDATA%\unity-agent-cli-pro,
+// %LOCALAPPDATA%\hera-agent-unity-unity and %LOCALAPPDATA%\unity-agent-cli-pro,
 // including \\-double-backslash variants and duplicates from earlier buggy
 // installs). Matching is done by case-insensitive suffix on the basename so
 // `System.IO.Path` normalisation failures cannot leave stale entries behind.
@@ -167,13 +167,13 @@ func addToPATHWindows(_ string) error {
 }
 
 // scrubLegacyUserPATH rewrites the current user's PATH, dropping any entry
-// whose basename (after backslash normalisation) matches hera-agent-pro or
+// whose basename (after backslash normalisation) matches hera-agent-unity-unity or
 // unity-agent-cli-pro. Empty entries are also discarded. Idempotent.
 func scrubLegacyUserPATH() error {
 	script := `
 $p = [Environment]::GetEnvironmentVariable("Path", "User")
 if (-not $p) { return }
-$legacy = @('hera-agent-pro','unity-agent-cli-pro')
+$legacy = @('hera-agent-unity-unity','unity-agent-cli-pro')
 $filtered = @()
 foreach ($entry in ($p -split ';')) {
     $trimmed = $entry.Trim()
@@ -261,7 +261,7 @@ func printInstallSuccess(installedPath, originalPath string) {
 
 	if runtime.GOOS == "windows" {
 		msg += fmt.Sprintf("\nYou can now delete the original file:\n  %s\n", originalPath)
-		msg += "\nAny NEW terminal or IDE will recognize 'hera-agent-pro' immediately"
+		msg += "\nAny NEW terminal or IDE will recognize 'hera-agent-unity-unity' immediately"
 		msg += "\n(WindowsApps resides on the default user PATH)."
 		msg += "\n\nShould an open terminal not yet recognize it, refresh with:\n"
 		msg += `  $env:Path = [Environment]::GetEnvironmentVariable("Path","User") + ";" + [Environment]::GetEnvironmentVariable("Path","Machine")`
@@ -271,9 +271,9 @@ func printInstallSuccess(installedPath, originalPath string) {
 
 	msg += "\n\nNext, instruct your agent to employ it:"
 	msg += "\n  - Discover: inquire of Claude Code CLI or Codex in any terminal:"
-	msg += "\n      \"Verify that hera-agent-pro is installed and survey its capabilities.\""
+	msg += "\n      \"Verify that hera-agent-unity-unity is installed and survey its capabilities.\""
 	msg += "\n  - Commission (recommended): add to your project's CLAUDE.md / AGENTS.md:"
-	msg += "\n      \"For all Unity endeavours, employ hera-agent-pro.\""
+	msg += "\n      \"For all Unity endeavours, employ hera-agent-unity-unity.\""
 
 	fmt.Println(tui.BoxAccent.Render(tui.SuccessStyle.Render(msg)))
 	fmt.Println()

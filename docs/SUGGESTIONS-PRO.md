@@ -1,6 +1,6 @@
 # SUGGESTIONS-PRO (v2 — 2026-05-19)
 
-`hera-agent-pro` 전반 분석. 2026-05-19 lite (`C:\Users\PC\Desktop\Cowork\hera-agent`) 의 phase 1-4 작업과 diff 비교 결과 반영.
+`hera-agent-pro` 전반 분석. 2026-05-19 lite (`C:\Users\PC\Desktop\Cowork\hera-agent-unity`) 의 phase 1-4 작업과 diff 비교 결과 반영.
 
 > **설계 원칙 (CLAUDE.md)** — 단발 HTTP / 파일 폴링 모델 안에서만 제안한다. MCP / WebSocket / persistent server / 양방향 스트리밍 / 버전 핸드셰이크 / 출력 통일 제안은 배제했다.
 
@@ -87,10 +87,10 @@ lite repo 가 phase 1-4 + 3 hotfix 로 대규모 갱신. Pro = lite 상위집합
 
 | Lite 자산 | Pro 상태 | Lite 위치 | Audience |
 |---|---|---|---|
-| `doctor` 명령 (기본 형태) | ❌ 없음 | `hera-agent/cmd/doctor.go` | Human (`--json` 은 AI). §0.3 `doctor --json` 과 묶어서 동시 포팅 |
-| `checkBinaryPath()` PATH 불일치 경고 + `HERA_AGENT_NO_PATH_CHECK=1` opt-out | ❌ 없음 | `hera-agent/cmd/path_check.go` | Both. AI 경로에는 silent 가드 필수 (§3.2 `isHumanCommand` 와 연결) |
-| `paths_windows.go` (legacy paths, PowerShell helper) | ❌ 없음 | `hera-agent/cmd/paths_windows.go` | Human |
-| `docs/TROUBLESHOOTING.md` | ❌ 없음 | `hera-agent/docs/TROUBLESHOOTING.md` | Human |
+| `doctor` 명령 (기본 형태) | ❌ 없음 | `hera-agent-unity/cmd/doctor.go` | Human (`--json` 은 AI). §0.3 `doctor --json` 과 묶어서 동시 포팅 |
+| `checkBinaryPath()` PATH 불일치 경고 + `HERA_AGENT_NO_PATH_CHECK=1` opt-out | ❌ 없음 | `hera-agent-unity/cmd/path_check.go` | Both. AI 경로에는 silent 가드 필수 (§3.2 `isHumanCommand` 와 연결) |
+| `paths_windows.go` (legacy paths, PowerShell helper) | ❌ 없음 | `hera-agent-unity/cmd/paths_windows.go` | Human |
+| `docs/TROUBLESHOOTING.md` | ❌ 없음 | `hera-agent-unity/docs/TROUBLESHOOTING.md` | Human |
 
 ---
 
@@ -150,7 +150,7 @@ return strings.HasSuffix(a.Name, suffix)
 
 **Audience: Human (install)**
 
-`.bashrc` / `.zshrc` 만 처리. `.profile` / `config.fish` 미지원. Lite shell 스크립트 (`hera-agent/install.sh:50-58`) 는 `$SHELL` basename 분기. 같은 로직 포팅.
+`.bashrc` / `.zshrc` 만 처리. `.profile` / `config.fish` 미지원. Lite shell 스크립트 (`hera-agent-unity/install.sh:50-58`) 는 `$SHELL` basename 분기. 같은 로직 포팅.
 
 ### 1.7 `cache.Outdated` 디스크 저장 무의미 — `cmd/version_check.go:96-102`
 
@@ -473,7 +473,7 @@ AI 가 응답 끝에서 "이게 전부인가?" 의문 없게.
 - `hera-agent-pro license status` (Human)
 - `hera-agent-pro license deactivate` (Human)
 - 검증 서버: Cloudflare Workers 무료 티어
-- 로컬 캐시: `~/.hera-agent-pro/license.json` (오프라인 7~30일)
+- 로컬 캐시: `~/.hera-agent-unity-pro/license.json` (오프라인 7~30일)
 - Pro-only tool gating: license invalid 시 `ToolMetadataRegistry.DisableTool` 로 `describe_type` / `find_method` / `list_assemblies` / batch endpoint / asset-config 비활성
 
 설계 주의: AI tool 응답에 license 만료 메시지 끼우면 토큰 누적. 만료는 status / doctor / uninstall 같은 human 경로에서만 노출.

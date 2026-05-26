@@ -23,7 +23,7 @@ func cacheFilePath() string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Join(home, ".hera-agent", "version-check.json")
+	return filepath.Join(home, ".hera-agent-unity-unity", "version-check.json")
 }
 
 func loadCache(path string) (*versionCache, error) {
@@ -110,5 +110,5 @@ func printUpdateNotice() {
 }
 
 func printNotice(current, latest string) {
-	fmt.Fprintf(os.Stderr, "\nUpdate available: %s → %s\nRun \"hera-agent update\" to upgrade.\n", current, latest)
+	fmt.Fprintf(os.Stderr, "\nUpdate available: %s → %s\nRun \"hera-agent-unity-unity update\" to upgrade.\n", current, latest)
 }

@@ -1,6 +1,6 @@
 # Harness Engineering & Orchestration 설계 문서
 
-> hera-agent-pro의 성능, 코드 품질, 확장성을 개선하기 위한 설계 가이드.
+> hera-agent-unity-pro의 성능, 코드 품질, 확장성을 개선하기 위한 설계 가이드.
 > 속도와 정확성을 최우선으로 하며, 지연을 유발하는 패턴은 배제.
 
 ---

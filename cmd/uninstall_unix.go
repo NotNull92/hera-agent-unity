@@ -42,7 +42,7 @@ func removeFromPATH(installDir string) error {
 }
 
 func removeBinaryAndDir(exe, installDir string) (deferred bool, err error) {
-	binPath := filepath.Join(installDir, "hera-agent")
+	binPath := filepath.Join(installDir, "hera-agent-unity-unity")
 	if _, statErr := os.Stat(binPath); statErr == nil {
 		if rmErr := os.Remove(binPath); rmErr != nil {
 			return false, rmErr

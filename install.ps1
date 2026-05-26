@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$repo = "NotNull92/hera-agent"
+$repo = "NotNull92/hera-agent-unity-unity"
 
 # Old Money ANSI color palette.
 # Use [char]27 instead of `e so this parses on Windows PowerShell 5.1
@@ -35,10 +35,10 @@ function Write-Fail($msg) {
 }
 
 # Install into WindowsApps — Windows 10+ keeps this on the default user PATH,
-# so new terminals (and IDEs launched from a fresh shell) pick up hera-agent
+# so new terminals (and IDEs launched from a fresh shell) pick up hera-agent-unity-unity
 # without us touching the PATH registry at all.
 $installDir = "$env:LOCALAPPDATA\Microsoft\WindowsApps"
-$exe = "$installDir\hera-agent.exe"
+$exe = "$installDir\hera-agent-unity-unity.exe"
 
 Write-Host ""
 Write-Host "$($Bold)$($Gold)  ╦ ╦ ╔═╗ ╔═╗ ╔═╗   ╔═╗ ╔═╗ ╔═╗ ╔╗╔ ╔╦╗   ╦   ╔╦╗ ╔╦╗ ╔═╗$($Reset)"
@@ -46,9 +46,9 @@ Write-Host "$($Bold)$($Gold)  ╠═╣ ║╣  ╠╦╝ ╠═╣   ╠═╣ 
 Write-Host "$($Bold)$($Gold)  ╩ ╩ ╚═╝ ╩╚═ ╩ ╩   ╩ ╩ ╚═╝ ╚═╝ ╝╚╝  ╩    ╚══ ╚╩╝  ╩  ╚═╝$($Reset)"
 Write-Host ""
 
-# Migrate from legacy install location ($LOCALAPPDATA\hera-agent) if present.
-$legacyDir = "$env:LOCALAPPDATA\hera-agent"
-$legacyExe = "$legacyDir\hera-agent.exe"
+# Migrate from legacy install location ($LOCALAPPDATA\hera-agent-unity-unity) if present.
+$legacyDir = "$env:LOCALAPPDATA\hera-agent-unity-unity"
+$legacyExe = "$legacyDir\hera-agent-unity-unity.exe"
 if (Test-Path $legacyExe) {
     try {
         Remove-Item -Path $legacyExe -Force -ErrorAction Stop
@@ -78,8 +78,8 @@ if ($newPath -ne $userPath) {
 }
 
 # Download the binary into the canonical WindowsApps location.
-$url = "https://github.com/$repo/releases/latest/download/hera-agent-windows-amd64.exe"
-Write-Step "Acquiring" "hera-agent for windows/amd64..."
+$url = "https://github.com/$repo/releases/latest/download/hera-agent-unity-unity-windows-amd64.exe"
+Write-Step "Acquiring" "hera-agent-unity-unity for windows/amd64..."
 Invoke-WebRequest -Uri $url -OutFile $exe -UseBasicParsing
 Write-Done "Binary acquired"
 
@@ -88,7 +88,7 @@ Write-Host "$($Bold)$($Sage)  ✓ Your instrument has been commissioned.$($Reset
 Write-Host ""
 Write-Step "Established at" $exe
 Write-Host ""
-Write-Host "  $($Cream)Any NEW terminal or IDE will recognize 'hera-agent' immediately$($Reset)"
+Write-Host "  $($Cream)Any NEW terminal or IDE will recognize 'hera-agent-unity-unity' immediately$($Reset)"
 Write-Host "  $($WarmGray)(WindowsApps resides on the default user PATH).$($Reset)"
 Write-Host ""
 Write-Host "  $($Cream)Should an open terminal not yet recognize it, refresh with:$($Reset)"
@@ -96,9 +96,9 @@ Write-Host "$($Gold)    `$env:Path = [Environment]::GetEnvironmentVariable('Path
 Write-Host ""
 Write-Host "$($Bold)$($Cream)  Next, instruct your agent to employ it:$($Reset)"
 Write-Host "    $($Cream)- Discover: inquire of Claude Code CLI or Codex in any terminal:$($Reset)"
-Write-Host "$($Gold)        'Verify that hera-agent is installed and survey its capabilities.'$($Reset)"
+Write-Host "$($Gold)        'Verify that hera-agent-unity-unity is installed and survey its capabilities.'$($Reset)"
 Write-Host "    $($Cream)- Commission (recommended): add to your project's CLAUDE.md / AGENTS.md:$($Reset)"
-Write-Host "$($Gold)        'For all Unity endeavours, employ hera-agent.'$($Reset)"
+Write-Host "$($Gold)        'For all Unity endeavours, employ hera-agent-unity-unity.'$($Reset)"
 Write-Host ""
 
 & $exe version

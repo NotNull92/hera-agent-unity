@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/NotNull92/hera-agent/internal/client"
+	"github.com/NotNull92/hera-agent-unity-unity/internal/client"
 )
 
 // doctorCmd prints a self-diagnostic report covering install path, PATH
 // resolution, duplicate copies, shell gotchas, and Unity instance state.
-// Intended as the first thing users (and AI agents) try when hera-agent
+// Intended as the first thing users (and AI agents) try when hera-agent-unity
 // "isn't working" — it answers "where is the binary, what does PATH see,
 // and is Unity reachable?" without requiring a Unity connection.
 func doctorCmd(args []string) error {
@@ -32,7 +32,7 @@ func doctorCmd(args []string) error {
 }
 
 func doctorText() error {
-	fmt.Println("hera-agent doctor")
+	fmt.Println("hera-agent-unity-unity doctor")
 	fmt.Println("=================")
 	fmt.Printf("Version:   %s\n", Version)
 	fmt.Printf("OS/Arch:   %s/%s\n", runtime.GOOS, runtime.GOARCH)
@@ -46,9 +46,9 @@ func doctorText() error {
 		fmt.Printf("  running:  %s\n", exe)
 	}
 
-	resolved, lookErr := exec.LookPath("hera-agent")
+	resolved, lookErr := exec.LookPath("hera-agent-unity-unity")
 	if lookErr != nil {
-		fmt.Printf("  X 'hera-agent' not on PATH (%v)\n", lookErr)
+		fmt.Printf("  X 'hera-agent-unity-unity' not on PATH (%v)\n", lookErr)
 		fmt.Println("    Reopen the terminal after install, or add the install dir to PATH.")
 	} else {
 		fmt.Printf("  on PATH:  %s\n", resolved)
@@ -59,8 +59,8 @@ func doctorText() error {
 		}
 	}
 
-	if dupes := findDuplicates("hera-agent"); len(dupes) > 1 {
-		fmt.Println("  ! multiple hera-agent binaries on PATH:")
+	if dupes := findDuplicates("hera-agent-unity-unity"); len(dupes) > 1 {
+		fmt.Println("  ! multiple hera-agent-unity-unity binaries on PATH:")
 		for _, d := range dupes {
 			fmt.Printf("      %s\n", d)
 		}
@@ -83,9 +83,9 @@ func doctorText() error {
 	if err != nil {
 		fmt.Printf("  ! cannot scan instances dir: %v\n", err)
 	} else if len(instances) == 0 {
-		fmt.Println("  ! no Unity instances detected (~/.hera-agent/instances is empty)")
+		fmt.Println("  ! no Unity instances detected (~/.hera-agent-unity-unity/instances is empty)")
 		fmt.Println("    Open Unity with the Connector package installed:")
-		fmt.Println("      https://github.com/NotNull92/hera-agent.git?path=AgentConnector")
+		fmt.Println("      https://github.com/NotNull92/hera-agent-unity-unity.git?path=AgentConnector")
 	} else {
 		fmt.Printf("  OK %d Unity instance(s) registered\n", len(instances))
 		for _, inst := range instances {
@@ -135,7 +135,7 @@ func collectBinaryInfo() map[string]interface{} {
 	} else {
 		info["running"] = exe
 	}
-	resolved, lookErr := exec.LookPath("hera-agent")
+	resolved, lookErr := exec.LookPath("hera-agent-unity-unity")
 	if lookErr != nil {
 		info["path_lookup_error"] = lookErr.Error()
 	} else {
@@ -144,7 +144,7 @@ func collectBinaryInfo() map[string]interface{} {
 			info["path_matches_running"] = sameFile(resolveSymlink(exe), resolveSymlink(resolved))
 		}
 	}
-	if dupes := findDuplicates("hera-agent"); len(dupes) > 1 {
+	if dupes := findDuplicates("hera-agent-unity-unity"); len(dupes) > 1 {
 		info["duplicates"] = dupes
 	}
 	_, installBin := getInstallPaths()
@@ -227,12 +227,12 @@ func printShellHints() {
 	switch runtime.GOOS {
 	case "windows":
 		fmt.Println("  PowerShell: 'where' is aliased to 'Where-Object'. To locate the binary use")
-		fmt.Println("              'where.exe hera-agent' or 'Get-Command hera-agent'.")
+		fmt.Println("              'where.exe hera-agent-unity-unity' or 'Get-Command hera-agent-unity-unity'.")
 		fmt.Println("  PATH refresh in current session:")
 		fmt.Println("    $env:Path = [Environment]::GetEnvironmentVariable('Path','User') + ';' +")
 		fmt.Println("                [Environment]::GetEnvironmentVariable('Path','Machine')")
 	default:
-		fmt.Println("  Verify resolution: 'command -v hera-agent' or 'which hera-agent'.")
+		fmt.Println("  Verify resolution: 'command -v hera-agent-unity-unity' or 'which hera-agent-unity-unity'.")
 		fmt.Println("  If PATH was just modified, restart your shell or source the rc file.")
 	}
 }

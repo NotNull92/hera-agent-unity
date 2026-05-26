@@ -17,7 +17,7 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
 └──────────────────────┘                   └───────────────────────────┘
            ▲                                                 │
            │                                                 │
-           │         ~/.hera-agent/instances/*.json     │
+           │         ~/.hera-agent-unity-unity/instances/*.json     │
            └──────────────────────────────────────────────┘
 ```
 
@@ -28,14 +28,14 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
 ### 1. Initial Connection
 
 1. Unity Editor opens → `HttpServer` starts on an available localhost port (8090 default, falls back to 8092+)
-2. `Heartbeat` writes `~/.hera-agent/instances/<md5(projectPath)>.json` every 0.5 seconds
+2. `Heartbeat` writes `~/.hera-agent-unity-unity/instances/<md5(projectPath)>.json` every 0.5 seconds
 3. CLI scans the instances directory via `internal/client.ScanInstances()`
 4. CLI discovers the Unity instance and connects
 
 ### 2. Command Execution
 
 ```
-[Terminal]    hera-agent editor play --wait
+[Terminal]    hera-agent-unity-unity editor play --wait
      │
      ▷  ① root.go: splitArgs() → strip --port, --project, --timeout flags
      │
@@ -114,7 +114,7 @@ Unity's script compilation / domain reload resets static variables and instances
 
 ## Instance File Format
 
-`~/.hera-agent/instances/<hash>.json`:
+`~/.hera-agent-unity-unity/instances/<hash>.json`:
 
 ```json
 {

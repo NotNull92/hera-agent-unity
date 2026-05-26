@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="docs/assets/hera_lite.png?v=2" width="50%" alt="hera-agent banner">
+<img src="docs/assets/hera_lite.png?v=2" width="50%" alt="hera-agent-unity banner">
 
 <br>
 
-[![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent/releases)
+[![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent-unity-unity?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent-unity-unity/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-%5E1.22-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
@@ -15,25 +15,25 @@
 
 **설치 → 연결 → AI가 Unity를 직접 제어**
 
-<img src="docs/video/hera-agent-install-status(not-connected-unity)-uninstall.gif" width="80%" alt="hera-agent CLI 설치, 상태 확인, 제거">
+<img src="docs/video/hera-agent-unity-install-status(not-connected-unity)-uninstall.gif" width="80%" alt="hera-agent-unity CLI 설치, 상태 확인, 제거">
 
 <br><br>
 
 **UPM 패키지 설치**
 
-<img src="docs/video/hera-agent-install-UPM-scene.gif" width="80%" alt="Unity UPM 패키지 설치">
+<img src="docs/video/hera-agent-unity-install-UPM-scene.gif" width="80%" alt="Unity UPM 패키지 설치">
 
 <br><br>
 
 **Unity 연결 상태 확인**
 
-<img src="docs/video/hera-agent-status-connected-unity.gif" width="80%" alt="hera-agent Unity 연결 상태">
+<img src="docs/video/hera-agent-unity-status-connected-unity.gif" width="80%" alt="hera-agent-unity Unity 연결 상태">
 
 <br><br>
 
-**Claude Code + hera-agent 씬 전환**
+**Claude Code + hera-agent-unity 씬 전환**
 
-<img src="docs/video/claude-code-hera-agent-scene-transition.gif" width="80%" alt="Claude Code가 hera-agent로 씬 전환">
+<img src="docs/video/claude-code-hera-agent-unity-scene-transition.gif" width="80%" alt="Claude Code가 hera-agent-unity로 씬 전환">
 
 <br><br>
 
@@ -74,12 +74,12 @@ Hera는 명령에 응답합니다 — 추론하지 않고, 가정하지 않고. 
 
 **macOS / Linux**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity-unity/main/install.sh | sh
 ```
 
 **Windows** (PowerShell)
 ```powershell
-irm https://raw.githubusercontent.com/NotNull92/hera-agent/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity-unity/main/install.ps1 | iex
 ```
 
 <details>
@@ -87,10 +87,10 @@ irm https://raw.githubusercontent.com/NotNull92/hera-agent/main/install.ps1 | ie
 
 **`go install`** (어떤 플랫폼이든)
 ```bash
-go install github.com/NotNull92/hera-agent@latest
+go install github.com/NotNull92/hera-agent-unity-unity@latest
 ```
 
-**수동 다운로드** — [Releases](https://github.com/NotNull92/hera-agent/releases)에서 플랫폼에 맞는 바이너리를 받으세요.
+**수동 다운로드** — [Releases](https://github.com/NotNull92/hera-agent-unity-unity/releases)에서 플랫폼에 맞는 바이너리를 받으세요.
 
 </details>
 
@@ -102,12 +102,12 @@ go install github.com/NotNull92/hera-agent@latest
 
 **Package Manager → Add package from git URL**
 ```
-https://github.com/NotNull92/hera-agent.git?path=AgentConnector
+https://github.com/NotNull92/hera-agent-unity-unity.git?path=AgentConnector
 ```
 
 또는 `Packages/manifest.json`에 직접 추가:
 ```json
-"com.notnull92.hera-agent": "https://github.com/NotNull92/hera-agent.git?path=AgentConnector"
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity-unity.git?path=AgentConnector"
 ```
 
 > 커넥터는 자동으로 시작됩니다. 별도 설정은 필요 없습니다.
@@ -116,29 +116,29 @@ https://github.com/NotNull92/hera-agent.git?path=AgentConnector
 
 ```bash
 # Unity 연결됐나? (포트 찾기 같은 거 없음)
-hera-agent status
+hera-agent-unity status
 
 # 터미널에서 Play Mode 진입 — 실제로 들어갈 때까지 대기
-hera-agent editor play --wait
+hera-agent-unity editor play --wait
 
 # C# 코드를 Unity 안에서 직접 실행 — 재컴파일도 재시작도 없음
-hera-agent exec "return EditorSceneManager.GetActiveScene().name;"
+hera-agent-unity exec "return EditorSceneManager.GetActiveScene().name;"
 
 # 스크린샷 없이 AI가 읽고 행동할 수 있는 에러 출력
-hera-agent console --type error
+hera-agent-unity console --type error
 ```
 
 ### 3. AI 에이전트에게 넘기기
 
 **발견** — 터미널에서 Claude Code CLI 또는 Codex를 열고 입력:
 
-> **"hera-agent cli 도구 설치되어 있는지 확인하고 파악해"**
+> **"hera-agent-unity cli 도구 설치되어 있는지 확인하고 파악해"**
 
-에이전트가 hera-agent를 발견해서 명령어를 나열하고, 알아서 Unity를 조종하기 시작합니다.
+에이전트가 hera-agent-unity를 발견해서 명령어를 나열하고, 알아서 Unity를 조종하기 시작합니다.
 
 **규칙으로 고정 (권장)** — Unity 프로젝트의 `CLAUDE.md`, `AGENTS.md` 등 AI 에이전트가 읽는 설정 문서에 다음 한 줄을 추가하세요:
 
-> **"유니티 작업의 경우 반드시 hera-agent를 사용해"**
+> **"유니티 작업의 경우 반드시 hera-agent-unity를 사용해"**
 
 매번 LLM이 학습 데이터에서 Unity API를 추측하는 대신, 항상 라이브 에디터에 손을 뻗게 만듭니다.
 
@@ -173,16 +173,16 @@ hera-agent console --type error
 
 ```bash
 # 모든 것을 검사
-hera-agent exec "return World.All.Count;" --usings Unity.Entities
+hera-agent-unity exec "return World.All.Count;" --usings Unity.Entities
 
 # 씬 수정
-hera-agent exec "var go = new GameObject(\"Temp\"); return go.name;"
+hera-agent-unity exec "var go = new GameObject(\"Temp\"); return go.name;"
 
 # stdin으로 파이프 (셸 이스케이핑 문제 해결)
 echo '
 var scene = EditorSceneManager.GetActiveScene();
 return scene.GetRootGameObjects().Length;
-' | hera-agent exec
+' | hera-agent-unity exec
 ```
 
 실제 C#을 컴파일하고 실행하므로 **Unity의 모든 API를 호출할 수 있습니다.** ECS World 검색, 에셋 수정, 에디터 내부 API 호출도 모두 가능합니다. 별도의 커스텀 툴 작성이 필요 없습니다.
@@ -220,10 +220,10 @@ public static class SpawnEnemy
 
 호출:
 ```bash
-hera-agent spawn --x 1 --y 0 --z 5 --prefab Goblin
+hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 ```
 
-`hera-agent list`는 파라미터 스키마를 노출해서 AI 에이전트가 소스 코드를 읽지 않고도 툴을 발견하고 호출할 수 있게 합니다.
+`hera-agent-unity list`는 파라미터 스키마를 노출해서 AI 에이전트가 소스 코드를 읽지 않고도 툴을 발견하고 호출할 수 있게 합니다.
 
 ---
 
@@ -245,7 +245,7 @@ hera-agent spawn --x 1 --y 0 --z 5 --prefab Goblin
 ```
 
 - **스테이트리스** — 매 요청은 독립적입니다. 재연결 로직이 없습니다.
-- **자동 발견** — `~/.hera-agent/instances/`를 스캔하여 실행 중인 Unity 에디터를 찾습니다.
+- **자동 발견** — `~/.hera-agent-unity/instances/`를 스캔하여 실행 중인 Unity 에디터를 찾습니다.
 - **도메인 리로드 대응** — 커넥터는 스크립트 재컴파일에도 살아남며 자동으로 복구합니다.
 - **메인 쓰레드 실행** — 모든 툴 핸들러는 Unity 메인 쓰레드에서 실행됩니다. 모든 API가 안전합니다.
 
@@ -253,7 +253,7 @@ hera-agent spawn --x 1 --y 0 --z 5 --prefab Goblin
 
 ## MCP와 비교
 
-| | MCP 통합 | hera-agent |
+| | MCP 통합 | hera-agent-unity |
 |---|:---:|:---:|
 | **설치** | Python + uv + FastMCP + 설정 파일 | 단일 바이너리 |
 | **런타임 의존성** | WebSocket 릴레이, 영구 프로세스 | 없음 |
@@ -278,7 +278,7 @@ hera-agent spawn --x 1 --y 0 --z 5 --prefab Goblin
 ## 제작자
 
 **Victor** — Unity/C# 개발자, 라이브 서비스 MMORPG 6년+ 프로덕션 경험  
-[hera-agent](https://github.com/NotNull92/hera-agent)로 [NoMoreRolls](https://github.com/NotNull92)를 솔로 개발 중 · 유튜브 [IndieAlchemist](https://www.youtube.com/@IndieAlchemist)
+[hera-agent-unity](https://github.com/NotNull92/hera-agent-unity-unity)로 [NoMoreRolls](https://github.com/NotNull92)를 솔로 개발 중 · 유튜브 [IndieAlchemist](https://www.youtube.com/@IndieAlchemist)
 
 [![GitHub](https://img.shields.io/badge/@NotNull92-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/NotNull92)
 [![Email](https://img.shields.io/badge/fatiger92@gmail.com-EA4335?logo=gmail&logoColor=white&style=flat-square)](mailto:fatiger92@gmail.com)
