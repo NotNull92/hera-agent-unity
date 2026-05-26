@@ -1,0 +1,8 @@
+hera-agent
+*.exe
+.env
+.DS_Store
+.vscode/
+.idea/
+.omc/
+coverage.out

@@ -1,0 +1,23 @@
+{
+  "name": "HeraAgent.TestRunner",
+  "rootNamespace": "HeraAgent.TestRunner",
+  "references": [
+    "HeraAgent.Editor",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": ["UNITY_TEST_FRAMEWORK"],
+  "versionDefines": [
+    {
+      "name": "com.unity.test-framework",
+      "expression": "1.0.0",
+      "define": "UNITY_TEST_FRAMEWORK"
+    }
+  ],
+  "noEngineReferences": false
+}

@@ -1,0 +1,13 @@
+version: "2"
+
+formatters:
+  enable:
+    - gofmt
+
+linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - (*net/http.Response).Body.Close
+        - (*os.File).Close

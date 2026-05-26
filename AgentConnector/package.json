@@ -1,0 +1,16 @@
+{
+  "name": "com.notnull92.hera-agent",
+  "version": "0.0.19",
+  "displayName": "Hera Agent Lite",
+  "description": "Lightweight version of Hera Agent. Control Unity Editor from your terminal with zero setup. Direct HTTP bridge for CLI commands, runtime C# execution, and custom tool dispatch.",
+  "unity": "6000.0",
+  "author": {
+    "name": "NotNull92",
+    "url": "https://github.com/NotNull92"
+  },
+  "keywords": ["cli", "tools", "editor"],
+  "type": "library",
+  "dependencies": {
+    "com.unity.nuget.newtonsoft-json": "3.2.1"
+  }
+}
