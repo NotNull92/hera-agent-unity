@@ -31,16 +31,22 @@ var agentGuide string
 func doctorCmd(args []string) error {
 	jsonMode := false
 	agentRulesMode := false
-	for _, a := range args {
-		switch a {
+	format := "markdown"
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
 		case "--json":
 			jsonMode = true
 		case "--agent-rules", "--print-agent-rules":
 			agentRulesMode = true
+		case "--format":
+			if i+1 < len(args) {
+				format = args[i+1]
+				i++
+			}
 		}
 	}
 	if agentRulesMode {
-		fmt.Print(extractAgentRules())
+		fmt.Print(extractAgentRules(format))
 		return nil
 	}
 	if jsonMode {
@@ -54,8 +60,21 @@ func doctorCmd(args []string) error {
 // guide. Designed to be appended to a project's AI rules file (CLAUDE.md /
 // AGENTS.md / .cursor/rules / .github/copilot-instructions.md / etc.) via
 // `hera-agent-unity doctor --agent-rules >> <your-rules-file>`.
-func extractAgentRules() string {
+//
+// format=="cursor" emits a valid `.mdc` rule file with YAML frontmatter so
+// Cursor's rule system actually loads and applies it. Without frontmatter
+// Cursor parses the file but never activates the rule. Any other format
+// value (or "markdown") emits plain markdown that Claude Code, Codex,
+// Copilot, and Continue.dev all accept verbatim.
+func extractAgentRules(format string) string {
 	var out strings.Builder
+	if format == "cursor" {
+		out.WriteString("---\n")
+		out.WriteString("description: Use hera-agent-unity CLI for any Unity Editor task — measure, do not guess\n")
+		out.WriteString("globs: **/*.cs,**/*.unity,**/*.prefab,**/*.asmdef,**/*.mat,**/*.asset,**/Assets/**\n")
+		out.WriteString("alwaysApply: true\n")
+		out.WriteString("---\n\n")
+	}
 	out.WriteString("# hera-agent-unity — Quick Rules + Pitfalls\n\n")
 	out.WriteString("> Emitted by `hera-agent-unity doctor --agent-rules`. ")
 	out.WriteString("Works with any AI coding agent (Claude Code, Codex, Cursor, Copilot, ...). ")

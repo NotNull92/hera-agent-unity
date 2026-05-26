@@ -8,12 +8,22 @@
 > |---|---|
 > | Claude Code | `CLAUDE.md` (project root) |
 > | OpenAI Codex / `AGENTS.md`-aware tools | `AGENTS.md` (project root) |
-> | Cursor | `.cursor/rules/hera-agent-unity.mdc` |
+> | Cursor | `.cursor/rules/hera-agent-unity.mdc` (needs YAML frontmatter) |
 > | GitHub Copilot | `.github/copilot-instructions.md` |
 > | Continue.dev | `.continuerules` |
 > | Other | whatever your tool calls its project rules file |
 >
-> Or run `hera-agent-unity doctor --agent-rules >> <your rules file>` to append the lean subset.
+> **Two ways to populate the target file**:
+>
+> 1. **Static** — copy the matching stub from [`examples/rules/`](examples/rules/) (one file per agent, already formatted).
+> 2. **Dynamic** — let the CLI generate it from this guide:
+>     ```bash
+>     # Claude / Codex / Copilot / Continue.dev — plain markdown
+>     hera-agent-unity doctor --agent-rules >> <your rules file>
+>
+>     # Cursor — frontmatter prepended automatically
+>     hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+>     ```
 
 `hera-agent-unity` is a CLI that drives a running Unity Editor over HTTP. Common uses: execute C# inside the Editor, read console logs, query the active scene, run tests, capture screenshots, batch several commands in one round-trip. Each call is a tool round-trip; response bytes become your input tokens, so reads cost as much as your own writes.
 
@@ -29,7 +39,7 @@ Quick links:
 
 Numbered so you can grep "[Rule N]" when in doubt.
 
-**[Rule 1]** Default to no return (or `return null;`) in `exec`. Side-effecting code (create objects, set properties, save scenes) should not return a verbose status string. The OK response is 3 bytes (`OK\n`); a hand-crafted summary string ships hundreds of bytes back into your context. Since v0.0.37 the trailing `return` is **optional** — snippets without one resolve to `null` automatically.
+**[Rule 1]** Default to no return (or `return null;`) in `exec`. Side-effecting code (create objects, set properties, save scenes) should not return a verbose status string. The OK response is 3 bytes (`OK\n`); a hand-crafted summary string ships hundreds of bytes back into your context. The trailing `return` is **optional** — snippets without one resolve to `null` automatically.
 
 ```cs
 // Bad — your status string costs ~200 tokens
@@ -38,7 +48,7 @@ return $"Created Canvas with {n} buttons under {parent.name}";
 // Good — same work, 3 bytes
 return null;
 
-// Also good — omit the return entirely (v0.0.37+)
+// Also good — omit the return entirely
 new GameObject("X");
 ```
 
@@ -237,9 +247,15 @@ If your `exec` triggers a script recompile or asset import that causes a domain 
 
 When using `--params '{"k":"v"}'`, explicit `--k v` flags override the JSON. Don't set the same key in both.
 
-### 4.5 Older versions: stdin hang in non-TTY shells
+### 4.5 Cursor / bash `$(...)` / CI: no `$null |` workaround needed
 
-Fixed in **v0.0.37+**. If you're on v0.0.36 or earlier and `exec` hangs in Cursor's shell / bash `$()` / CI, either upgrade (`hera-agent-unity update`) or prepend `$null |` (PowerShell) / `</dev/null` (bash) to every `exec` call.
+In non-TTY shells, stdin is open but never delivers EOF. The CLI's stdin reader detects this (`os.ModeNamedPipe` + `IsRegular` guard) and skips the read, so you can call `exec` exactly like you would in an interactive terminal:
+
+```bash
+hera-agent-unity exec "return Application.productName;"
+```
+
+No `$null |` prefix. No `</dev/null` redirect. If you do see `exec` hang in Cursor or CI, you're on an outdated binary — run `hera-agent-unity update`.
 
 ### 4.6 `console --clear` cannot be undone
 
@@ -267,7 +283,7 @@ Use `--filter Unity` / `--filter MyGame` / etc. to scope. Same for `find_method`
 
 ### 4.12 `return;` (no value) does not compile in `exec`
 
-Your snippet is wrapped in `static object Execute() { ... }`. A bare `return;` triggers `CS0126` ("an object of a type convertible to 'object' is required"). Use `return null;` for early exits, or omit the return entirely (v0.0.37+ falls through to `null`). `throw` also works and is preferred when the early exit represents a failure (exit non-zero via `EXEC_RUNTIME_ERROR`).
+Your snippet is wrapped in `static object Execute() { ... }`. A bare `return;` triggers `CS0126` ("an object of a type convertible to 'object' is required"). Use `return null;` for early exits, or omit the return entirely (it falls through to `null`). `throw` also works and is preferred when the early exit represents a failure (exit non-zero via `EXEC_RUNTIME_ERROR`).
 
 ```cs
 // Bad — CS0126

@@ -157,21 +157,39 @@ The agent will discover the CLI, run `list`, and start driving Unity.
 
 hera-agent-unity is a plain CLI returning JSON. Any coding agent that can run shell commands works:
 
-| Agent                  | Project rules file                              |
-|------------------------|-------------------------------------------------|
-| **Claude Code CLI**    | `CLAUDE.md` (project root)                      |
-| **OpenAI Codex**       | `AGENTS.md` (project root)                      |
-| **Cursor**             | `.cursor/rules/hera-agent-unity.mdc`            |
-| **GitHub Copilot**     | `.github/copilot-instructions.md`               |
-| **Continue.dev**       | `.continuerules`                                |
+| Agent                  | Project rules file                              | Template                                                  |
+|------------------------|-------------------------------------------------|-----------------------------------------------------------|
+| **Claude Code CLI**    | `CLAUDE.md` (project root)                      | [`examples/rules/CLAUDE.md`](examples/rules/CLAUDE.md)    |
+| **OpenAI Codex**       | `AGENTS.md` (project root)                      | [`examples/rules/AGENTS.md`](examples/rules/AGENTS.md)    |
+| **Cursor**             | `.cursor/rules/hera-agent-unity.mdc`            | [`examples/rules/cursor.mdc`](examples/rules/cursor.mdc)  |
+| **GitHub Copilot**     | `.github/copilot-instructions.md`               | [`examples/rules/copilot-instructions.md`](examples/rules/copilot-instructions.md) |
+| **Continue.dev**       | `.continuerules`                                | [`examples/rules/continuerules`](examples/rules/continuerules) |
 
 ### One-time setup per project (strongly recommended)
 
-Add one line to your agent's rules file:
+**Static** — copy the template that matches your agent:
+
+```bash
+cp examples/rules/cursor.mdc <your-unity-project>/.cursor/rules/hera-agent-unity.mdc
+```
+
+**Dynamic** — let the CLI emit the lean rule body straight into your rules file:
+
+```bash
+# Plain markdown (Claude Code, Codex, Copilot, Continue.dev)
+hera-agent-unity doctor --agent-rules >> CLAUDE.md
+
+# Cursor — frontmatter prepended automatically
+hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+```
+
+Either path locks in the core instruction:
 
 > **"For any Unity work, always reach for hera-agent-unity first."**
 
-Without this, agents fall back to guessing Unity APIs from training data — outdated code, wrong assumptions, wasted tokens. Lock it in once, save time every session.
+Without it, agents fall back to guessing Unity APIs from training data — outdated code, wrong assumptions, wasted tokens. Lock it in once, save time every session.
+
+> **Cursor note** — Cursor's `.mdc` rule files **require YAML frontmatter** (`description`, `globs`, `alwaysApply`) or the rule is parsed but never activated. Use the template or the `--format cursor` flag — a plain markdown paste will silently no-op.
 
 ---
 
