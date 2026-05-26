@@ -104,7 +104,7 @@ func isUserCodeDiagnostic(code string) bool {
 	return false
 }
 
-func Execute() error {
+func Execute(ctx context.Context) error {
 	flag.IntVar(&flagPort, "port", envInt("HERA_AGENT_PORT", 0), "Select Unity instance by active heartbeat port")
 	flag.StringVar(&flagProject, "project", envString("HERA_AGENT_PROJECT", ""), "Select Unity instance by project path")
 	flag.IntVar(&flagTimeout, "timeout", envInt("HERA_AGENT_TIMEOUT_MS", 60000), "Request timeout in milliseconds")
@@ -211,7 +211,7 @@ func Execute() error {
 
 	switch category {
 	case "batch":
-		return batchCmd(context.Background(), subArgs, client.SendBatch, resolve)
+		return batchCmd(ctx, subArgs, client.SendBatch, resolve)
 	case "editor":
 		resp, err = editorCmd(subArgs, send, resolve)
 	case "test":
