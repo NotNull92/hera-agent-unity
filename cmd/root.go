@@ -645,10 +645,21 @@ Diagnostics:
   doctor                        Self-check: binary path, PATH resolution,
                                 duplicate installs, shell hints, Unity instances
   doctor --json                 Same data, JSON envelope for agent parsing
+  doctor --agent-rules          Print Quick Rules + Pitfalls from AGENT.md
+                                (append to CLAUDE.md / AGENTS.md / etc.)
+
+Batch:
+  batch --file <path>           Execute multiple commands from a JSON file
+  batch                         Pipe JSON via stdin (no file needed)
+  batch --dry-run               Preview the plan without execution
 
 Update:
   update                        Update to the latest version
   update --check                Check for updates without installing
+
+Install:
+  install                       Register the binary on PATH (self-installer)
+  uninstall                     Completely remove from PATH and delete configs
 
 Asset Config:
   asset-config                  Interactive checkbox UI (Space to toggle)
@@ -663,6 +674,11 @@ Global Options:
   --project <path>    Select Unity instance by project path
   --timeout <ms>      Request timeout in ms (default: 60000)
   --verbose           Print progress + per-phase timings to stderr
+  --quiet             Suppress decorative progress messages (env: HERA_AGENT_QUIET)
+  --compact-json      Emit JSON without indentation — smaller AI payloads
+                      (env: HERA_AGENT_COMPACT_JSON)
+  --narrate           Print waitForAlive/waitForReady progress even on
+                      tool commands (env: HERA_AGENT_NARRATE)
 
 Use "hera-agent-unity <command> --help" for more information about a command.
 
@@ -961,7 +977,56 @@ Examples:
   hera-agent-unity update
   hera-agent-unity update --check
 `)
+	case "install":
+		fmt.Print(`Usage: hera-agent-unity install
 
+Register the running binary on PATH so subsequent shells can find it.
+Copies the binary to the canonical install directory for this OS and
+patches PATH (Unix) or relies on WindowsApps (Windows).
+
+  Linux / macOS: ~/.local/bin/hera-agent-unity
+  Windows:       %LOCALAPPDATA%\Microsoft\WindowsApps\hera-agent-unity.exe
+
+Legacy install locations from earlier hera-agent / hera-agent-pro
+versions are scrubbed automatically.
+
+Examples:
+  ./hera-agent-unity-linux-amd64 install
+  .\hera-agent-unity-windows-amd64.exe install
+`)
+	case "batch":
+		fmt.Print(`Usage: hera-agent-unity batch [--file <path.json>] [--dry-run]
+
+Execute multiple commands in a single HTTP request to Unity. The whole
+batch round-trips together so the response stays atomic and ordered.
+
+Design constraint: batch is for simple sequential execution only. For
+conditional branching, data passing between commands, or complex
+workflows, use individual CLI calls from a shell script or AI agent.
+
+JSON format:
+  {
+    "commands": [
+      {"command": "manage_editor", "params": {"action": "play"}},
+      {"command": "exec",          "params": {"code": "return ..."}}
+    ],
+    "options": { "fail_fast": true }
+  }
+
+Options:
+  --file <path>    Path to the JSON batch file. If omitted, reads stdin.
+  --dry-run        Print the plan without executing it.
+
+fail_fast:
+  true   Stop on first failure; return results up to that point.
+  false  Execute every command regardless of individual failures.
+
+Examples:
+  hera-agent-unity batch --file ./play_and_test.json
+  echo '{"commands":[{"command":"manage_editor","params":{"action":"refresh","compile":true}}]}' \
+    | hera-agent-unity batch
+  hera-agent-unity batch --file ./plan.json --dry-run
+`)
 	case "asset-config":
 		printAssetConfigHelp()
 	case "custom-tools", "custom", "tools":
@@ -1003,7 +1068,7 @@ Rules:
   - Discovered on Editor start and after every script recompilation
   - Duplicate tool names are detected and logged as errors (first wins)
 `)
-	case "setup", "install":
+	case "setup":
 		fmt.Print(`Installation and Unity setup
 
 CLI Installation:
