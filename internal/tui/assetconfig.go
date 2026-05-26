@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/NotNull92/hera-agent-unity-unity/internal/assetconfig"
+	"github.com/NotNull92/hera-agent-unity/internal/assetconfig"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"

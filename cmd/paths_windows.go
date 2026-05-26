@@ -9,12 +9,12 @@ import (
 )
 
 // legacyInstallPaths returns the pre-WindowsApps install location
-// (%LOCALAPPDATA%\hera-agent-unity-unity). uninstall scrubs leftover binaries and PATH
+// (%LOCALAPPDATA%\hera-agent-unity). uninstall scrubs leftover binaries and PATH
 // entries from this location for users who installed before v0.0.6.
 func legacyInstallPaths() (dir, bin string) {
 	home, _ := os.UserHomeDir()
-	dir = filepath.Join(home, "AppData", "Local", "hera-agent-unity-unity")
-	bin = filepath.Join(dir, "hera-agent-unity-unity.exe")
+	dir = filepath.Join(home, "AppData", "Local", "hera-agent-unity")
+	bin = filepath.Join(dir, "hera-agent-unity.exe")
 	return
 }
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/NotNull92/hera-agent-unity-unity-unity/cmd"
+	"github.com/NotNull92/hera-agent-unity/cmd"
 )
 
 var Version = "dev"

@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/NotNull92/hera-agent-unity-unity-unity/internal/tui"
+	"github.com/NotNull92/hera-agent-unity/internal/tui"
 )
 
 func uninstallCmd() error {
@@ -16,7 +16,7 @@ func uninstallCmd() error {
 
 	// Step 1: Confirm
 	prompt := fmt.Sprintf("  %s ",
-		tui.LabelStyle.Render("This will dissolve hera-agent-unity-unity and all its records. Proceed? (y/N):"))
+		tui.LabelStyle.Render("This will dissolve hera-agent-unity and all its records. Proceed? (y/N):"))
 	confirmed, err := promptConfirm(prompt)
 	if err != nil {
 		return err
@@ -72,9 +72,9 @@ func removeConfigDir() error {
 	}
 	var cfgDir string
 	if runtime.GOOS == "windows" {
-		cfgDir = filepath.Join(home, "AppData", "Roaming", "hera-agent-unity-unity")
+		cfgDir = filepath.Join(home, "AppData", "Roaming", "hera-agent-unity")
 	} else {
-		cfgDir = filepath.Join(home, ".config", "hera-agent-unity-unity")
+		cfgDir = filepath.Join(home, ".config", "hera-agent-unity")
 	}
 	if _, err := os.Stat(cfgDir); os.IsNotExist(err) {
 		return nil

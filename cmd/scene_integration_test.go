@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/NotNull92/hera-agent-unity-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
 
 func sendScene(t *testing.T, args []string, extra map[string]interface{}) *client.CommandResponse {

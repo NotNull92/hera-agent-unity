@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const repoAPI = "https://api.github.com/repos/NotNull92/hera-agent-unity-unity/releases/latest"
+const repoAPI = "https://api.github.com/repos/NotNull92/hera-agent-unity/releases/latest"
 
 type ghRelease struct {
 	TagName string    `json:"tag_name"`
@@ -134,7 +134,7 @@ func findAsset(assets []ghAsset) *ghAsset {
 	return nil
 }
 
-// sweepBackups removes lingering hera-agent-unity-unity*.bak files in the install dir.
+// sweepBackups removes lingering hera-agent-unity*.bak files in the install dir.
 // On Windows the in-use binary can hold a lock on the .bak rename target,
 // so prior runs may have failed to delete it. Best-effort: log warnings,
 // never fail the update.
@@ -145,7 +145,7 @@ func sweepBackups(dir string) {
 	}
 	for _, e := range entries {
 		name := e.Name()
-		if !strings.HasPrefix(name, "hera-agent-unity-unity") || !strings.HasSuffix(name, ".bak") {
+		if !strings.HasPrefix(name, "hera-agent-unity") || !strings.HasSuffix(name, ".bak") {
 			continue
 		}
 		path := filepath.Join(dir, name)

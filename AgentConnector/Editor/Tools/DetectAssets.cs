@@ -73,7 +73,7 @@ namespace HeraAgent.Tools
             var detectedAssets = new JArray();
             var configPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                ".hera-agent-unity-unity", "asset-config.json");
+                ".hera-agent-unity", "asset-config.json");
 
             // Load existing config
             JObject config = null;

@@ -44,7 +44,7 @@ namespace HeraAgent
                     $"Unknown command: {command}",
                     suggestions: new System.Collections.Generic.List<string>
                     {
-                        "Run 'hera-agent-unity-unity list --names' to see all tools"
+                        "Run 'hera-agent-unity list --names' to see all tools"
                     });
 
             try
@@ -105,7 +105,7 @@ namespace HeraAgent
                         $"Tool not found: {tool}",
                         suggestions: new System.Collections.Generic.List<string>
                         {
-                            "Run 'hera-agent-unity-unity list --names' to see all tools"
+                            "Run 'hera-agent-unity list --names' to see all tools"
                         });
                 return new SuccessResponse($"Tool: {tool}", schema);
             }

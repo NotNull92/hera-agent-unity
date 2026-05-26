@@ -4,7 +4,7 @@
 
 <br>
 
-[![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent-unity-unity?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent-unity-unity/releases)
+[![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent-unity?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent-unity/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go Version](https://img.shields.io/badge/go-%5E1.22-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
@@ -74,12 +74,12 @@ Hera는 명령에 응답합니다 — 추론하지 않고, 가정하지 않고. 
 
 **macOS / Linux**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity-unity/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.sh | sh
 ```
 
 **Windows** (PowerShell)
 ```powershell
-irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity-unity/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.ps1 | iex
 ```
 
 <details>
@@ -87,10 +87,10 @@ irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity-unity/main/inst
 
 **`go install`** (어떤 플랫폼이든)
 ```bash
-go install github.com/NotNull92/hera-agent-unity-unity@latest
+go install github.com/NotNull92/hera-agent-unity@latest
 ```
 
-**수동 다운로드** — [Releases](https://github.com/NotNull92/hera-agent-unity-unity/releases)에서 플랫폼에 맞는 바이너리를 받으세요.
+**수동 다운로드** — [Releases](https://github.com/NotNull92/hera-agent-unity/releases)에서 플랫폼에 맞는 바이너리를 받으세요.
 
 </details>
 
@@ -102,12 +102,12 @@ go install github.com/NotNull92/hera-agent-unity-unity@latest
 
 **Package Manager → Add package from git URL**
 ```
-https://github.com/NotNull92/hera-agent-unity-unity.git?path=AgentConnector
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 ```
 
 또는 `Packages/manifest.json`에 직접 추가:
 ```json
-"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity-unity.git?path=AgentConnector"
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
 > 커넥터는 자동으로 시작됩니다. 별도 설정은 필요 없습니다.
@@ -278,7 +278,7 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 ## 제작자
 
 **Victor** — Unity/C# 개발자, 라이브 서비스 MMORPG 6년+ 프로덕션 경험  
-[hera-agent-unity](https://github.com/NotNull92/hera-agent-unity-unity)로 [NoMoreRolls](https://github.com/NotNull92)를 솔로 개발 중 · 유튜브 [IndieAlchemist](https://www.youtube.com/@IndieAlchemist)
+[hera-agent-unity](https://github.com/NotNull92/hera-agent-unity)로 [NoMoreRolls](https://github.com/NotNull92)를 솔로 개발 중 · 유튜브 [IndieAlchemist](https://www.youtube.com/@IndieAlchemist)
 
 [![GitHub](https://img.shields.io/badge/@NotNull92-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/NotNull92)
 [![Email](https://img.shields.io/badge/fatiger92@gmail.com-EA4335?logo=gmail&logoColor=white&style=flat-square)](mailto:fatiger92@gmail.com)

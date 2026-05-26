@@ -51,7 +51,7 @@ public static class SpawnCubeTool
 That's it. The tool is automatically discovered and callable via:
 
 ```bash
-hera-agent-unity-unity spawn_cube --params '{"x":0,"y":1,"z":0,"name":"MyCube"}'
+hera-agent-unity spawn_cube --params '{"x":0,"y":1,"z":0,"name":"MyCube"}'
 ```
 
 ---
@@ -232,7 +232,7 @@ public static class FindByTagTool
 Call it:
 
 ```bash
-hera-agent-unity-unity find_by_tag --params '{"tag":"Enemy"}'
+hera-agent-unity find_by_tag --params '{"tag":"Enemy"}'
 ```
 
 ---
@@ -241,8 +241,8 @@ hera-agent-unity-unity find_by_tag --params '{"tag":"Enemy"}'
 
 1. Save the C# file in Unity
 2. Wait for compilation (domain reload)
-3. Verify discovery: `hera-agent-unity-unity list | grep my_tool`
-4. Test execution: `hera-agent-unity-unity my_tool --params '{"key":"value"}'`
+3. Verify discovery: `hera-agent-unity list | grep my_tool`
+4. Test execution: `hera-agent-unity my_tool --params '{"key":"value"}'`
 5. Check Unity Console for any errors
 
 ---

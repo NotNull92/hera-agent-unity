@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NotNull92/hera-agent-unity-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
 
 // These tests require a running Unity Editor with the Hera Agent connector.

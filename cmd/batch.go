@@ -7,8 +7,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/NotNull92/hera-agent-unity-unity-pro/internal/client"
-	"github.com/NotNull92/hera-agent-unity-unity-pro/internal/tui"
+	"github.com/NotNull92/hera-agent-unity-pro/internal/client"
+	"github.com/NotNull92/hera-agent-unity-pro/internal/tui"
 )
 
 // sendBatchFn is injected for testing.
@@ -39,7 +39,7 @@ func batchCmd(ctx context.Context, args []string, sendBatch sendBatchFn, resolve
 		// Read from stdin if piped (no --file required)
 		info, statErr := batchStdin.Stat()
 		if statErr != nil || info.Mode()&os.ModeCharDevice != 0 {
-			return fmt.Errorf("usage: hera-agent-unity-unity batch --file <path.json>  (or pipe JSON via stdin)")
+			return fmt.Errorf("usage: hera-agent-unity batch --file <path.json>  (or pipe JSON via stdin)")
 		}
 		data, err = io.ReadAll(batchStdin)
 		if err != nil || len(data) == 0 {

@@ -44,7 +44,7 @@ func prepareVersionCheckEnv(t *testing.T, version string) string {
 	origFetch := fetchLatestReleaseFn
 	t.Cleanup(func() { fetchLatestReleaseFn = origFetch })
 
-	return filepath.Join(home, ".hera-agent-unity-unity", "version-check.json")
+	return filepath.Join(home, ".hera-agent-unity", "version-check.json")
 }
 
 func TestPrintUpdateNotice_UsesCachedOutdatedNoticeWithinInterval(t *testing.T) {

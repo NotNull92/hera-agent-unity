@@ -149,7 +149,7 @@ namespace HeraAgent.Editor
         private static bool IsHeraAgentInstalled()
         {
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var configDir = Path.Combine(home, ".hera-agent-unity-unity-pro");
+            var configDir = Path.Combine(home, ".hera-agent-unity-pro");
             return Directory.Exists(configDir);
         }
 
@@ -1133,7 +1133,7 @@ namespace HeraAgent.Editor
         private static string GetConfigPath()
         {
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            return Path.Combine(home, ".hera-agent-unity-unity-pro", "asset-config.json");
+            return Path.Combine(home, ".hera-agent-unity-pro", "asset-config.json");
         }
 
         private void LoadConfig()

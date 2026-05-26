@@ -1,6 +1,6 @@
 # Development Guide
 
-This document covers the development environment setup, build process, testing, and release workflow for `hera-agent-unity-unity`.
+This document covers the development environment setup, build process, testing, and release workflow for `hera-agent-unity`.
 
 ---
 
@@ -49,12 +49,12 @@ go mod download
 
 **Via Package Manager (Git URL):**
 ```
-https://github.com/NotNull92/hera-agent-unity-unity.git?path=AgentConnector
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 ```
 
 **Or via manifest.json:**
 ```json
-"com.notnull92.hera-agent-unity-unity": "https://github.com/NotNull92/hera-agent-unity-unity.git?path=AgentConnector"
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
 ### 2. Assembly Definition
@@ -88,7 +88,7 @@ go test ./...
 
 ```bash
 # Windows (from macOS/Linux)
-GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/hera-agent-unity-unity.exe
+GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o dist/hera-agent-unity.exe
 
 # macOS Intel
 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/hera-agent-unity-darwin-amd64
@@ -126,17 +126,17 @@ These are excluded from default test runs. CI skips them because Unity is not av
 
 ```bash
 # Status (no Unity required for error case)
-hera-agent-unity-unity status
+hera-agent-unity status
 
 # Editor control (requires Unity)
-hera-agent-unity-unity editor play --wait
-hera-agent-unity-unity editor stop
+hera-agent-unity editor play --wait
+hera-agent-unity editor stop
 
 # C# execution (requires Unity)
-echo 'Debug.Log("test");' | hera-agent-unity-unity exec
+echo 'Debug.Log("test");' | hera-agent-unity exec
 
 # List tools (requires Unity)
-hera-agent-unity-unity list
+hera-agent-unity list
 ```
 
 ---
@@ -165,12 +165,12 @@ Common issues and fixes:
 ### install.ps1 (Windows)
 
 1. Queries GitHub API for `latest` release
-2. Downloads `.exe` to `$env:LOCALAPPDATA\hera-agent-unity-unity\`
+2. Downloads `.exe` to `$env:LOCALAPPDATA\hera-agent-unity\`
 3. Adds directory to `User` PATH environment variable (persistent)
 4. **Current shell must be restarted** to pick up PATH changes
 
 ```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity-unity/main/install.ps1 | iex"
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.ps1 | iex"
 ```
 
 ### install.sh (macOS/Linux)
@@ -181,7 +181,7 @@ powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/Not
 4. Adds `~/.local/bin/` to PATH if needed
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity-unity/main/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.sh | sh
 ```
 
 ---
@@ -230,7 +230,7 @@ They are **independent**. Bump only the component that changed.
 
 6. **Update installed CLI**
    ```bash
-   hera-agent-unity-unity update
+   hera-agent-unity update
    ```
 
 ### CI/CD
@@ -250,7 +250,7 @@ GitHub Actions workflows:
 
 ```bash
 # Verbose output
-hera-agent-unity-unity status --timeout 60000
+hera-agent-unity status --timeout 60000
 ```
 
 ### Unity C# Debugging
@@ -269,7 +269,7 @@ This logs every request, response, and error to the Unity Console.
 | Symptom | Cause | Fix |
 |:---|:---|:---|
 | `no Unity instances found` | Unity not running or Connector not installed | Open Unity, verify Connector package |
-| `cannot connect to Unity at port X` | Wrong port or Unity crashed | Check `hera-agent-unity-unity status`, verify port |
+| `cannot connect to Unity at port X` | Wrong port or Unity crashed | Check `hera-agent-unity status`, verify port |
 | `compilation finished with errors` | Script compilation failed | Check Unity Console, fix compile errors |
 | `connection closed before response` | Unity closed connection early | Retry command; may be Unity-side timing issue |
 | Tool not found in `list` | Class missing `[HeraTool]` or wrong name | Verify attribute and class name |

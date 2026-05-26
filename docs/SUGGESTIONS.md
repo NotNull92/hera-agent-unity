@@ -1,13 +1,13 @@
-# 개선 제안 — hera-agent-unity-unity-unity (lite, agent-first)
+# 개선 제안 — hera-agent-unity (lite, agent-first)
 
-> hera-agent-unity-unity-unity 의 주 사용자는 **AI 에이전트(Claude Code CLI, Codex 등)** 입니다.
+> hera-agent-unity 의 주 사용자는 **AI 에이전트(Claude Code CLI, Codex 등)** 입니다.
 > 인간이 직접 입력하는 명령은 사실상 다음 5개 뿐입니다:
 >
 > 1. 설치 — `install.sh` / `install.ps1`
-> 2. 상태 점검 — `hera-agent-unity-unity status`
-> 3. 진단 — `hera-agent-unity-unity doctor`
-> 4. 업데이트 — `hera-agent-unity-unity update`
-> 5. 제거 — `hera-agent-unity-unity uninstall`
+> 2. 상태 점검 — `hera-agent-unity status`
+> 3. 진단 — `hera-agent-unity doctor`
+> 4. 업데이트 — `hera-agent-unity update`
+> 5. 제거 — `hera-agent-unity uninstall`
 >
 > 나머지 명령(`exec`, `scene`, `console`, `menu`, `screenshot`, `profiler`, `test`,
 > `reserialize`, `editor`, `refresh`, `list` 등)은 모두 에이전트가 호출합니다.
@@ -63,7 +63,7 @@ lite 는 "Unity 를 CLI 로 조작하는 얇은 통로" 포지션 유지.
     "success": false,
     "message": "Compile error:\nL3: ; expected",
     "code": "EXEC_COMPILE_ERROR",
-    "suggestions": ["check syntax", "run hera-agent-unity-unity list to see available tools"],
+    "suggestions": ["check syntax", "run hera-agent-unity list to see available tools"],
     "data": { "compile_errors": [{ "line": 3, "message": "; expected" }] }
   }
   ```
@@ -351,7 +351,7 @@ lite 는 "Unity 를 CLI 로 조작하는 얇은 통로" 포지션 유지.
 - 구현 비용: root.go ~10 LoC.
 
 ### 3-17. 환경변수 `HERA_AGENT_QUIET=1` [낮음]
-- 동기: 에이전트는 `[hera-agent-unity-unity] compiling...` 같은 진행 메시지가 컨텍스트 오염. 인간이 직접 호출할 때는 유지.
+- 동기: 에이전트는 `[hera-agent-unity] compiling...` 같은 진행 메시지가 컨텍스트 오염. 인간이 직접 호출할 때는 유지.
 - 형태: env 가 1 이면 stderr 의 진행 메시지 전부 silence. result 만 stdout.
 - 구현 비용: root.go 및 출력 지점 7~8 곳. ~30 LoC.
 

@@ -1,10 +1,10 @@
-# hera-agent-unity-unity — AI-Readable Documentation
+# hera-agent-unity — AI-Readable Documentation
 
 > **For AI Agents**: This documentation is designed so that any AI reading it can immediately understand the project structure, modify code, and extend functionality without guessing.
 
 ## What This Project Is
 
-`hera-agent-unity-unity` is a **single-binary CLI tool** (written in Go, ~800 LoC core logic) that controls **Unity Editor** (via a C# connector, ~2300 LOC) over **plain HTTP** on localhost.
+`hera-agent-unity` is a **single-binary CLI tool** (written in Go, ~800 LoC core logic) that controls **Unity Editor** (via a C# connector, ~2300 LOC) over **plain HTTP** on localhost.
 
 Tests, TUI, and platform adapters add ~2,200 more lines — but the engine that talks to Unity stays lean.
 
@@ -18,14 +18,14 @@ Tests, TUI, and platform adapters add ~2,200 more lines — but the engine that 
 └─────────────────┘                     └─────────────────────┘
 ```
 
-**Repository**: `https://github.com/NotNull92/hera-agent-unity-unity`
+**Repository**: `https://github.com/NotNull92/hera-agent-unity`
 
 ---
 
 ## Quick Mental Model
 
 1. **Unity Editor opens** → C# `HttpServer` starts on localhost (port 8090+)
-2. **C# `Heartbeat`** writes a JSON file to `~/.hera-agent-unity-unity/instances/<hash>.json` every 0.5s
+2. **C# `Heartbeat`** writes a JSON file to `~/.hera-agent-unity/instances/<hash>.json` every 0.5s
 3. **Go CLI runs** → scans instance files → finds Unity → sends HTTP POST `/command`
 4. **C# `CommandRouter`** receives the command → dispatches to the right tool handler
 5. **JSON response** flows back to the terminal
@@ -49,7 +49,7 @@ Tests, TUI, and platform adapters add ~2,200 more lines — but the engine that 
 ## Directory Structure
 
 ```
-hera-agent-unity-unity/
+hera-agent-unity/
 ├── cmd/                          # Go CLI commands
 │   ├── root.go                   # Entry point, flag parsing, help
 │   ├── editor.go                 # editor play/stop/pause/refresh

@@ -16,10 +16,10 @@ func getInstallPaths() (dir, bin string) {
 		// WindowsApps is on the default user PATH in Windows 10+,
 		// so install.ps1 places the binary here.
 		dir = filepath.Join(home, "AppData", "Local", "Microsoft", "WindowsApps")
-		bin = filepath.Join(dir, "hera-agent-unity-unity.exe")
+		bin = filepath.Join(dir, "hera-agent-unity.exe")
 	default:
 		dir = filepath.Join(home, ".local", "bin")
-		bin = filepath.Join(dir, "hera-agent-unity-unity")
+		bin = filepath.Join(dir, "hera-agent-unity")
 	}
 	return
 }

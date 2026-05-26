@@ -38,7 +38,7 @@ func ConfigDir() string {
 		if err != nil {
 			home = "."
 		}
-		configPath = filepath.Join(home, ".hera-agent-unity-unity", "asset-config.json")
+		configPath = filepath.Join(home, ".hera-agent-unity", "asset-config.json")
 	})
 	return filepath.Dir(configPath)
 }

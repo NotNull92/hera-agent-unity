@@ -198,10 +198,10 @@ Writes the instance state JSON file every 0.5 seconds so the Go CLI can discover
 ### File Location
 
 ```csharp
-~/.hera-agent-unity-unity/instances/<md5(projectPath).Substring(0,16)>.json
+~/.hera-agent-unity/instances/<md5(projectPath).Substring(0,16)>.json
 ```
 
-Example: `~/.hera-agent-unity-unity/instances/a1b2c3d4e5f67890.json`
+Example: `~/.hera-agent-unity/instances/a1b2c3d4e5f67890.json`
 
 ### State Determination
 

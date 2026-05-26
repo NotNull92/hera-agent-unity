@@ -20,12 +20,12 @@
   },
   "StringFileInfo": {
     "CompanyName": "NotNull92",
-    "FileDescription": "hera-agent-unity-unity — CLI bridge to Unity Editor",
+    "FileDescription": "hera-agent-unity — CLI bridge to Unity Editor",
     "FileVersion": "0.0.33",
-    "InternalName": "hera-agent-unity-unity",
+    "InternalName": "hera-agent-unity",
     "LegalCopyright": "Copyright (c) 2026 NotNull92. All rights reserved.",
-    "OriginalFilename": "hera-agent-unity-unity.exe",
-    "ProductName": "hera-agent-unity-unity",
+    "OriginalFilename": "hera-agent-unity.exe",
+    "ProductName": "hera-agent-unity",
     "ProductVersion": "0.0.33"
   },
   "VarFileInfo": {
