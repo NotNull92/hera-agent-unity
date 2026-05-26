@@ -13,22 +13,105 @@ import (
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/tui"
 )
 
 var Version = "dev"
 
 var (
-	flagPort    int
-	flagProject string
-	flagTimeout int
-	flagVerbose bool
+	flagPort        int
+	flagProject     string
+	flagTimeout     int
+	flagVerbose     bool
+	flagQuiet       bool
+	flagCompactJSON bool
+	flagNarrate     bool
 )
 
+func envInt(key string, fallback int) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			return n
+		}
+	}
+	return fallback
+}
+
+func envString(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func envBool(key string, fallback bool) bool {
+	if v := os.Getenv(key); v != "" {
+		if b, err := strconv.ParseBool(v); err == nil {
+			return b
+		}
+	}
+	return fallback
+}
+
+// currentCategory tracks which subcommand is running so helpers can branch
+// between human-facing (styled stderr) and AI-facing (plain JSON) output.
+var currentCategory string
+
+// humanCategories are subcommands invoked by humans at a terminal. Everything
+// else is assumed to be called by an AI agent (Claude Code CLI / Codex) where
+// stderr decoration is just token cost.
+var humanCategories = map[string]bool{
+	"install":   true,
+	"uninstall": true,
+	"status":    true,
+	"update":    true,
+	"doctor":    true,
+	"help":      true,
+	"--help":    true,
+	"-h":        true,
+	"version":   true,
+	"--version": true,
+	"-v":        true,
+}
+
+// isHumanCommand reports whether the current subcommand is run by a human.
+// Used to gate styled stderr decoration, update notices, progress messages,
+// and other output that costs tokens when consumed by an AI agent.
+func isHumanCommand() bool {
+	return humanCategories[currentCategory]
+}
+
+// shouldCompactJSON reports whether printResponse should emit compact JSON.
+// True when the user explicitly requested it (--compact-json / env), or when
+// the current subcommand is an AI-target command. Human commands keep
+// indented JSON for readability.
+func shouldCompactJSON() bool {
+	return flagCompactJSON || !isHumanCommand()
+}
+
+// isUserCodeDiagnostic reports whether a structured error code describes a
+// failure in the user's C# snippet rather than a hera-agent-unity or
+// environment failure. Used to reframe the CLI output prefix so snippet
+// failures don't read as tool failures.
+func isUserCodeDiagnostic(code string) bool {
+	switch code {
+	case "EXEC_COMPILE_ERROR",
+		"EXEC_RUNTIME_ERROR",
+		"EXEC_LOGGED_ERROR",
+		"EXEC_COMPILE_TIMEOUT":
+		return true
+	}
+	return false
+}
+
 func Execute() error {
-	flag.IntVar(&flagPort, "port", 0, "Select Unity instance by active heartbeat port")
-	flag.StringVar(&flagProject, "project", "", "Select Unity instance by project path")
-	flag.IntVar(&flagTimeout, "timeout", 60000, "Request timeout in milliseconds")
-	flag.BoolVar(&flagVerbose, "verbose", false, "Print progress + per-phase timings to stderr")
+	flag.IntVar(&flagPort, "port", envInt("HERA_AGENT_PORT", 0), "Select Unity instance by active heartbeat port")
+	flag.StringVar(&flagProject, "project", envString("HERA_AGENT_PROJECT", ""), "Select Unity instance by project path")
+	flag.IntVar(&flagTimeout, "timeout", envInt("HERA_AGENT_TIMEOUT_MS", 60000), "Request timeout in milliseconds")
+	flag.BoolVar(&flagVerbose, "verbose", envBool("HERA_AGENT_VERBOSE", false), "Print progress + per-phase timings to stderr")
+	flag.BoolVar(&flagQuiet, "quiet", envBool("HERA_AGENT_QUIET", false), "Suppress decorative progress messages (errors still printed plain)")
+	flag.BoolVar(&flagCompactJSON, "compact-json", envBool("HERA_AGENT_COMPACT_JSON", false), "Output JSON without indentation (smaller responses for AI agents)")
+	flag.BoolVar(&flagNarrate, "narrate", envBool("HERA_AGENT_NARRATE", false), "Print waitForAlive/waitForReady progress messages even on tool commands (default: human-only)")
 
 	flag.Usage = func() { printHelp() }
 
@@ -48,6 +131,7 @@ func Execute() error {
 
 	category := cmdArgs[0]
 	subArgs := cmdArgs[1:]
+	currentCategory = category
 
 	// --help / -h on any command
 	for _, a := range subArgs {
@@ -117,7 +201,7 @@ func Execute() error {
 		if err != nil {
 			return nil, err
 		}
-		if command == "exec" {
+		if command == "exec" && (isHumanCommand() || flagVerbose) {
 			fmt.Fprintln(os.Stderr, "[hera-agent-unity] compiling...")
 		}
 		return sendWithProgress(inst, command, params, timeout, flagVerbose)
@@ -229,26 +313,55 @@ type sendBatchFn func(ctx context.Context, inst *client.Instance, req client.Bat
 
 func printResponse(resp *client.CommandResponse) {
 	if !resp.Success {
+		// AI-target commands: emit a plain JSON error envelope to stderr so
+		// the agent can parse code / suggestions / data without scraping
+		// styled boxes. Human commands keep the styled panel for terminal
+		// readability.
+		if !isHumanCommand() {
+			var b []byte
+			if shouldCompactJSON() {
+				b, _ = json.Marshal(resp)
+			} else {
+				b, _ = json.MarshalIndent(resp, "", "  ")
+			}
+			fmt.Fprintln(os.Stderr, string(b))
+			return
+		}
+
 		msg := resp.Message
 		if msg == "" {
 			msg = "unknown error"
 		}
-		prefix := "Error"
 		if resp.Code != "" {
-			prefix = "Error [" + resp.Code + "]"
+			if isUserCodeDiagnostic(resp.Code) {
+				msg = fmt.Sprintf("[user-code %s] %s", resp.Code, msg)
+			} else {
+				msg = fmt.Sprintf("[%s] %s", resp.Code, msg)
+			}
 		}
-		if len(resp.Data) > 0 && string(resp.Data) != "null" {
-			fmt.Fprintf(os.Stderr, "%s: %s\nDetails: %s\n", prefix, msg, string(resp.Data))
+		hasDetails := len(resp.Data) > 0 && string(resp.Data) != "null"
+		var suggestions string
+		if len(resp.Suggestions) > 0 {
+			suggestions = "\n\nSuggestions:\n- " + strings.Join(resp.Suggestions, "\n- ")
+		}
+		if flagQuiet {
+			if hasDetails {
+				fmt.Fprintf(os.Stderr, "%s\n%s%s\n", msg, string(resp.Data), suggestions)
+			} else {
+				fmt.Fprintln(os.Stderr, msg+suggestions)
+			}
 		} else {
-			fmt.Fprintf(os.Stderr, "%s: %s\n", prefix, msg)
-		}
-		for _, s := range resp.Suggestions {
-			fmt.Fprintf(os.Stderr, "  Hint: %s\n", s)
+			body := msg + suggestions
+			if hasDetails {
+				body = fmt.Sprintf("%s\n\nDetails:\n%s%s", msg, string(resp.Data), suggestions)
+			}
+			fmt.Fprintln(os.Stderr, tui.ErrorPanel("Failed", body))
 		}
 		return
 	}
+
 	if resp.AgentHint != "" {
-		fmt.Fprintf(os.Stderr, "[hera-agent-unity] hint: %s\n", resp.AgentHint)
+		fmt.Fprintln(os.Stderr, "hint: "+resp.AgentHint)
 	}
 
 	if len(resp.Data) > 0 && string(resp.Data) != "null" {
@@ -258,7 +371,12 @@ func printResponse(resp *client.CommandResponse) {
 			if s, ok := pretty.(string); ok {
 				fmt.Println(s)
 			} else {
-				b, _ := json.MarshalIndent(pretty, "", "  ")
+				var b []byte
+				if shouldCompactJSON() {
+					b, _ = json.Marshal(pretty)
+				} else {
+					b, _ = json.MarshalIndent(pretty, "", "  ")
+				}
 				fmt.Println(string(b))
 			}
 		} else {
@@ -411,7 +529,7 @@ func splitArgs(args []string) (flags, commands []string) {
 				i++
 				flags = append(flags, args[i])
 			}
-		case "--verbose":
+		case "--verbose", "--quiet", "--compact-json", "--narrate":
 			flags = append(flags, args[i])
 		default:
 			commands = append(commands, args[i])

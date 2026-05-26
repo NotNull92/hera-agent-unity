@@ -95,7 +95,10 @@ func waitForAlive(resolve instanceResolver, timeoutMs int) (*client.Instance, er
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "Waiting for Unity...\n")
+	narrate := !flagQuiet && (isHumanCommand() || flagNarrate)
+	if narrate {
+		fmt.Fprintf(os.Stderr, "Waiting for Unity...\n")
+	}
 
 	deadline := time.Now().Add(time.Duration(timeoutMs) * time.Millisecond)
 	for time.Now().Before(deadline) {
@@ -105,7 +108,9 @@ func waitForAlive(resolve instanceResolver, timeoutMs int) (*client.Instance, er
 			continue
 		}
 		if inst.Timestamp > baseline {
-			fmt.Fprintf(os.Stderr, "Unity is ready.\n")
+			if narrate {
+				fmt.Fprintf(os.Stderr, "Unity is ready.\n")
+			}
 			return inst, nil
 		}
 	}
@@ -116,7 +121,10 @@ func waitForAlive(resolve instanceResolver, timeoutMs int) (*client.Instance, er
 // waitForReady polls indefinitely until the heartbeat state becomes "ready".
 // Returns true if compilation had errors.
 func waitForReady(resolve instanceResolver) bool {
-	fmt.Fprintf(os.Stderr, "Waiting for compilation...\n")
+	narrate := !flagQuiet && (isHumanCommand() || flagNarrate)
+	if narrate {
+		fmt.Fprintf(os.Stderr, "Waiting for compilation...\n")
+	}
 
 	deadline := time.Now().Add(5 * time.Minute)
 	for time.Now().Before(deadline) {
@@ -126,15 +134,19 @@ func waitForReady(resolve instanceResolver) bool {
 			continue
 		}
 		if status.State == "ready" {
-			if status.CompileErrors {
-				fmt.Fprintf(os.Stderr, "Compilation finished with errors.\n")
-			} else {
-				fmt.Fprintf(os.Stderr, "Compilation complete.\n")
+			if narrate {
+				if status.CompileErrors {
+					fmt.Fprintf(os.Stderr, "Compilation finished with errors.\n")
+				} else {
+					fmt.Fprintf(os.Stderr, "Compilation complete.\n")
+				}
 			}
 			return status.CompileErrors
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "Timed out waiting for compilation (5m).\n")
+	if narrate {
+		fmt.Fprintf(os.Stderr, "Timed out waiting for compilation (5m).\n")
+	}
 	return true
 }
