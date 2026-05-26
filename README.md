@@ -37,19 +37,19 @@
 
 <br><br>
 
-[Installation](#installation) · [Quick Start](#quick-start) · [Commands](#commands) · [Custom Tools](#custom-tools) · [Architecture](#architecture)
+[Installation](#installation) · [Quick Start](#quick-start) · [Commands](#commands) · [Batch Mode](#batch-mode) · [Custom Tools](#custom-tools) · [Architecture](#architecture)
 
 </div>
 
 ---
 
-## Hera
+## Hera Agent Unity
 
-LLMs don't know your project. They remember last year's Unity API and generalized patterns. You pay that gap every week — in tokens and in time.
+LLMs don\'t know your project. They remember last year\'s Unity API and generalized patterns. You pay that gap every week — in tokens and in time.
 
-Hera stands between them.
+**hera-agent-unity** stands between them.
 
-Before AI guesses your code, Hera runs it in the Editor and returns the result. Before AI assumes a console error, Hera fetches the actual log filtered by type. Before AI hypothesizes a Play Mode outcome, Hera enters it and waits until it finishes.
+Before AI guesses your code, run it in the Editor and return the result. Before AI assumes a console error, fetch the actual log filtered by type. Before AI hypothesizes a Play Mode outcome, enter it and wait until it finishes.
 
 No middleware. No Python, no WebSocket, no JSON-RPC. One Go binary, localhost HTTP, one C# UPM package. When Unity Editor opens, Hera is already there.
 
@@ -66,7 +66,23 @@ Guessing is expensive. Measurement is the command.
 
 **~2,600 lines of core Go. ~3,900 lines of C#. Nothing else.**
 
-> Tests, TUI, and asset-config layer add ~2,300 more lines — but the engine that talks to Unity stays lean.
+> Tests, TUI, batch engine, and asset-config layer add ~3,500 more lines — but the engine that talks to Unity stays lean.
+
+---
+
+## What\'s New in v2 (Unified)
+
+**Former Pro features are now free for everyone.**
+
+| Feature | Before | Now |
+|---------|--------|-----|
+| Batch execution | Pro only | ✅ Free |
+| Asset config TUI | Pro only | ✅ Free |
+| Custom tool discovery | Pro only | ✅ Free |
+| Heartbeat auto-connect | Pro only | ✅ Free |
+| All future updates | — | ✅ Free |
+
+**hera-agent** + **hera-agent-pro** → **hera-agent-unity**. One project. One license. Zero friction.
 
 ---
 
@@ -118,7 +134,7 @@ Or add to `Packages/manifest.json`:
 # Is Unity even connected? (no port-finding ceremony)
 hera-agent-unity status
 
-# Drive Play Mode from your terminal — wait until it's actually in
+# Drive Play Mode from your terminal — wait until it\'s actually in
 hera-agent-unity editor play --wait
 
 # Run any C# directly inside Unity — no recompile, no restart
@@ -126,6 +142,9 @@ hera-agent-unity exec "return EditorSceneManager.GetActiveScene().name;"
 
 # Read errors AI can act on, not screenshots
 hera-agent-unity console --type error
+
+# Execute multiple commands in one shot (batch mode)
+hera-agent-unity batch --file workflow.json
 ```
 
 ### 3. Let your AI agent take over
@@ -146,7 +165,7 @@ The agent will discover hera-agent-unity, list its commands, and start driving U
 
 #### For Claude Code CLI Users
 
-**Required** — add this line to your Unity project's `CLAUDE.md`, `AGENTS.md`, or whatever convention your AI agent reads:
+**Required** — add this line to your Unity project\'s `CLAUDE.md`, `AGENTS.md`, or whatever convention your AI agent reads:
 
 > **"For any Unity work, always use hera-agent-unity as the first choice."**
 
@@ -173,6 +192,7 @@ This is not optional. Without this rule, the agent will guess Unity APIs from tr
 | `status` | Connection & project info |
 | `doctor` | Self-diagnose PATH, installs, shell, Unity reachability (`--json` for agents) |
 | `asset-config` | Toggle optional asset integrations (TUI / list / enable / disable / detect / `--json`) |
+| `batch` | Execute multiple commands from JSON file (`--file <path>`, `--json` for output) |
 | `update` | Self-update the binary |
 | `uninstall` | Remove the CLI from PATH |
 
@@ -192,13 +212,36 @@ hera-agent-unity exec "return World.All.Count;" --usings Unity.Entities
 hera-agent-unity exec "var go = new GameObject(\"Temp\"); return go.name;"
 
 # Pipe complex code via stdin (no shell escaping)
-echo '
+echo \'
 var scene = EditorSceneManager.GetActiveScene();
 return scene.GetRootGameObjects().Length;
-' | hera-agent-unity exec
+\' | hera-agent-unity exec
 ```
 
 Because it compiles and runs real C#, you can call **any** Unity API, inspect ECS worlds, modify assets, or invoke internal editor utilities. No custom tool needed.
+
+---
+
+## Batch Mode
+
+Execute complex workflows in a single command. Ideal for CI/CD or scripted automation.
+
+```bash
+hera-agent-unity batch --file workflow.json
+```
+
+Example `workflow.json`:
+```json
+{
+  "steps": [
+    { "cmd": "editor", "args": ["play", "--wait"] },
+    { "cmd": "exec", "args": ["return EditorSceneManager.GetActiveScene().name;"] },
+    { "cmd": "console", "args": ["--type", "error"] }
+  ]
+}
+```
+
+Add `--json` for machine-parseable output. Every step runs atomically with full error propagation.
 
 ---
 
@@ -260,7 +303,8 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 - **Stateless** — every request is independent. No reconnection dance.
 - **Auto-discovery** — scans `~/.hera-agent-unity/instances/` to find open Unity editors.
 - **Domain-reload safe** — connector survives script recompilation and resumes automatically.
-- **Main-thread execution** — all tool handlers run on Unity's main thread. Every API is safe.
+- **Main-thread execution** — all tool handlers run on Unity\'s main thread. Every API is safe.
+- **Batch engine** — execute multi-step workflows with atomic rollback on failure.
 
 ---
 
@@ -274,6 +318,7 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 | **Setup** | Generate config, restart AI client | Add package, done |
 | **Domain reload** | Complex reconnect logic | Stateless |
 | **Custom tools** | `[Attribute]` pattern | Same `[Attribute]` pattern |
+| **Batch execution** | Manual scripting | Built-in `batch` command |
 | **Compatibility** | MCP clients only | Any shell / any agent |
 
 ---
@@ -289,6 +334,16 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 
 ---
 
+## Projects Using Hera
+
+| Project | Description |
+|---------|-------------|
+| [**NoMoreRolls**](https://github.com/NotNull92) | Solo-developed Unity game — 3-tier architecture, 9-soul combat system. Built with hera-agent-unity. |
+
+> Want your project listed? Open an issue or PR.
+
+---
+
 ## Author
 
 **Victor** — Unity/C# Developer, 6+ years live-service MMORPG production  
@@ -296,6 +351,15 @@ Building [NoMoreRolls](https://github.com/NotNull92) solo with [hera-agent-unity
 
 [![GitHub](https://img.shields.io/badge/@NotNull92-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/NotNull92)
 [![Email](https://img.shields.io/badge/fatiger92@gmail.com-EA4335?logo=gmail&logoColor=white&style=flat-square)](mailto:fatiger92@gmail.com)
+
+## Sponsors
+
+hera-agent-unity is free and open source. If it saves you time or tokens, consider [sponsoring](https://github.com/sponsors/NotNull92) the project.
+
+Your support directly funds:
+- New engine support (Godot, Unreal)
+- AI agent integrations (Cursor, Windsurf, etc.)
+- Documentation and video tutorials
 
 ## License
 
