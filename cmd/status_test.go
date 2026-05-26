@@ -12,6 +12,9 @@ import (
 
 func writeInstanceFile(t *testing.T, inst client.Instance) string {
 	t.Helper()
+	client.ClearInstanceCache()
+	t.Cleanup(client.ClearInstanceCache)
+
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -59,6 +62,8 @@ func TestReadStatus_ValidFile(t *testing.T) {
 }
 
 func TestReadStatus_MissingFile(t *testing.T) {
+	client.ClearInstanceCache()
+	t.Cleanup(client.ClearInstanceCache)
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -69,6 +74,8 @@ func TestReadStatus_MissingFile(t *testing.T) {
 }
 
 func TestReadStatus_InvalidJSON(t *testing.T) {
+	client.ClearInstanceCache()
+	t.Cleanup(client.ClearInstanceCache)
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)

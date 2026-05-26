@@ -11,8 +11,35 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 )
+
+// Debug, when true, causes Send/SendBatch and instance discovery to print
+// HTTP request/response bodies and discovery info to stderr. Set by the
+// cmd package from the --debug flag or HERA_AGENT_DEBUG env var.
+var Debug bool
+
+// instanceCache stores the last ScanInstances result for process-level reuse.
+// A 5-second TTL is short enough that a stopped editor disappears quickly,
+// but long enough that batch / multi-step workflows don't re-stat the dir
+// on every hop.
+var (
+	instanceCache     []Instance
+	instanceCacheTime time.Time
+	instanceCacheMu   sync.RWMutex
+	instanceCacheTTL  = 5 * time.Second
+)
+
+// ClearInstanceCache discards the cached scan result so the next call to
+// ScanInstances reads from disk again. Useful in tests and after explicit
+// install/uninstall flows where the cache could mask new state.
+func ClearInstanceCache() {
+	instanceCacheMu.Lock()
+	instanceCache = nil
+	instanceCacheTime = time.Time{}
+	instanceCacheMu.Unlock()
+}
 
 // sharedHTTPClient is the package-level singleton used by all Send() calls.
 // Reusing it lets the connection pool keep idle keep-alive sockets open
@@ -157,7 +184,18 @@ func instancesDir() string {
 
 // ScanInstances reads all instance files from ~/.hera-agent-unity/instances/.
 // Stale files whose PID is no longer running are automatically removed.
+// Results are cached for instanceCacheTTL to keep multi-step workflows
+// (batch, exec → console → exec, etc.) from re-stat'ing the dir on every hop.
 func ScanInstances() ([]Instance, error) {
+	instanceCacheMu.RLock()
+	if instanceCache != nil && time.Since(instanceCacheTime) < instanceCacheTTL {
+		cached := make([]Instance, len(instanceCache))
+		copy(cached, instanceCache)
+		instanceCacheMu.RUnlock()
+		return cached, nil
+	}
+	instanceCacheMu.RUnlock()
+
 	dir := instancesDir()
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -184,6 +222,13 @@ func ScanInstances() ([]Instance, error) {
 		}
 		instances = append(instances, inst)
 	}
+
+	instanceCacheMu.Lock()
+	instanceCache = make([]Instance, len(instances))
+	copy(instanceCache, instances)
+	instanceCacheTime = time.Now()
+	instanceCacheMu.Unlock()
+
 	return instances, nil
 }
 
@@ -311,6 +356,10 @@ func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*C
 		defer cancel()
 	}
 
+	if Debug {
+		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, string(body))
+	}
+	start := time.Now()
 	resp, err := doWithReloadRetry(ctx, url, body, inst.Port)
 	if err != nil {
 		return nil, err
@@ -327,6 +376,10 @@ func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*C
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
+	if Debug {
+		fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
+			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
+	}
 	if err != nil || len(respBody) == 0 {
 		// Some commands (e.g. play mode entry) close the connection before responding.
 		// Unity side should be fixed to send response before closing; until then,
@@ -372,12 +425,17 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 
 	url := fmt.Sprintf("http://127.0.0.1:%d/commands", inst.Port)
 
+	if Debug {
+		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, string(body))
+	}
+
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 	httpReq.Header.Set("Content-Type", "application/json")
 
+	start := time.Now()
 	resp, err := sharedHTTPClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("cannot connect to Unity at port %d: %v", inst.Port, err)
@@ -386,6 +444,10 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
+		if Debug {
+			fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
+				resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
+		}
 		if len(respBody) > 0 {
 			return nil, fmt.Errorf("HTTP %d from Unity: %s", resp.StatusCode, string(respBody))
 		}
@@ -393,6 +455,10 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
+	if Debug {
+		fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
+			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
+	}
 	if err != nil || len(respBody) == 0 {
 		return nil, fmt.Errorf("connection closed before response for batch")
 	}

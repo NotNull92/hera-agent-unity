@@ -24,6 +24,7 @@ var (
 	flagTimeout     int
 	flagVerbose     bool
 	flagQuiet       bool
+	flagDebug       bool
 	flagCompactJSON bool
 	flagNarrate     bool
 )
@@ -110,6 +111,7 @@ func Execute(ctx context.Context) error {
 	flag.IntVar(&flagTimeout, "timeout", envInt("HERA_AGENT_TIMEOUT_MS", 60000), "Request timeout in milliseconds")
 	flag.BoolVar(&flagVerbose, "verbose", envBool("HERA_AGENT_VERBOSE", false), "Print progress + per-phase timings to stderr")
 	flag.BoolVar(&flagQuiet, "quiet", envBool("HERA_AGENT_QUIET", false), "Suppress decorative progress messages (errors still printed plain)")
+	flag.BoolVar(&flagDebug, "debug", envBool("HERA_AGENT_DEBUG", false), "Print HTTP request/response bodies and discovery info to stderr")
 	flag.BoolVar(&flagCompactJSON, "compact-json", envBool("HERA_AGENT_COMPACT_JSON", false), "Output JSON without indentation (smaller responses for AI agents)")
 	flag.BoolVar(&flagNarrate, "narrate", envBool("HERA_AGENT_NARRATE", false), "Print waitForAlive/waitForReady progress messages even on tool commands (default: human-only)")
 
@@ -128,6 +130,8 @@ func Execute(ctx context.Context) error {
 	}
 
 	checkBinaryPath()
+
+	client.Debug = flagDebug
 
 	category := cmdArgs[0]
 	subArgs := cmdArgs[1:]
@@ -529,7 +533,7 @@ func splitArgs(args []string) (flags, commands []string) {
 				i++
 				flags = append(flags, args[i])
 			}
-		case "--verbose", "--quiet", "--compact-json", "--narrate":
+		case "--verbose", "--quiet", "--debug", "--compact-json", "--narrate":
 			flags = append(flags, args[i])
 		default:
 			commands = append(commands, args[i])
@@ -675,6 +679,8 @@ Global Options:
   --timeout <ms>      Request timeout in ms (default: 60000)
   --verbose           Print progress + per-phase timings to stderr
   --quiet             Suppress decorative progress messages (env: HERA_AGENT_QUIET)
+  --debug             Print HTTP request/response bodies + discovery info
+                      to stderr (env: HERA_AGENT_DEBUG)
   --compact-json      Emit JSON without indentation — smaller AI payloads
                       (env: HERA_AGENT_COMPACT_JSON)
   --narrate           Print waitForAlive/waitForReady progress even on

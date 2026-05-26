@@ -23,6 +23,11 @@ func stubIsProcessDead(t *testing.T, deadPIDs map[int]bool) {
 // USERPROFILE to the temp directory so tests never read real local instances.
 func writeInstanceFiles(t *testing.T, files map[string]Instance) string {
 	t.Helper()
+	// Each test gets a clean instance cache so previous tests' results
+	// don't leak across HOME / tempdir boundaries.
+	ClearInstanceCache()
+	t.Cleanup(ClearInstanceCache)
+
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
