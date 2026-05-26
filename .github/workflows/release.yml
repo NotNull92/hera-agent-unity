@@ -24,14 +24,31 @@ jobs:
             goarch: arm64
           - goos: windows
             goarch: amd64
-          - goos: windows
-            goarch: arm64
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: "1.24"
+
+      - name: Generate Windows resource (icon + versioninfo)
+        if: matrix.goos == 'windows'
+        run: |
+          go install github.com/josephspurrier/goversioninfo/cmd/goversioninfo@latest
+          VERSION="${GITHUB_REF_NAME#v}"
+          IFS='.' read -r MAJ MIN PAT <<< "$VERSION"
+          python3 - <<PY
+          import json
+          v = "${VERSION}"
+          maj, mn, pat = int("${MAJ}"), int("${MIN}"), int("${PAT}")
+          with open("versioninfo.json") as f: d = json.load(f)
+          d["FixedFileInfo"]["FileVersion"] = {"Major": maj, "Minor": mn, "Patch": pat, "Build": 0}
+          d["FixedFileInfo"]["ProductVersion"] = {"Major": maj, "Minor": mn, "Patch": pat, "Build": 0}
+          d["StringFileInfo"]["FileVersion"] = v
+          d["StringFileInfo"]["ProductVersion"] = v
+          with open("versioninfo.json", "w") as f: json.dump(d, f, indent=2)
+          PY
+          goversioninfo -64 -o resource_windows_amd64.syso versioninfo.json
 
       - name: Build
         env:
