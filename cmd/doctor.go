@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -13,6 +14,15 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
 
+// agentGuide is the repo-root AGENT.md, embedded into the binary so
+// `doctor --agent-rules` can extract the Quick Rules + Pitfalls subset
+// without requiring repo access. The canonical file lives at the repo
+// root; a copy at cmd/AGENT.md exists because //go:embed cannot escape
+// the package directory.
+//
+//go:embed AGENT.md
+var agentGuide string
+
 // doctorCmd prints a self-diagnostic report covering install path, PATH
 // resolution, duplicate copies, shell gotchas, and Unity instance state.
 // Intended as the first thing users (and AI agents) try when hera-agent-unity
@@ -20,15 +30,71 @@ import (
 // and is Unity reachable?" without requiring a Unity connection.
 func doctorCmd(args []string) error {
 	jsonMode := false
+	agentRulesMode := false
 	for _, a := range args {
-		if a == "--json" {
+		switch a {
+		case "--json":
 			jsonMode = true
+		case "--agent-rules", "--print-agent-rules":
+			agentRulesMode = true
 		}
+	}
+	if agentRulesMode {
+		fmt.Print(extractAgentRules())
+		return nil
 	}
 	if jsonMode {
 		return doctorJSON()
 	}
 	return doctorText()
+}
+
+// extractAgentRules pulls the "Quick Rules" and "Pitfalls" sections out of
+// the embedded AGENT.md, with a header preamble pointing back to the full
+// guide. Designed to be appended to a project's AI rules file (CLAUDE.md /
+// AGENTS.md / .cursor/rules / .github/copilot-instructions.md / etc.) via
+// `hera-agent-unity doctor --agent-rules >> <your-rules-file>`.
+func extractAgentRules() string {
+	var out strings.Builder
+	out.WriteString("# hera-agent-unity — Quick Rules + Pitfalls\n\n")
+	out.WriteString("> Emitted by `hera-agent-unity doctor --agent-rules`. ")
+	out.WriteString("Works with any AI coding agent (Claude Code, Codex, Cursor, Copilot, ...). ")
+	out.WriteString("Full guide: https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md\n\n")
+	out.WriteString(extractMdSection(agentGuide, "## 1. Quick Rules"))
+	out.WriteString("\n")
+	out.WriteString(extractMdSection(agentGuide, "## 4. Pitfalls"))
+	out.WriteString("\n")
+	return out.String()
+}
+
+// extractMdSection returns the lines of doc starting with the given heading
+// and continuing until the next top-level "## " heading or a standalone "---"
+// line. The heading itself is included; trailing blank lines are trimmed.
+func extractMdSection(doc, heading string) string {
+	lines := strings.Split(doc, "\n")
+	var out []string
+	in := false
+	for _, l := range lines {
+		if !in {
+			if strings.HasPrefix(l, heading) {
+				in = true
+				out = append(out, l)
+			}
+			continue
+		}
+		if strings.TrimSpace(l) == "---" {
+			break
+		}
+		if strings.HasPrefix(l, "## ") && !strings.HasPrefix(l, heading) {
+			break
+		}
+		out = append(out, l)
+	}
+	// Trim trailing blank lines for a clean append target.
+	for len(out) > 0 && strings.TrimSpace(out[len(out)-1]) == "" {
+		out = out[:len(out)-1]
+	}
+	return strings.Join(out, "\n")
 }
 
 func doctorText() error {

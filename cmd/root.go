@@ -936,11 +936,15 @@ Does NOT require Unity to be running. Use this first when 'hera-agent-unity' is
 not found, points at the wrong copy, or can't see your Unity Editor.
 
 Options:
-  --json   Emit structured envelope (binary, shell, unity) for agents.
+  --json           Emit structured envelope (binary, shell, unity) for agents.
+  --agent-rules    Print the Quick Rules + Pitfalls subset of AGENT.md so
+                   you can append it to your project's AI rules file
+                   (CLAUDE.md / AGENTS.md / .cursor/rules / ...).
 
 Examples:
   hera-agent-unity doctor
   hera-agent-unity doctor --json
+  hera-agent-unity doctor --agent-rules >> CLAUDE.md
 
 Environment:
   HERA_AGENT_NO_PATH_CHECK=1   Silence the implicit per-command PATH warning.

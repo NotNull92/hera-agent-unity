@@ -1,0 +1,379 @@
+# hera-agent-unity — Guide for AI Agents
+
+> You are an AI coding agent operating in a Unity project that has `hera-agent-unity` available as a CLI. This document tells you how to use it efficiently. It is meant to be loaded into your project's rules file so every session has it without spending tokens to discover it.
+>
+> **Where to put this content** (one of the following, depending on your tool):
+>
+> | Tool | File path |
+> |---|---|
+> | Claude Code | `CLAUDE.md` (project root) |
+> | OpenAI Codex / `AGENTS.md`-aware tools | `AGENTS.md` (project root) |
+> | Cursor | `.cursor/rules/hera-agent-unity.mdc` |
+> | GitHub Copilot | `.github/copilot-instructions.md` |
+> | Continue.dev | `.continuerules` |
+> | Other | whatever your tool calls its project rules file |
+>
+> Or run `hera-agent-unity doctor --agent-rules >> <your rules file>` to append the lean subset.
+
+`hera-agent-unity` is a CLI that drives a running Unity Editor over HTTP. Common uses: execute C# inside the Editor, read console logs, query the active scene, run tests, capture screenshots, batch several commands in one round-trip. Each call is a tool round-trip; response bytes become your input tokens, so reads cost as much as your own writes.
+
+Quick links:
+- Full command catalog → [`docs/COMMANDS.md`](docs/COMMANDS.md)
+- Architecture → [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- Custom tool authoring → `hera-agent-unity help custom-tools`
+- Setup / install → [README](README.md)
+
+---
+
+## 1. Quick Rules (must-follow)
+
+Numbered so you can grep "[Rule N]" when in doubt.
+
+**[Rule 1]** Default to no return (or `return null;`) in `exec`. Side-effecting code (create objects, set properties, save scenes) should not return a verbose status string. The OK response is 3 bytes (`OK\n`); a hand-crafted summary string ships hundreds of bytes back into your context. Since v0.0.37 the trailing `return` is **optional** — snippets without one resolve to `null` automatically.
+
+```cs
+// Bad — your status string costs ~200 tokens
+return $"Created Canvas with {n} buttons under {parent.name}";
+
+// Good — same work, 3 bytes
+return null;
+
+// Also good — omit the return entirely (v0.0.37+)
+new GameObject("X");
+```
+
+> Caveat: `return;` (no value) still does NOT compile because `Execute()` returns `object`. Write `return null;` for early exits, or `throw new Exception("...")` for hard failures (see Rule 8).
+
+> Pro emits compact JSON automatically for non-human commands (anything outside `install/uninstall/status/update/upgrade/doctor/help/version`). Pass `--compact-json` or set `HERA_AGENT_COMPACT_JSON=1` to force compact on a TTY too.
+
+**[Rule 2]** Never return a `UnityEngine.Object` directly. `Transform`, `GameObject`, `Component`, `Scene`, `Material`, etc. expand to thousands of bytes of reflected properties.
+
+```cs
+// Bad — Transform serializes to 9KB+ (position, rotation, matrices, ...)
+return GameObject.Find("Canvas").transform;
+
+// Good — name + id is what you actually wanted
+var go = GameObject.Find("Canvas");
+return new { name = go.name, instanceID = go.GetInstanceID() };
+```
+
+Default `--depth` is `1`, which gives Unity Objects the shallow form `{name, type, instanceID}`. Set `--depth 3` only when you have a specific reason to inspect the property tree.
+
+**[Rule 3]** Branch on the `code` field of error responses, not on the message text. Messages get tweaked across versions; `code` is the stable enum-like contract.
+
+```jsonc
+// Error envelope shape
+{
+  "success": false,
+  "code": "EXEC_COMPILE_ERROR",   // <-- branch on this
+  "message": "Your C# snippet did not compile. L1 CS1525: ... (+2 more)",
+  "data": { "compile_errors": [ ... ] }
+}
+```
+
+**[Rule 4]** Batch related operations into a single `exec` call. Each call has fixed envelope + HTTP overhead; one `exec` that creates Canvas + 3 buttons is cheaper than three separate calls. For coarser composition (`editor refresh` + `console`, etc.) use the `batch` command.
+
+**[Rule 5]** For console reads, the default `--lines` is `20` (sane cap). Use `--lines 0` only when you actually need every entry. Use `--type error` when you don't care about warnings/logs.
+
+**[Rule 6]** Runtime errors from `exec` return user-filtered stack traces by default. If you suspect the framework itself is the cause (e.g. Unity internal exception), pass `--stacktrace full` to see all frames.
+
+**[Rule 7]** Use the right tool for the job — see §2. `exec` is the universal hammer but it costs csc compile time and is harder to inspect. Dedicated commands (`scene info`, `console`, `status`, `describe_type`, `find_method`) are faster and cheaper.
+
+**[Rule 8]** When you want a logical failure to be visible at the CLI exit-code layer, either **throw** (`throw new System.Exception("missing")` → `EXEC_RUNTIME_ERROR`, exit non-zero) or run with `--strict` so that any `Debug.LogError/LogException/LogAssert` raised during the snippet flips the response to `EXEC_LOGGED_ERROR`. Without one of these, `Debug.LogError("..."); return null;` is indistinguishable from a clean run by exit code — only the Unity console sees it.
+
+```cs
+// Off (default) — agent sees success even though "missing" was logged
+// hera-agent-unity exec "Debug.LogError(\"missing\"); return null;"
+//   → exit 0, success
+
+// On — same code surfaces as EXEC_LOGGED_ERROR
+// hera-agent-unity exec "Debug.LogError(\"missing\"); return null;" --strict
+//   → exit 1, code=EXEC_LOGGED_ERROR
+```
+
+---
+
+## 2. Tool Selection Cheatsheet
+
+When you can do something with a dedicated command, use it instead of `exec`. Dedicated commands skip csc compilation (5–15s cold, ~500ms warm).
+
+| You want to … | Use | Notes |
+|---|---|---|
+| Active scene name / path / dirty | `scene info` | Returns active + loaded scenes in one shot. |
+| Open / save / close a scene | `scene load <path>` / `scene save` / `scene close` | Modes: single (default), additive. |
+| Read recent console errors | `console --type error` | Default 20 entries; pagination via `--lines` + `--since`. |
+| Clear console | `console --clear` | Idempotent. |
+| Check if Editor is in play mode | `status` | Returns state field (ready/compiling/playing/paused). |
+| Enter / exit play mode | `editor play [--wait]` / `editor stop` | `--wait` blocks until fully entered. |
+| Force recompile | `editor refresh --compile` | Blocks until compilation finishes. |
+| Trigger a menu item | `menu "Window/General/Console"` | `File/Quit` is blocked for safety. |
+| Capture screenshot | `screenshot [--view game]` | Default scene view, 1920×1080. |
+| Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
+| Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
+| Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
+| List all tools | `list` or `list --compact` | 30s in-memory + on-disk cache. `--compact` keeps name + description + parameters (~50% smaller). |
+| Run multiple commands in one HTTP round-trip | `batch --file <path.json>` or pipe JSON | Sequential. `fail_fast` on first error by default. |
+| Compile-check without executing | `exec --check "<code>"` | Returns success on clean compile, `EXEC_COMPILE_ERROR` otherwise. No side effects. |
+| List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system]` | Use `--filter` to keep the response small. |
+| Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
+| Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
+| Anything else (read prop, AssetDatabase, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
+
+**Compile-check only** (validate syntax/types without executing):
+```bash
+hera-agent-unity exec "var x = SomeType.SomeMethod();" --check
+```
+Useful when you're not sure a refactor compiles before issuing a destructive call.
+
+---
+
+## 3. Common Patterns (Cookbook)
+
+Each pattern is the shortest viable form. Compose, don't copy whole blocks.
+
+### 3.1 Inspect scene state in one call
+
+```bash
+hera-agent-unity scene info
+```
+
+Returns `{ active: {name, path, isDirty}, loaded: [...] }`. Don't `exec` this — `scene info` is dedicated.
+
+### 3.2 Create N GameObjects with consistent naming
+
+```bash
+hera-agent-unity exec "
+var root = new GameObject(\"MyRoot\");
+for (int i = 0; i < 50; i++)
+    new GameObject(\"Item_\" + i).transform.SetParent(root.transform, false);
+return null;
+"
+```
+
+Bulk creation is one `exec`. Don't loop the CLI.
+
+### 3.3 Bulk-modify existing children
+
+```bash
+hera-agent-unity exec "
+var parent = GameObject.Find(\"MyRoot\");
+foreach (Transform t in parent.transform) t.position += new Vector3(0, 1, 0);
+return null;
+"
+```
+
+Note: `GameObject.Find` ignores **inactive** objects. If you `SetActive(false)` then `Find`, you get null and `NullReferenceException`. Use `Resources.FindObjectsOfTypeAll<GameObject>().FirstOrDefault(g => g.name == "X")` if you need inactive lookup.
+
+### 3.4 Pipe code via stdin (avoid shell escape hell)
+
+```bash
+echo 'return Application.dataPath;' | hera-agent-unity exec
+```
+
+Or load from a file:
+```bash
+hera-agent-unity exec --file scripts/probe.cs
+```
+
+Positional / stdin / `--file` precedence: positional > stdin > `--file`.
+
+### 3.5 Read just the most recent error
+
+```bash
+hera-agent-unity console --type error --lines 5
+```
+
+If empty, no errors. If you need the full stack of one entry, re-run with `--stacktrace full`.
+
+### 3.6 Compile-check before a risky exec
+
+```bash
+hera-agent-unity exec --check "var x = MyType.MaybeRenamed();"
+```
+
+On `EXEC_COMPILE_ERROR`, fix and retry. No side effects on success — you still need a separate `exec` (without `--check`) to actually run.
+
+### 3.7 Run several commands in one HTTP round-trip
+
+```bash
+echo '{"commands":[
+  {"command":"editor", "params":{"action":"refresh", "compile":true}},
+  {"command":"console", "params":{"type":"error", "lines":10}}
+], "options":{"fail_fast":true}}' | hera-agent-unity batch
+```
+
+`fail_fast: true` (default) stops at the first failing step. Use `fail_fast: false` when you want every step attempted. Batch is sequential — no branching, no result piping between steps. For control flow, use one larger `exec` or chain CLI calls.
+
+### 3.8 Inspect before you exec
+
+When unsure about a Unity API method's signature, ask the connector instead of guessing:
+
+```bash
+hera-agent-unity describe_type UnityEditor.AssetDatabase --members methods --limit 30
+hera-agent-unity find_method "Refresh" --namespace UnityEditor --limit 20
+```
+
+Costs a fraction of a wrong `exec` round-trip plus a stack trace.
+
+---
+
+## 4. Pitfalls
+
+### 4.1 `GameObject.Find` is active-only
+
+`Find` walks the active object graph. An object you just `SetActive(false)`'d is invisible to it; subsequent `Find` returns `null` → `NullReferenceException` on the next member access.
+
+Workaround: `Resources.FindObjectsOfTypeAll<GameObject>().FirstOrDefault(g => g.name == "X" && g.scene.IsValid())`.
+
+### 4.2 Cold csc compile is slow
+
+The first `exec` per Unity session pays csc startup (5–15s on Windows). Subsequent unique `exec` bodies are ~500ms–2s (csc warm in OS cache). Identical bodies hit the in-memory assembly cache and skip compile entirely (~10ms). Don't infer the tool is broken from one slow first call.
+
+### 4.3 Domain reload cancels in-flight HTTP
+
+If your `exec` triggers a script recompile or asset import that causes a domain reload, the HTTP connection drops. `hera-agent-unity` auto-retries the request transparently (up to ~5s) but a connection that was mid-execute may complete *after* you get a disconnection message. Use `editor refresh --compile` explicitly when you need to be sure compilation is done before continuing.
+
+### 4.4 `--params` JSON shape
+
+When using `--params '{"k":"v"}'`, explicit `--k v` flags override the JSON. Don't set the same key in both.
+
+### 4.5 Older versions: stdin hang in non-TTY shells
+
+Fixed in **v0.0.37+**. If you're on v0.0.36 or earlier and `exec` hangs in Cursor's shell / bash `$()` / CI, either upgrade (`hera-agent-unity update`) or prepend `$null |` (PowerShell) / `</dev/null` (bash) to every `exec` call.
+
+### 4.6 `console --clear` cannot be undone
+
+Logs cleared can't be recovered. If you're debugging, read first, then clear.
+
+### 4.7 Custom tools must be in an Editor assembly
+
+`[HeraTool]` classes only auto-register if their assembly is loaded by the Editor. Runtime-only assemblies are invisible. If `list` doesn't show your new tool, check that the file lives in an `Editor/` folder or that the asmdef has `Editor` in `includePlatforms`.
+
+### 4.8 The `agent_hint` field on stderr
+
+Tools occasionally emit a one-line `hint:` to stderr when there's a non-obvious next action (e.g. "scene is dirty; save before close"). Read stderr alongside stdout — `2>&1` merges them.
+
+### 4.9 `humanCategories` whitelist drives output mode
+
+Pro classifies commands as human-target (`install` / `uninstall` / `status` / `update` / `upgrade` / `doctor` / `help` / `version`) or AI-target (everything else). AI-target commands automatically emit compact JSON and suppress decorative stderr. If you author a new top-level command and add it to `humanCategories`, agents will get indented output for it — usually unintended.
+
+### 4.10 `batch` has no conditional or data passing
+
+By design. Each step's result is reported but not piped to the next step. If you need "do X only if Y succeeded", issue separate calls. Don't try to encode logic into batch JSON. `fail_fast: true` (default) is the only branching primitive.
+
+### 4.11 `list_assemblies` without `--filter` returns hundreds of entries
+
+Use `--filter Unity` / `--filter MyGame` / etc. to scope. Same for `find_method` — always pass `--limit` and `--namespace` when you can. The connector won't paginate; oversized responses just inflate your context.
+
+### 4.12 `return;` (no value) does not compile in `exec`
+
+Your snippet is wrapped in `static object Execute() { ... }`. A bare `return;` triggers `CS0126` ("an object of a type convertible to 'object' is required"). Use `return null;` for early exits, or omit the return entirely (v0.0.37+ falls through to `null`). `throw` also works and is preferred when the early exit represents a failure (exit non-zero via `EXEC_RUNTIME_ERROR`).
+
+```cs
+// Bad — CS0126
+if (canvas == null) { Debug.LogError("missing"); return; }
+
+// Good — explicit null
+if (canvas == null) { Debug.LogError("missing"); return null; }
+
+// Better when this is actually a failure — surfaces as EXEC_RUNTIME_ERROR
+if (canvas == null) throw new System.Exception("BootCanvas not found");
+```
+
+---
+
+## 5. Reference (skim on demand)
+
+### 5.1 Major commands
+
+| Command | Purpose | Key flags |
+|---|---|---|
+| `exec <code>` | Run C# in Editor | `--usings`, `--check`, `--depth N`, `--stacktrace {none\|user\|full}`, `--strict`, `--no-cache` |
+| `console` | Read/clear log entries | `--type error,warning,log`, `--lines N`, `--stacktrace`, `--clear`, `--since N` |
+| `scene info` / `load` / `save` / `close` / `list` | Scene management | `--mode single\|additive\|additive_without_loading` (load) |
+| `editor play \| stop \| pause \| refresh` | Editor lifecycle | `--wait` (play), `--compile`, `--force` (refresh) |
+| `menu "<path>"` | Execute menu item | (none) |
+| `screenshot` | Capture view | `--view scene\|game`, `--width`, `--height`, `--output_path` |
+| `test` | Run tests | `--mode EditMode\|PlayMode`, `--filter <ns.class>` |
+| `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
+| `reserialize [paths...]` | Force YAML reserialize | (no args = whole project) |
+| `log "<msg>"` | Write to Unity console | `--level log\|warning\|error` |
+| `list` | List registered tools | `--compact`, `--tool <name>` |
+| `batch` | Run multiple commands in one HTTP request | `--file path.json`, or pipe JSON; `options.fail_fast` |
+| `list_assemblies` | List loaded assemblies | `--filter`, `--include_system` |
+| `describe_type <name>` | Type info + Unity-pitfalls | `--members fields\|properties\|methods\|all`, `--limit N` |
+| `find_method <pat>` | Search methods across assemblies | `--namespace`, `--limit` (default 50) |
+| `asset-config set-csc <path>` / `set-dotnet <path>` | Persist a default csc / dotnet path | (no flags) |
+| `status` / `ping` | Editor state / liveness | (none) |
+| `doctor` | Self-diagnostic | `--json`, `--agent-rules` (this guide's TL;DR subset) |
+
+### 5.2 Response envelope
+
+Every command returns this JSON over HTTP (the CLI then prints just `data` to stdout for compactness):
+
+```jsonc
+{
+  "success": true,
+  "message": "human-readable summary",
+  "code": "OPTIONAL_STABLE_ENUM",     // present on errors; absent on most successes
+  "data": <command-specific>,         // null for void ops (return null;)
+  "suggestions": ["next step", ...],  // optional, on errors
+  "agent_hint": "one-line nudge",     // optional, written to stderr by CLI
+  "timings": { "compile_ms": 12, "execute_ms": 3, "serialize_ms": 1 }
+}
+```
+
+Common `code` values you might branch on:
+- `EXEC_COMPILE_ERROR` — `data.compile_errors: [{line, col, error_code, message}, ...]`. `line` is relative to the user snippet (1-based); errors that fall inside the internal wrapper (e.g. a bad `--usings` namespace) report the raw csc line as a fallback.
+- `EXEC_RUNTIME_ERROR` — `data.exception_type`, `data.stack_trace` (user-filtered unless `--stacktrace full`). The synthetic wrapper frame is collapsed to `at (your snippet)` in user-filtered mode; pass `--stacktrace full` to see the raw `__CliDynamic.Execute` frame.
+- `EXEC_LOGGED_ERROR` — `--strict` mode only. `data.logged_errors: [{type, message}, ...]`, `data.returned` is the value the snippet would have returned.
+- `EXEC_CSC_NOT_FOUND` / `EXEC_DOTNET_NOT_FOUND` — `suggestions[]` tells the user how to recover
+- `EXEC_COMPILE_TIMEOUT` — 30s csc timeout
+- `READCONSOLE_INIT_FAILED` — Unity internal API drift; `data.unity_version` for triage
+
+### 5.3 Environment variables
+
+Most have a `--flag` equivalent (column 2).
+
+| Variable | Equivalent flag / effect |
+|---|---|
+| `HERA_AGENT_PORT=N` | `--port N` |
+| `HERA_AGENT_PROJECT=<path>` | `--project <path>` |
+| `HERA_AGENT_TIMEOUT_MS=N` | `--timeout N` (default 60000) |
+| `HERA_AGENT_QUIET=1` | `--quiet` |
+| `HERA_AGENT_DEBUG=1` | `--debug` |
+| `HERA_AGENT_COMPACT_JSON=1` | `--compact-json` |
+| `HERA_AGENT_VERBOSE=1` | `--verbose` |
+| `HERA_AGENT_NARRATE=1` | `--narrate` |
+| `HERA_AGENT_NO_PATH_CHECK=1` | Silence per-command PATH-mismatch warning (useful from wrapper binaries). |
+| `GITHUB_TOKEN` | Auth token for `update` from a private release repo. |
+
+### 5.4 Output-control flags (pro-only)
+
+The default for AI-target commands (§4.9) is already the quietest path: compact JSON to stdout, nothing to stderr unless there's a real error. Per-call overrides:
+
+- `--quiet` — Suppress decorative stderr (banners, progress). For when you want only the envelope.
+- `--verbose` — Add per-phase timings + progress lines to stderr. For triaging slow calls.
+- `--debug` — Dump full HTTP request/response bodies + discovery info. Wire-level detail; noisy.
+- `--narrate` — Force `waitForAlive` progress messages on AI-target commands. For cold-start triage.
+
+### 5.5 What `--depth` actually does
+
+Controls how deep `exec`'s return-value serializer walks an object graph.
+
+| `--depth` | Behavior |
+|---|---|
+| `1` (default) | Primitives + one level of fields/properties. Unity Objects → shallow `{name, type, instanceID}`. |
+| `2` | Adds nested fields. Unity Objects still shallow. |
+| `3+` | Full reflection on Unity Objects too. Use sparingly — Transform at depth 3 is ~9KB. |
+| `8` | Hard maximum. |
+
+If you find yourself wanting `--depth 3` for a Transform, ask whether you really need `transform.position` etc. — usually returning the specific fields (`return new { x = t.position.x, ... }`) is both clearer and an order of magnitude cheaper.
+
+---
+
+## 6. When this doc is wrong
+
+If something here contradicts what `hera-agent-unity <cmd> --help` says, trust `--help`. This guide is a curated subset, not the authoritative reference. The catalog at `docs/COMMANDS.md` is also authoritative for flag tables.
+
+If you find a real bug or want to suggest a pattern, file an issue at `https://github.com/NotNull92/hera-agent-unity/issues`.
