@@ -1,76 +1,79 @@
 <div align="center">
 
-<img src="docs/assets/hera_lite.png?v=2" width="50%" alt="hera-agent-unity banner">
+<img src="docs/assets/hera_lite.png?v=2" width="50%" alt="hera-agent-unity">
 
 <br>
 
 [![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent-unity?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent-unity/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square&color=blue)](LICENSE)
-[![Go Version](https://img.shields.io/badge/go-%5E1.22-00ADD8?style=flat-square&logo=go)](https://go.dev)
+[![Go](https://img.shields.io/badge/go-%5E1.24-00ADD8?style=flat-square&logo=go)](https://go.dev)
+[![Unity](https://img.shields.io/badge/unity-6000.0%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
-**추측 대신 실측 — AI에게 살아 있는 Unity를 만지게 합니다.**
+**추측 대신 실측 — AI에게 살아 있는 Editor를 만지게 합니다.**
 
-<br><br>
+<sub><code>hera-agent</code> + <code>hera-agent-pro</code>의 통합 후속작. 하나의 프로젝트, 하나의 라이선스, 모든 기능 무료.</sub>
 
-**설치 → 연결 → AI가 Unity를 직접 제어**
+<br>
 
-<img src="docs/video/hera-agent-unity-install-status(not-connected-unity)-uninstall.gif" width="80%" alt="hera-agent-unity CLI 설치, 상태 확인, 제거">
+<img src="docs/video/hera-agent-install-status(not-connected-unity)-uninstall.gif" width="80%" alt="설치, 상태 확인, 제거">
 
-<br><br>
+<br>
 
-**UPM 패키지 설치**
-
-<img src="docs/video/hera-agent-unity-install-UPM-scene.gif" width="80%" alt="Unity UPM 패키지 설치">
-
-<br><br>
-
-**Unity 연결 상태 확인**
-
-<img src="docs/video/hera-agent-unity-status-connected-unity.gif" width="80%" alt="hera-agent-unity Unity 연결 상태">
-
-<br><br>
-
-**Claude Code + hera-agent-unity 씬 전환**
-
-<img src="docs/video/claude-code-hera-agent-unity-scene-transition.gif" width="80%" alt="Claude Code가 hera-agent-unity로 씬 전환">
-
-<br><br>
-
-[Installation](#설치) · [Quick Start](#퀵-스타트) · [Commands](#명령어) · [Custom Tools](#커스텀-툴) · [Architecture](#구조)
+[설치](#설치) · [퀵 스타트](#퀵-스타트) · [명령어](#명령어) · [배치](#배치--시나리오-자동화) · [커스텀 툴](#커스텀-툴) · [구조](#구조) · [FAQ](#faq)
 
 </div>
 
 ---
 
-## Hera
+## 왜 만들었는가
 
-LLM은 당신의 Unity를 모릅니다. 작년에 학습한 API와 일반화된 패턴을 기억할 뿐입니다. 당신은 매주 그 격차를 토큰과 시간으로 갚고 있습니다.
+LLM은 당신의 Unity를 모릅니다. 작년에 학습한 API와 일반화된 패턴을 기억할 뿐입니다 — 당신은 매주 그 격차를 토큰과 시간으로 갚고 있습니다.
 
-Hera는 그 사이에 섭니다.
+**hera-agent-unity**는 그 사이에 섭니다.
 
-AI가 코드를 추측하기 전에, Hera가 Editor에서 직접 실행하고 결과를 회수합니다. AI가 콘솔 에러를 가정하기 전에, Hera가 실제 로그를 type별로 가져옵니다. AI가 Play Mode 결과를 짐작하기 전에, Hera가 직접 돌리고 끝날 때까지 기다립니다.
+AI가 코드를 추측하기 전에, Hera가 Editor에서 직접 실행하고 결과를 회수합니다. AI가 콘솔 에러를 가정하기 전에, 실제 로그를 type 별로 가져옵니다. AI가 Play Mode 결과를 짐작하기 전에, 직접 진입해서 끝날 때까지 기다립니다. AI가 당신의 Unity 버전에 없는 API를 만들어내기 전에, 살아 있는 어셈블리에 리플렉션합니다.
 
-중간 서버는 없습니다. Python도, WebSocket도, JSON-RPC도 없습니다. 하나의 Go 바이너리, localhost HTTP, C# UPM 패키지 하나. Unity Editor가 열리면 Hera는 이미 거기 있습니다.
+미들웨어는 없습니다. Python도, WebSocket도, JSON-RPC도 없습니다. Go 바이너리 하나, localhost HTTP, C# UPM 패키지 하나. Unity Editor가 열리면 Hera는 이미 거기 있습니다.
 
 Hera는 명령에 응답합니다 — 추론하지 않고, 가정하지 않고. 당신의 Unity가 지금 이 순간 무엇인지를 있는 그대로 가져옵니다.
 
-추측은 비쌉니다. 실측은 명령입니다.
+> **추측은 비쌉니다. 실측은 명령입니다.**
 
 ```
-┌─────────────┐      HTTP      ┌─────────────────┐
-│   터미널    │ ◄────────────► │   Unity Editor  │
-│  (1바이너리) │   port 8090    │   (자동 시작)   │
-└─────────────┘                └─────────────────┘
+┌─────────────┐       HTTP        ┌──────────────────┐
+│   터미널    │ ◄──────────────► │   Unity Editor   │
+│  (1바이너리) │   localhost:8090  │  (자동 시작)     │
+└─────────────┘                   └──────────────────┘
 ```
 
-**Go 핵심 약 800줄, C# 약 2,300줄. 그 이상은 없습니다.**
+**Go 코어 약 2,600줄. C# 약 3,900줄. 런타임 의존성 0개.**
 
-> 테스트, TUI, 플랫폼 어댑터 등 부가 코드가 약 2,200줄 더 있지만, Unity와 직접 통신하는 엔진은 여전히 가볍습니다.
+> 테스트·TUI·배치 엔진·에셋 설정 레이어가 약 3,500줄 더 있지만, Unity와 직접 통신하는 엔진은 여전히 가볍습니다.
+
+---
+
+## v2 통합 — 무엇이 달라졌나
+
+`hera-agent`는 무료 라이트 버전이었고, `hera-agent-pro`는 추가 기능을 담은 상용 릴리스였습니다. **v2에서 두 프로젝트는 하나로 합쳐지고, 모든 Pro 기능이 무료로 제공됩니다.**
+
+| 기능                                | hera-agent (Lite) | hera-agent-pro | **hera-agent-unity v2** |
+|-------------------------------------|:-----------------:|:--------------:|:-----------------------:|
+| 에디터 제어 & `exec`                 | ✅                | ✅             | ✅                      |
+| 배치 실행                            | —                 | ✅             | ✅ **무료**             |
+| `describe_type` 인트로스펙션         | —                 | ✅             | ✅ **무료**             |
+| `find_method` / `list_assemblies`    | —                 | ✅             | ✅ **무료**             |
+| Asset Config 윈도우 (GUI)            | —                 | ✅             | ✅ **무료**             |
+| Unity 함정 카탈로그                  | —                 | ✅             | ✅ **무료**             |
+| 라이선스                             | MIT               | 상용           | **MIT**                 |
+
+기존에 둘 중 하나라도 사용 중이었다면 — 기존 패키지를 제거하고 `hera-agent-unity`를 설치하세요. 툴 이름과 CLI 인터페이스는 그대로입니다.
 
 ---
 
 ## 설치
+
+### CLI
 
 **macOS / Linux**
 ```bash
@@ -85,20 +88,21 @@ irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.ps
 <details>
 <summary>다른 설치 방법</summary>
 
-**`go install`** (어떤 플랫폼이든)
+**`go install`** (모든 플랫폼)
 ```bash
 go install github.com/NotNull92/hera-agent-unity@latest
 ```
 
-**수동 다운로드** — [Releases](https://github.com/NotNull92/hera-agent-unity/releases)에서 플랫폼에 맞는 바이너리를 받으세요.
+**수동 설치** — [Releases](https://github.com/NotNull92/hera-agent-unity/releases)에서 플랫폼에 맞는 바이너리를 받은 뒤, 한 번 실행해서 PATH에 등록합니다:
+
+```bash
+chmod +x ./hera-agent-unity-<platform>
+./hera-agent-unity-<platform> install
+```
 
 </details>
 
----
-
-## 퀵 스타트
-
-### 1. Unity Connector 설치
+### Unity Connector
 
 **Package Manager → Add package from git URL**
 ```
@@ -110,110 +114,251 @@ https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
-> 커넥터는 자동으로 시작됩니다. 별도 설정은 필요 없습니다.
+> 커넥터는 자동으로 시작합니다. 별도 설정 없음. Unity 6 (6000.0+)이 필요합니다.
 
-### 2. 명령어 실행
+<img src="docs/video/hera-agent-install-UPM-scene.gif" width="80%" alt="Unity UPM 패키지 설치">
+
+---
+
+## 퀵 스타트
 
 ```bash
-# Unity 연결됐나? (포트 찾기 같은 거 없음)
+# Unity 연결됐나? — heartbeat만 읽음, 포트 찾기 의식 없음
 hera-agent-unity status
 
 # 터미널에서 Play Mode 진입 — 실제로 들어갈 때까지 대기
 hera-agent-unity editor play --wait
 
-# C# 코드를 Unity 안에서 직접 실행 — 재컴파일도 재시작도 없음
+# C# 코드를 Unity 안에서 직접 실행 — 재컴파일도, 재시작도 없음
 hera-agent-unity exec "return EditorSceneManager.GetActiveScene().name;"
 
-# 스크린샷 없이 AI가 읽고 행동할 수 있는 에러 출력
+# 스크린샷이 아니라 AI가 읽고 행동할 수 있는 에러
 hera-agent-unity console --type error
+
+# 여러 명령을 한 번에 — 시나리오 자동화
+hera-agent-unity batch --file workflow.json
 ```
 
-### 3. AI 에이전트에게 넘기기
+<img src="docs/video/hera-agent-status-connected-unity.gif" width="80%" alt="Unity 연결 상태">
 
-**발견** — 터미널에서 Claude Code CLI 또는 Codex를 열고 입력:
+---
 
-> **"hera-agent-unity cli 도구 설치되어 있는지 확인하고 파악해"**
+## AI 에이전트에게 운전대 넘기기
 
-에이전트가 hera-agent-unity를 발견해서 명령어를 나열하고, 알아서 Unity를 조종하기 시작합니다.
+Claude Code, Codex, Cursor — 셸 명령을 실행할 수 있는 모든 에이전트에서 동작합니다. 이렇게 물어보세요:
 
-**규칙으로 고정 (권장)** — Unity 프로젝트의 `CLAUDE.md`, `AGENTS.md` 등 AI 에이전트가 읽는 설정 문서에 다음 한 줄을 추가하세요:
+> **"hera-agent-unity CLI 도구 설치돼 있는지 확인하고 어떤 기능 있는지 파악해."**
 
-> **"유니티 작업의 경우 반드시 hera-agent-unity를 사용해"**
+에이전트가 알아서 CLI를 발견하고, `list`를 돌려보고, Unity를 조종하기 시작합니다.
 
-매번 LLM이 학습 데이터에서 Unity API를 추측하는 대신, 항상 라이브 에디터에 손을 뻗게 만듭니다.
+<img src="docs/video/claude-code-hera-agent-scene-transition.gif" width="80%" alt="Claude Code가 hera-agent-unity로 씬을 조작">
+
+### 호환성
+
+hera-agent-unity는 JSON을 반환하는 평범한 CLI입니다. 셸 명령을 돌릴 수 있는 코딩 에이전트라면 무엇이든 동작합니다:
+
+| 에이전트               | 프로젝트 규칙 파일                             |
+|------------------------|-----------------------------------------------|
+| **Claude Code CLI**    | `CLAUDE.md` (프로젝트 루트)                   |
+| **OpenAI Codex**       | `AGENTS.md` (프로젝트 루트)                   |
+| **Cursor**             | `.cursor/rules/hera-agent-unity.mdc`          |
+| **GitHub Copilot**     | `.github/copilot-instructions.md`             |
+| **Continue.dev**       | `.continuerules`                              |
+
+### 프로젝트당 1회 세팅 (강력 권장)
+
+규칙 파일에 한 줄만 추가하세요:
+
+> **"Unity 관련 작업은 무조건 hera-agent-unity를 먼저 사용해."**
+
+이 줄이 없으면 에이전트는 학습 데이터에서 Unity API를 추측합니다 — 옛 코드, 잘못된 가정, 토큰 낭비. 한 번 박아두면 매 세션 시간을 아낍니다.
 
 ---
 
 ## 명령어
 
-| 명령어 | 기능 |
-|---------|-------------|
-| `editor` | Play, stop, pause, refresh |
-| `exec` | Unity 내부에서 C# 코드 실행 (`--file <path>` 로 긴 코드 로드, `--depth N` 으로 응답 깊이 조절) |
-| `log` | csc 컴파일 없이 Unity 콘솔에 메시지 출력 |
-| `ping` | 토큰 절약형 헬스 프로브 (heartbeat 파일만 읽음) |
-| `scene` | 씬 조회/로드/저장/목록/언로드 |
-| `console` | 로그 읽기, 필터링, 삭제 |
-| `test` | EditMode / PlayMode 테스트 실행 |
-| `menu` | 메뉴 항목 경로로 실행 |
-| `screenshot` | Scene 또는 Game 뷰 캡처 |
-| `profiler` | 프로파일러 계층 읽기, 녹화 제어 |
-| `reserialize` | 텍스트 편집 후 YAML 정제 |
-| `list` | 슬림 출력 (기본); `--names` / `--tool <name>` 으로 토큰 효율 조회 |
-| `status` | 연결 상태 및 프로젝트 정보 |
-| `update` | 바이너리 자동 업데이트 |
-| `install` | CLI를 PATH에 설치 |
-| `uninstall` | PATH에서 CLI 제거 |
+| 명령어            | 설명                                                                          |
+|-------------------|-------------------------------------------------------------------------------|
+| `editor`          | Play, stop, pause, refresh, recompile                                         |
+| `exec`            | Unity 내부에서 C# 코드 실행 — 에디터 + 런타임 풀 액세스                       |
+| `log`             | csc 컴파일 없이 Unity 콘솔에 메시지 출력                                      |
+| `scene`           | 정보, 로드, 저장, 목록, 닫기                                                  |
+| `console`         | 로그 읽기, 필터, 삭제                                                         |
+| `test`            | EditMode / PlayMode 테스트 실행                                               |
+| `menu`            | 경로로 메뉴 항목 실행                                                         |
+| `screenshot`      | Scene 또는 Game 뷰 캡처                                                       |
+| `profiler`        | 프로파일러 계층 읽기, 녹화 제어                                               |
+| `reserialize`     | 텍스트 편집 후 Unity YAML 강제 재직렬화                                       |
+| `describe_type`   | 라이브 타입 리플렉션 — 멤버, 시그니처, **Unity 함정**                          |
+| `find_method`     | 로드된 어셈블리 전반에서 메서드 이름 검색                                     |
+| `list_assemblies` | 로드된 어셈블리 목록 (기본적으로 `System.*` 노이즈 제외)                      |
+| `batch`           | 여러 명령을 원자적으로 실행                                                   |
+| `list`            | 툴 목록 — 슬림(기본) / `--names` / `--tool <name>` 전체 스키마                 |
+| `status`          | 연결 상태 및 프로젝트 정보                                                    |
+| `ping`            | 토큰 절약형 라이브니스 프로브 (heartbeat만 읽음, HTTP 없음)                   |
+| `doctor`          | 셀프 진단: PATH, 설치, 셸, Unity 도달성 (`--json`은 에이전트용)               |
+| `asset-config`    | 옵션 에셋 통합 토글 (TUI / list / enable / disable / detect)                  |
+| `update`          | GitHub Releases에서 셀프 업데이트                                             |
+| `install`         | PATH에 바이너리 등록                                                          |
+| `uninstall`       | PATH에서 CLI 제거                                                             |
+
+막혔으면 `hera-agent-unity doctor`, 또는 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ---
 
-## `exec` 명령어
+## `exec` — 런타임 C# 실행
 
-가장 강력한 기능입니다. 보일러플레이트 없이 전체 런타임에 접근할 수 있습니다.
+가장 강력한 명령어입니다. 에디터 + 런타임 풀 액세스. 보일러플레이트 없음.
 
 ```bash
-# 모든 것을 검사
-hera-agent-unity exec "return World.All.Count;" --usings Unity.Entities
+# 평가
+hera-agent-unity exec "return Application.dataPath;"
+hera-agent-unity exec "return GameObject.FindObjectsOfType<Camera>().Length;"
 
 # 씬 수정
 hera-agent-unity exec "var go = new GameObject(\"Temp\"); return go.name;"
 
-# stdin으로 파이프 (셸 이스케이핑 문제 해결)
+# ECS / 커스텀 어셈블리
+hera-agent-unity exec "return World.All.Count;" --usings Unity.Entities
+
+# 복잡한 코드는 stdin으로 파이프 — 셸 이스케이핑 회피
 echo '
 var scene = EditorSceneManager.GetActiveScene();
 return scene.GetRootGameObjects().Length;
 ' | hera-agent-unity exec
+
+# 또는 파일에서 로드
+hera-agent-unity exec --file scripts/probe.cs
 ```
 
-실제 C#을 컴파일하고 실행하므로 **Unity의 모든 API를 호출할 수 있습니다.** ECS World 검색, 에셋 수정, 에디터 내부 API 호출도 모두 가능합니다. 별도의 커스텀 툴 작성이 필요 없습니다.
+| 플래그            | 용도                                                                          |
+|-------------------|-------------------------------------------------------------------------------|
+| `--usings ns,...` | using 디렉티브 추가                                                           |
+| `--file <path>`   | 디스크에서 코드 로드 (positional · stdin이 우선)                              |
+| `--csc <path>`    | C# 컴파일러 경로 명시                                                         |
+| `--dotnet <path>` | dotnet 런타임 경로 명시                                                       |
+| `--no-cache`      | 컴파일된 어셈블리 캐시 무시 (디버그용)                                        |
+| `--depth N`       | 응답 객체 그래프 깊이 제한                                                    |
+
+**동작 원리.** 코드는 static 메서드로 래핑되어 시스템의 Roslyn(`csc`)으로 임시 DLL로 컴파일됩니다. 수집 가능한(Collectible) `AssemblyLoadContext`에 로드되어 메모리 누수를 막고, 리플렉션으로 실행한 뒤 결과를 JSON으로 직렬화합니다. 동일한 소스 코드는 인메모리 캐시에서 서빙됩니다 — warm call은 csc를 건너뜁니다.
+
+기본 using에는 `System`, `System.Linq`, `System.Reflection`, `UnityEngine`, `UnityEngine.SceneManagement`, `UnityEditor`, `UnityEditor.SceneManagement`, `UnityEditorInternal`이 포함됩니다.
+
+---
+
+## 인트로스펙션 — `describe_type`, `find_method`, `list_assemblies`
+
+이 세 명령어는 LLM이 학습 cutoff에 어렴풋이 기억하는 API가 아니라, **당신의 Unity 프로젝트에 지금 실제로 로드된 것**을 읽습니다.
+
+```bash
+# 무엇이 로드돼 있나? (System.* 기본 제외)
+hera-agent-unity list_assemblies
+hera-agent-unity list_assemblies --filter Unity.Entities
+
+# 타입 검사 — 시그니처 + 큐레이션된 Unity 함정
+hera-agent-unity describe_type UnityEditor.EditorApplication
+hera-agent-unity describe_type AssetDatabase --members methods --limit 50
+
+# 살아 있는 AppDomain 전체에서 메서드 이름 검색
+hera-agent-unity find_method Refresh --namespace UnityEditor
+```
+
+`describe_type`은 스키마와 함께 `pitfalls` 배열을 반환합니다 — 짧고 안정적인 함정 노트 + Unity 6 Manual 링크. 커버리지: **Editor API**, **MonoBehaviour 생명주기**, **uGUI** (Canvas, RectTransform, EventSystem, LayoutGroup, ScrollRect, Selectable, Mask, CanvasGroup, …). 각 항목은 `{ text, doc_url }` 형식이라 에이전트가 시그니처 + 함정 + fetch 가능한 문서를 1회 라운드트립으로 받습니다.
+
+`exec`와 짝지으면 dry-run 루프가 완성됩니다:
+
+```
+describe_type → 코드 작성 → exec → 수정 → exec
+```
+
+---
+
+## 배치 — 시나리오 자동화
+
+여러 단계 파이프라인을 CLI 호출 한 번에 실행합니다. CI, 자동화 스크립트, 큰 에이전트 플랜에 적합합니다.
+
+```bash
+hera-agent-unity batch --file workflow.json
+```
+
+```json
+{
+  "commands": [
+    { "command": "manage_editor", "params": { "action": "play", "wait": true } },
+    { "command": "exec",          "params": { "code": "return EditorSceneManager.GetActiveScene().name;" } },
+    { "command": "read_console",  "params": { "type": "error" } }
+  ],
+  "options": { "fail_fast": true }
+}
+```
+
+파일을 만들기 싫다면 stdin으로 파이프:
+
+```bash
+echo '{"commands":[{"command":"manage_editor","params":{"action":"refresh","compile":true}}]}' \
+  | hera-agent-unity batch
+```
+
+`--dry-run`은 실행 없이 계획만 미리 보여줍니다. `fail_fast`는 첫 에러에서 단락 처리하고 어느 스텝이 실패했는지 보고합니다.
+
+---
+
+## 프로파일러
+
+UI 없이 터미널에서 라이브 프로파일러를 읽습니다.
+
+```bash
+hera-agent-unity profiler enable                       # 녹화 시작
+hera-agent-unity profiler hierarchy                    # 최상위 샘플 (마지막 프레임)
+hera-agent-unity profiler hierarchy --depth 3          # 재귀 드릴다운
+hera-agent-unity profiler hierarchy --root PlayerLoop --depth 5
+hera-agent-unity profiler hierarchy --frames 30 --min 0.5 --sort self
+hera-agent-unity profiler disable                      # 녹화 중지
+hera-agent-unity profiler status
+hera-agent-unity profiler clear
+```
+
+| 플래그            | 용도                                                |
+|-------------------|----------------------------------------------------|
+| `--depth N`       | 재귀 깊이 (0 = 무제한, 기본 1)                      |
+| `--root <name>`   | 부분 문자열로 루트 샘플 매칭                        |
+| `--frames N`      | 최근 N 프레임 평균                                  |
+| `--from N --to N` | 명시적 프레임 범위 평균                             |
+| `--parent ID`     | ID로 항목 드릴 인투                                 |
+| `--min <ms>`      | 임계값 미만 항목 필터                               |
+| `--sort <col>`    | `total`(기본), `self`, `calls`                      |
+| `--thread N`      | 스레드 인덱스 (0 = 메인)                            |
 
 ---
 
 ## 커스텀 툴
 
-C# 클래스를 Editor 어셈블리에 두면 자동으로 발견됩니다.
+Editor 어셈블리 아무 곳에나 C# 클래스를 두면 자동으로 발견됩니다 — 등록도, 코드젠도 없습니다.
 
 ```csharp
 using HeraAgent;
 using Newtonsoft.Json.Linq;
+using UnityEngine;
 
-[HeraTool(Name = "spawn", Group = "gameplay")]
+[HeraTool(Name = "spawn", Group = "gameplay", Description = "지정 위치에 프리팹 스폰")]
 public static class SpawnEnemy
 {
     public class Parameters
     {
-        [ToolParameter("X 좌표", Required = true)] public float X;
-        [ToolParameter("Y 좌표", Required = true)] public float Y;
-        [ToolParameter("Z 좌표", Required = true)] public float Z;
-        [ToolParameter("프리팹 이름", DefaultValue = "Enemy")] public string Prefab;
+        [ToolParameter("X 월드 좌표", Required = true)] public float  X      { get; set; }
+        [ToolParameter("Y 월드 좌표", Required = true)] public float  Y      { get; set; }
+        [ToolParameter("Z 월드 좌표", Required = true)] public float  Z      { get; set; }
+        [ToolParameter("프리팹 이름", Default = "Enemy")] public string Prefab { get; set; }
     }
 
     public static object HandleCommand(JObject args)
     {
-        var p = new ToolParams(args);
+        var p      = new ToolParams(args);
         var prefab = Resources.Load<GameObject>(p.Get("prefab", "Enemy"));
-        var inst = Object.Instantiate(prefab, new Vector3(p.GetFloat("x"), p.GetFloat("y"), p.GetFloat("z")), Quaternion.identity);
-        return new SuccessResponse("생성 완료", new { name = inst.name });
+        var inst   = Object.Instantiate(prefab,
+                        new Vector3(p.GetFloat("x"), p.GetFloat("y"), p.GetFloat("z")),
+                        Quaternion.identity);
+        return new SuccessResponse("Spawned", new { name = inst.name });
     }
 }
 ```
@@ -223,66 +368,181 @@ public static class SpawnEnemy
 hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 ```
 
-`hera-agent-unity list`는 파라미터 스키마를 노출해서 AI 에이전트가 소스 코드를 읽지 않고도 툴을 발견하고 호출할 수 있게 합니다.
+**규칙**
+- `[HeraTool]`로 데코레이트
+- `public static object HandleCommand(JObject parameters)` 노출 (인스턴스 메서드도 가능)
+- `SuccessResponse(message, data)` 또는 `ErrorResponse(message)` 반환
+- `Parameters`의 멤버는 `{ get; set; }` 프로퍼티 — 필드는 스키마 생성기가 보지 못합니다
+- 클래스 이름은 자동 `snake_case` (`SpawnEnemy` → `spawn_enemy`); `Name =`으로 재정의 가능
+- 에디터 시작 시와 스크립트 리컴파일마다 재발견됨
+- Unity 메인 스레드에서 실행 — 모든 API가 안전합니다
+- 중복 툴 이름은 콘솔에 경고로 표시되며 먼저 등록된 쪽이 이깁니다
+
+`hera-agent-unity list`는 파라미터 스키마를 노출해서 에이전트가 소스 코드를 읽지 않고도 툴을 발견하고 호출할 수 있게 합니다.
 
 ---
 
 ## 구조
 
 ```
-┌─────────────┐         ┌─────────────────────────────┐
-│   CLI Go    │         │      Unity Editor           │
-│  (약 800 LoC) │◄───────►│  ┌─────────────────────┐    │
-│             │  HTTP   │  │   HttpServer        │    │
-│ • 자동 발견 │  8090+  │  │   (localhost)       │    │
-│ • 명령 전송 │         │  └──────────┬──────────┘    │
-│ • 결과 출력  │         │             │ 리플렉션      │
-│             │         │  ┌──────────▼──────────┐    │
-└─────────────┘         │  │   [HeraTool]        │    │
-                        │  │   클래스            │    │
-                        │  └─────────────────────┘    │
-                        └─────────────────────────────┘
+┌──────────────────┐           ┌──────────────────────────────────┐
+│    CLI (Go)      │           │         Unity Editor             │
+│                  │   HTTP    │                                  │
+│  ┌────────────┐  │  POST     │  ┌────────────┐                  │
+│  │ 인스턴스   │──┼──/command─┼─►│ HttpServer │ (localhost:8090+)│
+│  │   발견     │  │           │  └─────┬──────┘                  │
+│  └──────┬─────┘  │           │        │ ConcurrentQueue         │
+│         │ read   │           │  ┌─────▼──────┐                  │
+│  ┌──────▼─────┐  │           │  │  Command   │ EditorApplication│
+│  │ Heartbeat  │  │           │  │  Router    │ .update           │
+│  │   파일     │◄─┼───write───┼──│            │ (메인 스레드)    │
+│  │ (instance) │  │           │  └─────┬──────┘                  │
+│  └────────────┘  │           │        │ SemaphoreSlim(1,1)      │
+│                  │           │  ┌─────▼──────┐                  │
+│  ┌────────────┐  │           │  │    Tool    │ [HeraTool]       │
+│  │  Backoff   │  │           │  │ Discovery  │ 리플렉션         │
+│  │  폴링      │  │           │  └─────┬──────┘                  │
+│  └────────────┘  │           │  ┌─────▼──────┐                  │
+│                  │           │  │   핸들러   │ exec, editor,    │
+│                  │           │  │            │ test, profiler…  │
+└──────────────────┘           │  └────────────┘                  │
+                               └──────────────────────────────────┘
 ```
 
-- **스테이트리스** — 매 요청은 독립적입니다. 재연결 로직이 없습니다.
-- **자동 발견** — `~/.hera-agent-unity/instances/`를 스캔하여 실행 중인 Unity 에디터를 찾습니다.
-- **도메인 리로드 대응** — 커넥터는 스크립트 재컴파일에도 살아남며 자동으로 복구합니다.
-- **메인 쓰레드 실행** — 모든 툴 핸들러는 Unity 메인 쓰레드에서 실행됩니다. 모든 API가 안전합니다.
+| 원칙                              | 의미                                                                                                   |
+|-----------------------------------|-------------------------------------------------------------------------------------------------------|
+| **스테이트리스**                  | 매 요청은 독립적입니다. 세션도, 재연결 로직도 없습니다.                                                |
+| **자동 발견**                     | `~/.hera-agent-unity/instances/` heartbeat 파일을 스캔. CWD / 프로젝트 / 포트로 매칭합니다.            |
+| **도메인 리로드 안전**            | `[InitializeOnLoad]` + 어셈블리 리로드 이벤트로 스크립트 재컴파일에서 살아남습니다.                    |
+| **메인 스레드 실행**              | 모든 툴 핸들러가 `ConcurrentQueue` + `EditorApplication.update`를 통해 메인 스레드로 마샬링됩니다.     |
+| **파일시스템 크로스프로세스 버스**| Heartbeat · 테스트 결과 파일은 도메인 리로드 중 HTTP 서버 종료를 견뎌냅니다.                            |
+| **원자적 쓰기**                   | Heartbeat은 `.tmp`에 쓰고 rename — CLI가 반쯤 쓴 JSON을 읽는 일이 없습니다.                            |
+
+### AI 에이전트를 위한 엔지니어링
+
+- **함수 타입 DI (Go).** 명령 핸들러는 `sendFn`과 `instanceResolver`를 주입받습니다. `resolve` 클로저는 매 호출마다 인스턴스를 재발견하므로, 도메인 리로드로 HTTP 포트가 바뀌어도 다음 명령이 자동으로 새 엔드포인트를 찾습니다.
+- **3단계 오케스트레이션.** 컴파일을 트리거하는 명령은 `waitForAlive` → 전송 → `waitForReady` 순서입니다. 폴링은 1.5배 백오프 (100ms → 2s cap) — 보통의 2배보다 완만해서 Unity가 이미 ready로 돌아온 경우를 세밀하게 감지합니다.
+- **컴파일 유예 기간.** `editor refresh --compile`은 `state == "compiling"`을 3초간 강제로 고정합니다. Unity가 실제 컴파일을 시작하기까지의 1–2프레임 지연 동안 폴링이 stale `"ready"`에 걸리지 않게 합니다.
+- **PlayMode 테스트 폴링.** PlayMode 테스트는 도메인 리로드를 유발해 HTTP 서버가 파괴됩니다. 결과는 `~/.hera-agent-unity/status/test-results-<port>.json`에 기록되고 CLI가 500ms 간격으로 폴링합니다.
+- **원자적 셀프 업데이트.** GitHub Releases → 백업 → rename → 정리, 실패 시 롤백. Windows에서는 실행 중인 `.exe`가 잠기므로 PowerShell 프로세스를 spawn해 `.bak`을 지연 삭제합니다.
 
 ---
 
 ## MCP와 비교
 
-| | MCP 통합 | hera-agent-unity |
-|---|:---:|:---:|
-| **설치** | Python + uv + FastMCP + 설정 파일 | 단일 바이너리 |
-| **런타임 의존성** | WebSocket 릴레이, 영구 프로세스 | 없음 |
-| **프로토콜** | JSON-RPC 2.0 over stdio | 직접 HTTP POST |
-| **설정** | MCP 설정 생성, AI 클라이언트 재시작 | 패키지 추가하면 끝 |
-| **도메인 리로드** | 복잡한 재연결 로직 | 스테이트리스 |
-| **커스텀 툴** | `[Attribute]` 패턴 | 동일한 `[Attribute]` 패턴 |
-| **호환성** | MCP 클라이언트 전용 | 어떤 셸에서든, 어떤 에이전트와도 |
+|                      | MCP 통합                          | hera-agent-unity                          |
+|----------------------|-----------------------------------|-------------------------------------------|
+| **설치**             | Python + uv + FastMCP + 설정 파일 | 단일 바이너리                              |
+| **런타임 의존성**    | WebSocket 릴레이, 영구 프로세스    | 없음                                       |
+| **프로토콜**         | JSON-RPC 2.0 over stdio           | 직접 HTTP POST                             |
+| **세팅**             | 설정 생성, AI 클라이언트 재시작    | UPM 패키지 추가로 끝                       |
+| **도메인 리로드**    | 복잡한 재연결 로직                | 스테이트리스 (파일시스템 버스)             |
+| **커스텀 툴**        | `[Attribute]` 패턴                | 동일한 `[Attribute]` 패턴                  |
+| **호환성**           | MCP 클라이언트 전용                | 어떤 셸, 어떤 에이전트, 어떤 스크립트도    |
+| **다중 인스턴스**    | 수동 설정                         | CWD / 프로젝트 / 포트 자동 발견            |
 
 ---
 
-## 글로벌 플래그
+## 글로벌 플래그 & 환경 변수
 
 ```bash
---port <N>       # 자동 발견 무시
---project <path> # 프로젝트 경로로 선택
---timeout <ms>   # HTTP 타임아웃 (기본: 120초)
+--port <N>          # 활성 heartbeat 포트로 Unity 인스턴스 선택
+--project <path>    # 프로젝트 경로(부분 매칭)로 인스턴스 선택
+--timeout <ms>      # 요청 타임아웃 (기본 60000)
+--verbose           # 단계별 타이밍 + 진행 상황을 stderr로
 ```
+
+| 환경 변수                     | 용도                                                |
+|-------------------------------|----------------------------------------------------|
+| `HERA_AGENT_NO_PATH_CHECK=1`  | 매 명령마다의 PATH 경고를 끔                        |
+| `GITHUB_TOKEN`                | 프라이빗 미러에서 `update` 사용 시 인증             |
+
+---
+
+## FAQ
+
+<details>
+<summary><strong>Unity가 "port 8090 is taken"이라고 합니다.</strong></summary>
+
+커넥터는 8090, 8091, 8092, … 최대 10회까지 자동으로 다음 포트를 시도합니다. 전부 점유 중이면 좀비 Unity 프로세스나 다른 로컬 서비스가 포트를 잡고 있는지 확인하세요. CLI는 heartbeat 파일에서 실제 포트를 읽기 때문에 포트 번호는 사용자에게 투명합니다.
+
+</details>
+
+<details>
+<summary><strong>Unity를 최소화하면 명령이 멈춥니다.</strong></summary>
+
+원래 멈추지 않아야 합니다 — 커넥터는 큐에 작업을 넣을 때마다 `RepaintAllViews()`를 호출해서 포커스를 잃어도 update 루프가 돌게 만듭니다. 그래도 멈춘다면 UPM 패키지가 설치되어 있는지, Unity 콘솔에 `[Hera] HTTP server started on port XXXX`가 찍히는지 확인하세요.
+
+</details>
+
+<details>
+<summary><strong>`exec`가 "Cannot find csc compiler"로 실패합니다.</strong></summary>
+
+컴파일러는 .NET SDK, Visual Studio, 또는 Unity 내장 Roslyn에서 자동 탐지됩니다. 셋 다 없으면 [.NET SDK](https://dotnet.microsoft.com/download)를 설치하거나 경로를 직접 지정하세요:
+
+```bash
+hera-agent-unity exec "return 1+1;" --csc "C:\Program Files\dotnet\sdk\8.0.100\Roslyn\bincore\csc.dll"
+```
+
+</details>
+
+<details>
+<summary><strong>Unity Editor가 여러 개 켜져 있으면 어떻게 고르나요?</strong></summary>
+
+우선순위:
+1. `--port` 플래그 (명시적)
+2. `--project` 플래그 (경로 부분 매칭)
+3. 현재 작업 디렉토리가 알려진 프로젝트 경로와 매칭
+4. 가장 최근 heartbeat 타임스탬프 (폴백)
+
+</details>
+
+<details>
+<summary><strong>CI에서 써도 안전한가요?</strong></summary>
+
+네 — `batch`가 그걸 위해 설계됐습니다. exit code가 명령별로 전파되고, `fail_fast`로 첫 에러에서 단락됩니다. `update` 명령과 버전 알림은 비대화식 실행에서 끌 수 있습니다.
+
+</details>
+
+<details>
+<summary><strong>`hera-agent`나 `hera-agent-pro`를 쓰고 있었습니다. 마이그레이션은?</strong></summary>
+
+1. 기존 CLI 제거 (`hera-agent uninstall` 또는 `hera-agent-pro uninstall`).
+2. Unity에서 기존 UPM 패키지 제거 (`com.notnull92.hera-agent` / `com.notnull92.hera-agent-pro`).
+3. `hera-agent-unity` 설치 (CLI + UPM).
+4. 툴 이름과 CLI 인터페이스는 그대로 — 스크립트와 에이전트 규칙은 이름만 바꾸면 그대로 동작합니다.
+
+</details>
+
+---
+
+## 이 도구를 쓰는 프로젝트
+
+| 프로젝트                                                          | 설명                                                                                              |
+|-------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| [**NoMoreRolls**](https://github.com/NotNull92)                   | Unity 솔로 개발 게임 — 3-tier 아키텍처, 9-soul 전투 시스템. hera-agent-unity로 빌드.                |
+
+> 본인 프로젝트를 올리고 싶으면 이슈나 PR 환영합니다.
 
 ---
 
 ## 제작자
 
-**Victor** — Unity/C# 개발자, 라이브 서비스 MMORPG 6년+ 프로덕션 경험  
-[hera-agent-unity](https://github.com/NotNull92/hera-agent-unity)로 [NoMoreRolls](https://github.com/NotNull92)를 솔로 개발 중 · 유튜브 [IndieAlchemist](https://www.youtube.com/@IndieAlchemist)
+**Victor** — Unity/C# 개발자, 라이브 서비스 MMORPG 6년+ 프로덕션 경험.
+[hera-agent-unity](https://github.com/NotNull92/hera-agent-unity)로 [NoMoreRolls](https://github.com/NotNull92)를 솔로 개발 중 · 유튜브 [IndieAlchemist](https://www.youtube.com/@IndieAlchemist).
 
 [![GitHub](https://img.shields.io/badge/@NotNull92-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/NotNull92)
 [![Email](https://img.shields.io/badge/fatiger92@gmail.com-EA4335?logo=gmail&logoColor=white&style=flat-square)](mailto:fatiger92@gmail.com)
 
+## 후원
+
+hera-agent-unity는 무료 오픈소스입니다. 시간이나 토큰을 아껴줬다면 [후원](https://github.com/sponsors/NotNull92)으로 응원해 주세요.
+
+후원금은 다음에 직접 쓰입니다:
+- 새 엔진 지원 (Godot, Unreal)
+- 깊어진 에이전트 통합 (Cursor, Windsurf, …)
+- 문서, 영상 튜토리얼, 샘플 프로젝트
+
 ## 라이선스
 
-MIT
+MIT — [LICENSE](LICENSE) 참조.
