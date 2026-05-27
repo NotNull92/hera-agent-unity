@@ -98,6 +98,58 @@ namespace HeraAgent
         }
 
         /// <summary>
+        /// Returns tool names within Levenshtein distance <paramref name="maxDistance"/>
+        /// of the input. Used by the dispatcher to surface "did you mean" hints on
+        /// typo'd command names without forcing the agent to re-run `list`.
+        /// </summary>
+        public static List<string> SuggestSimilarCommands(string command, int maxDistance = 2, int max = 3)
+        {
+            if (string.IsNullOrEmpty(command)) return new List<string>();
+            var cache = GetCache();
+
+            var candidates = new List<(string name, int dist)>();
+            foreach (var name in cache.Keys)
+            {
+                var d = LevenshteinDistance(command, name);
+                if (d <= maxDistance)
+                    candidates.Add((name, d));
+            }
+            candidates.Sort((a, b) => a.dist.CompareTo(b.dist));
+
+            var result = new List<string>();
+            foreach (var (name, _) in candidates)
+            {
+                if (result.Count >= max) break;
+                result.Add(name);
+            }
+            return result;
+        }
+
+        static int LevenshteinDistance(string a, string b)
+        {
+            if (string.IsNullOrEmpty(a)) return string.IsNullOrEmpty(b) ? 0 : b.Length;
+            if (string.IsNullOrEmpty(b)) return a.Length;
+
+            var d = new int[a.Length + 1, b.Length + 1];
+            for (int i = 0; i <= a.Length; i++) d[i, 0] = i;
+            for (int j = 0; j <= b.Length; j++) d[0, j] = j;
+
+            for (int i = 1; i <= a.Length; i++)
+            {
+                for (int j = 1; j <= b.Length; j++)
+                {
+                    int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                    int del = d[i - 1, j] + 1;
+                    int ins = d[i, j - 1] + 1;
+                    int sub = d[i - 1, j - 1] + cost;
+                    int min = del < ins ? del : ins;
+                    d[i, j] = min < sub ? min : sub;
+                }
+            }
+            return d[a.Length, b.Length];
+        }
+
+        /// <summary>
         /// Slim default for agent consumers: name, description, schema only.
         /// Token-cost of `list` was ~90% redundancy across parameters/schema/metadata.
         /// For full per-tool detail use GetToolSchema(name).

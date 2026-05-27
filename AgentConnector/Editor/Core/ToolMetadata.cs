@@ -111,12 +111,18 @@ namespace HeraAgent
                         if (enumType != null && enumType.IsEnum)
                             return System.Enum.GetNames(enumType).ToList();
                     }
-                    catch { }
+                    catch
+                    {
+                        // ReflectionTypeLoadException on assemblies with broken
+                        // references — skip the assembly, keep scanning.
+                    }
                 }
             }
-            catch
+            catch (System.Exception ex)
             {
-                // Enum not found, ignore
+                UnityEngine.Debug.LogWarning(
+                    $"[Hera] I couldn't load enum values for '{enumName}'. " +
+                    $"The schema will be missing allowed values: {ex.Message}");
             }
             return null;
         }

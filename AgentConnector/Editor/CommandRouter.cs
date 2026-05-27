@@ -118,17 +118,23 @@ namespace HeraAgent
 
             var handler = ToolDiscovery.FindHandler(command);
             if (handler == null)
-                return new ErrorResponse("UNKNOWN_COMMAND",
-                    $"Unknown command: {command}",
-                    suggestions: new System.Collections.Generic.List<string>
-                    {
-                        "Run 'hera-agent-unity list --names' to see all tools"
-                    });
+            {
+                var similar = ToolDiscovery.SuggestSimilarCommands(command);
+                var suggestionList = new List<string>();
+                foreach (var s in similar) suggestionList.Add($"Did you mean '{s}'?");
+                suggestionList.Add("Run 'hera-agent-unity list --names' to see all tools");
+
+                return new ErrorResponse(
+                    code: "UNKNOWN_COMMAND",
+                    message: $"Unknown command: {command}",
+                    data: similar.Count > 0 ? new { did_you_mean = similar } : null,
+                    suggestions: suggestionList);
+            }
 
             try
             {
                 object result;
-                
+
                 // Check if it's a static method (traditional tools)
                 if (handler.IsStatic)
                 {
@@ -143,8 +149,23 @@ namespace HeraAgent
                         return new ErrorResponse($"Tool type not found: {command}");
                     }
 
-                    // Create instance (must have parameterless constructor)
-                    var instance = Activator.CreateInstance(toolType);
+                    // Create instance (must have parameterless constructor).
+                    // The two reflection exceptions we care about have distinct
+                    // operator-facing fixes — surface them rather than collapsing
+                    // both into "Failed to create instance".
+                    object instance;
+                    try
+                    {
+                        instance = Activator.CreateInstance(toolType);
+                    }
+                    catch (MissingMethodException)
+                    {
+                        return new ErrorResponse($"Tool '{command}' requires a parameterless constructor");
+                    }
+                    catch (MemberAccessException)
+                    {
+                        return new ErrorResponse($"Tool '{command}' constructor is not accessible (must be public)");
+                    }
                     if (instance == null)
                     {
                         return new ErrorResponse($"Failed to create tool instance: {command}");
