@@ -77,10 +77,11 @@ namespace HeraAgent.Tools
             var compileOnly = p.GetBool("compile_only");
             var noCache = p.GetBool("no_cache") || p.GetBool("nocache") || p.GetBool("no-cache");
             var stacktrace = (p.Get("stacktrace") ?? "user").ToLowerInvariant();
+            var strict = p.GetBool("strict");
             var depth = ClampDepth(p.GetInt("depth") ?? 0);
 
             var built = BuildSource(code, extraUsings);
-            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth);
+            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth, strict);
         }
 
         private struct BuiltSource
@@ -129,7 +130,7 @@ namespace HeraAgent.Tools
             return new BuiltSource { Source = sb.ToString(), UserCodeLineOffset = offset };
         }
 
-        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth)
+        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth, bool strict)
         {
             var timings = new Dictionary<string, long>();
             string cacheKey;
@@ -248,7 +249,7 @@ namespace HeraAgent.Tools
             }
 
             timings["cache"] = cacheState;
-            var result = Invoke(compiled, timings, stacktraceMode, depth);
+            var result = Invoke(compiled, timings, stacktraceMode, depth, strict);
             ResponseTimings.Merge(result, timings);
 
             // For --no-cache we own the ALC and must unload it. Serialize already
@@ -470,24 +471,56 @@ namespace HeraAgent.Tools
             return new LoadedAssembly { Assembly = Assembly.Load(bytes), LoadContext = null };
         }
 
-        private static object Invoke(Assembly compiled, Dictionary<string, long> timings, string stacktraceMode, int depth)
+        private class LoggedError
+        {
+            public string type;
+            public string message;
+        }
+
+        private static object Invoke(Assembly compiled, Dictionary<string, long> timings, string stacktraceMode, int depth, bool strict)
         {
             var method = compiled.GetType("__CliDynamic")?.GetMethod("Execute");
             if (method == null)
                 return new ErrorResponse("EXEC_INTERNAL_ERROR",
                     "Internal error: compiled type or method not found.");
 
+            // Strict mode: capture LogError/LogException/LogAssert raised by the
+            // snippet and surface them as a failure even when Execute() returns
+            // normally. Without this, `Debug.LogError(...); return null;` looks
+            // identical to a clean run at the CLI/exit-code layer — agents
+            // can't tell. AGENT.md Rule 8 documents the contract.
+            var logged = strict ? new List<LoggedError>() : null;
+            Application.LogCallback handler = null;
+            if (strict)
+            {
+                handler = (string condition, string stack, LogType type) =>
+                {
+                    if (type != LogType.Error && type != LogType.Exception && type != LogType.Assert)
+                        return;
+                    if (logged.Count >= 20) return; // cap to keep response bounded
+                    logged.Add(new LoggedError { type = type.ToString(), message = condition });
+                };
+                Application.logMessageReceived += handler;
+            }
+
             var execSw = Stopwatch.StartNew();
             object result;
             try
             {
-                result = method.Invoke(null, null);
+                try
+                {
+                    result = method.Invoke(null, null);
+                }
+                catch (TargetInvocationException tie)
+                {
+                    execSw.Stop();
+                    timings["execute_ms"] = execSw.ElapsedMilliseconds;
+                    return BuildRuntimeError(tie.InnerException ?? tie, stacktraceMode);
+                }
             }
-            catch (TargetInvocationException tie)
+            finally
             {
-                execSw.Stop();
-                timings["execute_ms"] = execSw.ElapsedMilliseconds;
-                return BuildRuntimeError(tie.InnerException ?? tie, stacktraceMode);
+                if (handler != null) Application.logMessageReceived -= handler;
             }
             execSw.Stop();
             timings["execute_ms"] = execSw.ElapsedMilliseconds;
@@ -497,6 +530,21 @@ namespace HeraAgent.Tools
                 new HashSet<object>(ReferenceEqualityComparer.Instance));
             serSw.Stop();
             timings["serialize_ms"] = serSw.ElapsedMilliseconds;
+
+            if (strict && logged.Count > 0)
+            {
+                var first = logged[0];
+                var summary = first.message != null && first.message.Length > 200
+                    ? first.message.Substring(0, 200) + "..."
+                    : first.message;
+                var msg = logged.Count == 1
+                    ? $"{first.type}: {summary}"
+                    : $"{first.type}: {summary} (+{logged.Count - 1} more)";
+                return new ErrorResponse("EXEC_LOGGED_ERROR",
+                    "Snippet logged error(s) in strict mode: " + msg,
+                    data: new { logged_errors = logged, returned = serialized });
+            }
+
             return new SuccessResponse("OK", serialized);
         }
 

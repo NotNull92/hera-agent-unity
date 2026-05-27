@@ -792,6 +792,11 @@ Options:
                          user — drop framework frames, collapse the synthetic
                                 wrapper to "(your snippet)" (default)
                          full — raw inner.StackTrace verbatim
+  --strict             Capture Debug.LogError / LogException / LogAssert
+                       raised by the snippet and surface them as
+                       EXEC_LOGGED_ERROR even if Execute() returned normally.
+                       Without --strict, a `Debug.LogError(...); return null;`
+                       looks identical to a clean run at the exit-code layer.
 
 Default usings: System, System.Collections.Generic, System.IO, System.Linq,
   System.Reflection, System.Threading.Tasks, UnityEngine,
