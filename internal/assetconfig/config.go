@@ -210,7 +210,6 @@ func SetAssetEnabled(id string, enabled bool) (*AssetConfig, error) {
 	return nil, fmt.Errorf("asset %q not found in config", id)
 }
 
-// SetAssetInstalled sets the installed state of an asset by ID.
 // GetEnabledAssets returns all enabled asset entries.
 func GetEnabledAssets() ([]AssetEntry, error) {
 	cfg, err := Load()
