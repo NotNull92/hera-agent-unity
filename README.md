@@ -122,24 +122,23 @@ Or add to `Packages/manifest.json`:
 
 ## Quick Start
 
+You only ever type four commands at this CLI. Everything else — `exec`, `editor`, `console`, `scene`, `batch`, `profiler`, `describe_type`, … — is what your **AI agent** calls on your behalf once you've handed it the wheel.
+
 ```bash
-# Is Unity connected? — heartbeat read, no port-finding ceremony
+# 1. Install the CLI (one-time, see Installation above)
+# 2. Open Unity with the AgentConnector UPM package — the heartbeat appears
+
+# Is Unity connected?
 hera-agent-unity status
 
-# Drive Play Mode from your terminal — wait until it's actually in
-hera-agent-unity editor play --wait
-
-# Run arbitrary C# inside Unity — no recompile, no restart
-hera-agent-unity exec "return EditorSceneManager.GetActiveScene().name;"
-
-# Errors AI can act on — not screenshots
-hera-agent-unity console --type error
-
-# Multi-step workflows in one shot
-hera-agent-unity batch --file workflow.json
+# Later, as maintenance:
+hera-agent-unity update           # pull the latest CLI release
+hera-agent-unity uninstall        # remove the CLI from PATH
 ```
 
 <img src="docs/video/hera-agent-status-connected-unity.gif" width="80%" alt="status with Unity connected">
+
+That's the **human** loop — install, verify, occasionally update. The next section is where the real work happens: hand the agent a one-line trigger and it drives the rest.
 
 ---
 

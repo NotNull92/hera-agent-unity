@@ -122,24 +122,23 @@ https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 
 ## 퀵 스타트
 
+이 CLI에서 사람이 직접 입력하는 명령은 사실상 네 개뿐입니다. 그 외 — `exec`, `editor`, `console`, `scene`, `batch`, `profiler`, `describe_type`, … — 는 **AI 에이전트**가 당신을 대신해 호출하는 명령입니다. 운전대를 한 번 넘기면 그 다음은 에이전트의 몫.
+
 ```bash
-# Unity 연결됐나? — heartbeat만 읽음, 포트 찾기 의식 없음
+# 1. CLI 설치 (한 번만, 위 Installation 참고)
+# 2. AgentConnector UPM 패키지가 설치된 Unity를 엽니다 — heartbeat가 뜸
+
+# Unity 연결됐나?
 hera-agent-unity status
 
-# 터미널에서 Play Mode 진입 — 실제로 들어갈 때까지 대기
-hera-agent-unity editor play --wait
-
-# C# 코드를 Unity 안에서 직접 실행 — 재컴파일도, 재시작도 없음
-hera-agent-unity exec "return EditorSceneManager.GetActiveScene().name;"
-
-# 스크린샷이 아니라 AI가 읽고 행동할 수 있는 에러
-hera-agent-unity console --type error
-
-# 여러 명령을 한 번에 — 시나리오 자동화
-hera-agent-unity batch --file workflow.json
+# 이후 유지보수 차원에서:
+hera-agent-unity update           # 최신 CLI 릴리스 받기
+hera-agent-unity uninstall        # PATH에서 제거
 ```
 
 <img src="docs/video/hera-agent-status-connected-unity.gif" width="80%" alt="Unity 연결 상태">
+
+이게 **사람**이 하는 일의 전부 — 설치, 확인, 가끔 업데이트. 다음 섹션에서 진짜 작업이 시작됩니다: 에이전트에게 한 줄 트리거를 던지면 나머지는 알아서.
 
 ---
 
