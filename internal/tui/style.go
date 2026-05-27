@@ -89,13 +89,13 @@ func SectionHeader(title string) string {
 	return "\n" + TitleStyle.Render(title) + "\n"
 }
 
-// BrandBanner returns the "HERA AGENT LITE" wordmark rendered as three rows of
+// BrandBanner returns the "HERA AGENT UNITY" wordmark rendered as three rows of
 // box-drawing characters in TitleStyle (Antique Gold). Used at the top of the
 // install / uninstall flows in place of a plain-text header.
 func BrandBanner() string {
-	const art = "  ╦ ╦ ╔═╗ ╔═╗ ╔═╗   ╔═╗ ╔═╗ ╔═╗ ╔╗╔ ╔╦╗   ╦   ╔╦╗ ╔╦╗ ╔═╗\n" +
-		"  ╠═╣ ║╣  ╠╦╝ ╠═╣   ╠═╣ ║ ╦ ║╣  ║║║  ║    ║    ║   ║  ║╣ \n" +
-		"  ╩ ╩ ╚═╝ ╩╚═ ╩ ╩   ╩ ╩ ╚═╝ ╚═╝ ╝╚╝  ╩    ╚══ ╚╩╝  ╩  ╚═╝"
+	const art = "  ╦ ╦ ╔═╗ ╔═╗ ╔═╗   ╔═╗ ╔═╗ ╔═╗ ╔╗╔ ╔╦╗   ╦ ╦ ╔╗╔ ╦ ╔╦╗ ╦ ╦\n" +
+		"  ╠═╣ ║╣  ╠╦╝ ╠═╣   ╠═╣ ║ ╦ ║╣  ║║║  ║    ║ ║ ║║║ ║  ║  ╚╦╝\n" +
+		"  ╩ ╩ ╚═╝ ╩╚═ ╩ ╩   ╩ ╩ ╚═╝ ╚═╝ ╝╚╝  ╩    ╚═╝ ╝╚╝ ╩  ╩   ╩ "
 	return TitleStyle.Render(art)
 }
 

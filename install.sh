@@ -31,9 +31,9 @@ else
 fi
 
 echo ""
-printf '%s\n' "${GOLD}  ╦ ╦ ╔═╗ ╔═╗ ╔═╗   ╔═╗ ╔═╗ ╔═╗ ╔╗╔ ╔╦╗   ╦   ╔╦╗ ╔╦╗ ╔═╗${RESET}"
-printf '%s\n' "${GOLD}  ╠═╣ ║╣  ╠╦╝ ╠═╣   ╠═╣ ║ ╦ ║╣  ║║║  ║    ║    ║   ║  ║╣ ${RESET}"
-printf '%s\n' "${GOLD}  ╩ ╩ ╚═╝ ╩╚═ ╩ ╩   ╩ ╩ ╚═╝ ╚═╝ ╝╚╝  ╩    ╚══ ╚╩╝  ╩  ╚═╝${RESET}"
+printf '%s\n' "${GOLD}  ╦ ╦ ╔═╗ ╔═╗ ╔═╗   ╔═╗ ╔═╗ ╔═╗ ╔╗╔ ╔╦╗   ╦ ╦ ╔╗╔ ╦ ╔╦╗ ╦ ╦${RESET}"
+printf '%s\n' "${GOLD}  ╠═╣ ║╣  ╠╦╝ ╠═╣   ╠═╣ ║ ╦ ║╣  ║║║  ║    ║ ║ ║║║ ║  ║  ╚╦╝${RESET}"
+printf '%s\n' "${GOLD}  ╩ ╩ ╚═╝ ╩╚═ ╩ ╩   ╩ ╩ ╚═╝ ╚═╝ ╝╚╝  ╩    ╚═╝ ╝╚╝ ╩  ╩   ╩ ${RESET}"
 echo ""
 
 URL="https://github.com/${REPO}/releases/latest/download/hera-agent-unity-${OS}-${ARCH}"
