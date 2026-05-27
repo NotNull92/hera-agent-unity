@@ -76,10 +76,11 @@ namespace HeraAgent.Tools
             var dotnetOverride = p.Get("dotnet");
             var compileOnly = p.GetBool("compile_only");
             var noCache = p.GetBool("no_cache") || p.GetBool("nocache") || p.GetBool("no-cache");
+            var stacktrace = (p.Get("stacktrace") ?? "user").ToLowerInvariant();
             var depth = ClampDepth(p.GetInt("depth") ?? 0);
 
             var built = BuildSource(code, extraUsings);
-            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, depth);
+            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth);
         }
 
         private struct BuiltSource
@@ -128,7 +129,7 @@ namespace HeraAgent.Tools
             return new BuiltSource { Source = sb.ToString(), UserCodeLineOffset = offset };
         }
 
-        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, int depth)
+        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth)
         {
             var timings = new Dictionary<string, long>();
             string cacheKey;
@@ -247,7 +248,7 @@ namespace HeraAgent.Tools
             }
 
             timings["cache"] = cacheState;
-            var result = Invoke(compiled, timings, depth);
+            var result = Invoke(compiled, timings, stacktraceMode, depth);
             ResponseTimings.Merge(result, timings);
 
             // For --no-cache we own the ALC and must unload it. Serialize already
@@ -469,7 +470,7 @@ namespace HeraAgent.Tools
             return new LoadedAssembly { Assembly = Assembly.Load(bytes), LoadContext = null };
         }
 
-        private static object Invoke(Assembly compiled, Dictionary<string, long> timings, int depth)
+        private static object Invoke(Assembly compiled, Dictionary<string, long> timings, string stacktraceMode, int depth)
         {
             var method = compiled.GetType("__CliDynamic")?.GetMethod("Execute");
             if (method == null)
@@ -486,14 +487,7 @@ namespace HeraAgent.Tools
             {
                 execSw.Stop();
                 timings["execute_ms"] = execSw.ElapsedMilliseconds;
-                var inner = tie.InnerException ?? tie;
-                return new ErrorResponse("EXEC_RUNTIME_ERROR",
-                    $"Runtime error: {inner.GetType().Name}: {inner.Message}",
-                    data: new
-                    {
-                        exception_type = inner.GetType().FullName,
-                        stack_trace = inner.StackTrace
-                    });
+                return BuildRuntimeError(tie.InnerException ?? tie, stacktraceMode);
             }
             execSw.Stop();
             timings["execute_ms"] = execSw.ElapsedMilliseconds;
@@ -504,6 +498,66 @@ namespace HeraAgent.Tools
             serSw.Stop();
             timings["serialize_ms"] = serSw.ElapsedMilliseconds;
             return new SuccessResponse("OK", serialized);
+        }
+
+        // BuildRuntimeError shapes the EXEC_RUNTIME_ERROR envelope according to
+        // the --stacktrace mode that AGENT.md Rule 6 documents:
+        //   "none" — no stack_trace field at all
+        //   "user" — stack_trace filtered through FilterUserFrames (default)
+        //   "full" — raw inner.StackTrace verbatim
+        private static object BuildRuntimeError(Exception inner, string mode)
+        {
+            object data;
+            switch (mode)
+            {
+                case "none":
+                    data = new { exception_type = inner.GetType().FullName };
+                    break;
+                case "full":
+                    data = new { exception_type = inner.GetType().FullName, stack_trace = inner.StackTrace };
+                    break;
+                default: // "user"
+                    data = new { exception_type = inner.GetType().FullName, stack_trace = FilterUserFrames(inner.StackTrace) };
+                    break;
+            }
+            return new ErrorResponse(
+                "EXEC_RUNTIME_ERROR",
+                $"Your C# snippet threw {inner.GetType().Name}: {inner.Message}",
+                data: data);
+        }
+
+        // FilterUserFrames strips framework frames (UnityEngine.*, UnityEditor.*,
+        // System.*, reflection wrappers) from a raw stack trace and collapses
+        // the synthetic wrapper frame to "(your snippet)". The result reads as
+        // if the user had written a regular method — agents stop spending
+        // tokens parsing through internal frames.
+        private static string FilterUserFrames(string raw)
+        {
+            if (string.IsNullOrEmpty(raw)) return raw;
+            var lines = raw.Split('\n');
+            var sb = new StringBuilder();
+            foreach (var line in lines)
+            {
+                var trimmed = line.TrimEnd();
+                if (string.IsNullOrEmpty(trimmed)) continue;
+                if (trimmed.Contains("at UnityEngine.") ||
+                    trimmed.Contains("at UnityEditor.") ||
+                    trimmed.Contains("at System.") ||
+                    trimmed.Contains("(wrapper") ||
+                    trimmed.Contains("System.Reflection") ||
+                    trimmed.Contains("RuntimeMethodHandle.InvokeMethod") ||
+                    trimmed.Contains("MethodBase.Invoke"))
+                    continue;
+                if (trimmed.Contains("__CliDynamic.Execute"))
+                {
+                    if (sb.Length > 0) sb.Append('\n');
+                    sb.Append("  at (your snippet)");
+                    continue;
+                }
+                if (sb.Length > 0) sb.Append('\n');
+                sb.Append(trimmed);
+            }
+            return sb.ToString();
         }
 
         private static string FormatErrors(string raw, int userLineOffset)

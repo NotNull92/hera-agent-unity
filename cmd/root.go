@@ -787,6 +787,11 @@ Options:
                        executing. Useful for dry-run validation before a real
                        exec — no side effects, no Invoke. Returns success on
                        clean compile, EXEC_COMPILE_ERROR otherwise.
+  --stacktrace <mode>  Format of EXEC_RUNTIME_ERROR stack traces:
+                         none — exception_type only, no frames
+                         user — drop framework frames, collapse the synthetic
+                                wrapper to "(your snippet)" (default)
+                         full — raw inner.StackTrace verbatim
 
 Default usings: System, System.Collections.Generic, System.IO, System.Linq,
   System.Reflection, System.Threading.Tasks, UnityEngine,
