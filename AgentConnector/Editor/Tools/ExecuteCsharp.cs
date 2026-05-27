@@ -74,10 +74,11 @@ namespace HeraAgent.Tools
 
             var cscOverride = p.Get("csc");
             var dotnetOverride = p.Get("dotnet");
+            var compileOnly = p.GetBool("compile_only");
             var noCache = p.GetBool("no_cache") || p.GetBool("nocache") || p.GetBool("no-cache");
             var depth = ClampDepth(p.GetInt("depth") ?? 0);
 
-            return CompileAndExecute(BuildSource(code, extraUsings), cscOverride, dotnetOverride, noCache, depth);
+            return CompileAndExecute(BuildSource(code, extraUsings), cscOverride, dotnetOverride, compileOnly, noCache, depth);
         }
 
         private const int DefaultSerializeDepth = 3;
@@ -106,7 +107,7 @@ namespace HeraAgent.Tools
             return sb.ToString();
         }
 
-        private static object CompileAndExecute(string source, string cscOverride, string dotnetOverride, bool noCache, int depth)
+        private static object CompileAndExecute(string source, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, int depth)
         {
             var timings = new Dictionary<string, long>();
             string cacheKey;
@@ -131,11 +132,28 @@ namespace HeraAgent.Tools
                 timings["compile_ms"] = 0;
                 timings["load_ms"] = 0;
                 cacheState = 2;
+                if (compileOnly)
+                {
+                    timings["cache"] = cacheState;
+                    var ok = new SuccessResponse("Compile OK", null);
+                    ResponseTimings.Merge(ok, timings);
+                    return ok;
+                }
             }
 
             var dllPath = Path.Combine(ExecCompileCache.BinCacheDir, cacheKey + ".dll");
             if (compiled == null && !noCache && File.Exists(dllPath))
             {
+                if (compileOnly)
+                {
+                    // A prior successful compile produced this DLL — sufficient
+                    // evidence the source still type-checks. Skip the load step.
+                    timings["compile_ms"] = 0;
+                    timings["cache"] = 1;
+                    var ok = new SuccessResponse("Compile OK", null);
+                    ResponseTimings.Merge(ok, timings);
+                    return ok;
+                }
                 var loadSw = Stopwatch.StartNew();
                 try
                 {
@@ -171,6 +189,16 @@ namespace HeraAgent.Tools
                     File.WriteAllBytes(dllPath, compileResult.Bytes);
                 }
                 catch { }
+
+                if (compileOnly)
+                {
+                    // Compiled cleanly; the persisted DLL above is enough for any
+                    // subsequent real exec. No need to load or invoke.
+                    timings["cache"] = 0;
+                    var ok = new SuccessResponse("Compile OK", null);
+                    ResponseTimings.Merge(ok, timings);
+                    return ok;
+                }
 
                 var loadSw = Stopwatch.StartNew();
                 LoadedAssembly loaded;

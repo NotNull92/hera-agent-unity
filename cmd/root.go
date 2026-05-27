@@ -236,6 +236,12 @@ func Execute(ctx context.Context) error {
 		var params map[string]interface{}
 		params, err = buildParams(subArgs, nil)
 		if err == nil {
+			// --check is the human-facing flag for compile-only mode; the
+			// wire payload uses compile_only to match the C# ToolParams reader.
+			if v, ok := params["check"].(bool); ok && v {
+				params["compile_only"] = true
+				delete(params, "check")
+			}
 			resp, err = send("exec", params)
 		}
 	default:
@@ -777,6 +783,10 @@ Options:
   --csc <path>         Path to csc compiler (csc.dll or csc.exe). Auto-detected if omitted.
   --dotnet <path>      Path to dotnet runtime. Auto-detected if omitted.
   --no-cache           Skip compile/assembly cache; force a fresh csc invocation.
+  --check              Compile-only: validate syntax/types and return without
+                       executing. Useful for dry-run validation before a real
+                       exec — no side effects, no Invoke. Returns success on
+                       clean compile, EXEC_COMPILE_ERROR otherwise.
 
 Default usings: System, System.Collections.Generic, System.IO, System.Linq,
   System.Reflection, System.Threading.Tasks, UnityEngine,
@@ -790,6 +800,7 @@ Examples:
   echo 'Debug.Log("hello"); return null;' | hera-agent-unity exec
   hera-agent-unity exec "return World.All.Count;" --usings Unity.Entities
   hera-agent-unity exec --file scripts/probe.cs
+  hera-agent-unity exec "var x = MyType.MaybeRenamed();" --check    # validate only
 
 Stdin:
   Pipe code via stdin to avoid shell escaping issues.
