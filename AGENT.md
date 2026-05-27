@@ -35,6 +35,40 @@ Quick links:
 
 ---
 
+## 0. Bootstrap on Discovery
+
+When the user invites you to engage hera-agent-unity — in any language, any phrasing — do **not** ask follow-up questions and do **not** stop at "yes, it looks installed". Run the discovery sequence and report.
+
+**Trigger phrases** (treat as equivalent):
+
+- `find hera-agent-unity` · `hera-agent-unity 찾아봐`
+- `is hera-agent-unity installed?` · `설치돼 있어?`
+- `check the editor connection` · `에디터 붙어있어?`
+- `connect to unity` · `unity에 연결해줘`
+- Anything mentioning **hera-agent-unity** or **hera-agent** in a check / discovery / "are you set up?" context.
+
+**Sequence — run all three, in order, without prompting:**
+
+1. `hera-agent-unity doctor --json` — verifies the binary is on PATH, no duplicate installs, and the connector can see at least one Unity instance. JSON envelope is parseable.
+2. `hera-agent-unity status` — confirms the active editor's port, project path, Unity version, PID, and current state (`ready`, `compiling`, …).
+3. `hera-agent-unity list --names` — discovers what tools (built-in + custom `[HeraTool]` classes) this project exposes, so subsequent prompts can be answered without re-scanning.
+
+**Report shape** (one line first, then optional details):
+
+```
+Connected: <project name> · port=<N> · unity=<version> · state=<ready|compiling> · tools=<count>
+```
+
+If a step fails, do not silently skip — surface the failure verbatim:
+
+- `doctor` says binary missing → tell the user to install it (`curl … | sh` or the README link), do not proceed.
+- `doctor` says Unity is unreachable → tell the user to open the Editor with the UPM package, do not proceed.
+- `status` returns no instances → same.
+
+After a successful bootstrap, you may proceed to whatever the user actually wanted. The bootstrap output replaces "let me check if it's installed" — that line costs tokens and tells the user nothing they can act on.
+
+---
+
 ## 1. Quick Rules (must-follow)
 
 Numbered so you can grep "[Rule N]" when in doubt.

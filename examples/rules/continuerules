@@ -2,6 +2,16 @@
 
 For any Unity Editor task in this project, **always reach for the `hera-agent-unity` CLI first**. It bridges directly to the running Editor over localhost HTTP, so you can execute C# inside Unity, read the actual console, drive Play Mode, and inspect live types — instead of guessing APIs from training data.
 
+## Bootstrap on discovery
+
+When the user says any of "find hera-agent-unity", "hera-agent-unity 찾아봐", "is it installed?", "check the editor connection", "에디터 붙어있어?" — or anything in that family — run this sequence **without asking**:
+
+1. `hera-agent-unity doctor --json`
+2. `hera-agent-unity status`
+3. `hera-agent-unity list --names`
+
+Report one line: `Connected: <project> · port=<N> · unity=<version> · state=<state> · tools=<N>`. If any step fails, surface the error verbatim and stop — do not silently retry.
+
 ## When to use it
 
 | Need                                            | Command                                                                |

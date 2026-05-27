@@ -75,10 +75,12 @@ func extractAgentRules(format string) string {
 		out.WriteString("alwaysApply: true\n")
 		out.WriteString("---\n\n")
 	}
-	out.WriteString("# hera-agent-unity — Quick Rules + Pitfalls\n\n")
+	out.WriteString("# hera-agent-unity — Bootstrap + Quick Rules + Pitfalls\n\n")
 	out.WriteString("> Emitted by `hera-agent-unity doctor --agent-rules`. ")
 	out.WriteString("Works with any AI coding agent (Claude Code, Codex, Cursor, Copilot, ...). ")
 	out.WriteString("Full guide: https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md\n\n")
+	out.WriteString(extractMdSection(agentGuide, "## 0. Bootstrap"))
+	out.WriteString("\n")
 	out.WriteString(extractMdSection(agentGuide, "## 1. Quick Rules"))
 	out.WriteString("\n")
 	out.WriteString(extractMdSection(agentGuide, "## 4. Pitfalls"))
