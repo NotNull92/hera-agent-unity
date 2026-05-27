@@ -180,12 +180,26 @@ namespace HeraAgent.Tools
                     var sb = new System.Text.StringBuilder();
                     foreach (var line in lines)
                     {
-                        // Skip Unity/system internal frames
+                        // Skip framework / runtime noise so the agent reads
+                        // the user's own frames first. Console stack traces
+                        // use "Type:Method (args)" format (different from the
+                        // "at Type.Method" format that ExecuteCsharp filters),
+                        // so this list mirrors that shape.
                         if (line.Contains("UnityEngine.Debug:") ||
                             line.Contains("UnityEditor.EditorGUIUtility:") ||
                             line.Contains("Unity.Entities.SystemState:") ||
                             line.Contains("(at Library/") ||
-                            line.Contains("(at ./Library/"))
+                            line.Contains("(at ./Library/") ||
+                            // hera-agent-unity's own dispatch + the exec wrapper —
+                            // never user-actionable, always noise in console traces.
+                            line.Contains("__CliDynamic:") ||
+                            line.Contains("HeraAgent.CommandRouter:") ||
+                            line.Contains("HeraAgent.HttpServer:") ||
+                            // Reflection + async machinery that wraps every
+                            // exec call regardless of user code shape.
+                            line.Contains("System.Reflection.MethodBase:Invoke") ||
+                            line.Contains("System.Runtime.CompilerServices.AsyncTaskMethodBuilder") ||
+                            line.Contains("UnityEditor.EditorApplication:Internal_CallUpdateFunctions"))
                             continue;
                         if (sb.Length > 0) sb.Append('\n');
                         sb.Append(line);
