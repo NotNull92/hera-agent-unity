@@ -201,6 +201,7 @@ namespace HeraAgent
                     description = attr.Description ?? "",
                     group = attr.Group ?? "",
                     groups = attr.Groups ?? new string[0],
+                    examples = BuildExamples(attr),
                     schema = GetToolMetadata(type)?.ParametersSchema
                         ?? GetLegacyParameterSchema(paramsType),
                     output_schema = GetToolMetadata(type)?.OutputSchema
@@ -215,6 +216,27 @@ namespace HeraAgent
                 };
             }
             return null;
+        }
+
+        // BuildExamples zips attr.Examples and attr.ExampleDescriptions by
+        // index. Missing descriptions become empty strings; tools that don't
+        // declare Examples return an empty list. The slim GetToolSchemas()
+        // intentionally omits this field — examples are deep-dive material,
+        // surfaced only by `list --tool <name>` to keep `list` itself lean.
+        private static List<object> BuildExamples(HeraToolAttribute attr)
+        {
+            var examples = attr.Examples ?? new string[0];
+            var descriptions = attr.ExampleDescriptions ?? new string[0];
+            var result = new List<object>(examples.Length);
+            for (int i = 0; i < examples.Length; i++)
+            {
+                result.Add(new
+                {
+                    call = examples[i],
+                    description = i < descriptions.Length ? descriptions[i] : "",
+                });
+            }
+            return result;
         }
 
         private static IEnumerable<(string name, Type type, HeraToolAttribute attr)> EnumerateTools()
