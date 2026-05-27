@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-05-27
+
+### Fixed
+
+- **Go error wrapping switched from `%v` to `%w`.** Eight `fmt.Errorf`
+  calls across `internal/client` and `cmd` now use `%w` so callers can
+  unwrap with `errors.Is` / `errors.As`. This enables programmatic
+  detection of `context.DeadlineExceeded`, `net.ErrClosed`, and other
+  wrapped errors without string matching.
+
+- **C# `ExecCompileCache` now disposes `SHA256` instances.** Both
+  `ComputeKey` and `HashStrings` previously abandoned `SHA256.Create()`
+  without disposal, creating finalizer pressure during repeated `exec`
+  invocations. Each call site now wraps the instance in `using var`.
+
+> UPM connector stays at v0.0.3 for this release. The C# fix above is
+> committed to `main` but the package version will be bumped separately.
+
 ## [0.0.4] - 2026-05-27
 
 ### Added
