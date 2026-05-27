@@ -247,18 +247,21 @@ return scene.GetRootGameObjects().Length;
 hera-agent-unity exec --file scripts/probe.cs
 ```
 
-| Flag              | Purpose                                                                      |
-|-------------------|------------------------------------------------------------------------------|
-| `--usings ns,...` | Add extra using directives                                                   |
-| `--file <path>`   | Load code from disk (stdin and positional arg take precedence)               |
-| `--csc <path>`    | Override the C# compiler path                                                |
-| `--dotnet <path>` | Override the dotnet runtime path                                             |
-| `--no-cache`      | Skip the compiled-assembly cache (debug only)                                |
-| `--depth N`       | Limit response object graph depth                                            |
+| Flag                  | Purpose                                                                                                                                  |
+|-----------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `--usings ns,...`     | Add extra using directives                                                                                                               |
+| `--file <path>`       | Load code from disk (stdin and positional arg take precedence)                                                                           |
+| `--csc <path>`        | Override the C# compiler path                                                                                                            |
+| `--dotnet <path>`     | Override the dotnet runtime path                                                                                                         |
+| `--no-cache`          | Skip the compiled-assembly cache (debug only)                                                                                            |
+| `--depth N`           | Limit response object graph depth (default 3, max 8)                                                                                     |
+| `--check`             | Compile-only dry run. Returns `SuccessResponse` on a clean compile, `EXEC_COMPILE_ERROR` otherwise. No `Execute()` call, no side effects.|
+| `--stacktrace <mode>` | Shape of `EXEC_RUNTIME_ERROR` stack traces: `none` (exception_type only), `user` (default — drop framework frames), `full` (raw).        |
+| `--strict`            | Capture `Debug.LogError` / `LogException` / `LogAssert` raised during the snippet and surface them as `EXEC_LOGGED_ERROR`.                |
 
 **How it works.** Code is wrapped in a static method, compiled with the system's Roslyn (`csc`) into a temporary DLL, loaded into a collectible `AssemblyLoadContext` (no leaks), invoked via reflection, and the result is JSON-serialized. Identical source code is served from an in-memory cache — warm calls skip csc entirely.
 
-Default usings include `System`, `System.Linq`, `System.Reflection`, `UnityEngine`, `UnityEngine.SceneManagement`, `UnityEditor`, `UnityEditor.SceneManagement`, `UnityEditorInternal`.
+Default usings include `System`, `System.Collections.Generic`, `System.IO`, `System.Linq`, `System.Reflection`, `System.Threading.Tasks`, `UnityEngine`, `UnityEngine.SceneManagement`, `UnityEditor`, `UnityEditor.SceneManagement`, `UnityEditorInternal`.
 
 ---
 
@@ -464,14 +467,31 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 ```bash
 --port <N>          # Select Unity instance by active heartbeat port
 --project <path>    # Select Unity instance by project path (substring match)
---timeout <ms>      # Request timeout (default: 60000)
---verbose           # Per-phase timings + progress to stderr
+--timeout <ms>      # Request timeout in ms (default: 60000)
+--verbose           # Per-phase timings + progress messages to stderr
+--quiet             # Suppress decorative progress messages (errors stay plain)
+--debug             # Dump HTTP request / response bodies + discovery info to stderr
+--compact-json      # Emit JSON without indentation — smaller payloads for AI agents
+--narrate           # Force waitForAlive / waitForReady narration even on tool commands
+                    # (default: narration is on only for human-target commands)
 ```
 
-| Environment variable          | Purpose                                              |
-|-------------------------------|------------------------------------------------------|
-| `HERA_AGENT_NO_PATH_CHECK=1`  | Silence the per-command PATH warning                 |
-| `GITHUB_TOKEN`                | Auth for `update` against private mirrors            |
+Each global flag has a `HERA_AGENT_*` environment-variable counterpart that the
+CLI reads when the flag is omitted. Setting these once in your shell profile
+lets you keep the flag off the command line.
+
+| Environment variable            | Equivalent flag                                                                |
+|---------------------------------|--------------------------------------------------------------------------------|
+| `HERA_AGENT_PORT`               | `--port <N>`                                                                   |
+| `HERA_AGENT_PROJECT`            | `--project <path>`                                                             |
+| `HERA_AGENT_TIMEOUT_MS`         | `--timeout <ms>`                                                               |
+| `HERA_AGENT_VERBOSE`            | `--verbose`                                                                    |
+| `HERA_AGENT_QUIET`              | `--quiet`                                                                      |
+| `HERA_AGENT_DEBUG`              | `--debug`                                                                      |
+| `HERA_AGENT_COMPACT_JSON`       | `--compact-json`                                                               |
+| `HERA_AGENT_NARRATE`            | `--narrate`                                                                    |
+| `HERA_AGENT_NO_PATH_CHECK=1`    | Silence the per-command PATH-mismatch warning (no flag equivalent)             |
+| `GITHUB_TOKEN`                  | Auth used by `update` when the release lives on a private GitHub mirror        |
 
 ---
 

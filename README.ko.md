@@ -247,18 +247,21 @@ return scene.GetRootGameObjects().Length;
 hera-agent-unity exec --file scripts/probe.cs
 ```
 
-| 플래그            | 용도                                                                          |
-|-------------------|-------------------------------------------------------------------------------|
-| `--usings ns,...` | using 디렉티브 추가                                                           |
-| `--file <path>`   | 디스크에서 코드 로드 (positional · stdin이 우선)                              |
-| `--csc <path>`    | C# 컴파일러 경로 명시                                                         |
-| `--dotnet <path>` | dotnet 런타임 경로 명시                                                       |
-| `--no-cache`      | 컴파일된 어셈블리 캐시 무시 (디버그용)                                        |
-| `--depth N`       | 응답 객체 그래프 깊이 제한                                                    |
+| 플래그                | 용도                                                                                                                                       |
+|-----------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `--usings ns,...`     | using 디렉티브 추가                                                                                                                        |
+| `--file <path>`       | 디스크에서 코드 로드 (positional · stdin이 우선)                                                                                            |
+| `--csc <path>`        | C# 컴파일러 경로 명시                                                                                                                      |
+| `--dotnet <path>`     | dotnet 런타임 경로 명시                                                                                                                    |
+| `--no-cache`          | 컴파일된 어셈블리 캐시 무시 (디버그용)                                                                                                     |
+| `--depth N`           | 응답 객체 그래프 깊이 제한 (기본 3, 최대 8)                                                                                                |
+| `--check`             | 컴파일만 검증하는 dry-run. 깨끗하게 컴파일되면 `SuccessResponse`, 실패 시 `EXEC_COMPILE_ERROR`. `Execute()` 호출도 부수 효과도 없음.        |
+| `--stacktrace <mode>` | `EXEC_RUNTIME_ERROR` 스택 트레이스 모드: `none`(예외 타입만), `user`(기본 — 프레임워크 프레임 제거), `full`(원본).                          |
+| `--strict`            | 스니펫 실행 중 발생한 `Debug.LogError` / `LogException` / `LogAssert`를 캡처해 `EXEC_LOGGED_ERROR`로 surface — 깨끗한 리턴도 실패로 뒤집힘. |
 
 **동작 원리.** 코드는 static 메서드로 래핑되어 시스템의 Roslyn(`csc`)으로 임시 DLL로 컴파일됩니다. 수집 가능한(Collectible) `AssemblyLoadContext`에 로드되어 메모리 누수를 막고, 리플렉션으로 실행한 뒤 결과를 JSON으로 직렬화합니다. 동일한 소스 코드는 인메모리 캐시에서 서빙됩니다 — warm call은 csc를 건너뜁니다.
 
-기본 using에는 `System`, `System.Linq`, `System.Reflection`, `UnityEngine`, `UnityEngine.SceneManagement`, `UnityEditor`, `UnityEditor.SceneManagement`, `UnityEditorInternal`이 포함됩니다.
+기본 using에는 `System`, `System.Collections.Generic`, `System.IO`, `System.Linq`, `System.Reflection`, `System.Threading.Tasks`, `UnityEngine`, `UnityEngine.SceneManagement`, `UnityEditor`, `UnityEditor.SceneManagement`, `UnityEditorInternal`이 포함됩니다.
 
 ---
 
@@ -464,14 +467,29 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 ```bash
 --port <N>          # 활성 heartbeat 포트로 Unity 인스턴스 선택
 --project <path>    # 프로젝트 경로(부분 매칭)로 인스턴스 선택
---timeout <ms>      # 요청 타임아웃 (기본 60000)
---verbose           # 단계별 타이밍 + 진행 상황을 stderr로
+--timeout <ms>      # 요청 타임아웃 ms (기본 60000)
+--verbose           # 단계별 타이밍 + 진행 메시지를 stderr로
+--quiet             # 장식성 진행 메시지 억제 (에러는 plain으로 그대로 출력)
+--debug             # HTTP 요청/응답 본문 + 디스커버리 정보를 stderr로 덤프
+--compact-json      # JSON을 들여쓰기 없이 — AI 에이전트용 페이로드 축소
+--narrate           # tool 명령에서도 waitForAlive / waitForReady 진행 메시지 강제
+                    # (기본: human-target 명령에만 narrate)
 ```
 
-| 환경 변수                     | 용도                                                |
-|-------------------------------|----------------------------------------------------|
-| `HERA_AGENT_NO_PATH_CHECK=1`  | 매 명령마다의 PATH 경고를 끔                        |
-| `GITHUB_TOKEN`                | 프라이빗 미러에서 `update` 사용 시 인증             |
+모든 글로벌 플래그는 동일한 의미의 `HERA_AGENT_*` 환경 변수 짝을 갖고 있어, 플래그가 생략됐을 때 CLI가 환경 변수를 읽습니다. 셸 프로필에 한 번 설정해두면 매 명령마다 플래그를 붙일 필요가 없습니다.
+
+| 환경 변수                       | 등가 플래그                                                                    |
+|---------------------------------|--------------------------------------------------------------------------------|
+| `HERA_AGENT_PORT`               | `--port <N>`                                                                   |
+| `HERA_AGENT_PROJECT`            | `--project <path>`                                                             |
+| `HERA_AGENT_TIMEOUT_MS`         | `--timeout <ms>`                                                               |
+| `HERA_AGENT_VERBOSE`            | `--verbose`                                                                    |
+| `HERA_AGENT_QUIET`              | `--quiet`                                                                      |
+| `HERA_AGENT_DEBUG`              | `--debug`                                                                      |
+| `HERA_AGENT_COMPACT_JSON`       | `--compact-json`                                                               |
+| `HERA_AGENT_NARRATE`            | `--narrate`                                                                    |
+| `HERA_AGENT_NO_PATH_CHECK=1`    | 매 명령마다의 PATH 불일치 경고를 끔 (플래그 등가 없음)                          |
+| `GITHUB_TOKEN`                  | release가 프라이빗 GitHub 미러에 있을 때 `update`가 사용하는 인증              |
 
 ---
 
