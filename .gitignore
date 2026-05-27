@@ -6,4 +6,5 @@ hera-agent-unity-*
 .vscode/
 .idea/
 .omc/
+.opencode/
 coverage.out
