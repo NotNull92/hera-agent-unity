@@ -31,8 +31,9 @@ var (
 	configOnce sync.Once
 )
 
-// ConfigDir returns the directory where asset-config.json is stored.
-func ConfigDir() string {
+// ConfigFilePath returns the full path to asset-config.json under the
+// user's home directory. Initialised once on first call.
+func ConfigFilePath() string {
 	configOnce.Do(func() {
 		home, err := os.UserHomeDir()
 		if err != nil {
@@ -40,18 +41,7 @@ func ConfigDir() string {
 		}
 		configPath = filepath.Join(home, ".hera-agent-unity", "asset-config.json")
 	})
-	return filepath.Dir(configPath)
-}
-
-// ConfigFilePath returns the full path to asset-config.json.
-func ConfigFilePath() string {
-	_ = ConfigDir() // ensure initialized
 	return configPath
-}
-
-// SetConfigFilePath overrides the config file path (for testing).
-func SetConfigFilePath(path string) {
-	configPath = path
 }
 
 // DefaultAssets returns the built-in list of known asset plugins.
@@ -167,7 +157,7 @@ func Load() (*AssetConfig, error) {
 
 // Save writes the asset config to disk.
 func Save(cfg *AssetConfig) error {
-	dir := ConfigDir()
+	dir := filepath.Dir(ConfigFilePath())
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}
@@ -221,25 +211,6 @@ func SetAssetEnabled(id string, enabled bool) (*AssetConfig, error) {
 }
 
 // SetAssetInstalled sets the installed state of an asset by ID.
-func SetAssetInstalled(id string, installed bool) (*AssetConfig, error) {
-	cfg, err := Load()
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range cfg.Assets {
-		if cfg.Assets[i].ID == id {
-			cfg.Assets[i].Installed = installed
-			if err := Save(cfg); err != nil {
-				return nil, err
-			}
-			return cfg, nil
-		}
-	}
-
-	return nil, fmt.Errorf("asset %q not found in config", id)
-}
-
 // GetEnabledAssets returns all enabled asset entries.
 func GetEnabledAssets() ([]AssetEntry, error) {
 	cfg, err := Load()

@@ -64,29 +64,9 @@ func ErrorPanel(title, message string) string {
 	return BoxError.Render(ErrorStyle.Render("✗ "+title) + "\n\n" + message)
 }
 
-// SuccessPanel renders a success message in a styled box
-func SuccessPanel(message string) string {
-	return BoxAccent.Render(SuccessStyle.Render("✓ Commissioned") + "\n\n" + message)
-}
-
 // InfoPanel renders info in a styled box
 func InfoPanel(title, message string) string {
 	return BoxStyle.Render(InfoStyle.Render(title) + "\n\n" + message)
-}
-
-// KV renders a key-value pair
-func KV(key, value string) string {
-	return LabelStyle.Width(14).Render(key+":") + " " + value
-}
-
-// KVPath renders a key-value pair with path styling
-func KVPath(key, value string) string {
-	return LabelStyle.Width(14).Render(key+":") + " " + PathStyle.Render(value)
-}
-
-// SectionHeader renders a section header
-func SectionHeader(title string) string {
-	return "\n" + TitleStyle.Render(title) + "\n"
 }
 
 // BrandBanner returns the "HERA AGENT UNITY" wordmark rendered as three rows of
@@ -97,65 +77,6 @@ func BrandBanner() string {
 		"  ╠═╣ ║╣  ╠╦╝ ╠═╣   ╠═╣ ║ ╦ ║╣  ║║║  ║    ║ ║ ║║║ ║  ║  ╚╦╝\n" +
 		"  ╩ ╩ ╚═╝ ╩╚═ ╩ ╩   ╩ ╩ ╚═╝ ╚═╝ ╝╚╝  ╩    ╚═╝ ╝╚╝ ╩  ╩   ╩ "
 	return TitleStyle.Render(art)
-}
-
-// Table renders a simple table from headers and rows
-func Table(headers []string, rows [][]string) string {
-	if len(rows) == 0 {
-		return InfoStyle.Render("  (no data)")
-	}
-
-	// Calculate column widths
-	widths := make([]int, len(headers))
-	for i, h := range headers {
-		widths[i] = len(h)
-	}
-	for _, row := range rows {
-		for i, cell := range row {
-			if i < len(widths) && len(cell) > widths[i] {
-				widths[i] = len(cell)
-			}
-		}
-	}
-
-	// Cap widths for display
-	for i := range widths {
-		if widths[i] > 50 {
-			widths[i] = 50
-		}
-	}
-
-	var out string
-	// Header
-	for i, h := range headers {
-		style := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(ColorPrimary))
-		out += style.Width(widths[i] + 2).Render(h)
-	}
-	out += "\n"
-
-	// Separator
-	for i := range headers {
-		sep := lipgloss.NewStyle().Foreground(lipgloss.Color(ColorBorder))
-		out += sep.Width(widths[i] + 2).Render("─")
-	}
-	out += "\n"
-
-	// Rows
-	for _, row := range rows {
-		for i, cell := range row {
-			if i >= len(widths) {
-				break
-			}
-			truncated := cell
-			if len(truncated) > widths[i] {
-				truncated = truncated[:widths[i]-3] + "..."
-			}
-			out += lipgloss.NewStyle().Width(widths[i] + 2).Render(truncated)
-		}
-		out += "\n"
-	}
-
-	return out
 }
 
 // Progress renders a progress indicator like [3/10]
