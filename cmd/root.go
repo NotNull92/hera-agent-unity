@@ -1083,7 +1083,7 @@ fail_fast:
 
 Examples:
   hera-agent-unity batch --file ./play_and_test.json
-  echo '{"commands":[{"command":"manage_editor","params":{"action":"refresh","compile":true}}]}' \
+  echo '{"commands":[{"command":"refresh_unity","params":{"compile":"request"}}]}' \
     | hera-agent-unity batch
   hera-agent-unity batch --file ./plan.json --dry-run
 `)
