@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-05-27
+
+### Fixed
+
+- **`batch` help example used a non-existent action.** The
+  `hera-agent-unity batch --help` text showed
+  `{"command":"manage_editor","params":{"action":"refresh"}}` — but
+  `manage_editor` only accepts play/stop/pause/set_active_tool/
+  add_tag/remove_tag/add_layer/remove_layer, so users who copy-pasted
+  the example hit `UNKNOWN_ACTION`. Swapped to the working
+  `refresh_unity` / `compile:"request"` form.
+
+- **`cmd/test.go` branched on a message string for the
+  Test-Framework-missing case.** Now branches on `resp.Code ==
+  "UNKNOWN_COMMAND"` to honor AGENT.md Rule 3 (code is stable; message
+  is not). Drops the unused `strings` import. `CommandRouter`
+  already emits `UNKNOWN_COMMAND` for this path, so it is a strict
+  upgrade with no behaviour change.
+
+### Changed
+
+- **`humanCategories` AGENT.md doc no longer lists `upgrade`.** The
+  word was never in `cmd/root.go`'s actual whitelist — invoking
+  `hera-agent-unity upgrade` already returns `UNKNOWN_COMMAND` with
+  `did_you_mean=["update"]`. Both `AGENT.md` and the embedded
+  `cmd/AGENT.md` are aligned with the real surface.
+
+### Removed
+
+- **Dead `SetAssetInstalled` doc comment** in
+  `internal/assetconfig/config.go` (function was removed in an
+  earlier refactor; its orphan comment was sitting above
+  `GetEnabledAssets` and misreading as its second doc line).
+- **Dead `keyMap.FullHelp` / `ShortHelp` methods** in
+  `internal/tui/assetconfig.go` — they satisfied
+  `bubbles/help.KeyMap` but the asset-config TUI never imports
+  `bubbles/help`, never constructs a `help.Model`, and never
+  renders help in `View()`. Zero callers across the repo.
+
+> UPM connector stays at v0.0.3 for this release — no C# changes.
+
 ## [0.0.5] - 2026-05-27
 
 ### Fixed
