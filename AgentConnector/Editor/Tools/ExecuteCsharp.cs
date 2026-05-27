@@ -78,7 +78,18 @@ namespace HeraAgent.Tools
             var noCache = p.GetBool("no_cache") || p.GetBool("nocache") || p.GetBool("no-cache");
             var depth = ClampDepth(p.GetInt("depth") ?? 0);
 
-            return CompileAndExecute(BuildSource(code, extraUsings), cscOverride, dotnetOverride, compileOnly, noCache, depth);
+            var built = BuildSource(code, extraUsings);
+            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, depth);
+        }
+
+        private struct BuiltSource
+        {
+            public string Source;
+            // csc reports diagnostics against the wrapped source. Subtract this
+            // offset from a raw error line to map back to the user's snippet
+            // line (1-based) so AGENT.md's "L<line>: <message>" hints land on
+            // the actual offending line of the user's code.
+            public int UserCodeLineOffset;
         }
 
         private const int DefaultSerializeDepth = 3;
@@ -90,7 +101,7 @@ namespace HeraAgent.Tools
             return requested > MaxSerializeDepth ? MaxSerializeDepth : requested;
         }
 
-        private static string BuildSource(string code, List<string> extraUsings)
+        private static BuiltSource BuildSource(string code, List<string> extraUsings)
         {
             var sb = new StringBuilder();
             foreach (var u in DefaultUsings)
@@ -102,12 +113,22 @@ namespace HeraAgent.Tools
             sb.AppendLine("public static class __CliDynamic {");
             sb.AppendLine("  public static object Execute() {");
             sb.AppendLine(code);
+            // Fallthrough so snippets without a trailing `return` still compile,
+            // resolving to null. AGENT.md documents this — Rule 1's "no return"
+            // examples rely on it. CS0162 is suppressed in CompileToBytes for
+            // the case where the user's snippet already returns.
+            sb.AppendLine("    return null;");
             sb.AppendLine("  }");
             sb.AppendLine("}");
-            return sb.ToString();
+
+            // Wrapper above user code: N usings + 1 blank line + `class` line
+            // + method-header line. The first line of the user's snippet sits
+            // at line (offset + 1) in the wrapped source.
+            int offset = DefaultUsings.Length + extraUsings.Count + 3;
+            return new BuiltSource { Source = sb.ToString(), UserCodeLineOffset = offset };
         }
 
-        private static object CompileAndExecute(string source, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, int depth)
+        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, int depth)
         {
             var timings = new Dictionary<string, long>();
             string cacheKey;
@@ -174,7 +195,7 @@ namespace HeraAgent.Tools
             if (compiled == null)
             {
                 var compileSw = Stopwatch.StartNew();
-                var compileResult = CompileToBytes(source, cscOverride, dotnetOverride);
+                var compileResult = CompileToBytes(source, userLineOffset, cscOverride, dotnetOverride);
                 compileSw.Stop();
                 timings["compile_ms"] = compileSw.ElapsedMilliseconds;
                 if (compileResult.Error != null)
@@ -267,7 +288,7 @@ namespace HeraAgent.Tools
             catch { }
         }
 
-        private static CompileResult CompileToBytes(string source, string cscOverride, string dotnetOverride)
+        private static CompileResult CompileToBytes(string source, int userLineOffset, string cscOverride, string dotnetOverride)
         {
             var utf8 = new UTF8Encoding(false);
             var tmpDir = Path.Combine(Path.GetTempPath(), "hera-agent-unity-exec");
@@ -400,10 +421,10 @@ namespace HeraAgent.Tools
                         var stdout = stdoutSb.ToString();
                         var stderr = stderrSb.ToString();
                         var output = string.IsNullOrEmpty(stderr) ? stdout : stderr;
-                        var parsed = ParseErrors(output);
+                        var parsed = ParseErrors(output, userLineOffset);
                         return new CompileResult { Error = new ErrorResponse(
                             "EXEC_COMPILE_ERROR",
-                            $"Compile error:\n{FormatErrors(output)}",
+                            $"Compile error:\n{FormatErrors(output, userLineOffset)}",
                             data: new { compile_errors = parsed }) };
                     }
                 }
@@ -485,7 +506,7 @@ namespace HeraAgent.Tools
             return new SuccessResponse("OK", serialized);
         }
 
-        private static string FormatErrors(string raw)
+        private static string FormatErrors(string raw, int userLineOffset)
         {
             var lines = raw.Split('\n');
             var errors = new List<string>();
@@ -495,14 +516,17 @@ namespace HeraAgent.Tools
                 if (string.IsNullOrEmpty(trimmed)) continue;
                 var m = Regex.Match(trimmed, @"\((\d+),\d+\):\s*error\s+\w+:\s*(.+)");
                 if (m.Success)
-                    errors.Add($"L{m.Groups[1].Value}: {m.Groups[2].Value}");
+                {
+                    int userLine = Math.Max(1, int.Parse(m.Groups[1].Value) - userLineOffset);
+                    errors.Add($"L{userLine}: {m.Groups[2].Value}");
+                }
                 else if (trimmed.Contains("error"))
                     errors.Add(trimmed);
             }
             return errors.Count > 0 ? string.Join("\n", errors) : raw;
         }
 
-        private static List<object> ParseErrors(string raw)
+        private static List<object> ParseErrors(string raw, int userLineOffset)
         {
             var lines = raw.Split('\n');
             var parsed = new List<object>();
@@ -515,7 +539,7 @@ namespace HeraAgent.Tools
                 {
                     parsed.Add(new
                     {
-                        line = int.Parse(m.Groups[1].Value),
+                        line = Math.Max(1, int.Parse(m.Groups[1].Value) - userLineOffset),
                         col = int.Parse(m.Groups[2].Value),
                         error_code = m.Groups[3].Value,
                         message = m.Groups[4].Value
