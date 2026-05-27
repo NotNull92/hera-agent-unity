@@ -390,6 +390,7 @@ Common `code` values you might branch on:
 - `EXEC_LOGGED_ERROR` — `--strict` mode only. `data.logged_errors: [{type, message}, ...]`, `data.returned` is the value the snippet would have returned.
 - `EXEC_CSC_NOT_FOUND` / `EXEC_DOTNET_NOT_FOUND` — `suggestions[]` tells the user how to recover
 - `EXEC_COMPILE_TIMEOUT` — 30s csc timeout
+- `UNKNOWN_COMMAND` — typo'd command name. `data.did_you_mean: [...]` lists up to 3 commands within Levenshtein distance 2; act on the first match before re-running `list --names`.
 - `READCONSOLE_INIT_FAILED` — Unity internal API drift; `data.unity_version` for triage
 
 ### 5.3 Environment variables
