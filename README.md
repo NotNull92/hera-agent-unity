@@ -47,9 +47,9 @@ Hera responds to commands — never inferring, never assuming. It returns what y
 └─────────────┘                   └──────────────────┘
 ```
 
-**~2,600 lines of core Go. ~3,900 lines of C#. Zero runtime dependencies.**
+**A small Go CLI, a single C# UPM package, zero runtime dependencies.**
 
-> Tests, TUI, batch engine, and asset-config layer add ~3,500 more lines — but the engine that talks to Unity stays lean.
+> Tests, TUI, batch engine, and asset-config layer sit on top — but the engine that talks to Unity stays lean.
 
 ---
 

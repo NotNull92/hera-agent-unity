@@ -9,7 +9,7 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
 ```
 ├──────────────────────┐          HTTP POST         ┌───────────────────────────┐
 │   Go CLI Binary        │  ▷───────────◁  │   Unity Editor (C#)         │
-│   (~800 LoC core)      │  localhost:8090+   │   - HttpServer                │
+│   (thin core)          │  localhost:8090+   │   - HttpServer                │
 │                        │                   │   - CommandRouter             │
 │  • cmd/               │                   │   - ToolDiscovery             │
 │  • internal/          │                   │   - Heartbeat                 │
