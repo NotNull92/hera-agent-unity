@@ -181,11 +181,11 @@ namespace HeraAgent
                 {
                     r = await CommandRouter.Dispatch(item.Command, item.Parameters);
                 }
-                item.Tcs.SetResult(r);
+                item.Tcs.TrySetResult(r);
             }
             catch (Exception ex)
             {
-                item.Tcs.SetResult(new ErrorResponse(ex.Message));
+                item.Tcs.TrySetResult(new ErrorResponse(ex.Message));
             }
         }
 
@@ -214,7 +214,7 @@ namespace HeraAgent
             var request = context.Request;
             var response = context.Response;
 
-            response.ContentType = "application/json";
+            response.ContentType = "application/json; charset=utf-8";
 
             // Block browser cross-origin requests — CLI uses Go HTTP client (not subject to CORS)
             if (request.HttpMethod == "OPTIONS")
