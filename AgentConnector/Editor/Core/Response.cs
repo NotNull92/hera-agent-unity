@@ -52,12 +52,6 @@ namespace HeraAgent
             this.data = data;
             this.suggestions = suggestions;
         }
-
-        public static ErrorResponse WithCode(string code, string message, object data = null, params string[] suggestions)
-        {
-            return new ErrorResponse(code, message, data,
-                suggestions != null && suggestions.Length > 0 ? new List<string>(suggestions) : null);
-        }
     }
 
     /// <summary>
