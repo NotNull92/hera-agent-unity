@@ -341,6 +341,32 @@ if (canvas == null) { Debug.LogError("missing"); return null; }
 if (canvas == null) throw new System.Exception("BootCanvas not found");
 ```
 
+### 4.13 PowerShell `exec` quoting
+
+PowerShell's `'single quotes'` do **not** interpret backslash escapes — bash-style `\"` lands as a literal `\` in the snippet, then csc reports `CS1056: Unexpected character '\\'`. PowerShell's `"double quotes"` interpret `$`, backtick, and a few others as PowerShell syntax, so most C# snippets don't survive that either. Three patterns always work in PowerShell:
+
+```powershell
+# 1. Multi-line, or contains quotes — stdin pipe + here-string (preferred)
+@'
+var iap = AssetDatabase.FindAssets("t:IAPRewardEntry").Length;
+return iap;
+'@ | hera-agent-unity exec
+
+# 2. Short, single-line — single-quoted string, write " directly (no escaping)
+hera-agent-unity exec 'return AssetDatabase.FindAssets("t:IAPRewardEntry").Length;'
+
+# 3. Long or reusable — load from disk
+hera-agent-unity exec --file scripts\probe.cs
+```
+
+Anti-patterns that fail in PowerShell:
+
+- `hera-agent-unity exec "var x = ...; return x;"` — PowerShell interprets `$`, backtick, `;` inside double quotes.
+- `hera-agent-unity exec 'var s = \"a\";'` — `\"` is **literal** inside single quotes; csc rejects the `\`.
+- `$code = @'...'@` in one shell call, then `hera-agent-unity exec $code` in a **separate** shell call (e.g. agents that issue each command as a fresh PowerShell process) — `$code` evaporates between calls. Chain inside one invocation: `$code = @'...'@; hera-agent-unity exec $code`.
+
+bash equivalent: same idea, replace `@'...'@` with `<<'EOF'` heredoc or single-quoted `'...'` string. Avoid `\"` unless the outer wrapper is `"..."`.
+
 ---
 
 ## 5. Reference (skim on demand)
