@@ -206,7 +206,8 @@ namespace HeraAgent.Tools
         {
             var refHash = GetRefHash();
             var bytes = Encoding.UTF8.GetBytes(source + "\0" + refHash + "\0" + langVersion);
-            return ToHex(SHA256.Create().ComputeHash(bytes));
+            using var sha = SHA256.Create();
+            return ToHex(sha.ComputeHash(bytes));
         }
 
         private static string HashStrings(IEnumerable<string> values)
@@ -214,7 +215,8 @@ namespace HeraAgent.Tools
             var sb = new StringBuilder();
             foreach (var v in values)
                 sb.Append(v).Append('\n');
-            return ToHex(SHA256.Create().ComputeHash(Encoding.UTF8.GetBytes(sb.ToString())));
+            using var sha = SHA256.Create();
+            return ToHex(sha.ComputeHash(Encoding.UTF8.GetBytes(sb.ToString())));
         }
 
         private static string ToHex(byte[] bytes)
