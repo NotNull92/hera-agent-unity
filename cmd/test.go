@@ -103,7 +103,7 @@ func pollTestResults(port int) (*client.CommandResponse, error) {
 		}
 
 		// State check (cheap): instance writes "stopped" on graceful quit.
-		inst, statusErr := readStatus(port)
+		inst, statusErr := client.FindByPort(port)
 		if statusErr == nil {
 			if inst.State == "stopped" {
 				return nil, fmt.Errorf("unity editor has stopped (port %d)", port)

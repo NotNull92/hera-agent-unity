@@ -14,7 +14,7 @@ type instanceResolver func() (*client.Instance, error)
 var statusPollInterval = 500 * time.Millisecond
 
 func statusCmd(inst *client.Instance) error {
-	status, err := readStatus(inst.Port)
+	status, err := client.FindByPort(inst.Port)
 	if err != nil {
 		return fmt.Errorf("no status for port %d — Unity may not be running", inst.Port)
 	}
@@ -75,11 +75,6 @@ func discoverStatusInstance(project string, port int) (*client.Instance, error) 
 		return client.FindByPort(port)
 	}
 	return client.DiscoverInstance(project, 0)
-}
-
-// readStatus finds the instance file matching the given port (any state).
-func readStatus(port int) (*client.Instance, error) {
-	return client.FindByPort(port)
 }
 
 // waitForAlive resolves the current target instance, then polls until a newer heartbeat appears.
