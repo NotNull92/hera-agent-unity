@@ -16,6 +16,19 @@ namespace HeraAgent
         public bool EnableDebugLogging { get; set; } = false;
         public string[] Groups { get; set; } = Array.Empty<string>();
         public bool Enabled { get; set; } = true;
+
+        /// <summary>
+        /// CLI invocation strings demonstrating typical usage. Paired by index
+        /// with <see cref="ExampleDescriptions"/>; if the lengths differ,
+        /// missing descriptions become empty strings.
+        /// </summary>
+        public string[] Examples { get; set; } = Array.Empty<string>();
+
+        /// <summary>
+        /// One-line descriptions matching <see cref="Examples"/> by index.
+        /// Empty array is allowed; the schema then exposes call-only entries.
+        /// </summary>
+        public string[] ExampleDescriptions { get; set; } = Array.Empty<string>();
     }
 
     /// <summary>

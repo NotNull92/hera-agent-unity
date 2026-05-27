@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2] - 2026-05-27
+
+### Fixed
+
+- **UPM package failed to compile** because the merged `HeraToolAttribute`
+  was missing `Examples` and `ExampleDescriptions` properties that
+  `DescribeType`, `FindMethod`, and `ListAssemblies` reference on their
+  `[HeraTool(... Examples = new[] { ... })]` declarations. Adding the two
+  properties back to the attribute (carried over from Pro) restores a
+  clean Unity import. `ToolDiscovery` does not yet surface the examples
+  in tool schemas — that is a future enhancement; v0.0.2 only restores
+  the compile path so the CLI side of v0.0.1 becomes actually usable.
+
 ## [0.0.1] - 2026-05-27
 
 Initial release of the unified `hera-agent-unity` — successor to
