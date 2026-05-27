@@ -2,24 +2,35 @@
 
 > You are an AI coding agent operating in a Unity project that has `hera-agent-unity` available as a CLI. This document tells you how to use it efficiently. It is meant to be loaded into your project's rules file so every session has it without spending tokens to discover it.
 >
-> **Where to put this content** (one of the following, depending on your tool):
+> **Where to put this content.** The agent ecosystem is converging on `AGENTS.md` at the project root as the canonical, cross-tool rules file. Codex reads it, recent Cursor builds read it, Claude Code is moving toward recognising it alongside `CLAUDE.md`, and any tool that doesn't yet read it can be pointed at it by a one-line tool-specific stub. For most projects, **putting the rules in `AGENTS.md` is enough**; tool-specific files only matter when a tool requires a different format or wants stricter behaviour (Cursor's `.mdc` frontmatter is the main case).
 >
-> | Tool | File path |
-> |---|---|
-> | Claude Code | `CLAUDE.md` (project root) |
-> | OpenAI Codex / `AGENTS.md`-aware tools | `AGENTS.md` (project root) |
-> | Cursor | `.cursor/rules/hera-agent-unity.mdc` (needs YAML frontmatter) |
-> | GitHub Copilot | `.github/copilot-instructions.md` |
-> | Continue.dev | `.continuerules` |
-> | Other | whatever your tool calls its project rules file |
+> **Recommended layout — multi-tool projects**:
+>
+> 1. Drop the full guide (or its lean subset) into `AGENTS.md` at the project root.
+> 2. For tools that ignore `AGENTS.md` or need their own format, drop a short stub that defers to `AGENTS.md`:
+>     - `CLAUDE.md` → `> See AGENTS.md.` (Claude Code reads both)
+>     - `.cursor/rules/hera-agent-unity.mdc` → frontmatter + the same body (see Cursor note below)
+>     - `.github/copilot-instructions.md` → repository-wide pointer to `AGENTS.md` (Copilot can layer file-pattern-specific rules under `.github/instructions/*.instructions.md` with `applyTo` frontmatter)
+>     - `.continuerules` → identical body
+>
+> **Per-tool target paths**:
+>
+> | Tool | Canonical path | Notes |
+> |---|---|---|
+> | OpenAI Codex / `AGENTS.md`-aware tools | `AGENTS.md` | Becoming the cross-tool standard. Lead with this. |
+> | Claude Code | `CLAUDE.md` (or `AGENTS.md`) | Reads `CLAUDE.md`; expanding to also read `AGENTS.md`. |
+> | Cursor | `.cursor/rules/*.mdc` | Per-rule files with YAML frontmatter required. `.cursorrules` (single-file) is **deprecated** — do not start new projects on it. `.cursorignore` excludes paths from the agent's view. |
+> | GitHub Copilot | `.github/copilot-instructions.md` | Repository-wide. Optional: `.github/instructions/*.instructions.md` with `applyTo: "**/*.cs,…"` frontmatter for file-pattern-specific guidance; `.github/prompts/*.prompt.md` for reusable prompts. |
+> | Continue.dev | `.continuerules` | Plain markdown. |
+> | Other | whatever your tool calls its project rules file | Most accept plain markdown. |
 >
 > **Two ways to populate the target file**:
 >
-> 1. **Static** — copy the matching stub from [`examples/rules/`](examples/rules/) (one file per agent, already formatted).
+> 1. **Static** — copy the matching stub from [`examples/rules/`](examples/rules/) (one file per tool, already formatted).
 > 2. **Dynamic** — let the CLI generate it from this guide:
 >     ```bash
->     # Claude / Codex / Copilot / Continue.dev — plain markdown
->     hera-agent-unity doctor --agent-rules >> <your rules file>
+>     # AGENTS.md / CLAUDE.md / Copilot / Continue.dev — plain markdown
+>     hera-agent-unity doctor --agent-rules >> AGENTS.md
 >
 >     # Cursor — frontmatter prepended automatically
 >     hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc

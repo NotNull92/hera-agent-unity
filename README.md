@@ -155,39 +155,38 @@ The agent will discover the CLI, run `list`, and start driving Unity.
 
 ### Compatibility
 
-hera-agent-unity is a plain CLI returning JSON. Any coding agent that can run shell commands works:
+hera-agent-unity is a plain CLI returning JSON. Any coding agent that can run shell commands works. The ecosystem is converging on **`AGENTS.md` at the project root** as the canonical multi-tool rules file — start there.
 
-| Agent                  | Project rules file                              | Template                                                  |
-|------------------------|-------------------------------------------------|-----------------------------------------------------------|
-| **Claude Code CLI**    | `CLAUDE.md` (project root)                      | [`examples/rules/CLAUDE.md`](examples/rules/CLAUDE.md)    |
-| **OpenAI Codex**       | `AGENTS.md` (project root)                      | [`examples/rules/AGENTS.md`](examples/rules/AGENTS.md)    |
-| **Cursor**             | `.cursor/rules/hera-agent-unity.mdc`            | [`examples/rules/cursor.mdc`](examples/rules/cursor.mdc)  |
-| **GitHub Copilot**     | `.github/copilot-instructions.md`               | [`examples/rules/copilot-instructions.md`](examples/rules/copilot-instructions.md) |
-| **Continue.dev**       | `.continuerules`                                | [`examples/rules/continuerules`](examples/rules/continuerules) |
+| Agent                  | Canonical path                                  | Template                                                  | Notes                                                       |
+|------------------------|-------------------------------------------------|-----------------------------------------------------------|-------------------------------------------------------------|
+| **OpenAI Codex** + AGENTS.md-aware tools | `AGENTS.md` (project root)         | [`examples/rules/AGENTS.md`](examples/rules/AGENTS.md)    | Cross-tool standard. Lead with this.                        |
+| **Claude Code CLI**    | `CLAUDE.md` (or `AGENTS.md`)                    | [`examples/rules/CLAUDE.md`](examples/rules/CLAUDE.md)    | Reads `CLAUDE.md`; expanding to also recognise `AGENTS.md`. |
+| **Cursor**             | `.cursor/rules/hera-agent-unity.mdc`            | [`examples/rules/cursor.mdc`](examples/rules/cursor.mdc)  | Per-rule files with YAML frontmatter. `.cursorrules` is **deprecated**. |
+| **GitHub Copilot**     | `.github/copilot-instructions.md`               | [`examples/rules/copilot-instructions.md`](examples/rules/copilot-instructions.md) | Optional: `.github/instructions/*.instructions.md` with `applyTo` frontmatter for file-pattern-specific guidance. |
+| **Continue.dev**       | `.continuerules`                                | [`examples/rules/continuerules`](examples/rules/continuerules) | Plain markdown.                                             |
+
+For multi-tool projects, the cleanest pattern is **`AGENTS.md` as the single source** plus a one-liner stub in tool-specific paths (`> See AGENTS.md.`). Cursor is the one exception — its `.mdc` files want the full body inline because the frontmatter is what makes the rule active.
 
 ### One-time setup per project (strongly recommended)
 
 **Static** — copy the template that matches your agent:
 
 ```bash
+cp examples/rules/AGENTS.md <your-unity-project>/AGENTS.md
 cp examples/rules/cursor.mdc <your-unity-project>/.cursor/rules/hera-agent-unity.mdc
 ```
 
 **Dynamic** — let the CLI emit the lean rule body straight into your rules file:
 
 ```bash
-# Plain markdown (Claude Code, Codex, Copilot, Continue.dev)
-hera-agent-unity doctor --agent-rules >> CLAUDE.md
+# AGENTS.md / CLAUDE.md / Copilot / Continue.dev — plain markdown
+hera-agent-unity doctor --agent-rules >> AGENTS.md
 
 # Cursor — frontmatter prepended automatically
 hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
 ```
 
-Either path locks in the core instruction:
-
-> **"For any Unity work, always reach for hera-agent-unity first."**
-
-Without it, agents fall back to guessing Unity APIs from training data — outdated code, wrong assumptions, wasted tokens. Lock it in once, save time every session.
+Either path locks in the core instruction and the auto-bootstrap protocol — once installed, saying *"find hera-agent-unity"* (or the Korean equivalent) makes the agent run `doctor` + `status` and report in one line, without asking.
 
 > **Cursor note** — Cursor's `.mdc` rule files **require YAML frontmatter** (`description`, `globs`, `alwaysApply`) or the rule is parsed but never activated. Use the template or the `--format cursor` flag — a plain markdown paste will silently no-op.
 
