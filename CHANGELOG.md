@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-05-27
+
+### Added
+
+- **AGENT.md Pitfall §4.13: PowerShell `exec` quoting.** Adds the
+  missing rule that bit a Cursor / Claude Code session on Windows —
+  PowerShell single quotes don't interpret backslash escapes, double
+  quotes interpret `$` / backtick / `;`, and agents that spawn a fresh
+  process per command lose `$code = @'...'@` between calls. The section
+  documents three patterns that always work (stdin pipe + here-string,
+  single-quoted strings without `\"` escapes, `exec --file` from disk)
+  and the matching anti-patterns. `cmd/AGENT.md` is re-synced so
+  `doctor --agent-rules` emits the new pitfall alongside the existing
+  twelve.
+
+> UPM connector unchanged in this release — still v0.0.3. Only the CLI
+> binary is rebuilt so the embedded AGENT.md picks up the new pitfall.
+
 ## [0.0.3] - 2026-05-27
 
 ### Fixed
