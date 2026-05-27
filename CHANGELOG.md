@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.0.1] - TBD
+## [0.0.1] - 2026-05-27
 
 Initial release of the unified `hera-agent-unity` — successor to
 `hera-agent` (free lite) and `hera-agent-pro` (commercial). All
