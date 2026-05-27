@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,9 +17,37 @@ namespace HeraAgent
     {
         static readonly SemaphoreSlim s_Lock = new(1, 1);
 
+        // 120s is the lock-acquisition timeout, not the per-command execution
+        // budget. Long-running operations (compile, profiler capture) are
+        // handled separately via heartbeat polling on the CLI side. If a
+        // command holds the lock longer than this, something is wedged and
+        // the caller deserves a clear error instead of an indefinite hang.
+        static readonly TimeSpan s_LockTimeout = TimeSpan.FromSeconds(120);
+
+        public class BatchCommandItem
+        {
+            public string Command { get; set; }
+            public JObject Params { get; set; }
+        }
+
+        public class BatchOptions
+        {
+            public bool FailFast { get; set; } = true;
+        }
+
+        public class BatchCommandResponse
+        {
+            public List<object> Results { get; set; }
+            public int Completed { get; set; }
+            public int Failed { get; set; }
+        }
+
         public static async Task<object> Dispatch(string command, JObject parameters)
         {
-            await s_Lock.WaitAsync();
+            if (!await s_Lock.WaitAsync(s_LockTimeout))
+            {
+                return new ErrorResponse("[Hera] I waited 120s for the command lock but another command is still running.");
+            }
             var sw = Stopwatch.StartNew();
             try
             {
@@ -31,6 +60,55 @@ namespace HeraAgent
             {
                 s_Lock.Release();
             }
+        }
+
+        /// <summary>
+        /// Run multiple commands sequentially while holding the same lock so
+        /// the batch is observed atomically from the CLI's perspective. The
+        /// CLI side serialises requests anyway, but batching saves one HTTP
+        /// round-trip per command and lets the editor avoid releasing /
+        /// re-acquiring the work queue between steps.
+        /// </summary>
+        public static async Task<object> DispatchBatch(List<BatchCommandItem> commands, BatchOptions options)
+        {
+            if (!await s_Lock.WaitAsync(s_LockTimeout))
+            {
+                return new ErrorResponse("[Hera] I waited 120s for the command lock but another command is still running.");
+            }
+
+            var results = new List<object>();
+            int failed = 0;
+
+            try
+            {
+                foreach (var item in commands)
+                {
+                    var sw = Stopwatch.StartNew();
+                    var result = await DispatchInternal(item.Command, item.Params);
+                    sw.Stop();
+                    ResponseTimings.Set(result, "total_ms", sw.ElapsedMilliseconds);
+                    results.Add(result);
+
+                    bool isError = result is ErrorResponse;
+                    if (isError) failed++;
+
+                    if (options.FailFast && isError)
+                    {
+                        break;
+                    }
+                }
+            }
+            finally
+            {
+                s_Lock.Release();
+            }
+
+            return new BatchCommandResponse
+            {
+                Results = results,
+                Completed = results.Count,
+                Failed = failed
+            };
         }
 
         static async Task<object> DispatchInternal(string command, JObject parameters)

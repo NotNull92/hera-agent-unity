@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
@@ -76,6 +77,10 @@ namespace HeraAgent
             public string Command;
             public JObject Parameters;
             public TaskCompletionSource<object> Tcs;
+            // Batch-specific fields (set when POST /commands is received).
+            public bool IsBatch;
+            public List<CommandRouter.BatchCommandItem> BatchItems;
+            public CommandRouter.BatchOptions BatchOptions;
         }
 
         static HttpServer()
@@ -167,7 +172,15 @@ namespace HeraAgent
         {
             try
             {
-                var r = await CommandRouter.Dispatch(item.Command, item.Parameters);
+                object r;
+                if (item.IsBatch)
+                {
+                    r = await CommandRouter.DispatchBatch(item.BatchItems, item.BatchOptions);
+                }
+                else
+                {
+                    r = await CommandRouter.Dispatch(item.Command, item.Parameters);
+                }
                 item.Tcs.SetResult(r);
             }
             catch (Exception ex)
@@ -226,41 +239,25 @@ namespace HeraAgent
 
             try
             {
-                if (request.HttpMethod != "POST" || request.Url.AbsolutePath != "/command")
+                if (request.HttpMethod != "POST")
                 {
-                    result = new ErrorResponse($"Expected POST /command, got {request.HttpMethod} {request.Url.AbsolutePath}");
+                    result = new ErrorResponse($"Expected POST, got {request.HttpMethod} {request.Url.AbsolutePath}");
                     response.StatusCode = 400;
                 }
                 else
                 {
-                    using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
-                    var body = await reader.ReadToEndAsync();
-                    var json = JObject.Parse(body);
-
-                    var command = json["command"]?.ToString();
-                    var parameters = json["params"] as JObject;
-
-                    // Debug logging
-                    DebugLogging.LogRequest(command, parameters);
-
-                    if (string.IsNullOrEmpty(command))
+                    switch (request.Url.AbsolutePath)
                     {
-                        result = new ErrorResponse("Missing 'command' field");
-                        response.StatusCode = 400;
-                        DebugLogging.LogError("unknown", new Exception("Missing 'command' field"));
-                    }
-                    else
-                    {
-                        var tcs = new TaskCompletionSource<object>();
-                        s_Queue.Enqueue(new WorkItem
-                        {
-                            Command = command,
-                            Parameters = parameters,
-                            Tcs = tcs,
-                        });
-                        ForceEditorUpdate();
-                        result = await tcs.Task;
-                        DebugLogging.LogResponse(command, result);
+                        case "/command":
+                            result = await HandleSingleCommand(request);
+                            break;
+                        case "/commands":
+                            result = await HandleBatchCommand(request);
+                            break;
+                        default:
+                            result = new ErrorResponse($"Expected POST /command or POST /commands, got {request.HttpMethod} {request.Url.AbsolutePath}");
+                            response.StatusCode = 400;
+                            break;
                     }
                 }
             }
@@ -276,6 +273,76 @@ namespace HeraAgent
             response.ContentLength64 = buffer.Length;
             await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
             response.Close();
+        }
+
+        static async Task<object> HandleSingleCommand(HttpListenerRequest request)
+        {
+            using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
+            var body = await reader.ReadToEndAsync();
+            var json = JObject.Parse(body);
+
+            var command = json["command"]?.ToString();
+            var parameters = json["params"] as JObject;
+
+            DebugLogging.LogRequest(command, parameters);
+
+            if (string.IsNullOrEmpty(command))
+            {
+                DebugLogging.LogError("unknown", new Exception("Missing 'command' field"));
+                return new ErrorResponse("Missing 'command' field");
+            }
+
+            var tcs = new TaskCompletionSource<object>();
+            s_Queue.Enqueue(new WorkItem
+            {
+                Command = command,
+                Parameters = parameters,
+                Tcs = tcs,
+            });
+            ForceEditorUpdate();
+            var result = await tcs.Task;
+            DebugLogging.LogResponse(command, result);
+            return result;
+        }
+
+        static async Task<object> HandleBatchCommand(HttpListenerRequest request)
+        {
+            using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
+            var body = await reader.ReadToEndAsync();
+            var json = JObject.Parse(body);
+
+            var commandsArray = json["commands"] as JArray;
+            if (commandsArray == null)
+            {
+                return new ErrorResponse("Missing 'commands' field");
+            }
+
+            var items = new List<CommandRouter.BatchCommandItem>();
+            foreach (var cmd in commandsArray)
+            {
+                items.Add(new CommandRouter.BatchCommandItem
+                {
+                    Command = cmd["command"]?.ToString(),
+                    Params = cmd["params"] as JObject,
+                });
+            }
+
+            var optionsObj = json["options"] as JObject;
+            var options = new CommandRouter.BatchOptions
+            {
+                FailFast = optionsObj?["fail_fast"]?.Value<bool>() ?? true,
+            };
+
+            var tcs = new TaskCompletionSource<object>();
+            s_Queue.Enqueue(new WorkItem
+            {
+                IsBatch = true,
+                BatchItems = items,
+                BatchOptions = options,
+                Tcs = tcs,
+            });
+            ForceEditorUpdate();
+            return await tcs.Task;
         }
     }
 }
