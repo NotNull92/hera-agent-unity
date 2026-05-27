@@ -46,8 +46,17 @@ namespace HeraAgent.Tools
             [ToolParameter("Path to dotnet runtime. Auto-detected if omitted.")]
             public string Dotnet { get; set; }
 
+            [ToolParameter("Compile-only dry run. Returns success on a clean compile, EXEC_COMPILE_ERROR otherwise. No Execute() call, no side effects.")]
+            public bool CompileOnly { get; set; }
+
             [ToolParameter("Skip compile/assembly cache. Forces a fresh csc invocation.")]
             public bool NoCache { get; set; }
+
+            [ToolParameter("EXEC_RUNTIME_ERROR stack-trace mode: 'none' (exception_type only), 'user' (drop framework frames, default), 'full' (raw inner.StackTrace).")]
+            public string Stacktrace { get; set; }
+
+            [ToolParameter("Capture Debug.LogError/LogException/LogAssert raised during the snippet and surface them as EXEC_LOGGED_ERROR even if Execute() returned normally.")]
+            public bool Strict { get; set; }
 
             [ToolParameter("Max object graph depth in serialized return value (default 3, max 8).")]
             public int Depth { get; set; }

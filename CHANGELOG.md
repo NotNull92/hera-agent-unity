@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-05-27
+
+### Fixed
+
+- **Console `--stacktrace user` filter widened.** Previously only five
+  frame patterns were dropped (`UnityEngine.Debug:`, `EditorGUIUtility:`,
+  `Unity.Entities.SystemState:`, `(at Library/`, `(at ./Library/`).
+  Real-world exception traces leaked the synthetic exec wrapper
+  (`__CliDynamic:Execute`), the hera-agent dispatcher itself
+  (`HeraAgent.CommandRouter:*`, `HeraAgent.HttpServer:*`), reflection
+  machinery (`System.Reflection.MethodBase:Invoke`,
+  `System.Runtime.CompilerServices.AsyncTaskMethodBuilder…`), and the
+  editor's update pump (`EditorApplication:Internal_CallUpdateFunctions`).
+  All seven families now drop in `user` mode; `full` still returns
+  everything verbatim.
+
+### Added
+
+- **`list --tool <name>` now includes an `examples` field.** The
+  `HeraToolAttribute.Examples` / `ExampleDescriptions` properties
+  restored in v0.0.2 were stored on the attribute but never surfaced
+  in the schema response. `ToolDiscovery.GetToolSchema()` now zips
+  the two arrays index-wise and emits a `[{call, description}, ...]`
+  list. The slim `list` (no `--tool`) payload is intentionally
+  unchanged — examples are deep-dive material.
+- **`exec` schema now advertises `compile_only`, `stacktrace`, and
+  `strict`.** These three flags were already wired end-to-end (v0.0.1
+  ExecuteCsharp.HandleCommand reads them via `p.GetBool` / `p.Get`),
+  but the `Parameters` nested class only declared the v0.0.1 base
+  set. Schema-driven consumers (`list --tool exec`) couldn't see
+  them. Three `[ToolParameter]` declarations added so the schema
+  matches the actual surface.
+
 ## [0.0.2] - 2026-05-27
 
 ### Fixed
