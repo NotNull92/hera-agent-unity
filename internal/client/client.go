@@ -136,7 +136,7 @@ func doWithReloadRetry(ctx context.Context, url string, body []byte, port int) (
 		}
 		lastErr = err
 		if !isConnectionRefused(err) {
-			return nil, fmt.Errorf("cannot connect to Unity at port %d: %v", port, err)
+			return nil, fmt.Errorf("cannot connect to Unity at port %d: %w", port, err)
 		}
 		if attempt == reloadRetryMax {
 			break
@@ -152,7 +152,7 @@ func doWithReloadRetry(ctx context.Context, url string, body []byte, port int) (
 		case <-time.After(reloadRetryDelay):
 		}
 	}
-	return nil, fmt.Errorf("cannot connect to Unity at port %d after %d retries: %v",
+	return nil, fmt.Errorf("cannot connect to Unity at port %d after %d retries: %w",
 		port, reloadRetryMax, lastErr)
 }
 
@@ -420,7 +420,7 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 
 	body, err := json.Marshal(req)
 	if err != nil {
-		return nil, fmt.Errorf("marshal batch request: %v", err)
+		return nil, fmt.Errorf("marshal batch request: %w", err)
 	}
 
 	url := fmt.Sprintf("http://127.0.0.1:%d/commands", inst.Port)
@@ -438,7 +438,7 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 	start := time.Now()
 	resp, err := sharedHTTPClient.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("cannot connect to Unity at port %d: %v", inst.Port, err)
+		return nil, fmt.Errorf("cannot connect to Unity at port %d: %w", inst.Port, err)
 	}
 	defer resp.Body.Close()
 
@@ -465,7 +465,7 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 
 	var result BatchCommandResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
-		return nil, fmt.Errorf("unmarshal batch response: %v", err)
+		return nil, fmt.Errorf("unmarshal batch response: %w", err)
 	}
 
 	return &result, nil

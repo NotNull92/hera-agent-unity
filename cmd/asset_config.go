@@ -20,7 +20,7 @@ func assetConfigCmd(args []string) error {
 		if arg == "--json" {
 			data, err := jsonOutputForAI()
 			if err != nil {
-				return fmt.Errorf("error: %v", err)
+				return fmt.Errorf("error: %w", err)
 			}
 			fmt.Println(string(data))
 			return nil

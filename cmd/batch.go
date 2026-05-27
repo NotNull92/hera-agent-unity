@@ -33,7 +33,7 @@ func batchCmd(ctx context.Context, args []string, sendBatch sendBatchFn, resolve
 	if hasFile && filePath != "" {
 		data, err = os.ReadFile(filePath)
 		if err != nil {
-			return fmt.Errorf("cannot read batch file: %v", err)
+			return fmt.Errorf("cannot read batch file: %w", err)
 		}
 	} else {
 		// Read from stdin if piped (no --file required)
@@ -49,7 +49,7 @@ func batchCmd(ctx context.Context, args []string, sendBatch sendBatchFn, resolve
 
 	var req client.BatchCommandRequest
 	if err := json.Unmarshal(data, &req); err != nil {
-		return fmt.Errorf("invalid JSON in batch data: %v", err)
+		return fmt.Errorf("invalid JSON in batch data: %w", err)
 	}
 
 	if dryRun {
