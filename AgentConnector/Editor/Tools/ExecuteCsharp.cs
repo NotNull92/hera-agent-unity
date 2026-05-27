@@ -244,11 +244,35 @@ namespace HeraAgent.Tools
             public ErrorResponse Error;
         }
 
+        // Per-call temp dir under %TEMP%\hera-agent-unity-exec collects .cs / .rsp
+        // files that should be deleted right after csc returns, but a hard kill of
+        // the editor or a stale file lock can leave debris behind. Sweep on each
+        // call to bound the directory.
+        private static void CleanupOldTempFiles(string tmpDir)
+        {
+            try
+            {
+                if (!Directory.Exists(tmpDir)) return;
+                var cutoff = DateTime.Now.AddHours(-24);
+                foreach (var file in Directory.GetFiles(tmpDir))
+                {
+                    try
+                    {
+                        if (File.GetLastWriteTime(file) < cutoff)
+                            File.Delete(file);
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
         private static CompileResult CompileToBytes(string source, string cscOverride, string dotnetOverride)
         {
             var utf8 = new UTF8Encoding(false);
             var tmpDir = Path.Combine(Path.GetTempPath(), "hera-agent-unity-exec");
             Directory.CreateDirectory(tmpDir);
+            CleanupOldTempFiles(tmpDir);
 
             var id = Guid.NewGuid().ToString("N").Substring(0, 8);
             var srcFile = Path.Combine(tmpDir, $"{id}.cs");
@@ -265,7 +289,14 @@ namespace HeraAgent.Tools
                 rsp.AppendLine("-target:library");
                 rsp.AppendLine($"-out:\"{outFile}\"");
                 rsp.AppendLine("-nologo");
-                rsp.AppendLine("-nowarn:0105,1701,1702");
+                // 0162: unreachable code — the auto-appended `return null;` below
+                // is unreachable when the user's snippet already ends with a return.
+                rsp.AppendLine("-nowarn:0105,0162,1701,1702");
+                // Force English csc diagnostics. On Korean / Japanese / Chinese
+                // Windows the compiler emits localized error messages in the
+                // system code page (CP949 etc.), and reading them as UTF-8 via
+                // StandardErrorEncoding produces mojibake in the response.
+                rsp.AppendLine("-preferreduilang:en-US");
                 rsp.AppendLine($"-langversion:{LangVersion}");
                 rsp.AppendLine($"@\"{refsRsp}\"");
                 rsp.AppendLine($"\"{srcFile}\"");
