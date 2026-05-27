@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
@@ -50,7 +49,7 @@ func testCmd(args []string, send sendFn, port int) (*client.CommandResponse, err
 		return nil, err
 	}
 
-	if !resp.Success && strings.Contains(resp.Message, "Unknown command") {
+	if !resp.Success && resp.Code == "UNKNOWN_COMMAND" {
 		return nil, fmt.Errorf(
 			"'run_tests' is not available.\n" +
 				"Install the Unity Test Framework package:\n" +
