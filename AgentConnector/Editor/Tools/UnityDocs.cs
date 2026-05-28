@@ -62,18 +62,19 @@ namespace HeraAgent.Tools
             {
                 var entry = UnityDocsStore.Lookup(key);
                 if (entry == null) continue;
+                // Minimal response shape — caller already knows `query`, the
+                // scriptreference_url is derivable from the key, the data set
+                // is single-version (6.0). manual_url + scriptreference_url
+                // are dropped from the default reply to keep typical lookups
+                // ~30 tokens; the original entry is still in the in-memory
+                // dict if a follow-up tool ever needs the long form.
                 return new SuccessResponse(
                     $"unity_docs: {entry.title ?? key}",
                     new
                     {
-                        query,
-                        query_normalized = queryNorm,
                         title = entry.title,
                         signature = entry.signature,
                         summary = entry.summary,
-                        manual_url = entry.manual_url,
-                        scriptreference_url = entry.scriptreference_url,
-                        unity_version = entry.unity_version,
                     });
             }
 

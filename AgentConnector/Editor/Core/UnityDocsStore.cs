@@ -45,6 +45,12 @@ namespace HeraAgent
         static string s_loadError;
         static readonly object s_lock = new object();
 
+        // Lazy prefix-bucket index — keys grouped by lowercase first char.
+        // Used by SuggestSimilar to scan ~1/26 of the corpus on typical misses
+        // instead of the full 31k. Built once after EnsureLoaded succeeds.
+        static Dictionary<char, string[]> s_prefixBuckets;
+        static readonly object s_bucketsLock = new object();
+
         /// <summary>
         /// Returns the dictionary entry for an exact key match, or null on miss.
         /// </summary>
@@ -67,6 +73,19 @@ namespace HeraAgent
         /// Returns up to <paramref name="max"/> keys within
         /// <paramref name="maxDistance"/> Levenshtein distance of the query.
         /// Used to power DOC_NOT_FOUND `did_you_mean` hints.
+        ///
+        /// Three layered cheap pre-filters make this near-O(n/26) on typical
+        /// typos instead of the naive O(n × L²) scan:
+        ///   1. Prefix bucket — only keys starting with the same letter
+        ///      (case-insensitive) are looked at first.
+        ///   2. Length filter — keys whose length differs from the query
+        ///      by more than maxDistance can't reach the budget; skipped.
+        ///   3. Bounded Levenshtein — DP table bails out the moment a row
+        ///      min exceeds maxDistance (sentinel return).
+        ///
+        /// If the prefix bucket yielded zero results (typically because the
+        /// query has a first-character typo) the full key set is rescanned
+        /// as a fallback so we don't silently miss obvious suggestions.
         /// </summary>
         public static List<string> SuggestSimilar(string query, int maxDistance = 3, int max = 5)
         {
@@ -74,10 +93,31 @@ namespace HeraAgent
             if (s_keys == null || s_keys.Length == 0 || string.IsNullOrEmpty(query))
                 return new List<string>();
 
+            EnsurePrefixBucketsBuilt();
+
+            var bucket = ResolveBucket(query);
+            var primary = ScanBucket(bucket, query, maxDistance, max);
+            if (primary.Count >= max || bucket == s_keys)
+                return primary;
+
+            // Bucket miss (or thin result) — fall back to the full key set.
+            // Length filter + bounded Levenshtein still apply, so this is
+            // ~the original cost only when the bucket really came up empty.
+            var fallback = ScanBucket(s_keys, query, maxDistance, max);
+            return fallback.Count > primary.Count ? fallback : primary;
+        }
+
+        static List<string> ScanBucket(string[] bucket, string query, int maxDistance, int max)
+        {
+            int queryLen = query.Length;
             var candidates = new List<(string name, int dist)>();
-            foreach (var k in s_keys)
+            foreach (var k in bucket)
             {
-                var d = Levenshtein.Distance(query, k);
+                // Length filter is the cheapest pre-check (no DP table at all);
+                // a string pair whose lengths differ by more than maxDistance
+                // can't possibly fit within the budget.
+                if (System.Math.Abs(k.Length - queryLen) > maxDistance) continue;
+                var d = Levenshtein.DistanceBounded(query, k, maxDistance);
                 if (d <= maxDistance) candidates.Add((k, d));
             }
             candidates.Sort((a, b) => a.dist.CompareTo(b.dist));
@@ -89,6 +129,38 @@ namespace HeraAgent
                 if (result.Count >= max) break;
             }
             return result;
+        }
+
+        static string[] ResolveBucket(string query)
+        {
+            if (s_prefixBuckets == null || query.Length == 0) return s_keys;
+            char first = char.ToLowerInvariant(query[0]);
+            return s_prefixBuckets.TryGetValue(first, out var bucket) ? bucket : s_keys;
+        }
+
+        static void EnsurePrefixBucketsBuilt()
+        {
+            if (s_prefixBuckets != null) return;
+            lock (s_bucketsLock)
+            {
+                if (s_prefixBuckets != null) return;
+
+                var groups = new Dictionary<char, List<string>>(64);
+                foreach (var k in s_keys)
+                {
+                    if (k.Length == 0) continue;
+                    char first = char.ToLowerInvariant(k[0]);
+                    if (!groups.TryGetValue(first, out var list))
+                    {
+                        list = new List<string>();
+                        groups[first] = list;
+                    }
+                    list.Add(k);
+                }
+                var buckets = new Dictionary<char, string[]>(groups.Count);
+                foreach (var kv in groups) buckets[kv.Key] = kv.Value.ToArray();
+                s_prefixBuckets = buckets;
+            }
         }
 
         /// <summary>

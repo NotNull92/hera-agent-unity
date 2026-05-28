@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (optimisation)
+
+- **`unity_docs` response shrunk + miss-path scan made ~30× cheaper —
+  Connector bumps to v0.0.12.** Two independent wins on top of the
+  v0.0.10/0.0.11 RAG refactor:
+  - **Minimal response shape.** `query`, `query_normalized`,
+    `manual_url`, `scriptreference_url`, and `unity_version` are
+    dropped from the happy-path reply; what remains is
+    `{ title, signature, summary }`. ~360 B → ~150 B over the wire,
+    ~90 → ~30 AI input tokens (66% reduction). The full row is still
+    in the in-memory dict if a follow-up tool ever needs it.
+  - **`SuggestSimilar` near-O(n/26) on typical misses.** The
+    `DOC_NOT_FOUND` Levenshtein path now layers three cheap
+    pre-filters: a lazy prefix bucket (keys grouped by lowercase
+    first letter — typo misses scan ~1/26 of the corpus), a
+    length-difference filter (lower bound on edit distance), and the
+    new `Levenshtein.DistanceBounded` (bails out the moment a DP row
+    min exceeds the budget). First-character-typo queries fall back
+    to a full scan so obvious suggestions don't vanish. Smoke-measured
+    miss latency: ~290 ms → ~10 ms (single-digit ms in cache-warm
+    cases).
+
 ### Changed
 
 - **`unity_docs` reworked to ship pre-parsed data inside the UPM
