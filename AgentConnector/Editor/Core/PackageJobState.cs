@@ -5,6 +5,9 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
+// `using UnityEditor;` also pulls in the legacy AssetStore PackageInfo type;
+// alias the PackageManager one so bare `PackageInfo` is unambiguous.
+using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 namespace HeraAgent
 {
