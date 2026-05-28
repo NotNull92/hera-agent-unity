@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (docs)
+
+- **AGENT.md §4.15 — PowerShell `--params` JSON quoting trap.** §4.13
+  already covers PowerShell `exec` snippet quoting, but the same
+  failure mode also catches `--params '{...}'` payloads — bash-style
+  `\"` escapes survive into JSON as literal backslashes and Go's
+  `json.Unmarshal` errors out with `invalid character '\\'`. Document
+  the single-quoted outer / raw-`"` inside pattern as the safe form,
+  plus the alternative of letting the scalar flags
+  (`--property` + `--value 0,1,0`) carry simple Vector / Color
+  values without `--params` at all. Bumps the AGENT.md surface that
+  `doctor --agent-rules` embeds — pick this CLI release up via
+  `hera-agent-unity update` to get the new section into your
+  AGENTS.md / CLAUDE.md / cursor rules.
+
 ### Added
 
 - **`manage_components` tool**

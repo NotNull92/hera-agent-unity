@@ -376,6 +376,24 @@ When you author a new tool under `AgentConnector/Editor/Tools/`, two type-name c
 
 Other pairs worth aliasing pre-emptively when you reach for them: `Random` (`System.Random` vs `UnityEngine.Random` — different semantics) and `Debug` (`System.Diagnostics.Debug` vs `UnityEngine.Debug`). Grep for bare `Object` / `PackageInfo` / `Random` / `Debug` once before triggering the first compile to skip a hotfix round-trip.
 
+### 4.15 PowerShell `--params` JSON quoting
+
+The same shell-escape failure mode as §4.13 hits `--params '{...}'` payloads on PowerShell. The JSON inside must reach the CLI with **raw double-quotes intact** — PowerShell does not let you bash-style escape them, and the bash-style attempt silently produces `invalid JSON in --params: invalid character '\\' ...`.
+
+```powershell
+# Works — single-quoted outer string keeps " literal
+hera-agent-unity manage_components set --component_id 12345 `
+  --params '{"property":"m_CenterOfMass","value":[0,1,0]}'
+
+# Fails — backslash-escaped " survive into the JSON as literal '\"'
+hera-agent-unity manage_components set --component_id 12345 `
+  --params "{\"property\":\"m_CenterOfMass\",\"value\":[0,1,0]}"
+```
+
+bash equivalent: same pattern — single-quoted outer is the safe form, no `\"` rewriting.
+
+Or sidestep `--params` entirely for simple values by splitting the keys: `--property m_CenterOfMass --value 0,1,0` ships the same Vector3 through the scalar-friendly flag (comma strings are accepted alongside JSON arrays for Vector2/3/4, Quaternion, Color, Vector2Int, Vector3Int). Reserve `--params` for nested envelopes that the scalar flags cannot represent — `{"value": {"asset_path": "..."}}`, `{"value": {"instance_id": -12345}}`, deeply-nested arrays.
+
 ---
 
 ## 5. Reference (skim on demand)
