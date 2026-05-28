@@ -112,7 +112,7 @@ var go = GameObject.Find("Canvas");
 return new { name = go.name, instanceID = go.GetInstanceID() };
 ```
 
-Default `--depth` is `1`, which gives Unity Objects the shallow form `{name, type, instanceID}`. Set `--depth 3` only when you have a specific reason to inspect the property tree.
+Default `--depth` is `3`, which fully reflects Unity Objects in the response. Pass `--depth 1` (or `2`) when you want the leanest payload — depths 1–2 collapse Unity Objects to the shallow form `{name, type, instanceID}`.
 
 **[Rule 3]** Branch on the `code` field of error responses, not on the message text. Messages get tweaked across versions; `code` is the stable enum-like contract.
 
@@ -460,12 +460,12 @@ Controls how deep `exec`'s return-value serializer walks an object graph.
 
 | `--depth` | Behavior |
 |---|---|
-| `1` (default) | Primitives + one level of fields/properties. Unity Objects → shallow `{name, type, instanceID}`. |
+| `1` | Primitives + one level of fields/properties. Unity Objects → shallow `{name, type, instanceID}`. |
 | `2` | Adds nested fields. Unity Objects still shallow. |
-| `3+` | Full reflection on Unity Objects too. Use sparingly — Transform at depth 3 is ~9KB. |
-| `8` | Hard maximum. |
+| `3` (default) | Full reflection on Unity Objects too — Transform at depth 3 is ~9KB. |
+| `4`–`8` | Even deeper trees. Rarely useful. `8` is the hard maximum. |
 
-If you find yourself wanting `--depth 3` for a Transform, ask whether you really need `transform.position` etc. — usually returning the specific fields (`return new { x = t.position.x, ... }`) is both clearer and an order of magnitude cheaper.
+If a default-depth Transform is more than you actually need, drop to `--depth 1` (or `2`) or — better — return only the fields you care about: `return new { x = t.position.x, y = t.position.y, z = t.position.z };` is both clearer and an order of magnitude cheaper than the full reflected tree.
 
 ---
 

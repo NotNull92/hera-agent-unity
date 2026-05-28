@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (docs)
+
+- **README × 2 sync with current code.** Reorganised the Commands table
+  from a 24-row flat list into seven categories (Editor & runtime /
+  Scene & GameObjects / Packages / Console-tests-capture / Introspection
+  / Workflow / Status & maintenance) so the three newer tools land in an
+  obvious slot. Replaced batch examples whose `manage_editor` `wait` /
+  `refresh+compile` actions and `read_console` command name never
+  existed in shipped code (same pattern already corrected in the
+  v0.0.6 `batch --help`). Generalised the "PlayMode test polling"
+  bullet to cover the `manage_packages` async-job + `[InitializeOnLoad]`
+  resume path on the same plumbing. Dropped the "What's New in v2 —
+  Unified" section, the matching `hera-agent` / `hera-agent-pro` FAQ
+  migration note, and the corresponding hero subtitle — the merge is
+  ~a year old and the migration audience is effectively gone (vault
+  §8-2 "Free/Pro 잔존 흔적 일소").
+
+- **AGENT.md `--depth` default corrected to match code.** Rule 2 and
+  §5.5 both said the default was `1`; `ExecuteCsharp.cs` ships
+  `DefaultSerializeDepth = 3`. Updated both passages so agents reading
+  the rules get the actual default, and reframed the "lean down" advice
+  from "raise to 3 only when..." to "drop to 1 or 2 when you want the
+  shallowest payload."
+
 ### Added
 
 - **`find_gameobjects` tool** (`AgentConnector/Editor/Tools/FindGameObjects.cs`)

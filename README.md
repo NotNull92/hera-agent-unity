@@ -12,7 +12,7 @@
 
 **Measurement, not guessing — give AI hands on the live Editor.**
 
-<sub>The unified successor to <code>hera-agent</code> + <code>hera-agent-pro</code>. One project. One license. All features free.</sub>
+<sub>One Go CLI · one C# UPM package · zero runtime dependencies · MIT.</sub>
 
 <br>
 
@@ -50,24 +50,6 @@ Hera responds to commands — never inferring, never assuming. It returns what y
 **A small Go CLI, a single C# UPM package, zero runtime dependencies.**
 
 > Tests, TUI, batch engine, and asset-config layer sit on top — but the engine that talks to Unity stays lean.
-
----
-
-## What's New in v2 — Unified
-
-`hera-agent` was the free lite tier. `hera-agent-pro` was the commercial release with extra power tools. **In v2 they merge, and every former Pro feature ships free.**
-
-| Feature                       | hera-agent (Lite) | hera-agent-pro | **hera-agent-unity v2** |
-|-------------------------------|:-----------------:|:--------------:|:-----------------------:|
-| Core editor control & `exec`  | ✅                | ✅             | ✅                      |
-| Batch execution               | —                 | ✅             | ✅ **free**             |
-| `describe_type` introspection | —                 | ✅             | ✅ **free**             |
-| `find_method` / `list_assemblies` | —             | ✅             | ✅ **free**             |
-| Asset Config window (GUI)     | —                 | ✅             | ✅ **free**             |
-| Unity pitfalls catalog        | —                 | ✅             | ✅ **free**             |
-| License                       | MIT               | Commercial     | **MIT**                 |
-
-If you used either project before — drop the old package, install `hera-agent-unity`, keep your workflows. Tool names and CLI surface are stable.
 
 ---
 
@@ -193,33 +175,66 @@ Either path locks in the core instruction and the auto-bootstrap protocol — on
 
 ## Commands
 
-| Command          | What it does                                                                  |
-|------------------|--------------------------------------------------------------------------------|
-| `editor`         | Play, stop, pause, refresh, recompile                                          |
-| `exec`           | Run arbitrary C# inside Unity — full editor & runtime access                   |
-| `log`            | Write to Unity console without the csc compile cost                            |
-| `scene`          | Info, load, save, list, close                                                  |
-| `manage_gameobject` | Create / destroy / move / re-parent / set_active / rename / get_transform   |
-| `find_gameobjects` | Filter scene GameObjects (name / tag / layer / component / path glob) + paging |
-| `manage_packages` | Package Manager: `list` (sync) / `add` / `remove` / `embed` (async job_id)     |
-| `console`        | Read, filter, clear logs                                                       |
-| `test`           | Run EditMode / PlayMode tests                                                  |
-| `menu`           | Execute any menu item by path                                                  |
-| `screenshot`     | Capture Scene or Game view                                                     |
-| `profiler`       | Read hierarchy, toggle recording                                               |
-| `reserialize`    | Force Unity to re-serialize YAML after text edits                              |
-| `describe_type`  | Reflect a live type — members, signatures, **Unity pitfalls**                  |
-| `find_method`    | Search method names across loaded assemblies                                   |
-| `list_assemblies`| List loaded assemblies (skip `System.*` noise by default)                      |
-| `batch`          | Execute multiple commands atomically                                           |
-| `list`           | List tools — slim (default), `--names`, or `--tool <name>` for full schema     |
-| `status`         | Connection & project info                                                      |
-| `ping`           | Token-cheap liveness probe (heartbeat read only — no HTTP)                     |
-| `doctor`         | Self-diagnose: PATH, installs, shell, Unity reachability (`--json` for agents) |
-| `asset-config`   | Toggle optional asset integrations (TUI / list / enable / disable / detect)    |
-| `update`         | Self-update from GitHub Releases                                               |
-| `install`        | Register the binary on PATH                                                    |
-| `uninstall`      | Remove the CLI from PATH                                                       |
+Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full flag list of any entry, or `list` to inspect every registered tool (including custom ones) at runtime.
+
+### Editor & runtime
+
+| Command | What it does |
+|---|---|
+| `editor`  | Play / stop / pause / refresh / recompile. |
+| `exec`    | Run arbitrary C# inside Unity — full editor & runtime access. |
+| `log`     | Write to Unity console without the csc compile cost. |
+
+### Scene & GameObjects
+
+| Command | What it does |
+|---|---|
+| `scene`              | Info / load / save / list / close. |
+| `manage_gameobject`  | Create / destroy / move / re-parent / set_active / rename / get_transform. |
+| `find_gameobjects`   | Filter scene GameObjects (name / tag / layer / component / path glob) with pagination. |
+
+### Packages
+
+| Command | What it does |
+|---|---|
+| `manage_packages` | `list` (sync) / `add` / `remove` / `embed` (async — returns a `job_id`, CLI polls the result file). |
+
+### Console, tests, capture
+
+| Command | What it does |
+|---|---|
+| `console`     | Read, filter, clear logs. |
+| `test`        | Run EditMode / PlayMode tests. |
+| `menu`        | Execute any menu item by path. |
+| `screenshot`  | Capture Scene or Game view. |
+| `profiler`    | Read hierarchy, toggle recording. |
+| `reserialize` | Force Unity to re-serialize YAML after text edits. |
+
+### Introspection
+
+| Command | What it does |
+|---|---|
+| `describe_type`   | Reflect a live type — members, signatures, **Unity pitfalls** + Manual links. |
+| `find_method`     | Search method names across loaded assemblies. |
+| `list_assemblies` | List loaded assemblies (skips `System.*` noise by default). |
+
+### Workflow
+
+| Command | What it does |
+|---|---|
+| `batch` | Execute multiple commands atomically in one HTTP round-trip. |
+| `list`  | List registered tools — slim (default), `--names`, or `--tool <name>` for full schema. |
+
+### Status & maintenance
+
+| Command | What it does |
+|---|---|
+| `status`       | Connection & project info. |
+| `ping`         | Token-cheap liveness probe (heartbeat read only — no HTTP round-trip). |
+| `doctor`       | Self-diagnose: PATH, installs, shell, Unity reachability (`--json` / `--agent-rules` for agents). |
+| `asset-config` | Toggle optional asset integrations (TUI / `list` / `enable` / `disable` / `detect`). |
+| `update`       | Self-update from GitHub Releases. |
+| `install` / `uninstall` | Register or remove the CLI on PATH. |
 
 Stuck? Run `hera-agent-unity doctor`, or open [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
@@ -306,9 +321,9 @@ hera-agent-unity batch --file workflow.json
 ```json
 {
   "commands": [
-    { "command": "manage_editor", "params": { "action": "play", "wait": true } },
+    { "command": "refresh_unity", "params": { "compile": "request" } },
     { "command": "exec",          "params": { "code": "return EditorSceneManager.GetActiveScene().name;" } },
-    { "command": "read_console",  "params": { "type": "error" } }
+    { "command": "console",       "params": { "type": "error", "lines": 10 } }
   ],
   "options": { "fail_fast": true }
 }
@@ -317,7 +332,7 @@ hera-agent-unity batch --file workflow.json
 Pipe JSON via stdin if you'd rather not write a file:
 
 ```bash
-echo '{"commands":[{"command":"manage_editor","params":{"action":"refresh","compile":true}}]}' \
+echo '{"commands":[{"command":"refresh_unity","params":{"compile":"request"}}]}' \
   | hera-agent-unity batch
 ```
 
@@ -445,7 +460,7 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 - **Function-typed DI in Go.** Command handlers receive `sendFn` and `instanceResolver` as injected functions. The `resolve` closure re-discovers the instance on every call, so domain reloads that rebind the HTTP port are absorbed transparently.
 - **Three-phase orchestration.** Compile-triggering commands do `waitForAlive` → send → `waitForReady`. Polling uses a 1.5× backoff (100ms → 2s cap) — finer than the usual 2× because Unity often returns to ready faster than that.
 - **Compile grace period.** `editor refresh --compile` keeps `state == "compiling"` pinned for 3 s so polling doesn't latch onto a stale `"ready"` before Unity actually starts the compile.
-- **PlayMode test polling.** PlayMode tests trigger a domain reload that destroys the HTTP server. Results are written to `~/.hera-agent-unity/status/test-results-<port>.json` and polled at 500 ms.
+- **Domain-reload-safe async jobs.** PlayMode tests and Package Manager `add` / `remove` / `embed` all trigger a domain reload that destroys the in-flight HTTP listener and Request handle. Each writes its outcome to `~/.hera-agent-unity/status/{test,package}-result-*.json` and the CLI polls at 500 ms. `[InitializeOnLoad]` hooks reattach watchers after the reload settles (and, for packages, run a verifying `Client.List` to reconstruct the outcome) so the result file always materialises.
 - **Atomic self-update.** GitHub Releases → backup → rename → cleanup with rollback. Windows defers `.bak` deletion to a spawned PowerShell because the running `.exe` is locked.
 
 ---
@@ -542,14 +557,6 @@ Priority order:
 Yes — `batch` was designed for it. Exit codes propagate per command; `fail_fast` short-circuits on the first error. The `update` command and version notice can be silenced for non-interactive runs.
 
 </details>
-
-<details>
-<summary><strong>I was using `hera-agent` or `hera-agent-pro`. How do I migrate?</strong></summary>
-
-1. Uninstall the old CLI (`hera-agent uninstall` or `hera-agent-pro uninstall`).
-2. Remove the old UPM package from Unity (`com.notnull92.hera-agent` / `com.notnull92.hera-agent-pro`).
-3. Install `hera-agent-unity` (CLI + UPM).
-4. Tool names and CLI surface are stable — your scripts and agent rules keep working with a name swap.
 
 </details>
 

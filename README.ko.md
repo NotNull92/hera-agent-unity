@@ -12,7 +12,7 @@
 
 **추측 대신 실측 — AI에게 살아 있는 Editor를 만지게 합니다.**
 
-<sub><code>hera-agent</code> + <code>hera-agent-pro</code>의 통합 후속작. 하나의 프로젝트, 하나의 라이선스, 모든 기능 무료.</sub>
+<sub>Go CLI 하나 · C# UPM 패키지 하나 · 런타임 의존성 0개 · MIT.</sub>
 
 <br>
 
@@ -50,24 +50,6 @@ Hera는 명령에 응답합니다 — 추론하지 않고, 가정하지 않고. 
 **작은 Go CLI 하나, C# UPM 패키지 하나, 런타임 의존성 0개.**
 
 > 테스트·TUI·배치 엔진·에셋 설정 레이어가 위에 얹혀 있지만, Unity와 직접 통신하는 엔진은 여전히 가볍습니다.
-
----
-
-## v2 통합 — 무엇이 달라졌나
-
-`hera-agent`는 무료 라이트 버전이었고, `hera-agent-pro`는 추가 기능을 담은 상용 릴리스였습니다. **v2에서 두 프로젝트는 하나로 합쳐지고, 모든 Pro 기능이 무료로 제공됩니다.**
-
-| 기능                                | hera-agent (Lite) | hera-agent-pro | **hera-agent-unity v2** |
-|-------------------------------------|:-----------------:|:--------------:|:-----------------------:|
-| 에디터 제어 & `exec`                 | ✅                | ✅             | ✅                      |
-| 배치 실행                            | —                 | ✅             | ✅ **무료**             |
-| `describe_type` 인트로스펙션         | —                 | ✅             | ✅ **무료**             |
-| `find_method` / `list_assemblies`    | —                 | ✅             | ✅ **무료**             |
-| Asset Config 윈도우 (GUI)            | —                 | ✅             | ✅ **무료**             |
-| Unity 함정 카탈로그                  | —                 | ✅             | ✅ **무료**             |
-| 라이선스                             | MIT               | 상용           | **MIT**                 |
-
-기존에 둘 중 하나라도 사용 중이었다면 — 기존 패키지를 제거하고 `hera-agent-unity`를 설치하세요. 툴 이름과 CLI 인터페이스는 그대로입니다.
 
 ---
 
@@ -193,33 +175,66 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 
 ## 명령어
 
-| 명령어            | 설명                                                                          |
-|-------------------|-------------------------------------------------------------------------------|
-| `editor`          | Play, stop, pause, refresh, recompile                                         |
-| `exec`            | Unity 내부에서 C# 코드 실행 — 에디터 + 런타임 풀 액세스                       |
-| `log`             | csc 컴파일 없이 Unity 콘솔에 메시지 출력                                      |
-| `scene`           | 정보, 로드, 저장, 목록, 닫기                                                  |
-| `manage_gameobject` | 생성 / 파괴 / 이동 / 부모 변경 / 활성 토글 / 이름 변경 / 트랜스폼 조회        |
-| `find_gameobjects` | 씬 GameObject 필터 (이름 / 태그 / 레이어 / 컴포넌트 / 경로 glob) + 페이지네이션 |
-| `manage_packages` | Package Manager: `list` (동기) / `add` / `remove` / `embed` (비동기 job_id)   |
-| `console`         | 로그 읽기, 필터, 삭제                                                         |
-| `test`            | EditMode / PlayMode 테스트 실행                                               |
-| `menu`            | 경로로 메뉴 항목 실행                                                         |
-| `screenshot`      | Scene 또는 Game 뷰 캡처                                                       |
-| `profiler`        | 프로파일러 계층 읽기, 녹화 제어                                               |
-| `reserialize`     | 텍스트 편집 후 Unity YAML 강제 재직렬화                                       |
-| `describe_type`   | 라이브 타입 리플렉션 — 멤버, 시그니처, **Unity 함정**                          |
-| `find_method`     | 로드된 어셈블리 전반에서 메서드 이름 검색                                     |
-| `list_assemblies` | 로드된 어셈블리 목록 (기본적으로 `System.*` 노이즈 제외)                      |
-| `batch`           | 여러 명령을 원자적으로 실행                                                   |
-| `list`            | 툴 목록 — 슬림(기본) / `--names` / `--tool <name>` 전체 스키마                 |
-| `status`          | 연결 상태 및 프로젝트 정보                                                    |
-| `ping`            | 토큰 절약형 라이브니스 프로브 (heartbeat만 읽음, HTTP 없음)                   |
-| `doctor`          | 셀프 진단: PATH, 설치, 셸, Unity 도달성 (`--json`은 에이전트용)               |
-| `asset-config`    | 옵션 에셋 통합 토글 (TUI / list / enable / disable / detect)                  |
-| `update`          | GitHub Releases에서 셀프 업데이트                                             |
-| `install`         | PATH에 바이너리 등록                                                          |
-| `uninstall`       | PATH에서 CLI 제거                                                             |
+대상별로 묶었습니다. 각 항목의 자세한 플래그는 `hera-agent-unity <cmd> --help`로, 등록된 모든 도구(커스텀 포함)는 런타임에 `list`로 확인하세요.
+
+### Editor & 런타임
+
+| 명령어 | 설명 |
+|---|---|
+| `editor` | Play / stop / pause / refresh / recompile. |
+| `exec`   | Unity 내부에서 C# 코드 실행 — 에디터 + 런타임 풀 액세스. |
+| `log`    | csc 컴파일 없이 Unity 콘솔에 메시지 출력. |
+
+### Scene & GameObject
+
+| 명령어 | 설명 |
+|---|---|
+| `scene`              | 정보 / 로드 / 저장 / 목록 / 닫기. |
+| `manage_gameobject`  | 생성 / 파괴 / 이동 / 부모 변경 / 활성 토글 / 이름 변경 / 트랜스폼 조회. |
+| `find_gameobjects`   | 씬 GameObject 필터 (이름 / 태그 / 레이어 / 컴포넌트 / 경로 glob) + 페이지네이션. |
+
+### Packages
+
+| 명령어 | 설명 |
+|---|---|
+| `manage_packages` | `list`(동기) / `add` / `remove` / `embed`(비동기 — `job_id` 발급 후 결과 파일 폴링). |
+
+### Console · 테스트 · 캡처
+
+| 명령어 | 설명 |
+|---|---|
+| `console`     | 로그 읽기, 필터, 삭제. |
+| `test`        | EditMode / PlayMode 테스트 실행. |
+| `menu`        | 경로로 메뉴 항목 실행. |
+| `screenshot`  | Scene 또는 Game 뷰 캡처. |
+| `profiler`    | 프로파일러 계층 읽기, 녹화 제어. |
+| `reserialize` | 텍스트 편집 후 Unity YAML 강제 재직렬화. |
+
+### 인트로스펙션
+
+| 명령어 | 설명 |
+|---|---|
+| `describe_type`   | 라이브 타입 리플렉션 — 멤버 / 시그니처 / **Unity 함정** + Manual 링크. |
+| `find_method`     | 로드된 어셈블리 전반에서 메서드 이름 검색. |
+| `list_assemblies` | 로드된 어셈블리 목록 (기본적으로 `System.*` 노이즈 제외). |
+
+### 워크플로우
+
+| 명령어 | 설명 |
+|---|---|
+| `batch` | 여러 명령을 한 HTTP 라운드트립에 원자적으로 실행. |
+| `list`  | 등록된 도구 목록 — 슬림(기본) / `--names` / `--tool <name>` 전체 스키마. |
+
+### 상태 · 유지보수
+
+| 명령어 | 설명 |
+|---|---|
+| `status`       | 연결 상태 및 프로젝트 정보. |
+| `ping`         | 토큰 절약형 라이브니스 프로브 (heartbeat 파일만 읽음 — HTTP 없음). |
+| `doctor`       | 셀프 진단: PATH / 설치 / 셸 / Unity 도달성 (`--json` / `--agent-rules` 옵션). |
+| `asset-config` | 옵션 에셋 통합 토글 (TUI / `list` / `enable` / `disable` / `detect`). |
+| `update`       | GitHub Releases에서 셀프 업데이트. |
+| `install` / `uninstall` | PATH에 바이너리 등록 / 제거. |
 
 막혔으면 `hera-agent-unity doctor`, 또는 [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
@@ -306,9 +321,9 @@ hera-agent-unity batch --file workflow.json
 ```json
 {
   "commands": [
-    { "command": "manage_editor", "params": { "action": "play", "wait": true } },
+    { "command": "refresh_unity", "params": { "compile": "request" } },
     { "command": "exec",          "params": { "code": "return EditorSceneManager.GetActiveScene().name;" } },
-    { "command": "read_console",  "params": { "type": "error" } }
+    { "command": "console",       "params": { "type": "error", "lines": 10 } }
   ],
   "options": { "fail_fast": true }
 }
@@ -317,7 +332,7 @@ hera-agent-unity batch --file workflow.json
 파일을 만들기 싫다면 stdin으로 파이프:
 
 ```bash
-echo '{"commands":[{"command":"manage_editor","params":{"action":"refresh","compile":true}}]}' \
+echo '{"commands":[{"command":"refresh_unity","params":{"compile":"request"}}]}' \
   | hera-agent-unity batch
 ```
 
@@ -445,7 +460,7 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 - **함수 타입 DI (Go).** 명령 핸들러는 `sendFn`과 `instanceResolver`를 주입받습니다. `resolve` 클로저는 매 호출마다 인스턴스를 재발견하므로, 도메인 리로드로 HTTP 포트가 바뀌어도 다음 명령이 자동으로 새 엔드포인트를 찾습니다.
 - **3단계 오케스트레이션.** 컴파일을 트리거하는 명령은 `waitForAlive` → 전송 → `waitForReady` 순서입니다. 폴링은 1.5배 백오프 (100ms → 2s cap) — 보통의 2배보다 완만해서 Unity가 이미 ready로 돌아온 경우를 세밀하게 감지합니다.
 - **컴파일 유예 기간.** `editor refresh --compile`은 `state == "compiling"`을 3초간 강제로 고정합니다. Unity가 실제 컴파일을 시작하기까지의 1–2프레임 지연 동안 폴링이 stale `"ready"`에 걸리지 않게 합니다.
-- **PlayMode 테스트 폴링.** PlayMode 테스트는 도메인 리로드를 유발해 HTTP 서버가 파괴됩니다. 결과는 `~/.hera-agent-unity/status/test-results-<port>.json`에 기록되고 CLI가 500ms 간격으로 폴링합니다.
+- **도메인 리로드에도 살아남는 비동기 작업.** PlayMode 테스트와 Package Manager `add` / `remove` / `embed`는 모두 도메인 리로드를 유발해 HTTP 리스너와 in-flight Request 핸들을 파괴합니다. 각 작업은 결과를 `~/.hera-agent-unity/status/{test,package}-result-*.json`에 기록하고 CLI가 500ms 간격으로 폴링합니다. 리로드 후에는 `[InitializeOnLoad]` 훅이 watcher를 다시 부착하고(패키지의 경우 `Client.List`로 결과 검증), 결과 파일이 항상 생성되도록 합니다.
 - **원자적 셀프 업데이트.** GitHub Releases → 백업 → rename → 정리, 실패 시 롤백. Windows에서는 실행 중인 `.exe`가 잠기므로 PowerShell 프로세스를 spawn해 `.bak`을 지연 삭제합니다.
 
 ---
@@ -540,14 +555,6 @@ hera-agent-unity exec "return 1+1;" --csc "C:\Program Files\dotnet\sdk\8.0.100\R
 네 — `batch`가 그걸 위해 설계됐습니다. exit code가 명령별로 전파되고, `fail_fast`로 첫 에러에서 단락됩니다. `update` 명령과 버전 알림은 비대화식 실행에서 끌 수 있습니다.
 
 </details>
-
-<details>
-<summary><strong>`hera-agent`나 `hera-agent-pro`를 쓰고 있었습니다. 마이그레이션은?</strong></summary>
-
-1. 기존 CLI 제거 (`hera-agent uninstall` 또는 `hera-agent-pro uninstall`).
-2. Unity에서 기존 UPM 패키지 제거 (`com.notnull92.hera-agent` / `com.notnull92.hera-agent-pro`).
-3. `hera-agent-unity` 설치 (CLI + UPM).
-4. 툴 이름과 CLI 인터페이스는 그대로 — 스크립트와 에이전트 규칙은 이름만 바꾸면 그대로 동작합니다.
 
 </details>
 
