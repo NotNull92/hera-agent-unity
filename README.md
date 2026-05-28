@@ -199,6 +199,7 @@ Either path locks in the core instruction and the auto-bootstrap protocol — on
 | `exec`           | Run arbitrary C# inside Unity — full editor & runtime access                   |
 | `log`            | Write to Unity console without the csc compile cost                            |
 | `scene`          | Info, load, save, list, close                                                  |
+| `manage_gameobject` | Create / destroy / move / re-parent / set_active / rename / get_transform   |
 | `console`        | Read, filter, clear logs                                                       |
 | `test`           | Run EditMode / PlayMode tests                                                  |
 | `menu`           | Execute any menu item by path                                                  |

@@ -627,6 +627,23 @@ Scene:
     scene save
     scene close Lobby
 
+GameObjects:
+  manage_gameobject create --name <n> [--primitive <kind>] [--parent <id|path>] [--position x,y,z]
+  manage_gameobject destroy --instance_id <N>|--path </R/C>
+  manage_gameobject move --instance_id <N>|--path </R/C> --position x,y,z [--space world|local]
+  manage_gameobject set_parent --instance_id <N>|--path </R/C> --parent <id|path|none>
+  manage_gameobject set_active --instance_id <N>|--path </R/C> --active true|false
+  manage_gameobject set_name --instance_id <N>|--path </R/C> --name <new>
+  manage_gameobject get_transform --instance_id <N>|--path </R/C>
+
+  Primitives: cube, sphere, capsule, cylinder, plane, quad (omit for empty GameObject)
+
+  Examples:
+    manage_gameobject create --name Player
+    manage_gameobject create --name Cube --primitive cube --position 0,1,0
+    manage_gameobject set_parent --path /Player --parent /Root
+    manage_gameobject get_transform --path /Root/Player
+
 Menu:
   menu "<path>"                 Execute Unity menu item by path
 
@@ -847,6 +864,53 @@ Examples:
 Notes:
   - load --mode single fails if the active scene has unsaved changes.
   - close fails if the target scene is dirty; save first.
+`)
+	case "manage_gameobject":
+		fmt.Print(`Usage: hera-agent-unity manage_gameobject <action> [flags]
+
+Actions:
+  create          Make a new GameObject (empty or primitive).
+  destroy         Delete the target GameObject.
+  move            Set position (world default; --space local for local).
+  set_parent      Reparent or unparent (--parent none).
+  set_active      Toggle GameObject.SetActive.
+  set_name        Rename.
+  get_transform   Read position / rotation (euler) / scale.
+
+Target (required for every action except create):
+  --instance_id <N>     Preferred. Survives renames and duplicates.
+  --path </Root/Child>  Hierarchy path. Fallback walk covers inactive subtrees.
+
+Flags:
+  --name <str>                       Name for create / set_name.
+  --primitive <kind>                 cube, sphere, capsule, cylinder, plane, quad.
+                                     Omit for an empty GameObject.
+  --parent <id|path>                 Parent reference. 'none' or empty unparents
+                                     (set_parent only).
+  --position x,y,z                   World position for create / move.
+                                     Also accepts JSON [x,y,z] or {x,y,z}
+                                     via --params.
+  --space <world|local>              Coordinate space for move (default: world).
+  --active <true|false>              Active state for set_active.
+  --world_position_stays <bool>      Match Transform.SetParent flag (default: true).
+
+Return shape (depth 1, every action):
+  { instance_id, name, path, scene, scene_path, active,
+    transform: { position:{x,y,z}, rotation:{x,y,z}, scale:{x,y,z} } }
+
+Examples:
+  hera-agent-unity manage_gameobject create --name Player
+  hera-agent-unity manage_gameobject create --name Cube --primitive cube --position 0,1,0
+  hera-agent-unity manage_gameobject set_parent --path /Player --parent /Root
+  hera-agent-unity manage_gameobject set_parent --path /Player --parent none
+  hera-agent-unity manage_gameobject set_active --path /Player --active false
+  hera-agent-unity manage_gameobject move --instance_id 12345 --position 5,0,0
+  hera-agent-unity manage_gameobject get_transform --path /Root/Player
+
+Notes:
+  - Every action marks the scene dirty — save the scene to persist changes.
+  - Edits register Undo entries (Ctrl+Z in the editor).
+  - GameObjects created in play mode are discarded on play exit (Unity behavior).
 `)
 	case "menu":
 		fmt.Print(`Usage: hera-agent-unity menu "<path>"

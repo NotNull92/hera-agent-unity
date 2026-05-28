@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`manage_gameobject` tool** (`AgentConnector/Editor/Tools/ManageGameObject.cs`)
+  — GameObject CRUD with seven sub-actions: `create`, `destroy`, `move`,
+  `set_parent`, `set_active`, `set_name`, `get_transform`. Target by
+  `instance_id` (preferred — survives renames and duplicates) or hierarchy
+  `path` (with a fallback walk that reaches inactive subtrees
+  `GameObject.Find` skips). `create` supports an optional `--primitive`
+  (cube / sphere / capsule / cylinder / plane / quad) and optional initial
+  `--parent` / `--position`. Every action registers an `Undo` entry and
+  marks the scene dirty, and every action returns the same depth-1 shape
+  `{ instance_id, name, path, scene, scene_path, active, transform:{position,
+  rotation, scale} }`. First entry of the post-v0.0.6 capability queue
+  (vault `capability-gaps-priorities-final.md` §5-1).
+  - Connector bumps to **v0.0.5**.
+
 ### Changed
 
 - **`editor play --wait` confirmation moved from C# to Go.** Play-mode

@@ -179,6 +179,80 @@ hera-agent-unity scene list
 
 ---
 
+## manage_gameobject
+
+GameObject CRUD inside the active scene(s). Target by `instance_id` (preferred — survives renames and duplicates) or hierarchy `path` (`/Root/Child/...`).
+
+```bash
+hera-agent-unity manage_gameobject <action> [flags]
+```
+
+### Actions
+
+| Action | Description |
+|:---|:---|
+| `create` | Make a new GameObject (empty or primitive). |
+| `destroy` | Delete the target GameObject (`DestroyImmediate` in edit mode, `Destroy` in play mode). |
+| `move` | Set position. World by default, `--space local` for local. |
+| `set_parent` | Reparent to another GameObject or unparent (`--parent none`). |
+| `set_active` | Toggle `GameObject.SetActive`. |
+| `set_name` | Rename. |
+| `get_transform` | Read position / rotation (euler) / scale + scene info. |
+
+### Flags
+
+| Flag | Description | Applies to |
+|:---|:---|:---|
+| `--instance_id <N>` | Target by InstanceID. Preferred. | all except `create` |
+| `--path </Root/Child>` | Target by hierarchy path. Fallback walk covers inactive subtrees. | all except `create` |
+| `--name <str>` | New GameObject name / rename target. | `create`, `set_name` |
+| `--primitive <kind>` | `cube`, `sphere`, `capsule`, `cylinder`, `plane`, `quad`. Omit for an empty GameObject. | `create` |
+| `--parent <id\|path>` | Parent reference. `none` or empty unparents (`set_parent`). | `create`, `set_parent` |
+| `--position x,y,z` | World position. Also accepts JSON `[x,y,z]` or `{x,y,z}` via `--params`. | `create`, `move` |
+| `--space <world\|local>` | Coordinate space. | `move` (default `world`) |
+| `--active <true\|false>` | Active state. | `set_active` |
+| `--world_position_stays <true\|false>` | Match `Transform.SetParent` flag. | `set_parent` (default `true`) |
+
+### Examples
+
+```bash
+hera-agent-unity manage_gameobject create --name Player
+hera-agent-unity manage_gameobject create --name Cube --primitive cube --position 0,1,0
+hera-agent-unity manage_gameobject move --instance_id 12345 --position 5,0,0
+hera-agent-unity manage_gameobject set_parent --path /Player --parent /Root
+hera-agent-unity manage_gameobject set_parent --path /Player --parent none
+hera-agent-unity manage_gameobject set_active --path /Player --active false
+hera-agent-unity manage_gameobject set_name --instance_id 12345 --name Hero
+hera-agent-unity manage_gameobject get_transform --path /Root/Player
+```
+
+### Return shape
+
+All actions return a depth-1 snapshot:
+
+```json
+{
+  "instance_id": 12345,
+  "name": "Player",
+  "path": "/Root/Player",
+  "scene": "Main",
+  "scene_path": "Assets/Scenes/Main.unity",
+  "active": true,
+  "transform": {
+    "position": { "x": 0.0, "y": 1.0, "z": 0.0 },
+    "rotation": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "scale":    { "x": 1.0, "y": 1.0, "z": 1.0 }
+  }
+}
+```
+
+**Notes**:
+- Every action calls `EditorSceneManager.MarkSceneDirty` — save the scene afterward to persist changes.
+- All edits register `Undo` entries so the user can `Ctrl+Z` your AI agent.
+- `create` in play mode produces a runtime GameObject that Unity discards on play exit — expected behavior, not a bug.
+
+---
+
 ## menu
 
 Execute a Unity menu item by path.

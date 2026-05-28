@@ -199,6 +199,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `exec`            | Unity 내부에서 C# 코드 실행 — 에디터 + 런타임 풀 액세스                       |
 | `log`             | csc 컴파일 없이 Unity 콘솔에 메시지 출력                                      |
 | `scene`           | 정보, 로드, 저장, 목록, 닫기                                                  |
+| `manage_gameobject` | 생성 / 파괴 / 이동 / 부모 변경 / 활성 토글 / 이름 변경 / 트랜스폼 조회        |
 | `console`         | 로그 읽기, 필터, 삭제                                                         |
 | `test`            | EditMode / PlayMode 테스트 실행                                               |
 | `menu`            | 경로로 메뉴 항목 실행                                                         |
