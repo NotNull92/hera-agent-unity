@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`unity_docs` tool** (`AgentConnector/Editor/Tools/UnityDocs.cs`) —
+  offline Unity ScriptReference lookup. Reads the local
+  `Documentation/en/ScriptReference/*.html` tree the user has on disk
+  and returns a slim shape `{ title, signature, summary, manual_url,
+  scriptreference_url, unity_version }` — typically 250-400 bytes per
+  call — so an AI agent can verify an API exists at this Unity version
+  before piping it through `exec`. Query → filename mapping covers
+  classes (`Rigidbody`), methods (`Rigidbody.AddForce`), properties
+  (`Rigidbody.mass` → `-mass.html`), and qualified names
+  (`UnityEditor.AssetDatabase.Refresh` strips the `UnityEditor.`
+  prefix). Misses return `DOC_NOT_FOUND` with `did_you_mean[]` from a
+  Levenshtein scan of the 31k-file index.
+  - **No network dependency.** The original §5-5 spec assumed
+    `docs.unity3d.com` fetch + 30-day disk TTL; the user pointed at the
+    offline `Documentation/en` directory they already had, which
+    collapses caching to a single in-memory LRU (32 entries) over
+    parsed shapes. The HTML files themselves are the canonical store.
+  - **No HtmlAgilityPack dependency.** Unity docs HTML uses stable
+    structural attributes (`signature-CS sig-block`, `h3 Description`,
+    `switch-link` anchor, `h1.heading inherit`) that hold up under
+    plain compiled regex.
+  - **CLI-side docs-root resolution.** `cmd/unity_docs.go` picks the
+    docs root via `--docs-path` flag → `HERA_AGENT_UNITY_DOCS` env →
+    `asset-config unity_docs_path` → `assetconfig.DetectUnityDocsPath`
+    probe, then forwards the absolute path. The connector stays
+    filesystem-environment-agnostic.
+  - Fifth and final entry of the post-v0.0.6 capability queue
+    (vault `capability-gaps-priorities-final.md` §5-5). The 5-item
+    queue established at 2026-05-28 is now complete.
+  - Connector bumps to **v0.0.9**.
+
+- **`Core/UnityDocsParser.cs`** — compiled-regex HTML parser +
+  32-entry in-memory LRU keyed by relative filename.
+  `Core/UnityDocsIndex.cs` — lazy index of ScriptReference filenames
+  for Levenshtein "did you mean" suggestions, built once per
+  `docs_root` per domain.
+
+- **`Core/Levenshtein.cs`** — extracted the edit-distance helper that
+  was duplicated three times (`ToolDiscovery` typo hints,
+  `ComponentTypeResolver` suggestions, the new `UnityDocsIndex`).
+  All three call sites now delegate.
+
+- **`asset-config unity-docs` sub-command** — persist / show /
+  autodetect the offline-docs directory. Backed by a new top-level
+  `unity_docs_path` field on `AssetConfig` so the value survives
+  across CLI sessions without an env var.
+
 ### Changed (docs)
 
 - **AGENT.md §4.15 — PowerShell `--params` JSON quoting trap.** §4.13

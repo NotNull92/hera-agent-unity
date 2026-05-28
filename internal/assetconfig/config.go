@@ -24,6 +24,12 @@ type AssetEntry struct {
 type AssetConfig struct {
 	Version string       `json:"version"`
 	Assets  []AssetEntry `json:"assets"`
+
+	// UnityDocsPath is the offline Unity Documentation directory used by the
+	// `unity_docs` tool (the `en/` folder under a standard download, holding
+	// ScriptReference/, Manual/, StaticFiles/). Empty string falls back to
+	// the env var and the autodetect probe at lookup time.
+	UnityDocsPath string `json:"unity_docs_path,omitempty"`
 }
 
 var (
@@ -239,4 +245,73 @@ func IsEnabled(id string) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+// GetUnityDocsPath reads the persisted offline-docs directory.
+func GetUnityDocsPath() (string, error) {
+	cfg, err := Load()
+	if err != nil {
+		return "", err
+	}
+	return cfg.UnityDocsPath, nil
+}
+
+// SetUnityDocsPath persists the offline-docs directory. Passing an empty
+// string clears the field so the lookup falls back to env + autodetect.
+func SetUnityDocsPath(path string) error {
+	cfg, err := Load()
+	if err != nil {
+		return err
+	}
+	cfg.UnityDocsPath = path
+	return Save(cfg)
+}
+
+// DetectUnityDocsPath probes the few well-known offline-docs locations and
+// returns the first one that resolves to an existing directory containing the
+// ScriptReference/ subfolder. Returns an empty string when nothing matched.
+// The caller decides whether to persist the result (Set) or just use it for
+// the current call.
+func DetectUnityDocsPath() string {
+	for _, p := range candidateUnityDocsPaths() {
+		if isValidUnityDocsDir(p) {
+			return p
+		}
+	}
+	return ""
+}
+
+func candidateUnityDocsPaths() []string {
+	var out []string
+	home, _ := os.UserHomeDir()
+	if home != "" {
+		out = append(out,
+			filepath.Join(home, "Downloads", "UnityDocumentation", "Documentation", "en"),
+			filepath.Join(home, "UnityDocumentation", "Documentation", "en"),
+		)
+	}
+	// Unity Hub-managed installs (Windows / macOS / Linux). The version
+	// folder is unknown so the caller has to point us at it explicitly;
+	// these probes target the parent dir that holds the version folders.
+	out = append(out,
+		`C:\Program Files\Unity\Hub\Editor`,
+		`/Applications/Unity/Hub/Editor`,
+		filepath.Join(home, "Unity", "Hub", "Editor"),
+	)
+	return out
+}
+
+func isValidUnityDocsDir(path string) bool {
+	if path == "" {
+		return false
+	}
+	info, err := os.Stat(path)
+	if err != nil || !info.IsDir() {
+		return false
+	}
+	srInfo, err := os.Stat(filepath.Join(path, "ScriptReference"))
+	if err != nil || !srInfo.IsDir() {
+		return false
+	}
+	return true
 }

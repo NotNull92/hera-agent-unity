@@ -240,6 +240,8 @@ func Execute(ctx context.Context) error {
 			return client.Send(currentInst, command, params, 0)
 		}
 		resp, err = managePackagesCmd(subArgs, pkgSend, currentInst.Port)
+	case "unity_docs":
+		resp, err = unityDocsCmd(subArgs, send)
 	case "exec":
 		subArgs, err = readExecFileIfPresent(subArgs)
 		if err != nil {
@@ -653,6 +655,16 @@ Packages (Package Manager):
     manage_packages remove com.unity.ai.navigation
     manage_packages embed com.unity.test-framework
 
+Documentation:
+  unity_docs <query>                              Offline Unity ScriptReference lookup.
+                                                  Query: Rigidbody | Rigidbody.mass |
+                                                  Rigidbody.AddForce | Vector3.zero |
+                                                  UnityEditor.AssetDatabase.Refresh.
+                                                  Returns title/signature/summary/manual_url.
+                                                  docs root: --docs-path flag, then
+                                                  HERA_AGENT_UNITY_DOCS env, then
+                                                  asset-config unity_docs_path, then autodetect.
+
 Components:
   manage_components add --path /Player --type Rigidbody
   manage_components list --instance_id <N>
@@ -912,6 +924,57 @@ Examples:
 Notes:
   - load --mode single fails if the active scene has unsaved changes.
   - close fails if the target scene is dirty; save first.
+`)
+	case "unity_docs":
+		fmt.Print(`Usage: hera-agent-unity unity_docs <query> [--docs-path <path>]
+
+Looks up an offline Unity ScriptReference page by class / property /
+method name and returns a slim shape suitable for an AI agent:
+  { title, signature, summary, manual_url, scriptreference_url,
+    unity_version }
+~250-400 bytes per call.
+
+Query examples:
+  Rigidbody                              -> ScriptReference/Rigidbody.html
+  Rigidbody.mass                         -> ScriptReference/Rigidbody-mass.html
+  Rigidbody.AddForce                     -> ScriptReference/Rigidbody.AddForce.html
+  Vector3.zero                           -> ScriptReference/Vector3-zero.html
+  UnityEditor.AssetDatabase.Refresh      -> ScriptReference/AssetDatabase.Refresh.html
+
+Filename mapping rules:
+  - Leading 'UnityEngine.' / 'UnityEditor.' is stripped (docs filenames
+    omit those namespaces).
+  - Last '.' is tried as-is (methods + classes) first; if that file
+    doesn't exist, the last '.' is replaced with '-' (properties).
+  - On miss the response carries did_you_mean[] from a Levenshtein
+    scan of the ScriptReference filename index.
+
+Docs root resolution (first hit wins):
+  1. --docs-path <path> (per-call override)
+  2. HERA_AGENT_UNITY_DOCS environment variable
+  3. asset-config unity_docs_path (persisted)
+  4. Autodetect probe of well-known locations
+       ~/Downloads/UnityDocumentation/Documentation/en
+       ~/UnityDocumentation/Documentation/en
+       (Unity Hub install dirs)
+  If nothing matches, the response is DOCS_NOT_CONFIGURED with the
+  recovery commands as suggestions.
+
+Persist a path once:
+  hera-agent-unity asset-config unity-docs --detect
+  hera-agent-unity asset-config unity-docs <path>
+
+Errors:
+  DOCS_NOT_CONFIGURED   No docs_root could be resolved.
+  DOC_NOT_FOUND         The query did not map to any file. data.did_you_mean
+                        carries up to 5 nearest filenames.
+
+Examples:
+  hera-agent-unity unity_docs Rigidbody
+  hera-agent-unity unity_docs Rigidbody.mass
+  hera-agent-unity unity_docs GameObject.AddComponent
+  hera-agent-unity unity_docs UnityEditor.AssetDatabase.Refresh
+  hera-agent-unity unity_docs Vector3.zero --docs-path "C:\Users\PC\Downloads\UnityDocumentation\Documentation\en"
 `)
 	case "manage_components":
 		fmt.Print(`Usage: hera-agent-unity manage_components <action> [flags]

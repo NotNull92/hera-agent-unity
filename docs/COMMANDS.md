@@ -269,6 +269,89 @@ hera-agent-unity manage_packages embed com.unity.test-framework
 
 ---
 
+## unity_docs
+
+Offline Unity ScriptReference lookup. Reads the local `Documentation/en/ScriptReference/*.html` set the user has on disk and returns a slim, JSON-ready shape suitable for AI agents who need to verify an API exists at this Unity version before running it through `exec`. No network, no rate limits.
+
+```bash
+hera-agent-unity unity_docs <query>
+```
+
+### Query → filename mapping
+
+| Query | Resolves to |
+|:---|:---|
+| `Rigidbody` | `ScriptReference/Rigidbody.html` |
+| `Rigidbody.mass` | `ScriptReference/Rigidbody-mass.html` (property) |
+| `Rigidbody.AddForce` | `ScriptReference/Rigidbody.AddForce.html` (method) |
+| `Vector3.zero` | `ScriptReference/Vector3-zero.html` |
+| `UnityEditor.AssetDatabase.Refresh` | `ScriptReference/AssetDatabase.Refresh.html` |
+
+- Leading `UnityEngine.` / `UnityEditor.` is stripped (docs filenames omit those namespaces).
+- The last `.` is tried as-is first (catches methods + classes), then replaced with `-` (catches properties).
+- On miss the response carries `data.did_you_mean[]` populated from a Levenshtein scan of the ScriptReference filename index.
+
+### Docs root resolution
+
+The CLI fills in `docs_root` before the call. Priority (first hit wins):
+
+1. `--docs-path <path>` flag on the call.
+2. `HERA_AGENT_UNITY_DOCS` environment variable.
+3. `asset-config unity_docs_path` (persisted).
+4. Autodetect probe (`~/Downloads/UnityDocumentation/Documentation/en` and a few Unity Hub install paths).
+
+If none of the four resolve, the response is `DOCS_NOT_CONFIGURED` with the recovery commands as `suggestions[]`.
+
+Persist a path once:
+
+```bash
+hera-agent-unity asset-config unity-docs --detect           # autodetect + save
+hera-agent-unity asset-config unity-docs <path/to/en>       # explicit save
+hera-agent-unity asset-config unity-docs --clear            # reset
+hera-agent-unity asset-config unity-docs                    # show current
+```
+
+### Return shape
+
+```json
+{
+  "query": "Rigidbody.mass",
+  "query_normalized": "Rigidbody.mass",
+  "title": "Rigidbody.mass",
+  "signature": "public float mass;",
+  "summary": "The mass of the rigidbody.",
+  "manual_url": "Manual/class-Rigidbody.html",
+  "scriptreference_url": "ScriptReference/Rigidbody-mass.html",
+  "unity_version": "6.0"
+}
+```
+
+Typically 250–400 bytes per call. Parsed pages are cached in a 32-entry in-memory LRU so repeated calls on the same query are ~1 ms instead of ~5–15 ms.
+
+### Errors
+
+| Code | Meaning |
+|:---|:---|
+| `DOCS_NOT_CONFIGURED` | No docs root resolved through any of the four mechanisms — recovery commands are in `suggestions[]`. |
+| `DOC_NOT_FOUND` | Query did not map to any file. `data.did_you_mean[]` holds up to 5 nearest filenames; `suggestions[]` carries them as ready-to-run CLI calls. |
+
+### Examples
+
+```bash
+hera-agent-unity unity_docs Rigidbody
+hera-agent-unity unity_docs Rigidbody.mass
+hera-agent-unity unity_docs GameObject.AddComponent
+hera-agent-unity unity_docs Vector3.zero
+hera-agent-unity unity_docs UnityEditor.AssetDatabase.Refresh
+hera-agent-unity unity_docs Rigidbody --docs-path "C:\Users\you\Downloads\UnityDocumentation\Documentation\en"
+```
+
+**Notes**:
+- HTML parsing uses a small set of compiled regex against stable structural attributes (`signature-CS sig-block`, `h3 Description`, `switch-link` anchor, `h1.heading inherit`) — no HtmlAgilityPack dependency.
+- `describe_type` intentionally stays separate: it returns the project's *loaded* type schema + curated Unity pitfalls, while `unity_docs` reads the *static* docs page. Pair them when you need both.
+
+---
+
 ## manage_components
 
 Component CRUD on a target GameObject. Property paths are raw `SerializedProperty` paths (`m_Name`, `m_LocalScale.x`, `m_Materials.Array.data[0]`) — no friendly-name mapping. Reference fields accept an InstanceID, an asset path, or a `{instance_id|asset_path}` envelope.

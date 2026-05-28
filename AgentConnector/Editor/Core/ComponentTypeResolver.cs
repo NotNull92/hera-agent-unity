@@ -36,7 +36,7 @@ namespace HeraAgent
             var candidates = new List<(string name, int dist)>();
             foreach (var t in TypeCache.GetTypesDerivedFrom<Component>())
             {
-                var d = LevenshteinDistance(name, t.Name);
+                var d = Levenshtein.Distance(name, t.Name);
                 if (d <= maxDistance) candidates.Add((t.Name, d));
             }
             candidates.Sort((a, b) => a.dist.CompareTo(b.dist));
@@ -50,30 +50,6 @@ namespace HeraAgent
                 if (result.Count >= max) break;
             }
             return result;
-        }
-
-        static int LevenshteinDistance(string a, string b)
-        {
-            if (string.IsNullOrEmpty(a)) return string.IsNullOrEmpty(b) ? 0 : b.Length;
-            if (string.IsNullOrEmpty(b)) return a.Length;
-
-            var d = new int[a.Length + 1, b.Length + 1];
-            for (int i = 0; i <= a.Length; i++) d[i, 0] = i;
-            for (int j = 0; j <= b.Length; j++) d[0, j] = j;
-
-            for (int i = 1; i <= a.Length; i++)
-            {
-                for (int j = 1; j <= b.Length; j++)
-                {
-                    int cost = a[i - 1] == b[j - 1] ? 0 : 1;
-                    int del = d[i - 1, j] + 1;
-                    int ins = d[i, j - 1] + 1;
-                    int sub = d[i - 1, j - 1] + cost;
-                    int min = del < ins ? del : ins;
-                    d[i, j] = min < sub ? min : sub;
-                }
-            }
-            return d[a.Length, b.Length];
         }
     }
 }

@@ -208,6 +208,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 | `describe_type`   | Reflect a live type — members, signatures, **Unity pitfalls** + Manual links. |
 | `find_method`     | Search method names across loaded assemblies. |
 | `list_assemblies` | List loaded assemblies (skips `System.*` noise by default). |
+| `unity_docs`      | Offline Unity ScriptReference lookup — `title / signature / summary / manual_url`. |
 
 ### Workflow
 
