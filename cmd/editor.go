@@ -19,10 +19,22 @@ func editorCmd(args []string, send sendFn, resolve instanceResolver) (*client.Co
 	switch action {
 	case "play":
 		_, wait := flags["wait"]
-		return send("manage_editor", map[string]interface{}{
-			"action":              "play",
-			"wait_for_completion": wait,
-		})
+		resp, err := send("manage_editor", map[string]interface{}{"action": "play"})
+		if err != nil {
+			return nil, err
+		}
+		if !resp.Success || !wait {
+			return resp, nil
+		}
+		// Confirmation must come from the heartbeat file: play-mode entry
+		// triggers a domain reload that stops the HTTP listener, so any
+		// C#-side `await EnteredPlayMode` would never get to write a response.
+		// `playing` or `paused` both indicate isPlaying == true.
+		if waitErr := waitForState(resolve, 60000, "playing", "paused"); waitErr != nil {
+			return nil, waitErr
+		}
+		resp.Message = "Entered play mode (confirmed)."
+		return resp, nil
 
 	case "stop":
 		return send("manage_editor", map[string]interface{}{"action": "stop"})

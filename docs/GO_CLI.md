@@ -103,8 +103,8 @@ func Execute() error {
 
 | Action | What it sends | Notes |
 |:---|:---|:---|
-| `play` | `manage_editor` + `action=play` + `wait_for_completion` | `--wait` blocks until `EnteredPlayMode` |
-| `stop` | `manage_editor` + `action=stop` | `--wait` blocks until `EnteredEditMode` |
+| `play` | `manage_editor` + `action=play` | `--wait` polls the heartbeat via `waitForState("playing", "paused")` after send — C# can't confirm `EnteredPlayMode` over HTTP because the domain reload stops the listener mid-response |
+| `stop` | `manage_editor` + `action=stop` | No `--wait` — stop is fire-and-forget |
 | `pause` | `manage_editor` + `action=pause` | Toggle pause/resume |
 | `refresh` | `refresh_unity` + mode/force | `--force` allows refresh during play mode |
 | `refresh --compile` | `refresh_unity` + `compile=request` | Triggers compilation, then `waitForReady()` |

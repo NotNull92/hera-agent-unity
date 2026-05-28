@@ -113,6 +113,35 @@ func waitForAlive(resolve instanceResolver, timeoutMs int) (*client.Instance, er
 	return nil, fmt.Errorf("timed out waiting for Unity")
 }
 
+// waitForState polls the heartbeat until inst.State matches one of targets,
+// or the deadline elapses. Used to confirm play/stop completion without
+// holding the HTTP connection through the domain reload that play-mode
+// entry triggers — the listener is stopped mid-response, so the only
+// reliable confirmation channel is the filesystem heartbeat.
+func waitForState(resolve instanceResolver, timeoutMs int, targets ...string) error {
+	narrate := !flagQuiet && (isHumanCommand() || flagNarrate)
+	if narrate {
+		fmt.Fprintf(os.Stderr, "Waiting for state %v...\n", targets)
+	}
+	deadline := time.Now().Add(time.Duration(timeoutMs) * time.Millisecond)
+	for time.Now().Before(deadline) {
+		time.Sleep(statusPollInterval)
+		inst, err := resolve()
+		if err != nil {
+			continue
+		}
+		for _, t := range targets {
+			if inst.State == t {
+				if narrate {
+					fmt.Fprintf(os.Stderr, "State is now %s.\n", inst.State)
+				}
+				return nil
+			}
+		}
+	}
+	return fmt.Errorf("timed out waiting for state %v", targets)
+}
+
 // waitForReady polls indefinitely until the heartbeat state becomes "ready".
 // Returns true if compilation had errors.
 func waitForReady(resolve instanceResolver) bool {

@@ -7,7 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`editor play --wait` confirmation moved from C# to Go.** Play-mode
+  entry triggers a domain reload that stops the HTTP listener
+  mid-response, so the previous `ManageEditor.HandleCommand`'s
+  `await WaitForPlayModeStateAsync(EnteredPlayMode)` path could never
+  write a reply. The handler now returns synchronously the moment
+  `EditorApplication.isPlaying = true` is set, and `cmd/editor.go`
+  polls the heartbeat file via the new `waitForState(resolve,
+  timeoutMs, "playing", "paused")` helper in `cmd/status.go` for the
+  60-second confirmation window. Same pattern as PlayMode test result
+  polling — file-bus uncouples confirmation from HTTP liveness.
+  - **Wire change**: `wait_for_completion` is no longer sent over
+    HTTP. Old CLI ↔ new Connector silently no-ops (`--wait` doesn't
+    block); new CLI ↔ old Connector also no-ops (old C# wouldn't have
+    written the response anyway). Bump both sides together.
+  - `stop --wait` is intentionally not supported — `editor stop` is
+    fire-and-forget.
+
 ### Added
+
+- **`waitForState(resolve, timeoutMs, targets...)`** in `cmd/status.go`
+  — generic heartbeat-state poller used by `editor play --wait`. Uses
+  `statusPollInterval`, narration-aware.
+
+### Removed
+
+- **`ManageEditor.WaitForPlayModeStateAsync` + `PlayModeTimeoutSeconds`
+  constant + `WaitForCompletion` parameter.** Dead after confirmation
+  moved Go-side. `HandleCommand` reverted to synchronous `object`
+  signature (no `async Task`).
+
+### Added (templates)
 
 - **`.github/PULL_REQUEST_TEMPLATE.md` and Korean companion.**
   Pre-merge regression checklist covering scope, version bump policy,
@@ -17,9 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   GitHub's default auto-fill; `PULL_REQUEST_TEMPLATE.ko.md` sits
   alongside as a copy-paste reference for Korean PRs.
 
-> Neither the CLI binary nor the UPM connector changes in this entry
-> — the templates live under `.github/` and ship outside both
-> artefacts.
+> Both the CLI binary and the UPM connector change in this entry.
+> Connector bumps to **v0.0.4** (ManageEditor.cs). CLI tag will follow.
 
 ## [0.0.6] - 2026-05-27
 

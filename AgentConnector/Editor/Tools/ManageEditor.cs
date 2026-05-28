@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditorInternal;
@@ -12,15 +11,11 @@ namespace HeraAgent.Tools
     {
         private const int FirstUserLayerIndex = 8;
         private const int TotalLayerCount = 32;
-        private const int PlayModeTimeoutSeconds = 60;
 
         public class Parameters
         {
             [ToolParameter("Action to perform: play, stop, pause, refresh, set_active_tool, add_tag, remove_tag, add_layer, remove_layer", Required = true)]
             public string Action { get; set; }
-
-            [ToolParameter("Wait for action to complete before responding")]
-            public bool WaitForCompletion { get; set; }
 
             [ToolParameter("Tool name (required for set_active_tool action)")]
             public string ToolName { get; set; }
@@ -32,7 +27,12 @@ namespace HeraAgent.Tools
             public string LayerName { get; set; }
         }
 
-        public static async Task<object> HandleCommand(JObject @params)
+        // Play/stop transitions trigger a domain reload that stops the HTTP
+        // listener mid-response. Confirming "EnteredPlayMode" on this side
+        // would never get to write a reply. The Go CLI polls the heartbeat
+        // file instead for `--wait` (cmd/editor.go → waitForState), so this
+        // handler returns synchronously the moment Unity accepts the request.
+        public static object HandleCommand(JObject @params)
         {
             if (@params == null)
                 return new ErrorResponse("Parameters cannot be null.");
@@ -43,7 +43,6 @@ namespace HeraAgent.Tools
                 return new ErrorResponse(actionResult.ErrorMessage);
 
             string action = actionResult.Value.ToLowerInvariant();
-            bool waitForCompletion = p.GetBool("wait_for_completion");
 
             switch (action)
             {
@@ -51,11 +50,6 @@ namespace HeraAgent.Tools
                     if (!EditorApplication.isPlaying)
                     {
                         EditorApplication.isPlaying = true;
-                        if (waitForCompletion)
-                        {
-                            await WaitForPlayModeStateAsync(PlayModeStateChange.EnteredPlayMode, TimeSpan.FromSeconds(PlayModeTimeoutSeconds));
-                            return new SuccessResponse("Entered play mode (confirmed).");
-                        }
                         return new SuccessResponse("Entered play mode.");
                     }
                     return new SuccessResponse("Already in play mode.");
@@ -72,11 +66,6 @@ namespace HeraAgent.Tools
                     if (EditorApplication.isPlaying)
                     {
                         EditorApplication.isPlaying = false;
-                        if (waitForCompletion)
-                        {
-                            await WaitForPlayModeStateAsync(PlayModeStateChange.EnteredEditMode, TimeSpan.FromSeconds(PlayModeTimeoutSeconds));
-                            return new SuccessResponse("Exited play mode (confirmed).");
-                        }
                         return new SuccessResponse("Exited play mode.");
                     }
                     return new SuccessResponse("Already stopped (not in play mode).");
@@ -166,42 +155,5 @@ namespace HeraAgent.Tools
             }
         }
 
-        private static Task WaitForPlayModeStateAsync(PlayModeStateChange targetState, TimeSpan timeout)
-        {
-            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var start = DateTime.UtcNow;
-            bool cleanedUp = false;
-
-            void Cleanup()
-            {
-                if (cleanedUp) return;
-                cleanedUp = true;
-                EditorApplication.playModeStateChanged -= OnStateChanged;
-                EditorApplication.update -= Tick;
-            }
-
-            void OnStateChanged(PlayModeStateChange state)
-            {
-                if (state == targetState)
-                {
-                    Cleanup();
-                    tcs.TrySetResult(true);
-                }
-            }
-
-            void Tick()
-            {
-                if (tcs.Task.IsCompleted) { Cleanup(); return; }
-                if ((DateTime.UtcNow - start) > timeout)
-                {
-                    Cleanup();
-                    tcs.TrySetException(new TimeoutException());
-                }
-            }
-
-            EditorApplication.playModeStateChanged += OnStateChanged;
-            EditorApplication.update += Tick;
-            return tcs.Task;
-        }
     }
 }

@@ -45,7 +45,7 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
      │
      ▷  ④ waitForAlive() → polls instance files until Unity is alive
      │
-     ▷  ⑤ editorCmd() → build params: {"action":"play","wait_for_completion":true}
+     ▷  ⑤ editorCmd() → build params: {"action":"play"}  // --wait handled Go-side via waitForState
      │
      ▷  ⑥ client.Send() → HTTP POST /command (JSON body)
      │
@@ -55,11 +55,13 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
      │
      ▷  ⑨ ToolDiscovery.FindHandler("manage_editor") → ManageEditor.HandleCommand
      │
-     ▷  ⑩ ManageEditor.play → EditorApplication.isPlaying = true
+     ▷  ⑩ ManageEditor.play → EditorApplication.isPlaying = true; SuccessResponse returned immediately
      │
-     ▷  ⑪ PlayModeStateChange.EnteredPlayMode event → TCS.SetResult()
+     ▷  ⑪ JSON response returned to Go (HTTP listener may die mid-response due to domain reload — retry absorbs it)
      │
-     ▷  ⑫ JSON response returned to Go → printResponse()
+     ▷  ⑫ Go: if --wait, waitForState(resolve, 60000, "playing", "paused") polls heartbeat until isPlaying observed
+     │
+     ▷  ⑬ printResponse() with "Entered play mode (confirmed)." message
 ```
 
 ---

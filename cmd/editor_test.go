@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"testing"
+	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
@@ -15,19 +16,30 @@ func TestEditorCmd_Play(t *testing.T) {
 	if (*params)["action"] != "play" {
 		t.Errorf("expected action=play, got %v", (*params)["action"])
 	}
-	if (*params)["wait_for_completion"] != false {
-		t.Errorf("expected wait_for_completion=false, got %v", (*params)["wait_for_completion"])
+	// Wait confirmation moved Go-side (waitForState polling); no longer sent as a wire param.
+	if _, present := (*params)["wait_for_completion"]; present {
+		t.Errorf("wait_for_completion should not be sent over HTTP anymore, got %v", (*params)["wait_for_completion"])
 	}
 }
 
 func TestEditorCmd_PlayWait(t *testing.T) {
+	origPollInterval := statusPollInterval
+	statusPollInterval = 5 * time.Millisecond
+	t.Cleanup(func() { statusPollInterval = origPollInterval })
+
 	send, params := mockSend("manage_editor", t)
-	resolve := func() (*client.Instance, error) { return nil, nil }
-	if _, err := editorCmd([]string{"play", "--wait"}, send, resolve); err != nil {
+	resolve := func() (*client.Instance, error) {
+		return &client.Instance{State: "playing"}, nil
+	}
+	resp, err := editorCmd([]string{"play", "--wait"}, send, resolve)
+	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if (*params)["wait_for_completion"] != true {
-		t.Errorf("expected wait_for_completion=true, got %v", (*params)["wait_for_completion"])
+	if (*params)["action"] != "play" {
+		t.Errorf("expected action=play, got %v", (*params)["action"])
+	}
+	if resp.Message != "Entered play mode (confirmed)." {
+		t.Errorf("expected confirmation message, got %q", resp.Message)
 	}
 }
 
