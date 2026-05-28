@@ -115,7 +115,7 @@ namespace HeraAgent.Tools
                 var (parent, parentErr) = ResolveParent(parentToken);
                 if (parentErr != null)
                 {
-                    Object.DestroyImmediate(go);
+                    UnityEngine.Object.DestroyImmediate(go);
                     return new ErrorResponse(parentErr);
                 }
                 if (parent != null) go.transform.SetParent(parent.transform, true);
@@ -126,7 +126,7 @@ namespace HeraAgent.Tools
             {
                 if (!TryParseVector3(posToken, out var pos, out var posErr))
                 {
-                    Object.DestroyImmediate(go);
+                    UnityEngine.Object.DestroyImmediate(go);
                     return new ErrorResponse($"Invalid 'position': {posErr}");
                 }
                 go.transform.position = pos;
@@ -146,7 +146,7 @@ namespace HeraAgent.Tools
             var scene = go.scene;
 
             if (Application.isPlaying)
-                Object.Destroy(go);
+                UnityEngine.Object.Destroy(go);
             else
                 Undo.DestroyObjectImmediate(go);
 
