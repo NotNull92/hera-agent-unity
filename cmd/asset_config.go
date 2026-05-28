@@ -63,8 +63,6 @@ func assetConfigCmd(args []string) error {
 	case "path":
 		fmt.Println(assetconfig.ConfigFilePath())
 		return nil
-	case "unity-docs", "unity_docs":
-		return assetConfigUnityDocs(subArgs)
 	case "--help", "-h":
 		printAssetConfigHelp()
 		return nil
@@ -235,74 +233,6 @@ func assetConfigGet(id string) error {
 	return nil
 }
 
-// assetConfigUnityDocs reads or writes the offline Unity Documentation path
-// used by the `unity_docs` tool. Subcommand shapes:
-//
-//	asset-config unity-docs              -> show current value
-//	asset-config unity-docs <path>       -> persist <path>
-//	asset-config unity-docs --clear      -> reset to empty (fall back to env / autodetect)
-//	asset-config unity-docs --detect     -> probe well-known locations; if found, persist
-func assetConfigUnityDocs(args []string) error {
-	if len(args) == 0 {
-		current, err := assetconfig.GetUnityDocsPath()
-		if err != nil {
-			return err
-		}
-		if current == "" {
-			detected := assetconfig.DetectUnityDocsPath()
-			fmt.Println("unity_docs_path: (not set)")
-			if detected != "" {
-				fmt.Printf("autodetected:    %s\n", detected)
-				fmt.Println("save with: hera-agent-unity asset-config unity-docs --detect")
-			} else {
-				fmt.Println("autodetect:      (no candidate matched)")
-			}
-			return nil
-		}
-		fmt.Printf("unity_docs_path: %s\n", current)
-		return nil
-	}
-
-	switch args[0] {
-	case "--clear":
-		if err := assetconfig.SetUnityDocsPath(""); err != nil {
-			return err
-		}
-		fmt.Println("unity_docs_path cleared.")
-		return nil
-
-	case "--detect":
-		detected := assetconfig.DetectUnityDocsPath()
-		if detected == "" {
-			return fmt.Errorf("no candidate Unity Documentation directory found at the well-known locations. Pass the path explicitly: asset-config unity-docs <path>")
-		}
-		if err := assetconfig.SetUnityDocsPath(detected); err != nil {
-			return err
-		}
-		fmt.Printf("unity_docs_path: %s (autodetected)\n", detected)
-		return nil
-
-	default:
-		path := args[0]
-		info, err := os.Stat(path)
-		if err != nil {
-			return fmt.Errorf("not a directory: %s (%w)", path, err)
-		}
-		if !info.IsDir() {
-			return fmt.Errorf("not a directory: %s", path)
-		}
-		if _, srErr := os.Stat(path + string(os.PathSeparator) + "ScriptReference"); srErr != nil {
-			fmt.Fprintln(os.Stderr, "warning: ScriptReference/ subfolder not found — path may be the wrong level.")
-			fmt.Fprintln(os.Stderr, "         saving anyway. Expected layout: <path>/ScriptReference/*.html")
-		}
-		if err := assetconfig.SetUnityDocsPath(path); err != nil {
-			return err
-		}
-		fmt.Printf("unity_docs_path: %s\n", path)
-		return nil
-	}
-}
-
 func printAssetConfigHelp() {
 	fmt.Print(`Usage: hera-agent-unity asset-config [subcommand]
 
@@ -317,13 +247,6 @@ Subcommands:
   detect                        Auto-detect installed assets (requires Unity)
   get <id>                      Show a single asset's state
   path                          Print the config file path
-  unity-docs                    Show / set / autodetect the offline Unity
-                                Documentation directory for 'unity_docs'.
-                                Usage:
-                                  asset-config unity-docs              show current + autodetect hint
-                                  asset-config unity-docs <path>       persist a path
-                                  asset-config unity-docs --detect     probe well-known locations + persist
-                                  asset-config unity-docs --clear      reset (env + autodetect fall back)
 
 Available Assets:
   odin_inspector                Odin Inspector

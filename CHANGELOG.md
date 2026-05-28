@@ -7,54 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+### Changed
 
-- **`unity_docs` tool** (`AgentConnector/Editor/Tools/UnityDocs.cs`) —
-  offline Unity ScriptReference lookup. Reads the local
-  `Documentation/en/ScriptReference/*.html` tree the user has on disk
-  and returns a slim shape `{ title, signature, summary, manual_url,
-  scriptreference_url, unity_version }` — typically 250-400 bytes per
-  call — so an AI agent can verify an API exists at this Unity version
-  before piping it through `exec`. Query → filename mapping covers
-  classes (`Rigidbody`), methods (`Rigidbody.AddForce`), properties
-  (`Rigidbody.mass` → `-mass.html`), and qualified names
-  (`UnityEditor.AssetDatabase.Refresh` strips the `UnityEditor.`
-  prefix). Misses return `DOC_NOT_FOUND` with `did_you_mean[]` from a
-  Levenshtein scan of the 31k-file index.
-  - **No network dependency.** The original §5-5 spec assumed
-    `docs.unity3d.com` fetch + 30-day disk TTL; the user pointed at the
-    offline `Documentation/en` directory they already had, which
-    collapses caching to a single in-memory LRU (32 entries) over
-    parsed shapes. The HTML files themselves are the canonical store.
-  - **No HtmlAgilityPack dependency.** Unity docs HTML uses stable
-    structural attributes (`signature-CS sig-block`, `h3 Description`,
-    `switch-link` anchor, `h1.heading inherit`) that hold up under
-    plain compiled regex.
-  - **CLI-side docs-root resolution.** `cmd/unity_docs.go` picks the
-    docs root via `--docs-path` flag → `HERA_AGENT_UNITY_DOCS` env →
-    `asset-config unity_docs_path` → `assetconfig.DetectUnityDocsPath`
-    probe, then forwards the absolute path. The connector stays
-    filesystem-environment-agnostic.
-  - Fifth and final entry of the post-v0.0.6 capability queue
-    (vault `capability-gaps-priorities-final.md` §5-5). The 5-item
-    queue established at 2026-05-28 is now complete.
-  - Connector bumps to **v0.0.9**.
+- **`unity_docs` reworked to ship pre-parsed data inside the UPM
+  package — Connector bumps to v0.0.10.** Replaces the per-call HTML
+  parser introduced in the previous Unreleased entry. The 31,581
+  ScriptReference pages are now converted once by
+  `tools/build-unity-docs/main.go` into a single gzipped JSONL
+  artefact (`AgentConnector/Editor/Data/unity_docs_6.0.jsonl.gz.bytes`,
+  ~1.2 MiB on disk after gzip) that lives inside the UPM connector
+  package itself. Installing the connector is the only prerequisite —
+  the user no longer has to host a `Documentation/en/` folder, set an
+  env var, or run `asset-config unity-docs`. First call per domain
+  triggers a one-time GZip decompress + JSONL parse into an in-memory
+  Dictionary<string, Entry>; every subsequent lookup is an O(1) dict
+  hit.
 
-- **`Core/UnityDocsParser.cs`** — compiled-regex HTML parser +
-  32-entry in-memory LRU keyed by relative filename.
-  `Core/UnityDocsIndex.cs` — lazy index of ScriptReference filenames
-  for Levenshtein "did you mean" suggestions, built once per
-  `docs_root` per domain.
+- **Replaces** the previous Unreleased work that read HTML per call:
+  - `AgentConnector/Editor/Core/UnityDocsParser.cs` (regex + LRU) and
+    `UnityDocsIndex.cs` (filesystem-scan index) are **removed**. Their
+    behaviour is now split across `tools/build-unity-docs/main.go`
+    (regex extraction, build-time only) and the new
+    `Core/UnityDocsStore.cs` (gzipped JSONL load + dict lookup +
+    Levenshtein suggestions over the in-memory key set).
+  - The CLI-side docs-root resolution stack in `cmd/unity_docs.go`
+    collapses to a one-line passthrough — the `--docs-path` /
+    `HERA_AGENT_UNITY_DOCS` / `asset-config unity_docs_path` /
+    `DetectUnityDocsPath` chain is **gone**. The `unity_docs_path`
+    field on `AssetConfig` and the `asset-config unity-docs`
+    sub-command are removed; `internal/assetconfig` reverts to its
+    pre-v0.0.9 surface.
+  - `UnityDocs.cs` (the `[HeraTool]` itself) loses its `docs_root`
+    parameter and gains a `DOCS_BUNDLE_UNAVAILABLE` error for the
+    case where the bundled data file is missing on a broken install.
 
-- **`Core/Levenshtein.cs`** — extracted the edit-distance helper that
-  was duplicated three times (`ToolDiscovery` typo hints,
-  `ComponentTypeResolver` suggestions, the new `UnityDocsIndex`).
-  All three call sites now delegate.
+- **`tools/build-unity-docs/main.go`** — Go script that scans
+  `Documentation/en/ScriptReference/*.html`, applies the same regex
+  set the connector used to evaluate per call (h1 / signature-CS /
+  Description / switch-link / Unity version), and emits sorted JSONL.
+  Detects `.gz` in the output path and wraps the writer in
+  `gzip.NewWriter` automatically. One-shot maintainer tool; the
+  resulting artefact is committed.
 
-- **`asset-config unity-docs` sub-command** — persist / show /
-  autodetect the offline-docs directory. Backed by a new top-level
-  `unity_docs_path` field on `AssetConfig` so the value survives
-  across CLI sessions without an env var.
+- **`Core/Levenshtein.cs`** stays — `UnityDocsStore.SuggestSimilar`
+  is the third consumer of the shared helper.
+
+### Changed (docs)
 
 ### Changed (docs)
 

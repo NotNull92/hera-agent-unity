@@ -661,9 +661,8 @@ Documentation:
                                                   Rigidbody.AddForce | Vector3.zero |
                                                   UnityEditor.AssetDatabase.Refresh.
                                                   Returns title/signature/summary/manual_url.
-                                                  docs root: --docs-path flag, then
-                                                  HERA_AGENT_UNITY_DOCS env, then
-                                                  asset-config unity_docs_path, then autodetect.
+                                                  Data ships inside the UPM package — no
+                                                  docs folder on your machine required.
 
 Components:
   manage_components add --path /Player --type Rigidbody
@@ -926,7 +925,7 @@ Notes:
   - close fails if the target scene is dirty; save first.
 `)
 	case "unity_docs":
-		fmt.Print(`Usage: hera-agent-unity unity_docs <query> [--docs-path <path>]
+		fmt.Print(`Usage: hera-agent-unity unity_docs <query>
 
 Looks up an offline Unity ScriptReference page by class / property /
 method name and returns a slim shape suitable for an AI agent:
@@ -934,47 +933,42 @@ method name and returns a slim shape suitable for an AI agent:
     unity_version }
 ~250-400 bytes per call.
 
-Query examples:
-  Rigidbody                              -> ScriptReference/Rigidbody.html
-  Rigidbody.mass                         -> ScriptReference/Rigidbody-mass.html
-  Rigidbody.AddForce                     -> ScriptReference/Rigidbody.AddForce.html
-  Vector3.zero                           -> ScriptReference/Vector3-zero.html
-  UnityEditor.AssetDatabase.Refresh      -> ScriptReference/AssetDatabase.Refresh.html
+The data set (~31k entries, gzipped ~1.2 MiB) ships inside the UPM
+connector package itself — no local docs folder required, no network
+access. Regenerate via 'go run ./tools/build-unity-docs' when Unity
+releases a new docs revision.
 
-Filename mapping rules:
+Query examples:
+  Rigidbody                              -> key 'Rigidbody'
+  Rigidbody.mass                         -> key 'Rigidbody-mass'
+  Rigidbody.AddForce                     -> key 'Rigidbody.AddForce'
+  Vector3.zero                           -> key 'Vector3-zero'
+  UnityEditor.AssetDatabase.Refresh      -> key 'AssetDatabase.Refresh'
+
+Key mapping rules:
   - Leading 'UnityEngine.' / 'UnityEditor.' is stripped (docs filenames
     omit those namespaces).
-  - Last '.' is tried as-is (methods + classes) first; if that file
+  - The literal query (methods + classes) is tried first; if that key
     doesn't exist, the last '.' is replaced with '-' (properties).
   - On miss the response carries did_you_mean[] from a Levenshtein
-    scan of the ScriptReference filename index.
-
-Docs root resolution (first hit wins):
-  1. --docs-path <path> (per-call override)
-  2. HERA_AGENT_UNITY_DOCS environment variable
-  3. asset-config unity_docs_path (persisted)
-  4. Autodetect probe of well-known locations
-       ~/Downloads/UnityDocumentation/Documentation/en
-       ~/UnityDocumentation/Documentation/en
-       (Unity Hub install dirs)
-  If nothing matches, the response is DOCS_NOT_CONFIGURED with the
-  recovery commands as suggestions.
-
-Persist a path once:
-  hera-agent-unity asset-config unity-docs --detect
-  hera-agent-unity asset-config unity-docs <path>
+    scan of the 31k-key index.
 
 Errors:
-  DOCS_NOT_CONFIGURED   No docs_root could be resolved.
-  DOC_NOT_FOUND         The query did not map to any file. data.did_you_mean
-                        carries up to 5 nearest filenames.
+  DOCS_BUNDLE_UNAVAILABLE  The bundled data file is missing or
+                           unreadable. Reinstall the UPM package, or
+                           rerun ./tools/build-unity-docs in a local
+                           checkout.
+  DOC_NOT_FOUND            The query did not map to any key.
+                           data.did_you_mean carries up to 5 nearest
+                           keys; suggestions[] echoes them as runnable
+                           CLI calls.
 
 Examples:
   hera-agent-unity unity_docs Rigidbody
   hera-agent-unity unity_docs Rigidbody.mass
   hera-agent-unity unity_docs GameObject.AddComponent
   hera-agent-unity unity_docs UnityEditor.AssetDatabase.Refresh
-  hera-agent-unity unity_docs Vector3.zero --docs-path "C:\Users\PC\Downloads\UnityDocumentation\Documentation\en"
+  hera-agent-unity unity_docs Vector3.zero
 `)
 	case "manage_components":
 		fmt.Print(`Usage: hera-agent-unity manage_components <action> [flags]
