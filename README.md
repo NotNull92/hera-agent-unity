@@ -232,6 +232,66 @@ Stuck? Run `hera-agent-unity doctor`, or open [docs/TROUBLESHOOTING.md](docs/TRO
 
 ---
 
+## What's New (post-v0.0.6 capability queue)
+
+The five-tool queue locked-in at 2026-05-28 is complete. Each entry filled a gap where `exec`'s csc warm-up cost or the syntactic overhead of wrapping a Unity API call in C# was too high for a clean AI agent workflow.
+
+| Tool | Connector | What it does |
+|---|---|---|
+| `manage_gameobject` | v0.0.5 | Create / destroy / move / re-parent / set_active / rename / get_transform. Shallow `instance_id` return survives renames and reparenting. |
+| `manage_packages`   | v0.0.6 | `Client.Add` / `Remove` / `Embed` / `List` driver. Async jobs (`job_id`) ride through the resolver's domain reload via an `[InitializeOnLoad]` watcher + a `Client.List` post-reload verifier. |
+| `find_gameobjects`  | v0.0.7 | Filter scene GameObjects by name / tag / layer / component / path glob, with stable pagination over a hierarchy-sorted result set. |
+| `manage_components` | v0.0.8 | Component CRUD via raw `SerializedProperty` paths (`m_Mass`, `m_Materials.Array.data[0]`). Reference fields accept an InstanceID, an asset path, or a `{instance_id\|asset_path}` envelope. Establishes the property-set pattern every future `manage_*` will reuse. |
+| `unity_docs`        | v0.0.10 → **v0.0.12** | Offline Unity 6 ScriptReference lookup. **31,581 entries ship inside the UPM package itself** as a 1.2 MiB gzipped JSONL — no docs folder on the user's machine, no network access, no rate limits. |
+
+### `unity_docs` — design + benchmarks (v0.0.12)
+
+The same generic shape every "RAG-style" lookup tool has — query → keyed retrieval → minimal context back to the agent — except the data set is small enough (~10 MiB of HTML → 1.2 MiB of gzipped JSONL) that it ships *inside the connector*. No embedding model, no vector DB, no external API. A single `Dictionary<string, Entry>` carries the whole Unity 6 ScriptReference; a lazy three-layer pre-filter keeps "did you mean" suggestions cheap on miss.
+
+**Build path** (one-time per Unity version, maintainer-run):
+
+```bash
+go run ./tools/build-unity-docs \
+    --in  <path-to-Documentation/en> \
+    --out AgentConnector/Editor/Data/unity_docs_6.0.jsonl.gz.bytes
+```
+
+The Go script applies the same compiled regex set the connector used to evaluate per call (`h1.heading inherit`, `signature-CS sig-block`, `h3 Description`, `switch-link` anchor, Unity version) and emits sorted JSONL. Gzip is auto-applied when the output path contains `.gz`. The committed artefact is what every CLI install picks up via the UPM package.
+
+**Runtime path** — the connector lazy-loads the bundle the first time `unity_docs` is invoked, then everything is O(1) dict lookup with a Levenshtein fallback for misses:
+
+| Path | Connector `total_ms` |
+|:---|:---:|
+| Happy lookup (dict hit) | **< 1 ms** |
+| Miss in-bucket — `Rigidbod` (1-char typo) | 2 ms |
+| Miss in-bucket — `MonoBehavior` (2-char typo) | 4 ms |
+| Miss with bucket fallback — `Wigidbody` (first-char typo) | 2 ms |
+| Miss no-match — `XyzNonsenseAbc` | 5 ms |
+
+Cold first call (gzip decompress + JSONL parse of 31,581 entries + dict + prefix-bucket build) is ~1.7 s and runs exactly once per Unity domain — domain reloads reset the state, the next call rebuilds.
+
+The 220 – 280 ms CLI end-to-end you see in a terminal is **Go binary startup + HTTP roundtrip + Unity queue dispatch** — shared by every hera tool, not unique to `unity_docs`.
+
+**Response shape is intentionally minimal:**
+
+```json
+{ "title": "Rigidbody.mass",
+  "signature": "public float mass;",
+  "summary": "The mass of the rigidbody." }
+```
+
+~100 – 185 bytes per reply, ~33 input tokens to the agent. Down ~53 % from a verbose shape that echoed `query_normalized`, `scriptreference_url`, `unity_version`, etc. that the caller could already derive.
+
+**Miss-path scan** uses three layered cheap pre-filters before paying for a Levenshtein DP table:
+
+1. **Prefix bucket** — keys grouped by lowercase first letter (lazy, built once after `EnsureLoaded`). A typo missing only an internal character lands in the right bucket and scans ~1/26 of the corpus.
+2. **Length filter** — `abs(len(a) - len(b)) > maxDistance` is a lower bound on the edit distance, so length-incompatible pairs are rejected without populating a DP table.
+3. **Bounded Levenshtein** — the DP scan bails the moment a row min exceeds the budget; returns a `maxDistance + 1` sentinel so the caller branches on a single comparison.
+
+If the bucket yields zero results (first-character typo) the full key set is rescanned as a fallback — the `Wigidbody` row above is that path firing, and it still returns `Rigidbody, Rigidbody2D` within 2 ms.
+
+---
+
 ## `exec` — Runtime C#
 
 The most powerful command. Full editor + runtime access. Zero boilerplate.

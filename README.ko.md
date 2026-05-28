@@ -232,6 +232,66 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 
 ---
 
+## What's New (post-v0.0.6 capability queue)
+
+2026-05-28에 lock-in 된 5개 도구 큐 모두 완료. 각각 *`exec` 의 csc warm-up 비용* 또는 *Unity API 호출을 C# 으로 감싸는 구문 부담* 이 너무 커서 AI 에이전트 워크플로우가 깔끔해지지 않는 영역을 메웠습니다.
+
+| 도구 | Connector | 무엇을 하나 |
+|---|---|---|
+| `manage_gameobject` | v0.0.5 | 생성 / 파괴 / 이동 / 부모 변경 / 활성 토글 / 이름 변경 / 트랜스폼 조회. shallow `instance_id` 반환은 rename / reparent 후에도 안정. |
+| `manage_packages`   | v0.0.6 | `Client.Add` / `Remove` / `Embed` / `List` 드라이버. 비동기 작업(`job_id`)은 resolver 의 도메인 리로드를 `[InitializeOnLoad]` 워처 + 리로드 후 `Client.List` 검증으로 통과. |
+| `find_gameobjects`  | v0.0.7 | 씬 GameObject 를 이름 / 태그 / 레이어 / 컴포넌트 / 경로 glob 로 필터, hierarchy 정렬 결과 위에 stable pagination. |
+| `manage_components` | v0.0.8 | raw `SerializedProperty` 경로(`m_Mass`, `m_Materials.Array.data[0]`)로 컴포넌트 CRUD. 참조 필드는 InstanceID / asset path / `{instance_id\|asset_path}` envelope 셋 다 수용. 이후 모든 `manage_*` 가 재사용할 property-set 패턴 정립. |
+| `unity_docs`        | v0.0.10 → **v0.0.12** | 오프라인 Unity 6 ScriptReference 조회. **31,581 entries 가 1.2 MiB gzipped JSONL 로 UPM 패키지 안에 포함** — 사용자 PC 의 docs 폴더 불필요, 네트워크 불필요, rate limit 없음. |
+
+### `unity_docs` — 설계 + 벤치마크 (v0.0.12)
+
+여느 "RAG-style" lookup 도구와 같은 일반적 구조 — query → keyed retrieval → 최소 context 를 agent 에 반환 — 이지만 데이터셋이 충분히 작아서(~10 MiB HTML → 1.2 MiB gzipped JSONL) *connector 안에 직접 포함* 됩니다. embedding 모델 없음, vector DB 없음, 외부 API 없음. 단일 `Dictionary<string, Entry>` 가 Unity 6 ScriptReference 전체를 담고, lazy 3-layer pre-filter 가 miss 시 "did you mean" 비용을 저렴하게 유지.
+
+**빌드 경로** (Unity 버전당 한 번, maintainer 실행):
+
+```bash
+go run ./tools/build-unity-docs \
+    --in  <path-to-Documentation/en> \
+    --out AgentConnector/Editor/Data/unity_docs_6.0.jsonl.gz.bytes
+```
+
+Go 스크립트가 connector 가 *매 호출마다* 적용하던 동일 정규식 셋(`h1.heading inherit`, `signature-CS sig-block`, `h3 Description`, `switch-link` 앵커, Unity 버전)을 적용해 정렬된 JSONL 출력. 출력 경로에 `.gz` 가 포함되면 gzip 자동 적용. commit 된 artefact 가 모든 CLI 설치에 UPM 패키지로 전달.
+
+**런타임 경로** — connector 가 `unity_docs` 첫 호출 시 번들을 lazy load, 이후 모든 호출은 dict O(1) lookup + miss 시 Levenshtein fallback:
+
+| 경로 | Connector `total_ms` |
+|:---|:---:|
+| Happy lookup (dict hit) | **< 1 ms** |
+| Miss in-bucket — `Rigidbod` (1글자 typo) | 2 ms |
+| Miss in-bucket — `MonoBehavior` (2글자 typo) | 4 ms |
+| Miss with bucket fallback — `Wigidbody` (첫 글자 typo) | 2 ms |
+| Miss no-match — `XyzNonsenseAbc` | 5 ms |
+
+Cold first call(gzip 해제 + 31,581 entries JSONL 파싱 + dict + prefix-bucket 빌드)은 ~1.7s, Unity 도메인당 한 번만. 도메인 리로드 시 상태 reset → 다음 호출이 재빌드.
+
+터미널에서 보이는 CLI E2E 220 – 280ms 는 **Go 바이너리 startup + HTTP roundtrip + Unity queue dispatch** — 모든 hera 도구가 공유. `unity_docs` 한정 아님.
+
+**응답 shape 의도적으로 최소화:**
+
+```json
+{ "title": "Rigidbody.mass",
+  "signature": "public float mass;",
+  "summary": "The mass of the rigidbody." }
+```
+
+응답당 100 – 185 bytes, agent 에 ~33 input tokens. caller 가 이미 알거나 유도 가능한 `query_normalized`, `scriptreference_url`, `unity_version` 등이 빠진 형태로 verbose shape 대비 ~53% 감소.
+
+**Miss-path 스캔** 은 Levenshtein DP 테이블 비용을 치르기 전에 3 layered cheap pre-filter 적용:
+
+1. **Prefix bucket** — 키를 lowercase first letter 별로 그룹 (lazy, `EnsureLoaded` 후 한 번 빌드). 내부 글자만 typo 면 정확한 bucket 에 매치되어 corpus 의 ~1/26 만 스캔.
+2. **Length filter** — `abs(len(a) - len(b)) > maxDistance` 가 edit distance 의 lower bound 라서 길이 불일치 페어는 DP 테이블 없이 reject.
+3. **Bounded Levenshtein** — DP 스캔이 row min 이 budget 초과 시 즉시 bail; 호출자가 단일 비교로 분기할 수 있게 `maxDistance + 1` sentinel 반환.
+
+bucket 결과가 0 (첫 글자 typo) 이면 full key set 으로 fallback — 위 표의 `Wigidbody` 행이 그 경로 발동 시점이며, 그래도 2ms 안에 `Rigidbody, Rigidbody2D` 반환.
+
+---
+
 ## `exec` — 런타임 C# 실행
 
 가장 강력한 명령어입니다. 에디터 + 런타임 풀 액세스. 보일러플레이트 없음.
