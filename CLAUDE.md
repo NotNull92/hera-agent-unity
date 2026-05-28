@@ -17,7 +17,11 @@ Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free und
 
 - **CLI ↔ Connector 버전 핸드셰이크 불필요**: 두 버전이 일치한다는 전제 자체가 없음. HTTP+JSON forward-compat과 동적 dispatch가 자연 처리. "버전 매칭 검사 추가하자"는 제안은 모델 밖.
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
-- **출력 비대칭은 명령별로 분리**: tool 명령 (`exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `asset-config`, `update`, custom tools) 의 성공/실패 응답은 **plain JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. human 명령 (`install`, `status`, `uninstall`, `doctor`) 은 styled (`tui.ErrorPanel`, `BoxAccent`, banner) 유지. "tool 에러도 인간이 읽는다"는 가정은 audience reality와 어긋남 (실제로 tool 호출 = AI).
+- **출력 비대칭은 명령별로 분리** — 세 부류:
+  - **표준 envelope tool 명령** (`exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
+  - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
+  - **자체 출력 경로 명령** (`asset-config`, `ping`): `printResponse` 를 거치지 않고 직접 출력. `asset-config` 는 기본 styled + `--json` 로 AI 모드. `ping` 은 단일 라인 `port=N alive=N state=... age_ms=N`. `doctor` 도 human 카테고리지만 `--json` / `--agent-rules` 분기 별도.
+  - "tool 에러도 인간이 읽는다"는 가정은 audience reality와 어긋남 (실제로 tool 호출 = AI). 새 명령 추가 시 `humanCategories` 등재 여부가 출력 모드를 결정한다.
 
 새 기능을 추가할 때도 이 모델 안에서 풀 것: HTTP 한 번 / 필요하면 파일 폴링.
 
@@ -25,27 +29,38 @@ Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free und
 
 ```
 cmd/                  # Go CLI — thin passthrough layer
-  root.go             # Entry point, flag/arg parsing, default passthrough
+  root.go             # Entry point, flag/arg parsing, humanCategories, default passthrough
   editor.go           # editor command (waitForReady polling)
   test.go             # test command (PlayMode result polling)
-  status.go           # status, waitForAlive, heartbeat reading
-  update.go           # self-update from GitHub releases
-  version_check.go    # periodic update notice (12h interval)
-  asset_config.go     # asset plugin config management
-  batch.go            # batch (multi-command) dispatch
-  install.go          # self-install onto PATH
-  doctor.go           # self-diagnostic (PATH, Unity reachability)
+  status.go           # status + ping + waitForAlive/waitForReady (heartbeat reads)
+  update.go           # self-update from GitHub releases (download + rename dance)
+  version_check.go    # periodic update notice (12h interval, human-only)
+  asset_config.go     # asset plugin config (TUI default + --json for AI)
+  batch.go            # batch (multi-command) dispatch + --dry-run preview
+  install.go          # self-install onto PATH + legacy scrub
+  uninstall.go        # self-uninstall (+ uninstall_{unix,windows}.go variants)
+  doctor.go           # self-diagnostic; embeds AGENT.md for --agent-rules
+  paths.go            # install path resolution (+ paths_windows.go)
+  path_check.go       # per-command PATH-mismatch warning (HERA_AGENT_NO_PATH_CHECK)
+  deferred_delete_*.go # Windows-safe .bak cleanup after self-update
+  AGENT.md            # embedded copy for `doctor --agent-rules` (go:embed)
 internal/client/      # Unity HTTP client, instance discovery, SendBatch
-internal/assetconfig/ # Asset plugin configuration persistence
-internal/tui/         # Terminal UI helpers (checkbox, banner, styled panels)
-AgentConnector/       # C# Unity Editor package (UPM)
+                      # + process_{unix,windows}.go (PID liveness check)
+internal/assetconfig/ # Asset plugin configuration persistence (config.go only)
+internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
+AgentConnector/       # C# Unity Editor package (UPM) — package.json holds version
   Editor/
-    Core/             # Response, ParamCoercion, ToolParams, StringCaseUtility,
-                      # ToolMetadata, UnityPitfalls, HeraToolInterfaces
-    Tools/            # Tool implementations (auto-registered via [HeraTool])
-    TestRunner/       # RunTests, TestRunnerState
-    Attributes/       # [HeraTool], [ToolParameter]
+    HttpServer.cs     # [InitializeOnLoad] HttpListener + queue + main-thread pump
+    CommandRouter.cs  # SemaphoreSlim lock (120s) + Dispatch / DispatchBatch
+    Heartbeat.cs      # 0.5s atomic write to ~/.hera-agent-unity/instances/<md5>.json
+    ToolDiscovery.cs  # [HeraTool] reflection cache + Levenshtein "did you mean"
+    HeraAgent.asmdef
     HeraAgentAssetConfigWindow.cs   # Editor GUI for asset-config
+    Core/             # Response, ParamCoercion, ToolParams,
+                      # StringCaseUtility, ToolMetadata, UnityPitfalls
+    Tools/            # Tool implementations (auto-registered via [HeraTool])
+    TestRunner/       # RunTests + TestRunnerState (domain-reload safe via files)
+    Attributes/       # [HeraTool], [ToolParameter]
 ```
 
 ## Development
@@ -99,6 +114,13 @@ AgentConnector/       # C# Unity Editor package (UPM)
 | HTTP body drain (non-200) | ⏭️ 넘어감 | stateless 단발성 + `io.ReadAll`로 충분히 drain |
 | 테스트 커버리지 확대 | 🗑️ 폐기 | 실제 Unity Editor 없이는 비현실적. 통합 테스트만 의미 있음 |
 | 120초 타임아웃 | 🔒 의도된 설계 | `SemaphoreSlim` lock 대기 시간. 변경 금지 |
+| Go 에러 wrapping `%v` → `%w` | ✅ v0.0.5 적용 | `internal/client` + `cmd` 8곳 전환. `errors.Is`/`errors.As` 가능 |
+| `ExecCompileCache` SHA256 dispose | ✅ v0.0.5 수정 | `ComputeKey`/`HashStrings` 모두 `using var sha = SHA256.Create()` |
+| `batch --help` 의 `manage_editor refresh` 예시 | ✅ v0.0.6 교체 | `refresh_unity` / `compile:"request"` 로 정정 — 원래 action 미존재 |
+| `cmd/test.go` 의 메시지 문자열 분기 | ✅ v0.0.6 수정 | `resp.Code == "UNKNOWN_COMMAND"` 로 변경 (AGENT.md Rule 3 준수) |
+| `humanCategories` 문서의 `upgrade` 단어 | ✅ v0.0.6 제거 | 실제 코드엔 없음 — `upgrade` 입력 시 `UNKNOWN_COMMAND` + did_you_mean 반환 |
+| asset-config TUI 의 dead `FullHelp`/`ShortHelp` | ✅ v0.0.6 제거 | `bubbles/help` import 안 함, 호출처 0개 |
+| `internal/assetconfig` 의 dead `SetAssetInstalled` 주석 | ✅ v0.0.6 제거 | 함수 자체는 이전에 삭제됨, 고아 주석만 남아 있던 것 |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 
