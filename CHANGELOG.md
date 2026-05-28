@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`.github/PULL_REQUEST_TEMPLATE.md` and Korean companion.**
+  Pre-merge regression checklist covering scope, version bump policy,
+  automated verification (`go build` / `vet` / `test` /
+  `golangci-lint` / `gofmt`), manual Unity-Editor integration checks,
+  and CLAUDE.md "Hard Constraints" review. English template is
+  GitHub's default auto-fill; `PULL_REQUEST_TEMPLATE.ko.md` sits
+  alongside as a copy-paste reference for Korean PRs.
+
+> Neither the CLI binary nor the UPM connector changes in this entry
+> — the templates live under `.github/` and ship outside both
+> artefacts.
+
 ## [0.0.6] - 2026-05-27
 
 ### Fixed
