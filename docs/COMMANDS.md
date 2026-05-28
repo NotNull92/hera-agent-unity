@@ -269,6 +269,100 @@ hera-agent-unity manage_packages embed com.unity.test-framework
 
 ---
 
+## manage_components
+
+Component CRUD on a target GameObject. Property paths are raw `SerializedProperty` paths (`m_Name`, `m_LocalScale.x`, `m_Materials.Array.data[0]`) — no friendly-name mapping. Reference fields accept an InstanceID, an asset path, or a `{instance_id|asset_path}` envelope.
+
+This tool establishes the property-set pattern reused by every future `manage_*` (material / animation / vfx / scriptable objects / prefab properties).
+
+```bash
+hera-agent-unity manage_components <action> [flags]
+```
+
+### Actions
+
+| Action | Description |
+|:---|:---|
+| `add`    | Attach a component. `--type` required. |
+| `remove` | Detach. By `--component_id`, or by GameObject + `--type` [+ `--index`]. |
+| `list`   | Every component on a GameObject (shallow). |
+| `get`    | Read a component. Omit `--property` for the full property dump, or pass `--property <path>` for one. |
+| `set`    | Write a single property. `--property` + `--value` required. |
+
+### Targeting
+
+GameObject (required for `add` / `list`, and for `remove` / `get` / `set` unless `--component_id` is given):
+
+| Flag | Description |
+|:---|:---|
+| `--instance_id <N>`   | Preferred. Survives renames and reparenting. |
+| `--path </Root/Child>` | Hierarchy path; fallback walk covers inactive subtrees. |
+
+Component:
+
+| Flag | Description |
+|:---|:---|
+| `--type <name>`        | Short (`Rigidbody`) or fully-qualified (`UnityEngine.Rigidbody`). Required for `add`. Used with the GameObject target for `remove` / `get` / `set`. |
+| `--index <N>`          | When the GameObject has multiple of the same type, pick one (default `0`). Ignored with `--component_id`. |
+| `--component_id <N>`   | Target the component directly by InstanceID — skips type + index resolution. |
+
+Property (`get` / `set`):
+
+| Flag | Description |
+|:---|:---|
+| `--property <path>` | Raw `SerializedProperty` path. For `get`, omit to dump every visible top-level property. |
+| `--value <scalar>`  | Scalar value for `set`. For arrays / objects / reference envelopes use `--params '{"value": ...}'`. |
+
+### Value shapes accepted by `set`
+
+`SerializedPropertyValue` coerces JSON into the property type Unity expects:
+
+| Type | Accepted JSON shapes |
+|:---|:---|
+| Integer / LayerMask / ArraySize | number, numeric string |
+| Boolean | `true` / `false` / `"true"` / `"on"` / `1` |
+| Float | number, numeric string |
+| String | any (toString) |
+| Character | single-char string |
+| Color | `"#RRGGBB"` / `"#RRGGBBAA"` / `[r,g,b]` / `[r,g,b,a]` / `{r,g,b,a}` / `"r,g,b[,a]"` |
+| Vector2 / 3 / 4 / Quaternion | `[x,y,z(,w)]` / `{x,y,z(,w)}` / `"x,y,z(,w)"` |
+| Vector2Int / Vector3Int | same shapes as float vectors, int components |
+| Enum | display-name string (case-insensitive) or integer index |
+| ObjectReference | `123` (InstanceID), `"Assets/Mat.mat"` (asset path), `{"instance_id": N}`, `{"asset_path": "..."}` |
+
+Reference-field set is the one to study — every future `manage_*` reuses this resolution path.
+
+### Return shapes
+
+`add` / `get` (full) — `{ instance_id, component: { component_id, type, type_short, enabled?, properties: { m_X: ..., ... } } }`
+
+`get` (single property) / `set` — `{ instance_id, component_id, type, property, property_type, value }`
+
+`list` — `{ instance_id, components: [{ component_id, type, type_short, enabled? }, ...] }`
+
+`remove` — `{ instance_id, removed: { component_id, type, type_short, enabled? } }`
+
+### Examples
+
+```bash
+hera-agent-unity manage_components add --path /Player --type Rigidbody
+hera-agent-unity manage_components list --instance_id 12345
+hera-agent-unity manage_components get --path /Player --type Rigidbody
+hera-agent-unity manage_components get --path /Player --type Transform --property m_LocalScale
+hera-agent-unity manage_components set --path /Player --type Rigidbody --property m_Mass --value 5
+hera-agent-unity manage_components set --path /Player --type MeshRenderer --property m_Materials.Array.data[0] --value Assets/Mat.mat
+hera-agent-unity manage_components set --instance_id -12345 --type Rigidbody --params '{"property":"m_CenterOfMass","value":[0,1,0]}'
+hera-agent-unity manage_components remove --component_id -67890
+```
+
+**Notes**:
+- `Transform` cannot be added or removed.
+- After `set`, the response re-reads the property through a fresh `SerializedObject` so the returned value reflects whatever Unity actually accepted (clamps, normalisation, enum-bit canonicalisation).
+- Every edit registers an `Undo` entry and marks the scene dirty.
+- `PROPERTY_NOT_FOUND` errors include the list of top-level property names that *do* exist on the target component — pipe that into your next `set`.
+
+---
+
 ## find_gameobjects
 
 Search every loaded-scene GameObject and return a shallow entry per match. Filters combine with AND; results are sorted by hierarchy path so pagination is stable across calls.

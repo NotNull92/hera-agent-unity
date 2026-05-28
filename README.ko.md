@@ -181,6 +181,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 |---|---|
 | `scene`              | 정보 / 로드 / 저장 / 목록 / 닫기. |
 | `manage_gameobject`  | 생성 / 파괴 / 이동 / 부모 변경 / 활성 토글 / 이름 변경 / 트랜스폼 조회. |
+| `manage_components`  | GameObject 의 component CRUD: `add` / `remove` / `list` / `get` / `set`. property 경로는 raw `SerializedProperty` 경로. |
 | `find_gameobjects`   | 씬 GameObject 필터 (이름 / 태그 / 레이어 / 컴포넌트 / 경로 glob) + 페이지네이션. |
 
 ### Packages

@@ -98,11 +98,15 @@ namespace HeraAgent.Tools
             Type componentType = null;
             if (!string.IsNullOrEmpty(componentName))
             {
-                componentType = ResolveComponentType(componentName);
+                componentType = ComponentTypeResolver.Resolve(componentName);
                 if (componentType == null)
+                {
+                    var similar = ComponentTypeResolver.SuggestSimilar(componentName);
                     return new ErrorResponse(
                         "UNKNOWN_COMPONENT_TYPE",
-                        $"Component type not found: '{componentName}'. Use the short name (e.g. 'Rigidbody') or a fully-qualified name (e.g. 'UnityEngine.Rigidbody').");
+                        $"Component type not found: '{componentName}'. Use the short name (e.g. 'Rigidbody') or a fully-qualified name (e.g. 'UnityEngine.Rigidbody').",
+                        data: similar.Count > 0 ? new { did_you_mean = similar } : null);
+                }
             }
 
             Regex pathRegex = null;
@@ -180,20 +184,6 @@ namespace HeraAgent.Tools
                 scene = go.scene.name,
                 active = go.activeInHierarchy,
             };
-        }
-
-        // TypeCache scan is ~10ms cold and cached afterwards. Accepts the
-        // short name (last segment) or the full namespace-qualified name.
-        // Tied to Component subclasses only — querying for a non-Component
-        // type would never resolve via GetComponent anyway.
-        private static Type ResolveComponentType(string name)
-        {
-            foreach (var t in TypeCache.GetTypesDerivedFrom<Component>())
-            {
-                if (t.Name == name || t.FullName == name)
-                    return t;
-            }
-            return null;
         }
 
         private static Regex GlobToRegex(string glob)

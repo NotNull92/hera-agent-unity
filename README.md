@@ -181,6 +181,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 |---|---|
 | `scene`              | Info / load / save / list / close. |
 | `manage_gameobject`  | Create / destroy / move / re-parent / set_active / rename / get_transform. |
+| `manage_components`  | Component CRUD on a GameObject: `add` / `remove` / `list` / `get` / `set`. Property paths are raw `SerializedProperty` paths. |
 | `find_gameobjects`   | Filter scene GameObjects (name / tag / layer / component / path glob) with pagination. |
 
 ### Packages

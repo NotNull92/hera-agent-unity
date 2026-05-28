@@ -7,6 +7,49 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`manage_components` tool**
+  (`AgentConnector/Editor/Tools/ManageComponents.cs`) — Component CRUD
+  on a target GameObject with five sub-actions: `add`, `remove`, `list`,
+  `get`, `set`. Targets a component by `--component_id` (preferred,
+  survives renames + multi-instance disambiguation) or by GameObject
+  (`--instance_id` / `--path`) plus `--type` and optional `--index`.
+  Property paths are raw `SerializedProperty` paths (`m_Name`,
+  `m_LocalScale.x`, `m_Materials.Array.data[0]`) — no friendly-name
+  mapping; the user writes what Unity serialises. `get` omits
+  `--property` to dump every visible top-level property of the
+  component; `set` re-reads after `ApplyModifiedProperties` so the
+  returned value reflects whatever Unity actually accepted (clamps,
+  normalisation, enum-bit canonicalisation). `PROPERTY_NOT_FOUND`
+  errors include the list of top-level property names that *do* exist
+  on the target — pipe that into the next `set` call.
+  - Fourth entry of the post-v0.0.6 capability queue
+    (vault `capability-gaps-priorities-final.md` §5-2). Establishes
+    the property-set pattern reused by every future `manage_*`
+    (material / animation / vfx / scriptable objects / prefab
+    properties).
+  - Connector bumps to **v0.0.8**.
+
+- **`Core/SerializedPropertyValue.cs`** — JSON ↔ `SerializedProperty`
+  bridge. `Read` returns a JSON-friendly shape per
+  `SerializedPropertyType`; `Apply` coerces a `JToken` back into the
+  matching typed setter. Supported types: Integer / ArraySize /
+  LayerMask / Boolean / Float / String / Character / Color / Vector2 /
+  Vector3 / Vector4 / Vector2Int / Vector3Int / Quaternion / Rect /
+  Bounds / Enum / ObjectReference. `ResolveReference` decodes
+  ObjectReference targets from an InstanceID integer, an asset path
+  string, or a `{instance_id | asset_path}` envelope — the same
+  resolution path future `manage_material` and friends will reuse.
+
+- **`Core/ComponentTypeResolver.cs`** — extracted from
+  `find_gameobjects.ResolveComponentType` so `manage_components` and
+  any future tool that needs a component type-name lookup share the
+  `TypeCache.GetTypesDerivedFrom<Component>()` scan. `SuggestSimilar`
+  adds a Levenshtein "did you mean" surface for `UNKNOWN_COMPONENT_TYPE`
+  errors. `find_gameobjects` now calls the helper and emits the
+  `did_you_mean` hint on its own type lookups too.
+
 ### Changed (docs)
 
 - **README × 2 sync with current code.** Reorganised the Commands table
