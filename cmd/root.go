@@ -1331,6 +1331,13 @@ Rules:
   - Runs on Unity main thread — all Unity APIs are safe
   - Discovered on Editor start and after every script recompilation
   - Duplicate tool names are detected and logged as errors (first wins)
+
+Namespace gotchas (bare names that collide with 'using System;' + 'using UnityEditor;'):
+  - Object       -> qualify as UnityEngine.Object, or 'using Object = UnityEngine.Object;'
+  - PackageInfo  -> 'using PackageInfo = UnityEditor.PackageManager.PackageInfo;'
+  - Random/Debug -> alias if you reach for them (System vs UnityEngine semantics differ)
+  Grep for bare 'Object' / 'PackageInfo' / 'Random' / 'Debug' before the first compile
+  to skip a CS0104 hotfix round-trip.
 `)
 	case "setup":
 		fmt.Print(`Installation and Unity setup

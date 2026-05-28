@@ -367,6 +367,15 @@ Anti-patterns that fail in PowerShell:
 
 bash equivalent: same idea, replace `@'...'@` with `<<'EOF'` heredoc or single-quoted `'...'` string. Avoid `\"` unless the outer wrapper is `"..."`.
 
+### 4.14 Custom `[HeraTool]` namespace collisions
+
+When you author a new tool under `AgentConnector/Editor/Tools/`, two type-name collisions reliably trigger `CS0104` on Unity's compiler the moment both `using System;` and `using UnityEditor;` are in scope (which most tools need):
+
+- **`Object`** — `System.Object` vs `UnityEngine.Object`. Qualify destroys as `UnityEngine.Object.Destroy(...)` / `UnityEngine.Object.DestroyImmediate(...)`, or alias once: `using Object = UnityEngine.Object;`.
+- **`PackageInfo`** — `UnityEditor.PackageInfo` (legacy AssetStore type) vs `UnityEditor.PackageManager.PackageInfo`. Alias once: `using PackageInfo = UnityEditor.PackageManager.PackageInfo;`.
+
+Other pairs worth aliasing pre-emptively when you reach for them: `Random` (`System.Random` vs `UnityEngine.Random` — different semantics) and `Debug` (`System.Diagnostics.Debug` vs `UnityEngine.Debug`). Grep for bare `Object` / `PackageInfo` / `Random` / `Debug` once before triggering the first compile to skip a hotfix round-trip.
+
 ---
 
 ## 5. Reference (skim on demand)
