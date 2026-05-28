@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -464,7 +463,7 @@ namespace HeraAgent.Tools
             {
                 instance_id = go.GetInstanceID(),
                 name = go.name,
-                path = GetHierarchyPath(t),
+                path = HierarchyPath.Build(t),
                 scene = go.scene.name,
                 scene_path = go.scene.path,
                 active = go.activeInHierarchy,
@@ -475,18 +474,6 @@ namespace HeraAgent.Tools
                     scale = new { x = t.localScale.x, y = t.localScale.y, z = t.localScale.z },
                 },
             };
-        }
-
-        private static string GetHierarchyPath(Transform t)
-        {
-            var stack = new Stack<string>();
-            var cursor = t;
-            while (cursor != null)
-            {
-                stack.Push(cursor.name);
-                cursor = cursor.parent;
-            }
-            return "/" + string.Join("/", stack);
         }
     }
 }

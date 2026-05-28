@@ -653,6 +653,16 @@ Packages (Package Manager):
     manage_packages remove com.unity.ai.navigation
     manage_packages embed com.unity.test-framework
 
+GameObjects (find):
+  find_gameobjects                                  All scene GameObjects (paged, limit=50)
+  find_gameobjects --name Player                    Substring filter on name (case-insensitive)
+  find_gameobjects --tag Enemy                      Exact tag match
+  find_gameobjects --layer UI                       Layer name or integer index
+  find_gameobjects --component Rigidbody            Has the given component
+  find_gameobjects --path_glob /Root/**/Pickup      Glob on hierarchy path (* segment, ** multiple)
+  find_gameobjects --include_inactive false         Active in hierarchy only (default includes inactive)
+  find_gameobjects --limit 100 --offset 50          Pagination
+
 GameObjects:
   manage_gameobject create --name <n> [--primitive <kind>] [--parent <id|path>] [--position x,y,z]
   manage_gameobject destroy --instance_id <N>|--path </R/C>
@@ -890,6 +900,58 @@ Examples:
 Notes:
   - load --mode single fails if the active scene has unsaved changes.
   - close fails if the target scene is dirty; save first.
+`)
+	case "find_gameobjects":
+		fmt.Print(`Usage: hera-agent-unity find_gameobjects [filters] [pagination]
+
+Searches every loaded-scene GameObject (active + inactive by default) and
+returns a shallow entry per match. Filters combine with AND.
+
+Filters:
+  --name <substr>            Name substring (case-insensitive).
+  --tag <name>               Exact tag match (Unity tag system).
+  --layer <name|index>       Layer name ('UI') or integer index (0..31).
+  --component <type>         Has the given component. Short name ('Rigidbody')
+                             or fully-qualified ('UnityEngine.Rigidbody').
+  --path_glob <glob>         Hierarchy path glob.
+                                *   matches a single segment (no '/')
+                                **  matches multiple segments
+                                ?   matches a single non-'/' char
+                             Path form: '/Root/Child/Name'.
+  --include_inactive <bool>  Default true. False = activeInHierarchy only.
+
+Pagination:
+  --limit  <N>               Max results (default 50). 0 = no cap.
+  --offset <N>               Skip the first N matches (default 0).
+
+Results are sorted by hierarchy path for stable pagination across calls.
+
+Output:
+  {
+    "total":     <count after filtering, before pagination>,
+    "returned":  <count in this page>,
+    "offset":    <echoed offset>,
+    "limit":     <echoed limit>,
+    "has_more":  <true if more pages remain>,
+    "results": [
+      { "instance_id": ..., "name": "...", "path": "/Root/...",
+        "scene": "...", "active": true|false }
+    ]
+  }
+
+Notes:
+  - Prefab assets and HideFlags.HideInHierarchy objects are stripped — only
+    things a user would see in the Hierarchy window are returned.
+  - Combine with manage_gameobject by feeding 'instance_id' back in
+    (survives renames and reparenting; preferred over path).
+
+Examples:
+  hera-agent-unity find_gameobjects --name Player
+  hera-agent-unity find_gameobjects --tag Enemy --include_inactive false
+  hera-agent-unity find_gameobjects --component Rigidbody --limit 20
+  hera-agent-unity find_gameobjects --path_glob /Root/**/Pickup
+  hera-agent-unity find_gameobjects --layer UI
+  hera-agent-unity find_gameobjects --limit 50 --offset 100
 `)
 	case "manage_packages":
 		fmt.Print(`Usage: hera-agent-unity manage_packages <action> [identifier] [flags]

@@ -269,6 +269,66 @@ hera-agent-unity manage_packages embed com.unity.test-framework
 
 ---
 
+## find_gameobjects
+
+Search every loaded-scene GameObject and return a shallow entry per match. Filters combine with AND; results are sorted by hierarchy path so pagination is stable across calls.
+
+```bash
+hera-agent-unity find_gameobjects [filters] [pagination]
+```
+
+### Filters
+
+| Flag | Description |
+|:---|:---|
+| `--name <substr>` | Name substring, case-insensitive. |
+| `--tag <name>` | Exact tag match (Unity tag system). |
+| `--layer <name\|index>` | Layer name (`UI`) or integer index (`0..31`). |
+| `--component <type>` | Has the given component. Short name (`Rigidbody`) or fully-qualified (`UnityEngine.Rigidbody`). |
+| `--path_glob <glob>` | Hierarchy path glob. `*` = single segment, `**` = multiple segments, `?` = single non-`/` char. |
+| `--include_inactive <bool>` | Default `true`. `false` = `activeInHierarchy` only. |
+
+### Pagination
+
+| Flag | Description | Default |
+|:---|:---|:---|
+| `--limit` | Max results to return. `0` = no cap. | `50` |
+| `--offset` | Skip the first N matches. | `0` |
+
+### Return shape
+
+```json
+{
+  "total":    137,
+  "returned": 50,
+  "offset":   0,
+  "limit":    50,
+  "has_more": true,
+  "results": [
+    { "instance_id": -12345, "name": "Player",
+      "path": "/Root/Player", "scene": "Main", "active": true }
+  ]
+}
+```
+
+### Examples
+
+```bash
+hera-agent-unity find_gameobjects --name Player
+hera-agent-unity find_gameobjects --tag Enemy --include_inactive false
+hera-agent-unity find_gameobjects --component Rigidbody --limit 20
+hera-agent-unity find_gameobjects --path_glob /Root/**/Pickup
+hera-agent-unity find_gameobjects --layer UI
+hera-agent-unity find_gameobjects --limit 50 --offset 100
+```
+
+**Notes**:
+- Prefab assets and `HideFlags.HideInHierarchy` objects are stripped — only items visible in the Hierarchy window are returned.
+- Feed an `instance_id` from a result back into `manage_gameobject` for follow-up edits — it survives renames and reparenting (path can change underneath you).
+- `--component` resolves through `TypeCache.GetTypesDerivedFrom<Component>()` so user-defined `MonoBehaviour`s work too.
+
+---
+
 ## manage_gameobject
 
 GameObject CRUD inside the active scene(s). Target by `instance_id` (preferred — survives renames and duplicates) or hierarchy `path` (`/Root/Child/...`).

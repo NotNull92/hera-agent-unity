@@ -9,6 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`find_gameobjects` tool** (`AgentConnector/Editor/Tools/FindGameObjects.cs`)
+  — search loaded-scene GameObjects with filters that combine via AND
+  (`name` substring case-insensitive, exact `tag`, `layer` by name or
+  index, `component` short or fully-qualified type name resolved through
+  `TypeCache`, and `path_glob` with `*`/`**`/`?` glob semantics) plus
+  built-in pagination (`limit` defaults to 50, `offset` defaults to 0,
+  `has_more` echoed back so callers know when to stop). Results are
+  sorted by hierarchy path so pagination is stable across calls.
+  Strips prefab assets and `HideFlags.HideInHierarchy` objects so only
+  what a user would see in the Hierarchy window is returned. Shallow
+  return per entry: `{ instance_id, name, path, scene, active }` —
+  same `instance_id` shape `manage_gameobject` accepts as input, so
+  filter-then-edit workflows feed straight through.
+  - Third entry of the post-v0.0.6 capability queue (vault
+    `capability-gaps-priorities-final.md` §5-3).
+  - Connector bumps to **v0.0.7**.
+
+- **`Core/HierarchyPath.Build(Transform)` helper** — extracted from
+  `ManageGameObject.GetHierarchyPath` now that `FindGameObjects` is a
+  second consumer. Keeps the `/Root/Child/Name` path format consistent
+  across every tool that returns a GameObject shallow shape.
+
 - **`manage_packages` tool** (`AgentConnector/Editor/Tools/ManagePackages.cs`
   + `AgentConnector/Editor/Core/PackageJobState.cs`) — drives
   `UnityEditor.PackageManager.Client` so AI agents can install / remove /
