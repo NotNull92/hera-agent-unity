@@ -227,6 +227,19 @@ func Execute(ctx context.Context) error {
 			return client.Send(currentInst, command, params, 0)
 		}
 		resp, err = testCmd(subArgs, testSend, currentInst.Port)
+	case "manage_packages":
+		currentInst, resolveErr := resolve()
+		if resolveErr != nil {
+			return resolveErr
+		}
+		// Package operations can outlast the global flag timeout (60s default)
+		// because the C# list/add path may run up to 60s on its own and add/
+		// remove poll a file for up to 10m. Send with no HTTP timeout — the
+		// start response (list result or "running" envelope) returns quickly.
+		pkgSend := func(command string, params interface{}) (*client.CommandResponse, error) {
+			return client.Send(currentInst, command, params, 0)
+		}
+		resp, err = managePackagesCmd(subArgs, pkgSend, currentInst.Port)
 	case "exec":
 		subArgs, err = readExecFileIfPresent(subArgs)
 		if err != nil {
@@ -627,6 +640,19 @@ Scene:
     scene save
     scene close Lobby
 
+Packages (Package Manager):
+  manage_packages list                              List every resolved package (sync)
+  manage_packages add <id>                          Install — registry / git URL / file:.. (async, job_id)
+  manage_packages remove <name>                     Uninstall by package name (async, job_id)
+  manage_packages embed <name>                      Copy cached package into Packages/ (async, job_id)
+
+  Examples:
+    manage_packages list
+    manage_packages add com.unity.ai.navigation
+    manage_packages add https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
+    manage_packages remove com.unity.ai.navigation
+    manage_packages embed com.unity.test-framework
+
 GameObjects:
   manage_gameobject create --name <n> [--primitive <kind>] [--parent <id|path>] [--position x,y,z]
   manage_gameobject destroy --instance_id <N>|--path </R/C>
@@ -864,6 +890,58 @@ Examples:
 Notes:
   - load --mode single fails if the active scene has unsaved changes.
   - close fails if the target scene is dirty; save first.
+`)
+	case "manage_packages":
+		fmt.Print(`Usage: hera-agent-unity manage_packages <action> [identifier] [flags]
+
+Actions:
+  list                            List every package the project resolves to (synchronous).
+  add <identifier>                Install a package. identifier accepts any
+                                  Client.Add string:
+                                    com.unity.x            Latest from registry
+                                    com.unity.x@1.2.3      Pinned version
+                                    https://.../repo.git   Git URL
+                                    https://.../repo.git?path=Subdir
+                                    file:../local-path     Local path
+                                  Returns a job_id; the CLI polls the
+                                  package-result file for up to 10m.
+  remove <name>                   Uninstall by package name (async, job_id).
+  embed <name>                    Copy a cached package out of
+                                  Library/PackageCache into Packages/ so it
+                                  becomes locally editable (async, job_id).
+
+Output:
+  list — { packages:[{ name, version, source, resolved_path,
+                       is_direct_dependency, display_name }] }
+  add / remove / embed start — { job_id, port, action, identifier } + message "running"
+  add / remove / embed complete (after polling) —
+      success: { action, identifier, package:{...} } (no package on remove)
+      failure: code PACKAGE_<ACTION>_FAILED + error message
+
+Polling:
+  Result file: ~/.hera-agent-unity/status/package-result-<port>-<job_id>.json
+  Deleted on read. Domain reloads triggered by the package resolver are
+  bridged via [InitializeOnLoad] + a Client.List verifier — the result file
+  is still written after the reload settles.
+
+Safety:
+  Direct manifest.json edits race the resolver and skip git-URL validation.
+  add / remove route through UnityEditor.PackageManager.Client which owns
+  the project lock — prefer this over hand-editing manifest.
+
+Examples:
+  hera-agent-unity manage_packages list
+  hera-agent-unity manage_packages add com.unity.ai.navigation
+  hera-agent-unity manage_packages add com.unity.cinemachine@2.9.7
+  hera-agent-unity manage_packages add https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
+  hera-agent-unity manage_packages remove com.unity.ai.navigation
+  hera-agent-unity manage_packages embed com.unity.test-framework
+
+OpenUPM:
+  Not directly supported in v0.0.6 — OpenUPM packages require a scoped
+  registry entry in manifest.json before Client.Add can resolve them.
+  Add the scoped registry once via the Package Manager UI, then use
+  'manage_packages add com.author.package' here.
 `)
 	case "manage_gameobject":
 		fmt.Print(`Usage: hera-agent-unity manage_gameobject <action> [flags]

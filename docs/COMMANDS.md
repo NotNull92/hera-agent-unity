@@ -179,6 +179,96 @@ hera-agent-unity scene list
 
 ---
 
+## manage_packages
+
+Drive `UnityEditor.PackageManager.Client` from the CLI. Replaces hand-editing `Packages/manifest.json` — the Package Manager API owns the project lock and validates git URLs that a manual edit would mishandle.
+
+```bash
+hera-agent-unity manage_packages <action> [identifier]
+```
+
+### Actions
+
+| Action | Sync? | Description |
+|:---|:---:|:---|
+| `list` | ✅ | Every package the project currently resolves to (incl. indirect dependencies). |
+| `add <identifier>` | ❌ | Install. `identifier` accepts any `Client.Add` form: `com.x.y`, `com.x.y@1.2.3`, `https://.../repo.git`, `https://.../repo.git?path=Sub`, `file:..`. |
+| `remove <name>` | ❌ | Uninstall by package name. |
+| `embed <name>` | ❌ | Copy a cached package out of `Library/PackageCache` into `Packages/` so it becomes locally editable. |
+
+`async` actions return immediately with a `job_id`. The CLI polls
+`~/.hera-agent-unity/status/package-result-<port>-<job_id>.json`
+for up to 10 minutes and deletes it once consumed.
+
+### Identifier forms (`add`)
+
+| Form | Example |
+|:---|:---|
+| Registry, latest | `com.unity.ai.navigation` |
+| Registry, pinned | `com.unity.cinemachine@2.9.7` |
+| Git URL | `https://github.com/Cysharp/UniTask.git` |
+| Git URL, subdir | `https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask` |
+| Local path | `file:../local-package` |
+
+### Return shape
+
+**list**:
+
+```json
+{
+  "packages": [
+    {
+      "name": "com.unity.collab-proxy",
+      "version": "2.4.0",
+      "source": "Registry",
+      "resolved_path": "Library/PackageCache/...",
+      "is_direct_dependency": true,
+      "display_name": "Version Control"
+    }
+  ]
+}
+```
+
+**add / remove / embed (start)**:
+
+```json
+{ "job_id": "pkg-9c4f12a8", "port": 8090, "action": "add", "identifier": "com.unity.ai.navigation" }
+```
+
+**add / remove / embed (completion, written to package-result file)**:
+
+```json
+{
+  "success": true,
+  "message": "add 'com.unity.ai.navigation' completed.",
+  "data": {
+    "action": "add",
+    "identifier": "com.unity.ai.navigation",
+    "package": { "name": "...", "version": "...", "source": "Registry", ... }
+  }
+}
+```
+
+Failure carries a structured `code`: `PACKAGE_ADD_FAILED`, `PACKAGE_REMOVE_FAILED`, `PACKAGE_EMBED_FAILED`, `PACKAGE_LIST_TIMEOUT`, `PACKAGE_TIMEOUT` (job idle >10m), or `PACKAGE_RESUME_LIST_FAILED` / `PACKAGE_RESUME_VERIFY_FAILED` (post-reload verification fell over).
+
+### Examples
+
+```bash
+hera-agent-unity manage_packages list
+hera-agent-unity manage_packages add com.unity.ai.navigation
+hera-agent-unity manage_packages add com.unity.cinemachine@2.9.7
+hera-agent-unity manage_packages add https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
+hera-agent-unity manage_packages remove com.unity.ai.navigation
+hera-agent-unity manage_packages embed com.unity.test-framework
+```
+
+**Notes**:
+- The package resolver triggers a domain reload after most `add` / `remove` operations. The CLI bridges this via `[InitializeOnLoad]` — a `Client.List` verifier runs after the reload and writes the result file even though the original `Request` handle is gone.
+- OpenUPM packages need their scoped registry registered first (Package Manager UI → ⊕ → Add scoped registry). Once registered, `manage_packages add com.author.pkg` resolves them like any registry package.
+- Embedding into `Packages/` puts the package under version control — commit the new folder if you want others to see your local edits.
+
+---
+
 ## manage_gameobject
 
 GameObject CRUD inside the active scene(s). Target by `instance_id` (preferred — survives renames and duplicates) or hierarchy `path` (`/Root/Child/...`).

@@ -9,6 +9,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`manage_packages` tool** (`AgentConnector/Editor/Tools/ManagePackages.cs`
+  + `AgentConnector/Editor/Core/PackageJobState.cs`) — drives
+  `UnityEditor.PackageManager.Client` so AI agents can install / remove /
+  embed packages without hand-editing `Packages/manifest.json` (which
+  races the resolver and skips git-URL validation). Four sub-actions:
+  `list` (synchronous, returns the full resolved package set), `add`,
+  `remove`, `embed` (each async — returns `{ job_id, port, action,
+  identifier }` immediately and writes the final result to
+  `~/.hera-agent-unity/status/package-result-<port>-<job_id>.json` up
+  to 10 minutes later). `add` accepts every `Client.Add` identifier
+  form: `com.x.y`, `com.x.y@1.2.3`, git URLs (with optional `?path=`
+  subdir), and `file:..` local paths.
+  - **Domain-reload safe.** Package installs almost always trigger a
+    resolver-driven domain reload that destroys the in-flight `Request`
+    handle. `PackageJobState` registers an `[InitializeOnLoad]` hook
+    that, after the reload settles, scans pending-job files and runs a
+    fresh `Client.List` to infer success (identifier present, or absent
+    for `remove`) before writing the result file the CLI is polling.
+  - **CLI poller** (`cmd/manage_packages.go`) mirrors
+    `cmd/test.go`'s PlayMode pattern: extract `job_id` from the start
+    envelope, poll the result file every 500ms, check Unity PID
+    liveness every 5s, fail after 10 minutes.
+  - Second entry of the post-v0.0.6 capability queue
+    (vault `capability-gaps-priorities-final.md` §5-4). OpenUPM scoped-
+    registry handling is intentionally out of scope for this entry —
+    document the manual scoped-registry registration as a precondition.
+  - Connector bumps to **v0.0.6**.
+
 - **`manage_gameobject` tool** (`AgentConnector/Editor/Tools/ManageGameObject.cs`)
   — GameObject CRUD with seven sub-actions: `create`, `destroy`, `move`,
   `set_parent`, `set_active`, `set_name`, `get_transform`. Target by
@@ -21,7 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `{ instance_id, name, path, scene, scene_path, active, transform:{position,
   rotation, scale} }`. First entry of the post-v0.0.6 capability queue
   (vault `capability-gaps-priorities-final.md` §5-1).
-  - Connector bumps to **v0.0.5**.
 
 ### Changed
 

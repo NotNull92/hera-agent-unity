@@ -200,6 +200,7 @@ Either path locks in the core instruction and the auto-bootstrap protocol — on
 | `log`            | Write to Unity console without the csc compile cost                            |
 | `scene`          | Info, load, save, list, close                                                  |
 | `manage_gameobject` | Create / destroy / move / re-parent / set_active / rename / get_transform   |
+| `manage_packages` | Package Manager: `list` (sync) / `add` / `remove` / `embed` (async job_id)     |
 | `console`        | Read, filter, clear logs                                                       |
 | `test`           | Run EditMode / PlayMode tests                                                  |
 | `menu`           | Execute any menu item by path                                                  |

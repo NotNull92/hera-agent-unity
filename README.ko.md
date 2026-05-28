@@ -200,6 +200,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `log`             | csc 컴파일 없이 Unity 콘솔에 메시지 출력                                      |
 | `scene`           | 정보, 로드, 저장, 목록, 닫기                                                  |
 | `manage_gameobject` | 생성 / 파괴 / 이동 / 부모 변경 / 활성 토글 / 이름 변경 / 트랜스폼 조회        |
+| `manage_packages` | Package Manager: `list` (동기) / `add` / `remove` / `embed` (비동기 job_id)   |
 | `console`         | 로그 읽기, 필터, 삭제                                                         |
 | `test`            | EditMode / PlayMode 테스트 실행                                               |
 | `menu`            | 경로로 메뉴 항목 실행                                                         |
