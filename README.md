@@ -16,10 +16,6 @@
 
 <br>
 
-<img src="docs/video/hera-agent-install-status(not-connected-unity)-uninstall.gif" width="80%" alt="Install, status, uninstall">
-
-<br>
-
 [Install](#installation) · [Quick Start](#quick-start) · [Commands](#commands) · [Batch](#batch--scripted-workflows) · [Custom Tools](#custom-tools) · [Architecture](#architecture) · [FAQ](#faq)
 
 </div>
@@ -98,8 +94,6 @@ Or add to `Packages/manifest.json`:
 
 > The connector starts automatically. No configuration. Requires Unity 6 (6000.0+).
 
-<img src="docs/video/hera-agent-install-UPM-scene.gif" width="80%" alt="Unity UPM installation">
-
 ---
 
 ## Quick Start
@@ -118,8 +112,6 @@ hera-agent-unity update           # pull the latest CLI release
 hera-agent-unity uninstall        # remove the CLI from PATH
 ```
 
-<img src="docs/video/hera-agent-status-connected-unity.gif" width="80%" alt="status with Unity connected">
-
 That's the **human** loop — install, verify, occasionally update. The next section is where the real work happens: hand the agent a one-line trigger and it drives the rest.
 
 ---
@@ -131,8 +123,6 @@ Open Claude Code, Codex, Cursor — any agent that can run a shell command. Ask:
 > **"Check if hera-agent-unity is installed and explore its capabilities."**
 
 The agent will discover the CLI, run `list`, and start driving Unity.
-
-<img src="docs/video/claude-code-hera-agent-scene-transition.gif" width="80%" alt="Claude Code driving Unity via hera-agent-unity">
 
 ### Compatibility
 
