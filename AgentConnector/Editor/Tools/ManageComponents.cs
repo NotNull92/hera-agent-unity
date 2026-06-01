@@ -192,13 +192,14 @@ namespace HeraAgent.Tools
             var (comp, go, err) = ResolveComponentTarget(p);
             if (err != null) return new ErrorResponse(err);
 
+            var compType = comp.GetType();
             string propertyPath = p.Get("property");
             using var so = new SerializedObject(comp);
 
             if (string.IsNullOrEmpty(propertyPath))
             {
                 return new SuccessResponse(
-                    $"Read {comp.GetType().Name} on {go.name}.",
+                    $"Read {compType.Name} on {go.name}.",
                     new
                     {
                         instance_id = go.GetInstanceID(),
@@ -210,16 +211,16 @@ namespace HeraAgent.Tools
             if (prop == null)
                 return new ErrorResponse(
                     "PROPERTY_NOT_FOUND",
-                    $"No SerializedProperty at '{propertyPath}' on {comp.GetType().Name}.",
+                    $"No SerializedProperty at '{propertyPath}' on {compType.Name}.",
                     data: new { available = EnumerateTopLevelPropertyNames(so) });
 
             return new SuccessResponse(
-                $"Read {comp.GetType().Name}.{propertyPath}.",
+                $"Read {compType.Name}.{propertyPath}.",
                 new
                 {
                     instance_id = go.GetInstanceID(),
                     component_id = comp.GetInstanceID(),
-                    type = comp.GetType().FullName,
+                    type = compType.FullName,
                     property = propertyPath,
                     property_type = prop.propertyType.ToString(),
                     value = SerializedPropertyValue.Read(prop),
@@ -231,6 +232,7 @@ namespace HeraAgent.Tools
             var (comp, go, err) = ResolveComponentTarget(p);
             if (err != null) return new ErrorResponse(err);
 
+            var compType = comp.GetType();
             string propertyPath = p.Get("property");
             if (string.IsNullOrEmpty(propertyPath))
                 return new ErrorResponse("'property' required for set.");
@@ -244,15 +246,15 @@ namespace HeraAgent.Tools
             if (prop == null)
                 return new ErrorResponse(
                     "PROPERTY_NOT_FOUND",
-                    $"No SerializedProperty at '{propertyPath}' on {comp.GetType().Name}.",
+                    $"No SerializedProperty at '{propertyPath}' on {compType.Name}.",
                     data: new { available = EnumerateTopLevelPropertyNames(so) });
 
-            Undo.RecordObject(comp, $"Hera Set {comp.GetType().Name}.{propertyPath}");
+            Undo.RecordObject(comp, $"Hera Set {compType.Name}.{propertyPath}");
             var (ok, applyErr) = SerializedPropertyValue.Apply(prop, valueToken);
             if (!ok)
                 return new ErrorResponse(
                     "VALUE_COERCION_FAILED",
-                    $"Failed to apply value to {comp.GetType().Name}.{propertyPath} ({prop.propertyType}): {applyErr}");
+                    $"Failed to apply value to {compType.Name}.{propertyPath} ({prop.propertyType}): {applyErr}");
 
             so.ApplyModifiedProperties();
             EditorSceneManager.MarkSceneDirty(go.scene);
@@ -262,12 +264,12 @@ namespace HeraAgent.Tools
             using var soFresh = new SerializedObject(comp);
             var propFresh = soFresh.FindProperty(propertyPath);
             return new SuccessResponse(
-                $"Set {comp.GetType().Name}.{propertyPath}.",
+                $"Set {compType.Name}.{propertyPath}.",
                 new
                 {
                     instance_id = go.GetInstanceID(),
                     component_id = comp.GetInstanceID(),
-                    type = comp.GetType().FullName,
+                    type = compType.FullName,
                     property = propertyPath,
                     property_type = prop.propertyType.ToString(),
                     value = SerializedPropertyValue.Read(propFresh),
@@ -384,13 +386,14 @@ namespace HeraAgent.Tools
 
         static object BuildComponentShape(Component comp, bool includeProperties)
         {
+            var compType = comp.GetType();
             if (!includeProperties)
             {
                 return new
                 {
                     component_id = comp.GetInstanceID(),
-                    type = comp.GetType().FullName,
-                    type_short = comp.GetType().Name,
+                    type = compType.FullName,
+                    type_short = compType.Name,
                     enabled = TryGetEnabled(comp),
                 };
             }
@@ -400,6 +403,7 @@ namespace HeraAgent.Tools
 
         static object BuildComponentShape(Component comp, SerializedObject so, bool includeProperties)
         {
+            var compType = comp.GetType();
             var properties = new Dictionary<string, object>();
             if (includeProperties)
             {
@@ -415,8 +419,8 @@ namespace HeraAgent.Tools
             return new
             {
                 component_id = comp.GetInstanceID(),
-                type = comp.GetType().FullName,
-                type_short = comp.GetType().Name,
+                type = compType.FullName,
+                type_short = compType.Name,
                 enabled = TryGetEnabled(comp),
                 properties = (object)properties,
             };

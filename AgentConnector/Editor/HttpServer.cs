@@ -111,7 +111,11 @@ namespace HeraAgent
                     s_Port = port;
                     s_Cts = new CancellationTokenSource();
 
-                    _ = ListenLoop(s_Cts.Token);
+                    _ = ListenLoop(s_Cts.Token).ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                            Debug.LogError($"[Hera] ListenLoop faulted: {t.Exception?.InnerException ?? t.Exception}");
+                    }, TaskContinuationOptions.OnlyOnFaulted);
 
                     Debug.Log($"[Hera] HTTP server started on port {port}");
                     return;
@@ -165,7 +169,13 @@ namespace HeraAgent
         static void ProcessQueue()
         {
             while (s_Queue.TryDequeue(out var item))
-                _ = ProcessItem(item);
+            {
+                _ = ProcessItem(item).ContinueWith(t =>
+                {
+                    if (t.IsFaulted)
+                        Debug.LogError($"[Hera] ProcessItem faulted: {t.Exception?.InnerException ?? t.Exception}");
+                }, TaskContinuationOptions.OnlyOnFaulted);
+            }
         }
 
         static async Task ProcessItem(WorkItem item)
@@ -196,7 +206,11 @@ namespace HeraAgent
                 try
                 {
                     var context = await s_Listener.GetContextAsync();
-                    _ = HandleRequest(context);
+                    _ = HandleRequest(context).ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                            Debug.LogError($"[Hera] HandleRequest faulted: {t.Exception?.InnerException ?? t.Exception}");
+                    }, TaskContinuationOptions.OnlyOnFaulted);
                 }
                 catch (ObjectDisposedException)
                 {

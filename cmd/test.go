@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -83,43 +82,5 @@ func pollTestResults(port int) (*client.CommandResponse, error) {
 	}
 
 	resultsPath := filepath.Join(home, ".hera-agent-unity", "status", fmt.Sprintf("test-results-%d.json", port))
-	deadline := time.Now().Add(10 * time.Minute)
-	const pidCheckEvery = 5 * time.Second
-	lastPidCheck := time.Now()
-	var lastPid int
-
-	for time.Now().Before(deadline) {
-		time.Sleep(500 * time.Millisecond)
-
-		data, err := os.ReadFile(resultsPath)
-		if err == nil {
-			_ = os.Remove(resultsPath)
-			var resp client.CommandResponse
-			if err := json.Unmarshal(data, &resp); err != nil {
-				return nil, fmt.Errorf("failed to parse test results: %w", err)
-			}
-			return &resp, nil
-		}
-
-		// State check (cheap): instance writes "stopped" on graceful quit.
-		inst, statusErr := client.FindByPort(port)
-		if statusErr == nil {
-			if inst.State == "stopped" {
-				return nil, fmt.Errorf("unity editor has stopped (port %d)", port)
-			}
-			lastPid = inst.PID
-		}
-
-		// PID liveness (more expensive): catches the case where Unity crashed
-		// during a domain reload — state stays mid-transition forever otherwise.
-		// Done every pidCheckEvery seconds rather than every tick.
-		if lastPid > 0 && time.Since(lastPidCheck) >= pidCheckEvery {
-			lastPidCheck = time.Now()
-			if client.IsProcessDead(lastPid) {
-				return nil, fmt.Errorf("unity editor process %d is no longer running", lastPid)
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("timed out waiting for test results (10m)")
+	return pollResultFile(resultsPath, port, 10*time.Minute, "test results")
 }

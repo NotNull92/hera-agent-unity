@@ -15,7 +15,7 @@ namespace HeraAgent
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".hera-agent-unity", "instances");
 
         static double s_LastWrite;
-        const double INTERVAL = 0.5;
+        const double INTERVAL = 1.0;
         const double COMPILE_START_TIMEOUT = 30.0; // hard cap awaiting compile-start after request
         static string s_ForcedState;
         static double s_CompileRequestTime;

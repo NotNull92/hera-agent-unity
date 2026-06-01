@@ -11,7 +11,10 @@ import (
 
 type instanceResolver func() (*client.Instance, error)
 
-var statusPollInterval = 500 * time.Millisecond
+// statusPollBaseInterval is the initial polling interval used by waitForAlive,
+// waitForState, and waitForReady. It is a variable (not a const) so tests can
+// shorten it to avoid sleeping for hundreds of milliseconds.
+var statusPollBaseInterval = 500 * time.Millisecond
 
 func statusCmd(inst *client.Instance) error {
 	status, err := client.FindByPort(inst.Port)
@@ -96,10 +99,19 @@ func waitForAlive(resolve instanceResolver, timeoutMs int) (*client.Instance, er
 	}
 
 	deadline := time.Now().Add(time.Duration(timeoutMs) * time.Millisecond)
+	interval := statusPollBaseInterval
+	const maxInterval = 1500 * time.Millisecond
+
 	for time.Now().Before(deadline) {
-		time.Sleep(statusPollInterval)
+		time.Sleep(interval)
 		inst, err = resolve()
 		if err != nil {
+			if interval < maxInterval {
+				interval *= 2
+				if interval > maxInterval {
+					interval = maxInterval
+				}
+			}
 			continue
 		}
 		if inst.Timestamp > baseline {
@@ -124,10 +136,19 @@ func waitForState(resolve instanceResolver, timeoutMs int, targets ...string) er
 		fmt.Fprintf(os.Stderr, "Waiting for state %v...\n", targets)
 	}
 	deadline := time.Now().Add(time.Duration(timeoutMs) * time.Millisecond)
+	interval := statusPollBaseInterval
+	const maxInterval = 1500 * time.Millisecond
+
 	for time.Now().Before(deadline) {
-		time.Sleep(statusPollInterval)
+		time.Sleep(interval)
 		inst, err := resolve()
 		if err != nil {
+			if interval < maxInterval {
+				interval *= 2
+				if interval > maxInterval {
+					interval = maxInterval
+				}
+			}
 			continue
 		}
 		for _, t := range targets {
@@ -151,10 +172,19 @@ func waitForReady(resolve instanceResolver) bool {
 	}
 
 	deadline := time.Now().Add(5 * time.Minute)
+	interval := statusPollBaseInterval
+	const maxInterval = 1500 * time.Millisecond
+
 	for time.Now().Before(deadline) {
-		time.Sleep(statusPollInterval)
+		time.Sleep(interval)
 		status, err := resolve()
 		if err != nil {
+			if interval < maxInterval {
+				interval *= 2
+				if interval > maxInterval {
+					interval = maxInterval
+				}
+			}
 			continue
 		}
 		if status.State == "ready" {

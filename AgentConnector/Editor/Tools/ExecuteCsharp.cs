@@ -564,22 +564,23 @@ namespace HeraAgent.Tools
         //   "full" — raw inner.StackTrace verbatim
         private static object BuildRuntimeError(Exception inner, string mode)
         {
+            var innerType = inner.GetType();
             object data;
             switch (mode)
             {
                 case "none":
-                    data = new { exception_type = inner.GetType().FullName };
+                    data = new { exception_type = innerType.FullName };
                     break;
                 case "full":
-                    data = new { exception_type = inner.GetType().FullName, stack_trace = inner.StackTrace };
+                    data = new { exception_type = innerType.FullName, stack_trace = inner.StackTrace };
                     break;
                 default: // "user"
-                    data = new { exception_type = inner.GetType().FullName, stack_trace = FilterUserFrames(inner.StackTrace) };
+                    data = new { exception_type = innerType.FullName, stack_trace = FilterUserFrames(inner.StackTrace) };
                     break;
             }
             return new ErrorResponse(
                 "EXEC_RUNTIME_ERROR",
-                $"Your C# snippet threw {inner.GetType().Name}: {inner.Message}",
+                $"Your C# snippet threw {innerType.Name}: {inner.Message}",
                 data: data);
         }
 

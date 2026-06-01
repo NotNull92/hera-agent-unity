@@ -66,39 +66,5 @@ func pollPackageJob(port int, jobID string) (*client.CommandResponse, error) {
 
 	resultPath := filepath.Join(home, ".hera-agent-unity", "status",
 		fmt.Sprintf("package-result-%d-%s.json", port, jobID))
-	deadline := time.Now().Add(10 * time.Minute)
-	const pidCheckEvery = 5 * time.Second
-	lastPidCheck := time.Now()
-	var lastPid int
-
-	for time.Now().Before(deadline) {
-		time.Sleep(500 * time.Millisecond)
-
-		data, rerr := os.ReadFile(resultPath)
-		if rerr == nil {
-			_ = os.Remove(resultPath)
-			var resp client.CommandResponse
-			if jerr := json.Unmarshal(data, &resp); jerr != nil {
-				return nil, fmt.Errorf("failed to parse package result: %w", jerr)
-			}
-			return &resp, nil
-		}
-
-		inst, statusErr := client.FindByPort(port)
-		if statusErr == nil {
-			if inst.State == "stopped" {
-				return nil, fmt.Errorf("unity editor has stopped (port %d)", port)
-			}
-			lastPid = inst.PID
-		}
-
-		if lastPid > 0 && time.Since(lastPidCheck) >= pidCheckEvery {
-			lastPidCheck = time.Now()
-			if client.IsProcessDead(lastPid) {
-				return nil, fmt.Errorf("unity editor process %d is no longer running", lastPid)
-			}
-		}
-	}
-
-	return nil, fmt.Errorf("timed out waiting for package job %s (10m)", jobID)
+	return pollResultFile(resultPath, port, 10*time.Minute, fmt.Sprintf("package job %s", jobID))
 }

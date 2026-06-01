@@ -35,9 +35,9 @@ func writeInstanceFile(t *testing.T, inst client.Instance) string {
 }
 
 func TestWaitForAlive_FollowsResolverPortChange(t *testing.T) {
-	origPollInterval := statusPollInterval
-	statusPollInterval = 5 * time.Millisecond
-	t.Cleanup(func() { statusPollInterval = origPollInterval })
+	origPollInterval := statusPollBaseInterval
+	statusPollBaseInterval = 5 * time.Millisecond
+	t.Cleanup(func() { statusPollBaseInterval = origPollInterval })
 
 	project := "C:/WorkSpace/ProjectMaid"
 	callCount := 0

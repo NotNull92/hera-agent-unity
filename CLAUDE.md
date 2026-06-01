@@ -86,11 +86,18 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 
 ### Adding a Command
 
+#### C# side
+
 1. Add a C# tool in `AgentConnector/Editor/Tools/` with `[HeraTool(Name = "command_name")]`.
 2. CLI command name matches the tool name — default passthrough handles dispatch.
 3. Positional args arrive as the `args` array, flags as named params.
-4. Go-side code is only needed for polling/waiting logic (editor, test).
-5. Add help text in `cmd/root.go` `printHelp()` overview and `printTopicHelp()` detailed section.
+
+#### Go side
+
+4. Add handler in `cmd/<command>.go` if the command needs polling/waiting logic (editor, test, manage_packages, etc.). Passthrough commands need no Go handler.
+5. Add routing in `cmd/root.go` `Execute()` switch. Default passthrough (fallthrough to `buildParams` + `send`) is enough for simple commands.
+6. Add to `cmd/root.go` `humanCategories` if the command is **human-target** (install, status, doctor, etc.). Omit for AI-target tool commands (exec, manage_components, batch, etc.).
+7. Add help text in `cmd/root.go` `printHelp()` overview and `printTopicHelp()` detailed section.
 
 ### Adding C# files to the Connector (.meta is mandatory)
 

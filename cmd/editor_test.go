@@ -23,9 +23,9 @@ func TestEditorCmd_Play(t *testing.T) {
 }
 
 func TestEditorCmd_PlayWait(t *testing.T) {
-	origPollInterval := statusPollInterval
-	statusPollInterval = 5 * time.Millisecond
-	t.Cleanup(func() { statusPollInterval = origPollInterval })
+	origPollInterval := statusPollBaseInterval
+	statusPollBaseInterval = 5 * time.Millisecond
+	t.Cleanup(func() { statusPollBaseInterval = origPollInterval })
 
 	send, params := mockSend("manage_editor", t)
 	resolve := func() (*client.Instance, error) {

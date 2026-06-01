@@ -52,8 +52,8 @@ var sharedHTTPClient = &http.Client{
 			Timeout:   2 * time.Second,
 			KeepAlive: 15 * time.Second,
 		}).DialContext,
-		MaxIdleConns:        4,
-		MaxIdleConnsPerHost: 2,
+		MaxIdleConns:        8,
+		MaxIdleConnsPerHost: 4,
 		IdleConnTimeout:     30 * time.Second,
 		DisableCompression:  true, // localhost, gzip cost > benefit
 	},
