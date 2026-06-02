@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (uGUI authoring tool — Connector v0.0.15)
+
+- **`manage_ui` — a new `[HeraTool]` for uGUI authoring.** Verified end-to-end
+  against a live Unity 6 editor. Actions:
+  - **`create`** — spins up a UI element (`canvas`, `panel`, `image`, `button`,
+    `text`, `empty`) with automatic Canvas + EventSystem scaffolding when one is
+    missing. Non-canvas elements default to the existing/auto Canvas as parent.
+  - **`set_anchor`** — exposes Unity's named anchor-preset grid
+    (`top-center`, `middle-left`, `stretch`, …) plus raw `anchor_min` /
+    `anchor_max`. By default the element's rect stays **visually fixed** (offsets
+    recomputed, the painful part to do by hand); `--snap` zeroes offsets / fills
+    and moves the pivot to match (Unity's Alt+Shift click).
+  - **`get_rect` / `set_rect`** — read the full RectTransform (anchors, pivot,
+    offsets, size, detected preset) and set any subset of fields directly.
+- **Zero compile-time dependency on com.unity.ugui / TextMeshPro.** UI and TMP
+  component types resolve through `TypeCache` (`ComponentTypeResolver`) and are
+  added via `AddComponent(type)`, so the connector still compiles in a project
+  without those packages. The text engine auto-selects TextMeshPro when present,
+  else legacy `UnityEngine.UI.Text`; force either with `--text tmp` / `--text
+  legacy`.
+- **Boundary kept clean:** `manage_ui` owns RectTransform anchor/pivot math and
+  UI-aware creation only; element *property* edits (Image color, Button colors,
+  Text font) stay in `manage_components` — no reimplementation.
+
 ### Added (asset-editing tools — Connector v0.0.14)
 
 - **Four new `[HeraTool]`s that fill the prefab / material / shader gap.** All

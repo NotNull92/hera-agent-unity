@@ -184,6 +184,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `manage_components`  | GameObject 의 component CRUD: `add` / `remove` / `list` / `get` / `set`. property 경로는 raw `SerializedProperty` 경로. |
 | `find_gameobjects`   | 씬 GameObject 필터 (이름 / 태그 / 레이어 / 컴포넌트 / 경로 glob) + 페이지네이션. |
 | `manage_prefab`      | 프리팹 에셋: `create`(GameObject → 프리팹) / `instantiate` / headless `add_component` / `remove_component`. |
+| `manage_ui`          | uGUI 저작: `create`(UI 요소 + Canvas/EventSystem 자동 구성) / `get_rect` / `set_anchor`(명명 프리셋 그리드) / `set_rect`. raw `m_` 경로 없이 RectTransform anchor/pivot 수학 처리. |
 
 ### 에셋 · 머티리얼 · 셰이더
 
@@ -253,6 +254,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `manage_components` | v0.0.8 | raw `SerializedProperty` 경로(`m_Mass`, `m_Materials.Array.data[0]`)로 컴포넌트 CRUD. 참조 필드는 InstanceID / asset path / `{instance_id\|asset_path}` envelope 셋 다 수용. 이후 모든 `manage_*` 가 재사용할 property-set 패턴 정립. |
 | `unity_docs`        | v0.0.10 → **v0.0.12** | 오프라인 Unity 6 ScriptReference 조회. **31,581 entries 가 1.2 MiB gzipped JSONL 로 UPM 패키지 안에 포함** — 사용자 PC 의 docs 폴더 불필요, 네트워크 불필요, rate limit 없음. |
 | `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | 자산 편집 묶음. `describe_shader`(셰이더 프로퍼티 조회/검색) → `manage_material`(머티리얼 CRUD, `SerializedPropertyValue` 재사용) / `manage_prefab`(headless `LoadPrefabContents` 편집) / `manage_asset_import`(`AssetImporter` import 설정, manage_components 패턴). |
+| `manage_ui` | **v0.0.15** | uGUI 저작. `create` 가 UI 요소(canvas / panel / image / button / text / empty)를 Canvas + EventSystem 자동 구성과 함께 생성; `set_anchor` 는 Unity 명명 앵커 프리셋 그리드를 노출하고 rect 를 시각적으로 고정 유지(또는 `--snap` 으로 Alt+Shift 채움); `get_rect` / `set_rect` 로 RectTransform 편집 완성. UI/TMP 타입은 `TypeCache` 로 해석 → com.unity.ugui 없는 프로젝트에서도 커넥터 컴파일. 요소 프로퍼티 편집은 `manage_components` 담당. |
 
 ### `unity_docs` — 설계 + 벤치마크 (v0.0.12)
 

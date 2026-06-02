@@ -184,6 +184,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 | `manage_components`  | Component CRUD on a GameObject: `add` / `remove` / `list` / `get` / `set`. Property paths are raw `SerializedProperty` paths. |
 | `find_gameobjects`   | Filter scene GameObjects (name / tag / layer / component / path glob) with pagination. |
 | `manage_prefab`      | Prefab asset ops: `create` (GameObject → prefab) / `instantiate` / headless `add_component` / `remove_component`. |
+| `manage_ui`          | uGUI authoring: `create` (UI element + auto Canvas/EventSystem) / `get_rect` / `set_anchor` (named preset grid) / `set_rect`. RectTransform anchor/pivot math without raw `m_` paths. |
 
 ### Assets, materials & shaders
 
@@ -253,6 +254,7 @@ The five-tool queue locked-in at 2026-05-28 is complete. Each entry filled a gap
 | `manage_components` | v0.0.8 | Component CRUD via raw `SerializedProperty` paths (`m_Mass`, `m_Materials.Array.data[0]`). Reference fields accept an InstanceID, an asset path, or a `{instance_id\|asset_path}` envelope. Establishes the property-set pattern every future `manage_*` will reuse. |
 | `unity_docs`        | v0.0.10 → **v0.0.12** | Offline Unity 6 ScriptReference lookup. **31,581 entries ship inside the UPM package itself** as a 1.2 MiB gzipped JSONL — no docs folder on the user's machine, no network access, no rate limits. |
 | `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | Asset-editing set. `describe_shader` (inspect/search shaders) pairs with `manage_material` (material CRUD, reuses `SerializedPropertyValue`); `manage_prefab` edits prefab assets headlessly via `LoadPrefabContents`; `manage_asset_import` drives import settings through `AssetImporter` (the `manage_components` pattern). |
+| `manage_ui` | **v0.0.15** | uGUI authoring. `create` spins up UI elements (canvas / panel / image / button / text / empty) with auto Canvas + EventSystem scaffolding; `set_anchor` exposes Unity's named anchor-preset grid and keeps the rect visually fixed (or `--snap` for Alt+Shift fill); `get_rect` / `set_rect` round out RectTransform editing. UI/TMP types resolve via `TypeCache`, so the connector still compiles in projects without com.unity.ugui. Element property edits stay in `manage_components`. |
 
 ### `unity_docs` — design + benchmarks (v0.0.12)
 

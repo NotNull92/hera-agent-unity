@@ -709,6 +709,36 @@ hera-agent-unity manage_asset_import set --path Assets/Tex/icon.png --property m
 
 ---
 
+## manage_ui
+
+uGUI authoring. The value-add over `manage_components`'s raw `m_` paths is the **RectTransform anchor/pivot math**: named anchor presets and visual-position-preserving re-anchoring. UI and TextMeshPro types resolve through `TypeCache`, so the connector still compiles in a project without `com.unity.ugui` installed. Element *property* edits (Image color, Button colors, Text font) stay in `manage_components`.
+
+```bash
+hera-agent-unity manage_ui <action> [flags]
+```
+
+| Action | Flags | Description |
+|:---|:---|:---|
+| `create` | `--element <kind>` `[--name <n>]` `[--content <text>]` `[--text tmp\|legacy]` `[--parent </path> or <id>]` | Create a UI element. Kinds: `canvas`, `panel`, `image`, `button`, `text`, `empty`. Auto-creates a Canvas + EventSystem when one is missing; non-canvas elements default to the existing/auto Canvas as parent. |
+| `get_rect` | `--instance_id <id>` or `--path </path>` | Read the full RectTransform (anchors, pivot, offsets, size) + detected preset. |
+| `set_anchor` | `--preset <name>` or `--anchor_min x,y --anchor_max x,y`; `[--snap true]` `[--pivot x,y]` | Re-anchor. By default the rect stays visually fixed (offsets recomputed); `--snap` zeroes offsets / fills and moves the pivot to match (Unity's Alt+Shift click). |
+| `set_rect` | `[--anchored_position x,y]` `[--size_delta x,y]` `[--pivot x,y]` `[--offset_min x,y]` `[--offset_max x,y]` | Set any subset of RectTransform fields directly. |
+
+**Text engine** — `create text` / `create button` use TextMeshPro when the package is present, else the legacy `UnityEngine.UI.Text`; force either with `--text tmp` / `--text legacy`.
+
+**Anchor presets** — `<vertical>-<horizontal>` where vertical ∈ {`top`, `middle`, `bottom`, `stretch`} and horizontal ∈ {`left`, `center`, `right`, `stretch`}: `top-left`, `top-center`, `top-right`, `middle-left`, `middle-center`, `middle-right`, `bottom-left`, `bottom-center`, `bottom-right`, `top-stretch`, `middle-stretch`, `bottom-stretch`, `stretch-left`, `stretch-center`, `stretch-right`, and `stretch` (full).
+
+```bash
+hera-agent-unity manage_ui create --element button --name PlayBtn --content Play
+hera-agent-unity manage_ui create --element text --name Title --content Hello --text legacy
+hera-agent-unity manage_ui get_rect --path /Canvas/PlayBtn
+hera-agent-unity manage_ui set_anchor --path /Canvas/Title --preset top-center
+hera-agent-unity manage_ui set_anchor --path /Canvas/Bg --preset stretch --snap true
+hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-40 --size_delta 300,60
+```
+
+---
+
 ## reserialize
 
 Force reserialize assets (rewrite YAML/JSON with current Unity version).
