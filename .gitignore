@@ -11,6 +11,3 @@ coverage.out
 
 # Local-dev Claude Code skills (not shared via repo)
 .claude/skills/
-
-# Local-only internal analysis (kept on disk, not shared via repo)
-docs/ECOSYSTEM_COMPARISON_2026.md
