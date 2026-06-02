@@ -9,9 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added (asset-editing tools — Connector v0.0.14)
 
-- **Four new `[HeraTool]`s that fill the prefab / material / shader gap** found
-  in the 2026 ecosystem survey (`docs/ECOSYSTEM_COMPARISON_2026.md`). All are
-  stateless one-shot HTTP calls and were verified end-to-end against a live
+- **Four new `[HeraTool]`s that fill the prefab / material / shader gap.** All
+  are stateless one-shot HTTP calls and were verified end-to-end against a live
   Unity 6 (URP) editor:
   - **`describe_shader`** — inspect a shader's properties (name, type, display
     label, range) or search shader names (`--list`). Read-only; pairs with
