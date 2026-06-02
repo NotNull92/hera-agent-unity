@@ -17,6 +17,7 @@ Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free und
 
 - **CLI ↔ Connector 버전 핸드셰이크 불필요**: 두 버전이 일치한다는 전제 자체가 없음. HTTP+JSON forward-compat과 동적 dispatch가 자연 처리. "버전 매칭 검사 추가하자"는 제안은 모델 밖.
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
+- **단일 에디터 모델 (멀티 에디터 미지원)** 🔒: 한 머신에 Unity 에디터 하나를 전제. 포트 바인딩 구조상 같은 머신에서 멀티 에디터는 실사용 불가 — instance discovery 는 "한" 인스턴스를 해석하고, 재시도·재해석(`doWithReloadRetry` 의 `DiscoverInstance` 포트 추종 등)이 *다른* 에디터를 집을 위험은 **모델 밖**. "여러 에디터 구분/디스앰비규에이션 추가하자", "재해석이 substring 매치로 잘못된 에디터를 고를 수 있다", "PID 로 정확 매칭하자" 같은 지적·제안은 모델 밖 — 멀티 인스턴스 충돌은 발생하지 않는 전제이므로 새 문제로 제기 금지.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
   - **표준 envelope tool 명령** (`exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_ui`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
   - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
