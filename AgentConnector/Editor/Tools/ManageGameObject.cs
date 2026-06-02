@@ -4,7 +4,6 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 namespace HeraAgent.Tools
 {
@@ -283,7 +282,7 @@ namespace HeraAgent.Tools
             string path = p.Get("path") ?? p.Get("target");
             if (!string.IsNullOrEmpty(path))
             {
-                var go = ResolveByPath(path);
+                var go = HierarchyPath.Find(path);
                 if (go == null) return (null, $"No GameObject at path: '{path}'.");
                 return (go, null);
             }
@@ -314,50 +313,9 @@ namespace HeraAgent.Tools
                 return (go, null);
             }
 
-            var byPath = ResolveByPath(s);
+            var byPath = HierarchyPath.Find(s);
             if (byPath == null) return (null, $"No GameObject for parent path: '{s}'.");
             return (byPath, null);
-        }
-
-        // GameObject.Find covers active objects across loaded scenes via "/Root/Child"
-        // syntax. The fallback walk also matches inactive roots/children that Find
-        // would skip — important because reparenting / set_active operates on
-        // inactive subtrees too.
-        private static GameObject ResolveByPath(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return null;
-            var found = GameObject.Find(path);
-            if (found != null) return found;
-
-            string trimmed = path.TrimStart('/');
-            if (string.IsNullOrEmpty(trimmed)) return null;
-            var segments = trimmed.Split('/');
-
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                var scene = SceneManager.GetSceneAt(i);
-                if (!scene.IsValid() || !scene.isLoaded) continue;
-                foreach (var root in scene.GetRootGameObjects())
-                {
-                    if (root.name != segments[0]) continue;
-                    var t = WalkPath(root.transform, segments, 1);
-                    if (t != null) return t.gameObject;
-                }
-            }
-            return null;
-        }
-
-        private static Transform WalkPath(Transform t, string[] segments, int index)
-        {
-            if (index >= segments.Length) return t;
-            for (int i = 0; i < t.childCount; i++)
-            {
-                var c = t.GetChild(i);
-                if (c.name != segments[index]) continue;
-                var match = WalkPath(c, segments, index + 1);
-                if (match != null) return match;
-            }
-            return null;
         }
 
         private static bool IsAncestor(Transform potentialAncestor, Transform t)

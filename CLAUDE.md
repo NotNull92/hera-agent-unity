@@ -65,7 +65,9 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
     HeraAgentAssetConfigWindow.cs   # Editor GUI for asset-config
     Core/             # Response, ParamCoercion, ToolParams,
                       # StringCaseUtility, ToolMetadata, UnityPitfalls,
-                      # HierarchyPath (GameObject path util),
+                      # HierarchyPath (Build: Transform→path; Find:
+                      # path→GameObject, inactive-aware — shared by
+                      # manage_gameobject/components/ui),
                       # ComponentTypeResolver (TypeCache + suggest),
                       # SerializedPropertyValue (JSON ↔ SerializedProperty +
                       # ObjectReference resolver — manage_components base),
@@ -188,6 +190,8 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | `unity_docs` SuggestSimilar 알고리즘 | 🔒 의도된 설계 (v0.0.12) | prefix bucket + length filter + bounded Levenshtein 의 3-layer pre-filter. miss latency 2–5ms (vs 이전 ~290ms). 첫 글자 typo 는 full-scan fallback. ToolDiscovery / ComponentTypeResolver 는 corpus 작아서 동일 최적화 *미적용* (premature) — 같이 묶지 말 것 |
 | `unity_docs` 응답 shape | 🔒 의도된 설계 (v0.0.12) | `{title, signature, summary}` 만. `query_normalized` / `manual_url` / `scriptreference_url` / `unity_version` 은 caller 가 알거나 유도 가능해서 제거. 토큰 ~33. 다시 *verbose shape* 또는 *manual_url 자동 fetch* 제안 금지 |
 | `Levenshtein` / `HierarchyPath` / `ComponentTypeResolver` Core 추출 | ✅ 완료 (v0.0.7–0.0.10) | 3 consumer 발생 시 추출 (premature 회피). HierarchyPath = ManageGameObject + FindGameObjects. ComponentTypeResolver = FindGameObjects + ManageComponents. Levenshtein = ToolDiscovery + ComponentTypeResolver + UnityDocsStore. 새로 다시 묶지 말 것 |
+| `HierarchyPath.Find` (inactive-aware path→GO) Core 추출 | ✅ 완료 (v0.0.16) | manage_ui 가 3번째 소비자가 되며 verbatim `FindByPath`/`ResolveByPath`+`WalkPath` 복사본이 ManageGameObject/ManageComponents/ManageUI 3곳 → `Core/HierarchyPath.Find` 로 통합 (Build 의 역방향). 3 consumer 임계 충족. 다시 인라인 복사 금지. (ManagePrefab 의 `ResolveByPathOrId` 는 inactive walk 없는 별개 헬퍼 — 묶지 말 것) |
+| `manage_ui` EventSystem 입력 모듈 | ✅ 수정 (v0.0.16) | `create` 가 항상 StandaloneInputModule 우선 시도 → new-Input-System 전용 프로젝트에서 매 프레임 throw + 입력 무반응 버그. `#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER` (Unity 내장 디파인 = 활성 입력 핸들링 반영, asmdef 참조 불필요) 로 게이트 — Unity 자체 EventSystem 메뉴와 동일. 다시 runtime 타입 존재 체크로 되돌리지 말 것 |
 | `manage_components` SerializedProperty 패턴 | 🔒 의도된 설계 (v0.0.8) | `Core/SerializedPropertyValue` 가 *모든 후속 manage_\* (material/animation/vfx/SO/prefab)* 의 property-set 토대. raw `m_X` 경로 그대로, friendly-name mapping *미적용* — Unity 가 실제 직렬화하는 이름과 1:1 유지. 다시 friendly mapping 제안 금지 |
 | `manage_packages` 비동기 패턴 | 🔒 의도된 설계 (v0.0.6) | `add/remove/embed` 는 `job_id` 발급 후 파일버스. `list` 만 동기 (CommandRouter 락 안에서 60s budget). 도메인 리로드 후 `[InitializeOnLoad]` 가 `Client.List` 로 결과 검증. 다시 *전부 동기* 또는 *전부 비동기* 통일 제안 금지 |
 

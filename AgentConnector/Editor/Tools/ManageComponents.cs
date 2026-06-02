@@ -4,7 +4,6 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 // Alias to dodge CS0104 between System.Object and UnityEngine.Object once
 // `using System;` is in scope (Unity API author trap — see AGENT.md §4.14).
 using Object = UnityEngine.Object;
@@ -335,53 +334,12 @@ namespace HeraAgent.Tools
             string path = p.Get("path");
             if (!string.IsNullOrEmpty(path))
             {
-                var go = FindByPath(path);
+                var go = HierarchyPath.Find(path);
                 if (go == null) return (null, $"No GameObject at path: '{path}'.");
                 return (go, null);
             }
 
             return (null, "GameObject target required: pass 'instance_id' or 'path'.");
-        }
-
-        // Mirrors ManageGameObject.ResolveByPath — covers inactive subtrees that
-        // GameObject.Find skips. When a third tool needs the same walk this
-        // moves to Core (currently second consumer, kept private here to avoid
-        // premature extraction).
-        static GameObject FindByPath(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return null;
-            var found = GameObject.Find(path);
-            if (found != null) return found;
-
-            string trimmed = path.TrimStart('/');
-            if (string.IsNullOrEmpty(trimmed)) return null;
-            var segments = trimmed.Split('/');
-
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                var scene = SceneManager.GetSceneAt(i);
-                if (!scene.IsValid() || !scene.isLoaded) continue;
-                foreach (var root in scene.GetRootGameObjects())
-                {
-                    if (root.name != segments[0]) continue;
-                    var t = WalkPath(root.transform, segments, 1);
-                    if (t != null) return t.gameObject;
-                }
-            }
-            return null;
-        }
-
-        static Transform WalkPath(Transform t, string[] segments, int index)
-        {
-            if (index >= segments.Length) return t;
-            for (int i = 0; i < t.childCount; i++)
-            {
-                var c = t.GetChild(i);
-                if (c.name != segments[index]) continue;
-                var match = WalkPath(c, segments, index + 1);
-                if (match != null) return match;
-            }
-            return null;
         }
 
         static object BuildComponentShape(Component comp, bool includeProperties)

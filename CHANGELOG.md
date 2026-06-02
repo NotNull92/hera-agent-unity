@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (manage_ui review follow-ups — Connector v0.0.16)
+
+- **EventSystem now gets the input module matching the project's active input
+  handling.** Previously `manage_ui create` always tried `StandaloneInputModule`
+  first and only fell back to `InputSystemUIInputModule` if the type was
+  unloadable — but `StandaloneInputModule` always loads (it ships with
+  com.unity.ugui), so on **new-Input-System-only** projects the auto-created
+  EventSystem got a module that throws every frame and routes no input. The gate
+  is now Unity's own `ENABLE_INPUT_SYSTEM` / `ENABLE_LEGACY_INPUT_MANAGER`
+  compile defines, so it picks `InputSystemUIInputModule` exactly when Unity's
+  GameObject ▸ UI ▸ EventSystem menu would.
+
+### Changed (shared hierarchy-path resolver extracted to Core — v0.0.16)
+
+- **`HierarchyPath.Find(path)`** added to `Core/HierarchyPath.cs` (the reverse of
+  the existing `Build`). The inactive-subtree-aware `"/Root/Child"` → GameObject
+  walk was verbatim-duplicated in `manage_gameobject`, `manage_components`, and
+  `manage_ui`; with the third consumer it crossed the repo's extraction
+  threshold. All three now call the shared resolver and dropped their private
+  `FindByPath`/`ResolveByPath` + `WalkPath` copies (and the now-unused
+  `UnityEngine.SceneManagement` usings).
+
 ### Added (uGUI authoring tool — Connector v0.0.15)
 
 - **`manage_ui` — a new `[HeraTool]` for uGUI authoring.** Verified end-to-end

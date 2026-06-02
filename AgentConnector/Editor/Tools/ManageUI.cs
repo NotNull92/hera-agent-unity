@@ -5,7 +5,6 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 // `using System;` + `using UnityEngine;` leave `Object` ambiguous; alias to the
 // engine type so bare Object here is UnityEngine.Object (CS0104 trap — CLAUDE.md).
 using Object = UnityEngine.Object;
@@ -228,10 +227,20 @@ namespace HeraAgent.Tools
                 Object.DestroyImmediate(go);
                 return "Could not add EventSystem.";
             }
-            // StandaloneInputModule for the legacy input system; InputSystemUIInputModule
-            // when the new input system is the only one present. Best-effort either way.
+            // Pick the input module that matches the project's *active* input
+            // handling, not just which type happens to be loadable. Unity sets
+            // ENABLE_INPUT_SYSTEM / ENABLE_LEGACY_INPUT_MANAGER from Player
+            // Settings, so this gates exactly like Unity's own EventSystem menu.
+            // New-only: StandaloneInputModule would still add (the type ships
+            // with com.unity.ugui) but throws at runtime — so prefer the new
+            // module there and only fall back if it's somehow unavailable.
+#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
+            if (AddByName(go, "InputSystemUIInputModule") == null)
+                AddByName(go, "StandaloneInputModule");
+#else
             if (AddByName(go, "StandaloneInputModule") == null)
                 AddByName(go, "InputSystemUIInputModule");
+#endif
             Undo.RegisterCreatedObjectUndo(go, "Hera Create EventSystem");
             created.Add("EventSystem");
             return null;
@@ -486,7 +495,7 @@ namespace HeraAgent.Tools
             string path = p.Get("path");
             if (!string.IsNullOrEmpty(path))
             {
-                var go = FindByPath(path);
+                var go = HierarchyPath.Find(path);
                 if (go == null) return (null, $"No GameObject at path: '{path}'.");
                 var rt = go.GetComponent<RectTransform>();
                 if (rt == null) return (null, $"'{go.name}' has no RectTransform (not a UI element).");
@@ -506,48 +515,9 @@ namespace HeraAgent.Tools
                 if (go == null) return (null, $"No GameObject for instance_id={id}.");
                 return (go.transform, null);
             }
-            var found = FindByPath(s);
+            var found = HierarchyPath.Find(s);
             if (found == null) return (null, $"No GameObject at path: '{s}'.");
             return (found.transform, null);
-        }
-
-        // Mirrors ManageGameObject/ManageComponents — covers inactive subtrees
-        // GameObject.Find skips. Third copy; promote to Core if a fourth appears.
-        private static GameObject FindByPath(string path)
-        {
-            if (string.IsNullOrEmpty(path)) return null;
-            var found = GameObject.Find(path);
-            if (found != null) return found;
-
-            string trimmed = path.TrimStart('/');
-            if (string.IsNullOrEmpty(trimmed)) return null;
-            var segments = trimmed.Split('/');
-
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                var scene = SceneManager.GetSceneAt(i);
-                if (!scene.IsValid() || !scene.isLoaded) continue;
-                foreach (var root in scene.GetRootGameObjects())
-                {
-                    if (root.name != segments[0]) continue;
-                    var t = WalkPath(root.transform, segments, 1);
-                    if (t != null) return t.gameObject;
-                }
-            }
-            return null;
-        }
-
-        private static Transform WalkPath(Transform t, string[] segments, int index)
-        {
-            if (index >= segments.Length) return t;
-            for (int i = 0; i < t.childCount; i++)
-            {
-                var c = t.GetChild(i);
-                if (c.name != segments[index]) continue;
-                var match = WalkPath(c, segments, index + 1);
-                if (match != null) return match;
-            }
-            return null;
         }
 
         // ---- helpers: components ----
