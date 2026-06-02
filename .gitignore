@@ -8,3 +8,6 @@ hera-agent-unity-*
 .omc/
 .opencode/
 coverage.out
+
+# Local-dev Claude Code skills (not shared via repo)
+.claude/skills/
