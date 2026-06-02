@@ -115,16 +115,34 @@ type CommandResponse struct {
 	Timings     map[string]int64 `json:"timings,omitempty"`
 }
 
-// doWithReloadRetry sends the POST request and transparently retries on
-// connection-refused errors while Unity's HTTP server is down between
-// domain reloads. Only the network-transport error path retries; once a
-// connection is established the request is considered delivered (no
-// double-dispatch). Cap is reloadRetryMax * reloadRetryDelay (~5s).
-func doWithReloadRetry(ctx context.Context, url string, body []byte, port int) (*http.Response, error) {
-	const reloadRetryMax = 10
-	const reloadRetryDelay = 500 * time.Millisecond
+// reloadRetryDelay paces dial retries while Unity's HTTP server is down between
+// domain reloads. reloadRetryFallbackDeadline caps how long we keep trying when
+// the caller set no per-command timeout, so a wedged editor can't hang us
+// forever — a reloading-but-alive editor is followed until it's reachable.
+const (
+	reloadRetryDelay            = 500 * time.Millisecond
+	reloadRetryFallbackDeadline = 60 * time.Second
+)
+
+// doWithReloadRetry sends the POST request and transparently retries while
+// Unity's HTTP listener is down between domain reloads. Only the dial path
+// (connection refused) retries — once a connection is established the request
+// is considered delivered, so the response-read path never retries (no
+// double-dispatch).
+//
+// A domain reload can rebind Unity to a NEW port, so each retry re-reads the
+// heartbeat (fresh) and follows the instance by project rather than hammering
+// the now-dead port. It keeps going until the editor answers, reports
+// "stopped", disappears (process gone), the caller's context is cancelled, or
+// the fallback deadline elapses — so a long reload no longer exhausts a fixed
+// retry budget while it's still in progress.
+func doWithReloadRetry(ctx context.Context, body []byte, inst *Instance) (*http.Response, error) {
+	port := inst.Port
+	project := inst.ProjectPath
+	deadline := time.Now().Add(reloadRetryFallbackDeadline)
 	var lastErr error
-	for attempt := 0; attempt <= reloadRetryMax; attempt++ {
+	for {
+		url := fmt.Sprintf("http://127.0.0.1:%d/command", port)
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 		if err != nil {
 			return nil, err
@@ -138,22 +156,29 @@ func doWithReloadRetry(ctx context.Context, url string, body []byte, port int) (
 		if !isConnectionRefused(err) {
 			return nil, fmt.Errorf("cannot connect to Unity at port %d: %w", port, err)
 		}
-		if attempt == reloadRetryMax {
+		if time.Now().After(deadline) {
 			break
 		}
-		// Heartbeat read is cheap; bail out early if Unity is reported stopped
-		// so we don't waste 5s retrying an editor that's already gone.
-		if inst, hbErr := FindByPort(port); hbErr == nil && inst.State == "stopped" {
-			return nil, fmt.Errorf("unity at port %d has stopped", port)
+		// Listener down — almost always a domain reload. Re-read the heartbeat
+		// (bypassing the cache) to bail if the editor is gone/stopped and to
+		// follow a port rebind so the next attempt targets the live listener.
+		ClearInstanceCache()
+		next, derr := DiscoverInstance(project, 0)
+		if derr != nil {
+			return nil, fmt.Errorf("cannot reach Unity for project %q (editor no longer running?): %w", project, lastErr)
 		}
+		if next.State == "stopped" {
+			return nil, fmt.Errorf("unity at port %d has stopped", next.Port)
+		}
+		port = next.Port
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-time.After(reloadRetryDelay):
 		}
 	}
-	return nil, fmt.Errorf("cannot connect to Unity at port %d after %d retries: %w",
-		port, reloadRetryMax, lastErr)
+	return nil, fmt.Errorf("cannot connect to Unity for project %q after %s (still reloading?): %w",
+		project, reloadRetryFallbackDeadline, lastErr)
 }
 
 func isConnectionRefused(err error) bool {
@@ -360,7 +385,7 @@ func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*C
 		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, string(body))
 	}
 	start := time.Now()
-	resp, err := doWithReloadRetry(ctx, url, body, inst.Port)
+	resp, err := doWithReloadRetry(ctx, body, inst)
 	if err != nil {
 		return nil, err
 	}

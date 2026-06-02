@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (CLI — domain-reload window resilience)
+
+- **Commands issued while Unity is mid-domain-reload now ride the reload out
+  instead of failing.** The connection-refused retry in `internal/client` had two
+  gaps that surfaced when chaining a command right after `editor refresh
+  --compile`: (1) it retried a **fixed 10×500ms (~5s)** budget, so a reload
+  longer than ~5s exhausted it (`cannot connect ... after 10 retries`), and
+  (2) it re-dialed the **same port**, so when Unity rebinds to a new port during
+  the reload (e.g. 8090 → 8092) every retry hit the dead listener. The retry now
+  re-reads the heartbeat each attempt to **follow the port rebind** and keeps
+  trying until the editor answers, reports `stopped`, disappears, the caller's
+  timeout fires, or a 60s fallback elapses — bounded, but no longer cut short
+  while a reload is genuinely still in progress. The
+  connection-established-then-closed path is unchanged (still not retried, to
+  preserve the no-double-dispatch guarantee for mutating commands).
+
 ### Fixed (manage_ui review follow-ups — Connector v0.0.16)
 
 - **EventSystem now gets the input module matching the project's active input
