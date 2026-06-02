@@ -18,7 +18,7 @@ Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free und
 - **CLI ↔ Connector 버전 핸드셰이크 불필요**: 두 버전이 일치한다는 전제 자체가 없음. HTTP+JSON forward-compat과 동적 dispatch가 자연 처리. "버전 매칭 검사 추가하자"는 제안은 모델 밖.
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
-  - **표준 envelope tool 명령** (`exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
+  - **표준 envelope tool 명령** (`exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
   - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
   - **자체 출력 경로 명령** (`asset-config`, `ping`): `printResponse` 를 거치지 않고 직접 출력. `asset-config` 는 기본 styled + `--json` 로 AI 모드. `ping` 은 단일 라인 `port=N alive=N state=... age_ms=N`. `doctor` 도 human 카테고리지만 `--json` / `--agent-rules` 분기 별도.
   - "tool 에러도 인간이 읽는다"는 가정은 audience reality와 어긋남 (실제로 tool 호출 = AI). 새 명령 추가 시 `humanCategories` 등재 여부가 출력 모드를 결정한다.
@@ -31,13 +31,16 @@ Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free und
 cmd/                  # Go CLI — thin passthrough layer
   root.go             # Entry point, flag/arg parsing, humanCategories, default passthrough
   editor.go           # editor command (waitForReady polling)
-  test.go             # test command (PlayMode result polling)
-  status.go           # status + ping + waitForAlive/waitForReady (heartbeat reads)
+  test.go             # test command (PlayMode result polling via pollResultFile)
+  poll.go             # shared pollResultFile: file-bus result poller w/ exponential
+                      # backoff (100ms→1.5s) + state/PID liveness checks (test + packages)
+  status.go           # status + ping + waitForAlive/waitForState/waitForReady
+                      # (heartbeat reads, same backoff)
   update.go           # self-update from GitHub releases (download + rename dance)
   version_check.go    # periodic update notice (12h interval, human-only)
   asset_config.go     # asset plugin config (TUI default + --json for AI)
   batch.go            # batch (multi-command) dispatch + --dry-run preview
-  manage_packages.go  # async job_id poller (file-bus, mirrors test.go PlayMode)
+  manage_packages.go  # async job_id dispatch + pollResultFile (file-bus, like test)
   unity_docs.go       # thin passthrough — connector ships its own data set
   install.go          # self-install onto PATH + legacy scrub
   uninstall.go        # self-uninstall (+ uninstall_{unix,windows}.go variants)
@@ -56,7 +59,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
   Editor/
     HttpServer.cs     # [InitializeOnLoad] HttpListener + queue + main-thread pump
     CommandRouter.cs  # SemaphoreSlim lock (120s) + Dispatch / DispatchBatch
-    Heartbeat.cs      # 0.5s atomic write to ~/.hera-agent-unity/instances/<md5>.json
+    Heartbeat.cs      # 1.0s atomic write to ~/.hera-agent-unity/instances/<md5>.json
     ToolDiscovery.cs  # [HeraTool] reflection cache + Levenshtein "did you mean"
     HeraAgent.asmdef
     HeraAgentAssetConfigWindow.cs   # Editor GUI for asset-config
@@ -71,8 +74,20 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # prefix/length/bounded Levenshtein suggest),
                       # Levenshtein (shared edit-distance helper)
     Tools/            # Tool implementations (auto-registered via [HeraTool]).
-                      # Post-v0.0.6 queue: ManageGameObject / ManagePackages /
-                      # FindGameObjects / ManageComponents / UnityDocs.
+                      # 19 [HeraTool] classes. Name= explicit unless noted
+                      # (no Name= → filename snake_case). ExecCompileCache.cs is
+                      # NOT a tool — internal helper for exec compile caching.
+                      #   exec        ExecuteCsharp
+                      #   console     ReadConsole  /  log          LogToConsole
+                      #   scene       ManageScene  /  menu          ExecuteMenuItem
+                      #   screenshot  EditorScreenshot / profiler   ManageProfiler
+                      #   reserialize ReserializeAssets / detect_assets DetectAssets(no Name=)
+                      #   describe_type DescribeType / find_method  FindMethod
+                      #   list_assemblies ListAssemblies
+                      #   manage_editor ManageEditor(no Name=) / refresh_unity RefreshUnity(no Name=)
+                      # Post-v0.0.6 queue (all shipped): manage_gameobject ManageGameObject /
+                      #   manage_packages ManagePackages / find_gameobjects FindGameObjects /
+                      #   manage_components ManageComponents / unity_docs UnityDocs.
     Data/             # Bundled data (UPM-shipped, immutable). Currently
                       # unity_docs_6.0.jsonl.gz.bytes — pre-parsed Unity 6
                       # ScriptReference, ~1.2 MiB gzipped, regenerated by
@@ -146,7 +161,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | asset-config 한/영 혼용 | ✅ 영어 통일 | 카테고리명, help text, 출력 메시지 모두 영어 |
 | `GetSnakeCaseName` 중복 | ✅ 제거됨 | `StringCaseUtility.ToSnakeCase()` 사용 |
 | ExecuteCsharp 삼항 연산자 | ✅ 단순화 | `const string name = "csc.exe"` |
-| ProcessItem fire-and-forget | ✅ 수정됨 | `ContinueWith(..., OnlyOnFaulted)` |
+| ProcessItem fire-and-forget | ✅ 수정됨 | v0.0.13: `ListenLoop`/`ProcessItem`/`HandleRequest` 모두 `ContinueWith(..., OnlyOnFaulted)` 적용 |
 | CommandRouter 에러 메시지 | ✅ 스타일링 완료 | `"[Hera] I waited 120s for the command lock..."` 형태 |
 | `gocritic` 린터 | 🚫 제외됨 | `unlambda`/`ifElseChain` 등 false-positive 多. `.golangci.yml`에서 뺌. `goimports`/`govet`/`staticcheck`/`ineffassign`/`misspell`/`bodyclose`만 활성화 |
 | HTTP body drain (non-200) | ⏭️ 넘어감 | stateless 단발성 + `io.ReadAll`로 충분히 drain |
@@ -160,6 +175,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | asset-config TUI 의 dead `FullHelp`/`ShortHelp` | ✅ v0.0.6 제거 | `bubbles/help` import 안 함, 호출처 0개 |
 | `internal/assetconfig` 의 dead `SetAssetInstalled` 주석 | ✅ v0.0.6 제거 | 함수 자체는 이전에 삭제됨, 고아 주석만 남아 있던 것 |
 | post-v0.0.6 capability queue (5건) | ✅ 완료 (2026-05-28) | `manage_gameobject` v0.0.5 / `manage_packages` v0.0.6 / `find_gameobjects` v0.0.7 / `manage_components` v0.0.8 / `unity_docs` v0.0.10–0.0.12. vault `capability-gaps-priorities-final.md` §5 잠금된 큐. 다음 큐는 새 vault 결정 시 lock-in |
+| reliability/efficiency pass (v0.0.13) | ✅ 완료 (2026-06-01) | `cmd/poll.go` 공유 `pollResultFile` 추출 (test + manage_packages 통합) + 고정 500ms sleep → exponential backoff (100ms→1.5s). status 폴링도 동일 backoff. `Heartbeat` 1.0s 로 완화 (3s stale margin 유지). HTTP idle pool MaxIdleConns 4→8 / PerHost 2→4. C# `ManageComponents`/`ExecuteCsharp` `GetType()` 캐시. 다시 제안 금지 |
 | `unity_docs` 데이터 소스 | 🔒 의도된 설계 (v0.0.10+) | 사용자 PC 의 `Documentation/en` 직접 읽기는 *폐기됨* (v0.0.9 만). 빌드 도구 (`tools/build-unity-docs`) 가 한 번 추출 → `AgentConnector/Editor/Data/unity_docs_6.0.jsonl.gz.bytes` 로 UPM 패키지에 동봉. 사용자 docs 폴더 의존성 0. 다시 *런타임 HTML fetch* 또는 *docs_root path resolution* 제안 금지 |
 | `unity_docs` SuggestSimilar 알고리즘 | 🔒 의도된 설계 (v0.0.12) | prefix bucket + length filter + bounded Levenshtein 의 3-layer pre-filter. miss latency 2–5ms (vs 이전 ~290ms). 첫 글자 typo 는 full-scan fallback. ToolDiscovery / ComponentTypeResolver 는 corpus 작아서 동일 최적화 *미적용* (premature) — 같이 묶지 말 것 |
 | `unity_docs` 응답 shape | 🔒 의도된 설계 (v0.0.12) | `{title, signature, summary}` 만. `query_normalized` / `manual_url` / `scriptreference_url` / `unity_version` 은 caller 가 알거나 유도 가능해서 제거. 토큰 ~33. 다시 *verbose shape* 또는 *manual_url 자동 fetch* 제안 금지 |
