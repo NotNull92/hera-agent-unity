@@ -615,6 +615,100 @@ hera-agent-unity screenshot --output_path captures/my_scene.png
 
 ---
 
+## describe_shader
+
+Inspect a shader's properties, or search shader names. Read-only — pair it with `manage_material` ("learn the properties, then set them").
+
+```bash
+hera-agent-unity describe_shader "<name>"          # describe one shader
+hera-agent-unity describe_shader --list [--filter <substr>]
+```
+
+| Flag | Description | Default |
+|:---|:---|:---|
+| `--list` | List/search shader names instead of describing one. | off |
+| `--filter <substr>` | (list) Case-insensitive name filter. | — |
+| `--limit <n>` | get: max properties. list: max shaders. | 60 / 50 |
+| `--include_builtin <bool>` | (list) Include built-in shaders. | `true` |
+
+`get` returns `{ name, property_count, truncated, properties: [{ name, type, display?, range? }] }` — `type` is `Color/Float/Range/Vector/TexEnv/Int`; `range` is `[min, max]` for Range. A missing shader returns `SHADER_NOT_FOUND` with `did_you_mean` suggestions.
+
+```bash
+hera-agent-unity describe_shader "Universal Render Pipeline/Lit"
+hera-agent-unity describe_shader --list --filter URP
+```
+
+---
+
+## manage_material
+
+Material asset CRUD. Property names are shader property names (`_BaseColor`, `_Metallic`, `_MainTex`) — run `describe_shader` first to discover them.
+
+```bash
+hera-agent-unity manage_material <action> --path <Assets/...mat> [flags]
+```
+
+| Action | Flags | Description |
+|:---|:---|:---|
+| `create` | `--shader <name>` | Create a material bound to a shader. |
+| `get` | `[--property <name>]` | Dump all property values, or one. |
+| `set` | `--property <name> --value <v>` | Set one property and save. |
+| `set_shader` | `--shader <name>` | Swap the shader. |
+
+Values reuse the `manage_components` forms: `1,0,0,1` or `#RRGGBB` for colors, a number for floats, `x,y,z,w` for vectors, and an asset path or InstanceID for textures.
+
+```bash
+hera-agent-unity manage_material create --path Assets/Mats/Player.mat --shader "Universal Render Pipeline/Lit"
+hera-agent-unity manage_material set --path Assets/Mats/Player.mat --property _BaseColor --value 1,0,0,1
+hera-agent-unity manage_material set --path Assets/Mats/Player.mat --property _MainTex --value Assets/Tex/skin.png
+```
+
+---
+
+## manage_prefab
+
+Prefab asset operations. `add_component` / `remove_component` edit the prefab asset **headlessly** (`PrefabUtility.LoadPrefabContents` → edit → save → unload — no prefab stage, no open-scene side effects) and target the prefab root.
+
+```bash
+hera-agent-unity manage_prefab <action> --path <Assets/...prefab> [flags]
+```
+
+| Action | Flags | Description |
+|:---|:---|:---|
+| `create` | `--source </Root/Child>` or `--instance_id <id>` | Save a scene GameObject as a new prefab asset. |
+| `instantiate` | `[--parent </path> or <id>]` | Drop the prefab into the active scene. |
+| `add_component` | `--component <Type>` | Add a component to the prefab root. |
+| `remove_component` | `--component <Type>` | Remove a component from the prefab root. |
+
+```bash
+hera-agent-unity manage_prefab create --source /Player --path Assets/Prefabs/Player.prefab
+hera-agent-unity manage_prefab add_component --path Assets/Prefabs/Player.prefab --component Rigidbody
+hera-agent-unity manage_prefab instantiate --path Assets/Prefabs/Player.prefab --parent /Spawns
+```
+
+---
+
+## manage_asset_import
+
+Read or change an asset's import settings through its `AssetImporter` (`TextureImporter`, `ModelImporter`, `AudioImporter`, …). Same SerializedObject pattern as `manage_components`, applied to the importer; property paths are raw SerializedProperty paths.
+
+```bash
+hera-agent-unity manage_asset_import <action> --path <Assets/...> [flags]
+```
+
+| Action | Flags | Description |
+|:---|:---|:---|
+| `get` | `[--property <m_X>]` | Dump all import settings, or one (run with no `--property` to discover names). |
+| `set` | `--property <m_X> --value <v>` | Set one setting, then `SaveAndReimport`. |
+
+```bash
+hera-agent-unity manage_asset_import get --path Assets/Tex/icon.png
+hera-agent-unity manage_asset_import set --path Assets/Tex/icon.png --property m_sRGBTexture --value 0
+hera-agent-unity manage_asset_import set --path Assets/Tex/icon.png --property m_EnableMipMap --value false
+```
+
+---
+
 ## reserialize
 
 Force reserialize assets (rewrite YAML/JSON with current Unity version).

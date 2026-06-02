@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (asset-editing tools — Connector v0.0.14)
+
+- **Four new `[HeraTool]`s that fill the prefab / material / shader gap** found
+  in the 2026 ecosystem survey (`docs/ECOSYSTEM_COMPARISON_2026.md`). All are
+  stateless one-shot HTTP calls and were verified end-to-end against a live
+  Unity 6 (URP) editor:
+  - **`describe_shader`** — inspect a shader's properties (name, type, display
+    label, range) or search shader names (`--list`). Read-only; pairs with
+    `manage_material`. Missing-shader lookups suggest similar names via
+    `Core/Levenshtein`.
+  - **`manage_material`** — material asset CRUD: `create` (with a shader),
+    `get`, `set` (one shader property), `set_shader`. Values reuse the
+    `manage_components` forms (`1,0,0,1`/`#hex` colors, numbers, `x,y,z,w`
+    vectors, asset-path/InstanceID textures) via `Core/SerializedPropertyValue`.
+  - **`manage_prefab`** — `create` (scene GameObject → prefab asset),
+    `instantiate`, and headless `add_component` / `remove_component` via
+    `PrefabUtility.LoadPrefabContents` → edit → `SaveAsPrefabAsset` →
+    `UnloadPrefabContents` (no PrefabStage, no scene side effects).
+  - **`manage_asset_import`** — `get` / `set` an asset's import settings through
+    its `AssetImporter` (`TextureImporter`, `ModelImporter`, …) by raw
+    SerializedProperty path, then `SaveAndReimport`. Same SerializedObject
+    pattern as `manage_components`, applied to the importer.
+- `Core/SerializedPropertyValue.TryParseColor` / `TryParseFloats` are now
+  `public` so value-typed tools (manage_material) can reuse the exact parse
+  forms instead of re-implementing them.
+
 ### Changed (optimisation)
 
 - **`unity_docs` response shrunk + miss-path scan made ~30× cheaper —

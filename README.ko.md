@@ -183,6 +183,15 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `manage_gameobject`  | 생성 / 파괴 / 이동 / 부모 변경 / 활성 토글 / 이름 변경 / 트랜스폼 조회. |
 | `manage_components`  | GameObject 의 component CRUD: `add` / `remove` / `list` / `get` / `set`. property 경로는 raw `SerializedProperty` 경로. |
 | `find_gameobjects`   | 씬 GameObject 필터 (이름 / 태그 / 레이어 / 컴포넌트 / 경로 glob) + 페이지네이션. |
+| `manage_prefab`      | 프리팹 에셋: `create`(GameObject → 프리팹) / `instantiate` / headless `add_component` / `remove_component`. |
+
+### 에셋 · 머티리얼 · 셰이더
+
+| 명령어 | 설명 |
+|---|---|
+| `manage_material`     | 머티리얼 에셋 CRUD: `create`(셰이더 지정) / `get` / `set`(프로퍼티 1개) / `set_shader`. |
+| `manage_asset_import` | 에셋의 import 설정을 `AssetImporter`로 읽기/쓰기 후 reimport. |
+| `describe_shader`     | 셰이더 프로퍼티(이름 / 타입 / range) 조회 또는 셰이더 이름 검색(`--list`). |
 
 ### Packages
 
@@ -243,6 +252,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `find_gameobjects`  | v0.0.7 | 씬 GameObject 를 이름 / 태그 / 레이어 / 컴포넌트 / 경로 glob 로 필터, hierarchy 정렬 결과 위에 stable pagination. |
 | `manage_components` | v0.0.8 | raw `SerializedProperty` 경로(`m_Mass`, `m_Materials.Array.data[0]`)로 컴포넌트 CRUD. 참조 필드는 InstanceID / asset path / `{instance_id\|asset_path}` envelope 셋 다 수용. 이후 모든 `manage_*` 가 재사용할 property-set 패턴 정립. |
 | `unity_docs`        | v0.0.10 → **v0.0.12** | 오프라인 Unity 6 ScriptReference 조회. **31,581 entries 가 1.2 MiB gzipped JSONL 로 UPM 패키지 안에 포함** — 사용자 PC 의 docs 폴더 불필요, 네트워크 불필요, rate limit 없음. |
+| `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | 자산 편집 묶음. `describe_shader`(셰이더 프로퍼티 조회/검색) → `manage_material`(머티리얼 CRUD, `SerializedPropertyValue` 재사용) / `manage_prefab`(headless `LoadPrefabContents` 편집) / `manage_asset_import`(`AssetImporter` import 설정, manage_components 패턴). |
 
 ### `unity_docs` — 설계 + 벤치마크 (v0.0.12)
 

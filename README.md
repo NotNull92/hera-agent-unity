@@ -183,6 +183,15 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 | `manage_gameobject`  | Create / destroy / move / re-parent / set_active / rename / get_transform. |
 | `manage_components`  | Component CRUD on a GameObject: `add` / `remove` / `list` / `get` / `set`. Property paths are raw `SerializedProperty` paths. |
 | `find_gameobjects`   | Filter scene GameObjects (name / tag / layer / component / path glob) with pagination. |
+| `manage_prefab`      | Prefab asset ops: `create` (GameObject → prefab) / `instantiate` / headless `add_component` / `remove_component`. |
+
+### Assets, materials & shaders
+
+| Command | What it does |
+|---|---|
+| `manage_material`     | Material asset CRUD: `create` (with a shader) / `get` / `set` (one property) / `set_shader`. |
+| `manage_asset_import` | Read / write an asset's import settings via its `AssetImporter`, then reimport. |
+| `describe_shader`     | Inspect a shader's properties (name / type / range) or search shader names (`--list`). |
 
 ### Packages
 
@@ -243,6 +252,7 @@ The five-tool queue locked-in at 2026-05-28 is complete. Each entry filled a gap
 | `find_gameobjects`  | v0.0.7 | Filter scene GameObjects by name / tag / layer / component / path glob, with stable pagination over a hierarchy-sorted result set. |
 | `manage_components` | v0.0.8 | Component CRUD via raw `SerializedProperty` paths (`m_Mass`, `m_Materials.Array.data[0]`). Reference fields accept an InstanceID, an asset path, or a `{instance_id\|asset_path}` envelope. Establishes the property-set pattern every future `manage_*` will reuse. |
 | `unity_docs`        | v0.0.10 → **v0.0.12** | Offline Unity 6 ScriptReference lookup. **31,581 entries ship inside the UPM package itself** as a 1.2 MiB gzipped JSONL — no docs folder on the user's machine, no network access, no rate limits. |
+| `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | Asset-editing set. `describe_shader` (inspect/search shaders) pairs with `manage_material` (material CRUD, reuses `SerializedPropertyValue`); `manage_prefab` edits prefab assets headlessly via `LoadPrefabContents`; `manage_asset_import` drives import settings through `AssetImporter` (the `manage_components` pattern). |
 
 ### `unity_docs` — design + benchmarks (v0.0.12)
 

@@ -242,7 +242,11 @@ namespace HeraAgent
 
         // ---- value parsers ----
 
-        static bool TryParseFloats(JToken token, int expected, out float[] result, out string err)
+        // public so value-typed tools that don't go through a SerializedProperty
+        // (e.g. manage_material setting Material.SetVector/SetColor by shader
+        // property type) can reuse the exact same parse forms — array, {x,y,z},
+        // and comma string — instead of re-implementing them.
+        public static bool TryParseFloats(JToken token, int expected, out float[] result, out string err)
         {
             result = null; err = null;
 
@@ -321,7 +325,7 @@ namespace HeraAgent
             return true;
         }
 
-        static bool TryParseColor(JToken token, out Color result, out string err)
+        public static bool TryParseColor(JToken token, out Color result, out string err)
         {
             result = default; err = null;
 
