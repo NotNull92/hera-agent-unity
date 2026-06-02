@@ -43,6 +43,7 @@ Tests, TUI, batch engine, and asset-config layer sit on top — but the engine t
 | [`COMMANDS.md`](COMMANDS.md) | All CLI commands, flags, parameters | Adding/changing commands |
 | [`CUSTOM_TOOLS.md`](CUSTOM_TOOLS.md) | How to write new C# tools that the CLI can call | Extending functionality |
 | [`DEVELOPMENT.md`](DEVELOPMENT.md) | Build, test, lint, release workflows | Setting up dev env or releasing |
+| [`ECOSYSTEM_COMPARISON_2026.md`](ECOSYSTEM_COMPARISON_2026.md) | Unity CLI/MCP landscape vs hera-agent-unity, feature-gap analysis (2026-06) | Planning new capabilities / positioning |
 
 ---
 
