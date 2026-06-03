@@ -132,10 +132,10 @@ const (
 //
 // A domain reload can rebind Unity to a NEW port, so each retry re-reads the
 // heartbeat (fresh) and follows the instance by project rather than hammering
-// the now-dead port. It keeps going until the editor answers, reports
-// "stopped", disappears (process gone), the caller's context is cancelled, or
-// the fallback deadline elapses — so a long reload no longer exhausts a fixed
-// retry budget while it's still in progress.
+// the now-dead port. It keeps going until the editor answers, the editor is
+// gone or stopped (discovery finds no live instance), the caller's context is
+// cancelled, or the fallback deadline elapses — so a long reload no longer
+// exhausts a fixed retry budget while it's still in progress.
 func doWithReloadRetry(ctx context.Context, body []byte, inst *Instance) (*http.Response, error) {
 	port := inst.Port
 	project := inst.ProjectPath
@@ -165,10 +165,10 @@ func doWithReloadRetry(ctx context.Context, body []byte, inst *Instance) (*http.
 		ClearInstanceCache()
 		next, derr := DiscoverInstance(project, 0)
 		if derr != nil {
+			// No live instance for this project — editor gone or stopped
+			// (DiscoverInstance filters out stopped, so a stopped editor
+			// surfaces here, not as a reachable next.State == "stopped").
 			return nil, fmt.Errorf("cannot reach Unity for project %q (editor no longer running?): %w", project, lastErr)
-		}
-		if next.State == "stopped" {
-			return nil, fmt.Errorf("unity at port %d has stopped", next.Port)
 		}
 		port = next.Port
 		select {
