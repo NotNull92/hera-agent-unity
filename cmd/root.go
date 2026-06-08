@@ -485,6 +485,25 @@ func buildParams(args []string, base map[string]interface{}) (map[string]interfa
 	return params, nil
 }
 
+// hasPositionalArg reports whether args carries a positional argument (the exec
+// code), mirroring buildParams' flag-value consumption: a token following a
+// --flag that is not itself --prefixed is that flag's value, not positional.
+// A naive "first non---- token" scan would treat the value of a value-taking
+// flag (e.g. the "2" in `exec --depth 2 --file x.cs`) as the code, silently
+// skip --file/stdin, and surface a misleading MISSING_PARAM: 'code' required.
+func hasPositionalArg(args []string) bool {
+	for i := 0; i < len(args); i++ {
+		if strings.HasPrefix(args[i], "--") {
+			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
+				i++ // consume the flag's value
+			}
+			continue
+		}
+		return true
+	}
+	return false
+}
+
 // readExecFileIfPresent strips --file <path> and prepends file contents as the
 // first positional arg. Returns args unchanged when --file is absent. Lets
 // agents avoid shell-escaping long code blocks.
@@ -507,14 +526,7 @@ func readExecFileIfPresent(args []string) ([]string, error) {
 	if filePath == "" {
 		return out, nil
 	}
-	hasPositional := false
-	for _, a := range out {
-		if !strings.HasPrefix(a, "--") {
-			hasPositional = true
-			break
-		}
-	}
-	if hasPositional {
+	if hasPositionalArg(out) {
 		return out, nil
 	}
 	data, err := os.ReadFile(filePath)
@@ -539,10 +551,8 @@ func readExecFileIfPresent(args []string) ([]string, error) {
 func readStdinIfPiped(args []string) []string {
 	// Positional arg (the code) wins over stdin per documented precedence,
 	// so there is no reason to even probe stdin if one is already present.
-	for _, a := range args {
-		if !strings.HasPrefix(a, "--") {
-			return args
-		}
+	if hasPositionalArg(args) {
+		return args
 	}
 
 	info, err := os.Stdin.Stat()
@@ -859,6 +869,9 @@ Options:
   --csc <path>         Path to csc compiler (csc.dll or csc.exe). Auto-detected if omitted.
   --dotnet <path>      Path to dotnet runtime. Auto-detected if omitted.
   --no-cache           Skip compile/assembly cache; force a fresh csc invocation.
+  --depth <n>          Max object graph depth in the serialized return value
+                       (default 3, max 8). Depths 1–2 collapse Unity Objects to
+                       {name, type, instanceID} for the leanest payload.
   --check              Compile-only: validate syntax/types and return without
                        executing. Useful for dry-run validation before a real
                        exec — no side effects, no Invoke. Returns success on
@@ -898,6 +911,8 @@ File:
 
 Notes:
   - Use 'return' for output, 'return null;' for void operations
+  - Leading 'using X;' directives in the code are auto-hoisted into the using
+    block, so a normal multi-line file works as-is. Equivalent to --usings.
 `)
 	case "scene":
 		fmt.Print(`Usage: hera-agent-unity scene <action> [target] [options]

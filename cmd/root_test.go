@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"os"
 	"testing"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
@@ -121,6 +122,49 @@ func TestBuildParams_BaseParams(t *testing.T) {
 	}
 	if p["depth"] != 5 {
 		t.Errorf("expected depth=5, got %v", p["depth"])
+	}
+}
+
+func TestHasPositionalArg(t *testing.T) {
+	cases := []struct {
+		name string
+		args []string
+		want bool
+	}{
+		{"empty", nil, false},
+		{"only code", []string{"return 1;"}, true},
+		{"only valueless flags", []string{"--check", "--no-cache"}, false},
+		{"flag with value, no code", []string{"--depth", "2"}, false},
+		{"flag value then code", []string{"--depth", "2", "return 1;"}, true},
+		{"code then flag value", []string{"return 1;", "--depth", "2"}, true},
+		// Mirrors buildParams: with no registry of valueless flags, the token
+		// after a --flag is consumed as its value. So a bare flag immediately
+		// followed by code reads as "flag=code, no positional". Code-first
+		// ordering (case above) is the unambiguous form.
+		{"flag eats following token", []string{"--check", "return 1;"}, false},
+	}
+	for _, tc := range cases {
+		if got := hasPositionalArg(tc.args); got != tc.want {
+			t.Errorf("%s: hasPositionalArg(%v) = %v, want %v", tc.name, tc.args, got, tc.want)
+		}
+	}
+}
+
+// Regression: `exec --depth 2 --file x.cs` must still read the file. The "2"
+// (value of --depth) was previously mistaken for positional code, so --file was
+// silently skipped and the caller hit MISSING_PARAM: 'code' required.
+func TestReadExecFileIfPresent_FlagValueNotMistakenForCode(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/probe.cs"
+	if err := os.WriteFile(path, []byte("return 1;\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	out, err := readExecFileIfPresent([]string{"--depth", "2", "--file", path})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(out) == 0 || out[0] != "return 1;" {
+		t.Fatalf("expected file contents as first positional arg, got %v", out)
 	}
 }
 
