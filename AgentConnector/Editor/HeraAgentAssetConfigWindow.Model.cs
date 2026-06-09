@@ -11,6 +11,7 @@ using UnityEditor.UIElements;
 namespace HeraAgent.Editor
 {
     public partial class HeraAgentAssetConfigWindow : EditorWindow
+    {
         [System.Serializable]
         private class AssetEntry
         {
