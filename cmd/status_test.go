@@ -59,7 +59,7 @@ func TestWaitForAlive_FollowsResolverPortChange(t *testing.T) {
 		}, nil
 	}
 
-	inst, err := waitForAlive(resolve, 100)
+	inst, err := waitForAlive(resolve, 100, "status")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

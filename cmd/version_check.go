@@ -50,8 +50,8 @@ func saveCache(path string, c *versionCache) {
 
 // printUpdateNotice checks for a newer version and prints a notice if available.
 // Silently does nothing on any error (no network, bad cache, etc.).
-func printUpdateNotice() {
-	if Version == "dev" || flagQuiet || !isHumanCommand() {
+func printUpdateNotice(category string) {
+	if Version == "dev" || flagQuiet || !isHumanCommand(category) {
 		return
 	}
 

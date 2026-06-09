@@ -83,7 +83,7 @@ func discoverStatusInstance(project string, port int) (*client.Instance, error) 
 
 // waitForAlive resolves the current target instance, then polls until a newer heartbeat appears.
 // This keeps following the same project even if Unity rebinds to a new port during reload.
-func waitForAlive(resolve instanceResolver, timeoutMs int) (*client.Instance, error) {
+func waitForAlive(resolve instanceResolver, timeoutMs int, category string) (*client.Instance, error) {
 	baseline := time.Now().UnixMilli()
 	inst, err := resolve()
 	if err == nil {
@@ -94,7 +94,7 @@ func waitForAlive(resolve instanceResolver, timeoutMs int) (*client.Instance, er
 		}
 	}
 
-	narrate := !flagQuiet && (isHumanCommand() || flagNarrate)
+	narrate := !flagQuiet && (isHumanCommand(category) || flagNarrate)
 	if narrate {
 		fmt.Fprintf(os.Stderr, "Waiting for Unity...\n")
 	}
@@ -130,8 +130,8 @@ func waitForAlive(resolve instanceResolver, timeoutMs int) (*client.Instance, er
 // holding the HTTP connection through the domain reload that play-mode
 // entry triggers — the listener is stopped mid-response, so the only
 // reliable confirmation channel is the filesystem heartbeat.
-func waitForState(resolve instanceResolver, timeoutMs int, targets ...string) error {
-	narrate := !flagQuiet && (isHumanCommand() || flagNarrate)
+func waitForState(resolve instanceResolver, timeoutMs int, category string, targets ...string) error {
+	narrate := !flagQuiet && (isHumanCommand(category) || flagNarrate)
 	if narrate {
 		fmt.Fprintf(os.Stderr, "Waiting for state %v...\n", targets)
 	}
@@ -165,8 +165,8 @@ func waitForState(resolve instanceResolver, timeoutMs int, targets ...string) er
 
 // waitForReady polls indefinitely until the heartbeat state becomes "ready".
 // Returns true if compilation had errors.
-func waitForReady(resolve instanceResolver) bool {
-	narrate := !flagQuiet && (isHumanCommand() || flagNarrate)
+func waitForReady(resolve instanceResolver, category string) bool {
+	narrate := !flagQuiet && (isHumanCommand(category) || flagNarrate)
 	if narrate {
 		fmt.Fprintf(os.Stderr, "Waiting for compilation...\n")
 	}

@@ -44,11 +44,8 @@ func prepareVersionCheckEnv(t *testing.T, version string) string {
 	origFetch := fetchLatestReleaseFn
 	t.Cleanup(func() { fetchLatestReleaseFn = origFetch })
 
-	// printUpdateNotice is gated on isHumanCommand(); pretend the user
-	// invoked a human-target command so the notice path runs.
-	origCategory := currentCategory
-	currentCategory = "status"
-	t.Cleanup(func() { currentCategory = origCategory })
+	// printUpdateNotice is gated on isHumanCommand(); pass a human-target
+	// category so the notice path runs.
 
 	return filepath.Join(home, ".hera-agent-unity", "version-check.json")
 }
@@ -68,7 +65,7 @@ func TestPrintUpdateNotice_UsesCachedOutdatedNoticeWithinInterval(t *testing.T) 
 	}
 
 	output := captureStderr(t, func() {
-		printUpdateNotice()
+		printUpdateNotice("status")
 	})
 
 	if fetchCalled {
@@ -95,7 +92,7 @@ func TestPrintUpdateNotice_RefreshesCacheAndPrintsOnceWhenStillOutdated(t *testi
 	}
 
 	output := captureStderr(t, func() {
-		printUpdateNotice()
+		printUpdateNotice("status")
 	})
 
 	if count := strings.Count(output, "Update available:"); count != 1 {
@@ -128,7 +125,7 @@ func TestPrintUpdateNotice_PreservesCachedNoticeOnFetchFailure(t *testing.T) {
 	}
 
 	output := captureStderr(t, func() {
-		printUpdateNotice()
+		printUpdateNotice("status")
 	})
 
 	if count := strings.Count(output, "Update available:"); count != 1 {
@@ -159,7 +156,7 @@ func TestPrintUpdateNotice_SkipsDevVersion(t *testing.T) {
 	}
 
 	output := captureStderr(t, func() {
-		printUpdateNotice()
+		printUpdateNotice("status")
 	})
 
 	if fetchCalled {

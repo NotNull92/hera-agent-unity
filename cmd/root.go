@@ -54,10 +54,6 @@ func envBool(key string, fallback bool) bool {
 	return fallback
 }
 
-// currentCategory tracks which subcommand is running so helpers can branch
-// between human-facing (styled stderr) and AI-facing (plain JSON) output.
-var currentCategory string
-
 // humanCategories are subcommands invoked by humans at a terminal. Everything
 // else is assumed to be called by an AI agent (Claude Code CLI / Codex) where
 // stderr decoration is just token cost.
@@ -75,20 +71,20 @@ var humanCategories = map[string]struct{}{
 	"-v":        {},
 }
 
-// isHumanCommand reports whether the current subcommand is run by a human.
+// isHumanCommand reports whether the given subcommand is run by a human.
 // Used to gate styled stderr decoration, update notices, progress messages,
 // and other output that costs tokens when consumed by an AI agent.
-func isHumanCommand() bool {
-	_, ok := humanCategories[currentCategory]
+func isHumanCommand(category string) bool {
+	_, ok := humanCategories[category]
 	return ok
 }
 
 // shouldCompactJSON reports whether printResponse should emit compact JSON.
 // True when the user explicitly requested it (--compact-json / env), or when
-// the current subcommand is an AI-target command. Human commands keep
+// the given subcommand is an AI-target command. Human commands keep
 // indented JSON for readability.
-func shouldCompactJSON() bool {
-	return flagCompactJSON || !isHumanCommand()
+func shouldCompactJSON(category string) bool {
+	return flagCompactJSON || !isHumanCommand(category)
 }
 
 // isUserCodeDiagnostic reports whether a structured error code describes a
@@ -136,7 +132,6 @@ func Execute(ctx context.Context) error {
 
 	category := cmdArgs[0]
 	subArgs := cmdArgs[1:]
-	currentCategory = category
 
 	// --help / -h on any command
 	for _, a := range subArgs {
@@ -169,7 +164,7 @@ func Execute(ctx context.Context) error {
 			return err
 		}
 		statusErr := statusCmd(inst)
-		printUpdateNotice()
+		printUpdateNotice(category)
 		return statusErr
 	case "ping":
 		return pingCmd(flagProject, flagPort)
@@ -196,7 +191,7 @@ func Execute(ctx context.Context) error {
 		return client.DiscoverInstance(targetProject, 0)
 	}
 
-	if _, err := waitForAlive(resolve, flagTimeout); err != nil {
+	if _, err := waitForAlive(resolve, flagTimeout, category); err != nil {
 		return err
 	}
 
@@ -206,7 +201,7 @@ func Execute(ctx context.Context) error {
 		if err != nil {
 			return nil, err
 		}
-		if command == "exec" && (isHumanCommand() || flagVerbose) {
+		if command == "exec" && (isHumanCommand(category) || flagVerbose) {
 			fmt.Fprintln(os.Stderr, "[hera-agent-unity] compiling...")
 		}
 		return sendWithProgress(inst, command, params, timeout, flagVerbose)
@@ -218,7 +213,7 @@ func Execute(ctx context.Context) error {
 	case "batch":
 		return batchCmd(ctx, subArgs, client.SendBatch, resolve)
 	case "editor":
-		resp, err = editorCmd(subArgs, send, resolve)
+		resp, err = editorCmd(subArgs, send, resolve, category)
 	case "test":
 		currentInst, resolveErr := resolve()
 		if resolveErr != nil {
@@ -272,13 +267,13 @@ func Execute(ctx context.Context) error {
 		return err
 	}
 
-	printResponse(resp)
+	printResponse(resp, category)
 
 	if flagVerbose {
 		printTimings(resp)
 	}
 
-	printUpdateNotice()
+	printUpdateNotice(category)
 
 	if !resp.Success {
 		os.Exit(1)
@@ -337,15 +332,15 @@ type SendFunc func(command string, params interface{}) (*client.CommandResponse,
 // Injected so batchCmd can be tested without a real Unity connection.
 type SendBatchFunc func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error)
 
-func printResponse(resp *client.CommandResponse) {
+func printResponse(resp *client.CommandResponse, category string) {
 	if !resp.Success {
 		// AI-target commands: emit a plain JSON error envelope to stderr so
 		// the agent can parse code / suggestions / data without scraping
 		// styled boxes. Human commands keep the styled panel for terminal
 		// readability.
-		if !isHumanCommand() {
+		if !isHumanCommand(category) {
 			var b []byte
-			if shouldCompactJSON() {
+			if shouldCompactJSON(category) {
 				b, _ = json.Marshal(resp)
 			} else {
 				b, _ = json.MarshalIndent(resp, "", "  ")
@@ -398,7 +393,7 @@ func printResponse(resp *client.CommandResponse) {
 				fmt.Println(s)
 			} else {
 				var b []byte
-				if shouldCompactJSON() {
+				if shouldCompactJSON(category) {
 					b, _ = json.Marshal(pretty)
 				} else {
 					b, _ = json.MarshalIndent(pretty, "", "  ")

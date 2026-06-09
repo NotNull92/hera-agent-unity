@@ -8,7 +8,7 @@ import (
 
 // editorCmd controls Unity play mode and asset database.
 // resolve is needed for waitForReady so compile polling can follow the current project instance.
-func editorCmd(args []string, send SendFunc, resolve instanceResolver) (*client.CommandResponse, error) {
+func editorCmd(args []string, send SendFunc, resolve instanceResolver, category string) (*client.CommandResponse, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("usage: hera-agent-unity editor <play|stop|pause|refresh>")
 	}
@@ -30,7 +30,7 @@ func editorCmd(args []string, send SendFunc, resolve instanceResolver) (*client.
 		// triggers a domain reload that stops the HTTP listener, so any
 		// C#-side `await EnteredPlayMode` would never get to write a response.
 		// `playing` or `paused` both indicate isPlaying == true.
-		if waitErr := waitForState(resolve, 60000, "playing", "paused"); waitErr != nil {
+		if waitErr := waitForState(resolve, 60000, category, "playing", "paused"); waitErr != nil {
 			return nil, waitErr
 		}
 		resp.Message = "Entered play mode (confirmed)."
@@ -59,7 +59,7 @@ func editorCmd(args []string, send SendFunc, resolve instanceResolver) (*client.
 			if !resp.Success {
 				return resp, nil
 			}
-			hasErrors := waitForReady(resolve)
+			hasErrors := waitForReady(resolve, category)
 			if hasErrors {
 				return nil, fmt.Errorf("compilation finished with errors (check hera-agent-unity console)")
 			}

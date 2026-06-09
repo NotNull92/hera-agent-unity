@@ -44,7 +44,7 @@ func managePackagesCmd(args []string, send SendFunc, port int) (*client.CommandR
 		return resp, nil
 	}
 
-	if isHumanCommand() || flagVerbose {
+	if isHumanCommand("manage_packages") || flagVerbose {
 		fmt.Fprintf(os.Stderr,
 			"Package job %s (%s %s) running, waiting for completion...\n",
 			meta.JobID, meta.Action, meta.Identifier)
