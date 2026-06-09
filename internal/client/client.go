@@ -14,26 +14,30 @@ import (
 	"time"
 )
 
-// Client holds per-client configuration and an HTTP client.
-// The zero value is usable; use DefaultClient for the package-level singleton.
+// Client holds per-client configuration, an HTTP client, an instance cache,
+// and a process-death checker.
+// Use NewClient to create a fully initialized instance, or DefaultClient for
+// the package-level singleton.
 type Client struct {
-	Debug      bool
-	httpClient *http.Client
+	Debug              bool
+	httpClient         *http.Client
+	cache              *InstanceCache
+	processDeadChecker func(int) bool
+}
+
+// NewClient creates a Client with the default HTTP client, instance cache,
+// and OS-specific process-death checker.
+func NewClient() *Client {
+	return &Client{
+		httpClient:         sharedHTTPClient,
+		cache:              NewInstanceCache(),
+		processDeadChecker: checkProcessDead,
+	}
 }
 
 // DefaultClient is the package-level singleton used by the top-level Send
 // and SendBatch convenience functions.
-var DefaultClient = &Client{httpClient: sharedHTTPClient}
-
-// defaultCache is the package-level instance cache used by ScanInstances.
-var defaultCache = NewInstanceCache()
-
-// ClearInstanceCache discards the cached scan result so the next call to
-// ScanInstances reads from disk again. Useful in tests and after explicit
-// install/uninstall flows where the cache could mask new state.
-func ClearInstanceCache() {
-	defaultCache.Clear()
-}
+var DefaultClient = NewClient()
 
 // sharedHTTPClient is the package-level singleton used by all Send() calls.
 // Reusing it lets the connection pool keep idle keep-alive sockets open
@@ -185,16 +189,21 @@ func isConnectionRefused(err error) bool {
 		strings.Contains(s, "No connection could be made")
 }
 
-// isProcessDead returns true only when the process is confirmed to not exist.
-// Permission errors or transient failures return false (not confirmed dead),
-// so the instance file is preserved.
-// Defaults to the OS-specific implementation; overridden in tests.
-var isProcessDead = checkProcessDead
-
 // IsProcessDead is the public probe used by polling commands that want to
 // detect a crashed Unity Editor without waiting for the heartbeat to stale.
 // Returns true only when the OS confirms the process is gone.
-func IsProcessDead(pid int) bool { return isProcessDead(pid) }
+func (c *Client) IsProcessDead(pid int) bool { return c.processDeadChecker(pid) }
+
+// IsProcessDead delegates to DefaultClient.IsProcessDead.
+func IsProcessDead(pid int) bool { return DefaultClient.IsProcessDead(pid) }
+
+// ClearInstanceCache discards the cached scan result so the next call to
+// ScanInstances reads from disk again. Useful in tests and after explicit
+// install/uninstall flows where the cache could mask new state.
+func (c *Client) ClearInstanceCache() { c.cache.Clear() }
+
+// ClearInstanceCache delegates to DefaultClient.ClearInstanceCache.
+func ClearInstanceCache() { DefaultClient.ClearInstanceCache() }
 
 func instancesDir() string {
 	home, _ := os.UserHomeDir()
@@ -205,8 +214,8 @@ func instancesDir() string {
 // Stale files whose PID is no longer running are automatically removed.
 // Results are cached for instanceCacheTTL to keep multi-step workflows
 // (batch, exec → console → exec, etc.) from re-stat'ing the dir on every hop.
-func ScanInstances() ([]Instance, error) {
-	if cached, ok := defaultCache.Get(); ok {
+func (c *Client) ScanInstances() ([]Instance, error) {
+	if cached, ok := c.cache.Get(); ok {
 		return cached, nil
 	}
 
@@ -230,21 +239,24 @@ func ScanInstances() ([]Instance, error) {
 		if err := json.Unmarshal(data, &inst); err != nil {
 			continue
 		}
-		if inst.PID > 0 && isProcessDead(inst.PID) {
+		if inst.PID > 0 && c.processDeadChecker(inst.PID) {
 			_ = os.Remove(fp)
 			continue
 		}
 		instances = append(instances, inst)
 	}
 
-	defaultCache.Set(instances)
+	c.cache.Set(instances)
 	return instances, nil
 }
 
+// ScanInstances delegates to DefaultClient.ScanInstances.
+func ScanInstances() ([]Instance, error) { return DefaultClient.ScanInstances() }
+
 // FindByPort scans instance files and returns the instance matching the given port.
 // If multiple instances share the same port, the one with the most recent timestamp wins.
-func FindByPort(port int) (*Instance, error) {
-	instances, err := ScanInstances()
+func (c *Client) FindByPort(port int) (*Instance, error) {
+	instances, err := c.ScanInstances()
 	if err != nil {
 		return nil, err
 	}
@@ -263,14 +275,17 @@ func FindByPort(port int) (*Instance, error) {
 	return best, nil
 }
 
+// FindByPort delegates to DefaultClient.FindByPort.
+func FindByPort(port int) (*Instance, error) { return DefaultClient.FindByPort(port) }
+
 func isActiveInstance(inst Instance) bool {
 	return inst.State != "stopped" && inst.Timestamp > 0
 }
 
 // FindActiveByPort is like FindByPort but skips stopped or incomplete instances.
 // Used by polling paths (waitForAlive, waitForReady) that only care about live instances.
-func FindActiveByPort(port int) (*Instance, error) {
-	instances, err := ScanInstances()
+func (c *Client) FindActiveByPort(port int) (*Instance, error) {
+	instances, err := c.ScanInstances()
 	if err != nil {
 		return nil, err
 	}
@@ -289,16 +304,19 @@ func FindActiveByPort(port int) (*Instance, error) {
 	return best, nil
 }
 
+// FindActiveByPort delegates to DefaultClient.FindActiveByPort.
+func FindActiveByPort(port int) (*Instance, error) { return DefaultClient.FindActiveByPort(port) }
+
 // DiscoverInstance finds a running Unity instance from ~/.hera-agent-unity/instances/.
 // If port > 0, matches an active instance by port.
 // If project is set, matches by project path substring.
 // Otherwise returns the most recently active instance.
-func DiscoverInstance(project string, port int) (*Instance, error) {
+func (c *Client) DiscoverInstance(project string, port int) (*Instance, error) {
 	if port > 0 {
-		return FindActiveByPort(port)
+		return c.FindActiveByPort(port)
 	}
 
-	instances, err := ScanInstances()
+	instances, err := c.ScanInstances()
 	if err != nil {
 		return nil, fmt.Errorf("no Unity instances found.\nIs Unity running with the Connector package?\nExpected: %s", instancesDir())
 	}
@@ -344,6 +362,11 @@ func DiscoverInstance(project string, port int) (*Instance, error) {
 		}
 	}
 	return &best, nil
+}
+
+// DiscoverInstance delegates to DefaultClient.DiscoverInstance.
+func DiscoverInstance(project string, port int) (*Instance, error) {
+	return DefaultClient.DiscoverInstance(project, port)
 }
 
 func (c *Client) Send(inst *Instance, command string, params interface{}, timeoutMs int) (*CommandResponse, error) {

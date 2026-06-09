@@ -8,15 +8,15 @@ import (
 	"testing"
 )
 
-// stubIsProcessDead replaces isProcessDead for testing.
+// stubIsProcessDead replaces DefaultClient's process-death checker for testing.
 // deadPIDs maps PID → true if the process is confirmed dead.
 func stubIsProcessDead(t *testing.T, deadPIDs map[int]bool) {
 	t.Helper()
-	orig := isProcessDead
-	isProcessDead = func(pid int) bool {
+	orig := DefaultClient.processDeadChecker
+	DefaultClient.processDeadChecker = func(pid int) bool {
 		return deadPIDs[pid]
 	}
-	t.Cleanup(func() { isProcessDead = orig })
+	t.Cleanup(func() { DefaultClient.processDeadChecker = orig })
 }
 
 // writeInstanceFiles creates isolated instance files and points both HOME and
