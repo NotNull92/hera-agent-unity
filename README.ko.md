@@ -271,6 +271,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `unity_docs`        | v0.0.10 → **v0.0.12** | 오프라인 Unity 6 ScriptReference 조회. **31,581 entries 가 1.2 MiB gzipped JSONL 로 UPM 패키지 안에 포함** — 사용자 PC 의 docs 폴더 불필요, 네트워크 불필요, rate limit 없음. |
 | `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | 자산 편집 묶음. `describe_shader`(셰이더 프로퍼티 조회/검색) → `manage_material`(머티리얼 CRUD, `SerializedPropertyValue` 재사용) / `manage_prefab`(headless `LoadPrefabContents` 편집) / `manage_asset_import`(`AssetImporter` import 설정, manage_components 패턴). |
 | `manage_ui` | **v0.0.15** | uGUI 저작. `create` 가 UI 요소(canvas / panel / image / button / text / empty)를 Canvas + EventSystem 자동 구성과 함께 생성; `set_anchor` 는 Unity 명명 앵커 프리셋 그리드를 노출하고 rect 를 시각적으로 고정 유지(또는 `--snap` 으로 Alt+Shift 채움); `get_rect` / `set_rect` 로 RectTransform 편집 완성. UI/TMP 타입은 `TypeCache` 로 해석 → com.unity.ugui 없는 프로젝트에서도 커넥터 컴파일. 요소 프로퍼티 편집은 `manage_components` 담당. |
+| `TargetResolver` + 테스트 + 벤치마크 | **v0.0.16** | `TargetResolver`가 `manage_components` / `manage_gameobject` / `manage_ui`의 공통 GameObject/Component 리졸루션을 추출. Go 테스트 커버리지 확대(`doctor`, `install`, `poll`, `assetconfig`). C# `HierarchyPath` 에디터 테스트. 스모크 테스트 벤치마크: 7회 호출 = 725B (~181T), 평균 26T/호출 — 리팩토링으로 토큰 비용 증가 없음 확인. |
 
 ### `unity_docs` — 설계 + 벤치마크 (v0.0.12)
 
@@ -496,6 +497,24 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 - 중복 툴 이름은 콘솔에 경고로 표시되며 먼저 등록된 쪽이 이깁니다
 
 `hera-agent-unity list`는 파라미터 스키마를 노출해서 에이전트가 소스 코드를 읽지 않고도 툴을 발견하고 호출할 수 있게 합니다.
+
+---
+
+## 성능
+
+hera-agent-unity는 AI 에이전트 워크플로우의 토큰 비용을 거의 무시할 수준으로 유지하도록 설계되었습니다. 최근 스모크 테스트 벤치마크(v0.0.16, 7개 대표 시나리오)에서 오버헤드가 여전히 미미함을 확인했습니다:
+
+| 지표 | 값 |
+|---|---:|
+| 총 호출 | 7 |
+| 총 왕복 바이트 | **725 B** |
+| 추정 토큰 (chars ÷ 4) | **~181 T** |
+| 호출당 평균 | **26 T** |
+| 5B 이하 응답 | **71%** |
+
+**비용을 차지하는 것**: 바이트의 88%는 에이전트가 작성한 C# 코드(입력)이며, 응답이 아닙니다. 대표적인 `exec` 호출인 `return Time.time;`은 **총 6 토큰** — 응답 자체는 2–3 토큰에 불과합니다.
+
+전체 50시나리오 벤치마크와 스모크 테스트 리포트는 [`docs/benchmarks/`](docs/benchmarks/)에서 확인할 수 있습니다.
 
 ---
 
