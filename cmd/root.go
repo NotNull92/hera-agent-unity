@@ -132,7 +132,7 @@ func Execute(ctx context.Context) error {
 
 	checkBinaryPath()
 
-	client.Debug = flagDebug
+	client.DefaultClient.Debug = flagDebug
 
 	category := cmdArgs[0]
 	subArgs := cmdArgs[1:]

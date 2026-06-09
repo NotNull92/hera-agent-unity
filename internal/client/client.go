@@ -14,10 +14,16 @@ import (
 	"time"
 )
 
-// Debug, when true, causes Send/SendBatch and instance discovery to print
-// HTTP request/response bodies and discovery info to stderr. Set by the
-// cmd package from the --debug flag or HERA_AGENT_DEBUG env var.
-var Debug bool
+// Client holds per-client configuration and an HTTP client.
+// The zero value is usable; use DefaultClient for the package-level singleton.
+type Client struct {
+	Debug      bool
+	httpClient *http.Client
+}
+
+// DefaultClient is the package-level singleton used by the top-level Send
+// and SendBatch convenience functions.
+var DefaultClient = &Client{httpClient: sharedHTTPClient}
 
 // defaultCache is the package-level instance cache used by ScanInstances.
 var defaultCache = NewInstanceCache()
@@ -124,7 +130,7 @@ const (
 // gone or stopped (discovery finds no live instance), the caller's context is
 // cancelled, or the fallback deadline elapses — so a long reload no longer
 // exhausts a fixed retry budget while it's still in progress.
-func doWithReloadRetry(ctx context.Context, body []byte, inst *Instance) (*http.Response, error) {
+func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Instance) (*http.Response, error) {
 	port := inst.Port
 	project := inst.ProjectPath
 	deadline := time.Now().Add(reloadRetryFallbackDeadline)
@@ -136,7 +142,7 @@ func doWithReloadRetry(ctx context.Context, body []byte, inst *Instance) (*http.
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/json")
-		resp, err := sharedHTTPClient.Do(req)
+		resp, err := c.httpClient.Do(req)
 		if err == nil {
 			return resp, nil
 		}
@@ -340,7 +346,7 @@ func DiscoverInstance(project string, port int) (*Instance, error) {
 	return &best, nil
 }
 
-func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*CommandResponse, error) {
+func (c *Client) Send(inst *Instance, command string, params interface{}, timeoutMs int) (*CommandResponse, error) {
 	if params == nil {
 		params = map[string]interface{}{}
 	}
@@ -359,11 +365,11 @@ func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*C
 		defer cancel()
 	}
 
-	if Debug {
+	if c.Debug {
 		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, string(body))
 	}
 	start := time.Now()
-	resp, err := doWithReloadRetry(ctx, body, inst)
+	resp, err := c.doWithReloadRetry(ctx, body, inst)
 	if err != nil {
 		return nil, err
 	}
@@ -379,7 +385,7 @@ func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*C
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
-	if Debug {
+	if c.Debug {
 		fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
 			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
 	}
@@ -405,9 +411,14 @@ func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*C
 	return &result, nil
 }
 
+// Send is a convenience wrapper that delegates to DefaultClient.Send.
+func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*CommandResponse, error) {
+	return DefaultClient.Send(inst, command, params, timeoutMs)
+}
+
 // SendBatch sends multiple commands to Unity in a single HTTP request.
 // Timeout is derived from the command count (30s base + 15s per command, 5min cap).
-func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*BatchCommandResponse, error) {
+func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*BatchCommandResponse, error) {
 	batchTimeout := 30 * time.Second
 	if n := len(req.Commands); n > 0 {
 		if calculated := time.Duration(n) * 15 * time.Second; calculated > batchTimeout {
@@ -428,7 +439,7 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 
 	url := fmt.Sprintf("http://127.0.0.1:%d/commands", inst.Port)
 
-	if Debug {
+	if c.Debug {
 		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, string(body))
 	}
 
@@ -439,7 +450,7 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 	httpReq.Header.Set("Content-Type", "application/json")
 
 	start := time.Now()
-	resp, err := sharedHTTPClient.Do(httpReq)
+	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("cannot connect to Unity at port %d: %w", inst.Port, err)
 	}
@@ -447,7 +458,7 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 
 	if resp.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(resp.Body)
-		if Debug {
+		if c.Debug {
 			fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
 				resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
 		}
@@ -458,7 +469,7 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
-	if Debug {
+	if c.Debug {
 		fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
 			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
 	}
@@ -472,4 +483,9 @@ func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*B
 	}
 
 	return &result, nil
+}
+
+// SendBatch is a convenience wrapper that delegates to DefaultClient.SendBatch.
+func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*BatchCommandResponse, error) {
+	return DefaultClient.SendBatch(ctx, inst, req)
 }
