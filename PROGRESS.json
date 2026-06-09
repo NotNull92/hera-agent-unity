@@ -2,7 +2,7 @@
   "project": "hera-agent-unity",
   "refactoring_session": {
     "date": "2026-06-09",
-    "total_prs": 16,
+    "total_prs": 17,
     "summary": "Extract duplicated utilities, unify polling loops, fix CI/linter settings, clean up naming, encapsulate global state, and split monolithic Execute function."
   },
   "prs": [
@@ -215,6 +215,19 @@
       "stats": "+38 / -39 lines",
       "risk": "low",
       "notes": "Extracted debugPost and processHTTPResponse helpers. Reduced ~30 lines of duplicated HTTP handling logic."
+    },
+    {
+      "number": 17,
+      "commit": "2d7b66e",
+      "title": "refactor(cmd): externalize help strings from root.go",
+      "changes": [
+        "cmd/help.go",
+        "cmd/help/*",
+        "cmd/root.go"
+      ],
+      "stats": "+913 / -922 lines",
+      "risk": "low",
+      "notes": "Moved ~920 lines of hardcoded help strings to //go:embed files. Created 25 topic help files."
     }
   ],
   "verification": {
@@ -226,7 +239,6 @@
     "C# Tool action dispatch boilerplate (8+ files duplication)",
     "HeraAgentAssetConfigWindow split (Model/View/Controller, 2,028 lines)",
     "C# TargetResolver commonization (ManageComponents/ManageGameObject/ManageUI)",
-    "Expand test coverage (doctor, install, poll, assetconfig)",
-    "root.go help string externalization (//go:embed, ~900 lines)"
+    "Expand test coverage (doctor, install, poll, assetconfig)"
   ]
 }
