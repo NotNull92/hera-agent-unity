@@ -369,6 +369,34 @@ func DiscoverInstance(project string, port int) (*Instance, error) {
 	return DefaultClient.DiscoverInstance(project, port)
 }
 
+func (c *Client) debugPost(url string, body []byte) {
+	if c.Debug {
+		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, string(body))
+	}
+}
+
+func (c *Client) processHTTPResponse(resp *http.Response, label string, start time.Time) ([]byte, error) {
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if c.Debug {
+		fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
+			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
+	}
+	if err != nil {
+		return nil, fmt.Errorf("read response for %s: %w", label, err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		if len(respBody) > 0 {
+			return nil, fmt.Errorf("HTTP %d from Unity: %s", resp.StatusCode, string(respBody))
+		}
+		return nil, fmt.Errorf("HTTP %d from Unity (%s)", resp.StatusCode, label)
+	}
+
+	return respBody, nil
+}
+
 func (c *Client) Send(inst *Instance, command string, params interface{}, timeoutMs int) (*CommandResponse, error) {
 	if params == nil {
 		params = map[string]interface{}{}
@@ -388,31 +416,18 @@ func (c *Client) Send(inst *Instance, command string, params interface{}, timeou
 		defer cancel()
 	}
 
-	if c.Debug {
-		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, string(body))
-	}
+	c.debugPost(url, body)
 	start := time.Now()
 	resp, err := c.doWithReloadRetry(ctx, body, inst)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		var body []byte
-		body, _ = io.ReadAll(resp.Body)
-		if len(body) > 0 {
-			return nil, fmt.Errorf("HTTP %d from Unity: %s", resp.StatusCode, string(body))
-		}
-		return nil, fmt.Errorf("HTTP %d from Unity (command: %s)", resp.StatusCode, command)
+	respBody, err := c.processHTTPResponse(resp, fmt.Sprintf("command: %s", command), start)
+	if err != nil {
+		return nil, err
 	}
-
-	respBody, err := io.ReadAll(resp.Body)
-	if c.Debug {
-		fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
-			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
-	}
-	if err != nil || len(respBody) == 0 {
+	if len(respBody) == 0 {
 		// Some commands (e.g. play mode entry) close the connection before responding.
 		// Unity side should be fixed to send response before closing; until then,
 		// treat empty response as error so crashes are not masked as success.
@@ -462,9 +477,7 @@ func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommand
 
 	url := fmt.Sprintf("http://127.0.0.1:%d/commands", inst.Port)
 
-	if c.Debug {
-		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, string(body))
-	}
+	c.debugPost(url, body)
 
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 	if err != nil {
@@ -477,26 +490,12 @@ func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommand
 	if err != nil {
 		return nil, fmt.Errorf("cannot connect to Unity at port %d: %w", inst.Port, err)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resp.Body)
-		if c.Debug {
-			fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
-				resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
-		}
-		if len(respBody) > 0 {
-			return nil, fmt.Errorf("HTTP %d from Unity: %s", resp.StatusCode, string(respBody))
-		}
-		return nil, fmt.Errorf("HTTP %d from Unity (batch)", resp.StatusCode)
+	respBody, err := c.processHTTPResponse(resp, "batch", start)
+	if err != nil {
+		return nil, err
 	}
-
-	respBody, err := io.ReadAll(resp.Body)
-	if c.Debug {
-		fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
-			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
-	}
-	if err != nil || len(respBody) == 0 {
+	if len(respBody) == 0 {
 		return nil, fmt.Errorf("connection closed before response for batch")
 	}
 
