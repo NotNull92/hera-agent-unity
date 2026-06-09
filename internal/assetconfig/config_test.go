@@ -31,7 +31,6 @@ func TestConfigFilePath(t *testing.T) {
 		t.Fatal("ConfigFilePath returned empty string")
 	}
 
-	wantSuffix := filepath.Join(".hera-agent-unity", "asset-config.json")
 	if !filepath.IsAbs(got) {
 		t.Errorf("ConfigFilePath not absolute: %s", got)
 	}
@@ -41,9 +40,7 @@ func TestConfigFilePath(t *testing.T) {
 	if filepath.Base(filepath.Dir(got)) != ".hera-agent-unity" {
 		t.Errorf("expected parent dir .hera-agent-unity, got %s", filepath.Base(filepath.Dir(got)))
 	}
-	if !filepath.IsLocal(wantSuffix) {
-		// Only useful on Go 1.24+; skip if not available.
-	}
+
 }
 
 func TestDefaultAssets(t *testing.T) {

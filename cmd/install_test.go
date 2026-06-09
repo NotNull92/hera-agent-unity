@@ -10,15 +10,8 @@ import (
 func TestGetInstallPaths(t *testing.T) {
 	dir := t.TempDir()
 
-	origHome := os.Getenv("HOME")
-	origUserProfile := os.Getenv("USERPROFILE")
-	t.Cleanup(func() {
-		os.Setenv("HOME", origHome)
-		os.Setenv("USERPROFILE", origUserProfile)
-	})
-
-	os.Setenv("HOME", dir)
-	os.Setenv("USERPROFILE", dir)
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
 
 	d, bin := getInstallPaths()
 

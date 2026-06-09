@@ -2,7 +2,6 @@ package poll
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -205,9 +204,6 @@ func TestWaitForFile_ParseErrorIsWrapped(t *testing.T) {
 		t.Fatal("expected error")
 	}
 	// The error should wrap the JSON syntax error.
-	if !errors.Is(err, errors.New("")) {
-		// errors.Is with a sentinel won't match json syntax error, but we can at least check the text.
-	}
 	if !strings.Contains(err.Error(), "failed to parse my-op") {
 		t.Fatalf("unexpected error text: %v", err)
 	}
