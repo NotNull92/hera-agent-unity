@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/poll"
 	"github.com/NotNull92/hera-agent-unity/internal/tui"
 )
 
@@ -98,31 +99,30 @@ func waitForAlive(resolve instanceResolver, timeoutMs int) (*client.Instance, er
 		fmt.Fprintf(os.Stderr, "Waiting for Unity...\n")
 	}
 
-	deadline := time.Now().Add(time.Duration(timeoutMs) * time.Millisecond)
-	interval := statusPollBaseInterval
-	const maxInterval = 1500 * time.Millisecond
-
-	for time.Now().Before(deadline) {
-		time.Sleep(interval)
-		inst, err = resolve()
-		if err != nil {
-			if interval < maxInterval {
-				interval *= 2
-				if interval > maxInterval {
-					interval = maxInterval
-				}
+	var result *client.Instance
+	err = poll.ExponentialBackoffLoop(
+		time.Duration(timeoutMs)*time.Millisecond,
+		statusPollBaseInterval,
+		1500*time.Millisecond,
+		func() bool {
+			inst, err = resolve()
+			if err != nil {
+				return false
 			}
-			continue
-		}
-		if inst.Timestamp > baseline {
-			if narrate {
-				fmt.Fprintf(os.Stderr, "Unity is ready.\n")
+			if inst.Timestamp > baseline {
+				result = inst
+				return true
 			}
-			return inst, nil
-		}
+			return false
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("timed out waiting for Unity")
 	}
-
-	return nil, fmt.Errorf("timed out waiting for Unity")
+	if narrate {
+		fmt.Fprintf(os.Stderr, "Unity is ready.\n")
+	}
+	return result, nil
 }
 
 // waitForState polls the heartbeat until inst.State matches one of targets,
@@ -135,32 +135,32 @@ func waitForState(resolve instanceResolver, timeoutMs int, targets ...string) er
 	if narrate {
 		fmt.Fprintf(os.Stderr, "Waiting for state %v...\n", targets)
 	}
-	deadline := time.Now().Add(time.Duration(timeoutMs) * time.Millisecond)
-	interval := statusPollBaseInterval
-	const maxInterval = 1500 * time.Millisecond
-
-	for time.Now().Before(deadline) {
-		time.Sleep(interval)
-		inst, err := resolve()
-		if err != nil {
-			if interval < maxInterval {
-				interval *= 2
-				if interval > maxInterval {
-					interval = maxInterval
+	var matchedState string
+	err := poll.ExponentialBackoffLoop(
+		time.Duration(timeoutMs)*time.Millisecond,
+		statusPollBaseInterval,
+		1500*time.Millisecond,
+		func() bool {
+			inst, err := resolve()
+			if err != nil {
+				return false
+			}
+			for _, t := range targets {
+				if inst.State == t {
+					matchedState = inst.State
+					return true
 				}
 			}
-			continue
-		}
-		for _, t := range targets {
-			if inst.State == t {
-				if narrate {
-					fmt.Fprintf(os.Stderr, "State is now %s.\n", inst.State)
-				}
-				return nil
-			}
-		}
+			return false
+		},
+	)
+	if err != nil {
+		return fmt.Errorf("timed out waiting for state %v", targets)
 	}
-	return fmt.Errorf("timed out waiting for state %v", targets)
+	if narrate {
+		fmt.Fprintf(os.Stderr, "State is now %s.\n", matchedState)
+	}
+	return nil
 }
 
 // waitForReady polls indefinitely until the heartbeat state becomes "ready".
@@ -171,36 +171,35 @@ func waitForReady(resolve instanceResolver) bool {
 		fmt.Fprintf(os.Stderr, "Waiting for compilation...\n")
 	}
 
-	deadline := time.Now().Add(5 * time.Minute)
-	interval := statusPollBaseInterval
-	const maxInterval = 1500 * time.Millisecond
-
-	for time.Now().Before(deadline) {
-		time.Sleep(interval)
-		status, err := resolve()
-		if err != nil {
-			if interval < maxInterval {
-				interval *= 2
-				if interval > maxInterval {
-					interval = maxInterval
-				}
+	var compileErrors bool
+	err := poll.ExponentialBackoffLoop(
+		5*time.Minute,
+		statusPollBaseInterval,
+		1500*time.Millisecond,
+		func() bool {
+			status, err := resolve()
+			if err != nil {
+				return false
 			}
-			continue
-		}
-		if status.State == "ready" {
-			if narrate {
-				if status.CompileErrors {
-					fmt.Fprintf(os.Stderr, "Compilation finished with errors.\n")
-				} else {
-					fmt.Fprintf(os.Stderr, "Compilation complete.\n")
-				}
+			if status.State == "ready" {
+				compileErrors = status.CompileErrors
+				return true
 			}
-			return status.CompileErrors
+			return false
+		},
+	)
+	if err != nil {
+		if narrate {
+			fmt.Fprintf(os.Stderr, "Timed out waiting for compilation (5m).\n")
 		}
+		return true
 	}
-
 	if narrate {
-		fmt.Fprintf(os.Stderr, "Timed out waiting for compilation (5m).\n")
+		if compileErrors {
+			fmt.Fprintf(os.Stderr, "Compilation finished with errors.\n")
+		} else {
+			fmt.Fprintf(os.Stderr, "Compilation complete.\n")
+		}
 	}
-	return true
+	return compileErrors
 }
