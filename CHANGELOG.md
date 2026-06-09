@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `staticcheck`/`errcheck` warnings in newly added test files.
 
-## [0.0.14] - 2026-06-09
+## [0.0.15] - 2026-06-09
 
 ### Fixed (CLI — domain-reload window resilience)
 
