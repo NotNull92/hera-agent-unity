@@ -2,13 +2,11 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
-	"github.com/NotNull92/hera-agent-unity/internal/logutil"
 	"github.com/NotNull92/hera-agent-unity/internal/poll"
 )
 
@@ -55,11 +53,6 @@ func testCmd(args []string, send SendFunc, port int) (*client.CommandResponse, e
 
 	fmt.Fprintln(os.Stderr, "PlayMode tests running, waiting for results...")
 
-	// Suppress "Unsolicited response received on idle HTTP channel" during domain reload
-	original := log.Writer()
-	log.SetOutput(logutil.NewSuppressWriter(os.Stderr, "Unsolicited response received on idle HTTP channel"))
-	defer log.SetOutput(original)
-
 	return pollTestResults(port)
 }
 
@@ -70,5 +63,5 @@ func pollTestResults(port int) (*client.CommandResponse, error) {
 	}
 
 	resultsPath := filepath.Join(home, ".hera-agent-unity", "status", fmt.Sprintf("test-results-%d.json", port))
-	return poll.WaitForFile(resultsPath, port, 10*time.Minute, "test results")
+	return poll.WaitForAsyncJob(resultsPath, port, 10*time.Minute, "test results")
 }

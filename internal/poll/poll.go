@@ -3,10 +3,12 @@ package poll
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/logutil"
 )
 
 // WaitForFile polls a filesystem result file until it appears, Unity stops,
@@ -62,4 +64,15 @@ func WaitForFile(resultPath string, port int, timeout time.Duration, opName stri
 	}
 
 	return nil, fmt.Errorf("timed out waiting for %s", opName)
+}
+
+// WaitForAsyncJob wraps WaitForFile with log suppression for the known-harmless
+// "Unsolicited response received on idle HTTP channel" noise that Go's net/http
+// emits when Unity drops the connection during a domain reload.
+func WaitForAsyncJob(resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {
+	original := log.Writer()
+	log.SetOutput(logutil.NewSuppressWriter(os.Stderr, "Unsolicited response received on idle HTTP channel"))
+	defer log.SetOutput(original)
+
+	return WaitForFile(resultPath, port, timeout, opName)
 }

@@ -1,0 +1,149 @@
+{
+  "project": "hera-agent-unity",
+  "refactoring_session": {
+    "date": "2026-06-09",
+    "total_prs": 9,
+    "summary": "Extract duplicated utilities, unify polling loops, fix CI/linter settings, clean up naming, encapsulate global state, and split monolithic Execute function."
+  },
+  "prs": [
+    {
+      "number": 1,
+      "commit": "3d55451",
+      "title": "refactor: extract duplicated utilities",
+      "changes": [
+        "internal/logutil/suppress.go (new)",
+        "internal/assetconfig/categories.go (new)",
+        "internal/poll/poll.go (moved from cmd/poll.go)",
+        "cmd/test.go",
+        "cmd/manage_packages.go",
+        "cmd/asset_config.go",
+        "internal/tui/assetconfig.go"
+      ],
+      "stats": "+58 / -44 lines",
+      "risk": "very low",
+      "notes": "Pure moves only. No behavior change."
+    },
+    {
+      "number": 2,
+      "commit": "1b741dd",
+      "title": "refactor: extract ExponentialBackoffLoop for status polling",
+      "changes": [
+        "internal/poll/backoff.go (new)",
+        "cmd/status.go"
+      ],
+      "stats": "+99 / -70 lines",
+      "risk": "very low",
+      "notes": "Loop body extracted verbatim into reusable helper."
+    },
+    {
+      "number": 3,
+      "commit": "e142cb7",
+      "title": "chore: enable linters and fix CI inconsistencies",
+      "changes": [
+        ".golangci.yml",
+        ".github/workflows/ci.yml",
+        ".github/workflows/benchmark.yml"
+      ],
+      "stats": "+12 / -4 lines",
+      "risk": "low",
+      "notes": "Added explicit linters. Fixed format check to fail on diff. Aligned upload-artifact versions."
+    },
+    {
+      "number": 4,
+      "commit": "c721163",
+      "title": "refactor: extract duplicated GetTypeName into SchemaUtility",
+      "changes": [
+        "AgentConnector/Editor/Core/SchemaUtility.cs (new)",
+        "AgentConnector/Editor/Core/ToolMetadata.cs",
+        "AgentConnector/Editor/ToolDiscovery.cs"
+      ],
+      "stats": "+25 / -22 lines",
+      "risk": "very low",
+      "notes": "C# GetTypeName logic consolidated. No behavior change."
+    },
+    {
+      "number": 5,
+      "commit": "d02b4b5",
+      "title": "refactor: naming clean-up",
+      "changes": [
+        "cmd/root.go",
+        "cmd/batch.go",
+        "cmd/editor.go",
+        "cmd/manage_packages.go",
+        "cmd/test.go",
+        "cmd/unity_docs.go",
+        "cmd/update.go",
+        "cmd/update_test.go",
+        "cmd/version_check_test.go",
+        "AgentConnector/Editor/HeraAgentAssetConfigWindow.cs"
+      ],
+      "stats": "+60 / -59 lines",
+      "risk": "very low",
+      "notes": "Renamed identifiers to match Go/C# conventions. ColorTeal -> ColorGold."
+    },
+    {
+      "number": 6,
+      "commit": "e94f668",
+      "title": "refactor: encapsulate instance cache into InstanceCache struct",
+      "changes": [
+        "internal/client/cache.go (new)",
+        "internal/client/client.go"
+      ],
+      "stats": "+57 / -27 lines",
+      "risk": "very low",
+      "notes": "Package-level cache variables moved into InstanceCache. defaultCache singleton."
+    },
+    {
+      "number": 7,
+      "commit": "ce4b18d",
+      "title": "refactor: encapsulate client.Debug into Client struct",
+      "changes": [
+        "internal/client/client.go",
+        "cmd/root.go"
+      ],
+      "stats": "+32 / -16 lines",
+      "risk": "very low",
+      "notes": "Added Client struct with Debug field. DefaultClient singleton. Preserved Send/SendBatch top-level wrappers."
+    },
+    {
+      "number": 8,
+      "commit": "7ab5907",
+      "title": "refactor: remove global currentCategory, pass category explicitly",
+      "changes": [
+        "cmd/root.go",
+        "cmd/status.go",
+        "cmd/editor.go",
+        "cmd/editor_test.go",
+        "cmd/manage_packages.go",
+        "cmd/version_check.go",
+        "cmd/version_check_test.go",
+        "cmd/status_test.go"
+      ],
+      "stats": "+45 / -53 lines",
+      "risk": "low",
+      "notes": "Eliminated global currentCategory string. All helpers now accept explicit category parameter."
+    },
+    {
+      "number": 9,
+      "commit": "a83cc47",
+      "title": "refactor: split Execute into runStandaloneCommand and runUnityCommand",
+      "changes": [
+        "cmd/root.go"
+      ],
+      "stats": "+100 / -86 lines",
+      "risk": "low",
+      "notes": "Extracted standalone and Unity-connected command switches into separate functions. Execute reduced from ~180 to ~50 lines."
+    }
+  ],
+  "verification": {
+    "go_build": "pass",
+    "go_test": "pass",
+    "golangci_lint": "0 issues"
+  },
+  "remaining_candidates": [
+    "C# TargetResolver commonization (ManageComponents/ManageGameObject/ManageUI)",
+    "HeraAgentAssetConfigWindow split (Model/View/Controller)",
+    "Expand test coverage (doctor, install, poll)",
+    "Go cmd package split into sub-packages (cmd/editor, cmd/doctor, etc.)"
+  ]
+}
