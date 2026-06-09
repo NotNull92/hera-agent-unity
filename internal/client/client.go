@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -20,25 +19,14 @@ import (
 // cmd package from the --debug flag or HERA_AGENT_DEBUG env var.
 var Debug bool
 
-// instanceCache stores the last ScanInstances result for process-level reuse.
-// A 5-second TTL is short enough that a stopped editor disappears quickly,
-// but long enough that batch / multi-step workflows don't re-stat the dir
-// on every hop.
-var (
-	instanceCache     []Instance
-	instanceCacheTime time.Time
-	instanceCacheMu   sync.RWMutex
-	instanceCacheTTL  = 5 * time.Second
-)
+// defaultCache is the package-level instance cache used by ScanInstances.
+var defaultCache = NewInstanceCache()
 
 // ClearInstanceCache discards the cached scan result so the next call to
 // ScanInstances reads from disk again. Useful in tests and after explicit
 // install/uninstall flows where the cache could mask new state.
 func ClearInstanceCache() {
-	instanceCacheMu.Lock()
-	instanceCache = nil
-	instanceCacheTime = time.Time{}
-	instanceCacheMu.Unlock()
+	defaultCache.Clear()
 }
 
 // sharedHTTPClient is the package-level singleton used by all Send() calls.
@@ -212,14 +200,9 @@ func instancesDir() string {
 // Results are cached for instanceCacheTTL to keep multi-step workflows
 // (batch, exec → console → exec, etc.) from re-stat'ing the dir on every hop.
 func ScanInstances() ([]Instance, error) {
-	instanceCacheMu.RLock()
-	if instanceCache != nil && time.Since(instanceCacheTime) < instanceCacheTTL {
-		cached := make([]Instance, len(instanceCache))
-		copy(cached, instanceCache)
-		instanceCacheMu.RUnlock()
+	if cached, ok := defaultCache.Get(); ok {
 		return cached, nil
 	}
-	instanceCacheMu.RUnlock()
 
 	dir := instancesDir()
 	entries, err := os.ReadDir(dir)
@@ -248,12 +231,7 @@ func ScanInstances() ([]Instance, error) {
 		instances = append(instances, inst)
 	}
 
-	instanceCacheMu.Lock()
-	instanceCache = make([]Instance, len(instances))
-	copy(instanceCache, instances)
-	instanceCacheTime = time.Now()
-	instanceCacheMu.Unlock()
-
+	defaultCache.Set(instances)
 	return instances, nil
 }
 
