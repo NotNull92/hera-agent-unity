@@ -1,0 +1,14 @@
+Usage: hera-agent-unity ping
+
+Token-cheap liveness probe. Reads the heartbeat file only — no Unity HTTP
+round-trip and no instance discovery beyond filesystem scan.
+
+Output: single line, e.g. "port=8090 alive=1 state=ready age_ms=42".
+Exit code: 0 when alive within 3s; 1 otherwise.
+
+Use 'status' for the richer human-readable view.
+
+Examples:
+  hera-agent-unity ping
+  hera-agent-unity ping --port 8090
+

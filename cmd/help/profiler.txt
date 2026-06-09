@@ -1,0 +1,26 @@
+Usage: hera-agent-unity profiler <subcommand> [options]
+
+Subcommands:
+  hierarchy             Top-level profiler samples (last frame)
+    --depth <N>         Recursive depth (0=unlimited, default: 1)
+    --root <name>       Set root by name (substring match, searches full tree)
+    --frames <N>        Average over last N frames (flat output, sorted by time)
+    --from <N>          Start frame index for range average
+    --to <N>            End frame index for range average
+    --parent <ID>       Drill into item by ID
+    --min <ms>          Filter items below threshold
+    --sort <col>        Sort by: total (default), self, calls
+    --max <N>           Max children per level (default: 30)
+    --frame <N>         Specific frame index
+    --thread <N>        Thread index (0=main)
+  enable                Start profiler recording
+  disable               Stop profiler recording
+  status                Show profiler state
+  clear                 Clear all captured frames
+
+Examples:
+  hera-agent-unity profiler hierarchy --depth 3
+  hera-agent-unity profiler hierarchy --root SimulationSystem --depth 3
+  hera-agent-unity profiler hierarchy --frames 30 --min 0.5 --sort self
+  hera-agent-unity profiler enable
+

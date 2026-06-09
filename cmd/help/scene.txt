@@ -1,0 +1,24 @@
+Usage: hera-agent-unity scene <action> [target] [options]
+
+Actions:
+  info                          Show active scene + all loaded scenes (name, path, dirty)
+  load <path|name> [--mode M]   Open a scene. Modes: single (default), additive, additive_without_loading
+  save [<path|name>]            Save the active scene, or a named loaded scene
+  list                          List scenes registered in Build Settings
+  close <path|name>             Unload a loaded scene (cannot close the only one)
+
+Target resolution:
+  Accepts an asset path (Assets/.../Foo.unity) or a bare scene name.
+  Names are resolved through AssetDatabase by exact filename match.
+
+Examples:
+  hera-agent-unity scene info
+  hera-agent-unity scene load Assets/Scenes/Main.unity
+  hera-agent-unity scene load Main --mode additive
+  hera-agent-unity scene save
+  hera-agent-unity scene close Lobby
+
+Notes:
+  - load --mode single fails if the active scene has unsaved changes.
+  - close fails if the target scene is dirty; save first.
+

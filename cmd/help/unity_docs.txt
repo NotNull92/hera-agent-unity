@@ -1,0 +1,45 @@
+Usage: hera-agent-unity unity_docs <query>
+
+Looks up an offline Unity ScriptReference page by class / property /
+method name and returns a slim shape suitable for an AI agent:
+  { title, signature, summary, manual_url, scriptreference_url,
+    unity_version }
+~250-400 bytes per call.
+
+The data set (~31k entries, gzipped ~1.2 MiB) ships inside the UPM
+connector package itself — no local docs folder required, no network
+access. Regenerate via 'go run ./tools/build-unity-docs' when Unity
+releases a new docs revision.
+
+Query examples:
+  Rigidbody                              -> key 'Rigidbody'
+  Rigidbody.mass                         -> key 'Rigidbody-mass'
+  Rigidbody.AddForce                     -> key 'Rigidbody.AddForce'
+  Vector3.zero                           -> key 'Vector3-zero'
+  UnityEditor.AssetDatabase.Refresh      -> key 'AssetDatabase.Refresh'
+
+Key mapping rules:
+  - Leading 'UnityEngine.' / 'UnityEditor.' is stripped (docs filenames
+    omit those namespaces).
+  - The literal query (methods + classes) is tried first; if that key
+    doesn't exist, the last '.' is replaced with '-' (properties).
+  - On miss the response carries did_you_mean[] from a Levenshtein
+    scan of the 31k-key index.
+
+Errors:
+  DOCS_BUNDLE_UNAVAILABLE  The bundled data file is missing or
+                           unreadable. Reinstall the UPM package, or
+                           rerun ./tools/build-unity-docs in a local
+                           checkout.
+  DOC_NOT_FOUND            The query did not map to any key.
+                           data.did_you_mean carries up to 5 nearest
+                           keys; suggestions[] echoes them as runnable
+                           CLI calls.
+
+Examples:
+  hera-agent-unity unity_docs Rigidbody
+  hera-agent-unity unity_docs Rigidbody.mass
+  hera-agent-unity unity_docs GameObject.AddComponent
+  hera-agent-unity unity_docs UnityEditor.AssetDatabase.Refresh
+  hera-agent-unity unity_docs Vector3.zero
+

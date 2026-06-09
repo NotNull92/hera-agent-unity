@@ -1,0 +1,20 @@
+Installation and Unity setup
+
+CLI Installation:
+  # Linux / macOS
+  curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.sh | sh
+
+  # Windows (PowerShell)
+  irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.ps1 | iex
+
+  # Go install (any platform)
+  go install github.com/NotNull92/hera-agent-unity@latest
+
+Unity Setup:
+  1. Window → Package Manager → + → Add package from git URL
+  2. Paste: https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
+  The Connector starts automatically when Unity opens.
+
+Verify:
+  hera-agent-unity list
+

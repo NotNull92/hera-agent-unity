@@ -1,0 +1,19 @@
+Usage: hera-agent-unity editor <play|stop|pause|refresh> [options]
+
+Subcommands:
+  play [--wait]       Enter play mode
+                      --wait blocks until Unity fully enters play mode.
+                      Without --wait, returns immediately after requesting.
+  stop                Exit play mode. No effect if not playing.
+  pause               Toggle pause. Only works during play mode.
+  refresh             Refresh AssetDatabase (reimport changed assets).
+                      Blocked in play mode unless --force is set.
+    --compile         Recompile scripts and wait until compilation finishes.
+    --force           Allow refresh during play mode and force asset update.
+
+Examples:
+  hera-agent-unity editor play --wait
+  hera-agent-unity editor stop
+  hera-agent-unity editor refresh --compile
+  hera-agent-unity editor refresh --force
+

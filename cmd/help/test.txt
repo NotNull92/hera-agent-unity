@@ -1,0 +1,20 @@
+Usage: hera-agent-unity test [options]
+
+Run Unity tests via the Test Runner API.
+
+Options:
+  --mode <EditMode|PlayMode>    Test mode (default: EditMode)
+  --filter <name>               Filter by namespace, class, or full test name
+                                Must be the full path (e.g. MyNamespace.MyClass)
+
+EditMode tests hold the connection open and return results directly.
+PlayMode tests return immediately and poll a results file (domain reload safe).
+
+Requires the Unity Test Framework package (com.unity.test-framework).
+
+Examples:
+  hera-agent-unity test
+  hera-agent-unity test --mode PlayMode
+  hera-agent-unity test --filter MyNamespace.MyTests
+  hera-agent-unity test --mode EditMode --filter MyNamespace.MyTests.SpecificTest
+

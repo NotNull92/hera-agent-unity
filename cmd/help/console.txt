@@ -1,0 +1,19 @@
+Usage: hera-agent-unity console [options]
+
+Read Unity console log entries.
+
+Options:
+  --lines <N>          Limit to N entries
+  --type <types>       Comma-separated log types: error, warning, log (default: error,warning,log)
+  --stacktrace <mode>  none: first line only
+                        user: with stack trace, internal frames filtered (default)
+                        full: raw message including all frames
+  --clear              Clear console
+
+Examples:
+  hera-agent-unity console
+  hera-agent-unity console --lines 20 --type error,warning,log
+  hera-agent-unity console --stacktrace user
+  hera-agent-unity console --type error --stacktrace full
+  hera-agent-unity console --clear
+

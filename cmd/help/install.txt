@@ -1,0 +1,16 @@
+Usage: hera-agent-unity install
+
+Register the running binary on PATH so subsequent shells can find it.
+Copies the binary to the canonical install directory for this OS and
+patches PATH (Unix) or relies on WindowsApps (Windows).
+
+  Linux / macOS: ~/.local/bin/hera-agent-unity
+  Windows:       %LOCALAPPDATA%\Microsoft\WindowsApps\hera-agent-unity.exe
+
+Legacy install locations from earlier hera-agent / hera-agent-pro
+versions are scrubbed automatically.
+
+Examples:
+  ./hera-agent-unity-linux-amd64 install
+  .\hera-agent-unity-windows-amd64.exe install
+

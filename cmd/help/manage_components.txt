@@ -1,0 +1,70 @@
+Usage: hera-agent-unity manage_components <action> [flags]
+
+Actions:
+  add      Attach a component. --type required.
+  remove   Detach a component. By component_id, or by GameObject + type [+ index].
+  list     Every component on a GameObject (shallow).
+  get      Read a component. Omit --property for the full property dump,
+           or pass --property <path> for a single property.
+  set      Write a single property. --property + --value required.
+
+GameObject target (required for add / list, and for remove / get / set
+unless --component_id is given):
+  --instance_id <N>     Preferred. Survives renames and reparenting.
+  --path </Root/Child>  Hierarchy path; fallback walk covers inactive subtrees.
+
+Component target:
+  --type <name>         Short ('Rigidbody') or fully-qualified
+                        ('UnityEngine.Rigidbody'). Required for add. Used
+                        with the GameObject target for remove / get / set.
+  --index <N>           When the GameObject has multiple of the same type,
+                        pick one (default 0). Ignored with --component_id.
+  --component_id <N>    Target the component directly by InstanceID — skips
+                        type + index resolution.
+
+Property targeting (get / set):
+  --property <path>     Raw SerializedProperty path: 'm_Name',
+                        'm_LocalScale.x', 'm_Materials.Array.data[0]'. For
+                        get, omit to dump every visible top-level property.
+  --value <scalar>      Scalar value for set. For complex shapes (arrays,
+                        objects, reference envelopes) use:
+                          --params '{"value": [1, 2, 3]}'
+                          --params '{"value": {"asset_path": "Assets/Mat.mat"}}'
+                          --params '{"value": {"instance_id": -12345}}'
+
+Value coercion (set):
+  Numeric / boolean / string / Vector2-4 / Vector2Int / Vector3Int /
+  Quaternion / Color / Enum / ObjectReference / Character / LayerMask /
+  ArraySize. Vectors accept '1,2,3', JSON [1,2,3], or {x:1,y:2,z:3}.
+  Colors accept '#RRGGBB[AA]', 'r,g,b[,a]', JSON arrays, or {r,g,b,a}.
+  Enums accept the integer index or the display name.
+
+Output:
+  add / get (full) / set → {
+    instance_id, component: {
+      component_id, type, type_short, enabled?, properties: {...}
+    }
+  }
+  get (single property) / set → adds property + property_type + value
+  list   → { instance_id, components: [{component_id, type, type_short, enabled?}, ...] }
+  remove → { instance_id, removed: {component_id, type, type_short, enabled?} }
+
+Notes:
+  - Transform cannot be added or removed.
+  - Re-read after set returns whatever Unity actually accepted (clamps,
+    normalization, enum-bit canonicalisation).
+  - Every edit registers an Undo entry and marks the scene dirty — save
+    the scene to persist.
+  - This tool establishes the property-set pattern reused by future
+    manage_* tools (material, animation, vfx, scriptable objects,
+    prefab properties).
+
+Examples:
+  hera-agent-unity manage_components add --path /Player --type Rigidbody
+  hera-agent-unity manage_components list --instance_id 12345
+  hera-agent-unity manage_components get --path /Player --type Rigidbody
+  hera-agent-unity manage_components get --path /Player --type Transform --property m_LocalScale
+  hera-agent-unity manage_components set --path /Player --type Rigidbody --property m_Mass --value 5
+  hera-agent-unity manage_components set --path /Player --type MeshRenderer --property m_Materials.Array.data[0] --value Assets/Mat.mat
+  hera-agent-unity manage_components remove --component_id -67890
+

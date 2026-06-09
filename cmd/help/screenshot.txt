@@ -1,0 +1,17 @@
+Usage: hera-agent-unity screenshot [options]
+
+Capture a screenshot of the Unity editor.
+
+Options:
+  --view <mode>      scene (default), game
+  --width <N>        Image width in pixels (default: 1920)
+  --height <N>       Image height in pixels (default: 1080)
+  --output_path <path>  Output path, absolute or relative to project root
+                        (default: Screenshots/screenshot.png)
+
+Examples:
+  hera-agent-unity screenshot
+  hera-agent-unity screenshot --view game
+  hera-agent-unity screenshot --view scene --width 3840 --height 2160
+  hera-agent-unity screenshot --output_path captures/my_scene.png
+

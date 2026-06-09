@@ -1,0 +1,11 @@
+Usage: hera-agent-unity reserialize [path...]
+
+Force Unity to reserialize assets through its own YAML serializer.
+Run after editing .prefab, .unity, .asset, or .mat files as text.
+No arguments = reserialize the entire project.
+
+Examples:
+  hera-agent-unity reserialize
+  hera-agent-unity reserialize Assets/Prefabs/Player.prefab
+  hera-agent-unity reserialize Assets/Scenes/Main.unity Assets/Scenes/Lobby.unity
+

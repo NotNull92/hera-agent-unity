@@ -1,0 +1,58 @@
+Usage: hera-agent-unity exec "<code>" [options]
+
+Execute C# code inside Unity Editor. Full access to UnityEngine,
+UnityEditor, and all loaded assemblies.
+
+Use 'return' to get output. Add --usings for types outside default namespaces.
+
+Options:
+  --usings <ns1,ns2>   Add extra using directives
+  --file <path>        Load code from file. Positional/stdin take precedence.
+  --csc <path>         Path to csc compiler (csc.dll or csc.exe). Auto-detected if omitted.
+  --dotnet <path>      Path to dotnet runtime. Auto-detected if omitted.
+  --no-cache           Skip compile/assembly cache; force a fresh csc invocation.
+  --depth <n>          Max object graph depth in the serialized return value
+                       (default 3, max 8). Depths 1–2 collapse Unity Objects to
+                       {name, type, instanceID} for the leanest payload.
+  --check              Compile-only: validate syntax/types and return without
+                       executing. Useful for dry-run validation before a real
+                       exec — no side effects, no Invoke. Returns success on
+                       clean compile, EXEC_COMPILE_ERROR otherwise.
+  --stacktrace <mode>  Format of EXEC_RUNTIME_ERROR stack traces:
+                         none — exception_type only, no frames
+                         user — drop framework frames, collapse the synthetic
+                                wrapper to "(your snippet)" (default)
+                         full — raw inner.StackTrace verbatim
+  --strict             Capture Debug.LogError / LogException / LogAssert
+                       raised by the snippet and surface them as
+                       EXEC_LOGGED_ERROR even if Execute() returned normally.
+                       Without --strict, a 'Debug.LogError(...); return null;'
+                       looks identical to a clean run at the exit-code layer.
+
+Default usings: System, System.Collections.Generic, System.IO, System.Linq,
+  System.Reflection, System.Threading.Tasks, UnityEngine,
+  UnityEngine.SceneManagement, UnityEditor, UnityEditor.SceneManagement,
+  UnityEditorInternal
+
+Examples:
+  hera-agent-unity exec "return 1+1;"
+  hera-agent-unity exec "return Application.dataPath;"
+  echo 'return EditorSceneManager.GetActiveScene().name;' | hera-agent-unity exec
+  echo 'Debug.Log("hello"); return null;' | hera-agent-unity exec
+  hera-agent-unity exec "return World.All.Count;" --usings Unity.Entities
+  hera-agent-unity exec --file scripts/probe.cs
+  hera-agent-unity exec "var x = MyType.MaybeRenamed();" --check    # validate only
+
+Stdin:
+  Pipe code via stdin to avoid shell escaping issues.
+  echo '<code>' | hera-agent-unity exec [--usings ns1,ns2]
+
+File:
+  --file <path> reads code from disk. Skipped if stdin or a positional code
+  argument is already present (those win over --file).
+
+Notes:
+  - Use 'return' for output, 'return null;' for void operations
+  - Leading 'using X;' directives in the code are auto-hoisted into the using
+    block, so a normal multi-line file works as-is. Equivalent to --usings.
+

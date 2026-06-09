@@ -1,0 +1,13 @@
+Usage: hera-agent-unity log "<message>" [--level <log|warning|error>]
+
+Write a message to the Unity console. Faster than 'exec "Debug.Log(...)"'
+because there's no C# compile step.
+
+Options:
+  --level <log|warning|error>    Log level (default: log)
+
+Examples:
+  hera-agent-unity log "checkpoint A"
+  hera-agent-unity log "missing prefab" --level warning
+  hera-agent-unity log "build failed" --level error
+

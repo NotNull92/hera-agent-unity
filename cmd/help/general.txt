@@ -1,0 +1,210 @@
+Usage: hera-agent-unity <command> [subcommand] [options]
+
+Editor Control:
+  editor play [--wait]          Enter play mode (--wait blocks until fully entered)
+  editor stop                   Exit play mode
+  editor pause                  Toggle pause/resume (play mode only)
+  editor refresh [--force]      Refresh asset database (blocked in play mode unless forced)
+  editor refresh --compile      Recompile scripts and wait until done
+
+Console:
+  console                       Read error & warning logs (default)
+  console --lines 20            Limit to N entries
+  console --type error,warning,log   Filter by log types (comma-separated)
+  console --stacktrace full     Stack trace: none, user (default), full
+  console --clear               Clear console
+
+Execute C#:
+  exec "<code>"                 Run C# code in Unity (return required for output)
+  echo '<code>' | exec          Pipe code via stdin (avoids shell escaping)
+  exec --file path.cs           Load code from file (positional/stdin take precedence)
+  exec "<code>" --usings x,y    Add extra using directives
+  exec "<code>" --no-cache      Skip compile/assembly cache (debug only)
+
+Log:
+  log "<message>"               Write to Unity console (no compile cost)
+  log "<msg>" --level warning   Levels: log (default), warning, error
+
+  Examples:
+    exec "Time.time"
+    exec "GameObject.FindObjectsOfType<Camera>().Length"
+    exec "var go = new GameObject(\"Test\"); return go.name;"
+
+  Note: identical code is served from the in-memory assembly cache
+  (warm calls skip csc). First call per Unity session is the cold path.
+
+Scene:
+  scene info                    Active scene name/path/dirty + loaded scene list
+  scene load <path|name>        Open scene (default mode: single)
+  scene load <path> --mode additive
+                                Load additively without unloading current
+  scene save [<path|name>]      Save active scene (or named scene if specified)
+  scene list                    Build Settings registered scenes
+  scene close <path|name>       Unload a non-active loaded scene (additive)
+
+  Examples:
+    scene info
+    scene load Assets/Scenes/Main.unity
+    scene load Main --mode additive
+    scene save
+    scene close Lobby
+
+Packages (Package Manager):
+  manage_packages list                              List every resolved package (sync)
+  manage_packages add <id>                          Install — registry / git URL / file:.. (async, job_id)
+  manage_packages remove <name>                     Uninstall by package name (async, job_id)
+  manage_packages embed <name>                      Copy cached package into Packages/ (async, job_id)
+
+  Examples:
+    manage_packages list
+    manage_packages add com.unity.ai.navigation
+    manage_packages add https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
+    manage_packages remove com.unity.ai.navigation
+    manage_packages embed com.unity.test-framework
+
+Documentation:
+  unity_docs <query>                              Offline Unity ScriptReference lookup.
+                                                  Query: Rigidbody | Rigidbody.mass |
+                                                  Rigidbody.AddForce | Vector3.zero |
+                                                  UnityEditor.AssetDatabase.Refresh.
+                                                  Returns title/signature/summary/manual_url.
+                                                  Data ships inside the UPM package — no
+                                                  docs folder on your machine required.
+
+Components:
+  manage_components add --path /Player --type Rigidbody
+  manage_components list --instance_id <N>
+  manage_components get --path /Player --type Rigidbody [--property m_Mass]
+  manage_components set --path /Player --type Rigidbody --property m_Mass --value 5
+  manage_components set --path /Player --type MeshRenderer --property m_Materials.Array.data[0] --value Assets/Mat.mat
+  manage_components remove --component_id <N>
+
+  Properties are raw SerializedProperty paths (m_Name, m_LocalScale.x).
+  Reference fields accept an InstanceID, an asset path, or a
+  {instance_id|asset_path} envelope via --params.
+
+GameObjects (find):
+  find_gameobjects                                  All scene GameObjects (paged, limit=50)
+  find_gameobjects --name Player                    Substring filter on name (case-insensitive)
+  find_gameobjects --tag Enemy                      Exact tag match
+  find_gameobjects --layer UI                       Layer name or integer index
+  find_gameobjects --component Rigidbody            Has the given component
+  find_gameobjects --path_glob /Root/**/Pickup      Glob on hierarchy path (* segment, ** multiple)
+  find_gameobjects --include_inactive false         Active in hierarchy only (default includes inactive)
+  find_gameobjects --limit 100 --offset 50          Pagination
+
+GameObjects:
+  manage_gameobject create --name <n> [--primitive <kind>] [--parent <id|path>] [--position x,y,z]
+  manage_gameobject destroy --instance_id <N>|--path </R/C>
+  manage_gameobject move --instance_id <N>|--path </R/C> --position x,y,z [--space world|local]
+  manage_gameobject set_parent --instance_id <N>|--path </R/C> --parent <id|path|none>
+  manage_gameobject set_active --instance_id <N>|--path </R/C> --active true|false
+  manage_gameobject set_name --instance_id <N>|--path </R/C> --name <new>
+  manage_gameobject get_transform --instance_id <N>|--path </R/C>
+
+  Primitives: cube, sphere, capsule, cylinder, plane, quad (omit for empty GameObject)
+
+  Examples:
+    manage_gameobject create --name Player
+    manage_gameobject create --name Cube --primitive cube --position 0,1,0
+    manage_gameobject set_parent --path /Player --parent /Root
+    manage_gameobject get_transform --path /Root/Player
+
+Menu:
+  menu "<path>"                 Execute Unity menu item by path
+
+  Examples:
+    menu "File/Save Project"
+    menu "Assets/Refresh"
+
+Screenshot:
+  screenshot                          Capture scene view (default)
+  screenshot --view game              Capture game view
+  screenshot --output_path <path>     Custom output path
+
+Reserialize:
+  reserialize [path...]          Force reserialize (no args = entire project)
+
+  Examples:
+    reserialize                                                    Reserialize entire project
+    reserialize Assets/Scenes/Main.unity
+    reserialize Assets/Prefabs/A.prefab Assets/Prefabs/B.prefab
+
+Tests:
+  test                            Run EditMode tests (default)
+  test --mode PlayMode            Run PlayMode tests
+  test --filter <name>            Filter by namespace, class, or full test name
+
+Profiler:
+  profiler hierarchy              Top-level profiler samples (last frame)
+  profiler hierarchy --depth 5    Recursive drill-down (0=unlimited)
+  profiler hierarchy --root Name  Set root by name (substring match)
+  profiler hierarchy --frames 30  Average over last 30 frames
+  profiler hierarchy --parent 5   Drill into item by ID
+  profiler hierarchy --min 0.5    Filter items below 0.5ms
+  profiler hierarchy --sort self  Sort by self time
+  profiler enable                Start profiler recording
+  profiler disable               Stop profiler recording
+  profiler status                Show profiler state
+  profiler clear                 Clear all captured frames
+
+Custom Tools:
+  list                          List tools (slim: name + description + schema)
+  list --names                  Names only (one entry per tool — token-efficient)
+  list --tool <name>            Full schema for a single tool (params + output + metadata)
+  <name>                        Call a custom tool directly
+  <name> --params '{"k":"v"}'   Call with JSON parameters
+
+Status:
+  status                        Show Unity Editor state (ready, compiling, etc.)
+  ping                          Token-cheap liveness probe (heartbeat read only, no HTTP)
+
+Diagnostics:
+  doctor                        Self-check: binary path, PATH resolution,
+                                duplicate installs, shell hints, Unity instances
+  doctor --json                 Same data, JSON envelope for agent parsing
+  doctor --agent-rules          Print Quick Rules + Pitfalls from AGENT.md
+                                (append to CLAUDE.md / AGENTS.md / etc.)
+
+Batch:
+  batch --file <path>           Execute multiple commands from a JSON file
+  batch                         Pipe JSON via stdin (no file needed)
+  batch --dry-run               Preview the plan without execution
+
+Update:
+  update                        Update to the latest version
+  update --check                Check for updates without installing
+
+Install:
+  install                       Register the binary on PATH (self-installer)
+  uninstall                     Completely remove from PATH and delete configs
+
+Asset Config:
+  asset-config                  Interactive checkbox UI (Space to toggle)
+  asset-config list             List all assets with status
+  asset-config enable <id>      Enable an asset
+  asset-config disable <id>     Disable an asset
+  asset-config detect           Auto-detect installed assets (requires Unity)
+  asset-config --json           Output enabled assets as JSON (for AI agents)
+
+Global Options:
+  --port <N>          Select Unity instance by active heartbeat port
+  --project <path>    Select Unity instance by project path
+  --timeout <ms>      Request timeout in ms (default: 60000)
+  --verbose           Print progress + per-phase timings to stderr
+  --quiet             Suppress decorative progress messages (env: HERA_AGENT_QUIET)
+  --debug             Print HTTP request/response bodies + discovery info
+                      to stderr (env: HERA_AGENT_DEBUG)
+  --compact-json      Emit JSON without indentation — smaller AI payloads
+                      (env: HERA_AGENT_COMPACT_JSON)
+  --narrate           Print waitForAlive/waitForReady progress even on
+                      tool commands (env: HERA_AGENT_NARRATE)
+
+Use "hera-agent-unity <command> --help" for more information about a command.
+
+Notes:
+  - Unity must be open with the Connector package installed
+  - Multiple Unity instances: use --port or --project to select
+  - Custom tools: any [HeraTool] class is auto-discovered
+  - Run 'list' to see all available tools
+

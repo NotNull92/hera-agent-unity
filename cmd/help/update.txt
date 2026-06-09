@@ -1,0 +1,11 @@
+Usage: hera-agent-unity update [options]
+
+Update the CLI binary to the latest release from GitHub.
+
+Options:
+  --check              Check for updates without installing
+
+Examples:
+  hera-agent-unity update
+  hera-agent-unity update --check
+

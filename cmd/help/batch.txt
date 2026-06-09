@@ -1,0 +1,32 @@
+Usage: hera-agent-unity batch [--file <path.json>] [--dry-run]
+
+Execute multiple commands in a single HTTP request to Unity. The whole
+batch round-trips together so the response stays atomic and ordered.
+
+Design constraint: batch is for simple sequential execution only. For
+conditional branching, data passing between commands, or complex
+workflows, use individual CLI calls from a shell script or AI agent.
+
+JSON format:
+  {
+    "commands": [
+      {"command": "manage_editor", "params": {"action": "play"}},
+      {"command": "exec",          "params": {"code": "return ..."}}
+    ],
+    "options": { "fail_fast": true }
+  }
+
+Options:
+  --file <path>    Path to the JSON batch file. If omitted, reads stdin.
+  --dry-run        Print the plan without executing it.
+
+fail_fast:
+  true   Stop on first failure; return results up to that point.
+  false  Execute every command regardless of individual failures.
+
+Examples:
+  hera-agent-unity batch --file ./play_and_test.json
+  echo '{"commands":[{"command":"refresh_unity","params":{"compile":"request"}}]}' \
+    | hera-agent-unity batch
+  hera-agent-unity batch --file ./plan.json --dry-run
+

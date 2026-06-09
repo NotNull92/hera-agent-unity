@@ -1,0 +1,11 @@
+Usage: hera-agent-unity menu "<path>"
+
+Execute a Unity menu item by its path.
+
+Examples:
+  hera-agent-unity menu "File/Save Project"
+  hera-agent-unity menu "Assets/Refresh"
+  hera-agent-unity menu "Window/General/Console"
+
+Note: File/Quit is blocked for safety.
+

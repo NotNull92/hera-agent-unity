@@ -1,0 +1,51 @@
+Usage: hera-agent-unity manage_packages <action> [identifier] [flags]
+
+Actions:
+  list                            List every package the project resolves to (synchronous).
+  add <identifier>                Install a package. identifier accepts any
+                                  Client.Add string:
+                                    com.unity.x            Latest from registry
+                                    com.unity.x@1.2.3      Pinned version
+                                    https://.../repo.git   Git URL
+                                    https://.../repo.git?path=Subdir
+                                    file:../local-path     Local path
+                                  Returns a job_id; the CLI polls the
+                                  package-result file for up to 10m.
+  remove <name>                   Uninstall by package name (async, job_id).
+  embed <name>                    Copy a cached package out of
+                                  Library/PackageCache into Packages/ so it
+                                  becomes locally editable (async, job_id).
+
+Output:
+  list — { packages:[{ name, version, source, resolved_path,
+                       is_direct_dependency, display_name }] }
+  add / remove / embed start — { job_id, port, action, identifier } + message "running"
+  add / remove / embed complete (after polling) —
+      success: { action, identifier, package:{...} } (no package on remove)
+      failure: code PACKAGE_<ACTION>_FAILED + error message
+
+Polling:
+  Result file: ~/.hera-agent-unity/status/package-result-<port>-<job_id>.json
+  Deleted on read. Domain reloads triggered by the package resolver are
+  bridged via [InitializeOnLoad] + a Client.List verifier — the result file
+  is still written after the reload settles.
+
+Safety:
+  Direct manifest.json edits race the resolver and skip git-URL validation.
+  add / remove route through UnityEditor.PackageManager.Client which owns
+  the project lock — prefer this over hand-editing manifest.
+
+Examples:
+  hera-agent-unity manage_packages list
+  hera-agent-unity manage_packages add com.unity.ai.navigation
+  hera-agent-unity manage_packages add com.unity.cinemachine@2.9.7
+  hera-agent-unity manage_packages add https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask
+  hera-agent-unity manage_packages remove com.unity.ai.navigation
+  hera-agent-unity manage_packages embed com.unity.test-framework
+
+OpenUPM:
+  Not directly supported in v0.0.6 — OpenUPM packages require a scoped
+  registry entry in manifest.json before Client.Add can resolve them.
+  Add the scoped registry once via the Package Manager UI, then use
+  'manage_packages add com.author.package' here.
+
