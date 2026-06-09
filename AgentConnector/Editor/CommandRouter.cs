@@ -111,11 +111,82 @@ namespace HeraAgent
             };
         }
 
+        static string ExtractAction(JObject parameters)
+        {
+            if (parameters == null) return null;
+
+            var action = parameters["action"]?.ToString();
+            if (!string.IsNullOrEmpty(action))
+                return action.ToLowerInvariant();
+
+            var args = parameters["args"] as JArray;
+            if (args != null && args.Count >= 1)
+                return args[0].ToString().ToLowerInvariant();
+
+            return null;
+        }
+
         static async Task<object> DispatchInternal(string command, JObject parameters)
         {
             if (command == "list")
                 return HandleList(parameters);
 
+            // Try action-level dispatch first
+            string action = ExtractAction(parameters);
+            if (!string.IsNullOrEmpty(action))
+            {
+                var actionHandler = ToolDiscovery.FindActionHandler(command, action);
+                if (actionHandler != null)
+                {
+                    try
+                    {
+                        object result;
+                        if (actionHandler.IsStatic)
+                        {
+                            result = actionHandler.Invoke(null, new object[] { parameters ?? new JObject() });
+                        }
+                        else
+                        {
+                            var toolType = actionHandler.DeclaringType;
+                            if (toolType == null)
+                                return new ErrorResponse($"Tool type not found: {command}");
+                            object instance;
+                            try
+                            {
+                                instance = Activator.CreateInstance(toolType);
+                            }
+                            catch (MissingMethodException)
+                            {
+                                return new ErrorResponse($"Tool '{command}' requires a parameterless constructor");
+                            }
+                            catch (MemberAccessException)
+                            {
+                                return new ErrorResponse($"Tool '{command}' constructor is not accessible (must be public)");
+                            }
+                            if (instance == null)
+                                return new ErrorResponse($"Failed to create tool instance: {command}");
+                            result = actionHandler.Invoke(instance, new object[] { parameters ?? new JObject() });
+                        }
+
+                        if (result is Task<object> asyncTask)
+                            return await asyncTask;
+                        if (result is Task task)
+                        {
+                            await task;
+                            return new SuccessResponse($"{command}:{action} completed");
+                        }
+                        return result ?? new SuccessResponse($"{command}:{action} completed");
+                    }
+                    catch (Exception ex)
+                    {
+                        var inner = ex.InnerException ?? ex;
+                        UnityEngine.Debug.LogException(inner);
+                        return new ErrorResponse($"{command}:{action} failed: {inner.Message}");
+                    }
+                }
+            }
+
+            // Fallback to legacy Handle/HandleCommand
             var handler = ToolDiscovery.FindHandler(command);
             if (handler == null)
             {

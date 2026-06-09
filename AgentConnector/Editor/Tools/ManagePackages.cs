@@ -37,41 +37,12 @@ namespace HeraAgent.Tools
             public string Identifier { get; set; }
         }
 
-        public static async Task<object> HandleCommand(JObject parameters)
-        {
-            if (parameters == null)
-                return new ErrorResponse("Parameters cannot be null.");
-
-            var p = new ToolParams(parameters);
-            var argsToken = p.GetRaw("args") as JArray;
-
-            string action = p.Get("action")
-                ?? (argsToken != null && argsToken.Count >= 1 ? argsToken[0].ToString() : null);
-            if (string.IsNullOrEmpty(action))
-                return new ErrorResponse("'action' required: list, add, remove, embed");
-            action = action.ToLowerInvariant();
-
-            string identifier = p.Get("identifier")
-                ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
-
-            switch (action)
-            {
-                case "list": return await ListAsync();
-                case "add": return StartAsyncJob("add", identifier);
-                case "remove": return StartAsyncJob("remove", identifier);
-                case "embed": return StartAsyncJob("embed", identifier);
-                default:
-                    return new ErrorResponse(
-                        $"Unknown manage_packages action: '{action}'. Use list, add, remove, embed.");
-            }
-        }
-
         // ---- Synchronous list ----
 
         // Client.List returns a ListRequest that resolves on EditorApplication.update
         // ticks. We yield with Task.Delay so Unity's main loop keeps pumping
         // (Thread.Sleep would freeze it and the request would never complete).
-        private static async Task<object> ListAsync()
+        public static async Task<object> ListAsync(JObject raw)
         {
             var request = Client.List(offlineMode: false, includeIndirectDependencies: true);
 
@@ -99,6 +70,33 @@ namespace HeraAgent.Tools
         }
 
         // ---- Async add / remove / embed ----
+
+        public static object Add(JObject raw)
+        {
+            var p = new ToolParams(raw);
+            var argsToken = p.GetRaw("args") as JArray;
+            string identifier = p.Get("identifier")
+                ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
+            return StartAsyncJob("add", identifier);
+        }
+
+        public static object Remove(JObject raw)
+        {
+            var p = new ToolParams(raw);
+            var argsToken = p.GetRaw("args") as JArray;
+            string identifier = p.Get("identifier")
+                ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
+            return StartAsyncJob("remove", identifier);
+        }
+
+        public static object Embed(JObject raw)
+        {
+            var p = new ToolParams(raw);
+            var argsToken = p.GetRaw("args") as JArray;
+            string identifier = p.Get("identifier")
+                ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
+            return StartAsyncJob("embed", identifier);
+        }
 
         private static object StartAsyncJob(string action, string identifier)
         {

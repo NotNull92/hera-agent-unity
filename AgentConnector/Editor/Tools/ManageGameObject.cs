@@ -59,38 +59,11 @@ namespace HeraAgent.Tools
             public bool? WorldPositionStays { get; set; }
         }
 
-        public static object HandleCommand(JObject parameters)
-        {
-            if (parameters == null)
-                return new ErrorResponse("Parameters cannot be null.");
-
-            var p = new ToolParams(parameters);
-            var argsToken = p.GetRaw("args") as JArray;
-            string action = p.Get("action")
-                ?? (argsToken != null && argsToken.Count >= 1 ? argsToken[0].ToString() : null);
-            if (string.IsNullOrEmpty(action))
-                return new ErrorResponse("'action' required: create, destroy, move, set_parent, set_active, set_name, get_transform");
-            action = action.ToLowerInvariant();
-
-            switch (action)
-            {
-                case "create": return Create(p);
-                case "destroy": return Destroy(p);
-                case "move": return Move(p);
-                case "set_parent": return SetParent(p);
-                case "set_active": return SetActive(p);
-                case "set_name": return SetName(p);
-                case "get_transform": return GetTransform(p);
-                default:
-                    return new ErrorResponse(
-                        $"Unknown manage_gameobject action: '{action}'. Use create, destroy, move, set_parent, set_active, set_name, get_transform.");
-            }
-        }
-
         // ---- sub-actions ----
 
-        private static object Create(ToolParams p)
+        public static object Create(JObject raw)
         {
+            var p = new ToolParams(raw);
             string name = p.Get("name");
             string primitive = p.Get("primitive");
 
@@ -135,8 +108,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Created GameObject: {go.name}", BuildShallow(go));
         }
 
-        private static object Destroy(ToolParams p)
+        public static object Destroy(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (go, err) = ResolveTarget(p);
             if (err != null) return new ErrorResponse(err);
 
@@ -152,8 +126,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse("Destroyed GameObject.", snapshot);
         }
 
-        private static object Move(ToolParams p)
+        public static object Move(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (go, err) = ResolveTarget(p);
             if (err != null) return new ErrorResponse(err);
 
@@ -175,8 +150,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Moved {go.name}.", BuildShallow(go));
         }
 
-        private static object SetParent(ToolParams p)
+        public static object SetParent(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (go, err) = ResolveTarget(p);
             if (err != null) return new ErrorResponse(err);
 
@@ -221,8 +197,9 @@ namespace HeraAgent.Tools
                 BuildShallow(go));
         }
 
-        private static object SetActive(ToolParams p)
+        public static object SetActive(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (go, err) = ResolveTarget(p);
             if (err != null) return new ErrorResponse(err);
 
@@ -239,8 +216,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Set {go.name}.active = {active.Value}.", BuildShallow(go));
         }
 
-        private static object SetName(ToolParams p)
+        public static object SetName(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (go, err) = ResolveTarget(p);
             if (err != null) return new ErrorResponse(err);
 
@@ -255,8 +233,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Renamed '{old}' -> '{name}'.", BuildShallow(go));
         }
 
-        private static object GetTransform(ToolParams p)
+        public static object GetTransform(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (go, err) = ResolveTarget(p);
             if (err != null) return new ErrorResponse(err);
             return new SuccessResponse("OK", BuildShallow(go));

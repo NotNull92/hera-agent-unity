@@ -62,37 +62,11 @@ namespace HeraAgent.Tools
             public string Value { get; set; }
         }
 
-        public static object HandleCommand(JObject parameters)
-        {
-            if (parameters == null)
-                return new ErrorResponse("Parameters cannot be null.");
-
-            var p = new ToolParams(parameters);
-            var argsToken = p.GetRaw("args") as JArray;
-
-            string action = p.Get("action")
-                ?? (argsToken != null && argsToken.Count >= 1 ? argsToken[0].ToString() : null);
-            if (string.IsNullOrEmpty(action))
-                return new ErrorResponse("'action' required: add, remove, list, get, set");
-            action = action.ToLowerInvariant();
-
-            switch (action)
-            {
-                case "add": return Add(p);
-                case "remove": return Remove(p);
-                case "list": return List(p);
-                case "get": return Get(p);
-                case "set": return Set(p);
-                default:
-                    return new ErrorResponse(
-                        $"Unknown manage_components action: '{action}'. Use add, remove, list, get, set.");
-            }
-        }
-
         // ---- sub-actions ----
 
-        static object Add(ToolParams p)
+        public static object Add(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (go, goErr) = ResolveGameObjectTarget(p);
             if (goErr != null) return new ErrorResponse(goErr);
 
@@ -135,8 +109,9 @@ namespace HeraAgent.Tools
                 });
         }
 
-        static object Remove(ToolParams p)
+        public static object Remove(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (comp, go, err) = ResolveComponentTarget(p);
             if (err != null) return new ErrorResponse(err);
 
@@ -165,8 +140,9 @@ namespace HeraAgent.Tools
                 });
         }
 
-        static object List(ToolParams p)
+        public static object List(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (go, goErr) = ResolveGameObjectTarget(p);
             if (goErr != null) return new ErrorResponse(goErr);
 
@@ -186,8 +162,9 @@ namespace HeraAgent.Tools
                 });
         }
 
-        static object Get(ToolParams p)
+        public static object Get(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (comp, go, err) = ResolveComponentTarget(p);
             if (err != null) return new ErrorResponse(err);
 
@@ -226,8 +203,9 @@ namespace HeraAgent.Tools
                 });
         }
 
-        static object Set(ToolParams p)
+        public static object Set(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (comp, go, err) = ResolveComponentTarget(p);
             if (err != null) return new ErrorResponse(err);
 

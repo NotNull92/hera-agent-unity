@@ -88,35 +88,11 @@ namespace HeraAgent.Tools
             public string OffsetMax { get; set; }
         }
 
-        public static object HandleCommand(JObject parameters)
-        {
-            if (parameters == null)
-                return new ErrorResponse("Parameters cannot be null.");
-
-            var p = new ToolParams(parameters);
-            var argsToken = p.GetRaw("args") as JArray;
-            string action = p.Get("action")
-                ?? (argsToken != null && argsToken.Count >= 1 ? argsToken[0].ToString() : null);
-            if (string.IsNullOrEmpty(action))
-                return new ErrorResponse("'action' required: create, get_rect, set_anchor, set_rect");
-            action = action.ToLowerInvariant();
-
-            switch (action)
-            {
-                case "create": return Create(p);
-                case "get_rect": return GetRect(p);
-                case "set_anchor": return SetAnchor(p);
-                case "set_rect": return SetRect(p);
-                default:
-                    return new ErrorResponse(
-                        $"Unknown manage_ui action: '{action}'. Use create, get_rect, set_anchor, set_rect.");
-            }
-        }
-
         // ---- create ----
 
-        private static object Create(ToolParams p)
+        public static object Create(JObject raw)
         {
+            var p = new ToolParams(raw);
             string element = (p.Get("element")
                 ?? ((p.GetRaw("args") as JArray)?.Count >= 2 ? ((JArray)p.GetRaw("args"))[1].ToString() : null))
                 ?.ToLowerInvariant();
@@ -345,8 +321,9 @@ namespace HeraAgent.Tools
 
         // ---- get_rect ----
 
-        private static object GetRect(ToolParams p)
+        public static object GetRect(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (rt, err) = ResolveRectTransform(p);
             if (err != null) return new ErrorResponse(err);
             return new SuccessResponse($"OK", BuildRectShape(rt));
@@ -354,8 +331,9 @@ namespace HeraAgent.Tools
 
         // ---- set_anchor ----
 
-        private static object SetAnchor(ToolParams p)
+        public static object SetAnchor(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (rt, err) = ResolveRectTransform(p);
             if (err != null) return new ErrorResponse(err);
 
@@ -424,8 +402,9 @@ namespace HeraAgent.Tools
 
         // ---- set_rect ----
 
-        private static object SetRect(ToolParams p)
+        public static object SetRect(JObject raw)
         {
+            var p = new ToolParams(raw);
             var (rt, err) = ResolveRectTransform(p);
             if (err != null) return new ErrorResponse(err);
 

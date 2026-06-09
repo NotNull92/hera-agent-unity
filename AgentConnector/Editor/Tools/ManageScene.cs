@@ -23,35 +23,7 @@ namespace HeraAgent.Tools
             public string Mode { get; set; }
         }
 
-        public static object HandleCommand(JObject parameters)
-        {
-            if (parameters == null)
-                return new ErrorResponse("Parameters cannot be null.");
-
-            var p = new ToolParams(parameters);
-            var argsToken = p.GetRaw("args") as JArray;
-
-            string action = p.Get("action")
-                ?? (argsToken != null && argsToken.Count >= 1 ? argsToken[0].ToString() : null);
-            if (string.IsNullOrEmpty(action))
-                return new ErrorResponse("'action' required: info, load, save, list, close");
-            action = action.ToLowerInvariant();
-
-            string target = p.Get("path") ?? p.Get("name") ?? p.Get("target")
-                ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
-
-            switch (action)
-            {
-                case "info": return Info();
-                case "load": return Load(target, p.Get("mode"));
-                case "save": return Save(target);
-                case "list": return List();
-                case "close": return Close(target);
-                default: return new ErrorResponse($"Unknown scene action: '{action}'. Use info, load, save, list, close.");
-            }
-        }
-
-        private static object Info()
+        public static object Info(JObject raw)
         {
             var active = SceneManager.GetActiveScene();
             var loaded = new List<object>();
@@ -74,8 +46,13 @@ namespace HeraAgent.Tools
             });
         }
 
-        private static object Load(string target, string mode)
+        public static object Load(JObject raw)
         {
+            var p = new ToolParams(raw);
+            var argsToken = p.GetRaw("args") as JArray;
+            string target = p.Get("path") ?? p.Get("name") ?? p.Get("target")
+                ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
+            string mode = p.Get("mode");
             if (string.IsNullOrEmpty(target))
                 return new ErrorResponse("'path' or positional scene path required for load.");
 
@@ -114,8 +91,12 @@ namespace HeraAgent.Tools
             });
         }
 
-        private static object Save(string target)
+        public static object Save(JObject raw)
         {
+            var p = new ToolParams(raw);
+            var argsToken = p.GetRaw("args") as JArray;
+            string target = p.Get("path") ?? p.Get("name") ?? p.Get("target")
+                ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
             Scene scene;
             if (string.IsNullOrEmpty(target))
             {
@@ -149,7 +130,7 @@ namespace HeraAgent.Tools
             });
         }
 
-        private static object List()
+        public static object List(JObject raw)
         {
             var registered = EditorBuildSettings.scenes;
             var list = new List<object>();
@@ -166,8 +147,12 @@ namespace HeraAgent.Tools
             return new SuccessResponse("OK", list);
         }
 
-        private static object Close(string target)
+        public static object Close(JObject raw)
         {
+            var p = new ToolParams(raw);
+            var argsToken = p.GetRaw("args") as JArray;
+            string target = p.Get("path") ?? p.Get("name") ?? p.Get("target")
+                ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
             if (string.IsNullOrEmpty(target))
                 return new ErrorResponse("'path' or positional scene name required for close.");
 

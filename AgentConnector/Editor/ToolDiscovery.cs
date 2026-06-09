@@ -24,6 +24,7 @@ namespace HeraAgent
         }
 
         private static Dictionary<string, ToolEntry> s_Cache;
+        private static Dictionary<string, MethodInfo> s_ActionHandlers;
         private static readonly object s_CacheLock = new object();
 
         static ToolDiscovery()
@@ -33,7 +34,11 @@ namespace HeraAgent
 
         private static void InvalidateCache()
         {
-            lock (s_CacheLock) s_Cache = null;
+            lock (s_CacheLock)
+            {
+                s_Cache = null;
+                s_ActionHandlers = null;
+            }
         }
 
         private static Dictionary<string, ToolEntry> GetCache()
@@ -49,6 +54,7 @@ namespace HeraAgent
         private static Dictionary<string, ToolEntry> BuildCache()
         {
             var cache = new Dictionary<string, ToolEntry>();
+            var actionHandlers = new Dictionary<string, MethodInfo>();
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 Type[] types;
@@ -87,14 +93,34 @@ namespace HeraAgent
                         Attr = attr,
                         Handler = handler,
                     };
+
+                    // Register action-level handlers: public static methods that take JObject
+                    foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                    {
+                        if (method.Name == "Handle" || method.Name == "HandleCommand")
+                            continue;
+                        var parms = method.GetParameters();
+                        if (parms.Length != 1 || parms[0].ParameterType != typeof(JObject))
+                            continue;
+                        var key = $"{name}:{method.Name.ToLowerInvariant()}";
+                        actionHandlers[key] = method;
+                    }
                 }
             }
+            s_ActionHandlers = actionHandlers;
             return cache;
         }
 
         public static MethodInfo FindHandler(string command)
         {
             return GetCache().TryGetValue(command, out var entry) ? entry.Handler : null;
+        }
+
+        public static MethodInfo FindActionHandler(string command, string action)
+        {
+            GetCache(); // Ensure action handlers are built
+            var key = $"{command}:{action.ToLowerInvariant()}";
+            return s_ActionHandlers?.TryGetValue(key, out var handler) == true ? handler : null;
         }
 
         /// <summary>
