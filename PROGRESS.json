@@ -2,8 +2,8 @@
   "project": "hera-agent-unity",
   "refactoring_session": {
     "date": "2026-06-09",
-    "total_prs": 19,
-    "summary": "Extract duplicated utilities, unify polling loops, fix CI/linter settings, clean up naming, encapsulate global state, and split monolithic Execute function."
+    "total_prs": 24,
+    "summary": "Extract duplicated utilities, unify polling loops, fix CI/linter settings, clean up naming, encapsulate global state, split monolithic Execute function, extract C# TargetResolver, and expand Go/C# test coverage."
   },
   "prs": [
     {
@@ -258,15 +258,76 @@
       "stats": "+1583 / -1553 lines",
       "risk": "low",
       "notes": "Split 2,028-line monolithic window into Model/View/Controller using partial class. Verified via asset-config CLI."
+    },
+    {
+      "number": 20,
+      "commit": "f6fdcef",
+      "title": "refactor(c#): extract TargetResolver for shared GameObject/Component resolution",
+      "changes": [
+        "AgentConnector/Editor/Core/TargetResolver.cs (new)",
+        "AgentConnector/Editor/Tools/ManageComponents.cs",
+        "AgentConnector/Editor/Tools/ManageGameObject.cs",
+        "AgentConnector/Editor/Tools/ManageUI.cs"
+      ],
+      "stats": "+102 / -109 lines",
+      "risk": "very low",
+      "notes": "Extracted ResolveGameObject, ResolveComponent<T>, ResolveTransform into shared helper. Removed duplicated resolution logic from 3 tool files. Preserved Component->GameObject fallback and alt path keys."
+    },
+    {
+      "number": 21,
+      "commit": "685c5d2",
+      "title": "test(go): add unit tests for doctor and install commands",
+      "changes": [
+        "cmd/doctor_test.go (new)",
+        "cmd/install_test.go (new)"
+      ],
+      "stats": "+255 lines",
+      "risk": "very low",
+      "notes": "TestExtractMdSection, TestExtractAgentRules, TestSameFile, TestResolveSymlink, TestGetInstallPaths, TestCopyFile. 8 top-level tests, 15 subtests — all pass."
+    },
+    {
+      "number": 22,
+      "commit": "5e1f1ee",
+      "title": "test(go): add unit tests for internal/poll package",
+      "changes": [
+        "internal/poll/poll_test.go (new)"
+      ],
+      "stats": "+214 lines",
+      "risk": "very low",
+      "notes": "TestExponentialBackoffLoop (immediate success, timeout, interval doubling), TestWaitForFile (file appears, timeout, invalid JSON, parse error), TestWaitForAsyncJob. 9 pass, 1 skip (UnityStopped requires live state)."
+    },
+    {
+      "number": 23,
+      "commit": "77fdb35",
+      "title": "test(go): add unit tests for internal/assetconfig package",
+      "changes": [
+        "internal/assetconfig/config_test.go (new)"
+      ],
+      "stats": "+345 lines",
+      "risk": "very low",
+      "notes": "TestConfigFilePath, TestDefaultAssets, TestLoadConfig (no file, valid JSON, invalid JSON), TestSaveConfig round-trip, TestToggleAsset, TestSetAssetEnabled, TestGetEnabledAssets, TestIsEnabled, TestCategoryNamesAndOrder. 11 pass."
+    },
+    {
+      "number": 24,
+      "commit": "b4dbe21",
+      "title": "test(csharp): add HierarchyPath editor tests",
+      "changes": [
+        "AgentConnector/Editor/Tests/HierarchyPathTests.cs (new)",
+        "AgentConnector/Editor/Tests.meta (new)",
+        "AgentConnector/Editor/Tests/HierarchyPathTests.cs.meta (new)"
+      ],
+      "stats": "+133 lines",
+      "risk": "very low",
+      "notes": "Build root/nested/null, Find root/nested/empty/non-existent. MenuItem: HeraAgent > Tests > HierarchyPath. Verified Unity Editor compilation."
     }
   ],
   "verification": {
     "go_build": "pass",
     "go_test": "pass",
-    "golangci_lint": "0 issues"
+    "golangci_lint": "0 issues",
+    "unity_compile": "pass"
   },
   "remaining_candidates": [
-    "C# TargetResolver commonization (ManageComponents/ManageGameObject/ManageUI)",
-    "Expand test coverage (doctor, install, poll, assetconfig)"
+    "All planned candidates completed. ManageUI helper inspection found no actual duplication across files."
   ]
 }
