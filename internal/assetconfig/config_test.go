@@ -1,0 +1,345 @@
+package assetconfig
+
+import (
+	"os"
+	"path/filepath"
+	"sync"
+	"testing"
+)
+
+func resetConfigPath(t *testing.T) {
+	t.Helper()
+	configOnce = sync.Once{}
+	configPath = ""
+}
+
+func withTempHome(t *testing.T) string {
+	t.Helper()
+	resetConfigPath(t)
+	dir := t.TempDir()
+	// On Windows os.UserHomeDir reads USERPROFILE first; on Unix it reads HOME.
+	t.Setenv("HOME", dir)
+	t.Setenv("USERPROFILE", dir)
+	return dir
+}
+
+func TestConfigFilePath(t *testing.T) {
+	withTempHome(t)
+
+	got := ConfigFilePath()
+	if got == "" {
+		t.Fatal("ConfigFilePath returned empty string")
+	}
+
+	wantSuffix := filepath.Join(".hera-agent-unity", "asset-config.json")
+	if !filepath.IsAbs(got) {
+		t.Errorf("ConfigFilePath not absolute: %s", got)
+	}
+	if filepath.Base(got) != "asset-config.json" {
+		t.Errorf("expected basename asset-config.json, got %s", filepath.Base(got))
+	}
+	if filepath.Base(filepath.Dir(got)) != ".hera-agent-unity" {
+		t.Errorf("expected parent dir .hera-agent-unity, got %s", filepath.Base(filepath.Dir(got)))
+	}
+	if !filepath.IsLocal(wantSuffix) {
+		// Only useful on Go 1.24+; skip if not available.
+	}
+}
+
+func TestDefaultAssets(t *testing.T) {
+	assets := DefaultAssets()
+	if len(assets) == 0 {
+		t.Fatal("DefaultAssets returned empty slice")
+	}
+
+	ids := make(map[string]bool, len(assets))
+	for _, a := range assets {
+		if a.ID == "" {
+			t.Error("asset missing ID")
+		}
+		if a.Name == "" {
+			t.Errorf("asset %q missing Name", a.ID)
+		}
+		if a.Category == "" {
+			t.Errorf("asset %q missing Category", a.ID)
+		}
+		if ids[a.ID] {
+			t.Errorf("duplicate asset ID %q", a.ID)
+		}
+		ids[a.ID] = true
+	}
+
+	// Verify known entries exist.
+	for _, want := range []string{"odin_inspector", "odin_validator", "odin_serializer", "dotween", "dotween_pro"} {
+		if !ids[want] {
+			t.Errorf("expected default asset %q not found", want)
+		}
+	}
+}
+
+func TestLoadConfig_NoFile_ReturnsDefaultsAndCreatesFile(t *testing.T) {
+	withTempHome(t)
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if cfg == nil {
+		t.Fatal("Load returned nil config")
+	}
+	if cfg.Version != "1.0.0" {
+		t.Errorf("expected version 1.0.0, got %s", cfg.Version)
+	}
+	if len(cfg.Assets) != len(DefaultAssets()) {
+		t.Errorf("expected %d assets, got %d", len(DefaultAssets()), len(cfg.Assets))
+	}
+
+	// File should have been created.
+	if _, err := os.Stat(ConfigFilePath()); err != nil {
+		t.Errorf("expected config file to be created: %v", err)
+	}
+}
+
+func TestLoadConfig_ValidJSON(t *testing.T) {
+	dir := withTempHome(t)
+	path := filepath.Join(dir, ".hera-agent-unity", "asset-config.json")
+	_ = os.MkdirAll(filepath.Dir(path), 0755)
+	data := `{"version":"2.0.0","assets":[{"id":"dotween","name":"DOTween","enabled":true,"installed":true,"category":"animation","description":"test"}]}`
+	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if cfg.Version != "2.0.0" {
+		t.Errorf("expected version 2.0.0, got %s", cfg.Version)
+	}
+
+	// Merged with defaults: dotween should preserve enabled/installed, but metadata refreshed.
+	found := false
+	for _, a := range cfg.Assets {
+		if a.ID == "dotween" {
+			found = true
+			if !a.Enabled {
+				t.Error("expected dotween to remain enabled")
+			}
+			if !a.Installed {
+				t.Error("expected dotween to remain installed")
+			}
+			if a.Name != "DOTween" {
+				t.Errorf("expected DOTween, got %s", a.Name)
+			}
+		}
+	}
+	if !found {
+		t.Error("dotween not found in merged config")
+	}
+
+	// Should also include other defaults.
+	if len(cfg.Assets) < len(DefaultAssets()) {
+		t.Errorf("expected at least %d assets after merge, got %d", len(DefaultAssets()), len(cfg.Assets))
+	}
+}
+
+func TestLoadConfig_InvalidJSON(t *testing.T) {
+	dir := withTempHome(t)
+	path := filepath.Join(dir, ".hera-agent-unity", "asset-config.json")
+	_ = os.MkdirAll(filepath.Dir(path), 0755)
+	if err := os.WriteFile(path, []byte("not json"), 0644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	_, err := Load()
+	if err == nil {
+		t.Fatal("expected error for invalid JSON, got nil")
+	}
+}
+
+func TestSaveConfig_RoundTrip(t *testing.T) {
+	withTempHome(t)
+
+	// Load defaults, mutate one asset, save, then load again.
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	cfg.Version = "1.2.3"
+	for i := range cfg.Assets {
+		if cfg.Assets[i].ID == "dotween" {
+			cfg.Assets[i].Enabled = true
+			cfg.Assets[i].Installed = true
+		}
+	}
+	if err := Save(cfg); err != nil {
+		t.Fatalf("Save error: %v", err)
+	}
+
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if loaded.Version != "1.2.3" {
+		t.Errorf("version mismatch: want %s, got %s", cfg.Version, loaded.Version)
+	}
+
+	var found bool
+	for _, a := range loaded.Assets {
+		if a.ID == "dotween" {
+			found = true
+			if !a.Enabled {
+				t.Error("expected dotween to be enabled after round-trip")
+			}
+			if !a.Installed {
+				t.Error("expected dotween to be installed after round-trip")
+			}
+		}
+	}
+	if !found {
+		t.Error("dotween not found after round-trip")
+	}
+}
+
+func TestToggleAsset(t *testing.T) {
+	withTempHome(t)
+
+	cfg, err := ToggleAsset("dotween")
+	if err != nil {
+		t.Fatalf("ToggleAsset error: %v", err)
+	}
+	for _, a := range cfg.Assets {
+		if a.ID == "dotween" && !a.Enabled {
+			t.Error("expected dotween to be enabled after toggle")
+		}
+	}
+
+	cfg, err = ToggleAsset("dotween")
+	if err != nil {
+		t.Fatalf("ToggleAsset error: %v", err)
+	}
+	for _, a := range cfg.Assets {
+		if a.ID == "dotween" && a.Enabled {
+			t.Error("expected dotween to be disabled after second toggle")
+		}
+	}
+
+	_, err = ToggleAsset("nonexistent")
+	if err == nil {
+		t.Error("expected error for nonexistent asset")
+	}
+}
+
+func TestSetAssetEnabled(t *testing.T) {
+	withTempHome(t)
+
+	cfg, err := SetAssetEnabled("dotween", true)
+	if err != nil {
+		t.Fatalf("SetAssetEnabled error: %v", err)
+	}
+	for _, a := range cfg.Assets {
+		if a.ID == "dotween" && !a.Enabled {
+			t.Error("expected dotween enabled")
+		}
+	}
+
+	cfg, err = SetAssetEnabled("dotween", false)
+	if err != nil {
+		t.Fatalf("SetAssetEnabled error: %v", err)
+	}
+	for _, a := range cfg.Assets {
+		if a.ID == "dotween" && a.Enabled {
+			t.Error("expected dotween disabled")
+		}
+	}
+
+	_, err = SetAssetEnabled("nonexistent", true)
+	if err == nil {
+		t.Error("expected error for nonexistent asset")
+	}
+}
+
+func TestGetEnabledAssets(t *testing.T) {
+	withTempHome(t)
+
+	// Initially none enabled.
+	enabled, err := GetEnabledAssets()
+	if err != nil {
+		t.Fatalf("GetEnabledAssets error: %v", err)
+	}
+	if len(enabled) != 0 {
+		t.Errorf("expected 0 enabled, got %d", len(enabled))
+	}
+
+	_, _ = SetAssetEnabled("dotween", true)
+	_, _ = SetAssetEnabled("odin_inspector", true)
+
+	enabled, err = GetEnabledAssets()
+	if err != nil {
+		t.Fatalf("GetEnabledAssets error: %v", err)
+	}
+	if len(enabled) != 2 {
+		t.Errorf("expected 2 enabled, got %d", len(enabled))
+	}
+	ids := make(map[string]bool)
+	for _, a := range enabled {
+		ids[a.ID] = true
+	}
+	if !ids["dotween"] || !ids["odin_inspector"] {
+		t.Errorf("unexpected enabled set: %+v", ids)
+	}
+}
+
+func TestIsEnabled(t *testing.T) {
+	withTempHome(t)
+
+	ok, err := IsEnabled("dotween")
+	if err != nil {
+		t.Fatalf("IsEnabled error: %v", err)
+	}
+	if ok {
+		t.Error("expected dotween to be disabled by default")
+	}
+
+	_, _ = SetAssetEnabled("dotween", true)
+
+	ok, err = IsEnabled("dotween")
+	if err != nil {
+		t.Fatalf("IsEnabled error: %v", err)
+	}
+	if !ok {
+		t.Error("expected dotween to be enabled")
+	}
+
+	// Nonexistent asset returns false without error.
+	ok, err = IsEnabled("nonexistent")
+	if err != nil {
+		t.Fatalf("IsEnabled error: %v", err)
+	}
+	if ok {
+		t.Error("expected nonexistent asset to be disabled")
+	}
+}
+
+func TestCategoryNamesAndOrder(t *testing.T) {
+	if len(CategoryNames) != len(CategoryOrder) {
+		t.Errorf("CategoryNames length %d != CategoryOrder length %d", len(CategoryNames), len(CategoryOrder))
+	}
+
+	seen := make(map[string]bool)
+	for _, key := range CategoryOrder {
+		if seen[key] {
+			t.Errorf("duplicate key %q in CategoryOrder", key)
+		}
+		seen[key] = true
+		if _, ok := CategoryNames[key]; !ok {
+			t.Errorf("key %q in CategoryOrder missing from CategoryNames", key)
+		}
+	}
+
+	for key := range CategoryNames {
+		if !seen[key] {
+			t.Errorf("key %q in CategoryNames missing from CategoryOrder", key)
+		}
+	}
+}
