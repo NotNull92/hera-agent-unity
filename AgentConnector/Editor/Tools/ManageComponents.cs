@@ -67,7 +67,7 @@ namespace HeraAgent.Tools
         public static object Add(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (go, goErr) = ResolveGameObjectTarget(p);
+            var (go, goErr) = TargetResolver.ResolveGameObject(p);
             if (goErr != null) return new ErrorResponse(goErr);
 
             string typeName = p.Get("type");
@@ -143,7 +143,7 @@ namespace HeraAgent.Tools
         public static object List(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (go, goErr) = ResolveGameObjectTarget(p);
+            var (go, goErr) = TargetResolver.ResolveGameObject(p);
             if (goErr != null) return new ErrorResponse(goErr);
 
             var comps = go.GetComponents<Component>();
@@ -269,7 +269,7 @@ namespace HeraAgent.Tools
                 return (comp, comp.gameObject, null);
             }
 
-            var (go, goErr) = ResolveGameObjectTarget(p);
+            var (go, goErr) = TargetResolver.ResolveGameObject(p);
             if (goErr != null) return (null, null, goErr);
 
             string typeName = p.Get("type");
@@ -292,32 +292,6 @@ namespace HeraAgent.Tools
                 return (null, go, $"index {index} out of range — '{go.name}' has {components.Length} {type.Name} component(s).");
 
             return (components[index], go, null);
-        }
-
-        static (GameObject go, string err) ResolveGameObjectTarget(ToolParams p)
-        {
-            var idToken = p.GetRaw("instance_id");
-            if (idToken != null && idToken.Type != JTokenType.Null)
-            {
-                int? id = p.GetInt("instance_id");
-                if (id == null) return (null, $"Invalid 'instance_id': '{idToken}'.");
-                var obj = EditorUtility.InstanceIDToObject(id.Value);
-                if (obj == null) return (null, $"No object for instance_id={id.Value}.");
-                GameObject go = obj as GameObject;
-                if (go == null && obj is Component c) go = c.gameObject;
-                if (go == null) return (null, $"instance_id={id.Value} is not a GameObject (type={obj.GetType().Name}).");
-                return (go, null);
-            }
-
-            string path = p.Get("path");
-            if (!string.IsNullOrEmpty(path))
-            {
-                var go = HierarchyPath.Find(path);
-                if (go == null) return (null, $"No GameObject at path: '{path}'.");
-                return (go, null);
-            }
-
-            return (null, "GameObject target required: pass 'instance_id' or 'path'.");
         }
 
         static object BuildComponentShape(Component comp, bool includeProperties)

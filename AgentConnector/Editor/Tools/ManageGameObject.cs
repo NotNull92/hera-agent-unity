@@ -111,7 +111,7 @@ namespace HeraAgent.Tools
         public static object Destroy(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (go, err) = ResolveTarget(p);
+            var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
             if (err != null) return new ErrorResponse(err);
 
             var snapshot = BuildShallow(go);
@@ -129,7 +129,7 @@ namespace HeraAgent.Tools
         public static object Move(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (go, err) = ResolveTarget(p);
+            var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
             if (err != null) return new ErrorResponse(err);
 
             var posToken = p.GetRaw("position");
@@ -153,7 +153,7 @@ namespace HeraAgent.Tools
         public static object SetParent(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (go, err) = ResolveTarget(p);
+            var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
             if (err != null) return new ErrorResponse(err);
 
             var parentToken = p.GetRaw("parent");
@@ -200,7 +200,7 @@ namespace HeraAgent.Tools
         public static object SetActive(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (go, err) = ResolveTarget(p);
+            var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
             if (err != null) return new ErrorResponse(err);
 
             var activeToken = p.GetRaw("active");
@@ -219,7 +219,7 @@ namespace HeraAgent.Tools
         public static object SetName(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (go, err) = ResolveTarget(p);
+            var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
             if (err != null) return new ErrorResponse(err);
 
             string name = p.Get("name");
@@ -236,38 +236,12 @@ namespace HeraAgent.Tools
         public static object GetTransform(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (go, err) = ResolveTarget(p);
+            var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
             if (err != null) return new ErrorResponse(err);
             return new SuccessResponse("OK", BuildShallow(go));
         }
 
         // ---- helpers ----
-
-        private static (GameObject go, string err) ResolveTarget(ToolParams p)
-        {
-            var idToken = p.GetRaw("instance_id");
-            if (idToken != null && idToken.Type != JTokenType.Null)
-            {
-                int? id = p.GetInt("instance_id");
-                if (id == null) return (null, $"Invalid 'instance_id': '{idToken}'.");
-                var obj = EditorUtility.InstanceIDToObject(id.Value);
-                if (obj == null) return (null, $"No object found for instance_id={id.Value}.");
-                GameObject go = obj as GameObject;
-                if (go == null && obj is Component c) go = c.gameObject;
-                if (go == null) return (null, $"instance_id={id.Value} is not a GameObject (type={obj.GetType().Name}).");
-                return (go, null);
-            }
-
-            string path = p.Get("path") ?? p.Get("target");
-            if (!string.IsNullOrEmpty(path))
-            {
-                var go = HierarchyPath.Find(path);
-                if (go == null) return (null, $"No GameObject at path: '{path}'.");
-                return (go, null);
-            }
-
-            return (null, "Target required: pass 'instance_id' or 'path'.");
-        }
 
         private static (GameObject go, string err) ResolveParent(JToken token)
         {

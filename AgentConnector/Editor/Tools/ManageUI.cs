@@ -115,7 +115,7 @@ namespace HeraAgent.Tools
             var parentToken = p.GetRaw("parent");
             if (parentToken != null && parentToken.Type != JTokenType.Null && !string.IsNullOrEmpty(parentToken.ToString()))
             {
-                var (pt, pErr) = ResolveTransform(parentToken.ToString());
+                var (pt, pErr) = TargetResolver.ResolveTransform(parentToken.ToString());
                 if (pErr != null) return new ErrorResponse(pErr);
                 parent = pt;
             }
@@ -324,7 +324,7 @@ namespace HeraAgent.Tools
         public static object GetRect(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (rt, err) = ResolveRectTransform(p);
+            var (rt, err) = TargetResolver.ResolveComponent<RectTransform>(p);
             if (err != null) return new ErrorResponse(err);
             return new SuccessResponse($"OK", BuildRectShape(rt));
         }
@@ -334,7 +334,7 @@ namespace HeraAgent.Tools
         public static object SetAnchor(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (rt, err) = ResolveRectTransform(p);
+            var (rt, err) = TargetResolver.ResolveComponent<RectTransform>(p);
             if (err != null) return new ErrorResponse(err);
 
             Vector2 newMin, newMax, presetPivot;
@@ -405,7 +405,7 @@ namespace HeraAgent.Tools
         public static object SetRect(JObject raw)
         {
             var p = new ToolParams(raw);
-            var (rt, err) = ResolveRectTransform(p);
+            var (rt, err) = TargetResolver.ResolveComponent<RectTransform>(p);
             if (err != null) return new ErrorResponse(err);
 
             Undo.RecordObject(rt, "Hera Set Rect");
@@ -454,50 +454,6 @@ namespace HeraAgent.Tools
         }
 
         // ---- helpers: targets ----
-
-        private static (RectTransform rt, string err) ResolveRectTransform(ToolParams p)
-        {
-            var idToken = p.GetRaw("instance_id");
-            if (idToken != null && idToken.Type != JTokenType.Null)
-            {
-                int? id = p.GetInt("instance_id");
-                if (id == null) return (null, $"Invalid 'instance_id': '{idToken}'.");
-                var obj = EditorUtility.InstanceIDToObject(id.Value);
-                if (obj == null) return (null, $"No object for instance_id={id.Value}.");
-                var go = obj as GameObject ?? (obj as Component)?.gameObject;
-                if (go == null) return (null, $"instance_id={id.Value} is not a GameObject (type={obj.GetType().Name}).");
-                var rt = go.GetComponent<RectTransform>();
-                if (rt == null) return (null, $"'{go.name}' has no RectTransform (not a UI element).");
-                return (rt, null);
-            }
-
-            string path = p.Get("path");
-            if (!string.IsNullOrEmpty(path))
-            {
-                var go = HierarchyPath.Find(path);
-                if (go == null) return (null, $"No GameObject at path: '{path}'.");
-                var rt = go.GetComponent<RectTransform>();
-                if (rt == null) return (null, $"'{go.name}' has no RectTransform (not a UI element).");
-                return (rt, null);
-            }
-
-            return (null, "Target required: pass 'instance_id' or 'path'.");
-        }
-
-        private static (Transform t, string err) ResolveTransform(string s)
-        {
-            if (string.IsNullOrEmpty(s)) return (null, null);
-            if (int.TryParse(s, out var id))
-            {
-                var obj = EditorUtility.InstanceIDToObject(id);
-                var go = obj as GameObject ?? (obj as Component)?.gameObject;
-                if (go == null) return (null, $"No GameObject for instance_id={id}.");
-                return (go.transform, null);
-            }
-            var found = HierarchyPath.Find(s);
-            if (found == null) return (null, $"No GameObject at path: '{s}'.");
-            return (found.transform, null);
-        }
 
         // ---- helpers: components ----
 
