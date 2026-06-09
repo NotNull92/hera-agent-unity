@@ -34,7 +34,7 @@ Report one line: `Connected: <project> · port=<N> · unity=<version> · state=<
 ## Full guide
 
 The complete cheatsheet (Tool Selection, Cookbook, Pitfalls, Reference) lives at
-<https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md>.
+<https://github.com/NotNull92/hera-agent-unity/blob/main/AGENTS.md>.
 
 Pull the latest Quick Rules + Pitfalls into this file at any time:
 

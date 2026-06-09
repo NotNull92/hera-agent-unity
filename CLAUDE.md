@@ -1,5 +1,7 @@
 # hera-agent-unity
 
+> See [`AGENTS.md`](AGENTS.md) for the canonical cross-tool agent rules file (read natively by Codex, Claude Code, Cursor, Copilot, and 30+ tools).
+
 CLI tool to control Unity Editor from the command line.
 Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free under MIT.
 

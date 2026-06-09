@@ -2,7 +2,9 @@
 
 > You are an AI coding agent operating in a Unity project that has `hera-agent-unity` available as a CLI. This document tells you how to use it efficiently. It is meant to be loaded into your project's rules file so every session has it without spending tokens to discover it.
 >
-> **Where to put this content.** The agent ecosystem is converging on `AGENTS.md` at the project root as the canonical, cross-tool rules file. Codex reads it, recent Cursor builds read it, Claude Code is moving toward recognising it alongside `CLAUDE.md`, and any tool that doesn't yet read it can be pointed at it by a one-line tool-specific stub. For most projects, **putting the rules in `AGENTS.md` is enough**; tool-specific files only matter when a tool requires a different format or wants stricter behaviour (Cursor's `.mdc` frontmatter is the main case).
+> **Where to put this content.** `AGENTS.md` at the project root is the canonical cross-tool agent rules file, standardized by the Agentic AI Foundation (AAIF) under the Linux Foundation (Dec 2025) and adopted by 60,000+ open-source repositories. OpenAI Codex, Claude Code, Cursor, GitHub Copilot, Gemini CLI, and 30+ tools read this file by default.
+>
+> This file (`AGENT.md`) remains the full reference guide. For the canonical cross-tool rules file, see [`AGENTS.md`](AGENTS.md).
 >
 > **Recommended layout — multi-tool projects**:
 >

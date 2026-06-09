@@ -34,7 +34,12 @@ Report one line: `Connected: <project> · port=<N> · unity=<version> · state=<
 ## Full guide
 
 The complete cheatsheet (Tool Selection, Cookbook, Pitfalls, Reference) lives at
-<https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md>.
+<https://github.com/NotNull92/hera-agent-unity/blob/main/AGENTS.md>.
+
+## Claude-specific notes
+
+- Claude Code reads `AGENTS.md` natively since late 2025. Keep `CLAUDE.md` only when you need path-scoped rules or imports.
+- This stub is intentionally minimal — the canonical rules live in `AGENTS.md` so other tools can share them.
 
 Pull the latest Quick Rules + Pitfalls into this file at any time:
 

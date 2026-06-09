@@ -4,27 +4,27 @@
 >
 > **Where to put this content.** `AGENTS.md` at the project root is the canonical cross-tool agent rules file, standardized by the Agentic AI Foundation (AAIF) under the Linux Foundation (Dec 2025) and adopted by 60,000+ open-source repositories. OpenAI Codex, Claude Code, Cursor, GitHub Copilot, Gemini CLI, and 30+ tools read this file by default.
 >
-> This file (`AGENT.md`) remains the full reference guide. For the canonical cross-tool rules file, see [`AGENTS.md`](AGENTS.md).
+> For multi-tool projects, the cleanest pattern is **`AGENTS.md` as the single source of truth** plus a one-line stub in tool-specific paths. Tool-specific files only matter when a tool requires a different format (Cursor's `.mdc` YAML frontmatter is the main case).
 >
 > **Recommended layout — multi-tool projects**:
 >
 > 1. Drop the full guide (or its lean subset) into `AGENTS.md` at the project root.
-> 2. For tools that ignore `AGENTS.md` or need their own format, drop a short stub that defers to `AGENTS.md`:
->     - `CLAUDE.md` → `> See AGENTS.md.` (Claude Code reads both)
->     - `.cursor/rules/hera-agent-unity.mdc` → frontmatter + the same body (see Cursor note below)
->     - `.github/copilot-instructions.md` → repository-wide pointer to `AGENTS.md` (Copilot can layer file-pattern-specific rules under `.github/instructions/*.instructions.md` with `applyTo` frontmatter)
+> 2. For tools that need their own format, drop a short stub that defers to `AGENTS.md`:
+>     - `CLAUDE.md` → `> See AGENTS.md.` (Claude Code reads `AGENTS.md` natively since late 2025)
+>     - `.cursor/rules/hera-agent-unity.mdc` → frontmatter + the same body (Cursor also supports plain `AGENTS.md` as a fallback)
+>     - `.github/copilot-instructions.md` → repository-wide pointer to `AGENTS.md` (Copilot uses nearest-file precedence; `.github/skills/` is for Agent Skills)
 >     - `.continuerules` → identical body
 >
-> **Per-tool target paths**:
+> **Per-tool target paths (2026-current)**:
 >
 > | Tool | Canonical path | Notes |
 > |---|---|---|
-> | OpenAI Codex / `AGENTS.md`-aware tools | `AGENTS.md` | Becoming the cross-tool standard. Lead with this. |
-> | Claude Code | `CLAUDE.md` (or `AGENTS.md`) | Reads `CLAUDE.md`; expanding to also read `AGENTS.md`. |
-> | Cursor | `.cursor/rules/*.mdc` | Per-rule files with YAML frontmatter required. `.cursorrules` (single-file) is **deprecated** — do not start new projects on it. `.cursorignore` excludes paths from the agent's view. |
-> | GitHub Copilot | `.github/copilot-instructions.md` | Repository-wide. Optional: `.github/instructions/*.instructions.md` with `applyTo: "**/*.cs,…"` frontmatter for file-pattern-specific guidance; `.github/prompts/*.prompt.md` for reusable prompts. |
+> | OpenAI Codex / AGENTS.md-aware tools | `AGENTS.md` | Cross-tool standard. Supports layering: `~/.codex/AGENTS.md` → repo root → subtree → `AGENTS.override.md`. |
+> | Claude Code | `AGENTS.md` (or `CLAUDE.md`) | Reads `AGENTS.md` natively. `CLAUDE.md` still works for path-scoped rules and imports. |
+> | Cursor | `.cursor/rules/*.mdc` | YAML frontmatter required for activation. `.cursorrules` (single-file) is **deprecated** and ignored by Agent mode. |
+> | GitHub Copilot | `.github/copilot-instructions.md` | Nearest-file precedence. Optional: `.github/instructions/*.instructions.md` with `applyTo` frontmatter; `.github/skills/` for Agent Skills. |
 > | Continue.dev | `.continuerules` | Plain markdown. |
-> | Other | whatever your tool calls its project rules file | Most accept plain markdown. |
+> | Other | Tool-specific rules file | Most accept plain markdown. |
 >
 > **Two ways to populate the target file**:
 >

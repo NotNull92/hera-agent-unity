@@ -34,7 +34,12 @@ Report one line: `Connected: <project> · port=<N> · unity=<version> · state=<
 ## Full guide
 
 The complete cheatsheet (Tool Selection, Cookbook, Pitfalls, Reference) lives at
-<https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md>.
+<https://github.com/NotNull92/hera-agent-unity/blob/main/AGENTS.md>.
+
+## Copilot-specific notes
+
+- Copilot uses **nearest-file precedence**: `AGENTS.md` works anywhere in the repo, and the closest one to the active file wins.
+- For reusable Agent Skills, use `.github/skills/<skill>/SKILL.md` (separate from project-level rules).
 
 Pull the latest Quick Rules + Pitfalls into this file at any time:
 
