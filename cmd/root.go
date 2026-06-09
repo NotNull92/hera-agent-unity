@@ -151,23 +151,9 @@ func runUnityCommand(ctx context.Context, category string, subArgs []string, sen
 	case "editor":
 		resp, err = editorCmd(subArgs, send, resolve, category)
 	case "test":
-		currentInst, resolveErr := resolve()
-		if resolveErr != nil {
-			return nil, resolveErr
-		}
-		testSend := func(command string, params interface{}) (*client.CommandResponse, error) {
-			return client.Send(currentInst, command, params, 0)
-		}
-		resp, err = testCmd(subArgs, testSend, currentInst.Port)
+		resp, err = testCmd(subArgs, send, resolve)
 	case "manage_packages":
-		currentInst, resolveErr := resolve()
-		if resolveErr != nil {
-			return nil, resolveErr
-		}
-		pkgSend := func(command string, params interface{}) (*client.CommandResponse, error) {
-			return client.Send(currentInst, command, params, 0)
-		}
-		resp, err = managePackagesCmd(subArgs, pkgSend, currentInst.Port)
+		resp, err = managePackagesCmd(subArgs, send, resolve)
 	case "unity_docs":
 		resp, err = unityDocsCmd(subArgs, send)
 	case "exec":

@@ -10,7 +10,7 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/poll"
 )
 
-func testCmd(args []string, send SendFunc, port int) (*client.CommandResponse, error) {
+func testCmd(args []string, send SendFunc, resolve instanceResolver) (*client.CommandResponse, error) {
 	flags := parseSubFlags(args)
 
 	mode := "EditMode"
@@ -51,9 +51,14 @@ func testCmd(args []string, send SendFunc, port int) (*client.CommandResponse, e
 		return resp, nil
 	}
 
+	inst, err := resolve()
+	if err != nil {
+		return nil, err
+	}
+
 	fmt.Fprintln(os.Stderr, "PlayMode tests running, waiting for results...")
 
-	return pollTestResults(port)
+	return pollTestResults(inst.Port)
 }
 
 func pollTestResults(port int) (*client.CommandResponse, error) {

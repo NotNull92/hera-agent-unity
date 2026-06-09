@@ -16,7 +16,7 @@ import (
 // budget). add / remove / embed return immediately with a job_id; we then
 // poll ~/.hera-agent-unity/status/package-result-PORT-JOBID.json the same
 // way cmd/test.go waits on PlayMode results.
-func managePackagesCmd(args []string, send SendFunc, port int) (*client.CommandResponse, error) {
+func managePackagesCmd(args []string, send SendFunc, resolve instanceResolver) (*client.CommandResponse, error) {
 	params, err := buildParams(args, nil)
 	if err != nil {
 		return nil, err
@@ -46,6 +46,15 @@ func managePackagesCmd(args []string, send SendFunc, port int) (*client.CommandR
 		fmt.Fprintf(os.Stderr,
 			"Package job %s (%s %s) running, waiting for completion...\n",
 			meta.JobID, meta.Action, meta.Identifier)
+	}
+
+	port := meta.Port
+	if port == 0 {
+		inst, err := resolve()
+		if err != nil {
+			return nil, err
+		}
+		port = inst.Port
 	}
 
 	return pollPackageJob(port, meta.JobID)
