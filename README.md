@@ -16,7 +16,7 @@
 
 <br>
 
-[Install](#installation) · [Quick Start](#quick-start) · [Commands](#commands) · [Batch](#batch--scripted-workflows) · [Custom Tools](#custom-tools) · [Architecture](#architecture) · [FAQ](#faq)
+[Install](#installation) · [Quick Start](#quick-start) · [Showcase](#showcase) · [Commands](#commands) · [Batch](#batch--scripted-workflows) · [Custom Tools](#custom-tools) · [Architecture](#architecture) · [FAQ](#faq)
 
 **English** · [한국어](README.ko.md)
 
@@ -48,6 +48,20 @@ Hera responds to commands — never inferring, never assuming. It returns what y
 **A small Go CLI, a single C# UPM package, zero runtime dependencies.**
 
 > Tests, TUI, batch engine, and asset-config layer sit on top — but the engine that talks to Unity stays lean.
+
+---
+
+## Showcase
+
+A game prototype built primarily with hera-agent-unity — the AI agent drove the live Editor through Hera (scene setup, component wiring, Play Mode iteration), not blind code generation.
+
+<div align="center">
+
+<video src="https://github.com/NotNull92/hera-agent-unity/raw/main/docs/sample/NoMoreRolls_Play.mp4" controls muted loop playsinline width="80%"></video>
+
+<sub><b><a href="https://github.com/NotNull92">NoMoreRolls</a></b> — solo-developed Unity game (3-tier architecture, 9-soul combat system). Play Mode capture.</sub>
+
+</div>
 
 ---
 
