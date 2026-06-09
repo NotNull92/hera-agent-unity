@@ -30,19 +30,9 @@ namespace HeraAgent
             DefaultValue = attr.DefaultValue;
             EnumType = attr.EnumType;
             Default = attr.Default;
-            Type = GetTypeName(propertyType);
+            Type = SchemaUtility.GetJsonTypeName(propertyType);
             OutputSchema = attr.OutputSchema;
             Schema = GenerateSchema(attr, propertyType);
-        }
-
-        private string GetTypeName(Type type)
-        {
-            if (type == typeof(string)) return "string";
-            if (type == typeof(int) || type == typeof(int?)) return "integer";
-            if (type == typeof(float) || type == typeof(float?)) return "number";
-            if (type == typeof(bool) || type == typeof(bool?)) return "boolean";
-            if (type.IsArray) return "array";
-            return "string";
         }
 
         private JObject GenerateSchema(ToolParameterAttribute attr, Type propertyType)

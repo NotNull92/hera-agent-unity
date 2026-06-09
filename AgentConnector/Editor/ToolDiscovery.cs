@@ -256,7 +256,7 @@ namespace HeraAgent
                 var propName = StringCaseUtility.ToSnakeCase(prop.Name);
                 var paramSchema = new JObject
                 {
-                    ["type"] = GetTypeName(prop.PropertyType),
+                    ["type"] = SchemaUtility.GetJsonTypeName(prop.PropertyType),
                     ["description"] = attr.Description ?? ""
                 };
 
@@ -274,16 +274,6 @@ namespace HeraAgent
             }
 
             return schema;
-        }
-
-        private static string GetTypeName(Type type)
-        {
-            if (type == typeof(string)) return "string";
-            if (type == typeof(int) || type == typeof(int?)) return "integer";
-            if (type == typeof(float) || type == typeof(float?)) return "number";
-            if (type == typeof(bool) || type == typeof(bool?)) return "boolean";
-            if (type.IsArray) return "array";
-            return "string";
         }
 
         private static bool HasEnumSupport(Type paramsType)
