@@ -61,25 +61,26 @@ var currentCategory string
 // humanCategories are subcommands invoked by humans at a terminal. Everything
 // else is assumed to be called by an AI agent (Claude Code CLI / Codex) where
 // stderr decoration is just token cost.
-var humanCategories = map[string]bool{
-	"install":   true,
-	"uninstall": true,
-	"status":    true,
-	"update":    true,
-	"doctor":    true,
-	"help":      true,
-	"--help":    true,
-	"-h":        true,
-	"version":   true,
-	"--version": true,
-	"-v":        true,
+var humanCategories = map[string]struct{}{
+	"install":   {},
+	"uninstall": {},
+	"status":    {},
+	"update":    {},
+	"doctor":    {},
+	"help":      {},
+	"--help":    {},
+	"-h":        {},
+	"version":   {},
+	"--version": {},
+	"-v":        {},
 }
 
 // isHumanCommand reports whether the current subcommand is run by a human.
 // Used to gate styled stderr decoration, update notices, progress messages,
 // and other output that costs tokens when consumed by an AI agent.
 func isHumanCommand() bool {
-	return humanCategories[currentCategory]
+	_, ok := humanCategories[currentCategory]
+	return ok
 }
 
 // shouldCompactJSON reports whether printResponse should emit compact JSON.
@@ -328,13 +329,13 @@ func printTimings(resp *client.CommandResponse) {
 	fmt.Fprintf(os.Stderr, "[hera-agent-unity] timings: %s\n", strings.Join(parts, " "))
 }
 
-// sendFn is the function signature for sending a command to Unity.
+// SendFunc is the function signature for sending a command to Unity.
 // Injected into each command function so they can be tested without a real Unity connection.
-type sendFn func(command string, params interface{}) (*client.CommandResponse, error)
+type SendFunc func(command string, params interface{}) (*client.CommandResponse, error)
 
-// sendBatchFn is the function signature for sending a batch command to Unity.
+// SendBatchFunc is the function signature for sending a batch command to Unity.
 // Injected so batchCmd can be tested without a real Unity connection.
-type sendBatchFn func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error)
+type SendBatchFunc func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error)
 
 func printResponse(resp *client.CommandResponse) {
 	if !resp.Success {

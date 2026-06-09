@@ -11,7 +11,7 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/tui"
 )
 
-// sendBatchFn is injected for testing.
+// SendBatchFunc is injected for testing.
 
 type batchStdinReader interface {
 	io.Reader
@@ -20,7 +20,7 @@ type batchStdinReader interface {
 
 var batchStdin batchStdinReader = os.Stdin
 
-func batchCmd(ctx context.Context, args []string, sendBatch sendBatchFn, resolve instanceResolver) error {
+func batchCmd(ctx context.Context, args []string, sendBatch SendBatchFunc, resolve instanceResolver) error {
 	params, err := buildParams(args, nil)
 	if err != nil {
 		return err

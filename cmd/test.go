@@ -12,7 +12,7 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/poll"
 )
 
-func testCmd(args []string, send sendFn, port int) (*client.CommandResponse, error) {
+func testCmd(args []string, send SendFunc, port int) (*client.CommandResponse, error) {
 	flags := parseSubFlags(args)
 
 	mode := "EditMode"

@@ -62,9 +62,9 @@ func TestPrintUpdateNotice_UsesCachedOutdatedNoticeWithinInterval(t *testing.T) 
 	})
 
 	fetchCalled := false
-	fetchLatestReleaseFn = func() (*ghRelease, error) {
+	fetchLatestReleaseFn = func() (*githubRelease, error) {
 		fetchCalled = true
-		return &ghRelease{TagName: "v9.9.9"}, nil
+		return &githubRelease{TagName: "v9.9.9"}, nil
 	}
 
 	output := captureStderr(t, func() {
@@ -90,8 +90,8 @@ func TestPrintUpdateNotice_RefreshesCacheAndPrintsOnceWhenStillOutdated(t *testi
 		Outdated:  true,
 	})
 
-	fetchLatestReleaseFn = func() (*ghRelease, error) {
-		return &ghRelease{TagName: "v0.3.12"}, nil
+	fetchLatestReleaseFn = func() (*githubRelease, error) {
+		return &githubRelease{TagName: "v0.3.12"}, nil
 	}
 
 	output := captureStderr(t, func() {
@@ -123,7 +123,7 @@ func TestPrintUpdateNotice_PreservesCachedNoticeOnFetchFailure(t *testing.T) {
 		Outdated:  true,
 	})
 
-	fetchLatestReleaseFn = func() (*ghRelease, error) {
+	fetchLatestReleaseFn = func() (*githubRelease, error) {
 		return nil, errors.New("network down")
 	}
 
@@ -153,9 +153,9 @@ func TestPrintUpdateNotice_PreservesCachedNoticeOnFetchFailure(t *testing.T) {
 func TestPrintUpdateNotice_SkipsDevVersion(t *testing.T) {
 	path := prepareVersionCheckEnv(t, "dev")
 	fetchCalled := false
-	fetchLatestReleaseFn = func() (*ghRelease, error) {
+	fetchLatestReleaseFn = func() (*githubRelease, error) {
 		fetchCalled = true
-		return &ghRelease{TagName: "v0.3.11"}, nil
+		return &githubRelease{TagName: "v0.3.11"}, nil
 	}
 
 	output := captureStderr(t, func() {

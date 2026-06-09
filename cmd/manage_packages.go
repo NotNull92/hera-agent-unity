@@ -18,7 +18,7 @@ import (
 // budget). add / remove / embed return immediately with a job_id; we then
 // poll ~/.hera-agent-unity/status/package-result-PORT-JOBID.json the same
 // way cmd/test.go waits on PlayMode results.
-func managePackagesCmd(args []string, send sendFn, port int) (*client.CommandResponse, error) {
+func managePackagesCmd(args []string, send SendFunc, port int) (*client.CommandResponse, error) {
 	params, err := buildParams(args, nil)
 	if err != nil {
 		return nil, err

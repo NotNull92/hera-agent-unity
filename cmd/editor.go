@@ -8,7 +8,7 @@ import (
 
 // editorCmd controls Unity play mode and asset database.
 // resolve is needed for waitForReady so compile polling can follow the current project instance.
-func editorCmd(args []string, send sendFn, resolve instanceResolver) (*client.CommandResponse, error) {
+func editorCmd(args []string, send SendFunc, resolve instanceResolver) (*client.CommandResponse, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("usage: hera-agent-unity editor <play|stop|pause|refresh>")
 	}

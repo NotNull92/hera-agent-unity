@@ -7,7 +7,7 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
 
-func mockSend(wantCmd string, t *testing.T) (sendFn, *map[string]interface{}) {
+func mockSend(wantCmd string, t *testing.T) (SendFunc, *map[string]interface{}) {
 	t.Helper()
 	captured := map[string]interface{}{}
 	fn := func(cmd string, params interface{}) (*client.CommandResponse, error) {

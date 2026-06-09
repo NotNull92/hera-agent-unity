@@ -24,9 +24,9 @@ namespace HeraAgent.Editor
         // ═══════════════════════════════════════════════════════════
 
         // Old Money palette — heritage, restraint, premium
-        private static readonly Color ColorTeal        = Hex("#C9A227"); // Antique Gold (primary accent)
-        private static readonly Color ColorTealDark    = Hex("#9C7E1E"); // darker gold (hover/pressed)
-        private static readonly Color ColorTealGlow    = Hex("#C9A227"); // alias of primary
+        private static readonly Color ColorGold        = Hex("#C9A227"); // Antique Gold (primary accent)
+        private static readonly Color ColorGoldDark    = Hex("#9C7E1E"); // darker gold (hover/pressed)
+        private static readonly Color ColorGoldGlow    = Hex("#C9A227"); // alias of primary
         private static readonly Color ColorAmber       = Hex("#9C7E1E"); // darker gold (secondary emphasis)
         private static readonly Color ColorAmberDark   = Hex("#7A6418"); // deepest gold
         private static readonly Color ColorError       = Hex("#8B3A3A"); // deep burgundy
@@ -212,7 +212,7 @@ namespace HeraAgent.Editor
             var titleLbl = new Label("Asset Catalog");
             titleLbl.style.fontSize = 13;
             titleLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
-            titleLbl.style.color = ColorTeal;
+            titleLbl.style.color = ColorGold;
             titleContainer.Add(titleLbl);
 
             toolbar.Add(titleContainer);
@@ -285,7 +285,7 @@ namespace HeraAgent.Editor
 
             if (active)
             {
-                pill.style.backgroundColor = ColorTeal;
+                pill.style.backgroundColor = ColorGold;
             }
             else
             {
@@ -302,7 +302,7 @@ namespace HeraAgent.Editor
             var countLbl = new Label(count.ToString());
             countLbl.style.fontSize = 10;
             countLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
-            countLbl.style.color = active ? ColorTealDark : ColorDarkMuted;
+            countLbl.style.color = active ? ColorGoldDark : ColorDarkMuted;
             countLbl.style.backgroundColor = active ? ColorBgDark : new Color(0.12f, 0.12f, 0.12f);
             countLbl.style.paddingLeft = 5;
             countLbl.style.paddingRight = 5;
@@ -507,7 +507,7 @@ namespace HeraAgent.Editor
                 text = "Enable All",
                 tooltip = "Enable all assets in this category"
             };
-            StyleSmallButton(enableAllBtn, ColorTeal);
+            StyleSmallButton(enableAllBtn, ColorGold);
             enableAllBtn.style.marginRight = 6;
             bulkRow.Add(enableAllBtn);
 
@@ -556,7 +556,7 @@ namespace HeraAgent.Editor
             var card = new VisualElement();
             card.style.backgroundColor = isSelected ? ColorBgCardSelected : ColorBgCard;
             card.style.borderLeftWidth = 3;
-            card.style.borderLeftColor = asset.enabled ? ColorTeal : new Color(0.18f, 0.18f, 0.18f);
+            card.style.borderLeftColor = asset.enabled ? ColorGold : new Color(0.18f, 0.18f, 0.18f);
             card.style.borderTopWidth = 1;
             card.style.borderTopColor = isSelected ? ColorBorderSelected : ColorBorder;
             card.style.borderRightWidth = 1;
@@ -607,7 +607,7 @@ namespace HeraAgent.Editor
             {
                 asset.enabled = evt.newValue;
                 _isDirty = true;
-                card.style.borderLeftColor = asset.enabled ? ColorTeal : new Color(0.18f, 0.18f, 0.18f);
+                card.style.borderLeftColor = asset.enabled ? ColorGold : new Color(0.18f, 0.18f, 0.18f);
                 UpdateStatusBar();
             });
             topRow.Add(toggle);
@@ -878,7 +878,7 @@ namespace HeraAgent.Editor
             foreach (var asset in _config.assets)
             {
                 if (!_assetCards.TryGetValue(asset.id, out var card)) continue;
-                card.style.borderLeftColor = asset.enabled ? ColorTeal : new Color(0.18f, 0.18f, 0.18f);
+                card.style.borderLeftColor = asset.enabled ? ColorGold : new Color(0.18f, 0.18f, 0.18f);
             }
         }
 
@@ -922,7 +922,7 @@ namespace HeraAgent.Editor
                     RefreshUI();
                 })
                 { text = "Clear Search" };
-                StyleSmallButton(clearBtn, ColorTeal);
+                StyleSmallButton(clearBtn, ColorGold);
                 clearBtn.style.marginTop = 12;
                 box.Add(clearBtn);
             }
@@ -960,7 +960,7 @@ namespace HeraAgent.Editor
             _loadingLabel = new Label("Surveying assets...");
             _loadingLabel.style.fontSize = 13;
             _loadingLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            _loadingLabel.style.color = ColorTeal;
+            _loadingLabel.style.color = ColorGold;
             spinnerBox.Add(_loadingLabel);
 
             var subLbl = new Label("This may take a moment.");
@@ -1014,7 +1014,7 @@ namespace HeraAgent.Editor
             _dirtyIndicator = new Label("● Modified");
             _dirtyIndicator.style.fontSize = 10;
             _dirtyIndicator.style.unityFontStyleAndWeight = FontStyle.Bold;
-            _dirtyIndicator.style.color = ColorTeal;
+            _dirtyIndicator.style.color = ColorGold;
             _dirtyIndicator.style.display = DisplayStyle.None;
             statusBar.Add(_dirtyIndicator);
 
@@ -1447,7 +1447,7 @@ namespace HeraAgent.Editor
         private static void StyleLinkButton(Button btn)
         {
             btn.style.backgroundColor = new Color(0.18f, 0.18f, 0.18f);
-            btn.style.color = ColorTeal;
+            btn.style.color = ColorGold;
             btn.style.unityFontStyleAndWeight = FontStyle.Bold;
             btn.style.fontSize = 10;
             btn.style.borderTopLeftRadius = 4;
@@ -1458,10 +1458,10 @@ namespace HeraAgent.Editor
             btn.style.borderRightWidth = 1;
             btn.style.borderBottomWidth = 1;
             btn.style.borderLeftWidth = 1;
-            btn.style.borderTopColor = ColorTeal;
-            btn.style.borderRightColor = ColorTeal;
-            btn.style.borderBottomColor = ColorTeal;
-            btn.style.borderLeftColor = ColorTeal;
+            btn.style.borderTopColor = ColorGold;
+            btn.style.borderRightColor = ColorGold;
+            btn.style.borderBottomColor = ColorGold;
+            btn.style.borderLeftColor = ColorGold;
             btn.style.paddingTop = 4;
             btn.style.paddingBottom = 4;
             btn.style.paddingLeft = 10;
@@ -1567,7 +1567,7 @@ namespace HeraAgent.Editor
             row.Add(pathLabel);
 
             var detectBtn = new Button(onDetect) { text = "🔍 Auto-Find" };
-            StyleSmallButton(detectBtn, ColorTealDark);
+            StyleSmallButton(detectBtn, ColorGoldDark);
             detectBtn.style.marginLeft = 8;
             detectBtn.style.width = 90;
             row.Add(detectBtn);

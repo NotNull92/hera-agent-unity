@@ -13,12 +13,12 @@ import (
 
 const repoAPI = "https://api.github.com/repos/NotNull92/hera-agent-unity/releases/latest"
 
-type ghRelease struct {
-	TagName string    `json:"tag_name"`
-	Assets  []ghAsset `json:"assets"`
+type githubRelease struct {
+	TagName string        `json:"tag_name"`
+	Assets  []githubAsset `json:"assets"`
 }
 
-type ghAsset struct {
+type githubAsset struct {
 	Name               string `json:"name"`
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
@@ -105,7 +105,7 @@ func updateCmd(args []string) error {
 	return nil
 }
 
-func fetchLatestRelease() (*ghRelease, error) {
+func fetchLatestRelease() (*githubRelease, error) {
 	resp, err := http.Get(repoAPI)
 	if err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func fetchLatestRelease() (*ghRelease, error) {
 		return nil, fmt.Errorf("GitHub API returned %d", resp.StatusCode)
 	}
 
-	var release ghRelease
+	var release githubRelease
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
 		return nil, err
 	}
@@ -124,7 +124,7 @@ func fetchLatestRelease() (*ghRelease, error) {
 }
 
 // findAsset finds the release asset matching the current OS and architecture.
-func findAsset(assets []ghAsset) *ghAsset {
+func findAsset(assets []githubAsset) *githubAsset {
 	suffix := fmt.Sprintf("%s-%s", runtime.GOOS, runtime.GOARCH)
 	for i, a := range assets {
 		if strings.Contains(a.Name, suffix) {
