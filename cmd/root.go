@@ -211,8 +211,7 @@ func Execute(ctx context.Context) error {
 	args := os.Args[1:]
 	flagArgs, cmdArgs := splitArgs(args)
 	if err := flag.CommandLine.Parse(flagArgs); err != nil {
-		fmt.Fprintf(os.Stderr, "flag parse error: %v\n", err)
-		os.Exit(1)
+		return fmt.Errorf("flag parse error: %w", err)
 	}
 
 	if len(cmdArgs) == 0 {
