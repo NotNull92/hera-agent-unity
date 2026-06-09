@@ -271,6 +271,7 @@ The five-tool queue locked-in at 2026-05-28 is complete. Each entry filled a gap
 | `unity_docs`        | v0.0.10 → **v0.0.12** | Offline Unity 6 ScriptReference lookup. **31,581 entries ship inside the UPM package itself** as a 1.2 MiB gzipped JSONL — no docs folder on the user's machine, no network access, no rate limits. |
 | `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | Asset-editing set. `describe_shader` (inspect/search shaders) pairs with `manage_material` (material CRUD, reuses `SerializedPropertyValue`); `manage_prefab` edits prefab assets headlessly via `LoadPrefabContents`; `manage_asset_import` drives import settings through `AssetImporter` (the `manage_components` pattern). |
 | `manage_ui` | **v0.0.15** | uGUI authoring. `create` spins up UI elements (canvas / panel / image / button / text / empty) with auto Canvas + EventSystem scaffolding; `set_anchor` exposes Unity's named anchor-preset grid and keeps the rect visually fixed (or `--snap` for Alt+Shift fill); `get_rect` / `set_rect` round out RectTransform editing. UI/TMP types resolve via `TypeCache`, so the connector still compiles in projects without com.unity.ugui. Element property edits stay in `manage_components`. |
+| `TargetResolver` + tests + benchmark | **v0.0.16** | `TargetResolver` extracts shared GameObject/Component resolution from `manage_components` / `manage_gameobject` / `manage_ui`. Go test coverage expanded (`doctor`, `install`, `poll`, `assetconfig`). C# `HierarchyPath` editor tests. Smoke test benchmark: 7 calls = 725B (~181T), avg 26T/call — no token cost increase from refactoring. |
 
 ### `unity_docs` — design + benchmarks (v0.0.12)
 
@@ -496,6 +497,24 @@ hera-agent-unity spawn --x 1 --y 0 --z 5 --prefab Goblin
 - Duplicate tool names are flagged in the console; first registration wins
 
 `hera-agent-unity list` exposes the parameter schema so agents can discover and call your tools without reading source.
+
+---
+
+## Performance
+
+hera-agent-unity is designed to keep token costs negligible for AI agent workflows. A recent smoke-test benchmark (v0.0.16, 7 representative scenarios) confirms the overhead stays minimal:
+
+| Metric | Value |
+|---|---:|
+| Total calls | 7 |
+| Total round-trip bytes | **725 B** |
+| Estimated tokens (chars ÷ 4) | **~181 T** |
+| Avg per call | **26 T** |
+| Responses ≤ 5 B | **71%** |
+
+**What drives cost**: 88% of bytes are the C# code the agent writes (input), not the response. A typical `exec` call like `return Time.time;` costs **6 tokens total** — the response itself is 2–3 tokens.
+
+A full 50-scenario benchmark and the smoke-test report live in [`docs/benchmarks/`](docs/benchmarks/).
 
 ---
 
