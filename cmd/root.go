@@ -289,7 +289,7 @@ func Execute(ctx context.Context) error {
 	printUpdateNotice(category)
 
 	if !resp.Success {
-		os.Exit(1)
+		return fmt.Errorf("command failed: %s", resp.Message)
 	}
 
 	return nil
