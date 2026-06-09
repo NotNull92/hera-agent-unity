@@ -57,7 +57,7 @@ A game prototype built primarily with hera-agent-unity — the AI agent drove th
 
 <div align="center">
 
-<video src="https://github.com/NotNull92/hera-agent-unity/raw/main/docs/sample/NoMoreRolls_Play.mp4" controls muted loop playsinline width="80%"></video>
+<video src="https://github.com/user-attachments/assets/a2b31a46-b60d-4de6-8238-58cb67683388" controls muted loop playsinline width="80%"></video>
 
 <sub><b>NoMoreRolls</b> — solo-developed Unity game (3-tier architecture, 9-soul combat system). Play Mode capture.</sub>
 

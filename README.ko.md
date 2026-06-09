@@ -57,7 +57,7 @@ hera-agent-unity를 주력으로 만든 게임 프로토타입 — 맹목적 코
 
 <div align="center">
 
-<video src="https://github.com/NotNull92/hera-agent-unity/raw/main/docs/sample/NoMoreRolls_Play.mp4" controls muted loop playsinline width="80%"></video>
+<video src="https://github.com/user-attachments/assets/a2b31a46-b60d-4de6-8238-58cb67683388" controls muted loop playsinline width="80%"></video>
 
 <sub><b>NoMoreRolls</b> — Unity 솔로 개발 게임 (3-tier 아키텍처, 9-soul 전투 시스템). Play Mode 캡처.</sub>
 
