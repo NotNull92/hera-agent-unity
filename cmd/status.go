@@ -57,8 +57,7 @@ func pingCmd(project string, port int) error {
 	inst, err := discoverStatusInstance(project, port)
 	if err != nil {
 		fmt.Println("alive=0")
-		os.Exit(1)
-		return nil
+		return fmt.Errorf("ping: not alive")
 	}
 	age := time.Since(time.UnixMilli(inst.Timestamp))
 	alive := age <= 3*time.Second && inst.State != "stopped"
@@ -69,7 +68,7 @@ func pingCmd(project string, port int) error {
 	fmt.Printf("port=%d alive=%d state=%s age_ms=%d\n",
 		inst.Port, flag, inst.State, age.Milliseconds())
 	if !alive {
-		os.Exit(1)
+		return fmt.Errorf("ping: not alive (state=%s, age_ms=%d)", inst.State, age.Milliseconds())
 	}
 	return nil
 }
