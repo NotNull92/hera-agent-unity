@@ -2,7 +2,7 @@
   "project": "hera-agent-unity",
   "refactoring_session": {
     "date": "2026-06-09",
-    "total_prs": 14,
+    "total_prs": 15,
     "summary": "Extract duplicated utilities, unify polling loops, fix CI/linter settings, clean up naming, encapsulate global state, and split monolithic Execute function."
   },
   "prs": [
@@ -191,6 +191,19 @@
       "stats": "+60 / -37 lines",
       "risk": "low",
       "notes": "Encapsulated defaultCache and isProcessDead into Client. Added NewClient(). Package-level wrappers preserved for backward compatibility."
+    },
+    {
+      "number": 15,
+      "commit": "d7b0eec",
+      "title": "refactor(cmd): unify send patterns in runUnityCommand",
+      "changes": [
+        "cmd/test.go",
+        "cmd/manage_packages.go",
+        "cmd/root.go"
+      ],
+      "stats": "+19 / -19 lines",
+      "risk": "low",
+      "notes": "Removed case-specific local send closures in test/manage_packages. All cases now use consistent send+resolve pattern."
     }
   ],
   "verification": {
@@ -201,7 +214,6 @@
   "remaining_candidates": [
     "C# Tool action dispatch boilerplate (8+ files duplication)",
     "HeraAgentAssetConfigWindow split (Model/View/Controller, 2,028 lines)",
-    "runUnityCommand case-specific send irregularities (test/manage_packages local closures)",
     "C# TargetResolver commonization (ManageComponents/ManageGameObject/ManageUI)",
     "Expand test coverage (doctor, install, poll, assetconfig)",
     "Send vs SendBatch HTTP logic duplication (Debug logging, status check)",
