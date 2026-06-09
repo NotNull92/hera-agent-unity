@@ -2,8 +2,8 @@ name: Benchmark
 
 on:
   # Manual trigger only — requires a running Unity Editor with the Connector package.
-  # GitHub-hosted runners do not have Unity installed, so this workflow is intended
-  # for self-hosted runners or local machines with Unity.
+  # GitHub-hosted runners do not have Unity installed; this workflow is provided
+  # as a template for local or self-hosted runners with Unity available.
   workflow_dispatch:
     inputs:
       runs:
@@ -35,7 +35,7 @@ jobs:
           HYPERFINE_RUNS: ${{ github.event.inputs.runs }}
 
       - name: Upload results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: benchmark-results-${{ github.run_id }}
           path: benchmark-results/

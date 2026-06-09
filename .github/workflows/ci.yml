@@ -34,4 +34,6 @@ jobs:
           version: v2.11.3
 
       - name: Format
-        run: golangci-lint fmt --diff
+        run: |
+          golangci-lint fmt
+          git diff --exit-code

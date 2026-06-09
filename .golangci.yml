@@ -5,6 +5,12 @@ formatters:
     - gofmt
 
 linters:
+  enable:
+    - errcheck
+    - staticcheck
+    - ineffassign
+    - unused
+    - misspell
   settings:
     errcheck:
       exclude-functions:
