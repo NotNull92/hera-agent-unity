@@ -59,7 +59,7 @@ A game prototype built primarily with hera-agent-unity — the AI agent drove th
 
 <video src="https://github.com/NotNull92/hera-agent-unity/raw/main/docs/sample/NoMoreRolls_Play.mp4" controls muted loop playsinline width="80%"></video>
 
-<sub><b><a href="https://github.com/NotNull92">NoMoreRolls</a></b> — solo-developed Unity game (3-tier architecture, 9-soul combat system). Play Mode capture.</sub>
+<sub><b>NoMoreRolls</b> — solo-developed Unity game (3-tier architecture, 9-soul combat system). Play Mode capture.</sub>
 
 </div>
 
@@ -646,7 +646,7 @@ Yes — `batch` was designed for it. Exit codes propagate per command; `fail_fas
 
 | Project                                                          | Description                                                                                       |
 |------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [**NoMoreRolls**](https://github.com/NotNull92)                  | Solo-developed Unity game — 3-tier architecture, 9-soul combat system. Built with hera-agent-unity. |
+| **NoMoreRolls**                                                  | Solo-developed Unity game — 3-tier architecture, 9-soul combat system. Built with hera-agent-unity. |
 
 > Want yours listed? Open an issue or PR.
 
@@ -655,7 +655,7 @@ Yes — `batch` was designed for it. Exit codes propagate per command; `fail_fas
 ## Author
 
 **Victor** — Unity/C# developer, 6+ years of live-service MMORPG production.
-Building [NoMoreRolls](https://github.com/NotNull92) solo with [hera-agent-unity](https://github.com/NotNull92/hera-agent-unity) · [IndieAlchemist](https://www.youtube.com/@IndieAlchemist) on YouTube.
+Building NoMoreRolls solo with [hera-agent-unity](https://github.com/NotNull92/hera-agent-unity) · [IndieAlchemist](https://www.youtube.com/@IndieAlchemist) on YouTube.
 
 [![GitHub](https://img.shields.io/badge/@NotNull92-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/NotNull92)
 [![Email](https://img.shields.io/badge/fatiger92@gmail.com-EA4335?logo=gmail&logoColor=white&style=flat-square)](mailto:fatiger92@gmail.com)

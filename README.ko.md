@@ -59,7 +59,7 @@ hera-agent-unity를 주력으로 만든 게임 프로토타입 — 맹목적 코
 
 <video src="https://github.com/NotNull92/hera-agent-unity/raw/main/docs/sample/NoMoreRolls_Play.mp4" controls muted loop playsinline width="80%"></video>
 
-<sub><b><a href="https://github.com/NotNull92">NoMoreRolls</a></b> — Unity 솔로 개발 게임 (3-tier 아키텍처, 9-soul 전투 시스템). Play Mode 캡처.</sub>
+<sub><b>NoMoreRolls</b> — Unity 솔로 개발 게임 (3-tier 아키텍처, 9-soul 전투 시스템). Play Mode 캡처.</sub>
 
 </div>
 
@@ -644,7 +644,7 @@ hera-agent-unity exec "return 1+1;" --csc "C:\Program Files\dotnet\sdk\8.0.100\R
 
 | 프로젝트                                                          | 설명                                                                                              |
 |-------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [**NoMoreRolls**](https://github.com/NotNull92)                   | Unity 솔로 개발 게임 — 3-tier 아키텍처, 9-soul 전투 시스템. hera-agent-unity로 빌드.                |
+| **NoMoreRolls**                                                   | Unity 솔로 개발 게임 — 3-tier 아키텍처, 9-soul 전투 시스템. hera-agent-unity로 빌드.                |
 
 > 본인 프로젝트를 올리고 싶으면 이슈나 PR 환영합니다.
 
@@ -653,7 +653,7 @@ hera-agent-unity exec "return 1+1;" --csc "C:\Program Files\dotnet\sdk\8.0.100\R
 ## 제작자
 
 **Victor** — Unity/C# 개발자, 라이브 서비스 MMORPG 6년+ 프로덕션 경험.
-[hera-agent-unity](https://github.com/NotNull92/hera-agent-unity)로 [NoMoreRolls](https://github.com/NotNull92)를 솔로 개발 중 · 유튜브 [IndieAlchemist](https://www.youtube.com/@IndieAlchemist).
+[hera-agent-unity](https://github.com/NotNull92/hera-agent-unity)로 NoMoreRolls를 솔로 개발 중 · 유튜브 [IndieAlchemist](https://www.youtube.com/@IndieAlchemist).
 
 [![GitHub](https://img.shields.io/badge/@NotNull92-181717?logo=github&logoColor=white&style=flat-square)](https://github.com/NotNull92)
 [![Email](https://img.shields.io/badge/fatiger92@gmail.com-EA4335?logo=gmail&logoColor=white&style=flat-square)](mailto:fatiger92@gmail.com)
