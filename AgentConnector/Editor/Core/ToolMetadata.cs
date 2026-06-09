@@ -39,7 +39,7 @@ namespace HeraAgent
         {
             var schema = new JObject
             {
-                ["type"] = GetTypeName(propertyType)
+                ["type"] = SchemaUtility.GetJsonTypeName(propertyType)
             };
 
             if (!string.IsNullOrEmpty(attr.Description))

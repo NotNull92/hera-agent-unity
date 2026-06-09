@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.16] - 2026-06-09
+
+### Fixed
+
+- `ToolMetadata.cs`: qualified `SchemaUtility.GetTypeName` call missing after
+  PR #4 extraction. Restored compilation in UPM package context.
+- `HeraAgentAssetConfigWindow.Model.cs` / `.View.cs`: missing `{` after
+  `partial class` declarations (syntax errors surfaced in UPM immutable folder).
+- Missing `.meta` files for `SchemaUtility.cs`, `TargetResolver.cs`,
+  `HeraAgentAssetConfigWindow.Model.cs`, `HeraAgentAssetConfigWindow.View.cs`.
+
+## [0.0.15] - 2026-06-09
+
 ### Added
 
 - Go test coverage expanded across `cmd` (`doctor`, `install`), `internal/poll`,
