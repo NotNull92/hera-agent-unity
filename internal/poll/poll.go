@@ -1,4 +1,4 @@
-package cmd
+package poll
 
 import (
 	"encoding/json"
@@ -9,10 +9,10 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
 
-// pollResultFile polls a filesystem result file until it appears, Unity stops,
+// WaitForFile polls a filesystem result file until it appears, Unity stops,
 // or the timeout expires. It uses exponential backoff starting at 100 ms and
 // capping at 1.5 s to avoid burning I/O on long-running operations.
-func pollResultFile(resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {
+func WaitForFile(resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {
 	deadline := time.Now().Add(timeout)
 	const pidCheckEvery = 5 * time.Second
 	lastPidCheck := time.Now()

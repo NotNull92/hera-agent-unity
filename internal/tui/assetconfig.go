@@ -204,14 +204,6 @@ func (m model) renderContent() string {
 	// Title
 	b.WriteString(titleStyle.Render("⚙ Asset Config") + "\n\n")
 
-	// Group assets by category
-	categoryNames := map[string]string{
-		"inspector":     "Inspector",
-		"validation":    "Validation",
-		"serialization": "Serialization",
-		"animation":     "Animation",
-	}
-
 	// Track which items belong to which category for cursor mapping
 	categorized := make(map[string][]int)
 	for i, asset := range m.assets {
@@ -220,16 +212,15 @@ func (m model) renderContent() string {
 	}
 
 	// Render each category
-	catOrder := []string{"inspector", "validation", "serialization", "animation"}
 	globalIdx := 0
 
-	for _, cat := range catOrder {
+	for _, cat := range assetconfig.CategoryOrder {
 		items, ok := categorized[cat]
 		if !ok || len(items) == 0 {
 			continue
 		}
 
-		catLabel := categoryNames[cat]
+		catLabel := assetconfig.CategoryNames[cat]
 		if catLabel == "" {
 			catLabel = cat
 		}

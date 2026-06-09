@@ -83,29 +83,21 @@ func assetConfigList() error {
 		return err
 	}
 
-	categoryNames := map[string]string{
-		"inspector":     "Inspector",
-		"validation":    "Validation",
-		"serialization": "Serialization",
-		"animation":     "Animation",
-	}
-
 	categorized := make(map[string][]assetconfig.AssetEntry)
 	for _, a := range cfg.Assets {
 		categorized[a.Category] = append(categorized[a.Category], a)
 	}
-	catOrder := []string{"inspector", "validation", "serialization", "animation"}
 
 	if tui.ColorEnabled() {
 		fmt.Println(tui.TitleStyle.Render(fmt.Sprintf("Asset Config v%s", cfg.Version)))
 		fmt.Println(tui.PathStyle.Render(assetconfig.ConfigFilePath()))
 		fmt.Println()
-		for _, cat := range catOrder {
+		for _, cat := range assetconfig.CategoryOrder {
 			items, ok := categorized[cat]
 			if !ok {
 				continue
 			}
-			fmt.Println("  " + tui.HelpSectionStyle.Render(categoryNames[cat]))
+			fmt.Println("  " + tui.HelpSectionStyle.Render(assetconfig.CategoryNames[cat]))
 			for _, a := range items {
 				badge := tui.StatusBadge("disabled")
 				if a.Enabled {
@@ -128,12 +120,12 @@ func assetConfigList() error {
 
 	// Plain output — kept stable for script/AI parsing.
 	fmt.Printf("Asset Config v%s — %s\n\n", cfg.Version, assetconfig.ConfigFilePath())
-	for _, cat := range catOrder {
+	for _, cat := range assetconfig.CategoryOrder {
 		items, ok := categorized[cat]
 		if !ok {
 			continue
 		}
-		fmt.Printf("  %s\n", categoryNames[cat])
+		fmt.Printf("  %s\n", assetconfig.CategoryNames[cat])
 		for _, a := range items {
 			status := "OFF"
 			if a.Enabled {

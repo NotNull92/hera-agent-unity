@@ -1,28 +1,16 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/logutil"
+	"github.com/NotNull92/hera-agent-unity/internal/poll"
 )
-
-type suppressWriter struct {
-	w        io.Writer
-	suppress string
-}
-
-func (s *suppressWriter) Write(p []byte) (int, error) {
-	if bytes.Contains(p, []byte(s.suppress)) {
-		return len(p), nil
-	}
-	return s.w.Write(p)
-}
 
 func testCmd(args []string, send sendFn, port int) (*client.CommandResponse, error) {
 	flags := parseSubFlags(args)
@@ -69,7 +57,7 @@ func testCmd(args []string, send sendFn, port int) (*client.CommandResponse, err
 
 	// Suppress "Unsolicited response received on idle HTTP channel" during domain reload
 	original := log.Writer()
-	log.SetOutput(&suppressWriter{w: os.Stderr, suppress: "Unsolicited response received on idle HTTP channel"})
+	log.SetOutput(logutil.NewSuppressWriter(os.Stderr, "Unsolicited response received on idle HTTP channel"))
 	defer log.SetOutput(original)
 
 	return pollTestResults(port)
@@ -82,5 +70,5 @@ func pollTestResults(port int) (*client.CommandResponse, error) {
 	}
 
 	resultsPath := filepath.Join(home, ".hera-agent-unity", "status", fmt.Sprintf("test-results-%d.json", port))
-	return pollResultFile(resultsPath, port, 10*time.Minute, "test results")
+	return poll.WaitForFile(resultsPath, port, 10*time.Minute, "test results")
 }

@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/logutil"
+	"github.com/NotNull92/hera-agent-unity/internal/poll"
 )
 
 // managePackagesCmd dispatches to manage_packages on the connector. list is
@@ -52,7 +54,7 @@ func managePackagesCmd(args []string, send sendFn, port int) (*client.CommandRes
 	// mid-response, same as PlayMode tests — suppress the noisy Go log so it
 	// doesn't bleed into the operator's terminal.
 	original := log.Writer()
-	log.SetOutput(&suppressWriter{w: os.Stderr, suppress: "Unsolicited response received on idle HTTP channel"})
+	log.SetOutput(logutil.NewSuppressWriter(os.Stderr, "Unsolicited response received on idle HTTP channel"))
 	defer log.SetOutput(original)
 
 	return pollPackageJob(port, meta.JobID)
@@ -66,5 +68,5 @@ func pollPackageJob(port int, jobID string) (*client.CommandResponse, error) {
 
 	resultPath := filepath.Join(home, ".hera-agent-unity", "status",
 		fmt.Sprintf("package-result-%d-%s.json", port, jobID))
-	return pollResultFile(resultPath, port, 10*time.Minute, fmt.Sprintf("package job %s", jobID))
+	return poll.WaitForFile(resultPath, port, 10*time.Minute, fmt.Sprintf("package job %s", jobID))
 }
