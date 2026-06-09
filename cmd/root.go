@@ -102,6 +102,100 @@ func isUserCodeDiagnostic(code string) bool {
 	return false
 }
 
+// runStandaloneCommand handles commands that do not need a live Unity connection.
+// Returns (true, nil) if the command was handled, (false, nil) if it needs Unity.
+func runStandaloneCommand(category string, subArgs []string) (bool, error) {
+	switch category {
+	case "help", "--help", "-h":
+		if len(subArgs) > 0 {
+			printTopicHelp(subArgs[0])
+		} else {
+			printHelp()
+		}
+		return true, nil
+	case "version", "--version", "-v":
+		fmt.Println("hera-agent-unity " + Version)
+		return true, nil
+	case "update":
+		return true, updateCmd(subArgs)
+	case "install":
+		return true, installCmd()
+	case "uninstall":
+		return true, uninstallCmd()
+	case "status":
+		inst, err := discoverStatusInstance(flagProject, flagPort)
+		if err != nil {
+			return true, err
+		}
+		statusErr := statusCmd(inst)
+		printUpdateNotice(category)
+		return true, statusErr
+	case "ping":
+		return true, pingCmd(flagProject, flagPort)
+	case "asset-config":
+		return true, assetConfigCmd(subArgs)
+	case "doctor":
+		return true, doctorCmd(subArgs)
+	}
+	return false, nil
+}
+
+// runUnityCommand handles commands that require a live Unity connection.
+func runUnityCommand(ctx context.Context, category string, subArgs []string, send SendFunc, resolve instanceResolver) (*client.CommandResponse, error) {
+	var resp *client.CommandResponse
+	var err error
+
+	switch category {
+	case "batch":
+		return nil, batchCmd(ctx, subArgs, client.SendBatch, resolve)
+	case "editor":
+		resp, err = editorCmd(subArgs, send, resolve, category)
+	case "test":
+		currentInst, resolveErr := resolve()
+		if resolveErr != nil {
+			return nil, resolveErr
+		}
+		testSend := func(command string, params interface{}) (*client.CommandResponse, error) {
+			return client.Send(currentInst, command, params, 0)
+		}
+		resp, err = testCmd(subArgs, testSend, currentInst.Port)
+	case "manage_packages":
+		currentInst, resolveErr := resolve()
+		if resolveErr != nil {
+			return nil, resolveErr
+		}
+		pkgSend := func(command string, params interface{}) (*client.CommandResponse, error) {
+			return client.Send(currentInst, command, params, 0)
+		}
+		resp, err = managePackagesCmd(subArgs, pkgSend, currentInst.Port)
+	case "unity_docs":
+		resp, err = unityDocsCmd(subArgs, send)
+	case "exec":
+		subArgs, err = readExecFileIfPresent(subArgs)
+		if err != nil {
+			return nil, err
+		}
+		subArgs = readStdinIfPiped(subArgs)
+		var params map[string]interface{}
+		params, err = buildParams(subArgs, nil)
+		if err == nil {
+			if v, ok := params["check"].(bool); ok && v {
+				params["compile_only"] = true
+				delete(params, "check")
+			}
+			resp, err = send("exec", params)
+		}
+	default:
+		var params map[string]interface{}
+		params, err = buildParams(subArgs, nil)
+		if err == nil {
+			resp, err = send(category, params)
+		}
+	}
+
+	return resp, err
+}
+
 func Execute(ctx context.Context) error {
 	flag.IntVar(&flagPort, "port", envInt("HERA_AGENT_PORT", 0), "Select Unity instance by active heartbeat port")
 	flag.StringVar(&flagProject, "project", envString("HERA_AGENT_PROJECT", ""), "Select Unity instance by project path")
@@ -141,37 +235,12 @@ func Execute(ctx context.Context) error {
 		}
 	}
 
-	switch category {
-	case "help", "--help", "-h":
-		if len(subArgs) > 0 {
-			printTopicHelp(subArgs[0])
-		} else {
-			printHelp()
-		}
+	handled, err := runStandaloneCommand(category, subArgs)
+	if err != nil {
+		return err
+	}
+	if handled {
 		return nil
-	case "version", "--version", "-v":
-		fmt.Println("hera-agent-unity " + Version)
-		return nil
-	case "update":
-		return updateCmd(subArgs)
-	case "install":
-		return installCmd()
-	case "uninstall":
-		return uninstallCmd()
-	case "status":
-		inst, err := discoverStatusInstance(flagProject, flagPort)
-		if err != nil {
-			return err
-		}
-		statusErr := statusCmd(inst)
-		printUpdateNotice(category)
-		return statusErr
-	case "ping":
-		return pingCmd(flagProject, flagPort)
-	case "asset-config":
-		return assetConfigCmd(subArgs)
-	case "doctor":
-		return doctorCmd(subArgs)
 	}
 
 	inst, err := client.DiscoverInstance(flagProject, flagPort)
@@ -207,62 +276,7 @@ func Execute(ctx context.Context) error {
 		return sendWithProgress(inst, command, params, timeout, flagVerbose)
 	}
 
-	var resp *client.CommandResponse
-
-	switch category {
-	case "batch":
-		return batchCmd(ctx, subArgs, client.SendBatch, resolve)
-	case "editor":
-		resp, err = editorCmd(subArgs, send, resolve, category)
-	case "test":
-		currentInst, resolveErr := resolve()
-		if resolveErr != nil {
-			return resolveErr
-		}
-		testSend := func(command string, params interface{}) (*client.CommandResponse, error) {
-			return client.Send(currentInst, command, params, 0)
-		}
-		resp, err = testCmd(subArgs, testSend, currentInst.Port)
-	case "manage_packages":
-		currentInst, resolveErr := resolve()
-		if resolveErr != nil {
-			return resolveErr
-		}
-		// Package operations can outlast the global flag timeout (60s default)
-		// because the C# list/add path may run up to 60s on its own and add/
-		// remove poll a file for up to 10m. Send with no HTTP timeout — the
-		// start response (list result or "running" envelope) returns quickly.
-		pkgSend := func(command string, params interface{}) (*client.CommandResponse, error) {
-			return client.Send(currentInst, command, params, 0)
-		}
-		resp, err = managePackagesCmd(subArgs, pkgSend, currentInst.Port)
-	case "unity_docs":
-		resp, err = unityDocsCmd(subArgs, send)
-	case "exec":
-		subArgs, err = readExecFileIfPresent(subArgs)
-		if err != nil {
-			return err
-		}
-		subArgs = readStdinIfPiped(subArgs)
-		var params map[string]interface{}
-		params, err = buildParams(subArgs, nil)
-		if err == nil {
-			// --check is the human-facing flag for compile-only mode; the
-			// wire payload uses compile_only to match the C# ToolParams reader.
-			if v, ok := params["check"].(bool); ok && v {
-				params["compile_only"] = true
-				delete(params, "check")
-			}
-			resp, err = send("exec", params)
-		}
-	default:
-		var params map[string]interface{}
-		params, err = buildParams(subArgs, nil)
-		if err == nil {
-			resp, err = send(category, params)
-		}
-	}
-
+	resp, err := runUnityCommand(ctx, category, subArgs, send, resolve)
 	if err != nil {
 		return err
 	}
