@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Go test coverage expanded across `cmd` (`doctor`, `install`), `internal/poll`,
+  and `internal/assetconfig`.
+- C# editor tests for `HierarchyPath.Build` / `HierarchyPath.Find`.
+
+### Changed
+
+- C# `TargetResolver` extracted from `ManageComponents`, `ManageGameObject`,
+  and `ManageUI` to eliminate duplicated GameObject/Component resolution logic.
+
+### Fixed
+
+- `staticcheck`/`errcheck` warnings in newly added test files.
+
+## [0.0.14] - 2026-06-09
+
 ### Fixed (CLI — domain-reload window resilience)
 
 - **Commands issued while Unity is mid-domain-reload now ride the reload out
