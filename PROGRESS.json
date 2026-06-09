@@ -2,7 +2,7 @@
   "project": "hera-agent-unity",
   "refactoring_session": {
     "date": "2026-06-09",
-    "total_prs": 9,
+    "total_prs": 13,
     "summary": "Extract duplicated utilities, unify polling loops, fix CI/linter settings, clean up naming, encapsulate global state, and split monolithic Execute function."
   },
   "prs": [
@@ -133,6 +133,52 @@
       "stats": "+100 / -86 lines",
       "risk": "low",
       "notes": "Extracted standalone and Unity-connected command switches into separate functions. Execute reduced from ~180 to ~50 lines."
+    },
+    {
+      "number": 10,
+      "commit": "7083beb",
+      "title": "refactor: extract async polling pattern into poll.WaitForAsyncJob",
+      "changes": [
+        "internal/poll/poll.go",
+        "cmd/test.go",
+        "cmd/manage_packages.go"
+      ],
+      "stats": "+18 / -14 lines",
+      "risk": "very low",
+      "notes": "Consolidated duplicate async polling + log suppression pattern into poll.WaitForAsyncJob."
+    },
+    {
+      "number": 11,
+      "commit": "02692f5",
+      "title": "refactor: remove os.Exit from pingCmd",
+      "changes": [
+        "cmd/status.go"
+      ],
+      "stats": "+2 / -3 lines",
+      "risk": "very low",
+      "notes": "Replaced os.Exit(1) with error return. main.go's run() handles exit code uniformly."
+    },
+    {
+      "number": 12,
+      "commit": "44ac061",
+      "title": "refactor: remove os.Exit from flag parse failure",
+      "changes": [
+        "cmd/root.go"
+      ],
+      "stats": "+1 / -2 lines",
+      "risk": "very low",
+      "notes": "Replaced os.Exit(1) with error return. Removed duplicated stderr output logic."
+    },
+    {
+      "number": 13,
+      "commit": "7e33ebe",
+      "title": "refactor: remove os.Exit from resp.Success check",
+      "changes": [
+        "cmd/root.go"
+      ],
+      "stats": "+1 / -1 lines",
+      "risk": "very low",
+      "notes": "Replaced os.Exit(1) with error return including resp.Message. Unified exit code handling in main.go."
     }
   ],
   "verification": {
@@ -141,9 +187,13 @@
     "golangci_lint": "0 issues"
   },
   "remaining_candidates": [
+    "C# Tool action dispatch boilerplate (8+ files duplication)",
+    "HeraAgentAssetConfigWindow split (Model/View/Controller, 2,028 lines)",
+    "internal/client remaining globals (sharedHTTPClient, defaultCache, isProcessDead)",
+    "runUnityCommand case-specific send irregularities (test/manage_packages local closures)",
     "C# TargetResolver commonization (ManageComponents/ManageGameObject/ManageUI)",
-    "HeraAgentAssetConfigWindow split (Model/View/Controller)",
-    "Expand test coverage (doctor, install, poll)",
-    "Go cmd package split into sub-packages (cmd/editor, cmd/doctor, etc.)"
+    "Expand test coverage (doctor, install, poll, assetconfig)",
+    "Send vs SendBatch HTTP logic duplication (Debug logging, status check)",
+    "root.go help string externalization (//go:embed, ~900 lines)"
   ]
 }
