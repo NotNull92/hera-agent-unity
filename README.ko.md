@@ -65,6 +65,71 @@ hera-agent-unity를 주력으로 만든 게임 프로토타입 — 맹목적 코
 
 ---
 
+## ✨ UI Juicy Mode — 그냥 작동하는 게 아니라 *살아있는* UI
+
+> *동작하는 버튼과 누르는 맛이 있는 버튼의 차이. 이제 AI 에이전트도 그 차이를 압니다.*
+
+AI가 UI를 만들면 작동은 하는데 — 죽어 있습니다. 가만히 있죠. 마우스를 올려도 반응이 없고, 클릭하면 툭 끊깁니다. 점수는 `0`에서 `1000`으로 한 프레임에 점프하고요. 기술적으로는 맞지만, 감각적으로는 밋밋합니다.
+
+진짜 게임에는 *눈치채기보다 느끼게 되는* 작고 만족스러운 디테일이 가득합니다. 커서가 닿으면 살짝 부풀고, 누르면 찌그러졌다가, 통통 튀며 돌아오는 버튼. 깜빡 나타나는 게 아니라 *팡* 하고 튀어나오는 팝업. 위로 굴러 올라가는 점수. 떠오르며 사라지는 데미지 숫자. 디자이너들은 이걸 **"juice"**(혹은 *game feel*)라고 부릅니다 — 그리고 AI가 만든 UI에서 가장 먼저 빠지는 게 바로 이겁니다. 모델이 애초에 더할 생각을 안 하니까요.
+
+**UI Juicy Mode는 그 기본값을 뒤집습니다.** 켜두면, 에이전트가 UI 요소를 만들 때마다 Hera가 그 요소를 살아있게 만드는 — *Game UI/UX Bible*에서 그대로 가져온, 숫자까지 박힌 구체적인 레시피를 함께 건넵니다. 그러면 에이전트가 애니메이션·사운드·피드백을 알아서 연결해 줍니다. 디자인 브리프도, 핑퐁도, "좀 더 다듬어진 느낌으로 해줄래?"도 필요 없습니다 — 그냥 juicy하게 나옵니다.
+
+### 죽은 UI vs. Juicy한 UI
+
+| | **Off** (기본) | **On** |
+|---|---|---|
+| **버튼** | 정적인 사각형. 클릭은 되는데 아무것도 안 움직임. | hover에 110%로 부풀고, press에 95%로 눌리고, 오버슈트로 통통 튀어 돌아오고, 클릭음 + 모바일 진동. |
+| **팝업** | 즉시 뿅 나타남. | 오버슈트로 팡 하고 커지며 등장, 뒤 화면은 어둡게 딤 처리. |
+| **점수 / HP / 골드** | `120 → 999` 툭 끊김. | 0.25초에 걸쳐 부드럽게 카운트업, 마지막 값에서 살짝 pop. |
+| **데미지 숫자** | 텍스트 떴다가 사라짐. | 크게 펀치인 → 50px 떠오름 → 사라지며 페이드. 크리티컬은 더 크게 + 화면 흔들림. |
+
+### 동작 방식
+
+이건 **가이드일 뿐, 군더더기가 아닙니다.** Hera는 무거운 런타임 컴포넌트를 씬에 붙이지 않습니다. 대신 레시피가 `manage_ui create` 응답 안에 `agent_hint`로 실려 에이전트에게 돌아가고 — 에이전트가 평소대로 `manage_components` / `exec` 경로로 적용합니다. 커넥터는 Editor 전용으로 남고, 빌드는 깨끗하게 유지됩니다.
+
+```jsonc
+// hera-agent-unity manage_ui create button --name PlayButton   (Juicy Mode 켠 상태)
+{
+  "instance_id": -8420,
+  "agent_hint": "[Hera] UI Juicy Mode is on — make this feel alive (Game UI/UX Bible).\n
+    Button feel (Normal → Hover → Press → Release):\n
+      - Hover:   100% → 110%, EaseOut 0.15s, +5% brightness\n
+      - Press:   → 95%, EaseOut 0.05s (immediate), −10% color\n
+      - Release: 95% → 110% → 100% with Back overshoot, 0.2s; click SFX; 10ms haptic on mobile\n
+      - Disabled: desaturate ~50%, opacity 60–70%, block interaction\n
+    Tweening: DOTween is enabled — use rt.DOScale(1.1f, 0.15f).SetEase(Ease.OutQuad) …"
+}
+```
+
+모든 레시피는 **구체적입니다** — 정확한 스케일 퍼센트, 이징 커브, 초 단위 타이밍 — 그래서 에이전트가 추측 대신 실제 수치를 적용합니다. 요소 종류마다 맞춤 레시피가 있습니다:
+
+| 요소 | 배우는 동작 |
+|---|---|
+| **버튼** | hover / press / release 상태머신 + 오버슈트, 클릭 SFX, 모바일 햅틱, disabled 스타일 |
+| **패널 / 팝업** | 느리고 과장된 등장(pop-in), 화면 딤, 빠르고 조용한 퇴장 |
+| **이미지** | 등장 시 pop-in, 희귀도 비례 보상 펄스 + glow, hover lift |
+| **텍스트** | 줄별 스태거 등장, 숫자 카운트업, 떠오르는 데미지 팝업 |
+| **컨테이너** | 자식 요소 스태거 등장, 툭 끊지 않고 애니메이션되는 레이아웃 변화 |
+| **캔버스** | 트윈 + 오디오 인프라 세팅, 모든 전환 애니메이션, UI 점유 면적 슬림하게 유지 |
+
+**툴체인에 맞춰 적응합니다.** Hera Settings에서 DOTween이 켜져 있으면 레시피가 `DOScale` 계열 트윈(프로젝트 표준)을 쓰라고 안내하고 — 아니면 어떤 프로젝트에서도 동작하는 coroutine/lerp 방식으로 폴백합니다. 그리고 강한 모션은 항상 reduce-motion 옵션 뒤에 두라고 에이전트에게 상기시켜서, juice가 멀미가 되지 않게 합니다.
+
+### 켜는 법
+
+**옵트인**입니다 — 기본은 꺼져 있고, 토글 한 번이면 됩니다:
+
+```bash
+hera-agent-unity asset-config juicy on      # 켜기
+hera-agent-unity asset-config juicy off     # 끄기
+```
+
+또는 Unity 안의 Hera Settings 창에서 **UI Juicy Mode**를 체크하세요. 그게 전부입니다 — 그때부터 에이전트가 만드는 모든 UI 요소가 살아서 나옵니다.
+
+> **Maximum output for minimum input.** 당신은 "플레이 버튼 추가해줘"라고만 말합니다. 에이전트는 진짜 게임이 만든 것 같은 버튼을 내놓습니다.
+
+---
+
 ## 설치
 
 ### CLI
@@ -272,7 +337,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | 자산 편집 묶음. `describe_shader`(셰이더 프로퍼티 조회/검색) → `manage_material`(머티리얼 CRUD, `SerializedPropertyValue` 재사용) / `manage_prefab`(headless `LoadPrefabContents` 편집) / `manage_asset_import`(`AssetImporter` import 설정, manage_components 패턴). |
 | `manage_ui` | **v0.0.15** | uGUI 저작. `create` 가 UI 요소(canvas / panel / image / button / text / empty)를 Canvas + EventSystem 자동 구성과 함께 생성; `set_anchor` 는 Unity 명명 앵커 프리셋 그리드를 노출하고 rect 를 시각적으로 고정 유지(또는 `--snap` 으로 Alt+Shift 채움); `get_rect` / `set_rect` 로 RectTransform 편집 완성. UI/TMP 타입은 `TypeCache` 로 해석 → com.unity.ugui 없는 프로젝트에서도 커넥터 컴파일. 요소 프로퍼티 편집은 `manage_components` 담당. |
 | `TargetResolver` + 테스트 + 벤치마크 | **v0.0.16** | `TargetResolver`가 `manage_components` / `manage_gameobject` / `manage_ui`의 공통 GameObject/Component 리졸루션을 추출. Go 테스트 커버리지 확대(`doctor`, `install`, `poll`, `assetconfig`). C# `HierarchyPath` 에디터 테스트. 스모크 테스트 벤치마크: 7회 호출 = 725B (~181T), 평균 26T/호출 — 리팩토링으로 토큰 비용 증가 없음 확인. |
-| UI Juicy Mode | **v0.0.19** | 옵트인 토글(Hera Settings 체크박스 / `asset-config juicy on`). 켜면 `manage_ui create` 가 만든 요소에 대한 Game UI/UX Bible juice 레시피(hover/press/release 이징, squash & stretch, 팝업 overshoot, count-up·데미지 숫자 타이밍, 햅틱)를 `agent_hint` 로 첨부. DOTween-aware: Hera Settings 에서 DOTween 이 enabled 면 `DOScale` 트윈을, 아니면 coroutine/lerp fallback 을 권고. 가이드 전용(런타임 컴포넌트 없음, 커넥터 Editor 전용 유지) — 에이전트가 `manage_components` / `exec` 로 적용. |
+| UI Juicy Mode | **v0.0.19** | AI가 만든 UI를 죽은 게 아니라 살아있게 만드는 옵트인 토글 — 켜면 `manage_ui create` 가 Game UI/UX Bible "juice" 레시피를 반환. 위의 전용 [**✨ UI Juicy Mode**](#-ui-juicy-mode--그냥-작동하는-게-아니라-살아있는-ui) 섹션 참고. |
 
 ### `unity_docs` — 설계 + 벤치마크 (v0.0.12)
 

@@ -65,6 +65,71 @@ A game prototype built primarily with hera-agent-unity — the AI agent drove th
 
 ---
 
+## ✨ UI Juicy Mode — UIs that feel *alive*, not just functional
+
+> *The difference between a button that works and a button that feels good to press. Now your AI agent knows it too.*
+
+When an AI builds a UI, it gives you a button that works — and feels dead. It sits there. Nothing happens when you hover. It snaps when you click. Scores jump from `0` to `1000` in a single frame. Technically correct, emotionally flat.
+
+Real games are full of tiny, satisfying details you *feel* more than notice: a button that swells when your cursor touches it, squashes when you press, and springs back with a little bounce. A popup that pops *in* instead of blinking into existence. A score that rolls upward. A damage number that floats up and fades. Designers call this **"juice"** (or *game feel*) — and it's usually the first thing AI-built UI is missing, because the model just doesn't think to add it.
+
+**UI Juicy Mode flips that default.** Turn it on, and every time your agent creates a UI element, Hera hands it a concrete, numbers-included recipe for making that element feel alive — lifted straight from the *Game UI/UX Bible*. The agent then wires up the animation, sound, and feedback for you. No design brief, no back-and-forth, no "can you make it feel more polished?" — it just comes out juicy.
+
+### Dead vs. Juicy
+
+| | **Off** (default) | **On** |
+|---|---|---|
+| **Button** | Static rectangle. Click registers, nothing moves. | Swells to 110% on hover, dips to 95% on press, springs back with an overshoot, plays a click, buzzes on mobile. |
+| **Popup** | Appears instantly. | Scales up from nothing with a playful overshoot, dims the screen behind it. |
+| **Score / HP / gold** | Snaps `120 → 999`. | Counts up smoothly over a quarter-second, with a little pop on the final value. |
+| **Damage number** | Plain text appears, then vanishes. | Punches in big, floats up 50px, fades on the way out — crits hit bigger, with a screen shake. |
+
+### How it works
+
+It's **guidance, not bloat.** Hera doesn't bolt heavy runtime components onto your scene. Instead, the recipe rides back to the agent inside the `manage_ui create` response as an `agent_hint` — and the agent applies it through the normal `manage_components` / `exec` path. The connector stays Editor-only; your build stays clean.
+
+```jsonc
+// hera-agent-unity manage_ui create button --name PlayButton   (with Juicy Mode on)
+{
+  "instance_id": -8420,
+  "agent_hint": "[Hera] UI Juicy Mode is on — make this feel alive (Game UI/UX Bible).\n
+    Button feel (Normal → Hover → Press → Release):\n
+      - Hover:   100% → 110%, EaseOut 0.15s, +5% brightness\n
+      - Press:   → 95%, EaseOut 0.05s (immediate), −10% color\n
+      - Release: 95% → 110% → 100% with Back overshoot, 0.2s; click SFX; 10ms haptic on mobile\n
+      - Disabled: desaturate ~50%, opacity 60–70%, block interaction\n
+    Tweening: DOTween is enabled — use rt.DOScale(1.1f, 0.15f).SetEase(Ease.OutQuad) …"
+}
+```
+
+Every recipe is **specific** — exact scale percentages, easing curves, and timings in seconds — so the agent applies real values instead of guessing. There's a tailored recipe for each element type:
+
+| Element | What it learns to do |
+|---|---|
+| **Button** | Hover / press / release state machine with overshoot, click SFX, mobile haptics, disabled styling |
+| **Panel / popup** | Slow exaggerated entrance (pop-in), screen dim, fast quiet exit |
+| **Image** | Pop-in on appear, rarity-scaled reward pulse + glow, hover lift |
+| **Text** | Staggered line entrances, count-up numbers, floating damage popups |
+| **Container** | Staggered child entrances, animated layout changes instead of snapping |
+| **Canvas** | Stand up the tween + audio infrastructure, animate every transition, keep UI footprint lean |
+
+**It adapts to your toolchain.** If DOTween is enabled in Hera Settings, the recipe tells the agent to use `DOScale`-style tweens (the project standard) — otherwise it falls back to a coroutine/lerp approach that works in any project. And it always reminds the agent to gate strong motion behind a reduce-motion option, so juice never becomes nausea.
+
+### Turn it on
+
+It's **opt-in** — off by default, one toggle away:
+
+```bash
+hera-agent-unity asset-config juicy on      # enable
+hera-agent-unity asset-config juicy off     # disable
+```
+
+Or tick **UI Juicy Mode** in the Hera Settings window inside Unity. That's it — every UI element your agent builds from then on comes out alive.
+
+> **Maximum output for minimum input.** You say "add a play button." Your agent ships one that feels like a real game made it.
+
+---
+
 ## Installation
 
 ### CLI
@@ -272,7 +337,7 @@ The five-tool queue locked-in at 2026-05-28 is complete. Each entry filled a gap
 | `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | Asset-editing set. `describe_shader` (inspect/search shaders) pairs with `manage_material` (material CRUD, reuses `SerializedPropertyValue`); `manage_prefab` edits prefab assets headlessly via `LoadPrefabContents`; `manage_asset_import` drives import settings through `AssetImporter` (the `manage_components` pattern). |
 | `manage_ui` | **v0.0.15** | uGUI authoring. `create` spins up UI elements (canvas / panel / image / button / text / empty) with auto Canvas + EventSystem scaffolding; `set_anchor` exposes Unity's named anchor-preset grid and keeps the rect visually fixed (or `--snap` for Alt+Shift fill); `get_rect` / `set_rect` round out RectTransform editing. UI/TMP types resolve via `TypeCache`, so the connector still compiles in projects without com.unity.ugui. Element property edits stay in `manage_components`. |
 | `TargetResolver` + tests + benchmark | **v0.0.16** | `TargetResolver` extracts shared GameObject/Component resolution from `manage_components` / `manage_gameobject` / `manage_ui`. Go test coverage expanded (`doctor`, `install`, `poll`, `assetconfig`). C# `HierarchyPath` editor tests. Smoke test benchmark: 7 calls = 725B (~181T), avg 26T/call — no token cost increase from refactoring. |
-| UI Juicy Mode | **v0.0.19** | Opt-in toggle (Hera Settings checkbox / `asset-config juicy on`). When on, `manage_ui create` attaches an `agent_hint` carrying concrete Game UI/UX Bible juice recipes for the element built — hover/press/release easing, squash & stretch, popup overshoot, count-up / damage-number timing, haptics. DOTween-aware: prefers `DOScale` tweens when DOTween is enabled in Hera Settings, else a coroutine/lerp fallback. Guidance-only (no runtime components, connector stays Editor-only); the agent applies it via `manage_components` / `exec`. |
+| UI Juicy Mode | **v0.0.19** | Opt-in toggle that makes `manage_ui create` return Game UI/UX Bible "juice" recipes so AI-built UIs feel alive instead of dead. See the dedicated [**✨ UI Juicy Mode**](#-ui-juicy-mode--uis-that-feel-alive-not-just-functional) section above. |
 
 ### `unity_docs` — design + benchmarks (v0.0.12)
 
