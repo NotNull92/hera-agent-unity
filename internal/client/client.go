@@ -208,7 +208,6 @@ func (c *Client) ClearInstanceCache() { c.cache.Clear() }
 // ClearInstanceCache delegates to DefaultClient.ClearInstanceCache.
 func ClearInstanceCache() { DefaultClient.ClearInstanceCache() }
 
-
 // ScanInstances reads all instance files from ~/.hera-agent-unity/instances/.
 // Stale files whose PID is no longer running are automatically removed.
 // Results are cached for instanceCacheTTL to keep multi-step workflows
