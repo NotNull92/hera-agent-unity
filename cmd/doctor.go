@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
 )
 
 // agentGuide is the repo-root AGENT.md, embedded into the binary so
@@ -170,8 +171,7 @@ func doctorText() error {
 	if err != nil {
 		fmt.Printf("  ! cannot scan instances dir: %v\n", err)
 	} else if len(instances) == 0 {
-		fmt.Println("  ! no Unity instances detected (~/.hera-agent-unity/instances is empty)")
-		fmt.Println("    Open Unity with the Connector package installed:")
+		fmt.Printf("  ! no Unity instances detected (%s is empty)\n", paths.InstancesDir())
 		fmt.Println("      https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector")
 	} else {
 		fmt.Printf("  OK %d Unity instance(s) registered\n", len(instances))

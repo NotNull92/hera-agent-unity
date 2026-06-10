@@ -95,31 +95,50 @@ func assetConfigList() error {
 		juicy = "on"
 	}
 
+	type listRow struct {
+		Enabled   bool
+		Installed bool
+		ID        string
+		Name      string
+	}
+	type listSection struct {
+		Title string
+		Rows  []listRow
+	}
+	var sections []listSection
+	for _, cat := range assetconfig.CategoryOrder {
+		items, ok := categorized[cat]
+		if !ok {
+			continue
+		}
+		var rows []listRow
+		for _, a := range items {
+			rows = append(rows, listRow{Enabled: a.Enabled, Installed: a.Installed, ID: a.ID, Name: a.Name})
+		}
+		sections = append(sections, listSection{Title: assetconfig.CategoryNames[cat], Rows: rows})
+	}
+
 	if tui.ColorEnabled() {
 		fmt.Println(tui.TitleStyle.Render(fmt.Sprintf("Asset Config v%s", cfg.Version)))
 		fmt.Println(tui.PathStyle.Render(assetconfig.ConfigFilePath()))
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("UI Juicy Mode:"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.JuicyMode]))
 		fmt.Println()
-		for _, cat := range assetconfig.CategoryOrder {
-			items, ok := categorized[cat]
-			if !ok {
-				continue
-			}
-			fmt.Println("  " + tui.HelpSectionStyle.Render(assetconfig.CategoryNames[cat]))
-			for _, a := range items {
+		for _, sec := range sections {
+			fmt.Println("  " + tui.HelpSectionStyle.Render(sec.Title))
+			for _, r := range sec.Rows {
 				badge := tui.StatusBadge("disabled")
-				if a.Enabled {
+				if r.Enabled {
 					badge = tui.StatusBadge("enabled")
 				}
 				installed := tui.MutedStyle.Render("·")
-				if a.Installed {
+				if r.Installed {
 					installed = tui.CheckStyle.Render("✓")
 				}
 				fmt.Printf("    %s %s  %s %s\n",
 					badge,
-					tui.PathStyle.Render(a.ID),
+					tui.PathStyle.Render(r.ID),
 					installed,
-					a.Name)
+					r.Name)
 			}
 			fmt.Println()
 		}
@@ -129,22 +148,18 @@ func assetConfigList() error {
 	// Plain output — kept stable for script/AI parsing.
 	fmt.Printf("Asset Config v%s — %s\n", cfg.Version, assetconfig.ConfigFilePath())
 	fmt.Printf("UI Juicy Mode: %s\n\n", juicy)
-	for _, cat := range assetconfig.CategoryOrder {
-		items, ok := categorized[cat]
-		if !ok {
-			continue
-		}
-		fmt.Printf("  %s\n", assetconfig.CategoryNames[cat])
-		for _, a := range items {
+	for _, sec := range sections {
+		fmt.Printf("  %s\n", sec.Title)
+		for _, r := range sec.Rows {
 			status := "OFF"
-			if a.Enabled {
+			if r.Enabled {
 				status = "ON "
 			}
 			installed := "  "
-			if a.Installed {
+			if r.Installed {
 				installed = "✓"
 			}
-			fmt.Printf("    [%s] %s  %s %s\n", status, a.ID, installed, a.Name)
+			fmt.Printf("    [%s] %s  %s %s\n", status, r.ID, installed, r.Name)
 		}
 		fmt.Println()
 	}

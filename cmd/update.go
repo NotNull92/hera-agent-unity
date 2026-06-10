@@ -24,8 +24,11 @@ type githubAsset struct {
 }
 
 func updateCmd(args []string) error {
-	flags := parseSubFlags(args)
-	_, checkOnly := flags["check"]
+	parsedParams, _, err := buildParams(args, nil)
+	if err != nil {
+		return err
+	}
+	_, checkOnly := parsedParams["check"]
 
 	fmt.Println("Checking for updates...")
 

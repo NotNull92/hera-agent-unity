@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
+	"github.com/NotNull92/hera-agent-unity/internal/unitystate"
 )
 
 // stubIsProcessDead replaces DefaultClient's process-death checker for testing.
@@ -31,7 +34,7 @@ func writeInstanceFiles(t *testing.T, files map[string]Instance) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	dir := filepath.Join(home, ".hera-agent-unity", "instances")
+	dir := paths.InstancesDir()
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatalf("failed to create instances dir: %v", err)
 	}
@@ -58,14 +61,14 @@ func TestFindActiveByPort_SkipsStoppedPicksLatest(t *testing.T) {
 	home := writeInstanceFiles(t, map[string]Instance{
 		// Alphabetically first — the old bug would pick this one
 		"aaa_stopped.json": {
-			State:       "stopped",
+			State:       unitystate.Stopped,
 			ProjectPath: "/projects/old",
 			Port:        8090,
 			PID:         100,
 			Timestamp:   1000,
 		},
 		"bbb_ready.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/current",
 			Port:        8090,
 			PID:         200,
@@ -78,8 +81,8 @@ func TestFindActiveByPort_SkipsStoppedPicksLatest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got.State != "ready" {
-		t.Errorf("State: got %q, want %q", got.State, "ready")
+	if got.State != unitystate.Ready {
+		t.Errorf("State: got %q, want %q", got.State, unitystate.Ready)
 	}
 	if got.ProjectPath != "/projects/current" {
 		t.Errorf("ProjectPath: got %q, want %q", got.ProjectPath, "/projects/current")
@@ -96,14 +99,14 @@ func TestFindActiveByPort_PicksLatestTimestamp(t *testing.T) {
 
 	home := writeInstanceFiles(t, map[string]Instance{
 		"aaa_old.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/old",
 			Port:        8090,
 			PID:         100,
 			Timestamp:   1000,
 		},
 		"bbb_new.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/new",
 			Port:        8090,
 			PID:         200,
@@ -130,7 +133,7 @@ func TestFindByPort_ReturnsStoppedInstance(t *testing.T) {
 
 	home := writeInstanceFiles(t, map[string]Instance{
 		"stopped.json": {
-			State:       "stopped",
+			State:       unitystate.Stopped,
 			ProjectPath: "/projects/old",
 			Port:        8090,
 			PID:         100,
@@ -143,8 +146,8 @@ func TestFindByPort_ReturnsStoppedInstance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got.State != "stopped" {
-		t.Errorf("State: got %q, want %q", got.State, "stopped")
+	if got.State != unitystate.Stopped {
+		t.Errorf("State: got %q, want %q", got.State, unitystate.Stopped)
 	}
 }
 
@@ -155,14 +158,14 @@ func TestFindByPort_PicksLatestWhenMixed(t *testing.T) {
 
 	home := writeInstanceFiles(t, map[string]Instance{
 		"aaa_stopped.json": {
-			State:       "stopped",
+			State:       unitystate.Stopped,
 			ProjectPath: "/projects/old",
 			Port:        8090,
 			PID:         100,
 			Timestamp:   1000,
 		},
 		"bbb_ready.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/current",
 			Port:        8090,
 			PID:         200,
@@ -193,14 +196,14 @@ func TestScanInstances_RemovesDeadPID(t *testing.T) {
 
 	home := writeInstanceFiles(t, map[string]Instance{
 		"dead.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/dead",
 			Port:        8090,
 			PID:         100,
 			Timestamp:   1000,
 		},
 		"alive.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/alive",
 			Port:        8091,
 			PID:         200,
@@ -222,7 +225,7 @@ func TestScanInstances_RemovesDeadPID(t *testing.T) {
 	}
 
 	// Verify the dead file was actually deleted
-	deadPath := filepath.Join(home, ".hera-agent-unity", "instances", "dead.json")
+	deadPath := filepath.Join(paths.InstancesDir(), "dead.json")
 	if _, err := os.Stat(deadPath); !os.IsNotExist(err) {
 		t.Error("dead.json should have been deleted")
 	}
@@ -236,7 +239,7 @@ func TestScanInstances_KeepsOnPermissionError(t *testing.T) {
 
 	home := writeInstanceFiles(t, map[string]Instance{
 		"eperm.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/eperm",
 			Port:        8090,
 			PID:         100,
@@ -254,7 +257,7 @@ func TestScanInstances_KeepsOnPermissionError(t *testing.T) {
 	}
 
 	// Verify the file was NOT deleted
-	fp := filepath.Join(home, ".hera-agent-unity", "instances", "eperm.json")
+	fp := filepath.Join(paths.InstancesDir(), "eperm.json")
 	if _, err := os.Stat(fp); err != nil {
 		t.Error("eperm.json should have been preserved")
 	}
@@ -267,7 +270,7 @@ func TestScanInstances_KeepsZeroPID(t *testing.T) {
 
 	home := writeInstanceFiles(t, map[string]Instance{
 		"legacy.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/legacy",
 			Port:        8090,
 			PID:         0,
@@ -295,7 +298,7 @@ func TestDiscoverInstance_ProjectPathMatchesSlashVariants(t *testing.T) {
 
 	home := writeInstanceFiles(t, map[string]Instance{
 		"project.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "E:/GamerAworlD",
 			Port:        8090,
 			PID:         100,
@@ -322,7 +325,7 @@ func TestDiscoverInstance_PortFlagPopulatesTimestamp(t *testing.T) {
 
 	home := writeInstanceFiles(t, map[string]Instance{
 		"current.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/current",
 			Port:        8091,
 			PID:         200,
@@ -367,7 +370,7 @@ func TestFindActiveByPort_SkipsZeroTimestamp(t *testing.T) {
 
 	home := writeInstanceFiles(t, map[string]Instance{
 		"zero_timestamp.json": {
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: "/projects/incomplete",
 			Port:        8090,
 			PID:         100,

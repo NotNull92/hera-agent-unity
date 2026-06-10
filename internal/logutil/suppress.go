@@ -15,15 +15,23 @@ type SuppressWriter struct {
 }
 
 // Write implements io.Writer.
+// It drops the write only if the suppression string appears at the start of a
+// line (or the very start of p). This is stricter than bytes.Contains, which
+// would accidentally suppress legitimate log lines that merely include the
+// phrase elsewhere.
 func (s *SuppressWriter) Write(p []byte) (int, error) {
-	if bytes.Contains(p, []byte(s.Suppress)) {
+	prefix := []byte(s.Suppress)
+	if bytes.HasPrefix(p, prefix) {
+		return len(p), nil
+	}
+	if bytes.Contains(p, append([]byte("\n"), prefix...)) {
 		return len(p), nil
 	}
 	return s.W.Write(p)
 }
 
-// NewSuppressWriter returns an io.Writer that discards writes containing the
-// given substring.
+// NewSuppressWriter returns an io.Writer that discards writes whose lines
+// start with the given string.
 func NewSuppressWriter(w io.Writer, suppress string) io.Writer {
 	return &SuppressWriter{W: w, Suppress: suppress}
 }

@@ -7,7 +7,7 @@ import "github.com/NotNull92/hera-agent-unity/internal/client"
 // has to resolve / forward a docs_root path. Kept as a named case so the
 // help text under printTopicHelp("unity_docs") still has a dedicated home.
 func unityDocsCmd(args []string, send SendFunc) (*client.CommandResponse, error) {
-	params, err := buildParams(args, nil)
+	params, _, err := buildParams(args, nil)
 	if err != nil {
 		return nil, err
 	}

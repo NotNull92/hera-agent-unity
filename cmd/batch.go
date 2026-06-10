@@ -21,7 +21,7 @@ type batchStdinReader interface {
 var batchStdin batchStdinReader = os.Stdin
 
 func batchCmd(ctx context.Context, args []string, sendBatch SendBatchFunc, resolve instanceResolver) error {
-	params, err := buildParams(args, nil)
+	params, _, err := buildParams(args, nil)
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,10 @@ func batchCmd(ctx context.Context, args []string, sendBatch SendBatchFunc, resol
 		return err
 	}
 
-	resp, err := sendBatch(ctx, inst, req)
+	var resp *client.BatchCommandResponse
+	withProgress("batch", flagVerbose, func() {
+		resp, err = sendBatch(ctx, inst, req)
+	})
 	if err != nil {
 		return err
 	}

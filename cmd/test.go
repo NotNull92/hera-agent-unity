@@ -3,18 +3,21 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
 	"github.com/NotNull92/hera-agent-unity/internal/poll"
 )
 
 func testCmd(args []string, send SendFunc, resolve instanceResolver) (*client.CommandResponse, error) {
-	flags := parseSubFlags(args)
+	parsedParams, _, err := buildParams(args, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	mode := "EditMode"
-	if m, ok := flags["mode"]; ok {
+	if m, ok := parsedParams["mode"].(string); ok {
 		mode = m
 	}
 
@@ -25,7 +28,7 @@ func testCmd(args []string, send SendFunc, resolve instanceResolver) (*client.Co
 	params := map[string]interface{}{
 		"mode": mode,
 	}
-	if filter, ok := flags["filter"]; ok {
+	if filter, ok := parsedParams["filter"].(string); ok {
 		params["filter"] = filter
 	}
 
@@ -62,11 +65,5 @@ func testCmd(args []string, send SendFunc, resolve instanceResolver) (*client.Co
 }
 
 func pollTestResults(port int) (*client.CommandResponse, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("cannot determine home directory: %w", err)
-	}
-
-	resultsPath := filepath.Join(home, ".hera-agent-unity", "status", fmt.Sprintf("test-results-%d.json", port))
-	return poll.WaitForAsyncJob(resultsPath, port, 10*time.Minute, "test results")
+	return poll.WaitForAsyncJob(paths.TestResultPath(port), port, 10*time.Minute, "test results")
 }

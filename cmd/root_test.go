@@ -24,36 +24,6 @@ func mockSend(wantCmd string, t *testing.T) (SendFunc, *map[string]interface{}) 
 	return fn, &captured
 }
 
-func TestParseSubFlags(t *testing.T) {
-	tests := []struct {
-		name string
-		args []string
-		want map[string]string
-	}{
-		{"empty", nil, map[string]string{}},
-		{"key value pair", []string{"--port", "8080"}, map[string]string{"port": "8080"}},
-		{"boolean flag", []string{"--wait"}, map[string]string{"wait": "true"}},
-		{"mixed", []string{"--port", "8080", "--wait", "--filter", "error"}, map[string]string{"port": "8080", "wait": "true", "filter": "error"}},
-		{"consecutive boolean flags", []string{"--wait", "--clear"}, map[string]string{"wait": "true", "clear": "true"}},
-		{"non-flag args ignored", []string{"play", "--wait"}, map[string]string{"wait": "true"}},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := parseSubFlags(tt.args)
-			if len(got) != len(tt.want) {
-				t.Errorf("parseSubFlags(%v) = %v, want %v", tt.args, got, tt.want)
-				return
-			}
-			for k, v := range tt.want {
-				if got[k] != v {
-					t.Errorf("parseSubFlags(%v)[%q] = %q, want %q", tt.args, k, got[k], v)
-				}
-			}
-		})
-	}
-}
-
 func TestSplitArgs(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -83,7 +53,7 @@ func TestSplitArgs(t *testing.T) {
 }
 
 func TestBuildParams_IntParsing(t *testing.T) {
-	p, err := buildParams([]string{"--lines", "50"}, nil)
+	p, _, err := buildParams([]string{"--lines", "50"}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -93,7 +63,7 @@ func TestBuildParams_IntParsing(t *testing.T) {
 }
 
 func TestBuildParams_BoolParsing(t *testing.T) {
-	p, err := buildParams([]string{"--clear"}, nil)
+	p, _, err := buildParams([]string{"--clear"}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -103,7 +73,7 @@ func TestBuildParams_BoolParsing(t *testing.T) {
 }
 
 func TestBuildParams_StringParsing(t *testing.T) {
-	p, err := buildParams([]string{"--filter", "error"}, nil)
+	p, _, err := buildParams([]string{"--filter", "error"}, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -113,7 +83,7 @@ func TestBuildParams_StringParsing(t *testing.T) {
 }
 
 func TestBuildParams_BaseParams(t *testing.T) {
-	p, err := buildParams([]string{"--depth", "5"}, map[string]interface{}{"action": "hierarchy"})
+	p, _, err := buildParams([]string{"--depth", "5"}, map[string]interface{}{"action": "hierarchy"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -122,31 +92,6 @@ func TestBuildParams_BaseParams(t *testing.T) {
 	}
 	if p["depth"] != 5 {
 		t.Errorf("expected depth=5, got %v", p["depth"])
-	}
-}
-
-func TestHasPositionalArg(t *testing.T) {
-	cases := []struct {
-		name string
-		args []string
-		want bool
-	}{
-		{"empty", nil, false},
-		{"only code", []string{"return 1;"}, true},
-		{"only valueless flags", []string{"--check", "--no-cache"}, false},
-		{"flag with value, no code", []string{"--depth", "2"}, false},
-		{"flag value then code", []string{"--depth", "2", "return 1;"}, true},
-		{"code then flag value", []string{"return 1;", "--depth", "2"}, true},
-		// Mirrors buildParams: with no registry of valueless flags, the token
-		// after a --flag is consumed as its value. So a bare flag immediately
-		// followed by code reads as "flag=code, no positional". Code-first
-		// ordering (case above) is the unambiguous form.
-		{"flag eats following token", []string{"--check", "return 1;"}, false},
-	}
-	for _, tc := range cases {
-		if got := hasPositionalArg(tc.args); got != tc.want {
-			t.Errorf("%s: hasPositionalArg(%v) = %v, want %v", tc.name, tc.args, got, tc.want)
-		}
 	}
 }
 

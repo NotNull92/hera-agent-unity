@@ -10,6 +10,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
+	"github.com/NotNull92/hera-agent-unity/internal/unitystate"
 	"strings"
 	"time"
 )
@@ -205,10 +208,6 @@ func (c *Client) ClearInstanceCache() { c.cache.Clear() }
 // ClearInstanceCache delegates to DefaultClient.ClearInstanceCache.
 func ClearInstanceCache() { DefaultClient.ClearInstanceCache() }
 
-func instancesDir() string {
-	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".hera-agent-unity", "instances")
-}
 
 // ScanInstances reads all instance files from ~/.hera-agent-unity/instances/.
 // Stale files whose PID is no longer running are automatically removed.
@@ -219,7 +218,7 @@ func (c *Client) ScanInstances() ([]Instance, error) {
 		return cached, nil
 	}
 
-	dir := instancesDir()
+	dir := paths.InstancesDir()
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -279,7 +278,7 @@ func (c *Client) FindByPort(port int) (*Instance, error) {
 func FindByPort(port int) (*Instance, error) { return DefaultClient.FindByPort(port) }
 
 func isActiveInstance(inst Instance) bool {
-	return inst.State != "stopped" && inst.Timestamp > 0
+	return inst.State != unitystate.Stopped && inst.Timestamp > 0
 }
 
 // FindActiveByPort is like FindByPort but skips stopped or incomplete instances.
@@ -318,7 +317,7 @@ func (c *Client) DiscoverInstance(project string, port int) (*Instance, error) {
 
 	instances, err := c.ScanInstances()
 	if err != nil {
-		return nil, fmt.Errorf("no Unity instances found.\nIs Unity running with the Connector package?\nExpected: %s", instancesDir())
+		return nil, fmt.Errorf("no Unity instances found.\nIs Unity running with the Connector package?\nExpected: %s", paths.InstancesDir())
 	}
 
 	// Filter out stopped instances

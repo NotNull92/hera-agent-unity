@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
+	"github.com/NotNull92/hera-agent-unity/internal/unitystate"
 )
 
 func writeInstanceFile(t *testing.T, inst client.Instance) string {
@@ -18,7 +20,7 @@ func writeInstanceFile(t *testing.T, inst client.Instance) string {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
-	dir := filepath.Join(home, ".hera-agent-unity", "instances")
+	dir := paths.InstancesDir()
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		t.Fatalf("failed to create instances dir: %v", err)
 	}
@@ -45,14 +47,14 @@ func TestWaitForAlive_FollowsResolverPortChange(t *testing.T) {
 		callCount++
 		if callCount == 1 {
 			return &client.Instance{
-				State:       "reloading",
+				State:       unitystate.Reloading,
 				ProjectPath: project,
 				Port:        8090,
 				Timestamp:   time.Now().Add(-5 * time.Second).UnixMilli(),
 			}, nil
 		}
 		return &client.Instance{
-			State:       "ready",
+			State:       unitystate.Ready,
 			ProjectPath: project,
 			Port:        8091,
 			Timestamp:   time.Now().UnixMilli(),
@@ -73,7 +75,7 @@ func TestWaitForAlive_FollowsResolverPortChange(t *testing.T) {
 
 func TestDiscoverStatusInstance_PortAllowsStoppedInstance(t *testing.T) {
 	want := client.Instance{
-		State:       "stopped",
+		State:       unitystate.Stopped,
 		ProjectPath: "/home/user/MyProject",
 		Port:        8090,
 		PID:         os.Getpid(),
@@ -86,7 +88,7 @@ func TestDiscoverStatusInstance_PortAllowsStoppedInstance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if got.State != "stopped" {
+	if got.State != unitystate.Stopped {
 		t.Errorf("State: got %q, want stopped", got.State)
 	}
 	if got.Port != 8090 {

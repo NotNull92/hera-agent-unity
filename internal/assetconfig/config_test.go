@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
 )
 
 func resetConfigPath(t *testing.T) {
@@ -98,8 +100,8 @@ func TestLoadConfig_NoFile_ReturnsDefaultsAndCreatesFile(t *testing.T) {
 }
 
 func TestLoadConfig_ValidJSON(t *testing.T) {
-	dir := withTempHome(t)
-	path := filepath.Join(dir, ".hera-agent-unity", "asset-config.json")
+	withTempHome(t)
+	path := paths.AssetConfigPath()
 	_ = os.MkdirAll(filepath.Dir(path), 0755)
 	data := `{"version":"2.0.0","assets":[{"id":"dotween","name":"DOTween","enabled":true,"installed":true,"category":"animation","description":"test"}]}`
 	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
@@ -141,8 +143,8 @@ func TestLoadConfig_ValidJSON(t *testing.T) {
 }
 
 func TestLoadConfig_InvalidJSON(t *testing.T) {
-	dir := withTempHome(t)
-	path := filepath.Join(dir, ".hera-agent-unity", "asset-config.json")
+	withTempHome(t)
+	path := paths.AssetConfigPath()
 	_ = os.MkdirAll(filepath.Dir(path), 0755)
 	if err := os.WriteFile(path, []byte("not json"), 0644); err != nil {
 		t.Fatalf("write file: %v", err)

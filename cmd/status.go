@@ -8,6 +8,7 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 	"github.com/NotNull92/hera-agent-unity/internal/poll"
 	"github.com/NotNull92/hera-agent-unity/internal/tui"
+	"github.com/NotNull92/hera-agent-unity/internal/unitystate"
 )
 
 type instanceResolver func() (*client.Instance, error)
@@ -60,7 +61,7 @@ func pingCmd(project string, port int) error {
 		return fmt.Errorf("ping: not alive")
 	}
 	age := time.Since(time.UnixMilli(inst.Timestamp))
-	alive := age <= 3*time.Second && inst.State != "stopped"
+	alive := age <= 3*time.Second && inst.State != unitystate.Stopped
 	flag := 0
 	if alive {
 		flag = 1
@@ -93,8 +94,7 @@ func waitForAlive(resolve instanceResolver, timeoutMs int, category string) (*cl
 		}
 	}
 
-	narrate := !flagQuiet && (isHumanCommand(category) || flagNarrate)
-	if narrate {
+	if shouldNarrate(category) {
 		fmt.Fprintf(os.Stderr, "Waiting for Unity...\n")
 	}
 
@@ -118,7 +118,7 @@ func waitForAlive(resolve instanceResolver, timeoutMs int, category string) (*cl
 	if err != nil {
 		return nil, fmt.Errorf("timed out waiting for Unity")
 	}
-	if narrate {
+	if shouldNarrate(category) {
 		fmt.Fprintf(os.Stderr, "Unity is ready.\n")
 	}
 	return result, nil
@@ -130,8 +130,7 @@ func waitForAlive(resolve instanceResolver, timeoutMs int, category string) (*cl
 // entry triggers — the listener is stopped mid-response, so the only
 // reliable confirmation channel is the filesystem heartbeat.
 func waitForState(resolve instanceResolver, timeoutMs int, category string, targets ...string) error {
-	narrate := !flagQuiet && (isHumanCommand(category) || flagNarrate)
-	if narrate {
+	if shouldNarrate(category) {
 		fmt.Fprintf(os.Stderr, "Waiting for state %v...\n", targets)
 	}
 	var matchedState string
@@ -156,7 +155,7 @@ func waitForState(resolve instanceResolver, timeoutMs int, category string, targ
 	if err != nil {
 		return fmt.Errorf("timed out waiting for state %v", targets)
 	}
-	if narrate {
+	if shouldNarrate(category) {
 		fmt.Fprintf(os.Stderr, "State is now %s.\n", matchedState)
 	}
 	return nil
@@ -165,8 +164,7 @@ func waitForState(resolve instanceResolver, timeoutMs int, category string, targ
 // waitForReady polls indefinitely until the heartbeat state becomes "ready".
 // Returns true if compilation had errors.
 func waitForReady(resolve instanceResolver, category string) bool {
-	narrate := !flagQuiet && (isHumanCommand(category) || flagNarrate)
-	if narrate {
+	if shouldNarrate(category) {
 		fmt.Fprintf(os.Stderr, "Waiting for compilation...\n")
 	}
 
@@ -180,7 +178,7 @@ func waitForReady(resolve instanceResolver, category string) bool {
 			if err != nil {
 				return false
 			}
-			if status.State == "ready" {
+			if status.State == unitystate.Ready {
 				compileErrors = status.CompileErrors
 				return true
 			}
@@ -188,12 +186,12 @@ func waitForReady(resolve instanceResolver, category string) bool {
 		},
 	)
 	if err != nil {
-		if narrate {
+		if shouldNarrate(category) {
 			fmt.Fprintf(os.Stderr, "Timed out waiting for compilation (5m).\n")
 		}
 		return true
 	}
-	if narrate {
+	if shouldNarrate(category) {
 		if compileErrors {
 			fmt.Fprintf(os.Stderr, "Compilation finished with errors.\n")
 		} else {
@@ -201,4 +199,8 @@ func waitForReady(resolve instanceResolver, category string) bool {
 		}
 	}
 	return compileErrors
+}
+
+func shouldNarrate(category string) bool {
+	return !flagQuiet && (isHumanCommand(category) || flagNarrate)
 }

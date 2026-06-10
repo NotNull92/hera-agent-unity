@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
 )
 
 // AssetEntry represents a single asset plugin entry.
@@ -46,11 +48,7 @@ var (
 // user's home directory. Initialised once on first call.
 func ConfigFilePath() string {
 	configOnce.Do(func() {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			home = "."
-		}
-		configPath = filepath.Join(home, ".hera-agent-unity", "asset-config.json")
+		configPath = paths.AssetConfigPath()
 	})
 	return configPath
 }

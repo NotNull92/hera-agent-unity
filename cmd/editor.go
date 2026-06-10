@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/unitystate"
 )
 
 // editorCmd controls Unity play mode and asset database.
@@ -14,11 +15,14 @@ func editorCmd(args []string, send SendFunc, resolve instanceResolver, category 
 	}
 
 	action := args[0]
-	flags := parseSubFlags(args[1:])
+	parsedParams, _, err := buildParams(args[1:], nil)
+	if err != nil {
+		return nil, err
+	}
 
 	switch action {
 	case "play":
-		_, wait := flags["wait"]
+		_, wait := parsedParams["wait"]
 		resp, err := send("manage_editor", map[string]interface{}{"action": "play"})
 		if err != nil {
 			return nil, err
@@ -30,7 +34,7 @@ func editorCmd(args []string, send SendFunc, resolve instanceResolver, category 
 		// triggers a domain reload that stops the HTTP listener, so any
 		// C#-side `await EnteredPlayMode` would never get to write a response.
 		// `playing` or `paused` both indicate isPlaying == true.
-		if waitErr := waitForState(resolve, 60000, category, "playing", "paused"); waitErr != nil {
+		if waitErr := waitForState(resolve, 60000, category, unitystate.Playing, unitystate.Paused); waitErr != nil {
 			return nil, waitErr
 		}
 		resp.Message = "Entered play mode (confirmed)."
@@ -43,8 +47,8 @@ func editorCmd(args []string, send SendFunc, resolve instanceResolver, category 
 		return send("manage_editor", map[string]interface{}{"action": "pause"})
 
 	case "refresh":
-		_, compile := flags["compile"]
-		_, force := flags["force"]
+		_, compile := parsedParams["compile"]
+		_, force := parsedParams["force"]
 		params := map[string]interface{}{}
 		if force {
 			params["force"] = true

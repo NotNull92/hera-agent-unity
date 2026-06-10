@@ -9,6 +9,7 @@ import (
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 	"github.com/NotNull92/hera-agent-unity/internal/logutil"
+	"github.com/NotNull92/hera-agent-unity/internal/unitystate"
 )
 
 // WaitForFile polls a filesystem result file until it appears, Unity stops,
@@ -39,7 +40,7 @@ func WaitForFile(resultPath string, port int, timeout time.Duration, opName stri
 		// State check (cheap): instance writes "stopped" on graceful quit.
 		inst, statusErr := client.FindByPort(port)
 		if statusErr == nil {
-			if inst.State == "stopped" {
+			if inst.State == unitystate.Stopped {
 				return nil, fmt.Errorf("unity editor has stopped (port %d)", port)
 			}
 			lastPid = inst.PID

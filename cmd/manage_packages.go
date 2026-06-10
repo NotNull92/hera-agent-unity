@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
 	"github.com/NotNull92/hera-agent-unity/internal/poll"
 )
 
@@ -17,7 +17,7 @@ import (
 // poll ~/.hera-agent-unity/status/package-result-PORT-JOBID.json the same
 // way cmd/test.go waits on PlayMode results.
 func managePackagesCmd(args []string, send SendFunc, resolve instanceResolver) (*client.CommandResponse, error) {
-	params, err := buildParams(args, nil)
+	params, _, err := buildParams(args, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -61,12 +61,5 @@ func managePackagesCmd(args []string, send SendFunc, resolve instanceResolver) (
 }
 
 func pollPackageJob(port int, jobID string) (*client.CommandResponse, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("cannot determine home directory: %w", err)
-	}
-
-	resultPath := filepath.Join(home, ".hera-agent-unity", "status",
-		fmt.Sprintf("package-result-%d-%s.json", port, jobID))
-	return poll.WaitForAsyncJob(resultPath, port, 10*time.Minute, fmt.Sprintf("package job %s", jobID))
+	return poll.WaitForAsyncJob(paths.PackageResultPath(port, jobID), port, 10*time.Minute, fmt.Sprintf("package job %s", jobID))
 }

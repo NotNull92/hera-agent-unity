@@ -79,12 +79,15 @@ func isHumanCommand(category string) bool {
 	return ok
 }
 
-// shouldCompactJSON reports whether printResponse should emit compact JSON.
-// True when the user explicitly requested it (--compact-json / env), or when
-// the given subcommand is an AI-target command. Human commands keep
-// indented JSON for readability.
-func shouldCompactJSON(category string) bool {
-	return flagCompactJSON || !isHumanCommand(category)
+// ResponsePrinter holds output-configuration state so that print logic can be
+// tested without mutating package-level flag variables.
+type ResponsePrinter struct {
+	Quiet       bool
+	CompactJSON bool
+}
+
+func (rp *ResponsePrinter) shouldCompactJSON(category string) bool {
+	return rp.CompactJSON || !isHumanCommand(category)
 }
 
 // isUserCodeDiagnostic reports whether a structured error code describes a
@@ -163,7 +166,7 @@ func runUnityCommand(ctx context.Context, category string, subArgs []string, sen
 		}
 		subArgs = readStdinIfPiped(subArgs)
 		var params map[string]interface{}
-		params, err = buildParams(subArgs, nil)
+		params, _, err = buildParams(subArgs, nil)
 		if err == nil {
 			if v, ok := params["check"].(bool); ok && v {
 				params["compile_only"] = true
@@ -173,7 +176,7 @@ func runUnityCommand(ctx context.Context, category string, subArgs []string, sen
 		}
 	default:
 		var params map[string]interface{}
-		params, err = buildParams(subArgs, nil)
+		params, _, err = buildParams(subArgs, nil)
 		if err == nil {
 			resp, err = send(category, params)
 		}
@@ -206,7 +209,6 @@ func Execute(ctx context.Context) error {
 	}
 
 	checkBinaryPath()
-
 	client.DefaultClient.Debug = flagDebug
 
 	category := cmdArgs[0]
@@ -233,40 +235,22 @@ func Execute(ctx context.Context) error {
 		return err
 	}
 
-	targetProject := flagProject
-	if flagPort == 0 && targetProject == "" {
-		targetProject = inst.ProjectPath
-	}
-
-	resolve := func() (*client.Instance, error) {
-		if flagPort > 0 {
-			return client.DiscoverInstance("", flagPort)
-		}
-		return client.DiscoverInstance(targetProject, 0)
-	}
-
+	resolve := makeResolver(inst, flagProject, flagPort)
 	if _, err := waitForAlive(resolve, flagTimeout, category); err != nil {
 		return err
 	}
 
-	timeout := flagTimeout
-	send := func(command string, params interface{}) (*client.CommandResponse, error) {
-		inst, err := resolve()
-		if err != nil {
-			return nil, err
-		}
-		if command == "exec" && (isHumanCommand(category) || flagVerbose) {
-			fmt.Fprintln(os.Stderr, "[hera-agent-unity] compiling...")
-		}
-		return sendWithProgress(inst, command, params, timeout, flagVerbose)
-	}
-
+	send := prepareSend(resolve, category, flagTimeout, flagVerbose)
 	resp, err := runUnityCommand(ctx, category, subArgs, send, resolve)
 	if err != nil {
 		return err
 	}
 
-	printResponse(resp, category)
+	printer := &ResponsePrinter{
+		Quiet:       flagQuiet,
+		CompactJSON: flagCompactJSON,
+	}
+	printer.Print(resp, category)
 
 	if flagVerbose {
 		printTimings(resp)
@@ -281,11 +265,44 @@ func Execute(ctx context.Context) error {
 	return nil
 }
 
-// sendWithProgress wraps client.Send. When verbose, prints a 1-second-cadence
-// progress line to stderr so harnesses see liveness while Unity is busy.
-func sendWithProgress(inst *client.Instance, command string, params interface{}, timeoutMs int, verbose bool) (*client.CommandResponse, error) {
+// makeResolver returns an instanceResolver that follows the same project even
+// if Unity rebinds to a new port during reload.
+func makeResolver(inst *client.Instance, project string, port int) instanceResolver {
+	targetProject := project
+	if port == 0 && targetProject == "" {
+		targetProject = inst.ProjectPath
+	}
+	return func() (*client.Instance, error) {
+		if port > 0 {
+			return client.DiscoverInstance("", port)
+		}
+		return client.DiscoverInstance(targetProject, 0)
+	}
+}
+
+// prepareSend builds the SendFunc closure injected into command handlers.
+// It resolves the current instance on every call so that port rebinds during
+// domain reload are followed transparently.
+func prepareSend(resolve instanceResolver, category string, timeoutMs int, verbose bool) SendFunc {
+	return func(command string, params interface{}) (*client.CommandResponse, error) {
+		inst, err := resolve()
+		if err != nil {
+			return nil, err
+		}
+		if command == "exec" && (isHumanCommand(category) || verbose) {
+			fmt.Fprintln(os.Stderr, "[hera-agent-unity] compiling...")
+		}
+		return sendWithProgress(inst, command, params, timeoutMs, verbose)
+	}
+}
+
+// withProgress runs fn while printing a 1-second-cadence progress line to
+// stderr when verbose is true. This keeps harnesses from timing out while
+// Unity is busy compiling or executing a long command.
+func withProgress(command string, verbose bool, fn func()) {
 	if !verbose {
-		return client.Send(inst, command, params, timeoutMs)
+		fn()
+		return
 	}
 	done := make(chan struct{})
 	start := time.Now()
@@ -302,8 +319,17 @@ func sendWithProgress(inst *client.Instance, command string, params interface{},
 			}
 		}
 	}()
-	resp, err := client.Send(inst, command, params, timeoutMs)
+	fn()
 	close(done)
+}
+
+// sendWithProgress wraps client.Send with progress output.
+func sendWithProgress(inst *client.Instance, command string, params interface{}, timeoutMs int, verbose bool) (*client.CommandResponse, error) {
+	var resp *client.CommandResponse
+	var err error
+	withProgress(command, verbose, func() {
+		resp, err = client.Send(inst, command, params, timeoutMs)
+	})
 	return resp, err
 }
 
@@ -331,7 +357,7 @@ type SendFunc func(command string, params interface{}) (*client.CommandResponse,
 // Injected so batchCmd can be tested without a real Unity connection.
 type SendBatchFunc func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error)
 
-func printResponse(resp *client.CommandResponse, category string) {
+func (rp *ResponsePrinter) Print(resp *client.CommandResponse, category string) {
 	if !resp.Success {
 		// AI-target commands: emit a plain JSON error envelope to stderr so
 		// the agent can parse code / suggestions / data without scraping
@@ -339,7 +365,7 @@ func printResponse(resp *client.CommandResponse, category string) {
 		// readability.
 		if !isHumanCommand(category) {
 			var b []byte
-			if shouldCompactJSON(category) {
+			if rp.shouldCompactJSON(category) {
 				b, _ = json.Marshal(resp)
 			} else {
 				b, _ = json.MarshalIndent(resp, "", "  ")
@@ -364,7 +390,7 @@ func printResponse(resp *client.CommandResponse, category string) {
 		if len(resp.Suggestions) > 0 {
 			suggestions = "\n\nSuggestions:\n- " + strings.Join(resp.Suggestions, "\n- ")
 		}
-		if flagQuiet {
+		if rp.Quiet {
 			if hasDetails {
 				fmt.Fprintf(os.Stderr, "%s\n%s%s\n", msg, string(resp.Data), suggestions)
 			} else {
@@ -392,7 +418,7 @@ func printResponse(resp *client.CommandResponse, category string) {
 				fmt.Println(s)
 			} else {
 				var b []byte
-				if shouldCompactJSON(category) {
+				if rp.shouldCompactJSON(category) {
 					b, _ = json.Marshal(pretty)
 				} else {
 					b, _ = json.MarshalIndent(pretty, "", "  ")
@@ -407,27 +433,9 @@ func printResponse(resp *client.CommandResponse, category string) {
 	}
 }
 
-// parseSubFlags parses --key value and --flag (boolean) pairs from subcommand args.
-// Non-flag args (no "--" prefix) are silently ignored.
-func parseSubFlags(args []string) map[string]string {
-	flags := map[string]string{}
-	for i := 0; i < len(args); i++ {
-		a := args[i]
-		if strings.HasPrefix(a, "--") {
-			key := a[2:]
-			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
-				flags[key] = args[i+1]
-				i++
-			} else {
-				flags[key] = "true"
-			}
-		}
-	}
-	return flags
-}
-
 // buildParams parses --flag value pairs and positional args from args and merges with base params.
-func buildParams(args []string, base map[string]interface{}) (map[string]interface{}, error) {
+// It returns the parsed params, any positional arguments, and an error.
+func buildParams(args []string, base map[string]interface{}) (map[string]interface{}, []string, error) {
 	params := map[string]interface{}{}
 	for k, v := range base {
 		params[k] = v
@@ -452,7 +460,7 @@ func buildParams(args []string, base map[string]interface{}) (map[string]interfa
 
 	if raw, ok := flags["params"]; ok {
 		if jsonErr := json.Unmarshal([]byte(raw), &params); jsonErr != nil {
-			return nil, fmt.Errorf("invalid JSON in --params: %w", jsonErr)
+			return nil, nil, fmt.Errorf("invalid JSON in --params: %w", jsonErr)
 		}
 	}
 	for k, v := range flags {
@@ -477,26 +485,7 @@ func buildParams(args []string, base map[string]interface{}) (map[string]interfa
 		params["args"] = positional
 	}
 
-	return params, nil
-}
-
-// hasPositionalArg reports whether args carries a positional argument (the exec
-// code), mirroring buildParams' flag-value consumption: a token following a
-// --flag that is not itself --prefixed is that flag's value, not positional.
-// A naive "first non---- token" scan would treat the value of a value-taking
-// flag (e.g. the "2" in `exec --depth 2 --file x.cs`) as the code, silently
-// skip --file/stdin, and surface a misleading MISSING_PARAM: 'code' required.
-func hasPositionalArg(args []string) bool {
-	for i := 0; i < len(args); i++ {
-		if strings.HasPrefix(args[i], "--") {
-			if i+1 < len(args) && !strings.HasPrefix(args[i+1], "--") {
-				i++ // consume the flag's value
-			}
-			continue
-		}
-		return true
-	}
-	return false
+	return params, positional, nil
 }
 
 // readExecFileIfPresent strips --file <path> and prepends file contents as the
@@ -521,7 +510,8 @@ func readExecFileIfPresent(args []string) ([]string, error) {
 	if filePath == "" {
 		return out, nil
 	}
-	if hasPositionalArg(out) {
+	_, positional, _ := buildParams(out, nil)
+	if len(positional) > 0 {
 		return out, nil
 	}
 	data, err := os.ReadFile(filePath)
@@ -546,7 +536,8 @@ func readExecFileIfPresent(args []string) ([]string, error) {
 func readStdinIfPiped(args []string) []string {
 	// Positional arg (the code) wins over stdin per documented precedence,
 	// so there is no reason to even probe stdin if one is already present.
-	if hasPositionalArg(args) {
+	_, positional, _ := buildParams(args, nil)
+	if len(positional) > 0 {
 		return args
 	}
 

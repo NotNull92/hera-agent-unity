@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
 )
 
 const checkInterval = 12 * time.Hour
@@ -19,11 +21,7 @@ type versionCache struct {
 }
 
 func cacheFilePath() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(home, ".hera-agent-unity", "version-check.json")
+	return paths.VersionCheckPath()
 }
 
 func loadCache(path string) (*versionCache, error) {
