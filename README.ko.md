@@ -200,7 +200,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `manage_components`  | GameObject 의 component CRUD: `add` / `remove` / `list` / `get` / `set`. property 경로는 raw `SerializedProperty` 경로. |
 | `find_gameobjects`   | 씬 GameObject 필터 (이름 / 태그 / 레이어 / 컴포넌트 / 경로 glob) + 페이지네이션. |
 | `manage_prefab`      | 프리팹 에셋: `create`(GameObject → 프리팹) / `instantiate` / headless `add_component` / `remove_component`. |
-| `manage_ui`          | uGUI 저작: `create`(UI 요소 + Canvas/EventSystem 자동 구성) / `get_rect` / `set_anchor`(명명 프리셋 그리드) / `set_rect`. raw `m_` 경로 없이 RectTransform anchor/pivot 수학 처리. |
+| `manage_ui`          | uGUI 저작: `create`(UI 요소 + Canvas/EventSystem 자동 구성) / `get_rect` / `set_anchor`(명명 프리셋 그리드) / `set_rect`. raw `m_` 경로 없이 RectTransform anchor/pivot 수학 처리. **UI Juicy Mode** 켜면 `create` 가 DOTween-aware Game UI/UX Bible juice 레시피를 `agent_hint` 로 반환. |
 
 ### 에셋 · 머티리얼 · 셰이더
 
@@ -250,7 +250,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `status`       | 연결 상태 및 프로젝트 정보. |
 | `ping`         | 토큰 절약형 라이브니스 프로브 (heartbeat 파일만 읽음 — HTTP 없음). |
 | `doctor`       | 셀프 진단: PATH / 설치 / 셸 / Unity 도달성 (`--json` / `--agent-rules` 옵션). |
-| `asset-config` | 옵션 에셋 통합 토글 (TUI / `list` / `enable` / `disable` / `detect`). |
+| `asset-config` | 옵션 에셋 통합 + **UI Juicy Mode** 토글 (TUI / `list` / `enable` / `disable` / `juicy on\|off` / `detect`). |
 | `update`       | GitHub Releases에서 셀프 업데이트. |
 | `install` / `uninstall` | PATH에 바이너리 등록 / 제거. |
 
@@ -272,6 +272,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | 자산 편집 묶음. `describe_shader`(셰이더 프로퍼티 조회/검색) → `manage_material`(머티리얼 CRUD, `SerializedPropertyValue` 재사용) / `manage_prefab`(headless `LoadPrefabContents` 편집) / `manage_asset_import`(`AssetImporter` import 설정, manage_components 패턴). |
 | `manage_ui` | **v0.0.15** | uGUI 저작. `create` 가 UI 요소(canvas / panel / image / button / text / empty)를 Canvas + EventSystem 자동 구성과 함께 생성; `set_anchor` 는 Unity 명명 앵커 프리셋 그리드를 노출하고 rect 를 시각적으로 고정 유지(또는 `--snap` 으로 Alt+Shift 채움); `get_rect` / `set_rect` 로 RectTransform 편집 완성. UI/TMP 타입은 `TypeCache` 로 해석 → com.unity.ugui 없는 프로젝트에서도 커넥터 컴파일. 요소 프로퍼티 편집은 `manage_components` 담당. |
 | `TargetResolver` + 테스트 + 벤치마크 | **v0.0.16** | `TargetResolver`가 `manage_components` / `manage_gameobject` / `manage_ui`의 공통 GameObject/Component 리졸루션을 추출. Go 테스트 커버리지 확대(`doctor`, `install`, `poll`, `assetconfig`). C# `HierarchyPath` 에디터 테스트. 스모크 테스트 벤치마크: 7회 호출 = 725B (~181T), 평균 26T/호출 — 리팩토링으로 토큰 비용 증가 없음 확인. |
+| UI Juicy Mode | **v0.0.19** | 옵트인 토글(Hera Settings 체크박스 / `asset-config juicy on`). 켜면 `manage_ui create` 가 만든 요소에 대한 Game UI/UX Bible juice 레시피(hover/press/release 이징, squash & stretch, 팝업 overshoot, count-up·데미지 숫자 타이밍, 햅틱)를 `agent_hint` 로 첨부. DOTween-aware: Hera Settings 에서 DOTween 이 enabled 면 `DOScale` 트윈을, 아니면 coroutine/lerp fallback 을 권고. 가이드 전용(런타임 컴포넌트 없음, 커넥터 Editor 전용 유지) — 에이전트가 `manage_components` / `exec` 로 적용. |
 
 ### `unity_docs` — 설계 + 벤치마크 (v0.0.12)
 

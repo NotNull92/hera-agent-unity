@@ -200,7 +200,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 | `manage_components`  | Component CRUD on a GameObject: `add` / `remove` / `list` / `get` / `set`. Property paths are raw `SerializedProperty` paths. |
 | `find_gameobjects`   | Filter scene GameObjects (name / tag / layer / component / path glob) with pagination. |
 | `manage_prefab`      | Prefab asset ops: `create` (GameObject → prefab) / `instantiate` / headless `add_component` / `remove_component`. |
-| `manage_ui`          | uGUI authoring: `create` (UI element + auto Canvas/EventSystem) / `get_rect` / `set_anchor` (named preset grid) / `set_rect`. RectTransform anchor/pivot math without raw `m_` paths. |
+| `manage_ui`          | uGUI authoring: `create` (UI element + auto Canvas/EventSystem) / `get_rect` / `set_anchor` (named preset grid) / `set_rect`. RectTransform anchor/pivot math without raw `m_` paths. With **UI Juicy Mode** on, `create` returns DOTween-aware Game UI/UX Bible juice recipes as an `agent_hint`. |
 
 ### Assets, materials & shaders
 
@@ -250,7 +250,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 | `status`       | Connection & project info. |
 | `ping`         | Token-cheap liveness probe (heartbeat read only — no HTTP round-trip). |
 | `doctor`       | Self-diagnose: PATH, installs, shell, Unity reachability (`--json` / `--agent-rules` for agents). |
-| `asset-config` | Toggle optional asset integrations (TUI / `list` / `enable` / `disable` / `detect`). |
+| `asset-config` | Toggle optional asset integrations + **UI Juicy Mode** (TUI / `list` / `enable` / `disable` / `juicy on\|off` / `detect`). |
 | `update`       | Self-update from GitHub Releases. |
 | `install` / `uninstall` | Register or remove the CLI on PATH. |
 
@@ -272,6 +272,7 @@ The five-tool queue locked-in at 2026-05-28 is complete. Each entry filled a gap
 | `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | Asset-editing set. `describe_shader` (inspect/search shaders) pairs with `manage_material` (material CRUD, reuses `SerializedPropertyValue`); `manage_prefab` edits prefab assets headlessly via `LoadPrefabContents`; `manage_asset_import` drives import settings through `AssetImporter` (the `manage_components` pattern). |
 | `manage_ui` | **v0.0.15** | uGUI authoring. `create` spins up UI elements (canvas / panel / image / button / text / empty) with auto Canvas + EventSystem scaffolding; `set_anchor` exposes Unity's named anchor-preset grid and keeps the rect visually fixed (or `--snap` for Alt+Shift fill); `get_rect` / `set_rect` round out RectTransform editing. UI/TMP types resolve via `TypeCache`, so the connector still compiles in projects without com.unity.ugui. Element property edits stay in `manage_components`. |
 | `TargetResolver` + tests + benchmark | **v0.0.16** | `TargetResolver` extracts shared GameObject/Component resolution from `manage_components` / `manage_gameobject` / `manage_ui`. Go test coverage expanded (`doctor`, `install`, `poll`, `assetconfig`). C# `HierarchyPath` editor tests. Smoke test benchmark: 7 calls = 725B (~181T), avg 26T/call — no token cost increase from refactoring. |
+| UI Juicy Mode | **v0.0.19** | Opt-in toggle (Hera Settings checkbox / `asset-config juicy on`). When on, `manage_ui create` attaches an `agent_hint` carrying concrete Game UI/UX Bible juice recipes for the element built — hover/press/release easing, squash & stretch, popup overshoot, count-up / damage-number timing, haptics. DOTween-aware: prefers `DOScale` tweens when DOTween is enabled in Hera Settings, else a coroutine/lerp fallback. Guidance-only (no runtime components, connector stays Editor-only); the agent applies it via `manage_components` / `exec`. |
 
 ### `unity_docs` — design + benchmarks (v0.0.12)
 

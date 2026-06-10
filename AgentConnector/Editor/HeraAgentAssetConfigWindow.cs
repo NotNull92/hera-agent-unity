@@ -101,6 +101,7 @@ namespace HeraAgent.Editor
         private VisualElement _emptyStateContainer;
         private Label _cscPathLabel;
         private Label _dotnetPathLabel;
+        private Label _juicyDotweenLabel;
 
         // ═══════════════════════════════════════════════════════════
         //  ENTRY POINTS
@@ -153,6 +154,7 @@ namespace HeraAgent.Editor
             InitializeCategoryStates();
 
             BuildToolbar();
+            BuildJuicyModeSection();
             BuildCompilerPathSection();
             BuildCategoryPills();
             RefreshCategoryPills();

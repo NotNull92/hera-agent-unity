@@ -53,6 +53,8 @@ func assetConfigCmd(args []string) error {
 			return fmt.Errorf("usage: asset-config toggle <id>")
 		}
 		return assetConfigToggleAction(subArgs[0])
+	case "juicy":
+		return assetConfigJuicy(subArgs)
 	case "detect":
 		return assetConfigDetect()
 	case "get":
@@ -88,9 +90,15 @@ func assetConfigList() error {
 		categorized[a.Category] = append(categorized[a.Category], a)
 	}
 
+	juicy := "off"
+	if cfg.JuicyMode {
+		juicy = "on"
+	}
+
 	if tui.ColorEnabled() {
 		fmt.Println(tui.TitleStyle.Render(fmt.Sprintf("Asset Config v%s", cfg.Version)))
 		fmt.Println(tui.PathStyle.Render(assetconfig.ConfigFilePath()))
+		fmt.Printf("%s %s\n", tui.LabelStyle.Render("UI Juicy Mode:"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.JuicyMode]))
 		fmt.Println()
 		for _, cat := range assetconfig.CategoryOrder {
 			items, ok := categorized[cat]
@@ -119,7 +127,8 @@ func assetConfigList() error {
 	}
 
 	// Plain output — kept stable for script/AI parsing.
-	fmt.Printf("Asset Config v%s — %s\n\n", cfg.Version, assetconfig.ConfigFilePath())
+	fmt.Printf("Asset Config v%s — %s\n", cfg.Version, assetconfig.ConfigFilePath())
+	fmt.Printf("UI Juicy Mode: %s\n\n", juicy)
 	for _, cat := range assetconfig.CategoryOrder {
 		items, ok := categorized[cat]
 		if !ok {
@@ -193,6 +202,50 @@ func printToggleResult(id, state string) {
 	fmt.Printf("✓ %s %s\n", id, state)
 }
 
+func assetConfigJuicy(args []string) error {
+	// No arg → report current state.
+	if len(args) == 0 {
+		cfg, err := assetconfig.Load()
+		if err != nil {
+			return err
+		}
+		state := "off"
+		if cfg.JuicyMode {
+			state = "on"
+		}
+		fmt.Printf("ui_juicy_mode: %s\n", state)
+		return nil
+	}
+
+	var enabled bool
+	switch strings.ToLower(args[0]) {
+	case "on", "enable", "true":
+		enabled = true
+	case "off", "disable", "false":
+		enabled = false
+	default:
+		return fmt.Errorf("usage: asset-config juicy [on|off]")
+	}
+
+	if _, err := assetconfig.SetJuicyMode(enabled); err != nil {
+		return err
+	}
+
+	state := "off"
+	if enabled {
+		state = "on"
+	}
+	if tui.ColorEnabled() {
+		fmt.Printf("%s %s %s\n",
+			tui.CheckStyle.Render("✓"),
+			tui.PathStyle.Render("ui_juicy_mode"),
+			tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[enabled]))
+		return nil
+	}
+	fmt.Printf("✓ ui_juicy_mode %s\n", state)
+	return nil
+}
+
 func assetConfigDetect() error {
 	// This command shows instructions for asset detection.
 	// The actual detection requires Unity running with the Connector package.
@@ -236,6 +289,7 @@ Subcommands:
   enable <id>                   Enable an asset
   disable <id>                  Disable an asset
   toggle <id>                   Toggle an asset (flip ON/OFF)
+  juicy [on|off]                Show or set UI Juicy Mode (manage_ui juice guidance)
   detect                        Auto-detect installed assets (requires Unity)
   get <id>                      Show a single asset's state
   path                          Print the config file path
@@ -252,6 +306,7 @@ Examples:
   hera-agent-unity asset-config enable dotween
   hera-agent-unity asset-config list
   hera-agent-unity asset-config toggle odin_inspector
+  hera-agent-unity asset-config juicy on
 
 TUI Controls:
   ↑/k          Move up
@@ -264,7 +319,7 @@ TUI Controls:
 // jsonOutputForAI returns the enabled assets as JSON for AI agent consumption.
 // This is used when the AI needs to know which assets to prioritize.
 func jsonOutputForAI() ([]byte, error) {
-	enabled, err := assetconfig.GetEnabledAssets()
+	cfg, err := assetconfig.Load()
 	if err != nil {
 		return nil, err
 	}
@@ -276,17 +331,26 @@ func jsonOutputForAI() ([]byte, error) {
 	}
 
 	var assets []aiAsset
-	for _, a := range enabled {
+	dotweenPreferred := false
+	for _, a := range cfg.Assets {
+		if !a.Enabled {
+			continue
+		}
 		assets = append(assets, aiAsset{
 			ID:       a.ID,
 			Name:     a.Name,
 			Category: a.Category,
 		})
+		if a.ID == "dotween" || a.ID == "dotween_pro" {
+			dotweenPreferred = true
+		}
 	}
 
 	return json.MarshalIndent(map[string]interface{}{
-		"enabled_assets": assets,
-		"total":          len(assets),
+		"enabled_assets":    assets,
+		"total":             len(assets),
+		"ui_juicy_mode":     cfg.JuicyMode,
+		"dotween_preferred": dotweenPreferred,
 	}, "", "  ")
 }
 

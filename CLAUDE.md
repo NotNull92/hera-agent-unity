@@ -77,7 +77,11 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # PackageJobState ([InitializeOnLoad] job watcher),
                       # UnityDocsStore (gzipped JSONL → dict + 3-layer
                       # prefix/length/bounded Levenshtein suggest),
-                      # Levenshtein (shared edit-distance helper)
+                      # Levenshtein (shared edit-distance helper),
+                      # HeraSettings (reads shared asset-config.json at dispatch
+                      # time — JuicyMode + DotweenPreferred, mtime-cached),
+                      # UIJuiceGuide (Game UI/UX Bible juice recipes per UI
+                      # element, DOTween-aware — manage_ui agent_hint source)
     Tools/            # Tool implementations (auto-registered via [HeraTool]).
                       # 24 [HeraTool] classes. Name= explicit unless noted
                       # (no Name= → filename snake_case). ExecCompileCache.cs is
@@ -198,6 +202,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | `doWithReloadRetry` 60s fallback vs ctx 타임아웃 | 📝 알려진 이슈, 미수정 (v0.0.13) | `reloadRetryFallbackDeadline`(60s)가 호출자 ctx(=`flagTimeout`)와 무관하게 적용. **기본 설정에선 무해** — `flagTimeout` 기본 60s 라 두 deadline 이 일치. `--timeout`/`HERA_AGENT_TIMEOUT_MS` 를 60s 초과로 올린 + 도메인 리로드가 60s 초과인 대형 프로젝트에서만, 리로드 창 명령이 ctx 만료 전 60s 에 `"after 60s (still reloading?)"` 로 실패(올린 타임아웃이 리로드 인내를 60s 너머로 못 늘림). 실 사용 설정에서 발생 안 해 **의도적으로 미수정** — 다시 새 버그로 제기 말 것. 정 고치려면 deadline 을 ctx deadline 파생(없을 때만 60s)으로 |
 | `manage_components` SerializedProperty 패턴 | 🔒 의도된 설계 (v0.0.8) | `Core/SerializedPropertyValue` 가 *모든 후속 manage_\* (material/animation/vfx/SO/prefab)* 의 property-set 토대. raw `m_X` 경로 그대로, friendly-name mapping *미적용* — Unity 가 실제 직렬화하는 이름과 1:1 유지. 다시 friendly mapping 제안 금지 |
 | `manage_packages` 비동기 패턴 | 🔒 의도된 설계 (v0.0.6) | `add/remove/embed` 는 `job_id` 발급 후 파일버스. `list` 만 동기 (CommandRouter 락 안에서 60s budget). 도메인 리로드 후 `[InitializeOnLoad]` 가 `Client.List` 로 결과 검증. 다시 *전부 동기* 또는 *전부 비동기* 통일 제안 금지 |
+| UI Juicy Mode | ✅ 완료 (Connector v0.0.19) | Hera Settings 체크박스(`asset-config.json` 의 `ui_juicy_mode`) ON → `manage_ui create` 응답에 `agent_hint` 로 Game UI/UX Bible juice 레시피(element별) 주입. **가이드 주입 방식 🔒**(런타임 컴포넌트 자동부착 아님 — connector Editor 전용 유지, manage_ui scope 경계 유지). DOTween 우선은 기존 `dotween`/`dotween_pro` `enabled` 플래그 참조(`Core/HeraSettings.DotweenPreferred`) → DOScale vs lerp 분기. juice 지식은 `Core/UIJuiceGuide` 순수 문자열(Data 에셋 아님). connector 가 dispatch 시 `asset-config.json` 을 mtime-cache 로 읽음(`Core/HeraSettings`). CLI 는 `asset-config juicy [on\|off]` + `--json` 의 `ui_juicy_mode`/`dotween_preferred` 로 표면화. Go struct 에 `DefaultCscPath`/`DefaultDotnetPath` round-trip 필드 추가(CLI Save 가 Editor 컴파일러 경로 안 지우도록). 다시 *자동부착(runtime asmdef)* 또는 *친절-매핑* 제안 금지 |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 

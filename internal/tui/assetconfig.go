@@ -55,6 +55,7 @@ var (
 )
 
 type model struct {
+	cfg      *assetconfig.AssetConfig // loaded config — preserved on save (JuicyMode, compiler paths)
 	assets   []assetconfig.AssetEntry
 	cursor   int
 	quitting bool
@@ -107,6 +108,7 @@ func NewAssetConfigModel() tea.Model {
 	vp.SetContent("")
 
 	return model{
+		cfg:      cfg,
 		assets:   cfg.Assets,
 		cursor:   0,
 		quitting: false,
@@ -161,13 +163,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.assets[m.cursor].Enabled = !m.assets[m.cursor].Enabled
 				m.changed = true
 			} else {
-				// "Quit" selected — save and quit
+				// "Quit" selected — save and quit. Preserve the loaded config's
+				// other fields (JuicyMode, compiler paths); only assets changed.
 				if m.changed {
-					cfg := &assetconfig.AssetConfig{
-						Version: "1.0.0",
-						Assets:  m.assets,
-					}
-					_ = assetconfig.Save(cfg)
+					m.cfg.Assets = m.assets
+					_ = assetconfig.Save(m.cfg)
 				}
 				m.quitting = true
 				return m, tea.Quit

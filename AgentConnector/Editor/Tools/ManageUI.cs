@@ -107,7 +107,7 @@ namespace HeraAgent.Tools
                 var (canvas, cErr) = CreateCanvas(p.Get("name"), created);
                 if (cErr != null) return new ErrorResponse(cErr);
                 Finalize(canvas, created);
-                return new SuccessResponse($"Created Canvas: {canvas.name}", BuildCreateShape(canvas, created));
+                return WithJuice("canvas", new SuccessResponse($"Created Canvas: {canvas.name}", BuildCreateShape(canvas, created)));
             }
 
             // Resolve parent: explicit --parent, else an existing/auto Canvas.
@@ -159,7 +159,18 @@ namespace HeraAgent.Tools
             go.transform.SetParent(parent, worldPositionStays: false);
 
             Finalize(go, created);
-            return new SuccessResponse($"Created {element}: {go.name}", BuildCreateShape(go, created));
+            return WithJuice(element, new SuccessResponse($"Created {element}: {go.name}", BuildCreateShape(go, created)));
+        }
+
+        // When UI Juicy Mode is on (Hera Settings), attach the element's juice
+        // recipe — concrete Game UI/UX Bible parameters, DOTween-aware — as an
+        // agent_hint so the calling agent can make the UI feel alive. No-op when
+        // the toggle is off (agent_hint stays null → omitted from the response).
+        private static SuccessResponse WithJuice(string element, SuccessResponse resp)
+        {
+            if (HeraSettings.JuicyMode)
+                resp.agent_hint = UIJuiceGuide.ForElement(element, HeraSettings.DotweenPreferred);
+            return resp;
         }
 
         private static (GameObject go, string err) CreateCanvas(string name, List<string> created)

@@ -24,6 +24,17 @@ type AssetEntry struct {
 type AssetConfig struct {
 	Version string       `json:"version"`
 	Assets  []AssetEntry `json:"assets"`
+
+	// JuicyMode mirrors ui_juicy_mode in the shared asset-config.json. When on,
+	// the connector's manage_ui attaches Game UI/UX Bible juice guidance to its
+	// create responses. The Hera Settings window is the primary editor.
+	JuicyMode bool `json:"ui_juicy_mode"`
+
+	// DefaultCscPath/DefaultDotnetPath are written by the Hera Settings window.
+	// The CLI doesn't edit them, but it must round-trip them so a CLI-side Save
+	// (e.g. toggling an asset or juicy mode) doesn't drop a user's compiler paths.
+	DefaultCscPath    string `json:"defaultCscPath,omitempty"`
+	DefaultDotnetPath string `json:"defaultDotnetPath,omitempty"`
 }
 
 var (
@@ -208,6 +219,19 @@ func SetAssetEnabled(id string, enabled bool) (*AssetConfig, error) {
 	}
 
 	return nil, fmt.Errorf("asset %q not found in config", id)
+}
+
+// SetJuicyMode sets the UI Juicy Mode flag and persists it.
+func SetJuicyMode(enabled bool) (*AssetConfig, error) {
+	cfg, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	cfg.JuicyMode = enabled
+	if err := Save(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 // GetEnabledAssets returns all enabled asset entries.

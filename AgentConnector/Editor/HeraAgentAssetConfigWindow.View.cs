@@ -410,6 +410,7 @@ namespace HeraAgent.Editor
                 asset.enabled = evt.newValue;
                 _isDirty = true;
                 card.style.borderLeftColor = asset.enabled ? ColorGold : new Color(0.18f, 0.18f, 0.18f);
+                UpdateJuicyDotweenLabel();
                 UpdateStatusBar();
             });
             topRow.Add(toggle);
@@ -812,6 +813,99 @@ namespace HeraAgent.Editor
             btn.style.paddingLeft = 10;
             btn.style.paddingRight = 10;
             btn.style.height = 26;
+        }
+
+        private void BuildJuicyModeSection()
+        {
+            var section = new VisualElement();
+            section.style.backgroundColor = ColorBgCard;
+            section.style.borderTopWidth = 1;
+            section.style.borderBottomWidth = 1;
+            section.style.borderTopColor = ColorBorder;
+            section.style.borderBottomColor = ColorBorder;
+            section.style.paddingTop = 10;
+            section.style.paddingBottom = 10;
+            section.style.paddingLeft = 12;
+            section.style.paddingRight = 12;
+            section.style.marginBottom = 6;
+            section.style.flexShrink = 0;
+            section.style.flexGrow = 0;
+
+            // Header row: icon + title + the toggle on the right.
+            var header = new VisualElement();
+            header.style.flexDirection = FlexDirection.Row;
+            header.style.alignItems = Align.Center;
+
+            var headerIcon = new Label("✦");
+            headerIcon.style.fontSize = 14;
+            headerIcon.style.marginRight = 4;
+            headerIcon.style.color = ColorGold;
+            header.Add(headerIcon);
+
+            var headerLbl = new Label("UI Juicy Mode");
+            headerLbl.style.fontSize = 13;
+            headerLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
+            headerLbl.style.color = ColorGold;
+            headerLbl.style.flexGrow = 1;
+            header.Add(headerLbl);
+
+            var toggle = new Toggle { value = _config?.ui_juicy_mode ?? false };
+            toggle.tooltip = "When on, manage_ui create attaches Game UI/UX Bible juice guidance to its responses.";
+            header.Add(toggle);
+
+            section.Add(header);
+
+            // Description.
+            var desc = new Label(
+                "When on, building UI with hera-agent-unity (manage_ui) returns concrete "
+                + "juice recipes — easing, squash, overshoot, screen-shake, haptics — so the "
+                + "agent makes UI feel alive instead of static.");
+            desc.style.fontSize = 10;
+            desc.style.color = ColorTextSecondary;
+            desc.style.whiteSpace = WhiteSpace.Normal;
+            desc.style.marginTop = 6;
+            section.Add(desc);
+
+            // DOTween preference status — driven by the asset toggles above.
+            _juicyDotweenLabel = new Label();
+            _juicyDotweenLabel.style.fontSize = 10;
+            _juicyDotweenLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _juicyDotweenLabel.style.marginTop = 6;
+            section.Add(_juicyDotweenLabel);
+
+            toggle.RegisterValueChangedCallback(evt =>
+            {
+                if (_config == null) return;
+                _config.ui_juicy_mode = evt.newValue;
+                _isDirty = true;
+                SaveConfig();
+                UpdateJuicyDotweenLabel();
+                UpdateStatusBar();
+            });
+
+            _root.Add(section);
+            UpdateJuicyDotweenLabel();
+        }
+
+        // Reflects whether DOTween is enabled in the asset list — the same signal
+        // HeraSettings/manage_ui use to pick DOScale tweens over a lerp fallback.
+        private void UpdateJuicyDotweenLabel()
+        {
+            if (_juicyDotweenLabel == null || _config == null) return;
+
+            bool dotween = _config.assets.Exists(a =>
+                (a.id == "dotween" || a.id == "dotween_pro") && a.enabled);
+
+            if (dotween)
+            {
+                _juicyDotweenLabel.text = "● DOTween preferred — juice guidance will use DOScale tweens.";
+                _juicyDotweenLabel.style.color = ColorSuccessText;
+            }
+            else
+            {
+                _juicyDotweenLabel.text = "○ DOTween not enabled — guidance falls back to a coroutine/lerp.";
+                _juicyDotweenLabel.style.color = ColorMuted;
+            }
         }
 
         private void BuildCompilerPathSection()

@@ -737,6 +737,8 @@ hera-agent-unity manage_ui set_anchor --path /Canvas/Bg --preset stretch --snap 
 hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-40 --size_delta 300,60
 ```
 
+**UI Juicy Mode** — when enabled (Hera Settings window, or `asset-config juicy on`), each `create` response carries an `agent_hint` with concrete Game UI/UX Bible juice recipes for the element just made (hover/press/release easing, squash & stretch, popup overshoot, damage-number/count-up timing, haptics). The recipe is DOTween-aware: with DOTween enabled in Hera Settings it suggests `DOScale`-based tweens, otherwise a coroutine/lerp fallback. The hint is advisory — element property edits still go through `manage_components`. When the mode is off, no hint is added.
+
 ---
 
 ## reserialize
@@ -899,11 +901,15 @@ hera-agent-unity asset-config <subcommand>
 | `list` | List all assets with status |
 | `enable <id>` | Enable an asset |
 | `disable <id>` | Disable an asset |
+| `toggle <id>` | Flip an asset ON/OFF |
+| `juicy [on\|off]` | Show or set UI Juicy Mode (drives `manage_ui` juice guidance) |
 | `detect` | Auto-detect installed assets (requires Unity) |
+| `get <id>` | Show a single asset's state |
+| `path` | Print the config file path |
 
 | Flag | Description | Default |
 |:---|:---|:---|
-| `--json` | Output enabled assets as JSON | `false` |
+| `--json` | Output enabled assets + `ui_juicy_mode` + `dotween_preferred` as JSON | `false` |
 
 ---
 

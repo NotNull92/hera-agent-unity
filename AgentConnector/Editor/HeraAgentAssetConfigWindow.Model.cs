@@ -32,6 +32,11 @@ namespace HeraAgent.Editor
             public List<AssetEntry> assets = new List<AssetEntry>();
             public string defaultCscPath;
             public string defaultDotnetPath;
+
+            // UI Juicy Mode — when on, manage_ui attaches Game UI/UX Bible juice
+            // guidance (DOTween-aware) to its create responses. Read at dispatch
+            // time by HeraSettings; surfaced to the CLI via asset-config.json.
+            public bool ui_juicy_mode;
         }
 
         private static string GetConfigPath()
