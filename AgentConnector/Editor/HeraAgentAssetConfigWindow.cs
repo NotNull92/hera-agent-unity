@@ -107,7 +107,7 @@ namespace HeraAgent.Editor
         //  ENTRY POINTS
         // ═══════════════════════════════════════════════════════════
 
-        [MenuItem("Tools/Hera Agent Unity/Hera Settings")]
+        [MenuItem("HeraAgent/Hera Settings")]
         public static void ShowWindow()
         {
             var wnd = GetWindow<HeraAgentAssetConfigWindow>(
@@ -119,7 +119,7 @@ namespace HeraAgent.Editor
             wnd.position = new Rect(wnd.position.x, wnd.position.y, 800, 720);
         }
 
-        [MenuItem("Tools/Hera Agent Unity/Hera Settings", true)]
+        [MenuItem("HeraAgent/Hera Settings", true)]
         private static bool ValidateShowWindow()
         {
             return IsHeraAgentInstalled();
