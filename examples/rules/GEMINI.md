@@ -51,4 +51,4 @@ Report one line: `Connected: <project> · port=<N> · unity=<version> · state=<
 
 ## On-demand skill
 
-A reusable skill is available at [`.agent/skills/hera-agent-unity/SKILL.md`](.agent/skills/hera-agent-unity/SKILL.md). Invoke it with `@hera-agent-unity` or "Use the hera-agent-unity skill" for the full command playbook.
+A reusable skill is available at [`.agents/skills/hera-agent-unity/SKILL.md`](.agents/skills/hera-agent-unity/SKILL.md). Invoke it with `@hera-agent-unity` or "Use the hera-agent-unity skill" for the full command playbook. (`.agents/skills/` is AntiGravity's current default; older builds read the legacy `.agent/skills/` path.)

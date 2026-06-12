@@ -67,7 +67,9 @@ func doctorCmd(args []string) error {
 // Cursor parses the file but never activates the rule.
 //
 // format=="antigravity" (alias "skill") emits SKILL.md-style frontmatter
-// (name + description) for AntiGravity's `.agent/skills/` on-demand skills.
+// (name + description) for AntiGravity's `.agents/skills/` on-demand skills
+// (the current default path; `.agent/skills/` is the legacy backward-compat
+// location).
 // format=="gemini" is AntiGravity's root GEMINI.md, which is plain markdown
 // (handled by the default branch, same as Claude Code / Codex / Copilot).
 //
