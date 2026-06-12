@@ -213,9 +213,11 @@ hera-agent-unity는 JSON을 뱉는 평범한 CLI일 뿐입니다. 셸 명령을 
 |------------------------|-----------------------------------------------|-----------------------------------------------------------|-------------------------------------------------------------|
 | **OpenAI Codex** + AGENTS.md 인식 도구 | `AGENTS.md` (프로젝트 루트)         | [`examples/rules/AGENTS.md`](examples/rules/AGENTS.md)    | 크로스 툴 표준. 여기서 시작.                                 |
 | **Claude Code CLI**    | `CLAUDE.md` (또는 `AGENTS.md`)                  | [`examples/rules/CLAUDE.md`](examples/rules/CLAUDE.md)    | `CLAUDE.md` 우선; `AGENTS.md` 인식도 확장 중.                |
+| **Kimi Code CLI**      | `AGENTS.md` (프로젝트 루트)                     | [`examples/rules/AGENTS.md`](examples/rules/AGENTS.md)    | `AGENTS.md` 네이티브 인식 (`/init`로 생성). Agent Skills도 지원. |
 | **Cursor**             | `.cursor/rules/hera-agent-unity.mdc`          | [`examples/rules/cursor.mdc`](examples/rules/cursor.mdc)  | 룰별 분리 파일 + YAML frontmatter 필수. `.cursorrules`는 **deprecated**. |
 | **GitHub Copilot**     | `.github/copilot-instructions.md`             | [`examples/rules/copilot-instructions.md`](examples/rules/copilot-instructions.md) | 옵션: `.github/instructions/*.instructions.md`에 `applyTo` frontmatter로 파일 패턴별 지침 가능. |
 | **Continue.dev**       | `.continuerules`                              | [`examples/rules/continuerules`](examples/rules/continuerules) | Plain markdown.                                             |
+| **Google Antigravity** | `GEMINI.md` (또는 `AGENTS.md`)                  | [`examples/rules/GEMINI.md`](examples/rules/GEMINI.md)    | `GEMINI.md`가 `AGENTS.md`보다 우선. 온디맨드 스킬 `.agents/skills/hera-agent-unity/SKILL.md`. |
 
 여러 툴을 같이 쓴다면, **`AGENTS.md` 하나를 원본**으로 두고 나머지 도구별 경로에는 한 줄짜리 stub(`> See AGENTS.md.`)만 남기는 게 제일 깔끔합니다. Cursor만 예외예요 — `.mdc`는 frontmatter가 있어야 룰이 켜지기 때문에 본문을 통째로 넣어둬야 합니다.
 

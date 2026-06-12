@@ -213,9 +213,11 @@ hera-agent-unity is a plain CLI returning JSON. Any coding agent that can run sh
 |------------------------|-------------------------------------------------|-----------------------------------------------------------|-------------------------------------------------------------|
 | **OpenAI Codex** + AGENTS.md-aware tools | `AGENTS.md` (project root)         | [`examples/rules/AGENTS.md`](examples/rules/AGENTS.md)    | Cross-tool standard. Lead with this.                        |
 | **Claude Code CLI**    | `CLAUDE.md` (or `AGENTS.md`)                    | [`examples/rules/CLAUDE.md`](examples/rules/CLAUDE.md)    | Reads `AGENTS.md` natively since late 2025. `CLAUDE.md` still works for path-scoped rules. |
+| **Kimi Code CLI**      | `AGENTS.md` (project root)                      | [`examples/rules/AGENTS.md`](examples/rules/AGENTS.md)    | Reads `AGENTS.md` natively (`/init` generates it). Also supports Agent Skills. |
 | **Cursor**             | `.cursor/rules/hera-agent-unity.mdc`            | [`examples/rules/cursor.mdc`](examples/rules/cursor.mdc)  | Per-rule files with YAML frontmatter. `.cursorrules` is **deprecated** and ignored by Agent mode. |
 | **GitHub Copilot**     | `.github/copilot-instructions.md`               | [`examples/rules/copilot-instructions.md`](examples/rules/copilot-instructions.md) | Optional: `.github/instructions/*.instructions.md` with `applyTo` frontmatter for file-pattern-specific guidance. |
 | **Continue.dev**       | `.continuerules`                                | [`examples/rules/continuerules`](examples/rules/continuerules) | Plain markdown.                                             |
+| **Google Antigravity** | `GEMINI.md` (or `AGENTS.md`)                    | [`examples/rules/GEMINI.md`](examples/rules/GEMINI.md)    | `GEMINI.md` wins over `AGENTS.md`. On-demand skill at `.agents/skills/hera-agent-unity/SKILL.md`. |
 
 For multi-tool projects, the cleanest pattern is **`AGENTS.md` as the single source** plus a one-liner stub in tool-specific paths (`> See AGENTS.md.`). Cursor is the one exception — its `.mdc` files want the full body inline because the frontmatter is what makes the rule active.
 
