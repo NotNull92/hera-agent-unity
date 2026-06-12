@@ -224,7 +224,7 @@ namespace HeraAgent.Tools
                     return new { x = v.x, y = v.y, z = v.z, w = v.w };
                 case ShaderUtil.ShaderPropertyType.TexEnv:
                     var tex = mat.GetTexture(property);
-                    return tex == null ? null : (object)new { instance_id = tex.GetInstanceID(), name = tex.name, type = tex.GetType().Name };
+                    return tex == null ? null : (object)new { instance_id = EntityIdCompat.IdOf(tex), name = tex.name, type = tex.GetType().Name };
                 case ShaderUtil.ShaderPropertyType.Int:
                     return mat.GetInteger(property);
                 default:

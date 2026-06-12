@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.20 — Unity 6000.5 compatibility)
+
+- **Unity 6000.5 (e.g. 6000.5.0b11) failed to compile the connector**, which
+  silently stripped every `[MenuItem]`/`[InitializeOnLoad]` — the **HeraAgent menu
+  disappeared** and no HttpServer booted. Root cause: 6000.5 promoted
+  `EditorUtility.InstanceIDToObject(int)` and `Object.GetInstanceID()` from a
+  deprecation *warning* (as in 6000.3) to an *obsolete-as-error* (CS0619), replacing
+  them with `EditorUtility.EntityIdToObject(EntityId)` / `Object.GetEntityId()`.
+- Added `Core/EntityIdCompat` — a version-gated (`UNITY_6000_5_OR_NEWER`) shim that
+  routes the 27 call sites across 8 files through the new API on 6000.5+ and the
+  legacy API on 6000.0–6000.4. The `int` id is read via `EntityId.GetHashCode()`
+  (bit-identical to the forbidden `EntityId → int` cast), preserving the existing
+  integer `instance_id` contract with no round-trip change. Verified clean compile
+  on both 6000.5.0b11 and 6000.3.5f2.
+
 ## [0.0.16] - 2026-06-09
 
 ### Fixed

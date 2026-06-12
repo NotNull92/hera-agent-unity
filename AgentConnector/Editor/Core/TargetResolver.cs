@@ -26,7 +26,7 @@ namespace HeraAgent
             {
                 int? id = p.GetInt("instance_id");
                 if (id == null) return (null, $"Invalid 'instance_id': '{idToken}'.");
-                var obj = EditorUtility.InstanceIDToObject(id.Value);
+                var obj = EntityIdCompat.ToObject(id.Value);
                 if (obj == null) return (null, $"No object for instance_id={id.Value}.");
                 GameObject go = obj as GameObject;
                 if (go == null && obj is Component c) go = c.gameObject;
@@ -76,7 +76,7 @@ namespace HeraAgent
             if (string.IsNullOrEmpty(s)) return (null, null);
             if (int.TryParse(s, out var id))
             {
-                var obj = EditorUtility.InstanceIDToObject(id);
+                var obj = EntityIdCompat.ToObject(id);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;
                 if (go == null) return (null, $"No GameObject for instance_id={id}.");
                 return (go.transform, null);

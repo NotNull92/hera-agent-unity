@@ -104,7 +104,7 @@ namespace HeraAgent.Tools
                 $"Added {type.Name} to {go.name}.",
                 new
                 {
-                    instance_id = go.GetInstanceID(),
+                    instance_id = EntityIdCompat.IdOf(go),
                     component = BuildComponentShape(comp, includeProperties: false),
                 });
         }
@@ -135,7 +135,7 @@ namespace HeraAgent.Tools
                 "Removed component.",
                 new
                 {
-                    instance_id = go.GetInstanceID(),
+                    instance_id = EntityIdCompat.IdOf(go),
                     removed = snapshot,
                 });
         }
@@ -157,7 +157,7 @@ namespace HeraAgent.Tools
                 $"{list.Count} components on {go.name}.",
                 new
                 {
-                    instance_id = go.GetInstanceID(),
+                    instance_id = EntityIdCompat.IdOf(go),
                     components = list,
                 });
         }
@@ -178,7 +178,7 @@ namespace HeraAgent.Tools
                     $"Read {compType.Name} on {go.name}.",
                     new
                     {
-                        instance_id = go.GetInstanceID(),
+                        instance_id = EntityIdCompat.IdOf(go),
                         component = BuildComponentShape(comp, so, includeProperties: true),
                     });
             }
@@ -194,8 +194,8 @@ namespace HeraAgent.Tools
                 $"Read {compType.Name}.{propertyPath}.",
                 new
                 {
-                    instance_id = go.GetInstanceID(),
-                    component_id = comp.GetInstanceID(),
+                    instance_id = EntityIdCompat.IdOf(go),
+                    component_id = EntityIdCompat.IdOf(comp),
                     type = compType.FullName,
                     property = propertyPath,
                     property_type = prop.propertyType.ToString(),
@@ -244,8 +244,8 @@ namespace HeraAgent.Tools
                 $"Set {compType.Name}.{propertyPath}.",
                 new
                 {
-                    instance_id = go.GetInstanceID(),
-                    component_id = comp.GetInstanceID(),
+                    instance_id = EntityIdCompat.IdOf(go),
+                    component_id = EntityIdCompat.IdOf(comp),
                     type = compType.FullName,
                     property = propertyPath,
                     property_type = prop.propertyType.ToString(),
@@ -262,7 +262,7 @@ namespace HeraAgent.Tools
             {
                 int? id = p.GetInt("component_id");
                 if (id == null) return (null, null, $"Invalid 'component_id': '{idToken}'.");
-                var obj = EditorUtility.InstanceIDToObject(id.Value);
+                var obj = EntityIdCompat.ToObject(id.Value);
                 if (obj == null) return (null, null, $"No object for component_id={id.Value}.");
                 var comp = obj as Component;
                 if (comp == null) return (null, null, $"instance_id={id.Value} is not a Component (type={obj.GetType().Name}).");
@@ -301,7 +301,7 @@ namespace HeraAgent.Tools
             {
                 return new
                 {
-                    component_id = comp.GetInstanceID(),
+                    component_id = EntityIdCompat.IdOf(comp),
                     type = compType.FullName,
                     type_short = compType.Name,
                     enabled = TryGetEnabled(comp),
@@ -328,7 +328,7 @@ namespace HeraAgent.Tools
             }
             return new
             {
-                component_id = comp.GetInstanceID(),
+                component_id = EntityIdCompat.IdOf(comp),
                 type = compType.FullName,
                 type_short = compType.Name,
                 enabled = TryGetEnabled(comp),

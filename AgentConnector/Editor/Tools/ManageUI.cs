@@ -585,7 +585,7 @@ namespace HeraAgent.Tools
         {
             return new
             {
-                instance_id = rt.gameObject.GetInstanceID(),
+                instance_id = EntityIdCompat.IdOf(rt.gameObject),
                 name = rt.name,
                 path = HierarchyPath.Build(rt),
                 rect = new
@@ -608,7 +608,7 @@ namespace HeraAgent.Tools
             var rt = go.GetComponent<RectTransform>();
             return new
             {
-                instance_id = go.GetInstanceID(),
+                instance_id = EntityIdCompat.IdOf(go),
                 name = go.name,
                 path = HierarchyPath.Build(go.transform),
                 scene = go.scene.name,

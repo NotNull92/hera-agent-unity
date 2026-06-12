@@ -75,7 +75,7 @@ namespace HeraAgent
                     if (obj == null) return null;
                     return new
                     {
-                        instance_id = obj.GetInstanceID(),
+                        instance_id = EntityIdCompat.IdOf(obj),
                         type = obj.GetType().Name,
                         name = obj.name,
                     };
@@ -203,7 +203,7 @@ namespace HeraAgent
 
             if (token.Type == JTokenType.Integer)
             {
-                var obj = EditorUtility.InstanceIDToObject(token.Value<int>());
+                var obj = EntityIdCompat.ToObject(token.Value<int>());
                 return obj == null ? (null, $"no object for instance_id={token.Value<int>()}") : (obj, null);
             }
 
@@ -213,7 +213,7 @@ namespace HeraAgent
                 if (string.IsNullOrEmpty(s)) return (null, null);
                 if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedId))
                 {
-                    var obj = EditorUtility.InstanceIDToObject(parsedId);
+                    var obj = EntityIdCompat.ToObject(parsedId);
                     return obj == null ? (null, $"no object for instance_id={parsedId}") : (obj, null);
                 }
                 var asset = AssetDatabase.LoadAssetAtPath<Object>(s);
@@ -225,7 +225,7 @@ namespace HeraAgent
                 if (jo["instance_id"] != null)
                 {
                     int id = jo["instance_id"].Value<int>();
-                    var obj = EditorUtility.InstanceIDToObject(id);
+                    var obj = EntityIdCompat.ToObject(id);
                     return obj == null ? (null, $"no object for instance_id={id}") : (obj, null);
                 }
                 if (jo["asset_path"] != null)

@@ -250,7 +250,7 @@ namespace HeraAgent.Tools
             if (token.Type == JTokenType.Integer)
             {
                 int id = token.Value<int>();
-                var obj = EditorUtility.InstanceIDToObject(id);
+                var obj = EntityIdCompat.ToObject(id);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;
                 if (go == null) return (null, $"No GameObject for parent instance_id={id}.");
                 return (go, null);
@@ -260,7 +260,7 @@ namespace HeraAgent.Tools
             if (string.IsNullOrEmpty(s)) return (null, null);
             if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedId))
             {
-                var obj = EditorUtility.InstanceIDToObject(parsedId);
+                var obj = EntityIdCompat.ToObject(parsedId);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;
                 if (go == null) return (null, $"No GameObject for parent instance_id={parsedId}.");
                 return (go, null);
@@ -372,7 +372,7 @@ namespace HeraAgent.Tools
             var t = go.transform;
             return new
             {
-                instance_id = go.GetInstanceID(),
+                instance_id = EntityIdCompat.IdOf(go),
                 name = go.name,
                 path = HierarchyPath.Build(t),
                 scene = go.scene.name,

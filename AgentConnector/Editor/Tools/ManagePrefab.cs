@@ -116,7 +116,7 @@ namespace HeraAgent.Tools
             EditorUtility.SetDirty(inst);
             return new SuccessResponse($"Instantiated {asset.name}", new
             {
-                instance_id = inst.GetInstanceID(),
+                instance_id = EntityIdCompat.IdOf(inst),
                 name = inst.name,
                 path = HierarchyPath.Build(inst.transform),
             });
@@ -190,7 +190,7 @@ namespace HeraAgent.Tools
             {
                 var id = p.GetInt("instance_id");
                 if (id == null) return (null, $"Invalid 'instance_id': '{idToken}'.");
-                var obj = EditorUtility.InstanceIDToObject(id.Value);
+                var obj = EntityIdCompat.ToObject(id.Value);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;
                 if (go == null) return (null, $"No GameObject for instance_id={id.Value}.");
                 return (go, null);
@@ -212,7 +212,7 @@ namespace HeraAgent.Tools
             if (string.IsNullOrEmpty(s)) return (null, null);
             if (int.TryParse(s, out var id))
             {
-                var obj = EditorUtility.InstanceIDToObject(id);
+                var obj = EntityIdCompat.ToObject(id);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;
                 return go == null ? (null, $"No GameObject for instance_id={id}.") : (go, null);
             }

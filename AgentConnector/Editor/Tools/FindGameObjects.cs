@@ -178,7 +178,7 @@ namespace HeraAgent.Tools
         {
             return new
             {
-                instance_id = go.GetInstanceID(),
+                instance_id = EntityIdCompat.IdOf(go),
                 name = go.name,
                 path = HierarchyPath.Build(go.transform),
                 scene = go.scene.name,
