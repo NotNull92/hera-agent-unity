@@ -64,16 +64,29 @@ func doctorCmd(args []string) error {
 //
 // format=="cursor" emits a valid `.mdc` rule file with YAML frontmatter so
 // Cursor's rule system actually loads and applies it. Without frontmatter
-// Cursor parses the file but never activates the rule. Any other format
-// value (or "markdown") emits plain markdown that Claude Code, Codex,
-// Copilot, and Continue.dev all accept verbatim.
+// Cursor parses the file but never activates the rule.
+//
+// format=="antigravity" (alias "skill") emits SKILL.md-style frontmatter
+// (name + description) for AntiGravity's `.agent/skills/` on-demand skills.
+// format=="gemini" is AntiGravity's root GEMINI.md, which is plain markdown
+// (handled by the default branch, same as Claude Code / Codex / Copilot).
+//
+// Any other format value (or "markdown") emits plain markdown that Claude
+// Code, Codex, Copilot, Continue.dev, and AntiGravity's GEMINI.md all accept
+// verbatim.
 func extractAgentRules(format string) string {
 	var out strings.Builder
-	if format == "cursor" {
+	switch format {
+	case "cursor":
 		out.WriteString("---\n")
 		out.WriteString("description: Use hera-agent-unity CLI for any Unity Editor task — measure, do not guess\n")
 		out.WriteString("globs: **/*.cs,**/*.unity,**/*.prefab,**/*.asmdef,**/*.mat,**/*.asset,**/Assets/**\n")
 		out.WriteString("alwaysApply: true\n")
+		out.WriteString("---\n\n")
+	case "antigravity", "skill":
+		out.WriteString("---\n")
+		out.WriteString("name: hera-agent-unity\n")
+		out.WriteString("description: Control the running Unity Editor via the hera-agent-unity CLI — execute C#, read the console, drive Play Mode, run tests, inspect live types\n")
 		out.WriteString("---\n\n")
 	}
 	out.WriteString("# hera-agent-unity — Bootstrap + Quick Rules + Pitfalls\n\n")

@@ -11,6 +11,9 @@ The agent ecosystem is converging on **`AGENTS.md` at the project root** as the 
 | `cursor.mdc`                       | `.cursor/rules/hera-agent-unity.mdc`     | Cursor               | `.cursorrules` is deprecated — use this.           |
 | `copilot-instructions.md`          | `.github/copilot-instructions.md`        | GitHub Copilot       | Repo-wide. Pair with `.github/instructions/*.instructions.md` for file-pattern rules. |
 | `continuerules`                    | `.continuerules`                         | Continue.dev         | Plain markdown.                                    |
+| `GEMINI.md`                        | `GEMINI.md` (project root)               | Google AntiGravity   | Reads `AGENTS.md` too, but `GEMINI.md` wins. Add the on-demand skill at `.agent/skills/hera-agent-unity/SKILL.md`. |
+
+**AntiGravity** (VS Code fork, Gemini-based, Agent-first) reads `GEMINI.md` at the project root with higher priority than `AGENTS.md`. Copy [`GEMINI.md`](GEMINI.md) there. It also supports on-demand skills — drop [`../../.agent/skills/hera-agent-unity/SKILL.md`](../../.agent/skills/hera-agent-unity/SKILL.md) into `.agent/skills/hera-agent-unity/SKILL.md` so the agent can invoke it with `@hera-agent-unity`.
 
 ## Why a template for each agent?
 
@@ -28,6 +31,10 @@ hera-agent-unity doctor --agent-rules >> CLAUDE.md
 
 # Cursor — adds frontmatter automatically
 hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+
+# AntiGravity — GEMINI.md is plain markdown; the on-demand skill needs SKILL.md frontmatter
+hera-agent-unity doctor --agent-rules >> GEMINI.md
+hera-agent-unity doctor --agent-rules --format antigravity > .agent/skills/hera-agent-unity/SKILL.md
 ```
 
 Either path works. The CLI output is a strict superset of the static templates (it pulls the full Quick Rules + Pitfalls sections from `AGENT.md`).
