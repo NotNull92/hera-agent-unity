@@ -175,6 +175,16 @@ https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 
 > 커넥터는 자동으로 시작합니다. 별도 설정 없음. Unity 6 (6000.0+)이 필요합니다.
 
+### 호환 Unity 버전
+
+| Unity 버전 | 상태 | 비고 |
+|---|---|---|
+| **6000.0 – 6000.4** | ✅ 지원 | Unity 6 (LTS + Tech stream) |
+| **6000.5+** (베타 포함, 예: `6000.5.0b11`) | ✅ 지원 | **Connector 0.0.20+** 필요. Unity 6000.5가 기존 `EditorUtility.InstanceIDToObject` / `Object.GetInstanceID` API를 컴파일 에러로 승격(새 `EntityId` API로 대체)했고, 커넥터가 `UNITY_6000_5_OR_NEWER` 게이트로 자동 대응합니다. |
+| **2022.x 이하** | ❌ 미지원 | 최소 Unity 6 (`6000.0`). |
+
+> **Unity 6000.5+에서 구버전 커넥터의 증상:** **HeraAgent** 메뉴가 안 보이고 `hera-agent-unity status`가 인스턴스 없음으로 나옵니다(어셈블리 컴파일 실패 → 메뉴·HTTP 서버 미등록). 해결: 커넥터를 **0.0.20+**로 갱신 — Package Manager에서 패키지 업데이트하거나, git 패키지를 재해석(`Packages/packages-lock.json`의 해당 엔트리 삭제 후 에디터 포커스)한 뒤 재컴파일하세요.
+
 ---
 
 ## 퀵 스타트

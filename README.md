@@ -175,6 +175,16 @@ Or add to `Packages/manifest.json`:
 
 > The connector starts automatically. No configuration. Requires Unity 6 (6000.0+).
 
+### Compatible Unity versions
+
+| Unity version | Status | Notes |
+|---|---|---|
+| **6000.0 – 6000.4** | ✅ Supported | Unity 6 (LTS + Tech stream) |
+| **6000.5+** (incl. betas, e.g. `6000.5.0b11`) | ✅ Supported | Needs **Connector 0.0.20+**. Unity 6000.5 promoted the legacy `EditorUtility.InstanceIDToObject` / `Object.GetInstanceID` APIs to hard compile errors (replaced by the new `EntityId` API); the connector adapts automatically behind a `UNITY_6000_5_OR_NEWER` gate. |
+| **2022.x and earlier** | ❌ Not supported | Minimum is Unity 6 (`6000.0`). |
+
+> **Symptom of a too-old connector on Unity 6000.5+:** the **HeraAgent** menu is missing and `hera-agent-unity status` reports no instance (the assembly failed to compile, so no menu items or HTTP server register). Fix: update the connector to **0.0.20+** — in Package Manager update the package, or re-resolve the git package (delete its entry from `Packages/packages-lock.json` and refocus the Editor) — then let Unity recompile.
+
 ---
 
 ## Quick Start
