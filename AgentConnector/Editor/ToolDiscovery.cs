@@ -102,7 +102,13 @@ namespace HeraAgent
                         var parms = method.GetParameters();
                         if (parms.Length != 1 || parms[0].ParameterType != typeof(JObject))
                             continue;
-                        var key = $"{name}:{method.Name.ToLowerInvariant()}";
+                        // Register under the snake_case of the method name so
+                        // multi-word actions resolve: the CLI sends snake_case
+                        // (get_rect, set_parent, …) to match tool/param naming,
+                        // but a bare ToLower() of "GetRect" is "getrect" — a miss
+                        // with no HandleCommand fallback (UNKNOWN_COMMAND). For
+                        // single-word methods snake_case == ToLower(), unchanged.
+                        var key = $"{name}:{StringCaseUtility.ToSnakeCase(method.Name)}";
                         actionHandlers[key] = method;
                     }
                 }

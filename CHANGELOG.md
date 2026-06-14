@@ -31,6 +31,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   always-create, `solid`/`rounded_rect`/`gradient`. Phase 2: upsert, `nine_slice`/`svg`,
   UI Toolkit.
 
+### Fixed (Connector 0.0.21 — multi-word action dispatch)
+
+- **Multi-word actions returned `UNKNOWN_COMMAND`** on action-method tools that
+  lack a `HandleCommand` fallback: `manage_ui get_rect` / `set_anchor` / `set_rect`
+  and `manage_gameobject set_parent` / `set_active` / `set_name` / `get_transform`.
+  `ToolDiscovery` registered action handlers under `method.Name.ToLowerInvariant()`
+  (`SetRect` → `setrect`), but the CLI sends snake_case (`set_rect`) to match the
+  tool/parameter naming convention, so the lookup missed. Now registered under
+  `StringCaseUtility.ToSnakeCase(method.Name)` (`SetRect` → `set_rect`). Single-word
+  actions are unchanged (snake_case == lower); only HandleCommand-free multi-word
+  actions are affected, and no tool exposes a non-action public-static `(JObject)`
+  method, so there is no misrouting.
+
 ### Fixed (Connector 0.0.20 — Unity 6000.5 compatibility)
 
 - **Unity 6000.5 (e.g. 6000.5.0b11) failed to compile the connector**, which
