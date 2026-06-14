@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.21 + CLI — `ui_doc`: HTML→Unity UI pipeline)
+
+- **New `ui_doc` tool (uGUI)** — closes the agent's weakest Unity area (UI) by
+  routing design through HTML, which LLMs are fluent in. Three deterministic
+  endpoints around a compact JSON IR (`ui_doc/1`):
+  - **`export`** serializes a live UI subtree to the IR (defaults omitted) so the
+    agent grounds an HTML design on the project's real structure instead of guessing.
+  - **`apply`** builds an IR document (always-create) under a parent and returns a
+    compact summary (`created` / `sprites` / `errors` / `root_id`). The doc is passed
+    via `--file` so it never rides inline in the agent's context.
+  - **`gen_sprite`** bakes a Tier-1 procedural sprite (`solid` / `rounded_rect` /
+    `gradient`) and imports it as a Sprite — **no external dependency** (hera's
+    zero-runtime-dep principle). Richer bitmap art is intentionally out of scope.
+- **UI Juicy Mode integration** — when on, `apply` adds the Game UI/UX Bible juice
+  recipes for each *distinct* element type in the doc as an `agent_hint` (deduped
+  once, not per element — strong signature, lean tokens). Guidance only; no runtime
+  components attached (the locked Juicy Mode boundary holds). Added
+  `UIJuiceGuide.ForElements`.
+- Reuses `SerializedPropertyValue`, `ComponentTypeResolver`, `TargetResolver`,
+  `HierarchyPath`, `ProceduralSprite`; UI/TMP types resolve via `TypeCache`, so the
+  connector still compiles without `com.unity.ugui`. MVP scope: uGUI only,
+  always-create, `solid`/`rounded_rect`/`gradient`. Phase 2: upsert, `nine_slice`/`svg`,
+  UI Toolkit.
+
 ### Fixed (Connector 0.0.20 — Unity 6000.5 compatibility)
 
 - **Unity 6000.5 (e.g. 6000.5.0b11) failed to compile the connector**, which

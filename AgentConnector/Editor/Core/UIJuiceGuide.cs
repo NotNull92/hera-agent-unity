@@ -63,18 +63,41 @@ namespace HeraAgent
             if (string.IsNullOrEmpty(element)) return null;
             if (!Recipes.TryGetValue(element.ToLowerInvariant(), out var recipe)) return null;
 
-            string tweenLine = dotweenPreferred
-                ? "Tweening: DOTween is enabled in Hera Settings — implement these with DOTween (project standard), e.g. " +
-                  "rt.DOScale(1.1f, 0.15f).SetEase(Ease.OutQuad); chain the release with .SetEase(Ease.OutBack); " +
-                  "use .SetUpdate(true) so UI keeps animating on unscaled time during a hit-pause."
-                : "Tweening: no DOTween enabled — drive these from a coroutine/Update lerp " +
-                  "(x += (target - x) * 0.1f per frame gives a natural EaseOut) or Unity animation. " +
-                  "Enable DOTween in Hera Settings to switch to DOScale-based tweens.";
-
-            return "[Hera] UI Juicy Mode is on — make this feel alive (Game UI/UX Bible). Maximum output for minimum input.\n" +
-                   recipe + "\n" +
-                   tweenLine + "\n" +
-                   "Always gate strong motion behind a reduce-motion / intensity option, and match feedback weight to action weight.";
+            return Header + recipe + "\n" + TweenLine(dotweenPreferred) + "\n" + Footer;
         }
+
+        /// <summary>
+        /// Composes one hint for several element types — dedupes by type and emits
+        /// a single header / tween line / footer so a bulk ui_doc apply stays
+        /// token-lean (the per-type recipes carry the strong signature, not
+        /// repeated boilerplate). Returns null when no type has a recipe.
+        /// </summary>
+        public static string ForElements(IEnumerable<string> elements, bool dotweenPreferred)
+        {
+            if (elements == null) return null;
+            var bodies = new List<string>();
+            var seen = new HashSet<string>();
+            foreach (var e in elements)
+            {
+                if (string.IsNullOrEmpty(e)) continue;
+                var key = e.ToLowerInvariant();
+                if (!seen.Add(key)) continue;
+                if (Recipes.TryGetValue(key, out var recipe))
+                    bodies.Add("--- " + key + " ---\n" + recipe);
+            }
+            if (bodies.Count == 0) return null;
+            return Header + string.Join("\n\n", bodies) + "\n" + TweenLine(dotweenPreferred) + "\n" + Footer;
+        }
+
+        const string Header = "[Hera] UI Juicy Mode is on — make this feel alive (Game UI/UX Bible). Maximum output for minimum input.\n";
+        const string Footer = "Always gate strong motion behind a reduce-motion / intensity option, and match feedback weight to action weight.";
+
+        static string TweenLine(bool dotweenPreferred) => dotweenPreferred
+            ? "Tweening: DOTween is enabled in Hera Settings — implement these with DOTween (project standard), e.g. " +
+              "rt.DOScale(1.1f, 0.15f).SetEase(Ease.OutQuad); chain the release with .SetEase(Ease.OutBack); " +
+              "use .SetUpdate(true) so UI keeps animating on unscaled time during a hit-pause."
+            : "Tweening: no DOTween enabled — drive these from a coroutine/Update lerp " +
+              "(x += (target - x) * 0.1f per frame gives a natural EaseOut) or Unity animation. " +
+              "Enable DOTween in Hera Settings to switch to DOScale-based tweens.";
     }
 }

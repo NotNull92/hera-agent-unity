@@ -174,6 +174,9 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system]` | Use `--filter` to keep the response small. |
 | Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
 | Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
+| Ground an HTML→UI design on the real UI | `ui_doc export --path </path>` | Returns the compact `ui_doc/1` IR (defaults omitted). Read it before authoring. |
+| Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...]` | Always-create. Pass the doc via `--file` so it never rides inline in context. |
+| Bake a procedural sprite | `ui_doc gen_sprite --spec '{...}' --out Assets/...` | Tier-1: `solid` / `rounded_rect` / `gradient`. No external dependency. |
 | Anything else (read prop, AssetDatabase, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
 
 **Compile-check only** (validate syntax/types without executing):
@@ -181,6 +184,20 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 hera-agent-unity exec "var x = SomeType.SomeMethod();" --check
 ```
 Useful when you're not sure a refactor compiles before issuing a destructive call.
+
+**ui_doc IR (`ui_doc/1`)** — the contract for HTML→UI. You're fluent in HTML/CSS but weak at uGUI; design in HTML, then `export` the live UI to ground yourself, and `apply` a node tree (defaults omitted). `anchor` uses `manage_ui`'s preset names (e.g. `top-center`, `stretch`) or raw `anchor_min`/`anchor_max`:
+
+```jsonc
+{ "schema": "ui_doc/1", "backend": "ugui",
+  "root": { "name": "Panel", "element": "panel",   // canvas|panel|image|button|text|empty
+    "rect": { "anchor": "stretch", "size": [400, 600] },
+    "image": { "color": "#1A1A2EFF", "sprite": { "gen": { "kind": "rounded_rect", "radius": 12 } } },
+    "children": [ { "name": "PlayBtn", "element": "button",
+      "rect": { "anchor": "top-center", "pos": [0, -40], "size": [240, 64] },
+      "text": { "value": "Play", "engine": "auto" } } ] } }
+```
+
+`image.sprite` = `{ "asset": "Assets/..." }` or `{ "gen": {<spec>} }` (baked on apply). With UI Juicy Mode on, `apply` returns per-element-type juice recipes as an `agent_hint`.
 
 ---
 

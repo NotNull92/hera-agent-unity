@@ -159,6 +159,8 @@ func runUnityCommand(ctx context.Context, category string, subArgs []string, sen
 		resp, err = managePackagesCmd(subArgs, send, resolve)
 	case "unity_docs":
 		resp, err = unityDocsCmd(subArgs, send)
+	case "ui_doc":
+		resp, err = uiDocCmd(subArgs, send)
 	case "exec":
 		subArgs, err = readExecFileIfPresent(subArgs)
 		if err != nil {
