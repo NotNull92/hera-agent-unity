@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
+using HeraAgent.Tools;
 
 namespace HeraAgent
 {
@@ -118,6 +119,9 @@ namespace HeraAgent
                     }, TaskContinuationOptions.OnlyOnFaulted);
 
                     Debug.Log($"[Hera] HTTP server started on port {port}");
+                    // Defer compiler pre-warm so editor startup is not blocked by a
+                    // potentially slow csc invocation.
+                    EditorApplication.delayCall += () => ExecuteCsharp.PreWarmCompiler();
                     return;
                 }
                 catch (HttpListenerException)

@@ -21,7 +21,7 @@ namespace HeraAgent.Tools
     [InitializeOnLoad]
     internal static class ExecCompileCache
     {
-        private const int MaxInMemoryAssemblies = 32;
+        private const int MaxInMemoryAssemblies = 128;
 
         private static readonly object Gate = new object();
         private static List<string> s_RefLocations;
@@ -105,7 +105,15 @@ namespace HeraAgent.Tools
                 if (s_RefLocations != null && s_RefRspPath != null && File.Exists(s_RefRspPath))
                     return;
 
-                var locations = new List<string>();
+                if (TryLoadRefsMeta(out var locations, out var hash, out var rspPath))
+                {
+                    s_RefLocations = locations;
+                    s_RefHash = hash;
+                    s_RefRspPath = rspPath;
+                    return;
+                }
+
+                locations = new List<string>();
                 var seenNames = new HashSet<string>();
                 foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
                 {
@@ -123,7 +131,7 @@ namespace HeraAgent.Tools
                 s_RefHash = HashStrings(locations);
 
                 Directory.CreateDirectory(CacheDir);
-                var rspPath = Path.Combine(CacheDir, $"refs-{s_RefHash}.rsp");
+                rspPath = Path.Combine(CacheDir, $"refs-{s_RefHash}.rsp");
                 if (!File.Exists(rspPath))
                 {
                     var sb = new StringBuilder(locations.Count * 128);
@@ -132,7 +140,57 @@ namespace HeraAgent.Tools
                     File.WriteAllText(rspPath, sb.ToString(), new UTF8Encoding(false));
                 }
                 s_RefRspPath = rspPath;
+                SaveRefsMeta(locations, s_RefHash, s_RefRspPath);
             }
+        }
+
+        private static bool TryLoadRefsMeta(out List<string> locations, out string hash, out string rspPath)
+        {
+            locations = null;
+            hash = null;
+            rspPath = null;
+            try
+            {
+                var metaPath = Path.Combine(CacheDir, "refs-meta.json");
+                if (!File.Exists(metaPath)) return false;
+
+                var json = File.ReadAllText(metaPath);
+                var root = Newtonsoft.Json.Linq.JObject.Parse(json);
+                var savedHash = root.Value<string>("hash");
+                var savedRsp = root.Value<string>("rspPath");
+                var savedCount = root.Value<int?>("assemblyCount") ?? -1;
+                var savedLocations = root["locations"] as Newtonsoft.Json.Linq.JArray;
+                if (string.IsNullOrEmpty(savedHash) || string.IsNullOrEmpty(savedRsp) || savedLocations == null)
+                    return false;
+                if (!File.Exists(savedRsp)) return false;
+                if (savedCount != savedLocations.Count) return false;
+
+                locations = savedLocations.Select(t => t.ToString()).ToList();
+                hash = savedHash;
+                rspPath = savedRsp;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void SaveRefsMeta(List<string> locations, string hash, string rspPath)
+        {
+            try
+            {
+                var metaPath = Path.Combine(CacheDir, "refs-meta.json");
+                var root = new Newtonsoft.Json.Linq.JObject
+                {
+                    ["hash"] = hash,
+                    ["rspPath"] = rspPath,
+                    ["assemblyCount"] = locations.Count,
+                    ["locations"] = new Newtonsoft.Json.Linq.JArray(locations)
+                };
+                File.WriteAllText(metaPath, root.ToString(Newtonsoft.Json.Formatting.None));
+            }
+            catch { }
         }
 
         public static string ResolveCsc(string overridePath)
@@ -141,7 +199,11 @@ namespace HeraAgent.Tools
             lock (Gate)
             {
                 if (s_CscPath != null && File.Exists(s_CscPath)) return s_CscPath;
-                s_CscPath = FindCsc();
+                var configPath = HeraSettings.DefaultCscPath;
+                if (!string.IsNullOrEmpty(configPath) && File.Exists(configPath))
+                    s_CscPath = configPath;
+                else
+                    s_CscPath = FindCsc();
                 return s_CscPath;
             }
         }
@@ -152,7 +214,11 @@ namespace HeraAgent.Tools
             lock (Gate)
             {
                 if (s_DotnetPath != null && File.Exists(s_DotnetPath)) return s_DotnetPath;
-                s_DotnetPath = FindDotnet();
+                var configPath = HeraSettings.DefaultDotnetPath;
+                if (!string.IsNullOrEmpty(configPath) && File.Exists(configPath))
+                    s_DotnetPath = configPath;
+                else
+                    s_DotnetPath = FindDotnet();
                 return s_DotnetPath;
             }
         }
@@ -229,6 +295,14 @@ namespace HeraAgent.Tools
         private static string FindCsc()
         {
             var content = EditorApplication.applicationContentsPath;
+            var candidates = new[]
+            {
+                Path.Combine(content, "DotNetSdkRoslyn", "csc.dll"),
+                Path.Combine(content, "MonoBleedingEdge", "lib", "mono", "4.5", "csc.exe"),
+            };
+            foreach (var c in candidates)
+                if (File.Exists(c)) return c;
+
             var cscDll = SearchFile(content, "csc.dll");
             if (cscDll != null) return cscDll;
             if (Application.platform == RuntimePlatform.WindowsEditor)
@@ -242,7 +316,16 @@ namespace HeraAgent.Tools
         private static string FindDotnet()
         {
             var name = "dotnet" + (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "");
-            var found = SearchFile(EditorApplication.applicationContentsPath, name);
+            var content = EditorApplication.applicationContentsPath;
+            var candidates = new[]
+            {
+                Path.Combine(content, "dotnet", name),
+                Path.Combine(content, name),
+            };
+            foreach (var c in candidates)
+                if (File.Exists(c)) return c;
+
+            var found = SearchFile(content, name);
             if (found != null) return found;
             if (Application.platform != RuntimePlatform.WindowsEditor)
             {

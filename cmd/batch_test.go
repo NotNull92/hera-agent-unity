@@ -18,7 +18,7 @@ func TestBatchCmd_Success(t *testing.T) {
 	mockInst := &client.Instance{Port: 8090}
 	mockResolve := func() (*client.Instance, error) { return mockInst, nil }
 
-	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error) {
+	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
 		return &client.BatchCommandResponse{
 			Results: []client.CommandResponse{
 				{Success: true, Message: "ok1"},
@@ -34,7 +34,7 @@ func TestBatchCmd_Success(t *testing.T) {
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	defer func() { batchStdin = oldStdin }()
 
-	err := batchCmd(context.Background(), []string{}, mockSend, mockResolve)
+	err := batchCmd(context.Background(), []string{}, mockSend, mockResolve, 60000)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -77,7 +77,7 @@ func TestBatchCmd_FailFast(t *testing.T) {
 	mockInst := &client.Instance{Port: 8090}
 	mockResolve := func() (*client.Instance, error) { return mockInst, nil }
 
-	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error) {
+	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
 		return &client.BatchCommandResponse{
 			Results: []client.CommandResponse{
 				{Success: true, Message: "ok1"},
@@ -93,7 +93,7 @@ func TestBatchCmd_FailFast(t *testing.T) {
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	defer func() { batchStdin = oldStdin }()
 
-	err := batchCmd(context.Background(), []string{}, mockSend, mockResolve)
+	err := batchCmd(context.Background(), []string{}, mockSend, mockResolve, 60000)
 	if err == nil {
 		t.Fatal("expected error for failed batch, got nil")
 	}
@@ -114,7 +114,7 @@ func TestBatchCmd_File(t *testing.T) {
 	mockResolve := func() (*client.Instance, error) { return mockInst, nil }
 
 	var capturedReq client.BatchCommandRequest
-	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error) {
+	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
 		capturedReq = req
 		return &client.BatchCommandResponse{
 			Results:   []client.CommandResponse{{Success: true, Message: "played"}},
@@ -123,7 +123,7 @@ func TestBatchCmd_File(t *testing.T) {
 		}, nil
 	}
 
-	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, mockResolve)
+	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, mockResolve, 60000)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -143,11 +143,11 @@ func TestBatchCmd_InvalidJSON(t *testing.T) {
 	}
 
 	mockResolve := func() (*client.Instance, error) { return &client.Instance{Port: 8090}, nil }
-	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error) {
+	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
 		return nil, errors.New("should not reach send")
 	}
 
-	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, mockResolve)
+	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, mockResolve, 60000)
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")
 	}
@@ -158,7 +158,7 @@ func TestBatchCmd_InvalidJSON(t *testing.T) {
 
 func TestBatchCmd_ResolveError(t *testing.T) {
 	mockResolve := func() (*client.Instance, error) { return nil, fmt.Errorf("no instance") }
-	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error) {
+	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
 		return nil, errors.New("should not reach send")
 	}
 
@@ -166,7 +166,7 @@ func TestBatchCmd_ResolveError(t *testing.T) {
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	defer func() { batchStdin = oldStdin }()
 
-	err := batchCmd(context.Background(), []string{}, mockSend, mockResolve)
+	err := batchCmd(context.Background(), []string{}, mockSend, mockResolve, 60000)
 	if err == nil {
 		t.Fatal("expected error for resolve failure")
 	}

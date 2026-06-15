@@ -17,6 +17,8 @@ namespace HeraAgent
         private static long s_stampTicks = long.MinValue;
         private static bool s_juicyMode;
         private static bool s_dotweenPreferred;
+        private static string s_defaultCscPath;
+        private static string s_defaultDotnetPath;
 
         /// <summary>UI Juicy Mode toggle. False when unset or unreadable.</summary>
         public static bool JuicyMode
@@ -31,6 +33,22 @@ namespace HeraAgent
         public static bool DotweenPreferred
         {
             get { Refresh(); return s_dotweenPreferred; }
+        }
+
+        /// <summary>
+        /// User-configured csc path from asset-config.json, or null when unset/unreadable.
+        /// </summary>
+        public static string DefaultCscPath
+        {
+            get { Refresh(); return s_defaultCscPath; }
+        }
+
+        /// <summary>
+        /// User-configured dotnet path from asset-config.json, or null when unset/unreadable.
+        /// </summary>
+        public static string DefaultDotnetPath
+        {
+            get { Refresh(); return s_defaultDotnetPath; }
         }
 
         private static string ConfigPath()
@@ -51,6 +69,8 @@ namespace HeraAgent
                         s_stampTicks = long.MinValue;
                         s_juicyMode = false;
                         s_dotweenPreferred = false;
+                        s_defaultCscPath = null;
+                        s_defaultDotnetPath = null;
                         return;
                     }
 
@@ -60,6 +80,8 @@ namespace HeraAgent
 
                     var root = JObject.Parse(File.ReadAllText(path));
                     s_juicyMode = root.Value<bool?>("ui_juicy_mode") ?? false;
+                    s_defaultCscPath = root.Value<string>("defaultCscPath");
+                    s_defaultDotnetPath = root.Value<string>("defaultDotnetPath");
 
                     bool dotween = false;
                     if (root["assets"] is JArray assets)
@@ -81,6 +103,8 @@ namespace HeraAgent
                     // A malformed or locked file should never break a tool call.
                     s_juicyMode = false;
                     s_dotweenPreferred = false;
+                    s_defaultCscPath = null;
+                    s_defaultDotnetPath = null;
                 }
             }
         }

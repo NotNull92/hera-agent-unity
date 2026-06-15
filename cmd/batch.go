@@ -20,7 +20,7 @@ type batchStdinReader interface {
 
 var batchStdin batchStdinReader = os.Stdin
 
-func batchCmd(ctx context.Context, args []string, sendBatch SendBatchFunc, resolve instanceResolver) error {
+func batchCmd(ctx context.Context, args []string, sendBatch SendBatchFunc, resolve instanceResolver, timeoutMs int) error {
 	params, _, err := buildParams(args, nil)
 	if err != nil {
 		return err
@@ -67,18 +67,30 @@ func batchCmd(ctx context.Context, args []string, sendBatch SendBatchFunc, resol
 
 	var resp *client.BatchCommandResponse
 	withProgress("batch", flagVerbose, func() {
-		resp, err = sendBatch(ctx, inst, req)
+		resp, err = sendBatch(ctx, inst, req, timeoutMs)
 	})
 	if err != nil {
 		return err
 	}
 
+	compact := flagCompactJSON || !isHumanCommand("batch")
+	quiet := flagQuiet
+
 	for i, result := range resp.Results {
+		if compact {
+			b, _ := json.Marshal(result)
+			fmt.Println(string(b))
+			continue
+		}
 		status := "OK"
 		if !result.Success {
 			status = "FAIL"
 		}
-		fmt.Printf("%s %s %s\n", tui.Progress(i+1, len(resp.Results)), tui.StatusBadge(status), result.Message)
+		if quiet {
+			fmt.Printf("[%d/%d] %s: %s\n", i+1, len(resp.Results), status, result.Message)
+		} else {
+			fmt.Printf("%s %s %s\n", tui.Progress(i+1, len(resp.Results)), tui.StatusBadge(status), result.Message)
+		}
 	}
 
 	if resp.Failed > 0 {

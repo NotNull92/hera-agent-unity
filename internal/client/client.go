@@ -123,6 +123,7 @@ type CommandResponse struct {
 const (
 	reloadRetryDelay            = 500 * time.Millisecond
 	reloadRetryFallbackDeadline = 60 * time.Second
+	maxResponseSize             = 50 * 1024 * 1024 // 50 MB
 )
 
 // doWithReloadRetry sends the POST request and transparently retries while
@@ -137,13 +138,13 @@ const (
 // gone or stopped (discovery finds no live instance), the caller's context is
 // cancelled, or the fallback deadline elapses — so a long reload no longer
 // exhausts a fixed retry budget while it's still in progress.
-func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Instance) (*http.Response, error) {
+func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Instance, path string) (*http.Response, error) {
 	port := inst.Port
 	project := inst.ProjectPath
 	deadline := time.Now().Add(reloadRetryFallbackDeadline)
 	var lastErr error
 	for {
-		url := fmt.Sprintf("http://127.0.0.1:%d/command", port)
+		url := fmt.Sprintf("http://127.0.0.1:%d%s", port, path)
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
 		if err != nil {
 			return nil, err
@@ -376,13 +377,16 @@ func (c *Client) debugPost(url string, body []byte) {
 func (c *Client) processHTTPResponse(resp *http.Response, label string, start time.Time) ([]byte, error) {
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize+1))
 	if c.Debug {
 		fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
 			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
 	}
 	if err != nil {
 		return nil, fmt.Errorf("read response for %s: %w", label, err)
+	}
+	if len(respBody) > maxResponseSize {
+		return nil, fmt.Errorf("response for %s exceeded maximum size of %d bytes", label, maxResponseSize)
 	}
 
 	if resp.StatusCode != http.StatusOK {
@@ -416,7 +420,7 @@ func (c *Client) Send(inst *Instance, command string, params interface{}, timeou
 
 	c.debugPost(url, body)
 	start := time.Now()
-	resp, err := c.doWithReloadRetry(ctx, body, inst)
+	resp, err := c.doWithReloadRetry(ctx, body, inst, "/command")
 	if err != nil {
 		return nil, err
 	}
@@ -453,10 +457,13 @@ func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*C
 }
 
 // SendBatch sends multiple commands to Unity in a single HTTP request.
-// Timeout is derived from the command count (30s base + 15s per command, 5min cap).
-func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*BatchCommandResponse, error) {
+// If timeoutMs > 0 it is used; otherwise the timeout is derived from the
+// command count (30s base + 15s per command, 5min cap).
+func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest, timeoutMs int) (*BatchCommandResponse, error) {
 	batchTimeout := 30 * time.Second
-	if n := len(req.Commands); n > 0 {
+	if timeoutMs > 0 {
+		batchTimeout = time.Duration(timeoutMs) * time.Millisecond
+	} else if n := len(req.Commands); n > 0 {
 		if calculated := time.Duration(n) * 15 * time.Second; calculated > batchTimeout {
 			batchTimeout = calculated
 		}
@@ -473,20 +480,12 @@ func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommand
 		return nil, fmt.Errorf("marshal batch request: %w", err)
 	}
 
-	url := fmt.Sprintf("http://127.0.0.1:%d/commands", inst.Port)
-
-	c.debugPost(url, body)
-
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-	httpReq.Header.Set("Content-Type", "application/json")
+	c.debugPost(fmt.Sprintf("http://127.0.0.1:%d/commands", inst.Port), body)
 
 	start := time.Now()
-	resp, err := c.httpClient.Do(httpReq)
+	resp, err := c.doWithReloadRetry(ctx, body, inst, "/commands")
 	if err != nil {
-		return nil, fmt.Errorf("cannot connect to Unity at port %d: %w", inst.Port, err)
+		return nil, err
 	}
 
 	respBody, err := c.processHTTPResponse(resp, "batch", start)
@@ -506,6 +505,6 @@ func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommand
 }
 
 // SendBatch is a convenience wrapper that delegates to DefaultClient.SendBatch.
-func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest) (*BatchCommandResponse, error) {
-	return DefaultClient.SendBatch(ctx, inst, req)
+func SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest, timeoutMs int) (*BatchCommandResponse, error) {
+	return DefaultClient.SendBatch(ctx, inst, req, timeoutMs)
 }

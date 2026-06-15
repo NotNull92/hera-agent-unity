@@ -97,7 +97,7 @@ func TestExecCacheNoCacheFlag(t *testing.T) {
 // oldest source must miss memory but should still skip compile via the
 // on-disk DLL cache.
 func TestExecCacheLRUEviction(t *testing.T) {
-	const inMemoryCap = 32
+	const inMemoryCap = 128
 	const overflow = 8
 	seed := time.Now().UnixNano()
 

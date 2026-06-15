@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [CLI 0.0.21 / Connector 0.0.28] - 2026-06-15
+
 ### Added (Connector 0.0.27 + CLI — ui_doc verify loop: capture + sample)
 
 Two endpoints that turn "eyeball and rationalize" into "measure and correct" when
@@ -27,6 +29,38 @@ reproducing a reference image — the measure-don't-guess loop is now first-clas
   only reads a static file — no Unity round-trip, available before `apply`.
 - Loop: `sample` colors → author IR → `apply` → `capture` → compare → fix → repeat.
   Documented in COMMANDS.md / AGENTS.md / `docs/UI_DOC_IR.md`.
+
+### Changed (Performance & reliability refactor)
+
+A conservative pass focused on faster `exec` warm-up, lower token/byte overhead,
+and surviving domain reloads more gracefully. No user-facing defaults were changed.
+
+- **Fixed `batch` nil-pointer panic**: a successful `batch` invocation no longer
+  crashes the CLI when `Execute()` dereferences a nil response.
+- **`batch` compact/quiet output**: when `--compact-json` or `--quiet` is passed,
+  each step is emitted as compact JSON or plain text instead of styled TUI output.
+- **Faster Go response formatting**: the success path no longer round-trips
+  `resp.Data` through `interface{}`; compact mode prints raw bytes and pretty mode
+  uses `json.Indent` directly. Plain string responses are still unquoted.
+- **`SendBatch` reliability**: batch requests now reuse the same domain-reload
+  retry loop as single commands and respect an explicit `--timeout` when provided.
+- **HTTP response size guard**: responses larger than 50 MB are rejected with a
+  clear error instead of being buffered indefinitely.
+- **Connector compiler pre-warm**: after the HTTP server starts, a trivial
+  `return null;` compile is scheduled on `EditorApplication.delayCall` to keep the
+  VBCSCompiler server warm across domain reloads.
+- **`exec` in-memory cache expanded**: `MaxInMemoryAssemblies` raised from 32 to
+  128, reducing disk loads during long agent sessions.
+- **`asset-config.json` compiler paths honored**: `ExecCompileCache` now prefers
+  `defaultCscPath`/`defaultDotnetPath` from Hera Settings before falling back to
+  auto-discovery.
+- **Faster compiler discovery**: known Unity installation paths are probed before
+  falling back to recursive directory scans.
+- **Cached assembly reference enumeration**: `EnsureRefs` skips full AppDomain
+  scanning when a validated `refs-meta.json` + `refs-<hash>.rsp` already exists.
+- **`Serialize` member caching**: per-type field/property reflection results are
+  cached within a domain, reducing repeated reflection cost for complex return
+  values.
 
 ### Added (Connector 0.0.26 — ui_doc IR v2: layout system, Image fill, stretch offsets)
 

@@ -32,6 +32,13 @@ namespace HeraAgent.Tools
             "UnityEditorInternal",
         };
 
+        private static readonly Dictionary<Type, MemberInfo[]> s_SerializableMembersCache = new();
+
+        static ExecuteCsharp()
+        {
+            AssemblyReloadEvents.afterAssemblyReload += () => s_SerializableMembersCache.Clear();
+        }
+
         public class Parameters
         {
             [ToolParameter("C# code to execute. Use 'return' for output.", Required = true)]
@@ -91,6 +98,28 @@ namespace HeraAgent.Tools
 
             var built = BuildSource(code, extraUsings);
             return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth, strict);
+        }
+
+        /// <summary>
+        /// Compiles a trivial snippet in the background to warm the VBCSCompiler
+        /// server after a domain reload. Called from HttpServer on startup; failures
+        /// are swallowed because this is purely an optimization.
+        /// </summary>
+        public static void PreWarmCompiler()
+        {
+            try
+            {
+                var built = BuildSource("return null;", new List<string>());
+                var result = CompileToBytes(built.Source, built.UserCodeLineOffset, null, null);
+                // Result bytes are intentionally discarded; the goal is only to keep
+                // the compiler server process alive and JIT-warmed.
+                if (result.Error != null)
+                    Debug.LogWarning($"[Hera] Compiler pre-warm compile failed: {result.Error.message}");
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Hera] Compiler pre-warm failed: {ex.Message}");
+            }
         }
 
         private struct BuiltSource
@@ -777,31 +806,53 @@ namespace HeraAgent.Tools
                 }
 
                 var r = new Dictionary<string, object>();
-                foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
+                foreach (var m in GetSerializableMembers(type))
                 {
-                    if (f.FieldType == type) continue;
-                    if (f.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
-                    try { r[f.Name] = Serialize(f.GetValue(obj), depth + 1, maxDepth, visited); }
-                    catch (Exception ex) { r[f.Name] = $"<error: {ex.GetType().Name}>"; }
-                }
-                foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
-                {
-                    if (!prop.CanRead) continue;
-                    if (prop.GetIndexParameters().Length > 0) continue;
-                    if (prop.PropertyType == type) continue;
-                    // Obsolete shortcut accessors (Component.audio, .camera, .rigidbody, ...)
-                    // throw NotSupportedException at runtime and would spam responses.
-                    if (prop.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
-                    try { r[prop.Name] = Serialize(prop.GetValue(obj), depth + 1, maxDepth, visited); }
-                    catch (Exception ex)
+                    if (m is FieldInfo f)
                     {
-                        var inner = ex is TargetInvocationException tie ? tie.InnerException ?? tie : ex;
-                        r[prop.Name] = $"<error: {inner.GetType().Name}>";
+                        try { r[f.Name] = Serialize(f.GetValue(obj), depth + 1, maxDepth, visited); }
+                        catch (Exception ex) { r[f.Name] = $"<error: {ex.GetType().Name}>"; }
+                    }
+                    else if (m is PropertyInfo prop)
+                    {
+                        try { r[prop.Name] = Serialize(prop.GetValue(obj), depth + 1, maxDepth, visited); }
+                        catch (Exception ex)
+                        {
+                            var inner = ex is TargetInvocationException tie ? tie.InnerException ?? tie : ex;
+                            r[prop.Name] = $"<error: {inner.GetType().Name}>";
+                        }
                     }
                 }
                 if (r.Count > 0) return r;
             }
             return obj.ToString();
+        }
+
+        private static MemberInfo[] GetSerializableMembers(Type type)
+        {
+            if (s_SerializableMembersCache.TryGetValue(type, out var members))
+                return members;
+
+            var list = new List<MemberInfo>();
+            foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (f.FieldType == type) continue;
+                if (f.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
+                list.Add(f);
+            }
+            foreach (var prop in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            {
+                if (!prop.CanRead) continue;
+                if (prop.GetIndexParameters().Length > 0) continue;
+                if (prop.PropertyType == type) continue;
+                // Obsolete shortcut accessors (Component.audio, .camera, .rigidbody, ...)
+                // throw NotSupportedException at runtime and would spam responses.
+                if (prop.GetCustomAttribute<ObsoleteAttribute>() != null) continue;
+                list.Add(prop);
+            }
+            members = list.ToArray();
+            s_SerializableMembersCache[type] = members;
+            return members;
         }
 
         private sealed class ReferenceEqualityComparer : IEqualityComparer<object>

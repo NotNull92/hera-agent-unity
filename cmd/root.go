@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -64,11 +65,7 @@ var humanCategories = map[string]struct{}{
 	"update":    {},
 	"doctor":    {},
 	"help":      {},
-	"--help":    {},
-	"-h":        {},
 	"version":   {},
-	"--version": {},
-	"-v":        {},
 }
 
 // isHumanCommand reports whether the given subcommand is run by a human.
@@ -150,7 +147,11 @@ func runUnityCommand(ctx context.Context, category string, subArgs []string, sen
 
 	switch category {
 	case "batch":
-		return nil, batchCmd(ctx, subArgs, client.SendBatch, resolve)
+		err := batchCmd(ctx, subArgs, client.SendBatch, resolve, flagTimeout)
+		if err != nil {
+			return nil, err
+		}
+		return &client.CommandResponse{Success: true}, nil
 	case "editor":
 		resp, err = editorCmd(subArgs, send, resolve, category)
 	case "test":
@@ -357,7 +358,7 @@ type SendFunc func(command string, params interface{}) (*client.CommandResponse,
 
 // SendBatchFunc is the function signature for sending a batch command to Unity.
 // Injected so batchCmd can be tested without a real Unity connection.
-type SendBatchFunc func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest) (*client.BatchCommandResponse, error)
+type SendBatchFunc func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error)
 
 func (rp *ResponsePrinter) Print(resp *client.CommandResponse, category string) {
 	if !resp.Success {
@@ -413,22 +414,23 @@ func (rp *ResponsePrinter) Print(resp *client.CommandResponse, category string) 
 	}
 
 	if len(resp.Data) > 0 && string(resp.Data) != "null" {
-		var pretty interface{}
-		if json.Unmarshal(resp.Data, &pretty) == nil {
-			// If data is a plain string, print it raw (preserves newlines for tree output etc.)
-			if s, ok := pretty.(string); ok {
+		// If data is a plain JSON string, print it raw (preserves newlines for tree output etc.)
+		if len(resp.Data) >= 2 && resp.Data[0] == '"' && resp.Data[len(resp.Data)-1] == '"' {
+			var s string
+			if err := json.Unmarshal(resp.Data, &s); err == nil {
 				fmt.Println(s)
-			} else {
-				var b []byte
-				if rp.shouldCompactJSON(category) {
-					b, _ = json.Marshal(pretty)
-				} else {
-					b, _ = json.MarshalIndent(pretty, "", "  ")
-				}
-				fmt.Println(string(b))
+				return
 			}
-		} else {
+		}
+		if rp.shouldCompactJSON(category) {
 			fmt.Println(string(resp.Data))
+		} else {
+			var buf bytes.Buffer
+			if err := json.Indent(&buf, resp.Data, "", "  "); err == nil {
+				fmt.Println(buf.String())
+			} else {
+				fmt.Println(string(resp.Data))
+			}
 		}
 	} else if resp.Message != "" {
 		fmt.Println(resp.Message)
