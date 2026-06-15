@@ -772,11 +772,11 @@ hera-agent-unity ui_doc <action> [flags]
     "children": [
       { "name": "PlayBtn", "element": "button",
         "rect": { "anchor": "top-center", "pos": [0, -40], "size": [240, 64] },
-        "text": { "value": "Play", "engine": "auto" } }
+        "text": { "value": "Play", "engine": "auto", "color": "#FFFFFFFF", "align": "center" } }
     ] } }
 ```
 
-`image.sprite` is either `{ "asset": "Assets/..." }` (existing) or `{ "gen": {<spec>} }` (baked on apply). `text.engine` is `auto` / `tmp` / `legacy`.
+`image.sprite` is either `{ "asset": "Assets/..." }` (existing) or `{ "gen": {<spec>} }` (baked on apply; a `nine_slice` border auto-sets `Image.type = Sliced`). `text.engine` is `auto` / `tmp` / `legacy`; `text.color` is `#hex` or `r,g,b[,a]`; `text.align` is `center` / `left` / `right` / `top-left` / `top-center`.
 
 ```bash
 # Ground on the current UI, hand the IR to the agent

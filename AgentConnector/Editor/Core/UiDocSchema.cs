@@ -101,11 +101,14 @@ namespace HeraAgent
             var txt = GetComponentByName(go, "TextMeshProUGUI") ?? GetComponentByName(go, "Text");
             if (txt == null) return null;
             if (!(GetProp(txt, "text") is string val) || string.IsNullOrEmpty(val)) return null;
-            return new JObject
+            var o = new JObject
             {
                 ["value"] = val,
                 ["engine"] = txt.GetType().Name == "Text" ? "legacy" : "tmp",
             };
+            if (GetProp(txt, "color") is Color tc && tc != Color.white)
+                o["color"] = "#" + ColorUtility.ToHtmlStringRGBA(tc);
+            return o;
         }
 
         static string DetectElement(GameObject go)
@@ -270,30 +273,64 @@ namespace HeraAgent
         static void ApplyText(GameObject go, JObject text, string element, ApplyStats stats)
         {
             if (text == null) return;
-            string value = text["value"]?.ToString();
             string engine = text["engine"]?.ToString();
 
+            Component txt;
             if (element == "button")
             {
                 // Reuse an existing label child if present (idempotent / upsert-safe);
                 // otherwise create one — a stretched child (mirrors ManageUI.BuildButton).
-                var existing = FindTextInChildren(go);
-                if (existing != null)
+                txt = FindTextInChildren(go);
+                if (txt == null)
                 {
-                    if (value != null) SetProp(existing, "text", value);
-                    return;
+                    var labelGo = new GameObject("Text", typeof(RectTransform));
+                    txt = AddTextComponent(labelGo, engine, stats);
+                    if (txt != null)
+                    {
+                        labelGo.transform.SetParent(go.transform, worldPositionStays: false);
+                        Stretch(labelGo);
+                    }
                 }
-                var labelGo = new GameObject("Text", typeof(RectTransform));
-                var txt = AddTextComponent(labelGo, engine, stats);
-                if (txt != null && value != null) SetProp(txt, "text", value);
-                labelGo.transform.SetParent(go.transform, worldPositionStays: false);
-                Stretch(labelGo);
             }
             else
             {
-                var txt = GetComponentByName(go, "TextMeshProUGUI") ?? GetComponentByName(go, "Text");
-                if (txt != null && value != null) SetProp(txt, "text", value);
+                txt = GetComponentByName(go, "TextMeshProUGUI") ?? GetComponentByName(go, "Text");
             }
+
+            if (txt == null) return;
+            StyleText(txt, text);
+        }
+
+        // Applies value + optional color + optional align to a text component
+        // (TMP or legacy Text), all via reflection so the connector stays free of
+        // a compile-time com.unity.ugui / TextMeshPro dependency.
+        static void StyleText(Component txt, JObject text)
+        {
+            if (text["value"] != null) SetProp(txt, "text", text["value"].ToString());
+            if (text["color"] is JToken ct && SerializedPropertyValue.TryParseColor(ct, out var c, out _))
+                SetProp(txt, "color", c);
+            var align = text["align"]?.ToString();
+            if (!string.IsNullOrEmpty(align)) SetTextAlign(txt, align);
+        }
+
+        static void SetTextAlign(Component txt, string align)
+        {
+            var pi = txt.GetType().GetProperty("alignment", BindingFlags.Public | BindingFlags.Instance);
+            if (pi == null || !pi.CanWrite) return;
+            // TMP uses TextAlignmentOptions, legacy Text uses TextAnchor — map to each.
+            bool tmp = pi.PropertyType.Name == "TextAlignmentOptions";
+            string name;
+            switch (align.ToLowerInvariant())
+            {
+                case "center": name = tmp ? "Center" : "MiddleCenter"; break;
+                case "left": name = tmp ? "Left" : "MiddleLeft"; break;
+                case "right": name = tmp ? "Right" : "MiddleRight"; break;
+                case "top-left": case "topleft": name = tmp ? "TopLeft" : "UpperLeft"; break;
+                case "top-center": case "top": name = tmp ? "Top" : "UpperCenter"; break;
+                default: return;
+            }
+            try { pi.SetValue(txt, System.Enum.Parse(pi.PropertyType, name)); }
+            catch { /* best-effort */ }
         }
 
         static GameObject FindChildByName(Transform parent, string name)

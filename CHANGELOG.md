@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.24 — ui_doc text color + alignment in the IR)
+
+- **`text` nodes now accept `color` (#hex or r,g,b[,a]) and `align`**
+  (`center` / `left` / `right` / `top-left` / `top-center`). `apply` sets them on
+  the text component via reflection; `align` maps to TMP `TextAlignmentOptions`
+  or legacy `TextAnchor` automatically. Removes the manual `manage_components` /
+  `exec` pass previously needed to make agent-built text readable and centered.
+  `export` now also emits `text.color` when non-white. (Found by dogfooding —
+  every HUD apply needed a follow-up to recolor/centre text.)
+
 ### Fixed (Connector 0.0.23 — ui_doc apply auto-Sliced for bordered sprites)
 
 - **`apply` now sets `Image.type = Sliced` when the node's sprite has a 9-slice
