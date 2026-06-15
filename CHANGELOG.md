@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [CLI 0.0.23 / Connector 0.0.30] - 2026-06-15
+
+### Fixed
+
+- **PreWarmCompiler noise**: `ExecuteCsharp.PreWarmCompiler()` now skips when
+  `EditorApplication.isCompiling` or `isUpdating`, and failures are silently
+  ignored. Pre-warming is purely an optimization and should not spam the console.
+
 ## [CLI 0.0.22 / Connector 0.0.29] - 2026-06-15
 
 ### Fixed

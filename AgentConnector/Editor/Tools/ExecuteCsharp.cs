@@ -103,22 +103,25 @@ namespace HeraAgent.Tools
         /// <summary>
         /// Compiles a trivial snippet in the background to warm the VBCSCompiler
         /// server after a domain reload. Called from HttpServer on startup; failures
-        /// are swallowed because this is purely an optimization.
+        /// are silently ignored because this is purely an optimization.
         /// </summary>
         public static void PreWarmCompiler()
         {
             try
             {
+                // Skip if the editor is still compiling scripts or importing assets —
+                // the assembly reference set may be incomplete at this point.
+                if (EditorApplication.isCompiling || EditorApplication.isUpdating)
+                    return;
+
                 var built = BuildSource("return null;", new List<string>());
-                var result = CompileToBytes(built.Source, built.UserCodeLineOffset, null, null);
                 // Result bytes are intentionally discarded; the goal is only to keep
                 // the compiler server process alive and JIT-warmed.
-                if (result.Error != null)
-                    UnityEngine.Debug.LogWarning($"[Hera] Compiler pre-warm compile failed: {result.Error.message}");
+                CompileToBytes(built.Source, built.UserCodeLineOffset, null, null);
             }
-            catch (Exception ex)
+            catch
             {
-                UnityEngine.Debug.LogWarning($"[Hera] Compiler pre-warm failed: {ex.Message}");
+                // Best-effort optimization; never spam the console on failure.
             }
         }
 
