@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.23 — ui_doc apply auto-Sliced for bordered sprites)
+
+- **`apply` now sets `Image.type = Sliced` when the node's sprite has a 9-slice
+  border** (any `nine_slice` gen sprite, or a referenced sprite with a border).
+  Previously the Image kept the default `Simple` type, which stretches a bordered
+  sprite's corners into an oval — making `nine_slice` useless without a manual
+  follow-up. Set via reflection, so the connector keeps no compile-time
+  com.unity.ugui dependency. (Found by dogfooding ui_doc to rebuild a game HUD
+  from a screenshot.)
+
 ### Added (Connector 0.0.22 — `ui_doc` phase 2: nine_slice + upsert)
 
 - **`gen_sprite` nine_slice kind** — bakes a rounded-rect texture and sets the

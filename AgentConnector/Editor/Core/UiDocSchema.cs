@@ -253,7 +253,15 @@ namespace HeraAgent
                 if (!string.IsNullOrEmpty(assetPath))
                 {
                     var spr = AssetDatabase.LoadAssetAtPath<Sprite>(assetPath);
-                    if (spr != null) SetProp(img, "sprite", spr);
+                    if (spr != null)
+                    {
+                        SetProp(img, "sprite", spr);
+                        // A bordered sprite (nine_slice) only renders correctly with
+                        // Image.type = Sliced; Simple (the default) stretches the
+                        // corners into an oval. Set it via reflection so the connector
+                        // keeps no compile-time com.unity.ugui dependency.
+                        if (spr.border != Vector4.zero) SetImageSliced(img);
+                    }
                     else stats.Errors.Add($"sprite asset not found for '{name}': {assetPath}");
                 }
             }
@@ -390,6 +398,16 @@ namespace HeraAgent
             if (pi == null || !pi.CanWrite) return;
             if (!pi.PropertyType.IsInstanceOfType(value)) return;
             try { pi.SetValue(comp, value); }
+            catch { /* best-effort */ }
+        }
+
+        // Set Image.type = Sliced via reflection (the connector has no compile-time
+        // reference to com.unity.ugui, so we resolve the Image.Type enum at runtime).
+        static void SetImageSliced(Component img)
+        {
+            var pi = img.GetType().GetProperty("type", BindingFlags.Public | BindingFlags.Instance);
+            if (pi == null || !pi.CanWrite) return;
+            try { pi.SetValue(img, System.Enum.Parse(pi.PropertyType, "Sliced")); }
             catch { /* best-effort */ }
         }
 
