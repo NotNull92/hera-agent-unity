@@ -16,7 +16,7 @@
 
 <br>
 
-[Install](#installation) · [Quick Start](#quick-start) · [Showcase](#showcase) · [Commands](#commands) · [Batch](#batch--scripted-workflows) · [Custom Tools](#custom-tools) · [Architecture](#architecture) · [FAQ](#faq)
+[Install](#installation) · [Quick Start](#quick-start) · [Showcase](#showcase) · [Mockup → UI](#-mockup--live-unity-ui) · [Commands](#commands) · [Batch](#batch--scripted-workflows) · [Custom Tools](#custom-tools) · [Architecture](#architecture) · [FAQ](#faq)
 
 **English** · [한국어](README.ko.md)
 
@@ -62,6 +62,75 @@ A game prototype built primarily with hera-agent-unity — the AI agent drove th
 <sub><b>NoMoreRolls</b> — solo-developed Unity game (3-tier architecture, 9-soul combat system). Play Mode capture.</sub>
 
 </div>
+
+---
+
+## 🎨 Mockup → Live Unity UI
+
+> *Hand your agent a reference screenshot or an HTML mockup. Get back a real, pixel-measured uGUI hierarchy — built and verified, not approximated.*
+
+Ask any AI to build a Unity UI and watch it flail. It knows HTML and CSS cold — but uGUI is a different planet: `RectTransform` anchors, pivots, stretch offsets, nested `LayoutGroup`s, 9-sliced sprites. So the model guesses the anchor math, hardcodes absolute positions that shatter at the next resolution, and — the real problem — has **no way to check its own work** against the reference. You get a layout that's vaguely right and pixel-wrong, then burn an afternoon nudging values by hand.
+
+**`ui_doc` turns UI from the agent's worst Unity skill into a deterministic, _self-correcting_ pipeline.** The agent designs in the one language it's genuinely fluent in — a compact, HTML-shaped JSON IR (`ui_doc/2`) — and Hera performs the exact Unity-side translation. Then it closes the loop almost no AI tooling even attempts: it **measures** the built result against your reference and fixes the difference, instead of eyeballing it and moving on.
+
+### The measure-don't-guess loop
+
+This is what makes a reproduction *faithful* instead of "close enough" — and it runs with **no human in it**:
+
+```
+   reference image  (screenshot / mockup)
+        │
+        ▼
+   1. sample    read the true colors out of the reference image
+   2. author    write the ui_doc/2 IR   (HTML-shaped JSON)
+   3. apply     the IR becomes a real uGUI hierarchy
+   4. capture   render exactly what you built   →  PNG
+   5. compare   diff against the reference, then fix the IR
+        │
+        └──────────  repeat until capture matches the reference
+```
+
+The agent reads the *true* colors straight out of your screenshot, builds the UI, renders exactly what it built (overlay canvases and all), diffs it against the target, and corrects — on its own.
+
+### Five endpoints, one contract
+
+| Endpoint | Runs in | What it does |
+|---|---|---|
+| `export`     | Connector | Serialize a live UI subtree → `ui_doc/2` IR (defaults omitted), so the agent grounds its design on the project's **real** structure instead of hallucinating one. |
+| `apply`      | Connector | Build the IR under a `--parent`. `--mode create` (default) or **`upsert`** (match children by name, edit **in place** — the full export → edit → apply round-trip). The doc rides via `--file`, never bloating the agent's context. |
+| `gen_sprite` | Connector | Bake a procedural sprite (`solid` / `rounded_rect` / `gradient` / `nine_slice`) and import it as a `Sprite` — **zero external dependency**, no image model, no asset pack. |
+| `capture`    | Connector | Render the live UI — including the `ScreenSpaceOverlay` canvases a normal `screenshot` composites *after* the camera and silently drops — to a PNG for visual diffing. |
+| `sample`     | CLI       | Read **measured** hex colors out of a reference image (`--at "x,y"` points / `--region "x,y,w,h"`, normalized [0,1]). Pure stdlib decode — no Unity round-trip, usable before a single object exists. |
+
+### Watch it rebuild a game HUD from one screenshot
+
+```bash
+# 1 ─ Ground on the project's real hierarchy (don't guess the structure)
+hera-agent-unity ui_doc export --path /Canvas/HUD
+
+# 2 ─ Pull the actual colors out of the reference art
+hera-agent-unity ui_doc sample --image hud_ref.png --region "0,0,1,0.2"
+
+# 3 ─ Author the IR in HTML-shaped JSON, then build it under the Canvas
+hera-agent-unity ui_doc apply --file hud.json --parent /Canvas --mode upsert
+
+# 4 ─ Render exactly what shipped, compare to the reference, fix, repeat
+hera-agent-unity ui_doc capture --out hud_built.png
+```
+
+That isn't a contrived demo — it's how the feature was **dogfooded into existence**, rebuilding a real game HUD from a single screenshot until `capture` matched the reference.
+
+### Why it actually holds up
+
+- **Designs in the agent's native tongue.** An HTML-shaped node tree, not the raw `m_AnchoredPosition` math the model gets wrong.
+- **A real layout system — not absolute coordinates.** The IR (`ui_doc/2`) carries `Horizontal` / `Vertical` / `Grid` `LayoutGroup`, `LayoutElement`, `ContentSizeFitter`, Image **fill** modes (the idiomatic progress / HP bar via `fill.amount`), **9-slice** borders, stretch **offsets**, and text **color / alignment / font**. Responsive by construction.
+- **Zero-dependency art.** `gen_sprite` bakes its textures procedurally — no `com.unity.vectorgraphics`, no external image generator, nothing to install.
+- **It sees what you see.** `capture` composites the overlay canvases ordinary screenshots miss, so the diff is honest.
+- **Compiles in any project.** Every uGUI / TextMeshPro type resolves through `TypeCache` — the connector keeps **zero compile-time dependency** on `com.unity.ugui`.
+
+Full IR reference: [`docs/UI_DOC_IR.md`](docs/UI_DOC_IR.md) · every flag: [`docs/COMMANDS.md`](docs/COMMANDS.md#ui_doc).
+
+> `ui_doc` builds the UI **right**. [**UI Juicy Mode**](#-ui-juicy-mode--uis-that-feel-alive-not-just-functional) below makes it **feel alive** — when on, every `apply` carries a Game UI/UX Bible juice recipe per element type as an `agent_hint`.
 
 ---
 
@@ -312,7 +381,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 | `describe_type`   | Reflect a live type — members, signatures, **Unity pitfalls** + Manual links. |
 | `find_method`     | Search method names across loaded assemblies. |
 | `list_assemblies` | List loaded assemblies (skips `System.*` noise by default). |
-| `unity_docs`      | Offline Unity ScriptReference lookup — `title / signature / summary / manual_url`. |
+| `unity_docs`      | Offline Unity ScriptReference lookup — minimal `title / signature / summary` reply (~33 tokens). |
 
 ### Workflow
 
@@ -351,6 +420,10 @@ The five-tool queue locked-in at 2026-05-28 is complete. Each entry filled a gap
 | `manage_ui` | **v0.0.15** | uGUI authoring. `create` spins up UI elements (canvas / panel / image / button / text / empty) with auto Canvas + EventSystem scaffolding; `set_anchor` exposes Unity's named anchor-preset grid and keeps the rect visually fixed (or `--snap` for Alt+Shift fill); `get_rect` / `set_rect` round out RectTransform editing. UI/TMP types resolve via `TypeCache`, so the connector still compiles in projects without com.unity.ugui. Element property edits stay in `manage_components`. |
 | `TargetResolver` + tests + benchmark | **v0.0.16** | `TargetResolver` extracts shared GameObject/Component resolution from `manage_components` / `manage_gameobject` / `manage_ui`. Go test coverage expanded (`doctor`, `install`, `poll`, `assetconfig`). C# `HierarchyPath` editor tests. Smoke test benchmark: 7 calls = 725B (~181T), avg 26T/call — no token cost increase from refactoring. |
 | UI Juicy Mode | **v0.0.19** | Opt-in toggle that makes `manage_ui create` return Game UI/UX Bible "juice" recipes so AI-built UIs feel alive instead of dead. See the dedicated [**✨ UI Juicy Mode**](#-ui-juicy-mode--uis-that-feel-alive-not-just-functional) section above. |
+| Unity 6000.5 compat | **v0.0.20** | `Core/EntityIdCompat` shim (gated by `UNITY_6000_5_OR_NEWER`) routes 27 call sites through the new `EntityId` API on 6000.5+ and the legacy `InstanceID` API on 6000.0–6000.4. Unity 6000.5 promoted the old APIs to hard compile errors — without the shim the connector silently fails to compile and the **HeraAgent menu vanishes**. |
+| `ui_doc` | **v0.0.21 → v0.0.27** | HTML→Unity UI pipeline (uGUI) — the agent's weakest area. `export` / `apply` (`create` + `upsert`) / `gen_sprite` / `capture` / `sample` around a compact JSON IR (`ui_doc/2`). Grew into a full layout system (Horizontal / Vertical / Grid `LayoutGroup`, `LayoutElement`, `ContentSizeFitter`), Image fill modes + 9-slice, stretch offsets, text color / align / font, and a *measure-don't-guess* verify loop. Zero external dependency; still no compile-time `com.unity.ugui` link. The flagship [**🎨 Mockup → Live Unity UI**](#-mockup--live-unity-ui) section walks the whole loop. |
+| Performance & reliability | **v0.0.28** | Conservative pass: VBCSCompiler pre-warm on startup, `refs-meta.json` reference cache (skips the full AppDomain scan), in-memory assembly cache 32 → 128, per-type `Serialize` reflection cache, faster known-path compiler discovery. CLI side: `batch` nil-pointer fix, compact/quiet `batch` output, `SendBatch` reusing the domain-reload retry, and a 50 MB response guard. No user-facing default changed. |
+| `exec` on macOS / Linux | **v0.0.31** | The snippet compiler now runs a Windows-PE `csc.exe` through Unity's bundled **Mono** host on macOS / Linux (a managed PE can't be exec'd directly) instead of failing with `EXEC_LAUNCH_FAILED`. Resolves a `defaultCscPath` → `csc.exe` config that pointed exec at a PE. Windows path unchanged. |
 
 ### `unity_docs` — design + benchmarks (v0.0.12)
 
@@ -715,6 +788,8 @@ The compiler is auto-detected from .NET SDK, Visual Studio, or Unity's bundled R
 ```bash
 hera-agent-unity exec "return 1+1;" --csc "C:\Program Files\dotnet\sdk\8.0.100\Roslyn\bincore\csc.dll"
 ```
+
+On macOS / Linux a Windows-PE `csc.exe` is launched through Unity's bundled **Mono** host automatically (Connector 0.0.31+), so a `.dll` Roslyn isn't required — prefer pointing `--csc` at a `csc.dll` only when you want the .NET Roslyn path.
 
 </details>
 
