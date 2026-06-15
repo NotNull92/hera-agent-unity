@@ -114,11 +114,11 @@ namespace HeraAgent.Tools
                 // Result bytes are intentionally discarded; the goal is only to keep
                 // the compiler server process alive and JIT-warmed.
                 if (result.Error != null)
-                    Debug.LogWarning($"[Hera] Compiler pre-warm compile failed: {result.Error.message}");
+                    UnityEngine.Debug.LogWarning($"[Hera] Compiler pre-warm compile failed: {result.Error.message}");
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[Hera] Compiler pre-warm failed: {ex.Message}");
+                UnityEngine.Debug.LogWarning($"[Hera] Compiler pre-warm failed: {ex.Message}");
             }
         }
 

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [CLI 0.0.22 / Connector 0.0.29] - 2026-06-15
+
+### Fixed
+
+- **Connector compile error**: `ExecuteCsharp.PreWarmCompiler()` now uses
+  `UnityEngine.Debug.LogWarning` to avoid ambiguous reference with
+  `System.Diagnostics.Debug`.
+
 ## [CLI 0.0.21 / Connector 0.0.28] - 2026-06-15
 
 ### Added (Connector 0.0.27 + CLI — ui_doc verify loop: capture + sample)
