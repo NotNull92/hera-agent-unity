@@ -278,7 +278,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 | `find_gameobjects`   | Filter scene GameObjects (name / tag / layer / component / path glob) with pagination. |
 | `manage_prefab`      | Prefab asset ops: `create` (GameObject → prefab) / `instantiate` / headless `add_component` / `remove_component`. |
 | `manage_ui`          | uGUI authoring: `create` (UI element + auto Canvas/EventSystem) / `get_rect` / `set_anchor` (named preset grid) / `set_rect`. RectTransform anchor/pivot math without raw `m_` paths. With **UI Juicy Mode** on, `create` returns DOTween-aware Game UI/UX Bible juice recipes as an `agent_hint`. |
-| `ui_doc`             | HTML→Unity UI pipeline (uGUI): `export` (live subtree → compact `ui_doc/1` JSON, for grounding) / `apply` (IR → UI; `--mode create` or `upsert` to update existing in place; doc via `--file`) / `gen_sprite` (Tier-1 procedural sprite — solid/rounded_rect/gradient/nine_slice — baked + imported, no external dep). Juice recipes ride `apply`'s `agent_hint` (deduped per element type) when Juicy Mode is on. |
+| `ui_doc`             | HTML→Unity UI pipeline (uGUI): `export` (live subtree → compact `ui_doc/2` JSON, for grounding) / `apply` (IR → UI; `--mode create` or `upsert` to update existing in place; doc via `--file`) / `gen_sprite` (Tier-1 procedural sprite — solid/rounded_rect/gradient/nine_slice — baked + imported, no external dep) / `capture` (render the live overlay UI → PNG for visual verification) / `sample` (read measured hex colors from a reference image — point/region, no Unity round-trip). Juice recipes ride `apply`'s `agent_hint` (deduped per element type) when Juicy Mode is on. |
 
 ### Assets, materials & shaders
 

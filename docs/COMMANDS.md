@@ -743,13 +743,17 @@ hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-
 
 ## ui_doc
 
-HTML→Unity UI pipeline (uGUI). The agent is fluent in HTML/CSS but weak at uGUI; `ui_doc` closes the gap by giving it two **deterministic** endpoints plus a compact JSON IR (`ui_doc/1`) as the contract:
+HTML→Unity UI pipeline (uGUI). The agent is fluent in HTML/CSS but weak at uGUI; `ui_doc` closes the gap by giving it **deterministic** endpoints plus a compact JSON IR (`ui_doc/2`) as the contract:
 
 - **`export`** serializes a live UI subtree to the IR (defaults omitted) — *grounding* so the agent maps an HTML design onto the project's real structure instead of guessing.
 - **`apply`** builds an IR document under a parent (always-create) and reports a compact summary.
 - **`gen_sprite`** bakes a Tier-1 procedural sprite (CSS-shape vocabulary) and imports it — **no external dependency**.
+- **`capture`** renders the live UI to a PNG so the agent can *see* what it built and compare it to the reference. ScreenSpaceOverlay canvases are composited after the camera, so a normal `screenshot` misses them; `capture` routes every root non-world canvas through a throwaway camera + RenderTexture.
+- **`sample`** reads measured hex colors out of a reference image (point or region averages). Lets the agent *measure* colors instead of eyeballing them. Runs CLI-side — no Unity round-trip — since it only reads a static file.
 
 > The agent owns the creative middle (image/text → HTML mockup → IR); `ui_doc` owns the Unity-side read/write. Bitmap art (illustrations) is out of scope — it would require an external image model.
+>
+> **Measure-don't-guess loop**: `sample` the reference for exact colors → author the IR → `apply` → `capture` → compare to the reference → fix the largest discrepancy → repeat. This turns "eyeball and rationalize" into "measure and correct".
 
 ```bash
 hera-agent-unity ui_doc <action> [flags]
@@ -757,14 +761,16 @@ hera-agent-unity ui_doc <action> [flags]
 
 | Action | Flags | Description |
 |:---|:---|:---|
-| `export` | `--path </path>` or `--instance_id <id>`; `[--depth N]` | Serialize the subtree to the `ui_doc/1` IR. Depth defaults to 8. |
+| `export` | `--path </path>` or `--instance_id <id>`; `[--depth N]` | Serialize the subtree to the `ui_doc/2` IR. Depth defaults to 8. |
 | `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | Realize the IR under the parent (default: existing/auto Canvas). `create` (default) always makes new objects; `upsert` matches existing children by name and updates rect/graphic/text in place (no duplicates, no deletes). Pass the doc via `--file` so it never rides inline in context. |
 | `gen_sprite` | `--spec '{...}'` or `--kind/--size/--color/...`; `[--out Assets/...]` | Bake + import a sprite. Kinds: `solid`, `rounded_rect`, `gradient`, `nine_slice` (rounded box + 9-slice `border [l,b,r,t]`, default = radius). Default out: `Assets/HeraGenerated/`. |
+| `capture` | `[--out <file.png>]`; `[--width N] [--height N]`; `[--bg #RRGGBBAA]`; `[--canvas </path> or <id>]` | Render the live overlay UI to a PNG. Size defaults to the canvas pixel size (current game view); `bg` defaults to opaque dark (`alpha 0` = transparent); without `--canvas` it captures all root non-world canvases. Default out: a temp file. Returns `{path,width,height,bytes,canvases}`. |
+| `sample` | `--image <ref.png>`; `--at "x,y"` and/or `--region "x,y,w,h"`; `[--kernel N]` | Read measured colors from a reference image. Coordinates are **normalized [0,1], top-left origin**; `;`-separate several (`--at "0.5,0.5;0.1,0.2"`). Points are averaged over a `±kernel` px box (default 2) to shrug off antialiasing. Returns each as `{at/region, px, hex, rgba}`. CLI-side — no Unity needed. |
 
-**IR shape (`ui_doc/1`)** — a node tree; defaults are omitted on export (`anchor` uses the same preset names as `manage_ui set_anchor`, else `anchor_min`/`anchor_max`):
+**IR shape (`ui_doc/2`)** — a node tree; defaults are omitted on export (`anchor` uses the same preset names as `manage_ui set_anchor`, else `anchor_min`/`anchor_max`). Full reference: [`UI_DOC_IR.md`](UI_DOC_IR.md).
 
 ```jsonc
-{ "schema": "ui_doc/1", "backend": "ugui",
+{ "schema": "ui_doc/2", "backend": "ugui",
   "root": {
     "name": "Panel", "element": "panel",            // canvas|panel|image|button|text|empty
     "rect": { "anchor": "stretch", "size": [400, 600] },
@@ -787,6 +793,12 @@ hera-agent-unity ui_doc apply --file design.json --parent /Canvas
 
 # Bake a button background
 hera-agent-unity ui_doc gen_sprite --spec '{"kind":"rounded_rect","size":[240,64],"color":"#1A1A2EFF","radius":12}' --out Assets/UI/btn_bg.png
+
+# Measure exact colors off the reference before authoring the IR
+hera-agent-unity ui_doc sample --image ref.png --at "0.5,0.12;0.5,0.95" --region "0.1,0.8,0.3,0.05"
+
+# Render what you built and compare it to the reference
+hera-agent-unity ui_doc capture --out /tmp/built.png
 ```
 
 **UI Juicy Mode** — when enabled, `apply` adds an `agent_hint` with the Game UI/UX Bible juice recipes for each *distinct* element type in the doc (deduped once, not per element — strong signature, lean tokens). Guidance only; no runtime components are attached.

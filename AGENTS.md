@@ -174,9 +174,11 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system]` | Use `--filter` to keep the response small. |
 | Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
 | Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
-| Ground an HTML→UI design on the real UI | `ui_doc export --path </path>` | Returns the compact `ui_doc/1` IR (defaults omitted). Read it before authoring. |
+| Ground an HTML→UI design on the real UI | `ui_doc export --path </path>` | Returns the compact `ui_doc/2` IR (defaults omitted). Read it before authoring. |
 | Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...] [--mode upsert]` | `create` (default) or `upsert` (update existing children in place). Pass the doc via `--file` so it never rides inline in context. |
 | Bake a procedural sprite | `ui_doc gen_sprite --spec '{...}' --out Assets/...` | Tier-1: `solid` / `rounded_rect` / `gradient` / `nine_slice` (border for 9-slice). No external dependency. |
+| Measure colors off a reference image | `ui_doc sample --image ref.png --at "x,y" [--region "x,y,w,h"]` | Normalized [0,1] top-left coords (`;`-separate many). Returns measured `hex`/`rgba`. Measure colors — don't eyeball them. CLI-side, no Unity needed. |
+| See what you built (verify) | `ui_doc capture --out /tmp/built.png` | Renders the live overlay UI to PNG (a normal `screenshot` misses overlay canvases). Read it and compare to the reference. |
 | Anything else (read prop, AssetDatabase, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
 
 **Compile-check only** (validate syntax/types without executing):
@@ -185,10 +187,10 @@ hera-agent-unity exec "var x = SomeType.SomeMethod();" --check
 ```
 Useful when you're not sure a refactor compiles before issuing a destructive call.
 
-**ui_doc IR (`ui_doc/1`)** — the contract for HTML→UI. You're fluent in HTML/CSS but weak at uGUI; design in HTML, then `export` the live UI to ground yourself, and `apply` a node tree (defaults omitted). `anchor` uses `manage_ui`'s preset names (e.g. `top-center`, `stretch`) or raw `anchor_min`/`anchor_max`:
+**ui_doc IR (`ui_doc/2`)** — the contract for HTML→UI. You're fluent in HTML/CSS but weak at uGUI; design in HTML, then `export` the live UI to ground yourself, and `apply` a node tree (defaults omitted). `anchor` uses `manage_ui`'s preset names (e.g. `top-center`, `stretch`) or raw `anchor_min`/`anchor_max`. Full reference: `docs/UI_DOC_IR.md`:
 
 ```jsonc
-{ "schema": "ui_doc/1", "backend": "ugui",
+{ "schema": "ui_doc/2", "backend": "ugui",
   "root": { "name": "Panel", "element": "panel",   // canvas|panel|image|button|text|empty
     "rect": { "anchor": "stretch", "size": [400, 600] },
     "image": { "color": "#1A1A2EFF", "sprite": { "gen": { "kind": "rounded_rect", "radius": 12 } } },
@@ -202,7 +204,8 @@ Useful when you're not sure a refactor compiles before issuing a destructive cal
 **Icons** (no SVG gen): reference an existing sprite via `image.sprite.asset`, or use an icon-font glyph — a `text` element whose `value` is the glyph char, then assign the icon TMP font with `manage_components set --property m_fontAsset --value <font.asset>`. See COMMANDS.md → ui_doc → Icons.
 
 **Reproducing a reference image faithfully** — rules that matter for a close match:
-- **Measure, don't guess.** Derive each element's position/size/color from the reference (the canvas is a known px space, e.g. 1080×1920). Never eyeball a position and then rationalize it. If you can't place a detail accurately, omit it — a wrong/misplaced element is worse than a missing one.
+- **Run the verify loop.** `ui_doc sample` the reference for exact colors → author the IR → `apply` → `ui_doc capture` → Read the PNG and compare it to the reference → fix the largest discrepancy → repeat until it stops improving. The tools exist so you measure and correct instead of eyeballing and rationalizing.
+- **Measure, don't guess.** Derive each element's position/size/color from the reference (the canvas is a known px space, e.g. 1080×1920). Use `ui_doc sample` for colors rather than guessing hex. Never eyeball a position and then rationalize it. If you can't place a detail accurately, omit it — a wrong/misplaced element is worse than a missing one.
 - **Progress bars / fills:** anchor the fill to the track's *start edge* (not centered) and size it = `fraction × track length`, kept inside the track. A center-anchored fill overflows the track.
 - **Text inside a container** (button / chip / pill): give the text the *same rect* as the container + `align: center`. A smaller or offset text rect clips (e.g. "x1") or de-centers.
 - **Sub-icon rows** (runes / gems / stars under a slider): place them under their owning element as an evenly-spaced row, and match the count from the reference.

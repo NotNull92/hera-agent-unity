@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.27 + CLI — ui_doc verify loop: capture + sample)
+
+Two endpoints that turn "eyeball and rationalize" into "measure and correct" when
+reproducing a reference image — the measure-don't-guess loop is now first-class.
+
+- **`ui_doc capture`** (Connector) renders the live UI to a PNG. ScreenSpaceOverlay
+  canvases are composited after the camera, so a normal `screenshot` misses them;
+  `capture` temporarily routes every root non-world canvas through a throwaway
+  camera + RenderTexture, `ReadPixels` → PNG, then restores each canvas (in a
+  `finally`, so a throw can't leave the scene mangled). Flags: `--out`,
+  `--width`/`--height` (default = canvas pixel size), `--bg #RRGGBBAA` (alpha 0 =
+  transparent), `--canvas` (restrict to one). Replaces the hand-rolled temp-camera
+  `exec` the HUD work kept rewriting.
+- **`ui_doc sample`** (CLI-side) reads measured hex colors from a reference image —
+  `--at "x,y"` points and/or `--region "x,y,w,h"`, normalized [0,1] top-left,
+  `;`-separated for many, `±--kernel` px averaging (default 2). Returns
+  `{at/region, px, hex, rgba}`. Runs in the CLI (pure stdlib image decode) since it
+  only reads a static file — no Unity round-trip, available before `apply`.
+- Loop: `sample` colors → author IR → `apply` → `capture` → compare → fix → repeat.
+  Documented in COMMANDS.md / AGENTS.md / `docs/UI_DOC_IR.md`.
+
 ### Added (Connector 0.0.26 — ui_doc IR v2: layout system, Image fill, stretch offsets)
 
 Audited the ui_doc IR against the official uGUI manual (Unity 6000.0 /

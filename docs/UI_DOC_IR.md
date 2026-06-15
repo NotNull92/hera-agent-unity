@@ -19,6 +19,18 @@ Prefer **relative layout** (`layout` groups, `fill`, anchors) over absolute
 coordinates — it survives different inputs/resolutions. Reserve absolute
 `pos`/`size` for elements the reference genuinely places by pixel.
 
+### Verify loop (measure, don't guess)
+
+When reproducing a reference image, close the loop instead of eyeballing:
+
+1. `ui_doc sample --image ref.png --at "x,y" [--region "x,y,w,h"]` — read **measured**
+   hex colors (normalized [0,1], top-left; `;`-separate many; CLI-side, no Unity).
+2. Author the IR with those colors / measured positions.
+3. `ui_doc apply --file design.json`.
+4. `ui_doc capture --out /tmp/built.png` — render the live overlay UI to a PNG
+   (a normal `screenshot` misses ScreenSpaceOverlay canvases).
+5. Read the PNG, compare to the reference, fix the largest discrepancy, repeat.
+
 ## Document shape
 
 ```jsonc
