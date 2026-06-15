@@ -430,7 +430,7 @@ namespace HeraAgent.Tools
                 var csc = ExecCompileCache.ResolveCsc(cscOverride);
                 string exe, args;
 
-                if (csc != null && csc.EndsWith(".dll"))
+                if (csc != null && csc.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                 {
                     var dotnet = ExecCompileCache.ResolveDotnet(dotnetOverride);
                     if (dotnet == null)
@@ -442,10 +442,29 @@ namespace HeraAgent.Tools
                     exe = dotnet;
                     args = $"exec \"{csc}\" {rspArg} /shared";
                 }
-                else if (csc != null)
+                else if (csc != null && Application.platform == RuntimePlatform.WindowsEditor)
                 {
+                    // Windows can exec the csc.exe PE directly.
                     exe = csc;
                     args = $"{rspArg} /shared";
+                }
+                else if (csc != null)
+                {
+                    // csc.exe is a Windows-PE managed assembly; macOS/Linux cannot
+                    // exec it directly and must run it through the bundled Mono host.
+                    var mono = ExecCompileCache.ResolveMono();
+                    if (mono == null)
+                        return new CompileResult { Error = new ErrorResponse(
+                            "EXEC_MONO_NOT_FOUND",
+                            "Found a Windows csc.exe but no Mono host to run it under: " +
+                            EditorApplication.applicationContentsPath,
+                            suggestions: new List<string>
+                            {
+                                "Pass --csc <path-to-csc.dll> to use the .NET Roslyn compiler instead",
+                                "Pass --dotnet <path-to-dotnet>"
+                            }) };
+                    exe = mono;
+                    args = $"\"{csc}\" {rspArg} /shared";
                 }
                 else
                 {
@@ -460,6 +479,9 @@ namespace HeraAgent.Tools
                 {
                     FileName = exe,
                     Arguments = args,
+                    // An empty working directory makes some hosts resolve the launcher
+                    // relative to a bogus CWD; anchor it to our temp dir.
+                    WorkingDirectory = tmpDir,
                     UseShellExecute = false,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
@@ -477,11 +499,12 @@ namespace HeraAgent.Tools
                 {
                     return new CompileResult { Error = new ErrorResponse(
                         "EXEC_LAUNCH_FAILED",
-                        $"Failed to launch compiler process: {ex.Message}",
+                        $"Failed to launch compiler process (platform={Application.platform}, " +
+                        $"launcher={exe}, compiler={csc}): {ex.Message}",
                         suggestions: new List<string>
                         {
-                            "Check antivirus/sandbox is not blocking csc",
-                            $"Verify executable exists: {exe}"
+                            "Check antivirus/sandbox is not blocking the compiler",
+                            $"Verify launcher exists: {exe}"
                         }) };
                 }
 
@@ -489,11 +512,12 @@ namespace HeraAgent.Tools
                 {
                     return new CompileResult { Error = new ErrorResponse(
                         "EXEC_LAUNCH_FAILED",
-                        "Process.Start returned null. Compiler did not launch.",
+                        $"Process.Start returned null; compiler did not launch " +
+                        $"(platform={Application.platform}, launcher={exe}, compiler={csc}).",
                         suggestions: new List<string>
                         {
-                            "Check antivirus/sandbox is not blocking csc",
-                            $"Verify executable exists: {exe}"
+                            "Check antivirus/sandbox is not blocking the compiler",
+                            $"Verify launcher exists: {exe}"
                         }) };
                 }
 

@@ -29,6 +29,7 @@ namespace HeraAgent.Tools
         private static string s_RefRspPath;
         private static string s_CscPath;
         private static string s_DotnetPath;
+        private static string s_MonoPath;
 
         private struct CachedAssembly
         {
@@ -223,6 +224,21 @@ namespace HeraAgent.Tools
             }
         }
 
+        /// <summary>
+        /// Resolves the bundled Mono host. On macOS/Linux this is needed to run a
+        /// Windows-PE csc.exe (a managed assembly cannot be exec'd directly).
+        /// Returns null when no mono host can be found.
+        /// </summary>
+        public static string ResolveMono()
+        {
+            lock (Gate)
+            {
+                if (s_MonoPath != null && File.Exists(s_MonoPath)) return s_MonoPath;
+                s_MonoPath = FindMono();
+                return s_MonoPath;
+            }
+        }
+
         public static bool TryGetAssembly(string key, out Assembly assembly)
         {
             lock (Gate)
@@ -339,6 +355,23 @@ namespace HeraAgent.Tools
                     if (File.Exists(p)) return p;
             }
             return name;
+        }
+
+        private static string FindMono()
+        {
+            var name = "mono" + (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "");
+            var content = EditorApplication.applicationContentsPath;
+            var candidates = new[]
+            {
+                // Windows layout (applicationContentsPath = .../Editor/Data).
+                Path.Combine(content, "MonoBleedingEdge", "bin", name),
+                // macOS layout (applicationContentsPath = .../Unity.app/Contents).
+                Path.Combine(content, "Resources", "Scripting", "MonoBleedingEdge", "bin", name),
+            };
+            foreach (var c in candidates)
+                if (File.Exists(c)) return c;
+
+            return SearchFile(content, name);
         }
 
         private static string SearchFile(string dir, string name)
