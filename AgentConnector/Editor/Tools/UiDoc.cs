@@ -10,7 +10,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "ui_doc",
-        Description = "HTML→Unity UI pipeline (uGUI). export: serialize a UI subtree to the compact ui_doc IR (grounding for the agent). apply: build a ui_doc IR (always-create) under a parent — pass the doc via --file. gen_sprite: Tier-1 procedural sprite (solid/rounded_rect/gradient) baked + imported, no external dependency. Element property edits beyond the IR stay in manage_components; juice recipes ride apply's agent_hint when UI Juicy Mode is on.",
+        Description = "HTML→Unity UI pipeline (uGUI). export: serialize a UI subtree to the compact ui_doc IR (grounding for the agent). apply: realize a ui_doc IR under a parent — pass the doc via --file; --mode create (default, always-new) or upsert (match existing children by name and update rect/graphic/text in place). gen_sprite: Tier-1 procedural sprite (solid/rounded_rect/gradient/nine_slice) baked + imported, no external dependency. Element property edits beyond the IR stay in manage_components; juice recipes ride apply's agent_hint when UI Juicy Mode is on.",
         Examples = new[]
         {
             "hera-agent-unity ui_doc export --path /Canvas/Panel",
@@ -47,7 +47,10 @@ namespace HeraAgent.Tools
             [ToolParameter("apply: parent path/InstanceID to attach the doc root under. Default: an existing/auto-created Canvas.")]
             public string Parent { get; set; }
 
-            [ToolParameter("gen_sprite: the sprite spec {kind,size,color,radius,from,to,direction}. Alternative to individual flags.")]
+            [ToolParameter("apply: 'create' (default — always new objects) or 'upsert' (match existing children by name, update rect/graphic/text in place; no deletes).")]
+            public string Mode { get; set; }
+
+            [ToolParameter("gen_sprite: the sprite spec — kind (solid|rounded_rect|gradient|nine_slice), size [w,h], color/from/to, radius, border [l,b,r,t] (nine_slice), direction (gradient). Alternative to individual flags.")]
             public string Spec { get; set; }
 
             [ToolParameter("gen_sprite: output asset path under Assets/ (e.g. Assets/UI/bg.png). Default: auto under Assets/HeraGenerated/.")]
@@ -129,8 +132,10 @@ namespace HeraAgent.Tools
                 parent = canvas != null ? canvas.transform : null;
             }
 
+            bool upsert = string.Equals(p.Get("mode"), "upsert", System.StringComparison.OrdinalIgnoreCase);
+
             var stats = new UiDocSchema.ApplyStats();
-            var root = UiDocSchema.ApplyNode(rootNode, parent, stats);
+            var root = UiDocSchema.ApplyNode(rootNode, parent, stats, upsert);
 
             if (root != null)
             {
@@ -138,13 +143,17 @@ namespace HeraAgent.Tools
                 if (root.scene.IsValid()) EditorSceneManager.MarkSceneDirty(root.scene);
             }
 
+            var counts = upsert
+                ? $"{stats.Created} created, {stats.Updated} updated, {stats.Sprites} sprites"
+                : $"{stats.Created} created, {stats.Sprites} sprites";
             var message = stats.Errors.Count > 0
-                ? $"Applied ui_doc: {stats.Created} created, {stats.Sprites} sprites, {stats.Errors.Count} errors"
-                : $"Applied ui_doc: {stats.Created} created, {stats.Sprites} sprites";
+                ? $"Applied ui_doc: {counts}, {stats.Errors.Count} errors"
+                : $"Applied ui_doc: {counts}";
 
             var resp = new SuccessResponse(message, new
             {
                 created = stats.Created,
+                updated = stats.Updated,
                 sprites = stats.Sprites,
                 errors = stats.Errors,
                 root_id = root != null ? EntityIdCompat.IdOf(root) : 0,
@@ -165,6 +174,7 @@ namespace HeraAgent.Tools
                 CopyIfPresent(p, spec, "size");
                 CopyIfPresent(p, spec, "color");
                 CopyIfPresent(p, spec, "radius");
+                CopyIfPresent(p, spec, "border");
                 CopyIfPresent(p, spec, "from");
                 CopyIfPresent(p, spec, "to");
                 CopyIfPresent(p, spec, "direction");

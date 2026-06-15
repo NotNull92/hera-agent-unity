@@ -278,7 +278,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `find_gameobjects`   | 씬 GameObject 필터 (이름 / 태그 / 레이어 / 컴포넌트 / 경로 glob) + 페이지네이션. |
 | `manage_prefab`      | 프리팹 에셋: `create`(GameObject → 프리팹) / `instantiate` / headless `add_component` / `remove_component`. |
 | `manage_ui`          | uGUI 저작: `create`(UI 요소 + Canvas/EventSystem 자동 구성) / `get_rect` / `set_anchor`(명명 프리셋 그리드) / `set_rect`. raw `m_` 경로 없이 RectTransform anchor/pivot 수학 처리. **UI Juicy Mode** 켜면 `create` 가 DOTween-aware Game UI/UX Bible juice 레시피를 `agent_hint` 로 반환. |
-| `ui_doc`             | HTML→Unity UI 파이프라인(uGUI): `export`(라이브 서브트리 → 컴팩트 `ui_doc/1` JSON, grounding 용) / `apply`(IR → UI, 항상 생성, doc 은 `--file` 로) / `gen_sprite`(Tier-1 절차적 스프라이트 — solid/rounded_rect/gradient — 베이크 + import, 외부 의존성 0). Juicy Mode 켜면 `apply` 의 `agent_hint` 에 juice 레시피가 요소 타입별로 dedup 되어 실림. |
+| `ui_doc`             | HTML→Unity UI 파이프라인(uGUI): `export`(라이브 서브트리 → 컴팩트 `ui_doc/1` JSON, grounding 용) / `apply`(IR → UI; `--mode create` 또는 `upsert`로 기존 제자리 갱신; doc 은 `--file` 로) / `gen_sprite`(Tier-1 절차적 스프라이트 — solid/rounded_rect/gradient/nine_slice — 베이크 + import, 외부 의존성 0). Juicy Mode 켜면 `apply` 의 `agent_hint` 에 juice 레시피가 요소 타입별로 dedup 되어 실림. |
 
 ### 에셋 · 머티리얼 · 셰이더
 

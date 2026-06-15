@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.22 — `ui_doc` phase 2: nine_slice + upsert)
+
+- **`gen_sprite` nine_slice kind** — bakes a rounded-rect texture and sets the
+  sprite's 9-slice border (default = corner radius; override with `border [l,b,r,t]`)
+  plus FullRect mesh, so a single generated sprite scales without distorting corners.
+- **`apply --mode upsert`** — matches existing children by name and updates their
+  rect / graphic / text **in place** (same `root_id`, no duplicate objects; button
+  labels are reused) instead of always creating. Completes the
+  export → edit → apply round-trip. Default stays `create`. Response now reports
+  `updated` alongside `created`.
+- SVG was evaluated and **deferred**: the rasterization shader (`Unlit/VectorGradient`)
+  ships with the full `com.unity.vectorgraphics` package, not the built-in
+  `com.unity.modules.vectorgraphics` module, so it can't be delivered as a
+  zero-dependency, verified feature yet.
+
 ### Added (Connector 0.0.21 + CLI — `ui_doc`: HTML→Unity UI pipeline)
 
 - **New `ui_doc` tool (uGUI)** — closes the agent's weakest Unity area (UI) by

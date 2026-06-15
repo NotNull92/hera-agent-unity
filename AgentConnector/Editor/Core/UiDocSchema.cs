@@ -28,6 +28,7 @@ namespace HeraAgent
         public class ApplyStats
         {
             public int Created;
+            public int Updated;
             public int Sprites;
             public readonly List<string> Errors = new List<string>();
             public readonly HashSet<string> ElementTypes = new HashSet<string>();
@@ -120,27 +121,45 @@ namespace HeraAgent
         // APPLY  (IR node → GameObject tree, always-create)
         // =====================================================================
 
-        /// <summary>Builds the node (and its children) under <paramref name="parent"/>. Returns the created root GameObject.</summary>
-        public static GameObject ApplyNode(JObject node, Transform parent, ApplyStats stats)
+        /// <summary>
+        /// Realizes the node (and its children) under <paramref name="parent"/>.
+        /// create mode always makes new objects; upsert matches an existing child
+        /// by name and updates its rect/graphic/text in place (no component or
+        /// element-type changes, no deletion of objects absent from the doc).
+        /// Returns the realized root GameObject.
+        /// </summary>
+        public static GameObject ApplyNode(JObject node, Transform parent, ApplyStats stats, bool upsert)
         {
             if (node == null) return null;
             string element = (node["element"]?.ToString() ?? "empty").ToLowerInvariant();
             string name = node["name"]?.ToString();
 
-            var go = BuildElement(element, name, node, stats);
-            go.transform.SetParent(parent, worldPositionStays: false);
+            GameObject go = null;
+            if (upsert && !string.IsNullOrEmpty(name))
+                go = FindChildByName(parent, name);
+
+            if (go == null)
+            {
+                go = BuildElement(element, name, node, stats);
+                go.transform.SetParent(parent, worldPositionStays: false);
+                Undo.RegisterCreatedObjectUndo(go, "Hera ui_doc apply");
+                stats.Created++;
+            }
+            else
+            {
+                Undo.RecordObject(go.transform, "Hera ui_doc upsert");
+                stats.Updated++;
+            }
 
             if (node["rect"] is JObject rect) ApplyRect(go, rect);
             ApplyImage(go, node["image"] as JObject, name, stats);
             ApplyText(go, node["text"] as JObject, element, stats);
 
-            Undo.RegisterCreatedObjectUndo(go, "Hera ui_doc apply");
-            stats.Created++;
             stats.ElementTypes.Add(element);
 
             if (node["children"] is JArray children)
                 foreach (var child in children)
-                    if (child is JObject co) ApplyNode(co, go.transform, stats);
+                    if (child is JObject co) ApplyNode(co, go.transform, stats, upsert);
 
             return go;
         }
@@ -248,7 +267,14 @@ namespace HeraAgent
 
             if (element == "button")
             {
-                // Button label is a stretched child (mirrors ManageUI.BuildButton).
+                // Reuse an existing label child if present (idempotent / upsert-safe);
+                // otherwise create one — a stretched child (mirrors ManageUI.BuildButton).
+                var existing = FindTextInChildren(go);
+                if (existing != null)
+                {
+                    if (value != null) SetProp(existing, "text", value);
+                    return;
+                }
                 var labelGo = new GameObject("Text", typeof(RectTransform));
                 var txt = AddTextComponent(labelGo, engine, stats);
                 if (txt != null && value != null) SetProp(txt, "text", value);
@@ -260,6 +286,28 @@ namespace HeraAgent
                 var txt = GetComponentByName(go, "TextMeshProUGUI") ?? GetComponentByName(go, "Text");
                 if (txt != null && value != null) SetProp(txt, "text", value);
             }
+        }
+
+        static GameObject FindChildByName(Transform parent, string name)
+        {
+            if (parent == null) return null;
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                var c = parent.GetChild(i);
+                if (c.name == name) return c.gameObject;
+            }
+            return null;
+        }
+
+        static Component FindTextInChildren(GameObject go)
+        {
+            for (int i = 0; i < go.transform.childCount; i++)
+            {
+                var child = go.transform.GetChild(i).gameObject;
+                var t = GetComponentByName(child, "TextMeshProUGUI") ?? GetComponentByName(child, "Text");
+                if (t != null) return t;
+            }
+            return null;
         }
 
         // ---- element-build helpers (replicated minimal from ManageUI) ----

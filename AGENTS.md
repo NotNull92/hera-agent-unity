@@ -175,8 +175,8 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
 | Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
 | Ground an HTML→UI design on the real UI | `ui_doc export --path </path>` | Returns the compact `ui_doc/1` IR (defaults omitted). Read it before authoring. |
-| Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...]` | Always-create. Pass the doc via `--file` so it never rides inline in context. |
-| Bake a procedural sprite | `ui_doc gen_sprite --spec '{...}' --out Assets/...` | Tier-1: `solid` / `rounded_rect` / `gradient`. No external dependency. |
+| Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...] [--mode upsert]` | `create` (default) or `upsert` (update existing children in place). Pass the doc via `--file` so it never rides inline in context. |
+| Bake a procedural sprite | `ui_doc gen_sprite --spec '{...}' --out Assets/...` | Tier-1: `solid` / `rounded_rect` / `gradient` / `nine_slice` (border for 9-slice). No external dependency. |
 | Anything else (read prop, AssetDatabase, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
 
 **Compile-check only** (validate syntax/types without executing):

@@ -10,12 +10,14 @@ using Object = UnityEngine.Object;
 namespace HeraAgent
 {
     /// <summary>
-    /// Tier-1 procedural sprite generation: solid / rounded_rect / gradient.
-    /// Bakes a Texture2D headlessly, writes a PNG under Assets/, and imports it as
-    /// a Sprite. No external dependency (hera's zero-runtime-dep principle) — this
-    /// covers the CSS-shape vocabulary an HTML mockup maps onto. Richer bitmap art
-    /// is intentionally out of scope (would require an external image model).
-    /// Shared by ui_doc's gen_sprite action and apply (inline sprite specs).
+    /// Tier-1 procedural sprite generation: solid / rounded_rect / gradient /
+    /// nine_slice. Bakes a Texture2D headlessly, writes a PNG under Assets/, and
+    /// imports it as a Sprite. No external dependency (hera's zero-runtime-dep
+    /// principle) — this covers the CSS-shape vocabulary an HTML mockup maps onto.
+    /// (SVG rasterization is intentionally out of scope: it needs the Unlit/
+    /// VectorGradient shader that ships with the full com.unity.vectorgraphics
+    /// package, not the built-in module.) Shared by ui_doc's gen_sprite action
+    /// and apply (inline sprite specs).
     /// </summary>
     public static class ProceduralSprite
     {
@@ -25,10 +27,11 @@ namespace HeraAgent
         /// <summary>
         /// Generates a sprite PNG from a spec and imports it as a Sprite. Returns
         /// the asset path (under Assets/) or an error.
-        /// spec keys: kind (solid|rounded_rect|gradient), size [w,h],
-        /// color/from/to (#hex or r,g,b[,a]), radius (rounded_rect, px),
-        /// direction (gradient: vertical|horizontal). outPath null → auto under
-        /// <see cref="DefaultDir"/> keyed by the spec content.
+        /// spec keys: kind (solid|rounded_rect|gradient|nine_slice), size [w,h],
+        /// color/from/to (#hex or r,g,b[,a]), radius (rounded_rect/nine_slice, px),
+        /// border [l,b,r,t] (nine_slice; default = radius), direction (gradient:
+        /// vertical|horizontal). outPath null → auto under <see cref="DefaultDir"/>
+        /// keyed by the spec content.
         /// </summary>
         public static (string path, string err) Generate(JObject spec, string outPath)
         {
@@ -46,6 +49,7 @@ namespace HeraAgent
                 return (null, $"size {w}x{h} exceeds the {MaxDimension}px cap");
 
             Color[] pixels;
+            Vector4? border = null;
             switch (kind)
             {
                 case "solid":
@@ -58,8 +62,13 @@ namespace HeraAgent
                     pixels = Gradient(w, h, ColorOf(spec, "from", Color.white), ColorOf(spec, "to", Color.black),
                         (spec["direction"]?.ToString() ?? "vertical").ToLowerInvariant());
                     break;
+                case "nine_slice":
+                    int r = RadiusOf(spec, w, h);
+                    pixels = RoundedRect(w, h, ColorOf(spec, "color", Color.white), r);
+                    border = BorderOf(spec, r);
+                    break;
                 default:
-                    return (null, $"unknown sprite kind '{kind}'. Valid: solid, rounded_rect, gradient.");
+                    return (null, $"unknown sprite kind '{kind}'. Valid: solid, rounded_rect, gradient, nine_slice.");
             }
 
             var tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
@@ -93,10 +102,24 @@ namespace HeraAgent
                 importer.mipmapEnabled = false;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.filterMode = FilterMode.Bilinear;
+
+                if (border.HasValue)
+                {
+                    // 9-slice: set the sprite border so corners stay fixed while
+                    // edges/center stretch. FullRect mesh avoids tight-mesh gaps.
+                    var settings = new TextureImporterSettings();
+                    importer.ReadTextureSettings(settings);
+                    settings.spriteBorder = border.Value; // (left, bottom, right, top)
+                    settings.spriteMeshType = SpriteMeshType.FullRect;
+                    importer.SetTextureSettings(settings);
+                }
+
                 importer.SaveAndReimport();
             }
             return (path, null);
         }
+
+        // ---- helpers ----
 
         static string AutoPath(JObject spec, string kind, int w, int h)
         {
@@ -116,6 +139,17 @@ namespace HeraAgent
         {
             int r = spec["radius"]?.Value<int>() ?? Mathf.RoundToInt(Mathf.Min(w, h) * 0.2f);
             return Mathf.Clamp(r, 0, Mathf.Min(w, h) / 2);
+        }
+
+        // Sprite border (left, bottom, right, top). Explicit --border [l,b,r,t]
+        // wins; otherwise default to the corner radius so rounded corners stay fixed.
+        static Vector4 BorderOf(JObject spec, int radius)
+        {
+            var tok = spec["border"];
+            if (tok != null && SerializedPropertyValue.TryParseFloats(tok, 4, out var b, out _))
+                return new Vector4(b[0], b[1], b[2], b[3]);
+            float r = radius;
+            return new Vector4(r, r, r, r);
         }
 
         static Color[] Solid(int w, int h, Color c)
