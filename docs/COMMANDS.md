@@ -791,6 +791,27 @@ hera-agent-unity ui_doc gen_sprite --spec '{"kind":"rounded_rect","size":[240,64
 
 **UI Juicy Mode** — when enabled, `apply` adds an `agent_hint` with the Game UI/UX Bible juice recipes for each *distinct* element type in the doc (deduped once, not per element — strong signature, lean tokens). Guidance only; no runtime components are attached.
 
+### Icons (no SVG needed)
+
+`gen_sprite` covers CSS-shape backgrounds (solid / rounded_rect / gradient / nine_slice); it deliberately does **not** rasterize SVG (that needs the `com.unity.vectorgraphics` package — a runtime dependency hera avoids). For icons, use one of two zero-dependency, in-model patterns instead:
+
+1. **Existing icon sprite** — reference it straight from the IR. One step, no extra calls:
+   ```jsonc
+   { "name": "PlayIcon", "element": "image",
+     "rect": { "anchor": "middle-center", "size": [48, 48] },
+     "image": { "sprite": { "asset": "Assets/Icons/play.png" } } }
+   ```
+
+2. **Icon font glyph** (recommended — scalable, tintable, themeable). Create a `text` element whose `value` is the glyph character for the icon (e.g. Material Icons `U+E037` = play), then assign the icon TMP font asset via `manage_components` (font assignment is a component property edit, so it stays out of `ui_doc`):
+   ```bash
+   # 1. ui_doc apply creates the text element with the glyph as its value (engine tmp)
+   # 2. point it at the icon font:
+   hera-agent-unity manage_components set --path /Canvas/PlayIcon \
+     --type TextMeshProUGUI --property m_fontAsset --value "Assets/Fonts/MaterialIcons SDF.asset"
+   ```
+
+Prefer (1) when the project ships icon sprites, (2) when it uses an icon font (one font asset serves every glyph, and the icon inherits text color/size). Reserve actual bitmap art for externally-authored assets referenced via `sprite.asset`.
+
 ---
 
 ## reserialize

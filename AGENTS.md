@@ -199,6 +199,8 @@ Useful when you're not sure a refactor compiles before issuing a destructive cal
 
 `image.sprite` = `{ "asset": "Assets/..." }` or `{ "gen": {<spec>} }` (baked on apply). With UI Juicy Mode on, `apply` returns per-element-type juice recipes as an `agent_hint`.
 
+**Icons** (no SVG gen): reference an existing sprite via `image.sprite.asset`, or use an icon-font glyph — a `text` element whose `value` is the glyph char, then assign the icon TMP font with `manage_components set --property m_fontAsset --value <font.asset>`. See COMMANDS.md → ui_doc → Icons.
+
 ---
 
 ## 3. Common Patterns (Cookbook)
