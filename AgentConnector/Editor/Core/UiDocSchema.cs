@@ -10,11 +10,15 @@ using Object = UnityEngine.Object;
 namespace HeraAgent
 {
     /// <summary>
-    /// The ui_doc IR (schema "ui_doc/1"): a compact, defaults-omitted JSON tree
+    /// The ui_doc IR (schema "ui_doc/2"): a compact, defaults-omitted JSON tree
     /// that round-trips a uGUI subtree. <see cref="ExportNode"/> serializes the
-    /// current state (export); <see cref="ApplyNode"/> builds it (always-create,
-    /// MVP). Reuses Core utilities (ComponentTypeResolver, SerializedPropertyValue)
-    /// so the connector stays compile-free of com.unity.ugui / TextMeshPro.
+    /// current state (export); <see cref="ApplyNode"/> builds it (create or upsert).
+    /// Mirrors uGUI's serialized model: rect (both anchor modes incl. stretch
+    /// offsets), Image (type/Filled fill/extras), text, and the layout system
+    /// (Horizontal/Vertical/GridLayoutGroup, LayoutElement, ContentSizeFitter).
+    /// See docs/UI_DOC_IR.md. Reuses Core utilities (ComponentTypeResolver,
+    /// SerializedPropertyValue) so the connector stays compile-free of
+    /// com.unity.ugui / TextMeshPro — all uGUI types resolve at runtime.
     ///
     /// The anchor-preset grid and element-build helpers are replicated minimally
     /// from ManageUI (ui_doc is the 2nd consumer); extract to Core at the 3rd per
@@ -22,7 +26,7 @@ namespace HeraAgent
     /// </summary>
     public static class UiDocSchema
     {
-        public const string SchemaId = "ui_doc/1";
+        public const string SchemaId = "ui_doc/2";
 
         /// <summary>Accumulates apply results for a compact, token-disciplined summary.</summary>
         public class ApplyStats
@@ -74,10 +78,21 @@ namespace HeraAgent
             string preset = AnchorPreset.Detect(rt.anchorMin, rt.anchorMax);
             if (preset != null) o["anchor"] = preset;
             else { o["anchor_min"] = Vec(rt.anchorMin); o["anchor_max"] = Vec(rt.anchorMax); }
-
-            if (rt.anchoredPosition != Vector2.zero) o["pos"] = Vec(rt.anchoredPosition);
-            if (rt.sizeDelta != Vector2.zero) o["size"] = Vec(rt.sizeDelta);
             if (rt.pivot != new Vector2(0.5f, 0.5f)) o["pivot"] = Vec(rt.pivot);
+
+            // On a stretched axis sizeDelta is padding, not size — emit offsets so
+            // the rect round-trips exactly. Non-stretched: emit pos/size.
+            bool stretched = rt.anchorMin.x != rt.anchorMax.x || rt.anchorMin.y != rt.anchorMax.y;
+            if (stretched)
+            {
+                o["offset_min"] = Vec(rt.offsetMin);
+                o["offset_max"] = Vec(rt.offsetMax);
+            }
+            else
+            {
+                if (rt.anchoredPosition != Vector2.zero) o["pos"] = Vec(rt.anchoredPosition);
+                if (rt.sizeDelta != Vector2.zero) o["size"] = Vec(rt.sizeDelta);
+            }
             return o;
         }
 
@@ -92,6 +107,19 @@ namespace HeraAgent
             {
                 var path = AssetDatabase.GetAssetPath(spr);
                 if (!string.IsNullOrEmpty(path)) o["sprite"] = new JObject { ["asset"] = path };
+            }
+
+            var typeObj = GetProp(img, "type");
+            string typeName = typeObj?.ToString();
+            if (typeName != null && typeName != "Simple") o["type"] = typeName.ToLowerInvariant();
+            if (typeName == "Filled")
+            {
+                var fo = new JObject();
+                if (GetProp(img, "fillAmount") is float fa) fo["amount"] = System.Math.Round(fa, 3);
+                if (GetProp(img, "fillMethod") is object fm) fo["method"] = fm.ToString().ToLowerInvariant();
+                if (GetProp(img, "fillOrigin") is int forig) fo["origin"] = forig;
+                if (GetProp(img, "fillClockwise") is bool fcw) fo["clockwise"] = fcw;
+                o["fill"] = fo;
             }
             return o.Count > 0 ? o : null;
         }
@@ -157,6 +185,8 @@ namespace HeraAgent
             if (node["rect"] is JObject rect) ApplyRect(go, rect);
             ApplyImage(go, node["image"] as JObject, name, stats);
             ApplyText(go, node["text"] as JObject, element, stats);
+            // Layout group goes on before children so they auto-arrange as created.
+            ApplyLayout(go, node);
 
             stats.ElementTypes.Add(element);
 
@@ -233,6 +263,13 @@ namespace HeraAgent
             // anchoredPosition depends on anchors/pivot, so set it last.
             if (rect["pos"] != null && SerializedPropertyValue.TryParseFloats(rect["pos"], 2, out var ap, out _))
                 rt.anchoredPosition = new Vector2(ap[0], ap[1]);
+
+            // Stretched anchors: offsets are authoritative (Left/Bottom, Right/Top).
+            // Set after size/pos so they win when both are present.
+            if (rect["offset_min"] != null && SerializedPropertyValue.TryParseFloats(rect["offset_min"], 2, out var omn, out _))
+                rt.offsetMin = new Vector2(omn[0], omn[1]);
+            if (rect["offset_max"] != null && SerializedPropertyValue.TryParseFloats(rect["offset_max"], 2, out var omx, out _))
+                rt.offsetMax = new Vector2(omx[0], omx[1]);
         }
 
         static void ApplyImage(GameObject go, JObject image, string name, ApplyStats stats)
@@ -268,6 +305,26 @@ namespace HeraAgent
                     else stats.Errors.Add($"sprite asset not found for '{name}': {assetPath}");
                 }
             }
+
+            // Explicit Image.type overrides the auto-Sliced default above.
+            var typeStr = image["type"]?.ToString();
+            if (!string.IsNullOrEmpty(typeStr)) SetEnumProp(img, "type", typeStr);
+
+            // Filled image = the idiomatic progress / HP / damage bar (fill_amount),
+            // instead of resizing a child. If a fill is given without a type, it's Filled.
+            if (image["fill"] is JObject fill)
+            {
+                if (string.IsNullOrEmpty(typeStr)) SetEnumProp(img, "type", "Filled");
+                if (fill["amount"] != null) SetProp(img, "fillAmount", fill["amount"].Value<float>());
+                if (fill["method"] != null) SetEnumProp(img, "fillMethod", fill["method"].ToString());
+                if (fill["origin"] != null) SetProp(img, "fillOrigin", fill["origin"].Value<int>());
+                if (fill["clockwise"] != null) SetProp(img, "fillClockwise", fill["clockwise"].Value<bool>());
+            }
+
+            if (image["fill_center"] != null) SetProp(img, "fillCenter", image["fill_center"].Value<bool>());
+            if (image["preserve_aspect"] != null) SetProp(img, "preserveAspect", image["preserve_aspect"].Value<bool>());
+            if (image["ppu_multiplier"] != null) SetProp(img, "pixelsPerUnitMultiplier", image["ppu_multiplier"].Value<float>());
+            if (image["raycast_target"] != null) SetProp(img, "raycastTarget", image["raycast_target"].Value<bool>());
         }
 
         static void ApplyText(GameObject go, JObject text, string element, ApplyStats stats)
@@ -311,6 +368,15 @@ namespace HeraAgent
                 SetProp(txt, "color", c);
             var align = text["align"]?.ToString();
             if (!string.IsNullOrEmpty(align)) SetTextAlign(txt, align);
+            // Optional font: an asset path to a TMP_FontAsset (for TMP text) or a
+            // Font (legacy). SetProp's type check ignores a mismatch, so a TMP font
+            // path is a no-op on a legacy Text component and vice versa.
+            var fontPath = text["font"]?.ToString();
+            if (!string.IsNullOrEmpty(fontPath))
+            {
+                var font = AssetDatabase.LoadAssetAtPath<Object>(fontPath);
+                if (font != null) SetProp(txt, "font", font);
+            }
         }
 
         static void SetTextAlign(Component txt, string align)
@@ -438,14 +504,132 @@ namespace HeraAgent
             catch { /* best-effort */ }
         }
 
-        // Set Image.type = Sliced via reflection (the connector has no compile-time
-        // reference to com.unity.ugui, so we resolve the Image.Type enum at runtime).
-        static void SetImageSliced(Component img)
+        static void SetImageSliced(Component img) => SetEnumProp(img, "type", "Sliced");
+
+        // Sets an enum property by case-insensitive name, resolving the enum type at
+        // runtime (the connector has no compile-time com.unity.ugui reference).
+        static void SetEnumProp(Component comp, string prop, string enumName)
         {
-            var pi = img.GetType().GetProperty("type", BindingFlags.Public | BindingFlags.Instance);
-            if (pi == null || !pi.CanWrite) return;
-            try { pi.SetValue(img, System.Enum.Parse(pi.PropertyType, "Sliced")); }
+            if (comp == null || string.IsNullOrEmpty(enumName)) return;
+            var pi = comp.GetType().GetProperty(prop, BindingFlags.Public | BindingFlags.Instance);
+            if (pi == null || !pi.CanWrite || !pi.PropertyType.IsEnum) return;
+            try { pi.SetValue(comp, System.Enum.Parse(pi.PropertyType, enumName, true)); }
             catch { /* best-effort */ }
+        }
+
+        static Component GetOrAddByName(GameObject go, string typeName)
+        {
+            var existing = GetComponentByName(go, typeName);
+            return existing != null ? existing : AddByName(go, typeName);
+        }
+
+        // ---- layout: LayoutGroups / LayoutElement / ContentSizeFitter ----
+
+        static void ApplyLayout(GameObject go, JObject node)
+        {
+            if (node["layout"] is JObject layout) ApplyLayoutGroup(go, layout);
+            if (node["layout_element"] is JObject le) ApplyLayoutElement(go, le);
+            if (node["fit"] is JObject fit) ApplyFit(go, fit);
+        }
+
+        static void ApplyLayoutGroup(GameObject go, JObject layout)
+        {
+            string type = (layout["type"]?.ToString() ?? "horizontal").ToLowerInvariant();
+            string comp = type == "vertical" ? "VerticalLayoutGroup"
+                : type == "grid" ? "GridLayoutGroup" : "HorizontalLayoutGroup";
+            var g = GetOrAddByName(go, comp);
+            if (g == null) return;
+
+            if (layout["padding"] != null && SerializedPropertyValue.TryParseFloats(layout["padding"], 4, out var pad, out _))
+                SetProp(g, "padding", new RectOffset((int)pad[0], (int)pad[1], (int)pad[2], (int)pad[3]));
+            var align = layout["align"]?.ToString();
+            if (!string.IsNullOrEmpty(align)) SetEnumProp(g, "childAlignment", MapTextAnchor(align));
+
+            if (type == "grid")
+            {
+                if (layout["cell"] != null && SerializedPropertyValue.TryParseFloats(layout["cell"], 2, out var cs, out _))
+                    SetProp(g, "cellSize", new Vector2(cs[0], cs[1]));
+                if (layout["spacing"] != null && SerializedPropertyValue.TryParseFloats(layout["spacing"], 2, out var sp, out _))
+                    SetProp(g, "spacing", new Vector2(sp[0], sp[1]));
+                if (layout["start_corner"] != null) SetEnumProp(g, "startCorner", MapEnumWord(layout["start_corner"].ToString()));
+                if (layout["start_axis"] != null) SetEnumProp(g, "startAxis", MapEnumWord(layout["start_axis"].ToString()));
+                if (layout["constraint"] != null) SetEnumProp(g, "constraint", MapConstraint(layout["constraint"].ToString()));
+                if (layout["count"] != null) SetProp(g, "constraintCount", layout["count"].Value<int>());
+            }
+            else
+            {
+                if (layout["spacing"] != null) SetProp(g, "spacing", layout["spacing"].Value<float>());
+                if (layout["control_size"] is JArray cw && cw.Count == 2)
+                {
+                    SetProp(g, "childControlWidth", cw[0].Value<bool>());
+                    SetProp(g, "childControlHeight", cw[1].Value<bool>());
+                }
+                if (layout["force_expand"] is JArray fe && fe.Count == 2)
+                {
+                    SetProp(g, "childForceExpandWidth", fe[0].Value<bool>());
+                    SetProp(g, "childForceExpandHeight", fe[1].Value<bool>());
+                }
+                if (layout["reverse"] != null) SetProp(g, "reverseArrangement", layout["reverse"].Value<bool>());
+            }
+        }
+
+        static void ApplyLayoutElement(GameObject go, JObject le)
+        {
+            var c = GetOrAddByName(go, "LayoutElement");
+            if (c == null) return;
+            if (le["min"] is JArray mn && mn.Count == 2) { SetProp(c, "minWidth", mn[0].Value<float>()); SetProp(c, "minHeight", mn[1].Value<float>()); }
+            if (le["preferred"] is JArray pf && pf.Count == 2) { SetProp(c, "preferredWidth", pf[0].Value<float>()); SetProp(c, "preferredHeight", pf[1].Value<float>()); }
+            if (le["flexible"] is JArray fl && fl.Count == 2) { SetProp(c, "flexibleWidth", fl[0].Value<float>()); SetProp(c, "flexibleHeight", fl[1].Value<float>()); }
+            if (le["ignore"] != null) SetProp(c, "ignoreLayout", le["ignore"].Value<bool>());
+        }
+
+        static void ApplyFit(GameObject go, JObject fit)
+        {
+            var c = GetOrAddByName(go, "ContentSizeFitter");
+            if (c == null) return;
+            if (fit["h"] != null) SetEnumProp(c, "horizontalFit", MapFit(fit["h"].ToString()));
+            if (fit["v"] != null) SetEnumProp(c, "verticalFit", MapFit(fit["v"].ToString()));
+        }
+
+        // IR align ("middle-center", "top-left", "center") → TextAnchor name.
+        static string MapTextAnchor(string a)
+        {
+            var p = a.Trim().ToLowerInvariant().Split('-');
+            string v = "Middle", h = "Center";
+            string MV(string s) => s == "top" ? "Upper" : s == "bottom" ? "Lower" : s == "middle" ? "Middle" : null;
+            string MH(string s) => s == "left" ? "Left" : s == "right" ? "Right" : s == "center" ? "Center" : null;
+            if (p.Length == 2) { v = MV(p[0]) ?? "Middle"; h = MH(p[1]) ?? "Center"; }
+            else if (p.Length == 1) { var hh = MH(p[0]); var vv = MV(p[0]); if (hh != null) h = hh; if (vv != null) v = vv; }
+            return v + h;
+        }
+
+        // "upper-left"/"horizontal" → "UpperLeft"/"Horizontal".
+        static string MapEnumWord(string s)
+        {
+            var parts = s.Trim().ToLowerInvariant().Split('-', '_');
+            string r = "";
+            foreach (var p in parts) if (p.Length > 0) r += char.ToUpperInvariant(p[0]) + p.Substring(1);
+            return r;
+        }
+
+        static string MapConstraint(string s)
+        {
+            switch (s.Trim().ToLowerInvariant())
+            {
+                case "fixed-columns": case "fixed_columns": case "columns": return "FixedColumnCount";
+                case "fixed-rows": case "fixed_rows": case "rows": return "FixedRowCount";
+                default: return "Flexible";
+            }
+        }
+
+        static string MapFit(string s)
+        {
+            switch (s.Trim().ToLowerInvariant())
+            {
+                case "min": return "MinSize";
+                case "preferred": return "PreferredSize";
+                default: return "Unconstrained";
+            }
         }
 
         static JArray Vec(Vector2 v) => new JArray { Rnd(v.x), Rnd(v.y) };

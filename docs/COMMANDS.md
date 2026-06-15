@@ -776,7 +776,7 @@ hera-agent-unity ui_doc <action> [flags]
     ] } }
 ```
 
-`image.sprite` is either `{ "asset": "Assets/..." }` (existing) or `{ "gen": {<spec>} }` (baked on apply; a `nine_slice` border auto-sets `Image.type = Sliced`). `text.engine` is `auto` / `tmp` / `legacy`; `text.color` is `#hex` or `r,g,b[,a]`; `text.align` is `center` / `left` / `right` / `top-left` / `top-center`.
+`image.sprite` is either `{ "asset": "Assets/..." }` (existing) or `{ "gen": {<spec>} }` (baked on apply; a `nine_slice` border auto-sets `Image.type = Sliced`). `text.engine` is `auto` / `tmp` / `legacy`; `text.color` is `#hex` or `r,g,b[,a]`; `text.align` is `center` / `left` / `right` / `top-left` / `top-center`; `text.font` is an asset path to a TMP_FontAsset (or legacy Font) — also how you set an icon-font glyph.
 
 ```bash
 # Ground on the current UI, hand the IR to the agent

@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.26 — ui_doc IR v2: layout system, Image fill, stretch offsets)
+
+Audited the ui_doc IR against the official uGUI manual (Unity 6000.0 /
+com.unity.ugui@2.0) and closed the accuracy/coverage gaps. Schema is now
+`ui_doc/2`; full reference in `docs/UI_DOC_IR.md`. All new types resolve at
+runtime (still no compile-time com.unity.ugui dependency).
+
+- **Layout system** (the big one — relative layout, no fragile absolute coords):
+  `node.layout` adds a `HorizontalLayoutGroup` / `VerticalLayoutGroup` /
+  `GridLayoutGroup` (padding, spacing, child alignment, control/force-expand size,
+  reverse; grid cell/spacing/start corner/axis/constraint/count). `node.layout_element`
+  → `LayoutElement` (min/preferred/flexible/ignore). `node.fit` → `ContentSizeFitter`
+  (h/v: unconstrained|min|preferred).
+- **Image `type` + Filled fill**: `image.type` (simple/sliced/tiled/filled) and
+  `image.fill {amount, method, origin, clockwise}` — the idiomatic progress / HP /
+  damage bar (`fill.amount`) instead of resizing a child. Plus `fill_center`,
+  `preserve_aspect`, `ppu_multiplier`, `raycast_target`.
+- **Rect stretch offsets**: `rect.offset_min`/`offset_max` map to
+  `RectTransform.offsetMin/offsetMax`. Fixes the bug where `size` (sizeDelta) was
+  used as the size on a stretched axis (where it actually means edge padding).
+  export now emits offsets for stretched rects, pos/size for non-stretched.
+
+### Added (Connector 0.0.25 — ui_doc text font in the IR)
+
+- **`text` nodes now accept `font`** — an asset path to a TMP_FontAsset (for TMP
+  text) or a Font (legacy). `apply` loads it and assigns it via reflection; a type
+  mismatch (TMP path on a legacy Text, or vice versa) is a safe no-op. Lets a doc
+  pick a project/icon font in one step instead of a follow-up `manage_components`
+  call. (`export` intentionally omits `font` to avoid stamping every text node with
+  the default font path.) This is also the in-model path for icon-font glyphs.
+
 ### Added (Connector 0.0.24 — ui_doc text color + alignment in the IR)
 
 - **`text` nodes now accept `color` (#hex or r,g,b[,a]) and `align`**

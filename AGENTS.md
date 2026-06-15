@@ -197,9 +197,16 @@ Useful when you're not sure a refactor compiles before issuing a destructive cal
       "text": { "value": "Play", "engine": "auto" } } ] } }
 ```
 
-`image.sprite` = `{ "asset": "Assets/..." }` or `{ "gen": {<spec>} }` (baked on apply; `nine_slice` auto-sets Image type Sliced). `text` takes `value` + optional `engine` (auto/tmp/legacy), `color` (#hex), `align` (center/left/right/top-left). With UI Juicy Mode on, `apply` returns per-element-type juice recipes as an `agent_hint`.
+`image.sprite` = `{ "asset": "Assets/..." }` or `{ "gen": {<spec>} }` (baked on apply; `nine_slice` auto-sets Image type Sliced). `text` takes `value` + optional `engine` (auto/tmp/legacy), `color` (#hex), `align` (center/left/right/top-left), `font` (asset path to a TMP/legacy font — also the icon-font-glyph path). With UI Juicy Mode on, `apply` returns per-element-type juice recipes as an `agent_hint`.
 
 **Icons** (no SVG gen): reference an existing sprite via `image.sprite.asset`, or use an icon-font glyph — a `text` element whose `value` is the glyph char, then assign the icon TMP font with `manage_components set --property m_fontAsset --value <font.asset>`. See COMMANDS.md → ui_doc → Icons.
+
+**Reproducing a reference image faithfully** — rules that matter for a close match:
+- **Measure, don't guess.** Derive each element's position/size/color from the reference (the canvas is a known px space, e.g. 1080×1920). Never eyeball a position and then rationalize it. If you can't place a detail accurately, omit it — a wrong/misplaced element is worse than a missing one.
+- **Progress bars / fills:** anchor the fill to the track's *start edge* (not centered) and size it = `fraction × track length`, kept inside the track. A center-anchored fill overflows the track.
+- **Text inside a container** (button / chip / pill): give the text the *same rect* as the container + `align: center`. A smaller or offset text rect clips (e.g. "x1") or de-centers.
+- **Sub-icon rows** (runes / gems / stars under a slider): place them under their owning element as an evenly-spaced row, and match the count from the reference.
+- **Bespoke art** (coins, weapons, trophies, stat icons) can't be procedurally generated — use real sprite assets or an icon font; only fall back to a clearly-stylized placeholder, and state that it is one. Don't fabricate detail you can't match.
 
 ---
 

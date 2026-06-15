@@ -41,7 +41,7 @@ namespace HeraAgent.Tools
             [ToolParameter("export: max child depth to walk (default 8).")]
             public int? Depth { get; set; }
 
-            [ToolParameter("apply: the ui_doc IR document. The CLI injects this from --file so the doc never rides inline in the agent's context; inline JSON is also accepted.")]
+            [ToolParameter("apply: the ui_doc/2 IR document (schema in docs/UI_DOC_IR.md). Nodes carry rect (anchor + pos/size or stretch offset_min/max), image (color/sprite + type/fill for progress bars + extras), text (value/color/align/font), and the layout system (layout group + layout_element + fit) for relative arrangement. The CLI injects this from --file so the doc never rides inline in the agent's context; inline JSON is also accepted.")]
             public string Doc { get; set; }
 
             [ToolParameter("apply: parent path/InstanceID to attach the doc root under. Default: an existing/auto-created Canvas.")]
