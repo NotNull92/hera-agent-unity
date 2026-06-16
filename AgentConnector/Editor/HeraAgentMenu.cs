@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -8,8 +7,6 @@ using UnityEditor.PackageManager.Requests;
 // `using UnityEditor;` also pulls in the legacy AssetStore PackageInfo type;
 // alias the PackageManager one so bare `PackageInfo` is unambiguous.
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
-// `using System.Diagnostics;` brings in its own Debug type.
-using Debug = UnityEngine.Debug;
 using UnityEngine;
 
 namespace HeraAgent.Editor
@@ -76,14 +73,12 @@ namespace HeraAgent.Editor
                 var alreadyLatest = "hera-agent-unity is already up to date.";
                 Debug.Log($"[Hera] {alreadyLatest}");
                 EditorUtility.DisplayDialog("Hera Update", alreadyLatest, "OK");
-                LogCliStatus();
                 return;
             }
 
             var info = $"Updated hera-agent-unity to {newVersion}.";
             Debug.Log($"[Hera] {info}");
             EditorUtility.DisplayDialog("Hera Update Complete", info, "OK");
-            LogCliStatus();
         }
 
         /// <summary>
@@ -140,57 +135,6 @@ namespace HeraAgent.Editor
 
             return request.Result?.FirstOrDefault(
                 p => string.Equals(p.name, PackageName, StringComparison.OrdinalIgnoreCase));
-        }
-
-        /// <summary>
-        /// Runs `hera-agent-unity status` and logs the result to the Unity console.
-        /// Non-fatal: if the CLI is not on PATH we just log a warning.
-        /// </summary>
-        private static void LogCliStatus()
-        {
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "hera-agent-unity",
-                    Arguments = "status",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                };
-
-                using (var process = Process.Start(psi))
-                {
-                    if (process == null)
-                    {
-                        Debug.LogWarning("[Hera] Could not start hera-agent-unity status process.");
-                        return;
-                    }
-
-                    var output = process.StandardOutput.ReadToEnd();
-                    var error = process.StandardError.ReadToEnd();
-                    process.WaitForExit(10000);
-
-                    if (!string.IsNullOrWhiteSpace(output))
-                    {
-                        var firstLine = output.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-                        Debug.Log($"[Hera] CLI status: {firstLine}");
-                    }
-                    else if (!string.IsNullOrWhiteSpace(error))
-                    {
-                        // `status` is a human-target command and may write to stderr even on success.
-                        var firstLine = error.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-                        Debug.Log($"[Hera] CLI status: {firstLine}");
-                    }
-                    else
-                        Debug.Log("[Hera] CLI status returned no output.");
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[Hera] Failed to run hera-agent-unity status: {ex.Message}");
-            }
         }
 
         private const string PackageName = "com.notnull92.hera-agent-unity";
