@@ -35,11 +35,11 @@ namespace HeraAgent.Editor
 
         private static async Task UpdateHeraAgentAsync()
         {
-            var identifier = await ResolvePackageNameAsync();
+            var identifier = await ResolveAddIdentifierAsync();
             if (string.IsNullOrEmpty(identifier))
             {
                 identifier = DefaultPackageUrl;
-                Debug.Log($"[Hera] Could not resolve current package name; falling back to {identifier}");
+                Debug.Log($"[Hera] Could not resolve current package source; falling back to {identifier}");
             }
 
             var request = Client.Add(identifier);
@@ -70,11 +70,12 @@ namespace HeraAgent.Editor
         }
 
         /// <summary>
-        /// Returns the installed package name so UPM re-resolves the current
-        /// source (registry entry, git URL, or local path) at its latest version.
-        /// Returns null if the package cannot be found (e.g. embedded manually).
+        /// Builds the identifier that Client.Add expects for the currently
+        /// installed hera-agent-unity package. Git/local packages need their
+        /// source path/URL; registry packages can use the package name.
+        /// Returns null if the package cannot be found at all.
         /// </summary>
-        private static async Task<string> ResolvePackageNameAsync()
+        private static async Task<string> ResolveAddIdentifierAsync()
         {
             var request = Client.List(offlineMode: false, includeIndirectDependencies: false);
             while (!request.IsCompleted)
@@ -97,7 +98,28 @@ namespace HeraAgent.Editor
             var pkg = request.Result?.FirstOrDefault(
                 p => string.Equals(p.name, PackageName, StringComparison.OrdinalIgnoreCase));
 
-            return pkg?.name;
+            if (pkg == null)
+                return null;
+
+            switch (pkg.source)
+            {
+                case PackageSource.Git:
+                case PackageSource.Local:
+                case PackageSource.LocalTarball:
+                    // packageId is "name@source"; Client.Add needs the source part.
+                    if (!string.IsNullOrEmpty(pkg.packageId) && pkg.packageId.Contains("@"))
+                        return pkg.packageId.Substring(pkg.packageId.IndexOf("@") + 1);
+                    break;
+
+                case PackageSource.Registry:
+                case PackageSource.BuiltIn:
+                case PackageSource.Unknown:
+                default:
+                    // Registry packages can be refreshed by name alone.
+                    return pkg.name;
+            }
+
+            return pkg.name;
         }
 
         private const string PackageName = "com.notnull92.hera-agent-unity";
