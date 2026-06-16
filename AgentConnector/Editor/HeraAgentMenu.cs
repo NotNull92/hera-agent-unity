@@ -173,7 +173,10 @@ namespace HeraAgent.Editor
                     process.WaitForExit(10000);
 
                     if (!string.IsNullOrWhiteSpace(output))
-                        Debug.Log($"[Hera] CLI status:\n{output.Trim()}");
+                    {
+                        var firstLine = output.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                        Debug.Log($"[Hera] CLI status: {firstLine}");
+                    }
                     else if (!string.IsNullOrWhiteSpace(error))
                         Debug.LogWarning($"[Hera] CLI status stderr:\n{error.Trim()}");
                     else
