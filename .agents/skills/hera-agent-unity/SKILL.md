@@ -10,7 +10,7 @@ Drive a **running Unity Editor** from the terminal over localhost HTTP. Use this
 ## When to use
 
 - Manipulating the Editor: scenes, GameObjects, components, prefabs, materials, UI (`scene`, `manage_gameobject`, `manage_components`, `manage_prefab`, `manage_material`, `manage_ui`).
-- Building UI from an HTML design: `ui_doc export` (live UI → compact JSON to ground on), `ui_doc apply --file <doc.json>` (JSON → UI, always-create), `ui_doc gen_sprite` (Tier-1 procedural sprite — no external dep). Design in HTML, export to ground, apply the `ui_doc/1` IR.
+- Building UI from an HTML design: `ui_doc export` (live UI → compact JSON to ground on), `ui_doc apply --file <doc.json>` (JSON → UI; `--mode create` default or `upsert` to edit existing in place), `ui_doc gen_sprite` (procedural sprite — no external dep), `ui_doc capture` (render the live UI → PNG to verify against a reference). Design in HTML, export to ground, apply the `ui_doc/2` IR.
 - Reading the **real** console: errors, warnings, stack traces (`console`).
 - Running EditMode / PlayMode tests (`test`).
 - Driving Play Mode (`editor play` / `stop`).

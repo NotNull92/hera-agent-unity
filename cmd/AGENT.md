@@ -171,7 +171,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | List all tools | `list` or `list --compact` | 30s in-memory + on-disk cache. `--compact` keeps name + description + parameters (~50% smaller). |
 | Run multiple commands in one HTTP round-trip | `batch --file <path.json>` or pipe JSON | Sequential. `fail_fast` on first error by default. |
 | Compile-check without executing | `exec --check "<code>"` | Returns success on clean compile, `EXEC_COMPILE_ERROR` otherwise. No side effects. |
-| List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system]` | Use `--filter` to keep the response small. |
+| List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system] [--include_version]` | Returns bare name strings by default; `--filter` to scope, `--include_version` for `{name, version}` objects. |
 | Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
 | Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
 | Anything else (read prop, AssetDatabase, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
@@ -414,9 +414,9 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
 | `reserialize [paths...]` | Force YAML reserialize | (no args = whole project) |
 | `log "<msg>"` | Write to Unity console | `--level log\|warning\|error` |
-| `list` | List registered tools | `--compact`, `--tool <name>` |
+| `list` | List registered tools (names → name+desc → schema) | `--names` (names only), `--tool <name>` (full schema) |
 | `batch` | Run multiple commands in one HTTP request | `--file path.json`, or pipe JSON; `options.fail_fast` |
-| `list_assemblies` | List loaded assemblies | `--filter`, `--include_system` |
+| `list_assemblies` | List loaded assembly names | `--filter`, `--include_system`, `--include_version` |
 | `describe_type <name>` | Type info + Unity-pitfalls | `--members fields\|properties\|methods\|all`, `--limit N` |
 | `find_method <pat>` | Search methods across assemblies | `--namespace`, `--limit` (default 50) |
 | `asset-config set-csc <path>` / `set-dotnet <path>` | Persist a default csc / dotnet path | (no flags) |
