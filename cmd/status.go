@@ -163,14 +163,24 @@ func waitForState(resolve instanceResolver, timeoutMs int, category string, targ
 
 // waitForReady polls indefinitely until the heartbeat state becomes "ready".
 // Returns true if compilation had errors.
-func waitForReady(resolve instanceResolver, category string) bool {
+// waitForReady polls until the editor returns to Ready or timeoutMs elapses.
+// It is bounded by the caller's --timeout (default 60s) rather than a hidden
+// multi-minute cap, so a slow or stuck domain reload can't block the CLI long
+// enough for a wrapping agent (e.g. Claude Code's 120s bash timeout) to
+// background the process. ready=false means it timed out still compiling —
+// distinct from a clean compile that produced errors (ready=true, hasErrors=true).
+func waitForReady(resolve instanceResolver, timeoutMs int, category string) (ready, hasErrors bool) {
+	// Guard against a missing/zero timeout (e.g. a caller that never parsed
+	// flags) collapsing the deadline to "now" and timing out instantly.
+	if timeoutMs <= 0 {
+		timeoutMs = 60000
+	}
 	if shouldNarrate(category) {
 		fmt.Fprintf(os.Stderr, "Waiting for compilation...\n")
 	}
 
-	var compileErrors bool
 	err := poll.ExponentialBackoffLoop(
-		5*time.Minute,
+		time.Duration(timeoutMs)*time.Millisecond,
 		statusPollBaseInterval,
 		1500*time.Millisecond,
 		func() bool {
@@ -179,7 +189,7 @@ func waitForReady(resolve instanceResolver, category string) bool {
 				return false
 			}
 			if status.State == unitystate.Ready {
-				compileErrors = status.CompileErrors
+				hasErrors = status.CompileErrors
 				return true
 			}
 			return false
@@ -187,18 +197,18 @@ func waitForReady(resolve instanceResolver, category string) bool {
 	)
 	if err != nil {
 		if shouldNarrate(category) {
-			fmt.Fprintf(os.Stderr, "Timed out waiting for compilation (5m).\n")
+			fmt.Fprintf(os.Stderr, "Still compiling after %ds (timed out waiting).\n", timeoutMs/1000)
 		}
-		return true
+		return false, false
 	}
 	if shouldNarrate(category) {
-		if compileErrors {
+		if hasErrors {
 			fmt.Fprintf(os.Stderr, "Compilation finished with errors.\n")
 		} else {
 			fmt.Fprintf(os.Stderr, "Compilation complete.\n")
 		}
 	}
-	return compileErrors
+	return true, hasErrors
 }
 
 func shouldNarrate(category string) bool {

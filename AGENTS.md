@@ -162,7 +162,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Clear console | `console --clear` | Idempotent. |
 | Check if Editor is in play mode | `status` | Returns state field (ready/compiling/playing/paused). |
 | Enter / exit play mode | `editor play [--wait]` / `editor stop` | `--wait` blocks until fully entered. |
-| Force recompile | `editor refresh --compile` | Blocks until compilation finishes. |
+| Force recompile | `editor refresh --compile` | Waits until compile finishes or `--timeout` (60s default) elapses — raise `--timeout` for big projects, or use `refresh_unity --compile request` to fire-and-forget. |
 | Trigger a menu item | `menu "Window/General/Console"` | `File/Quit` is blocked for safety. |
 | Capture screenshot | `screenshot [--view game]` | Default scene view, 1920×1080. |
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (CLI 0.0.25 — `editor refresh --compile` no longer blocks for minutes)
+
+- **`editor refresh --compile` could hang for up to 5 minutes**, which made
+  wrapping agents (Claude Code's 120s bash timeout) background the process — the
+  recompile "kept running" in the background very frequently. `waitForReady` had a
+  hard-coded `5*time.Minute` cap and ignored `--timeout`. It now honors the caller's
+  `--timeout` (default 60s, under the 120s agent budget; raise it for big projects).
+- **Timeout is no longer misreported as a compile error.** `waitForReady` returned
+  `hasErrors=true` on timeout, so `editor refresh --compile` printed "compilation
+  finished with errors" when it had merely timed out. It now returns a distinct
+  `ready=false`, and the command reports "compilation still running after Ns — raise
+  --timeout, or poll status / console" instead. (`refresh_unity --compile request`
+  is unchanged — it was already fire-and-forget.)
+
 ### Changed (Connector 0.0.35 / CLI 0.0.24 — token & robustness follow-ups)
 
 Three follow-ups from the discovery-token audit:

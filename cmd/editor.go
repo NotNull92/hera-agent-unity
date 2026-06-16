@@ -63,7 +63,10 @@ func editorCmd(args []string, send SendFunc, resolve instanceResolver, category 
 			if !resp.Success {
 				return resp, nil
 			}
-			hasErrors := waitForReady(resolve, category)
+			ready, hasErrors := waitForReady(resolve, flagTimeout, category)
+			if !ready {
+				return nil, fmt.Errorf("compilation still running after %ds — raise --timeout, or poll `status` / `console` for completion", flagTimeout/1000)
+			}
 			if hasErrors {
 				return nil, fmt.Errorf("compilation finished with errors (check hera-agent-unity console)")
 			}
