@@ -188,13 +188,26 @@ namespace HeraAgent
             // Layout group goes on before children so they auto-arrange as created.
             ApplyLayout(go, node);
 
-            stats.ElementTypes.Add(element);
+            // A filled image is the idiomatic progress / HP bar — surface the
+            // bar-specific juice recipe (instant drop + delayed chip bar, segment
+            // ticks) instead of the generic image one.
+            stats.ElementTypes.Add(element == "image" && IsBarImage(node["image"] as JObject) ? "bar" : element);
 
             if (node["children"] is JArray children)
                 foreach (var child in children)
                     if (child is JObject co) ApplyNode(co, go.transform, stats, upsert);
 
             return go;
+        }
+
+        // A filled Image (image.fill present, or image.type == "filled") is a
+        // progress / health / damage bar rather than a plain graphic.
+        static bool IsBarImage(JObject image)
+        {
+            if (image == null) return false;
+            if (image["fill"] is JObject) return true;
+            var t = image["type"]?.ToString();
+            return t != null && t.ToLowerInvariant() == "filled";
         }
 
         static GameObject BuildElement(string element, string name, JObject node, ApplyStats stats)

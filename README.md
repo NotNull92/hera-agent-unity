@@ -177,10 +177,11 @@ Every recipe is **specific** — exact scale percentages, easing curves, and tim
 |---|---|
 | **Button** | Hover / press / release state machine with overshoot, click SFX, mobile haptics, disabled styling |
 | **Panel / popup** | Slow exaggerated entrance (pop-in), screen dim, fast quiet exit |
-| **Image** | Pop-in on appear, rarity-scaled reward pulse + glow, hover lift |
-| **Text** | Staggered line entrances, count-up numbers, floating damage popups |
+| **Image** | Pop-in on appear, rarity-scaled reward pulse + glow, flash-on-hit (white + interrupt + knockback), hover lift |
+| **Bar** (filled image) | The signature health/progress juice — instant fill drop with a delayed "chip" bar catching up, low-value danger pulse, segment ticks |
+| **Text** | Staggered line entrances, count-up numbers (rising-pitch combo SFX), floating damage popups |
 | **Container** | Staggered child entrances, animated layout changes instead of snapping |
-| **Canvas** | Stand up the tween + audio infrastructure, animate every transition, keep UI footprint lean |
+| **Canvas** | Stand up the tween + audio infrastructure, hit-pause on big impacts, animate every transition, keep UI footprint lean |
 
 **It adapts to your toolchain.** If DOTween is enabled in Hera Settings, the recipe tells the agent to use `DOScale`-style tweens (the project standard) — otherwise it falls back to a coroutine/lerp approach that works in any project. And it always reminds the agent to gate strong motion behind a reduce-motion option, so juice never becomes nausea.
 

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Connector 0.0.36 — UI Juicy Mode: deeper Game-Feel coverage)
+
+Audited `Core/UIJuiceGuide` against the "Secrets of Game Feel and Juice" playbook
+and closed four gaps, plus added a dedicated bar recipe:
+
+- **Audio depth** — `button` now advises randomizing the click SFX pitch (±5–8 %)
+  so repeats don't fatigue, and `text` count-up advises a **rising pitch** per
+  consecutive step (Peggle / Mario-coin) to sell a combo's build-up.
+- **Hit-pause / freeze-frame** — `canvas` setup now teaches the ~30–80 ms freeze on
+  high-impact moments (it was only hinted at via `.SetUpdate(true)`).
+- **Flash-on-hit** — `image` now advises a 1–2 frame white flash + tween interrupt +
+  knockback + bassy impact SFX when an element takes damage.
+- **The golden rule** — the shared footer now states it explicitly: *double down on
+  the screen's purpose* (reward UI earns big juice; precision / input-heavy UI stays
+  calm and readable).
+- **New `bar` recipe** — the signature health / progress-bar juice (instant fill drop
+  with a delayed "chip" bar catching up, low-value danger pulse, segment ticks). It
+  fires through `ui_doc apply`: a node whose `image` has a `fill` (or `type: filled`)
+  is now classified as `bar` for the juice hint instead of the generic `image`.
+
 ### Fixed (CLI 0.0.25 — `editor refresh --compile` no longer blocks for minutes)
 
 - **`editor refresh --compile` could hang for up to 5 minutes**, which made
