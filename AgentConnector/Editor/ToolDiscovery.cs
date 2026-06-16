@@ -158,38 +158,31 @@ namespace HeraAgent
         }
 
         /// <summary>
-        /// Slim default for agent consumers: name, description, schema only.
-        /// Token-cost of `list` was ~90% redundancy across parameters/schema/metadata.
-        /// For full per-tool detail use GetToolSchema(name).
+        /// Default `list` for agent consumers: name + description, no schema.
+        /// Per-tool schemas (the bulk of the bytes) are fetched on demand via
+        /// `list --tool &lt;name&gt;`, so the default catalogue stays cheap — the
+        /// full-schema dump was ~6k tokens for ~26 tools, almost all of it the
+        /// per-parameter JSON Schema the agent rarely needs up front.
         /// </summary>
-        public static List<object> GetToolSchemas()
+        public static List<object> GetToolSummaries()
         {
             var tools = new List<object>();
-            foreach (var (name, type, attr) in EnumerateTools())
-            {
-                var paramsType = type.GetNestedType("Parameters");
-                tools.Add(new
-                {
-                    name,
-                    description = attr.Description ?? "",
-                    schema = GetToolMetadata(type)?.ParametersSchema
-                        ?? GetLegacyParameterSchema(paramsType),
-                });
-            }
+            foreach (var (name, _, attr) in EnumerateTools())
+                tools.Add(new { name, description = attr.Description ?? "" });
             return tools;
         }
 
         /// <summary>
-        /// Names-only listing — one entry per tool. Use when an agent just needs
-        /// to know what's available before picking one to introspect.
+        /// Names-only listing — a flat array of tool names, nothing else. The
+        /// cheapest discovery surface (the AGENTS.md bootstrap runs this every
+        /// session); descriptions live in the default `list`, schemas in
+        /// `list --tool &lt;name&gt;`.
         /// </summary>
         public static List<object> GetToolNames()
         {
             var tools = new List<object>();
-            foreach (var (name, _, attr) in EnumerateTools())
-            {
-                tools.Add(new { name, description = attr.Description ?? "" });
-            }
+            foreach (var (name, _, _) in EnumerateTools())
+                tools.Add(name);
             return tools;
         }
 
@@ -228,7 +221,7 @@ namespace HeraAgent
 
         // BuildExamples zips attr.Examples and attr.ExampleDescriptions by
         // index. Missing descriptions become empty strings; tools that don't
-        // declare Examples return an empty list. The slim GetToolSchemas()
+        // declare Examples return an empty list. The slim GetToolSummaries()
         // intentionally omits this field — examples are deep-dive material,
         // surfaced only by `list --tool <name>` to keep `list` itself lean.
         private static List<object> BuildExamples(HeraToolAttribute attr)

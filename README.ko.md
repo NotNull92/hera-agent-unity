@@ -380,7 +380,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 |---|---|
 | `describe_type`   | 라이브 타입 리플렉션 — 멤버 / 시그니처 / **Unity 함정** + Manual 링크. |
 | `find_method`     | 로드된 어셈블리 전반에서 메서드 이름 검색. |
-| `list_assemblies` | 로드된 어셈블리 목록 (기본적으로 `System.*` 노이즈 제외). |
+| `list_assemblies` | 로드된 어셈블리 **이름** 목록 (`System.*` 제외; `--include_version` / `--include_location` 로 보강). |
 | `unity_docs`      | 오프라인 Unity ScriptReference 조회 — 최소 `title / signature / summary` 응답 (~33 토큰). |
 
 ### 워크플로우
@@ -388,7 +388,7 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | 명령어 | 설명 |
 |---|---|
 | `batch` | 여러 명령을 한 HTTP 라운드트립에 원자적으로 실행. |
-| `list`  | 등록된 도구 목록 — 슬림(기본) / `--names` / `--tool <name>` 전체 스키마. |
+| `list`  | 등록된 도구 목록 — 이름만(`--names`) / 이름+설명(기본) / `--tool <name>` 전체 스키마. |
 
 ### 상태 · 유지보수
 

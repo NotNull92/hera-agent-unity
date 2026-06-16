@@ -405,7 +405,14 @@ namespace HeraAgent.Tools
 
             try
             {
-                File.WriteAllText(srcFile, source, utf8);
+                // Write the snippet WITH a UTF-8 BOM so csc unambiguously detects
+                // UTF-8 and never falls back to the system code page (CP949 on
+                // Korean Windows) to read the source — that fallback needs
+                // System.Text.Encoding.CodePages, which the .NET-Core Roslyn
+                // runtime (Unity 6.5+ `dotnet exec csc.dll`) does not ship. The
+                // .rsp stays BOM-less (a BOM there would prepend to the first arg
+                // and break flag parsing).
+                File.WriteAllText(srcFile, source, new UTF8Encoding(true));
 
                 var refsRsp = ExecCompileCache.GetRefRspPath();
 
@@ -421,6 +428,15 @@ namespace HeraAgent.Tools
                 // system code page (CP949 etc.), and reading them as UTF-8 via
                 // StandardErrorEncoding produces mojibake in the response.
                 rsp.AppendLine("-preferreduilang:en-US");
+                // Emit compiler output as UTF-8 instead of the console's OEM code
+                // page. Without this, csc on the .NET-Core Roslyn path (Unity 6.5+,
+                // `dotnet exec csc.dll`) encodes its redirected output via
+                // Encoding.GetEncoding(949) on Korean Windows, which needs
+                // System.Text.Encoding.CodePages — absent from the bundled runtime —
+                // so csc crashes before compiling anything (every exec returned
+                // EXEC_COMPILE_ERROR). Mono csc.exe (Unity 6.0–6.4) also accepts the
+                // flag, so this stays version-agnostic and can't regress 6.3/6.4.
+                rsp.AppendLine("-utf8output");
                 rsp.AppendLine($"-langversion:{LangVersion}");
                 rsp.AppendLine($"@\"{refsRsp}\"");
                 rsp.AppendLine($"\"{srcFile}\"");

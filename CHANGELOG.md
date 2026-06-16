@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.32 — exec on non-English Windows + Unity 6.5)
+
+- **`exec` failed to compile *anything* on Korean/Japanese/Chinese Windows under
+  Unity 6.5+** with `EXEC_COMPILE_ERROR` and a `System.Text.Encoding.CodePages`
+  assembly-load error — every snippet, even `return 1+1;`. Root cause: Unity 6.5
+  runs the snippet compiler as `dotnet exec csc.dll` (.NET-Core Roslyn), and on a
+  non-Latin console csc tries to encode its redirected output via
+  `Encoding.GetEncoding(<oem-codepage>)`, which needs `System.Text.Encoding.CodePages`
+  — an assembly the bundled runtime doesn't ship — so csc crashes before compiling.
+  Unity 6.0–6.4 used Mono `csc.exe`, which bundles those code pages, so the bug was
+  6.5-specific. Fix is **version-agnostic** (no compiler-path branching, so it can't
+  regress 6.3/6.4): add `-utf8output` to force UTF-8 compiler output, and write the
+  snippet with a UTF-8 BOM so csc never falls back to the system code page to read
+  the source. Verified: exec + `--usings` + `--compile_only` + `--file` all still
+  pass on Unity 6.3 (Mono path) after the change.
+
+### Changed (Connector 0.0.32 — discovery token cost)
+
+Measured the AI-agent discovery surface and cut the three biggest payloads. No
+behavior change beyond response shape; full detail stays one flag away.
+
+- **`list` (default) no longer dumps every tool's full JSON Schema** — it returns
+  `{name, description}` per tool (~70% fewer tokens). The per-tool schema, which
+  was the bulk of the bytes, is still available on demand via `list --tool <name>`.
+- **`list --names` now returns a flat array of names** (`["exec", …]`) instead of
+  `{name, description}` objects — the cheapest discovery surface, and the one the
+  AGENTS.md bootstrap runs every session.
+- **`list_assemblies` returns bare name strings by default** instead of
+  `{name, version}` objects — most assemblies report `0.0.0.0`, so the version was
+  noise (~50% fewer tokens). Opt back in with `--include_version`; `--include_location`
+  still implies version.
+
 ## [CLI 0.0.23 / Connector 0.0.30] - 2026-06-15
 
 ### Fixed

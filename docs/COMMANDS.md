@@ -911,10 +911,20 @@ hera-agent-unity profiler enable
 
 ## list
 
-List all registered tools with their parameter schemas.
+List registered tools. Three detail levels, cheapest first — the per-tool
+parameter schema is the bulk of the bytes, so it's opt-in rather than dumped
+up front:
+
+| Form | Returns | Use when |
+|:---|:---|:---|
+| `list --names` | flat array of tool names only | cheapest discovery (the AGENTS.md bootstrap runs this) |
+| `list` | `{name, description}` per tool, no schema | you want a one-line hint per tool |
+| `list --tool <name>` | full parameter + output schema for one tool | you're about to call that tool |
 
 ```bash
+hera-agent-unity list --names
 hera-agent-unity list
+hera-agent-unity list --tool exec
 ```
 
 Useful for discovering custom tools added to the project.

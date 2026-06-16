@@ -285,7 +285,7 @@ namespace HeraAgent
             if (namesOnly)
                 return new SuccessResponse("Available tools", ToolDiscovery.GetToolNames());
 
-            return new SuccessResponse("Available tools", ToolDiscovery.GetToolSchemas());
+            return new SuccessResponse("Available tools", ToolDiscovery.GetToolSummaries());
         }
     }
 }

@@ -121,7 +121,7 @@ namespace HeraAgent
     /// <summary>
     /// Represents metadata for a CLI tool including parameter schemas.
     /// Only ParametersSchema and OutputSchema are consumed downstream
-    /// (ToolDiscovery.GetToolSchema / GetToolSchemas).
+    /// (ToolDiscovery.GetToolSchema / GetToolSummaries).
     /// </summary>
     public class ToolMetadata
     {

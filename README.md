@@ -380,7 +380,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 |---|---|
 | `describe_type`   | Reflect a live type — members, signatures, **Unity pitfalls** + Manual links. |
 | `find_method`     | Search method names across loaded assemblies. |
-| `list_assemblies` | List loaded assemblies (skips `System.*` noise by default). |
+| `list_assemblies` | List loaded assembly **names** (skips `System.*`; `--include_version` / `--include_location` to enrich). |
 | `unity_docs`      | Offline Unity ScriptReference lookup — minimal `title / signature / summary` reply (~33 tokens). |
 
 ### Workflow
@@ -388,7 +388,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 | Command | What it does |
 |---|---|
 | `batch` | Execute multiple commands atomically in one HTTP round-trip. |
-| `list`  | List registered tools — slim (default), `--names`, or `--tool <name>` for full schema. |
+| `list`  | List registered tools — names only (`--names`), name+description (default), or `--tool <name>` for the full schema. |
 
 ### Status & maintenance
 

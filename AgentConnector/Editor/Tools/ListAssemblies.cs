@@ -12,15 +12,15 @@ namespace HeraAgent.Tools
         {
             "list_assemblies",
             "list_assemblies --filter Unity.Entities",
-            "list_assemblies --include_system true",
+            "list_assemblies --include_version true",
             "list_assemblies --include_location true",
         },
         ExampleDescriptions = new[]
         {
-            "List project + Unity assemblies (system DLLs filtered out, location omitted)",
+            "List project + Unity assembly names (system DLLs filtered out; bare name strings)",
             "Filter by substring (case-insensitive)",
-            "Include System.* and mscorlib in the result",
-            "Include DLL file paths (default off — most AI agents don't need them)",
+            "Return {name, version} objects instead of bare names",
+            "Include DLL file paths (implies version; default off — most AI agents don't need them)",
         })]
     public static class ListAssemblies
     {
@@ -32,7 +32,10 @@ namespace HeraAgent.Tools
             [ToolParameter("Include System.*, mscorlib, netstandard etc. Default false because AI agents rarely need them.")]
             public bool IncludeSystem { get; set; }
 
-            [ToolParameter("Include each assembly's DLL location (full path). Default false — saves ~50% of response size.")]
+            [ToolParameter("Return {name, version} objects instead of bare name strings. Default false — most assemblies report 0.0.0.0, so the version is dropped to roughly halve the payload.")]
+            public bool IncludeVersion { get; set; }
+
+            [ToolParameter("Include each assembly's DLL location (full path), implies version. Default false — most AI agents don't need them.")]
             public bool IncludeLocation { get; set; }
         }
 
@@ -47,6 +50,7 @@ namespace HeraAgent.Tools
             var p = new ToolParams(@params);
             var filter = p.Get("filter");
             var includeSystem = p.GetBool("include_system");
+            var includeVersion = p.GetBool("include_version");
             var includeLocation = p.GetBool("include_location");
 
             var sortedAssemblies = AppDomain.CurrentDomain.GetAssemblies()
@@ -66,16 +70,24 @@ namespace HeraAgent.Tools
                     name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) < 0)
                     continue;
 
-                var version = asm.GetName().Version?.ToString();
                 if (includeLocation)
                 {
+                    var version = asm.GetName().Version?.ToString();
                     string location = null;
                     try { location = asm.Location; } catch { /* dynamic / in-memory */ }
                     result.Add(new { name, version, location });
                 }
+                else if (includeVersion)
+                {
+                    var version = asm.GetName().Version?.ToString();
+                    result.Add(new { name, version });
+                }
                 else
                 {
-                    result.Add(new { name, version });
+                    // Bare name — most assemblies report 0.0.0.0, so the version
+                    // field is noise the agent rarely reads. Opt in with
+                    // --include_version when it actually matters.
+                    result.Add(name);
                 }
             }
 
