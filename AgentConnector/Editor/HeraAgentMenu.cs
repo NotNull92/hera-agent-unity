@@ -49,8 +49,6 @@ namespace HeraAgent.Editor
                 Debug.Log($"[Hera] Could not resolve current package source; falling back to {identifier}");
             }
 
-            LogCliStatus();
-
             var request = Client.Add(identifier);
             while (!request.IsCompleted)
             {
@@ -78,12 +76,14 @@ namespace HeraAgent.Editor
                 var alreadyLatest = "hera-agent-unity is already up to date.";
                 Debug.Log($"[Hera] {alreadyLatest}");
                 EditorUtility.DisplayDialog("Hera Update", alreadyLatest, "OK");
+                LogCliStatus();
                 return;
             }
 
             var info = $"Updated hera-agent-unity to {newVersion}.";
             Debug.Log($"[Hera] {info}");
             EditorUtility.DisplayDialog("Hera Update Complete", info, "OK");
+            LogCliStatus();
         }
 
         /// <summary>
