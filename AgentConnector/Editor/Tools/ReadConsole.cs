@@ -15,6 +15,12 @@ namespace HeraAgent.Tools
         private static FieldInfo _modeField, _messageField, _fileField, _lineField;
         private static Type _logEntryType;
 
+        /// <summary>
+        /// console relies on the UnityEditor internal LogEntries API because Unity
+        /// does not expose a public way to read the console programmatically. The
+        /// reflection results are cached; if the internal shape changes across a
+        /// Unity version, ReadConsole gracefully degrades to READCONSOLE_INIT_FAILED.
+        /// </summary>
         static ReadConsole()
         {
             try
@@ -106,7 +112,7 @@ namespace HeraAgent.Tools
             var type = p.Get("type", "error,warning,log").ToLower();
             var types = type.Split(',').Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
 
-            int? count = p.GetInt("lines") ?? p.GetInt("count");
+            int? count = p.GetInt("lines") ?? p.GetInt("count") ?? 20;
             string stacktrace = p.Get("stacktrace", "user").ToLower();
             int since = p.GetInt("since") ?? 0;
 
@@ -141,7 +147,7 @@ namespace HeraAgent.Tools
                     if (!want) continue;
 
                     filteredTotal++;
-                    if (count.HasValue && entries.Count >= count.Value)
+                    if (count.HasValue && entries.Count > count.Value)
                     {
                         truncated = true;
                         continue;

@@ -70,8 +70,6 @@ var humanCategories = map[string]struct{}{
 	"status":    {},
 	"update":    {},
 	"doctor":    {},
-	"help":      {},
-	"version":   {},
 }
 
 // isHumanCommand reports whether the given subcommand is run by a human.
