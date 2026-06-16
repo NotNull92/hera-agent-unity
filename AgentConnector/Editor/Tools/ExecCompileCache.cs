@@ -201,7 +201,15 @@ namespace HeraAgent.Tools
             {
                 if (s_CscPath != null && File.Exists(s_CscPath)) return s_CscPath;
                 var configPath = HeraSettings.DefaultCscPath;
-                if (!string.IsNullOrEmpty(configPath) && File.Exists(configPath))
+                // Honor a configured csc path — UNLESS it points at the bundled
+                // Mono csc.exe. The Hera Settings auto-detect persists that path on
+                // Unity versions where it can't find the .NET SDK Roslyn (6.5 moved
+                // csc.dll to DotNetSdk/sdk/<version>/Roslyn/bincore/), but Mono
+                // csc.exe crashes loading System.Text.Encoding.CodePages on a
+                // non-Latin (CP949 etc.) Windows console — breaking every exec. Fall
+                // through to FindCsc, which resolves the working csc.dll, so a stale
+                // or auto-detected Mono path can't override the fix.
+                if (!string.IsNullOrEmpty(configPath) && File.Exists(configPath) && !IsMonoCsc(configPath))
                     s_CscPath = configPath;
                 else
                     s_CscPath = FindCsc();
@@ -306,6 +314,17 @@ namespace HeraAgent.Tools
             var sb = new StringBuilder(bytes.Length * 2);
             foreach (var b in bytes) sb.Append(b.ToString("x2"));
             return sb.ToString();
+        }
+
+        // True for the bundled Mono Roslyn (MonoBleedingEdge/.../csc.exe), which
+        // fails to load System.Text.Encoding.CodePages on a non-Latin Windows
+        // console. A VS / MSBuild csc.exe (full .NET Framework) is not flagged.
+        private static bool IsMonoCsc(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            var p = path.Replace('\\', '/');
+            return p.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+                && p.IndexOf("MonoBleedingEdge", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private static string FindCsc()

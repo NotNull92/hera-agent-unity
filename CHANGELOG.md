@@ -7,12 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed (Connector 0.0.33 — exec on non-English Windows + Unity 6.5)
+### Fixed (Connector 0.0.34 — exec on non-English Windows + Unity 6.5)
 
 - **`exec` failed to compile *anything* on Korean/Japanese/Chinese Windows under
   Unity 6.5+** with `EXEC_COMPILE_ERROR` and a `System.Text.Encoding.CodePages`
-  assembly-load error — every snippet, even `return 1+1;`. **Two root causes**, both
+  assembly-load error — every snippet, even `return 1+1;`. **Three root causes**, all
   fixed version-agnostically (no per-version branching, so 6.0–6.4 can't regress):
+  - **Stale/auto-detected `defaultCscPath` override.** The Hera Settings window
+    auto-detects a compiler and persists it to `asset-config.json` `defaultCscPath`,
+    which `ResolveCsc` honored *before* `FindCsc`. On Unity versions where its
+    detector can't find the SDK Roslyn it saves the bundled Mono `csc.exe` — so even
+    a corrected `FindCsc` was bypassed. `ResolveCsc` now ignores a `defaultCscPath`
+    that points at the Mono `csc.exe` (`MonoBleedingEdge/…/csc.exe`) and falls through
+    to `FindCsc`, so a stale or mis-detected path can't break exec. A real csc.dll or
+    VS/MSBuild csc.exe override is still honored.
   - **Wrong compiler selected.** Unity moved the .NET SDK Roslyn between versions —
     6.0–6.4: `…/DotNetSdkRoslyn/csc.dll`; 6.5+: `…/DotNetSdk/sdk/<version>/Roslyn/
     bincore/csc.dll` (version-numbered). `FindCsc` had a hard-coded
