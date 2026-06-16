@@ -162,7 +162,6 @@ namespace HeraAgent.Tools
                 {
                     name = m.Name,
                     signature = FormatMethodSignature(m),
-                    is_static = m.IsStatic,
                 }).ToArray(),
             };
         }

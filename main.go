@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -28,7 +29,11 @@ func run() int {
 	defer stop()
 
 	if err := cmd.Execute(ctx); err != nil {
-		fmt.Fprintln(os.Stderr, tui.ErrorStyle.Render(fmt.Sprintf("Error: %v", err)))
+		// Tool-command failures already printed a JSON error envelope to stderr;
+		// don't print a second, duplicate "Error: …" line for them.
+		if !errors.Is(err, cmd.ErrCommandFailed) {
+			fmt.Fprintln(os.Stderr, tui.ErrorStyle.Render(fmt.Sprintf("Error: %v", err)))
+		}
 		return 1
 	}
 	return 0

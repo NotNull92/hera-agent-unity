@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -18,6 +19,11 @@ import (
 )
 
 var Version = "dev"
+
+// ErrCommandFailed signals that a tool command returned success=false. The
+// compact JSON error envelope has already been printed to stderr, so main()
+// exits non-zero on this sentinel without printing a duplicate error line.
+var ErrCommandFailed = errors.New("command failed")
 
 var (
 	flagPort        int
@@ -262,6 +268,14 @@ func Execute(ctx context.Context) error {
 	printUpdateNotice(category)
 
 	if !resp.Success {
+		// For AI-target (tool) commands the printer already wrote the compact
+		// JSON error envelope to stderr; returning the message again would
+		// double it in the agent's captured output (and waste tokens). Signal
+		// failure with a sentinel that main() exits on without re-printing.
+		// Human commands keep the readable "Error: command failed: …" line.
+		if !isHumanCommand(category) {
+			return ErrCommandFailed
+		}
 		return fmt.Errorf("command failed: %s", resp.Message)
 	}
 

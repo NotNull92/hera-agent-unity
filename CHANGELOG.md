@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Connector 0.0.35 / CLI 0.0.24 — token & robustness follow-ups)
+
+Three follow-ups from the discovery-token audit:
+
+- **`find_method` / `describe_type` drop the redundant `is_static` field.** The
+  method signature already encodes the `static` modifier (and the name), so the
+  separate boolean was pure overhead. `find_method`'s grouped results now return
+  bare signature strings instead of `{signature, is_static}` objects. (Property /
+  field / event `is_static` stays — those carry it nowhere else.)
+- **Tool-command errors no longer print the message twice.** A failed tool command
+  emitted both the compact JSON error envelope (for the agent to parse) *and* a
+  human `Error: command failed: <message>` line — doubling the error text in the
+  agent's captured output. The CLI now exits non-zero on an `ErrCommandFailed`
+  sentinel without the duplicate line for AI-target commands; human commands keep
+  the readable line.
+- **Hera Settings compiler auto-detect prefers `csc.dll`.** `FindUnityBuiltInCsc`
+  hard-coded the 6.0–6.4 `DotNetSdkRoslyn/csc.dll` path and otherwise fell to Mono
+  `csc.exe`; it now recursively prefers any `csc.dll` (finding the 6.5 SDK path
+  too) so the persisted `defaultCscPath` can't point at the CodePages-breaking Mono
+  compiler. Defense-in-depth on top of the v0.0.34 `ResolveCsc` guard.
+
 ### Fixed (Connector 0.0.34 — exec on non-English Windows + Unity 6.5)
 
 - **`exec` failed to compile *anything* on Korean/Japanese/Chinese Windows under

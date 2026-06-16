@@ -8,7 +8,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "find_method",
-        Description = "Search method names across loaded assemblies by substring. Returns declaring type, signature, and whether the method is static. Useful when you remember 'something with Refresh' but not the exact class.",
+        Description = "Search method names across loaded assemblies by substring. Returns declaring type and signature (the signature includes the static modifier and return type). Useful when you remember 'something with Refresh' but not the exact class.",
         Examples = new[]
         {
             "find_method Refresh",
@@ -62,7 +62,7 @@ namespace HeraAgent.Tools
             if (includePrivate) binding |= BindingFlags.NonPublic;
 
             // Internal accumulator: keep a single representation, transform at the end.
-            var rawHits = new List<(string DeclaringType, string Assembly, string Signature, bool IsStatic)>();
+            var rawHits = new List<(string DeclaringType, string Assembly, string Signature)>();
             var totalMatches = 0;
 
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
@@ -91,7 +91,7 @@ namespace HeraAgent.Tools
                         totalMatches++;
                         if (rawHits.Count < limit)
                         {
-                            rawHits.Add((t.FullName, asm.GetName().Name, DescribeType.FormatMethodSignature(m), m.IsStatic));
+                            rawHits.Add((t.FullName, asm.GetName().Name, DescribeType.FormatMethodSignature(m)));
                         }
                     }
                 }
@@ -110,11 +110,10 @@ namespace HeraAgent.Tools
                     {
                         type = g.Key,
                         assembly = g.First().Assembly,
-                        methods = g.Select(h => new
-                        {
-                            signature = h.Signature,
-                            is_static = h.IsStatic,
-                        }).ToArray(),
+                        // Bare signature strings — the signature already encodes the
+                        // static modifier and the method name, so an object wrapper
+                        // per method was pure token overhead.
+                        methods = g.Select(h => h.Signature).ToArray(),
                     })
                     .ToArray();
 
@@ -131,7 +130,6 @@ namespace HeraAgent.Tools
                 declaring_type = h.DeclaringType,
                 assembly = h.Assembly,
                 signature = h.Signature,
-                is_static = h.IsStatic,
             }).ToList();
 
             return new SuccessResponse(message, new

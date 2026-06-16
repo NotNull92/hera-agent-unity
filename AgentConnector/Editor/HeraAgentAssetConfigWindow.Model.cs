@@ -379,19 +379,34 @@ namespace HeraAgent.Editor
             var appContents = EditorApplication.applicationContentsPath;
             if (string.IsNullOrEmpty(appContents)) return null;
 
-            // Unity's own .NET SDK Roslyn (newer Unity versions)
-            var dotNetSdkRoslyn = Path.Combine(appContents, "DotNetSdkRoslyn", "csc.dll");
-            if (IsValidCscPath(dotNetSdkRoslyn)) return dotNetSdkRoslyn;
+            // Unity's own .NET SDK Roslyn — the correct compiler. Its path moved
+            // between versions (6.0–6.4: DotNetSdkRoslyn/csc.dll; 6.5+: DotNetSdk/
+            // sdk/<version>/Roslyn/bincore/csc.dll) and macOS nests under
+            // Resources/Scripting, so fast-path the stable layouts then fall back
+            // to a recursive csc.dll search.
+            var dllCandidates = new[]
+            {
+                Path.Combine(appContents, "DotNetSdkRoslyn", "csc.dll"),
+                Path.Combine(appContents, "Resources", "Scripting", "DotNetSdkRoslyn", "csc.dll"),
+            };
+            foreach (var c in dllCandidates)
+                if (IsValidCscPath(c)) return c;
 
-            // MonoBleedingEdge fallback (older Unity versions)
-            var name = Application.platform == RuntimePlatform.WindowsEditor ? "csc.exe" : "csc.exe";
-            var monoCsc = Path.Combine(appContents, "MonoBleedingEdge", "lib", "mono", "4.5", name);
-            if (File.Exists(monoCsc)) return monoCsc;
-
-            // Deep search as last resort (limited depth)
             try
             {
-                foreach (var file in Directory.GetFiles(appContents, name, SearchOption.AllDirectories))
+                foreach (var file in Directory.GetFiles(appContents, "csc.dll", SearchOption.AllDirectories))
+                    if (IsValidCscPath(file)) return file;
+            }
+            catch { }
+
+            // Mono csc.exe is a last resort only — it fails to load
+            // System.Text.Encoding.CodePages on a non-Latin Windows console, so we
+            // reach for it only when no .NET SDK Roslyn csc.dll ships.
+            var monoCsc = Path.Combine(appContents, "MonoBleedingEdge", "lib", "mono", "4.5", "csc.exe");
+            if (File.Exists(monoCsc)) return monoCsc;
+            try
+            {
+                foreach (var file in Directory.GetFiles(appContents, "csc.exe", SearchOption.AllDirectories))
                     return file;
             }
             catch { }
