@@ -311,16 +311,30 @@ namespace HeraAgent.Tools
         private static string FindCsc()
         {
             var content = EditorApplication.applicationContentsPath;
-            var candidates = new[]
+            // The .NET SDK Roslyn (`dotnet exec csc.dll`) is the modern, correct
+            // compiler. Its path moved between Unity versions — 6.0–6.4:
+            // DotNetSdkRoslyn/csc.dll; 6.5+: DotNetSdk/sdk/<version>/Roslyn/
+            // bincore/csc.dll (version-numbered) — and macOS nests everything
+            // under Resources/Scripting, so the recursive SearchFile below is the
+            // real resolver. These are only fast-path hits for the stable layouts.
+            var dllCandidates = new[]
             {
                 Path.Combine(content, "DotNetSdkRoslyn", "csc.dll"),
-                Path.Combine(content, "MonoBleedingEdge", "lib", "mono", "4.5", "csc.exe"),
+                Path.Combine(content, "Resources", "Scripting", "DotNetSdkRoslyn", "csc.dll"),
             };
-            foreach (var c in candidates)
+            foreach (var c in dllCandidates)
                 if (File.Exists(c)) return c;
 
+            // Always prefer ANY csc.dll over Mono csc.exe — recursive so it finds
+            // the version-numbered 6.5 SDK path too. (A previous MonoBleedingEdge
+            // csc.exe fast-path candidate short-circuited here on Windows 6.5 —
+            // where the 6.3 csc.dll candidate path no longer exists — and picked
+            // the Mono compiler, which fails to load System.Text.Encoding.CodePages
+            // on a non-Latin (CP949 etc.) console, breaking every exec.)
             var cscDll = SearchFile(content, "csc.dll");
             if (cscDll != null) return cscDll;
+
+            // Mono csc.exe is the last resort — only when no .NET Roslyn ships.
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
                 var cscExe = SearchFile(content, "csc.exe");

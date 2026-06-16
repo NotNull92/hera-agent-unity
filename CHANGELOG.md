@@ -7,21 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed (Connector 0.0.32 — exec on non-English Windows + Unity 6.5)
+### Fixed (Connector 0.0.33 — exec on non-English Windows + Unity 6.5)
 
 - **`exec` failed to compile *anything* on Korean/Japanese/Chinese Windows under
   Unity 6.5+** with `EXEC_COMPILE_ERROR` and a `System.Text.Encoding.CodePages`
-  assembly-load error — every snippet, even `return 1+1;`. Root cause: Unity 6.5
-  runs the snippet compiler as `dotnet exec csc.dll` (.NET-Core Roslyn), and on a
-  non-Latin console csc tries to encode its redirected output via
-  `Encoding.GetEncoding(<oem-codepage>)`, which needs `System.Text.Encoding.CodePages`
-  — an assembly the bundled runtime doesn't ship — so csc crashes before compiling.
-  Unity 6.0–6.4 used Mono `csc.exe`, which bundles those code pages, so the bug was
-  6.5-specific. Fix is **version-agnostic** (no compiler-path branching, so it can't
-  regress 6.3/6.4): add `-utf8output` to force UTF-8 compiler output, and write the
-  snippet with a UTF-8 BOM so csc never falls back to the system code page to read
-  the source. Verified: exec + `--usings` + `--compile_only` + `--file` all still
-  pass on Unity 6.3 (Mono path) after the change.
+  assembly-load error — every snippet, even `return 1+1;`. **Two root causes**, both
+  fixed version-agnostically (no per-version branching, so 6.0–6.4 can't regress):
+  - **Wrong compiler selected.** Unity moved the .NET SDK Roslyn between versions —
+    6.0–6.4: `…/DotNetSdkRoslyn/csc.dll`; 6.5+: `…/DotNetSdk/sdk/<version>/Roslyn/
+    bincore/csc.dll` (version-numbered). `FindCsc` had a hard-coded
+    `MonoBleedingEdge/…/csc.exe` fast-path candidate that, on Windows 6.5 (where the
+    6.3 `csc.dll` candidate path no longer exists), short-circuited to the **Mono
+    `csc.exe`** before the recursive `csc.dll` search ever ran. Mono `csc.exe` run on
+    a non-Latin (CP949) Windows console fails to load `System.Text.Encoding.CodePages`
+    and crashes at startup. Fix: dropped the `csc.exe` fast-path candidate so the
+    recursive `csc.dll` search always wins (it finds the version-numbered 6.5 SDK
+    path too); Mono `csc.exe` is now a true last resort, used only when no .NET
+    Roslyn ships.
+  - **CP949 output encoding.** Even on the correct `dotnet exec csc.dll` path, csc on
+    a non-Latin console encodes redirected output via `Encoding.GetEncoding(<oem-cp>)`,
+    which needs the same missing assembly. Fix: add `-utf8output` to force UTF-8
+    compiler output, and write the snippet with a UTF-8 BOM so csc never falls back
+    to the system code page to read the source.
+- Verified on Unity 6.3 (macOS, live): exec + `--usings` + `--compile_only` + `--file`
+  all still pass, and `FindCsc` resolves the same `csc.dll` it did before. Verified on
+  Unity 6.5 (macOS): the new resolution picks `DotNetSdk/sdk/8.0.318/Roslyn/bincore/
+  csc.dll` and `dotnet exec csc.dll -utf8output` compiles with clean English
+  diagnostics.
 
 ### Changed (Connector 0.0.32 — discovery token cost)
 
