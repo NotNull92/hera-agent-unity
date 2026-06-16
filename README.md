@@ -424,6 +424,10 @@ The five-tool queue locked-in at 2026-05-28 is complete. Each entry filled a gap
 | `ui_doc` | **v0.0.21 → v0.0.27** | HTML→Unity UI pipeline (uGUI) — the agent's weakest area. `export` / `apply` (`create` + `upsert`) / `gen_sprite` / `capture` / `sample` around a compact JSON IR (`ui_doc/2`). Grew into a full layout system (Horizontal / Vertical / Grid `LayoutGroup`, `LayoutElement`, `ContentSizeFitter`), Image fill modes + 9-slice, stretch offsets, text color / align / font, and a *measure-don't-guess* verify loop. Zero external dependency; still no compile-time `com.unity.ugui` link. The flagship [**🎨 Mockup → Live Unity UI**](#-mockup--live-unity-ui) section walks the whole loop. |
 | Performance & reliability | **v0.0.28** | Conservative pass: VBCSCompiler pre-warm on startup, `refs-meta.json` reference cache (skips the full AppDomain scan), in-memory assembly cache 32 → 128, per-type `Serialize` reflection cache, faster known-path compiler discovery. CLI side: `batch` nil-pointer fix, compact/quiet `batch` output, `SendBatch` reusing the domain-reload retry, and a 50 MB response guard. No user-facing default changed. |
 | `exec` on macOS / Linux | **v0.0.31** | The snippet compiler now runs a Windows-PE `csc.exe` through Unity's bundled **Mono** host on macOS / Linux (a managed PE can't be exec'd directly) instead of failing with `EXEC_LAUNCH_FAILED`. Resolves a `defaultCscPath` → `csc.exe` config that pointed exec at a PE. Windows path unchanged. |
+| `exec` on Windows / Unity 6.5 | **v0.0.32 → v0.0.34** | Fixed `exec` failing to compile *anything* on non-Latin (Korean / Japanese / Chinese) Windows under Unity 6.5+ — every snippet returned `EXEC_COMPILE_ERROR` with a `System.Text.Encoding.CodePages` load failure. Unity 6.5 relocated the SDK Roslyn to `DotNetSdk/sdk/<version>/Roslyn/bincore/csc.dll`, and the resolver was short-circuiting to the bundled **Mono `csc.exe`**, which crashes on a CP949 console. Now prefers `csc.dll` (recursive, version-agnostic), forces `-utf8output` + a UTF-8 BOM, and ignores a stale Mono `csc.exe` `defaultCscPath`. Verified no regression on 6.3. |
+| Discovery token cuts | **v0.0.35** | Leaner agent-discovery surface: `list` default drops the per-tool JSON schemas (~−73%), `list --names` returns a bare name array (~−95%), `list_assemblies` returns bare names by default (`--include_version` to enrich, ~−49%), and `find_method` / `describe_type` drop the redundant `is_static` field (the signature already encodes `static`). |
+| Tool-error de-dup | **CLI v0.0.24** | A failed tool command printed its message twice — once as the compact JSON envelope, once as a human `Error: command failed: …` line. AI-target commands now emit the JSON only, halving the error's token cost. |
+| `editor refresh --compile` bounded | **CLI v0.0.25** | The recompile wait used a hidden 5-minute cap and ignored `--timeout`, so a wrapping agent (Claude Code's 120 s bash budget) backgrounded the still-running process. It now honors `--timeout` (60 s default; raise for big projects) and reports a timeout distinctly from a compile that produced errors. |
 
 ### `unity_docs` — design + benchmarks (v0.0.12)
 
@@ -790,6 +794,13 @@ hera-agent-unity exec "return 1+1;" --csc "C:\Program Files\dotnet\sdk\8.0.100\R
 ```
 
 On macOS / Linux a Windows-PE `csc.exe` is launched through Unity's bundled **Mono** host automatically (Connector 0.0.31+), so a `.dll` Roslyn isn't required — prefer pointing `--csc` at a `csc.dll` only when you want the .NET Roslyn path.
+
+</details>
+
+<details>
+<summary><strong>`exec` returns `EXEC_COMPILE_ERROR` with a `System.Text.Encoding.CodePages` failure (non-English Windows + Unity 6.5).</strong></summary>
+
+Every snippet — even `return 1+1;` — fails because the resolver picked Unity's bundled **Mono `csc.exe`**, which crashes loading `System.Text.Encoding.CodePages` on a CP949 / Shift-JIS / GBK console. **Update the connector to 0.0.34+**: it prefers the .NET SDK Roslyn `csc.dll` (whose path Unity 6.5 moved to `DotNetSdk/sdk/<version>/Roslyn/bincore/`) and forces UTF-8 compiler I/O. Re-resolve the git package (delete its entry from `Packages/packages-lock.json`, refocus the Editor) to pick it up.
 
 </details>
 

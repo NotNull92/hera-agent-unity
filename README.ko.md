@@ -424,6 +424,10 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | `ui_doc` | **v0.0.21 → v0.0.27** | HTML→Unity UI 파이프라인(uGUI) — 에이전트의 최약점 영역. 컴팩트 JSON IR(`ui_doc/2`) 중심으로 `export` / `apply`(`create` + `upsert`) / `gen_sprite` / `capture` / `sample`. 풀 레이아웃 시스템(Horizontal / Vertical / Grid `LayoutGroup`, `LayoutElement`, `ContentSizeFitter`), Image fill 모드 + 9-slice, stretch offset, 텍스트 color / align / font, *추측 대신 실측* 검증 루프까지 성장. 외부 의존성 0; 여전히 `com.unity.ugui` 컴파일타임 링크 없음. 플래그십 [**🎨 목업 → 라이브 Unity UI**](#-목업--라이브-unity-ui) 섹션에서 루프 전체를 설명합니다. |
 | 성능 & 신뢰성 | **v0.0.28** | 보수적 패스: 시작 시 VBCSCompiler pre-warm, `refs-meta.json` 참조 캐시(전체 AppDomain 스캔 생략), 인메모리 어셈블리 캐시 32 → 128, 타입별 `Serialize` 리플렉션 캐시, 알려진 경로 우선 컴파일러 탐지. CLI: `batch` nil-pointer 수정, compact/quiet `batch` 출력, `SendBatch` 의 도메인 리로드 재시도 재사용, 50 MB 응답 가드. 사용자 기본값 변경 없음. |
 | `exec` macOS / Linux | **v0.0.31** | 스니펫 컴파일러가 Windows-PE `csc.exe` 를 macOS / Linux 에서 Unity 내장 **Mono** 호스트로 실행(매니지드 PE 는 직접 exec 불가) — `EXEC_LAUNCH_FAILED` 로 실패하던 것을 해결. `defaultCscPath` → `csc.exe` 설정이 exec 를 PE 로 향하게 한 케이스 대응. Windows 경로는 그대로. |
+| `exec` Windows / Unity 6.5 | **v0.0.32 → v0.0.34** | 비-Latin(한국어 / 일본어 / 중국어) Windows + Unity 6.5+ 에서 `exec` 가 **아무것도 컴파일 못 하던** 문제 해결 — 모든 스니펫이 `System.Text.Encoding.CodePages` 로드 실패와 함께 `EXEC_COMPILE_ERROR`. Unity 6.5 가 SDK Roslyn 을 `DotNetSdk/sdk/<version>/Roslyn/bincore/csc.dll` 로 옮겼는데, resolver 가 번들 **Mono `csc.exe`** 로 단락 → CP949 콘솔에서 크래시. 이제 `csc.dll` 우선(재귀, 버전 무관) + `-utf8output` + UTF-8 BOM 강제 + stale Mono `csc.exe` `defaultCscPath` 무시. 6.3 회귀 없음 검증. |
+| 발견 토큰 절감 | **v0.0.35** | 에이전트 발견 표면 경량화: `list` 기본이 도구별 JSON 스키마 제거(~−73%), `list --names` 는 bare 이름 배열(~−95%), `list_assemblies` 는 기본 bare 이름(`--include_version` 으로 보강, ~−49%), `find_method` / `describe_type` 는 중복 `is_static` 제거(시그니처가 이미 `static` 인코딩). |
+| 도구 에러 중복 제거 | **CLI v0.0.24** | 실패한 도구 명령이 메시지를 두 번 출력 — compact JSON envelope + human `Error: command failed: …` 라인. 이제 AI-타겟 명령은 JSON 만 출력해 에러 토큰 절반. |
+| `editor refresh --compile` 바운드 | **CLI v0.0.25** | 리컴파일 대기가 숨은 5분 캡을 쓰고 `--timeout` 을 무시 → 래핑 에이전트(Claude Code 120 초 bash 예산)가 돌아가는 프로세스를 백그라운드로 전환. 이제 `--timeout`(기본 60 초; 큰 프로젝트는 올림) 존중 + 타임아웃을 compile 에러와 구분 보고. |
 
 ### `unity_docs` — 설계 + 벤치마크 (v0.0.12)
 
@@ -788,6 +792,13 @@ hera-agent-unity exec "return 1+1;" --csc "C:\Program Files\dotnet\sdk\8.0.100\R
 ```
 
 macOS / Linux에서는 Windows-PE `csc.exe`가 Unity 내장 **Mono** 호스트를 통해 자동 실행됩니다(Connector 0.0.31+). 따라서 `.dll` Roslyn이 꼭 필요하진 않습니다 — `.NET` Roslyn 경로를 쓰고 싶을 때만 `--csc`를 `csc.dll`로 지정하세요.
+
+</details>
+
+<details>
+<summary><strong>비-영어 Windows + Unity 6.5에서 `exec`가 `System.Text.Encoding.CodePages` 실패와 함께 `EXEC_COMPILE_ERROR`를 냅니다.</strong></summary>
+
+모든 스니펫(`return 1+1;` 조차)이 실패하는 건, resolver가 Unity 내장 **Mono `csc.exe`**를 골랐기 때문입니다 — 이게 CP949 / Shift-JIS / GBK 콘솔에서 `System.Text.Encoding.CodePages` 로드에 실패해 크래시합니다. **커넥터를 0.0.34+로 갱신**하세요: .NET SDK Roslyn `csc.dll`(Unity 6.5가 `DotNetSdk/sdk/<version>/Roslyn/bincore/`로 옮긴 경로)을 우선하고 UTF-8 컴파일러 I/O를 강제합니다. git 패키지를 재해석(`Packages/packages-lock.json`의 해당 항목 삭제 → 에디터 포커스)하면 반영됩니다.
 
 </details>
 
