@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using UnityEditor;
@@ -35,12 +36,15 @@ namespace HeraAgent.Editor
 
         private static async Task UpdateHeraAgentAsync()
         {
-            var identifier = await ResolveAddIdentifierAsync();
+            var currentPkg = await FindCurrentPackageAsync();
+            var identifier = BuildAddIdentifier(currentPkg);
             if (string.IsNullOrEmpty(identifier))
             {
                 identifier = DefaultPackageUrl;
                 Debug.Log($"[Hera] Could not resolve current package source; falling back to {identifier}");
             }
+
+            LogCliStatus();
 
             var request = Client.Add(identifier);
             while (!request.IsCompleted)
@@ -64,6 +68,14 @@ namespace HeraAgent.Editor
             }
 
             var newVersion = request.Result?.version ?? "latest";
+            if (currentPkg != null && string.Equals(currentPkg.version, newVersion, StringComparison.Ordinal))
+            {
+                var alreadyLatest = "hera-agent-unity is already up to date.";
+                Debug.Log($"[Hera] {alreadyLatest}");
+                EditorUtility.DisplayDialog("Hera Update", alreadyLatest, "OK");
+                return;
+            }
+
             var info = $"Updated hera-agent-unity to {newVersion}.";
             Debug.Log($"[Hera] {info}");
             EditorUtility.DisplayDialog("Hera Update Complete", info, "OK");
@@ -75,29 +87,8 @@ namespace HeraAgent.Editor
         /// source path/URL; registry packages can use the package name.
         /// Returns null if the package cannot be found at all.
         /// </summary>
-        private static async Task<string> ResolveAddIdentifierAsync()
+        private static string BuildAddIdentifier(PackageInfo pkg)
         {
-            var request = Client.List(offlineMode: false, includeIndirectDependencies: false);
-            while (!request.IsCompleted)
-            {
-                if (request.Status == StatusCode.InProgress)
-                {
-                    await Task.Delay(50);
-                    continue;
-                }
-
-                break;
-            }
-
-            if (request.Status >= StatusCode.Failure)
-            {
-                Debug.LogWarning($"[Hera] Client.List failed: {request.Error?.message ?? "unknown"}");
-                return null;
-            }
-
-            var pkg = request.Result?.FirstOrDefault(
-                p => string.Equals(p.name, PackageName, StringComparison.OrdinalIgnoreCase));
-
             if (pkg == null)
                 return null;
 
@@ -120,6 +111,74 @@ namespace HeraAgent.Editor
             }
 
             return pkg.name;
+        }
+
+        private static async Task<PackageInfo> FindCurrentPackageAsync()
+        {
+            var request = Client.List(offlineMode: false, includeIndirectDependencies: false);
+            while (!request.IsCompleted)
+            {
+                if (request.Status == StatusCode.InProgress)
+                {
+                    await Task.Delay(50);
+                    continue;
+                }
+
+                break;
+            }
+
+            if (request.Status >= StatusCode.Failure)
+            {
+                Debug.LogWarning($"[Hera] Client.List failed: {request.Error?.message ?? "unknown"}");
+                return null;
+            }
+
+            return request.Result?.FirstOrDefault(
+                p => string.Equals(p.name, PackageName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        /// <summary>
+        /// Runs `hera-agent-unity status` and logs the result to the Unity console.
+        /// Non-fatal: if the CLI is not on PATH we just log a warning.
+        /// </summary>
+        private static void LogCliStatus()
+        {
+            try
+            {
+                var psi = new ProcessStartInfo
+                {
+                    FileName = "hera-agent-unity",
+                    Arguments = "status",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+
+                using (var process = Process.Start(psi))
+                {
+                    if (process == null)
+                    {
+                        Debug.LogWarning("[Hera] Could not start hera-agent-unity status process.");
+                        return;
+                    }
+
+                    var output = process.StandardOutput.ReadToEnd();
+                    var error = process.StandardError.ReadToEnd();
+                    process.WaitForExit(10000);
+
+                    if (!string.IsNullOrWhiteSpace(output))
+                        Debug.Log($"[Hera] CLI status:\n{output.Trim()}");
+                    else if (!string.IsNullOrWhiteSpace(error))
+                        Debug.LogWarning($"[Hera] CLI status stderr:\n{error.Trim()}");
+                    else
+                        Debug.Log("[Hera] CLI status returned no output.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Hera] Failed to run hera-agent-unity status: {ex.Message}");
+            }
         }
 
         private const string PackageName = "com.notnull92.hera-agent-unity";
