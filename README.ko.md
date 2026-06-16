@@ -429,6 +429,8 @@ hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent
 | 발견 토큰 절감 | **v0.0.35** | 에이전트 발견 표면 경량화: `list` 기본이 도구별 JSON 스키마 제거(~−73%), `list --names` 는 bare 이름 배열(~−95%), `list_assemblies` 는 기본 bare 이름(`--include_version` 으로 보강, ~−49%), `find_method` / `describe_type` 는 중복 `is_static` 제거(시그니처가 이미 `static` 인코딩). |
 | 도구 에러 중복 제거 | **CLI v0.0.24** | 실패한 도구 명령이 메시지를 두 번 출력 — compact JSON envelope + human `Error: command failed: …` 라인. 이제 AI-타겟 명령은 JSON 만 출력해 에러 토큰 절반. |
 | `editor refresh --compile` 바운드 | **CLI v0.0.25** | 리컴파일 대기가 숨은 5분 캡을 쓰고 `--timeout` 을 무시 → 래핑 에이전트(Claude Code 120 초 bash 예산)가 돌아가는 프로세스를 백그라운드로 전환. 이제 `--timeout`(기본 60 초; 큰 프로젝트는 올림) 존중 + 타임아웃을 compile 에러와 구분 보고. |
+| UI Juicy Mode — 커버리지 확장 + `bar` | **v0.0.36** | `Core/UIJuiceGuide` 를 *Secrets of Game Feel and Juice* 플레이북 기준으로 점검하고, 기존 레시피에 4개 cross-cutting 기법을 보강(클릭 SFX 피치 랜덤화 + 콤보용 상승 피치 카운트업, 캔버스 hit-pause ~30–80 ms, 피격 시 image flash + 트윈 중단 + 넉백, "화면의 목적에 올인하고 정밀/입력 UI 는 차분하게" 골든룰 명시). 진짜 새 요소 타입 **`bar`**(체력/진행) 추가 — 시그니처 fill juice(즉시 감소 + 지연 "chip" 바, 낮은 값 위험 펄스, 세그먼트 틱). `ui_doc apply` 로 발동: filled image 노드(`image.fill` / `type=filled`)가 hint 용으로 `bar` 분류됨. `manage_ui` 의 `--element` 세트는 잠금 유지. |
+| `console --lines` 기본값 + 트렁케이션 수정 | **v0.0.37** | `console` 가 전체 버퍼 대신 `--lines` 를 **20** 으로 기본 설정(문서화된 동작과 일치). 트렁케이션 감지 off-by-one(`>=` → `>`) 수정 — `truncated` 가 한 항목 일찍 켜지던 문제. 에이전트 문서도 동기화: `exec --depth` 기본은 **3**(문서가 `1` 로 잘못 표기), CLI 는 도달 불가능한 `help` / `version` 항목을 `humanCategories` 에서 제거(둘 다 해당 화이트리스트 참조 전에 처리됨). |
 
 ### `unity_docs` — 설계 + 벤치마크 (v0.0.12)
 
