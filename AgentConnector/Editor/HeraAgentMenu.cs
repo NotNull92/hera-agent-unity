@@ -8,6 +8,8 @@ using UnityEditor.PackageManager.Requests;
 // `using UnityEditor;` also pulls in the legacy AssetStore PackageInfo type;
 // alias the PackageManager one so bare `PackageInfo` is unambiguous.
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
+// `using System.Diagnostics;` brings in its own Debug type.
+using Debug = UnityEngine.Debug;
 using UnityEngine;
 
 namespace HeraAgent.Editor
