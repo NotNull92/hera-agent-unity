@@ -178,7 +178,11 @@ namespace HeraAgent.Editor
                         Debug.Log($"[Hera] CLI status: {firstLine}");
                     }
                     else if (!string.IsNullOrWhiteSpace(error))
-                        Debug.LogWarning($"[Hera] CLI status stderr:\n{error.Trim()}");
+                    {
+                        // `status` is a human-target command and may write to stderr even on success.
+                        var firstLine = error.Trim().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
+                        Debug.Log($"[Hera] CLI status: {firstLine}");
+                    }
                     else
                         Debug.Log("[Hera] CLI status returned no output.");
                 }
