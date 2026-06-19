@@ -11,7 +11,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
+      fail-fast: false
       matrix:
         include:
           - goos: linux
@@ -29,9 +31,10 @@ jobs:
 
       - uses: actions/setup-go@v6
         with:
-          go-version: "1.25"
+          go-version-file: go.mod
 
       - name: Build
+        id: build
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -39,12 +42,16 @@ jobs:
           EXT=""
           if [ "$GOOS" = "windows" ]; then EXT=".exe"; fi
           VERSION="${GITHUB_REF_NAME}"
-          go build -ldflags="-s -w -X main.Version=${VERSION}" -o "hera-agent-unity-${GOOS}-${GOARCH}${EXT}" .
+          OUT="hera-agent-unity-${GOOS}-${GOARCH}${EXT}"
+          go build -ldflags="-s -w -X main.Version=${VERSION}" -o "$OUT" .
+          echo "binary=$OUT" >> "$GITHUB_OUTPUT"
+          ls -l "$OUT"
 
       - uses: actions/upload-artifact@v7
         with:
           name: hera-agent-unity-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: hera-agent-unity-*
+          path: ${{ steps.build.outputs.binary }}
+          if-no-files-found: error
 
   release:
     needs: build
