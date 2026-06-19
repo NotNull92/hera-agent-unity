@@ -5,9 +5,15 @@
 .DS_Store
 .vscode/
 .idea/
-.omc/
 .opencode/
 coverage.out
 
-# Local-dev Claude Code skills (not shared via repo)
-.claude/skills/
+# Local agent tooling (not shared — public repo)
+.omc/
+.omx/
+.claude/
+.agents/skills/hyper-mode/
+.agents/skills/sync-claude-md/
+
+# Internal dev scratch (refactoring session log)
+PROGRESS.json
