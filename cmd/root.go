@@ -140,6 +140,8 @@ func runStandaloneCommand(category string, subArgs []string) (bool, error) {
 		return true, assetConfigCmd(subArgs)
 	case "doctor":
 		return true, doctorCmd(subArgs)
+	case "html-to-uidoc":
+		return true, htmlToUIDocCmd(subArgs)
 	}
 	return false, nil
 }

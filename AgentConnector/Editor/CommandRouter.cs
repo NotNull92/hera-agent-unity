@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
@@ -46,7 +47,8 @@ namespace HeraAgent
         {
             if (!await s_Lock.WaitAsync(s_LockTimeout))
             {
-                return new ErrorResponse("[Hera] I waited 120s for the command lock but another command is still running.");
+                return new ErrorResponse("COMMAND_LOCK_TIMEOUT",
+                    "[Hera] I waited 120s for the command lock but another command is still running.");
             }
             var sw = Stopwatch.StartNew();
             try
@@ -73,7 +75,8 @@ namespace HeraAgent
         {
             if (!await s_Lock.WaitAsync(s_LockTimeout))
             {
-                return new ErrorResponse("[Hera] I waited 120s for the command lock but another command is still running.");
+                return new ErrorResponse("COMMAND_LOCK_TIMEOUT",
+                    "[Hera] I waited 120s for the command lock but another command is still running.");
             }
 
             var results = new List<object>();
@@ -131,63 +134,20 @@ namespace HeraAgent
             if (command == "list")
                 return HandleList(parameters);
 
-            // Try action-level dispatch first
+            // Prefer an explicit action when one is supplied; fall back to the
+            // tool's default HandleCommand so `manage_ui --element button` still
+            // works even though `create` is the usual action.
             string action = ExtractAction(parameters);
+            bool usedAction = false;
+            MethodInfo handler = null;
             if (!string.IsNullOrEmpty(action))
             {
-                var actionHandler = ToolDiscovery.FindActionHandler(command, action);
-                if (actionHandler != null)
-                {
-                    try
-                    {
-                        object result;
-                        if (actionHandler.IsStatic)
-                        {
-                            result = actionHandler.Invoke(null, new object[] { parameters ?? new JObject() });
-                        }
-                        else
-                        {
-                            var toolType = actionHandler.DeclaringType;
-                            if (toolType == null)
-                                return new ErrorResponse($"Tool type not found: {command}");
-                            object instance;
-                            try
-                            {
-                                instance = Activator.CreateInstance(toolType);
-                            }
-                            catch (MissingMethodException)
-                            {
-                                return new ErrorResponse($"Tool '{command}' requires a parameterless constructor");
-                            }
-                            catch (MemberAccessException)
-                            {
-                                return new ErrorResponse($"Tool '{command}' constructor is not accessible (must be public)");
-                            }
-                            if (instance == null)
-                                return new ErrorResponse($"Failed to create tool instance: {command}");
-                            result = actionHandler.Invoke(instance, new object[] { parameters ?? new JObject() });
-                        }
-
-                        if (result is Task<object> asyncTask)
-                            return await asyncTask;
-                        if (result is Task task)
-                        {
-                            await task;
-                            return new SuccessResponse($"{command}:{action} completed");
-                        }
-                        return result ?? new SuccessResponse($"{command}:{action} completed");
-                    }
-                    catch (Exception ex)
-                    {
-                        var inner = ex.InnerException ?? ex;
-                        UnityEngine.Debug.LogException(inner);
-                        return new ErrorResponse($"{command}:{action} failed: {inner.Message}");
-                    }
-                }
+                handler = ToolDiscovery.FindActionHandler(command, action);
+                usedAction = handler != null;
             }
+            if (handler == null)
+                handler = ToolDiscovery.FindDefaultHandler(command);
 
-            // Fallback to legacy Handle/HandleCommand
-            var handler = ToolDiscovery.FindHandler(command);
             if (handler == null)
             {
                 var similar = ToolDiscovery.SuggestSimilarCommands(command);
@@ -205,25 +165,16 @@ namespace HeraAgent
             try
             {
                 object result;
-
-                // Check if it's a static method (traditional tools)
                 if (handler.IsStatic)
                 {
                     result = handler.Invoke(null, new object[] { parameters ?? new JObject() });
                 }
                 else
                 {
-                    // It's an instance method (class-based tools) - create instance
                     var toolType = handler.DeclaringType;
                     if (toolType == null)
-                    {
-                        return new ErrorResponse($"Tool type not found: {command}");
-                    }
+                        return new ErrorResponse("TOOL_TYPE_NOT_FOUND", $"Tool type not found: {command}");
 
-                    // Create instance (must have parameterless constructor).
-                    // The two reflection exceptions we care about have distinct
-                    // operator-facing fixes — surface them rather than collapsing
-                    // both into "Failed to create instance".
                     object instance;
                     try
                     {
@@ -231,36 +182,37 @@ namespace HeraAgent
                     }
                     catch (MissingMethodException)
                     {
-                        return new ErrorResponse($"Tool '{command}' requires a parameterless constructor");
+                        return new ErrorResponse("TOOL_MISSING_CONSTRUCTOR",
+                            $"Tool '{command}' requires a parameterless constructor");
                     }
                     catch (MemberAccessException)
                     {
-                        return new ErrorResponse($"Tool '{command}' constructor is not accessible (must be public)");
+                        return new ErrorResponse("TOOL_CONSTRUCTOR_INACCESSIBLE",
+                            $"Tool '{command}' constructor is not accessible (must be public)");
                     }
                     if (instance == null)
-                    {
-                        return new ErrorResponse($"Failed to create tool instance: {command}");
-                    }
+                        return new ErrorResponse("TOOL_INSTANCE_CREATE_FAILED",
+                            $"Failed to create tool instance: {command}");
 
                     result = handler.Invoke(instance, new object[] { parameters ?? new JObject() });
                 }
 
                 if (result is Task<object> asyncTask)
                     return await asyncTask;
-
                 if (result is Task task)
                 {
                     await task;
-                    return new SuccessResponse($"{command} completed");
+                    return new SuccessResponse($"{command}{(usedAction ? ":" + action : "")} completed");
                 }
-
-                return result ?? new SuccessResponse($"{command} completed");
+                return result ?? new SuccessResponse($"{command}{(usedAction ? ":" + action : "")} completed");
             }
             catch (Exception ex)
             {
                 var inner = ex.InnerException ?? ex;
                 UnityEngine.Debug.LogException(inner);
-                return new ErrorResponse($"{command} failed: {inner.Message}");
+                string code = usedAction ? "TOOL_ACTION_FAILED" : "TOOL_FAILED";
+                string suffix = usedAction ? $":{action}" : "";
+                return new ErrorResponse(code, $"{command}{suffix} failed: {inner.Message}");
             }
         }
 

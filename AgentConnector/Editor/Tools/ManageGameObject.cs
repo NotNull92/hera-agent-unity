@@ -61,6 +61,7 @@ namespace HeraAgent.Tools
 
         // ---- sub-actions ----
 
+        [HeraAction]
         public static object Create(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -71,7 +72,7 @@ namespace HeraAgent.Tools
             if (!string.IsNullOrEmpty(primitive))
             {
                 if (!TryParsePrimitive(primitive, out var prim))
-                    return new ErrorResponse($"Unknown primitive: '{primitive}'. Use cube, sphere, capsule, cylinder, plane, quad.");
+                    return new ErrorResponse("UNKNOWN_PRIMITIVE", $"Unknown primitive: '{primitive}'. Use cube, sphere, capsule, cylinder, plane, quad.");
                 go = GameObject.CreatePrimitive(prim);
                 if (!string.IsNullOrEmpty(name)) go.name = name;
             }
@@ -87,7 +88,7 @@ namespace HeraAgent.Tools
                 if (parentErr != null)
                 {
                     UnityEngine.Object.DestroyImmediate(go);
-                    return new ErrorResponse(parentErr);
+                    return parentErr;
                 }
                 if (parent != null) go.transform.SetParent(parent.transform, true);
             }
@@ -98,7 +99,7 @@ namespace HeraAgent.Tools
                 if (!TryParseVector3(posToken, out var pos, out var posErr))
                 {
                     UnityEngine.Object.DestroyImmediate(go);
-                    return new ErrorResponse($"Invalid 'position': {posErr}");
+                    return new ErrorResponse("INVALID_PARAM", $"Invalid 'position': {posErr}");
                 }
                 go.transform.position = pos;
             }
@@ -108,11 +109,12 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Created GameObject: {go.name}", BuildShallow(go));
         }
 
+        [HeraAction]
         public static object Destroy(JObject raw)
         {
             var p = new ToolParams(raw);
             var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             var snapshot = BuildShallow(go);
             var scene = go.scene;
@@ -126,17 +128,18 @@ namespace HeraAgent.Tools
             return new SuccessResponse("Destroyed GameObject.", snapshot);
         }
 
+        [HeraAction]
         public static object Move(JObject raw)
         {
             var p = new ToolParams(raw);
             var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             var posToken = p.GetRaw("position");
             if (posToken == null || posToken.Type == JTokenType.Null)
-                return new ErrorResponse("'position' required for move.");
+                return new ErrorResponse("MISSING_PARAM", "'position' required for move.");
             if (!TryParseVector3(posToken, out var pos, out var posErr))
-                return new ErrorResponse($"Invalid 'position': {posErr}");
+                return new ErrorResponse("INVALID_PARAM", $"Invalid 'position': {posErr}");
 
             var space = (p.Get("space") ?? "world").ToLowerInvariant();
             Undo.RecordObject(go.transform, "Hera Move");
@@ -144,17 +147,18 @@ namespace HeraAgent.Tools
             {
                 case "world": go.transform.position = pos; break;
                 case "local": go.transform.localPosition = pos; break;
-                default: return new ErrorResponse($"Unknown space: '{space}'. Use 'world' or 'local'.");
+                default: return new ErrorResponse("INVALID_PARAM", $"Unknown space: '{space}'. Use 'world' or 'local'.");
             }
             EditorSceneManager.MarkSceneDirty(go.scene);
             return new SuccessResponse($"Moved {go.name}.", BuildShallow(go));
         }
 
+        [HeraAction]
         public static object SetParent(JObject raw)
         {
             var p = new ToolParams(raw);
             var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             var parentToken = p.GetRaw("parent");
             bool unparent = parentToken == null
@@ -165,10 +169,10 @@ namespace HeraAgent.Tools
             if (!unparent)
             {
                 var (parent, parentErr) = ResolveParent(parentToken);
-                if (parentErr != null) return new ErrorResponse(parentErr);
-                if (parent == go) return new ErrorResponse("Cannot parent a GameObject to itself.");
+                if (parentErr != null) return parentErr;
+                if (parent == go) return new ErrorResponse("PARENTING_SELF", "Cannot parent a GameObject to itself.");
                 if (IsAncestor(go.transform, parent.transform))
-                    return new ErrorResponse("Cannot create a parenting cycle (target is an ancestor of the requested parent).");
+                    return new ErrorResponse("PARENTING_CYCLE", "Cannot create a parenting cycle (target is an ancestor of the requested parent).");
                 newParent = parent.transform;
             }
 
@@ -197,18 +201,19 @@ namespace HeraAgent.Tools
                 BuildShallow(go));
         }
 
+        [HeraAction]
         public static object SetActive(JObject raw)
         {
             var p = new ToolParams(raw);
             var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             var activeToken = p.GetRaw("active");
             if (activeToken == null || activeToken.Type == JTokenType.Null)
-                return new ErrorResponse("'active' required for set_active (true/false).");
+                return new ErrorResponse("MISSING_PARAM", "'active' required for set_active (true/false).");
             var active = ParamCoercion.CoerceBoolNullable(activeToken);
             if (active == null)
-                return new ErrorResponse($"Invalid 'active': '{activeToken}'. Use true/false.");
+                return new ErrorResponse("INVALID_PARAM", $"Invalid 'active': '{activeToken}'. Use true/false.");
 
             Undo.RecordObject(go, "Hera SetActive");
             go.SetActive(active.Value);
@@ -216,15 +221,16 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Set {go.name}.active = {active.Value}.", BuildShallow(go));
         }
 
+        [HeraAction]
         public static object SetName(JObject raw)
         {
             var p = new ToolParams(raw);
             var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             string name = p.Get("name");
             if (string.IsNullOrEmpty(name))
-                return new ErrorResponse("'name' required for set_name.");
+                return new ErrorResponse("MISSING_PARAM", "'name' required for set_name.");
 
             Undo.RecordObject(go, "Hera SetName");
             string old = go.name;
@@ -233,17 +239,18 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Renamed '{old}' -> '{name}'.", BuildShallow(go));
         }
 
+        [HeraAction]
         public static object GetTransform(JObject raw)
         {
             var p = new ToolParams(raw);
             var (go, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
             return new SuccessResponse("OK", BuildShallow(go));
         }
 
         // ---- helpers ----
 
-        private static (GameObject go, string err) ResolveParent(JToken token)
+        private static (GameObject go, ErrorResponse err) ResolveParent(JToken token)
         {
             if (token == null || token.Type == JTokenType.Null) return (null, null);
 
@@ -252,7 +259,7 @@ namespace HeraAgent.Tools
                 int id = token.Value<int>();
                 var obj = EntityIdCompat.ToObject(id);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;
-                if (go == null) return (null, $"No GameObject for parent instance_id={id}.");
+                if (go == null) return (null, new ErrorResponse("OBJECT_NOT_FOUND", $"No GameObject for parent instance_id={id}."));
                 return (go, null);
             }
 
@@ -262,12 +269,12 @@ namespace HeraAgent.Tools
             {
                 var obj = EntityIdCompat.ToObject(parsedId);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;
-                if (go == null) return (null, $"No GameObject for parent instance_id={parsedId}.");
+                if (go == null) return (null, new ErrorResponse("OBJECT_NOT_FOUND", $"No GameObject for parent instance_id={parsedId}."));
                 return (go, null);
             }
 
             var byPath = HierarchyPath.Find(s);
-            if (byPath == null) return (null, $"No GameObject for parent path: '{s}'.");
+            if (byPath == null) return (null, new ErrorResponse("TARGET_NOT_FOUND", $"No GameObject for parent path: '{s}'."));
             return (byPath, null);
         }
 

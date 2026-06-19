@@ -42,6 +42,7 @@ namespace HeraAgent.Tools
         // Client.List returns a ListRequest that resolves on EditorApplication.update
         // ticks. We yield with Task.Delay so Unity's main loop keeps pumping
         // (Thread.Sleep would freeze it and the request would never complete).
+        [HeraAction]
         public static async Task<object> ListAsync(JObject raw)
         {
             var request = Client.List(offlineMode: false, includeIndirectDependencies: true);
@@ -71,6 +72,7 @@ namespace HeraAgent.Tools
 
         // ---- Async add / remove / embed ----
 
+        [HeraAction]
         public static object Add(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -80,6 +82,7 @@ namespace HeraAgent.Tools
             return StartAsyncJob("add", identifier);
         }
 
+        [HeraAction]
         public static object Remove(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -89,6 +92,7 @@ namespace HeraAgent.Tools
             return StartAsyncJob("remove", identifier);
         }
 
+        [HeraAction]
         public static object Embed(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -101,7 +105,7 @@ namespace HeraAgent.Tools
         private static object StartAsyncJob(string action, string identifier)
         {
             if (string.IsNullOrEmpty(identifier))
-                return new ErrorResponse($"'identifier' required for {action}.");
+                return new ErrorResponse("MISSING_PARAM", $"'identifier' required for {action}.");
 
             var jobId = $"pkg-{Guid.NewGuid().ToString("N").Substring(0, 8)}";
             var port = HttpServer.Port;
@@ -118,13 +122,13 @@ namespace HeraAgent.Tools
                     case "embed": request = Client.Embed(identifier); break;
                     default:
                         PackageJobState.ClearPending(port, jobId);
-                        return new ErrorResponse($"Unsupported async action: {action}.");
+                        return new ErrorResponse("UNKNOWN_ACTION", $"Unsupported async action: {action}.");
                 }
             }
             catch (Exception ex)
             {
                 PackageJobState.ClearPending(port, jobId);
-                return new ErrorResponse($"Failed to start {action} '{identifier}': {ex.Message}");
+                return new ErrorResponse("PACKAGE_JOB_START_FAILED", $"Failed to start {action} '{identifier}': {ex.Message}");
             }
 
             PackageJobState.AttachWatcher(port, jobId, action, identifier, request);

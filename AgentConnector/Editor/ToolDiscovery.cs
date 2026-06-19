@@ -20,11 +20,19 @@ namespace HeraAgent
             public string Name;
             public Type Type;
             public HeraToolAttribute Attr;
-            public MethodInfo Handler;
+            public MethodInfo DefaultHandler;
         }
 
-        private static Dictionary<string, ToolEntry> s_Cache;
-        private static Dictionary<string, MethodInfo> s_ActionHandlers;
+        private struct ActionEntry
+        {
+            public string ToolName;
+            public string ActionName;
+            public MethodInfo Method;
+            public HeraActionAttribute Attr;
+        }
+
+        private static Dictionary<string, ToolEntry> s_Tools;
+        private static Dictionary<string, ActionEntry> s_Actions;
         private static readonly object s_CacheLock = new object();
 
         static ToolDiscovery()
@@ -36,97 +44,125 @@ namespace HeraAgent
         {
             lock (s_CacheLock)
             {
-                s_Cache = null;
-                s_ActionHandlers = null;
+                s_Tools = null;
+                s_Actions = null;
             }
         }
 
-        private static Dictionary<string, ToolEntry> GetCache()
+        private static void BuildCache()
         {
             lock (s_CacheLock)
             {
-                if (s_Cache != null) return s_Cache;
-                s_Cache = BuildCache();
-                return s_Cache;
-            }
-        }
+                if (s_Tools != null) return;
 
-        private static Dictionary<string, ToolEntry> BuildCache()
-        {
-            var cache = new Dictionary<string, ToolEntry>();
-            var actionHandlers = new Dictionary<string, MethodInfo>();
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                Type[] types;
-                try { types = assembly.GetTypes(); }
-                catch (ReflectionTypeLoadException) { continue; }
+                var tools = new Dictionary<string, ToolEntry>();
+                var actions = new Dictionary<string, ActionEntry>();
 
-                foreach (var type in types)
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    if (!type.IsClass) continue;
-                    var attr = type.GetCustomAttribute<HeraToolAttribute>();
-                    if (attr == null) continue;
-                    if (!attr.Enabled) continue;
+                    Type[] types;
+                    try { types = assembly.GetTypes(); }
+                    catch (ReflectionTypeLoadException) { continue; }
 
-                    var name = attr.Name ?? StringCaseUtility.ToSnakeCase(type.Name);
-                    if (cache.TryGetValue(name, out var existing))
+                    foreach (var type in types)
                     {
-                        UnityEngine.Debug.LogError(
-                            $"[Hera] Duplicate tool name '{name}': " +
-                            $"{existing.Type.FullName} and {type.FullName}. " +
-                            $"Rename one or remove the duplicate.");
-                        continue;
-                    }
+                        if (!type.IsClass) continue;
+                        var attr = type.GetCustomAttribute<HeraToolAttribute>();
+                        if (attr == null) continue;
+                        if (!attr.Enabled) continue;
 
-                    var staticMethod = type.GetMethod("HandleCommand",
-                        BindingFlags.Public | BindingFlags.Static, null,
-                        new[] { typeof(JObject) }, null);
-                    var instanceMethod = type.GetMethod("HandleCommand",
-                        BindingFlags.Public | BindingFlags.Instance, null,
-                        new[] { typeof(JObject) }, null);
-                    var handler = staticMethod ?? instanceMethod;
-
-                    cache[name] = new ToolEntry
-                    {
-                        Name = name,
-                        Type = type,
-                        Attr = attr,
-                        Handler = handler,
-                    };
-
-                    // Register action-level handlers: public static methods that take JObject
-                    foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
-                    {
-                        if (method.Name == "Handle" || method.Name == "HandleCommand")
+                        var name = attr.Name ?? StringCaseUtility.ToSnakeCase(type.Name);
+                        if (tools.TryGetValue(name, out var existing))
+                        {
+                            UnityEngine.Debug.LogError(
+                                $"[Hera] Duplicate tool name '{name}': " +
+                                $"{existing.Type.FullName} and {type.FullName}. " +
+                                $"Rename one or remove the duplicate.");
                             continue;
-                        var parms = method.GetParameters();
-                        if (parms.Length != 1 || parms[0].ParameterType != typeof(JObject))
-                            continue;
-                        // Register under the snake_case of the method name so
-                        // multi-word actions resolve: the CLI sends snake_case
-                        // (get_rect, set_parent, …) to match tool/param naming,
-                        // but a bare ToLower() of "GetRect" is "getrect" — a miss
-                        // with no HandleCommand fallback (UNKNOWN_COMMAND). For
-                        // single-word methods snake_case == ToLower(), unchanged.
-                        var key = $"{name}:{StringCaseUtility.ToSnakeCase(method.Name)}";
-                        actionHandlers[key] = method;
+                        }
+
+                        var staticMethod = type.GetMethod("HandleCommand",
+                            BindingFlags.Public | BindingFlags.Static, null,
+                            new[] { typeof(JObject) }, null);
+                        var instanceMethod = type.GetMethod("HandleCommand",
+                            BindingFlags.Public | BindingFlags.Instance, null,
+                            new[] { typeof(JObject) }, null);
+                        var defaultHandler = staticMethod ?? instanceMethod;
+
+                        tools[name] = new ToolEntry
+                        {
+                            Name = name,
+                            Type = type,
+                            Attr = attr,
+                            DefaultHandler = defaultHandler,
+                        };
+
+                        // Register action-level handlers.
+                        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                        {
+                            var actionAttr = method.GetCustomAttribute<HeraActionAttribute>();
+                            bool isLegacyAction = actionAttr == null
+                                && method.Name != "Handle"
+                                && method.Name != "HandleCommand"
+                                && IsActionSignature(method);
+
+                            if (actionAttr == null && !isLegacyAction)
+                                continue;
+
+                            var actionName = (actionAttr?.Name ?? StringCaseUtility.ToSnakeCase(method.Name)).ToLowerInvariant();
+                            var key = $"{name}:{actionName}";
+                            if (actions.ContainsKey(key))
+                            {
+                                UnityEngine.Debug.LogWarning(
+                                    $"[Hera] Duplicate action '{key}' in {type.FullName}; " +
+                                    $"later definition ignored.");
+                                continue;
+                            }
+
+                            actions[key] = new ActionEntry
+                            {
+                                ToolName = name,
+                                ActionName = actionName,
+                                Method = method,
+                                Attr = actionAttr,
+                            };
+                        }
                     }
                 }
+
+                s_Tools = tools;
+                s_Actions = actions;
             }
-            s_ActionHandlers = actionHandlers;
-            return cache;
         }
 
-        public static MethodInfo FindHandler(string command)
+        private static bool IsActionSignature(MethodInfo method)
         {
-            return GetCache().TryGetValue(command, out var entry) ? entry.Handler : null;
+            var parms = method.GetParameters();
+            return parms.Length == 1 && parms[0].ParameterType == typeof(JObject);
+        }
+
+        private static Dictionary<string, ToolEntry> GetTools()
+        {
+            BuildCache();
+            return s_Tools;
+        }
+
+        private static Dictionary<string, ActionEntry> GetActions()
+        {
+            BuildCache();
+            return s_Actions;
+        }
+
+        public static MethodInfo FindDefaultHandler(string command)
+        {
+            return GetTools().TryGetValue(command, out var entry) ? entry.DefaultHandler : null;
         }
 
         public static MethodInfo FindActionHandler(string command, string action)
         {
-            GetCache(); // Ensure action handlers are built
+            if (string.IsNullOrEmpty(action)) return null;
             var key = $"{command}:{action.ToLowerInvariant()}";
-            return s_ActionHandlers?.TryGetValue(key, out var handler) == true ? handler : null;
+            return GetActions().TryGetValue(key, out var entry) ? entry.Method : null;
         }
 
         /// <summary>
@@ -137,10 +173,10 @@ namespace HeraAgent
         public static List<string> SuggestSimilarCommands(string command, int maxDistance = 2, int max = 3)
         {
             if (string.IsNullOrEmpty(command)) return new List<string>();
-            var cache = GetCache();
+            var tools = GetTools();
 
             var candidates = new List<(string name, int dist)>();
-            foreach (var name in cache.Keys)
+            foreach (var name in tools.Keys)
             {
                 var d = Levenshtein.Distance(command, name);
                 if (d <= maxDistance)
@@ -242,7 +278,7 @@ namespace HeraAgent
 
         private static IEnumerable<(string name, Type type, HeraToolAttribute attr)> EnumerateTools()
         {
-            foreach (var entry in GetCache().Values)
+            foreach (var entry in GetTools().Values)
                 yield return (entry.Name, entry.Type, entry.Attr);
         }
 

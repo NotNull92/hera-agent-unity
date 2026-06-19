@@ -49,7 +49,7 @@ namespace HeraAgent.Tools
             var pattern = p.Get("pattern")
                 ?? (p.GetRaw("args") as JArray)?[0]?.ToString();
             if (string.IsNullOrWhiteSpace(pattern))
-                return new ErrorResponse("'pattern' parameter required.");
+                return new ErrorResponse("MISSING_PARAM", "'pattern' parameter required.");
 
             var nsFilter = p.Get("namespace");
             var limit = p.GetInt("limit") ?? 50;

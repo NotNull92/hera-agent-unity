@@ -834,6 +834,42 @@ Prefer (1) when the project ships icon sprites, (2) when it uses an icon font (o
 
 ---
 
+## html-to-uidoc
+
+Convert an inline-style HTML mockup to `ui_doc/2` JSON. This is a **CLI-side**
+command — no Unity round-trip — so agents can turn a pixel-perfect HTML design
+into the uGUI IR inside a single shell pipeline.
+
+```bash
+hera-agent-unity html-to-uidoc --file <html> [--out <json>] [--width <N>] [--height <N>]
+```
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--file` | required | Input HTML file |
+| `--out` | stdout | Output JSON file |
+| `--width` | 1080 | HTML design canvas width in pixels |
+| `--height` | 1920 | HTML design canvas height in pixels |
+
+The generated IR sets `canvas.reference_resolution` to `[width, height]` and
+uses `Scale With Screen Size`, so **1 HTML pixel maps to 1 uGUI canvas unit**.
+HTML `top` (downward positive) is converted to uGUI `anchoredPosition.y`
+(upward positive) automatically.
+
+Supported HTML:
+- Inline `style` attributes only (CSS classes / `<style>` blocks are not parsed).
+- `position:absolute; left:<px>; top:<px>; width:<px>; height:<px>`.
+- `background-color:<hex|rgb|name>`.
+- `border-radius:<px>` → `rounded_rect` procedural sprite.
+- Tags: `<div>` (panel), `<button>` (button), `<img>` (image), `<span>` (text).
+
+```bash
+hera-agent-unity html-to-uidoc --file design.html --out ui_doc.json --width 1920 --height 1080
+hera-agent-unity html-to-uidoc --file design.html | hera-agent-unity ui_doc apply
+```
+
+---
+
 ## reserialize
 
 Force reserialize assets (rewrite YAML/JSON with current Unity version).

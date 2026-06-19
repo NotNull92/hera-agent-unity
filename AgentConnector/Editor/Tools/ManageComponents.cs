@@ -64,15 +64,16 @@ namespace HeraAgent.Tools
 
         // ---- sub-actions ----
 
+        [HeraAction]
         public static object Add(JObject raw)
         {
             var p = new ToolParams(raw);
             var (go, goErr) = TargetResolver.ResolveGameObject(p);
-            if (goErr != null) return new ErrorResponse(goErr);
+            if (goErr != null) return goErr;
 
             string typeName = p.Get("type");
             if (string.IsNullOrEmpty(typeName))
-                return new ErrorResponse("'type' required for add.");
+                return new ErrorResponse("MISSING_PARAM", "'type' required for add.");
 
             var type = ComponentTypeResolver.Resolve(typeName);
             if (type == null)
@@ -85,7 +86,7 @@ namespace HeraAgent.Tools
             }
 
             if (type == typeof(Transform))
-                return new ErrorResponse("Transform is added automatically with every GameObject and cannot be added again.");
+                return new ErrorResponse("TRANSFORM_NOT_ADDABLE", "Transform is added automatically with every GameObject and cannot be added again.");
 
             Component comp;
             try
@@ -94,10 +95,10 @@ namespace HeraAgent.Tools
             }
             catch (Exception ex)
             {
-                return new ErrorResponse($"AddComponent failed: {ex.Message}");
+                return new ErrorResponse("ADD_COMPONENT_FAILED", $"AddComponent failed: {ex.Message}");
             }
             if (comp == null)
-                return new ErrorResponse($"AddComponent returned null — '{type.Name}' may forbid duplicates on this GameObject (e.g. via DisallowMultipleComponent).");
+                return new ErrorResponse("ADD_COMPONENT_NULL", $"AddComponent returned null — '{type.Name}' may forbid duplicates on this GameObject (e.g. via DisallowMultipleComponent).");
 
             EditorSceneManager.MarkSceneDirty(go.scene);
             return new SuccessResponse(
@@ -109,14 +110,15 @@ namespace HeraAgent.Tools
                 });
         }
 
+        [HeraAction]
         public static object Remove(JObject raw)
         {
             var p = new ToolParams(raw);
             var (comp, go, err) = ResolveComponentTarget(p);
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             if (comp is Transform)
-                return new ErrorResponse("Transform cannot be removed.");
+                return new ErrorResponse("TRANSFORM_NOT_REMOVABLE", "Transform cannot be removed.");
 
             var snapshot = BuildComponentShape(comp, includeProperties: false);
 
@@ -127,7 +129,7 @@ namespace HeraAgent.Tools
             }
             catch (Exception ex)
             {
-                return new ErrorResponse($"Remove failed: {ex.Message}");
+                return new ErrorResponse("REMOVE_COMPONENT_FAILED", $"Remove failed: {ex.Message}");
             }
 
             EditorSceneManager.MarkSceneDirty(go.scene);
@@ -140,11 +142,12 @@ namespace HeraAgent.Tools
                 });
         }
 
+        [HeraAction]
         public static object List(JObject raw)
         {
             var p = new ToolParams(raw);
             var (go, goErr) = TargetResolver.ResolveGameObject(p);
-            if (goErr != null) return new ErrorResponse(goErr);
+            if (goErr != null) return goErr;
 
             var comps = go.GetComponents<Component>();
             var list = new List<object>(comps.Length);
@@ -162,11 +165,12 @@ namespace HeraAgent.Tools
                 });
         }
 
+        [HeraAction]
         public static object Get(JObject raw)
         {
             var p = new ToolParams(raw);
             var (comp, go, err) = ResolveComponentTarget(p);
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             var compType = comp.GetType();
             string propertyPath = p.Get("property");
@@ -203,20 +207,21 @@ namespace HeraAgent.Tools
                 });
         }
 
+        [HeraAction]
         public static object Set(JObject raw)
         {
             var p = new ToolParams(raw);
             var (comp, go, err) = ResolveComponentTarget(p);
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             var compType = comp.GetType();
             string propertyPath = p.Get("property");
             if (string.IsNullOrEmpty(propertyPath))
-                return new ErrorResponse("'property' required for set.");
+                return new ErrorResponse("MISSING_PARAM", "'property' required for set.");
 
             var valueToken = p.GetRaw("value");
             if (valueToken == null)
-                return new ErrorResponse("'value' required for set.");
+                return new ErrorResponse("MISSING_PARAM", "'value' required for set.");
 
             using var so = new SerializedObject(comp);
             var prop = so.FindProperty(propertyPath);
@@ -255,17 +260,17 @@ namespace HeraAgent.Tools
 
         // ---- helpers ----
 
-        static (Component comp, GameObject go, string err) ResolveComponentTarget(ToolParams p)
+        static (Component comp, GameObject go, ErrorResponse err) ResolveComponentTarget(ToolParams p)
         {
             var idToken = p.GetRaw("component_id");
             if (idToken != null && idToken.Type != JTokenType.Null)
             {
                 int? id = p.GetInt("component_id");
-                if (id == null) return (null, null, $"Invalid 'component_id': '{idToken}'.");
+                if (id == null) return (null, null, new ErrorResponse("INVALID_COMPONENT_ID", $"Invalid 'component_id': '{idToken}'."));
                 var obj = EntityIdCompat.ToObject(id.Value);
-                if (obj == null) return (null, null, $"No object for component_id={id.Value}.");
+                if (obj == null) return (null, null, new ErrorResponse("OBJECT_NOT_FOUND", $"No object for component_id={id.Value}."));
                 var comp = obj as Component;
-                if (comp == null) return (null, null, $"instance_id={id.Value} is not a Component (type={obj.GetType().Name}).");
+                if (comp == null) return (null, null, new ErrorResponse("NOT_A_COMPONENT", $"instance_id={id.Value} is not a Component (type={obj.GetType().Name})."));
                 return (comp, comp.gameObject, null);
             }
 
@@ -274,22 +279,24 @@ namespace HeraAgent.Tools
 
             string typeName = p.Get("type");
             if (string.IsNullOrEmpty(typeName))
-                return (null, go, "Target required: pass 'component_id' or ('type' + GameObject target).");
+                return (null, go, new ErrorResponse("MISSING_PARAM", "Target required: pass 'component_id' or ('type' + GameObject target)."));
 
             var type = ComponentTypeResolver.Resolve(typeName);
             if (type == null)
             {
                 var similar = ComponentTypeResolver.SuggestSimilar(typeName);
-                var hint = similar.Count > 0 ? $". Did you mean: {string.Join(", ", similar)}?" : "";
-                return (null, go, $"Component type not found: '{typeName}'{hint}");
+                return (null, go, new ErrorResponse(
+                    "UNKNOWN_COMPONENT_TYPE",
+                    $"Component type not found: '{typeName}'.",
+                    data: similar.Count > 0 ? new { did_you_mean = similar } : null));
             }
 
             int index = p.GetInt("index", 0) ?? 0;
             var components = go.GetComponents(type);
             if (components.Length == 0)
-                return (null, go, $"GameObject '{go.name}' has no {type.Name} component.");
+                return (null, go, new ErrorResponse("COMPONENT_NOT_FOUND", $"GameObject '{go.name}' has no {type.Name} component."));
             if (index < 0 || index >= components.Length)
-                return (null, go, $"index {index} out of range — '{go.name}' has {components.Length} {type.Name} component(s).");
+                return (null, go, new ErrorResponse("COMPONENT_INDEX_OUT_OF_RANGE", $"index {index} out of range — '{go.name}' has {components.Length} {type.Name} component(s)."));
 
             return (components[index], go, null);
         }

@@ -28,13 +28,13 @@ namespace HeraAgent.TestRunner
         public static Task<object> HandleCommand(JObject @params)
         {
             if (@params == null)
-                return Task.FromResult<object>(new ErrorResponse("Parameters cannot be null."));
+                return Task.FromResult<object>(new ErrorResponse("MISSING_PARAM", "Parameters cannot be null."));
 
             var p = new ToolParams(@params);
 
             var modeResult = p.GetRequired("mode");
             if (!modeResult.IsSuccess)
-                return Task.FromResult<object>(new ErrorResponse(modeResult.ErrorMessage));
+                return Task.FromResult<object>(new ErrorResponse("MISSING_PARAM", modeResult.ErrorMessage));
 
             var modeStr = modeResult.Value.Trim();
             TestMode testMode;
@@ -43,7 +43,7 @@ namespace HeraAgent.TestRunner
             else if (modeStr.Equals("PlayMode", StringComparison.OrdinalIgnoreCase))
                 testMode = TestMode.PlayMode;
             else
-                return Task.FromResult<object>(new ErrorResponse($"Unknown mode '{modeStr}'. Use EditMode or PlayMode."));
+                return Task.FromResult<object>(new ErrorResponse("INVALID_PARAM", $"Unknown mode '{modeStr}'. Use EditMode or PlayMode."));
 
             var filter = p.Get("filter", null);
 
@@ -163,7 +163,7 @@ namespace HeraAgent.TestRunner
                 passes   = passed,
             };
             return failed.Count > 0
-                ? (object)new ErrorResponse($"{failed.Count} test(s) failed.", summary)
+                ? (object)new ErrorResponse("TESTS_FAILED", $"{failed.Count} test(s) failed.", summary)
                 : new SuccessResponse($"All {passed.Count} test(s) passed.", summary);
         }
 

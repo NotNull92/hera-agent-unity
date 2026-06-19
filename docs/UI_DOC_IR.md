@@ -179,16 +179,39 @@ PreferredSize=2).
 
 ## Canvas (root) → `Canvas` + `CanvasScaler`
 
-When `element:"canvas"` (or auto-created), configure the scaler for a target
-resolution so absolute coordinates are reproducible:
+When the root node has `element: "canvas"`, `ui_doc apply` creates a standalone
+Canvas at the scene root and applies the top-level `canvas` block to its
+`CanvasScaler`. Set `reference_resolution` to the HTML design size so that
+HTML pixel values map 1:1 to uGUI canvas units.
 
 ```jsonc
-"canvas": {
-  "scale_mode": "scale_with_screen_size|constant_pixel_size",
-  "reference_resolution": [1080, 1920],
-  "match": 0.5                              // matchWidthOrHeight 0=width…1=height
+{
+  "schema": "ui_doc/2",
+  "backend": "ugui",
+  "canvas": {
+    "scale_mode": "scale_with_screen_size",
+    "reference_resolution": [1080, 1920],  // same as the HTML design canvas
+    "match": 0.5                           // matchWidthOrHeight 0=width…1=height
+  },
+  "root": {
+    "name": "Canvas",
+    "element": "canvas",
+    "rect": { "anchor": "stretch", "size": [0, 0] },
+    "children": [ ... ]
+  }
 }
 ```
+
+Supported `canvas` fields:
+- `scale_mode`: `"scale_with_screen_size"` | `"constant_pixel_size"`
+- `reference_resolution`: `[width, height]` (used by Scale With Screen Size)
+- `match`: `0..1` (`matchWidthOrHeight`)
+- `scale_factor`: float (`scaleFactor` for Constant Pixel Size)
+- `reference_pixels_per_unit`: float (`referencePixelsPerUnit`, default 100)
+
+If the root element is **not** `canvas` and no `--parent` is supplied, `ui_doc apply`
+still auto-parents under an existing Canvas (the previous behavior); the top-level
+`canvas` config is ignored in that case.
 
 ## gen sprite spec (`image.sprite.gen` / `ui_doc gen_sprite`)
 

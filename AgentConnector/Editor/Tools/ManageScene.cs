@@ -23,6 +23,7 @@ namespace HeraAgent.Tools
             public string Mode { get; set; }
         }
 
+        [HeraAction]
         public static object Info(JObject raw)
         {
             var active = SceneManager.GetActiveScene();
@@ -46,6 +47,7 @@ namespace HeraAgent.Tools
             });
         }
 
+        [HeraAction]
         public static object Load(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -54,11 +56,11 @@ namespace HeraAgent.Tools
                 ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
             string mode = p.Get("mode");
             if (string.IsNullOrEmpty(target))
-                return new ErrorResponse("'path' or positional scene path required for load.");
+                return new ErrorResponse("MISSING_PARAM", "'path' or positional scene path required for load.");
 
             var path = ResolvePath(target);
             if (path == null)
-                return new ErrorResponse($"Scene not found: '{target}'");
+                return new ErrorResponse("SCENE_NOT_FOUND", $"Scene not found: '{target}'");
 
             var loadMode = OpenSceneMode.Single;
             if (!string.IsNullOrEmpty(mode))
@@ -71,7 +73,7 @@ namespace HeraAgent.Tools
                     case "additivewithoutloading":
                         loadMode = OpenSceneMode.AdditiveWithoutLoading; break;
                     default:
-                        return new ErrorResponse($"Unknown mode: '{mode}'. Use single, additive, additive_without_loading.");
+                        return new ErrorResponse("INVALID_PARAM", $"Unknown mode: '{mode}'. Use single, additive, additive_without_loading.");
                 }
             }
 
@@ -79,7 +81,7 @@ namespace HeraAgent.Tools
             {
                 var active = SceneManager.GetActiveScene();
                 if (active.isDirty)
-                    return new ErrorResponse($"Active scene '{active.name}' has unsaved changes. Save it first or use --mode additive.");
+                    return new ErrorResponse("SCENE_DIRTY", $"Active scene '{active.name}' has unsaved changes. Save it first or use --mode additive.");
             }
 
             var scene = EditorSceneManager.OpenScene(path, loadMode);
@@ -91,6 +93,7 @@ namespace HeraAgent.Tools
             });
         }
 
+        [HeraAction]
         public static object Save(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -106,7 +109,7 @@ namespace HeraAgent.Tools
             {
                 scene = FindLoaded(target);
                 if (!scene.IsValid())
-                    return new ErrorResponse($"Scene not loaded: '{target}'");
+                    return new ErrorResponse("SCENE_NOT_LOADED", $"Scene not loaded: '{target}'");
             }
 
             if (!scene.isDirty)
@@ -121,7 +124,7 @@ namespace HeraAgent.Tools
 
             bool ok = EditorSceneManager.SaveScene(scene);
             if (!ok)
-                return new ErrorResponse($"Failed to save scene: {scene.name}");
+                return new ErrorResponse("SCENE_SAVE_FAILED", $"Failed to save scene: {scene.name}");
             return new SuccessResponse($"Saved scene: {scene.name}", new
             {
                 name = scene.name,
@@ -130,6 +133,7 @@ namespace HeraAgent.Tools
             });
         }
 
+        [HeraAction]
         public static object List(JObject raw)
         {
             var registered = EditorBuildSettings.scenes;
@@ -147,6 +151,7 @@ namespace HeraAgent.Tools
             return new SuccessResponse("OK", list);
         }
 
+        [HeraAction]
         public static object Close(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -154,24 +159,24 @@ namespace HeraAgent.Tools
             string target = p.Get("path") ?? p.Get("name") ?? p.Get("target")
                 ?? (argsToken != null && argsToken.Count >= 2 ? argsToken[1].ToString() : null);
             if (string.IsNullOrEmpty(target))
-                return new ErrorResponse("'path' or positional scene name required for close.");
+                return new ErrorResponse("MISSING_PARAM", "'path' or positional scene name required for close.");
 
             var scene = FindLoaded(target);
             if (!scene.IsValid())
-                return new ErrorResponse($"Scene not loaded: '{target}'");
+                return new ErrorResponse("SCENE_NOT_LOADED", $"Scene not loaded: '{target}'");
 
             if (SceneManager.sceneCount <= 1)
-                return new ErrorResponse("Cannot close the only loaded scene.");
+                return new ErrorResponse("SCENE_CLOSE_FORBIDDEN", "Cannot close the only loaded scene.");
 
             if (scene.isDirty)
-                return new ErrorResponse($"Scene '{scene.name}' has unsaved changes. Save first.");
+                return new ErrorResponse("SCENE_DIRTY", $"Scene '{scene.name}' has unsaved changes. Save first.");
 
             // Snapshot identity before CloseScene; the Scene struct is invalidated by it.
             var capturedName = scene.name;
             var capturedPath = scene.path;
             bool ok = EditorSceneManager.CloseScene(scene, true);
             if (!ok)
-                return new ErrorResponse($"Failed to close scene: {capturedName}");
+                return new ErrorResponse("SCENE_CLOSE_FAILED", $"Failed to close scene: {capturedName}");
             return new SuccessResponse($"Closed scene: {capturedName}", new
             {
                 name = capturedName,

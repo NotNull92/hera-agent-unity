@@ -122,7 +122,7 @@ namespace HeraAgent.Tools
             if (idTok != null && idTok.Type != JTokenType.Null)
             {
                 var (go, err) = TargetResolver.ResolveGameObject(p);
-                if (go == null) return new ErrorResponse("TARGET_NOT_FOUND", err);
+                if (err != null) return err;
                 target = go.transform;
             }
             else
@@ -131,7 +131,7 @@ namespace HeraAgent.Tools
                 if (string.IsNullOrEmpty(path))
                     return new ErrorResponse("MISSING_PARAM", "export needs 'path' or 'instance_id' (the UI subtree root).");
                 var (t, err) = TargetResolver.ResolveTransform(path);
-                if (t == null) return new ErrorResponse("TARGET_NOT_FOUND", err);
+                if (err != null) return err;
                 target = t;
             }
 
@@ -158,11 +158,18 @@ namespace HeraAgent.Tools
 
             Transform parent;
             var parentTok = p.GetRaw("parent");
-            if (parentTok != null && parentTok.Type != JTokenType.Null && !string.IsNullOrEmpty(parentTok.ToString()))
+            bool explicitParent = parentTok != null && parentTok.Type != JTokenType.Null && !string.IsNullOrEmpty(parentTok.ToString());
+            if (explicitParent)
             {
                 var (t, err) = TargetResolver.ResolveTransform(parentTok.ToString());
-                if (t == null) return new ErrorResponse("PARENT_NOT_FOUND", err);
+                if (err != null) return err;
                 parent = t;
+            }
+            else if (string.Equals(rootNode["element"]?.ToString(), "canvas", System.StringComparison.OrdinalIgnoreCase))
+            {
+                // A root canvas element stands alone at the scene root; the
+                // top-level `canvas` config configures its CanvasScaler.
+                parent = null;
             }
             else
             {
@@ -173,7 +180,8 @@ namespace HeraAgent.Tools
             bool upsert = string.Equals(p.Get("mode"), "upsert", System.StringComparison.OrdinalIgnoreCase);
 
             var stats = new UiDocSchema.ApplyStats();
-            var root = UiDocSchema.ApplyNode(rootNode, parent, stats, upsert);
+            var canvasConfig = doc["canvas"] as JObject;
+            var root = UiDocSchema.ApplyNode(rootNode, parent, stats, upsert, canvasConfig);
 
             if (root != null)
             {
@@ -412,7 +420,7 @@ namespace HeraAgent.Tools
             if (!string.IsNullOrEmpty(canvasSel))
             {
                 var (t, err) = TargetResolver.ResolveTransform(canvasSel);
-                if (t == null) return new ErrorResponse("TARGET_NOT_FOUND", err);
+                if (err != null) return err;
                 var c = t.GetComponentInParent<Canvas>();
                 only = c != null ? c.rootCanvas : null;
                 if (only == null) return new ErrorResponse("TARGET_NOT_FOUND", $"[Hera] I found '{canvasSel}' but it isn't under a Canvas.");

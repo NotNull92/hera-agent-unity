@@ -82,14 +82,14 @@ namespace HeraAgent.Tools
                     ProfilerDriver.ClearAllFrames();
                     return new SuccessResponse("All profiler frames cleared.");
                 default:
-                    return new ErrorResponse($"Unknown action: '{action}'. Valid: hierarchy, enable, disable, status, clear.");
+                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action: '{action}'. Valid: hierarchy, enable, disable, status, clear.");
             }
         }
 
         private static object Hierarchy(ToolParams p)
         {
             if (ProfilerDriver.enabled == false && ProfilerDriver.lastFrameIndex < 0)
-                return new ErrorResponse("Profiler has no captured data. Enable profiler first.");
+                return new ErrorResponse("PROFILER_NO_DATA", "Profiler has no captured data. Enable profiler first.");
 
             var fromFrame = p.GetInt("from", -1).Value;
             var toFrame = p.GetInt("to", -1).Value;
@@ -128,7 +128,7 @@ namespace HeraAgent.Tools
                 sortColumn, false);
 
             if (frameData == null || frameData.valid == false)
-                return new ErrorResponse($"No profiler data for frame {frameIndex}, thread {threadIndex}.");
+                return new ErrorResponse("PROFILER_NO_FRAME_DATA", $"No profiler data for frame {frameIndex}, thread {threadIndex}.");
 
             // Must traverse from root first — Unity lazy-initializes the hierarchy tree.
             int rootId = frameData.GetRootItemID();
@@ -143,7 +143,7 @@ namespace HeraAgent.Tools
             {
                 int found = FindItemByName(frameData, rootId, rootName);
                 if (found < 0)
-                    return new ErrorResponse($"No profiler item matching '{rootName}' found.");
+                    return new ErrorResponse("PROFILER_ITEM_NOT_FOUND", $"No profiler item matching '{rootName}' found.");
                 parentId = found;
                 parentName = frameData.GetItemName(found);
             }
@@ -177,7 +177,7 @@ namespace HeraAgent.Tools
             toFrame = Math.Min(toFrame, lastAvail);
             int frameCount = toFrame - fromFrame + 1;
             if (frameCount <= 0)
-                return new ErrorResponse($"No frames in range [{fromFrame}..{toFrame}]. Available: [{firstAvail}..{lastAvail}].");
+                return new ErrorResponse("PROFILER_NO_FRAMES_IN_RANGE", $"No frames in range [{fromFrame}..{toFrame}]. Available: [{firstAvail}..{lastAvail}].");
 
             var threadIndex = p.GetInt("thread", 0).Value;
             var rootName = p.Get("root");

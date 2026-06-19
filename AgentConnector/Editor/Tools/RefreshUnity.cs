@@ -1,7 +1,4 @@
-using System;
 using Newtonsoft.Json.Linq;
-using UnityEditor;
-using UnityEditor.Compilation;
 
 namespace HeraAgent.Tools
 {
@@ -27,33 +24,18 @@ namespace HeraAgent.Tools
         {
             var p = new ToolParams(@params ?? new JObject());
             string mode = p.Get("mode", "if_dirty");
-            string scope = p.Get("scope", "all");
             string compile = p.Get("compile", "none");
             bool force = p.GetBool("force");
 
-            bool compileRequested = false;
-
-            if (!force && EditorApplication.isPlayingOrWillChangePlaymode)
-            {
-                return new ErrorResponse("Cannot refresh while Unity is in or entering play mode. Exit play mode first, or pass --force if this is intentional.");
-            }
-
-            AssetDatabase.Refresh(string.Equals(mode, "force", StringComparison.OrdinalIgnoreCase)
-                ? ImportAssetOptions.ForceUpdate | ImportAssetOptions.ForceSynchronousImport
-                : ImportAssetOptions.ForceSynchronousImport);
-
-            if (string.Equals(compile, "request", StringComparison.OrdinalIgnoreCase))
-            {
-                Heartbeat.MarkCompileRequested();
-                CompilationPipeline.RequestScriptCompilation();
-                compileRequested = true;
-            }
+            var result = AssetRefresh.Refresh(mode, compile, force);
+            if (result.error != null)
+                return result.error;
 
             return new SuccessResponse("Refresh requested.", new
             {
-                refresh_triggered = true,
-                compile_requested = compileRequested,
-                force = force,
+                refresh_triggered = result.refreshTriggered,
+                compile_requested = result.compileRequested,
+                force = result.force,
             });
         }
     }

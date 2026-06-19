@@ -98,7 +98,7 @@ namespace HeraAgent.Tools
             }
 
             if (@params == null)
-                return new ErrorResponse("Parameters cannot be null.");
+                return new ErrorResponse("MISSING_PARAM", "Parameters cannot be null.");
 
             var p = new ToolParams(@params);
 

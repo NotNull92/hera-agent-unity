@@ -159,7 +159,7 @@ namespace HeraAgent
         /// element-type changes, no deletion of objects absent from the doc).
         /// Returns the realized root GameObject.
         /// </summary>
-        public static GameObject ApplyNode(JObject node, Transform parent, ApplyStats stats, bool upsert)
+        public static GameObject ApplyNode(JObject node, Transform parent, ApplyStats stats, bool upsert, JObject canvasConfig = null)
         {
             if (node == null) return null;
             string element = (node["element"]?.ToString() ?? "empty").ToLowerInvariant();
@@ -171,7 +171,7 @@ namespace HeraAgent
 
             if (go == null)
             {
-                go = BuildElement(element, name, node, stats);
+                go = BuildElement(element, name, node, stats, canvasConfig);
                 go.transform.SetParent(parent, worldPositionStays: false);
                 Undo.RegisterCreatedObjectUndo(go, "Hera ui_doc apply");
                 stats.Created++;
@@ -193,9 +193,11 @@ namespace HeraAgent
             // ticks) instead of the generic image one.
             stats.ElementTypes.Add(element == "image" && IsBarImage(node["image"] as JObject) ? "bar" : element);
 
+            // Canvas scaler config applies to the root canvas only; nested canvases
+            // receive null so they keep default scaler settings.
             if (node["children"] is JArray children)
                 foreach (var child in children)
-                    if (child is JObject co) ApplyNode(co, go.transform, stats, upsert);
+                    if (child is JObject co) ApplyNode(co, go.transform, stats, upsert, null);
 
             return go;
         }
@@ -210,7 +212,7 @@ namespace HeraAgent
             return t != null && t.ToLowerInvariant() == "filled";
         }
 
-        static GameObject BuildElement(string element, string name, JObject node, ApplyStats stats)
+        static GameObject BuildElement(string element, string name, JObject node, ApplyStats stats, JObject canvasConfig = null)
         {
             var go = new GameObject(string.IsNullOrEmpty(name) ? Capitalize(element) : name, typeof(RectTransform));
             switch (element)
@@ -223,6 +225,7 @@ namespace HeraAgent
                     canvas.renderMode = RenderMode.ScreenSpaceOverlay;
                     AddByName(go, "CanvasScaler");
                     AddByName(go, "GraphicRaycaster");
+                    if (canvasConfig != null) ApplyCanvasConfig(go, canvasConfig);
                     break;
                 case "image":
                     AddOrError(go, "Image", stats);
@@ -249,6 +252,56 @@ namespace HeraAgent
                     break;
             }
             return go;
+        }
+
+        static void ApplyCanvasConfig(GameObject go, JObject config)
+        {
+            var scaler = GetComponentByName(go, "CanvasScaler");
+            if (scaler == null) return;
+            var type = scaler.GetType();
+
+            try
+            {
+                var scaleModeProp = type.GetProperty("uiScaleMode");
+                if (scaleModeProp != null && config["scale_mode"] is JValue sm)
+                {
+                    var modeStr = sm.ToString().ToLowerInvariant().Replace("_", "");
+                    var enumType = scaleModeProp.PropertyType;
+                    object enumValue = null;
+                    foreach (var name in Enum.GetNames(enumType))
+                    {
+                        if (name.ToLowerInvariant() == modeStr)
+                        {
+                            enumValue = Enum.Parse(enumType, name);
+                            break;
+                        }
+                    }
+                    if (enumValue != null) scaleModeProp.SetValue(scaler, enumValue);
+                }
+
+                var refResProp = type.GetProperty("referenceResolution");
+                if (refResProp != null && config["reference_resolution"] is JArray rr && rr.Count >= 2)
+                {
+                    var vec = Activator.CreateInstance(typeof(Vector2), rr[0].Value<float>(), rr[1].Value<float>());
+                    refResProp.SetValue(scaler, vec);
+                }
+
+                var matchProp = type.GetProperty("matchWidthOrHeight");
+                if (matchProp != null && config["match"] is JValue m)
+                    matchProp.SetValue(scaler, m.Value<float>());
+
+                var scaleFactorProp = type.GetProperty("scaleFactor");
+                if (scaleFactorProp != null && config["scale_factor"] is JValue sf)
+                    scaleFactorProp.SetValue(scaler, sf.Value<float>());
+
+                var ppuProp = type.GetProperty("referencePixelsPerUnit");
+                if (ppuProp != null && config["reference_pixels_per_unit"] is JValue rp)
+                    ppuProp.SetValue(scaler, rp.Value<float>());
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[Hera] Failed to apply canvas config to '{go.name}': {ex.Message}");
+            }
         }
 
         static void ApplyRect(GameObject go, JObject rect)

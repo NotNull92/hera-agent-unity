@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -87,7 +86,7 @@ namespace HeraAgent.Tools
             {
                 path,
                 root = prefab.name,
-                components = ComponentNames(prefab),
+                components = GameObjectComponents.GetNames(prefab),
             });
         }
 
@@ -169,19 +168,11 @@ namespace HeraAgent.Tools
                 {
                     path,
                     component = type.Name,
-                    components = ComponentNames(saved),
+                    components = GameObjectComponents.GetNames(saved),
                 });
         }
 
         // ---- helpers ----
-
-        private static string[] ComponentNames(GameObject go)
-        {
-            return go.GetComponents<Component>()
-                .Where(c => c != null)
-                .Select(c => c.GetType().Name)
-                .ToArray();
-        }
 
         private static (GameObject go, string err) ResolveSceneGo(ToolParams p)
         {

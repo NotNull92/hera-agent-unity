@@ -35,12 +35,12 @@ namespace HeraAgent.Tools
         public static object HandleCommand(JObject @params)
         {
             if (@params == null)
-                return new ErrorResponse("Parameters cannot be null.");
+                return new ErrorResponse("MISSING_PARAM", "Parameters cannot be null.");
 
             var p = new ToolParams(@params);
             var actionResult = p.GetRequired("action");
             if (!actionResult.IsSuccess)
-                return new ErrorResponse(actionResult.ErrorMessage);
+                return new ErrorResponse("MISSING_PARAM", actionResult.ErrorMessage);
 
             string action = actionResult.Value.ToLowerInvariant();
 
@@ -60,7 +60,7 @@ namespace HeraAgent.Tools
                         EditorApplication.isPaused = !EditorApplication.isPaused;
                         return new SuccessResponse(EditorApplication.isPaused ? "Game paused." : "Game resumed.");
                     }
-                    return new ErrorResponse("Cannot pause/resume: Not in play mode.");
+                    return new ErrorResponse("NOT_IN_PLAY_MODE", "Cannot pause/resume: Not in play mode.");
 
                 case "stop":
                     if (EditorApplication.isPlaying)
@@ -72,28 +72,28 @@ namespace HeraAgent.Tools
 
                 case "set_active_tool":
                     var toolNameResult = p.GetRequired("tool_name", "'tool_name' parameter required.");
-                    if (!toolNameResult.IsSuccess) return new ErrorResponse(toolNameResult.ErrorMessage);
+                    if (!toolNameResult.IsSuccess) return new ErrorResponse("MISSING_PARAM", toolNameResult.ErrorMessage);
                     if (Enum.TryParse<Tool>(toolNameResult.Value, true, out var targetTool) && targetTool != Tool.None && targetTool <= Tool.Custom)
                     {
                         UnityEditor.Tools.current = targetTool;
                         return new SuccessResponse($"Set active tool to '{targetTool}'.");
                     }
-                    return new ErrorResponse($"Could not parse '{toolNameResult.Value}' as a Unity Tool.");
+                    return new ErrorResponse("INVALID_PARAM", $"Could not parse '{toolNameResult.Value}' as a Unity Tool.");
 
                 case "add_tag":
                     var addTagResult = p.GetRequired("tag_name", "'tag_name' parameter required.");
-                    if (!addTagResult.IsSuccess) return new ErrorResponse(addTagResult.ErrorMessage);
+                    if (!addTagResult.IsSuccess) return new ErrorResponse("MISSING_PARAM", addTagResult.ErrorMessage);
                     if (InternalEditorUtility.tags.Contains(addTagResult.Value))
-                        return new ErrorResponse($"Tag '{addTagResult.Value}' already exists.");
+                        return new ErrorResponse("TAG_ALREADY_EXISTS", $"Tag '{addTagResult.Value}' already exists.");
                     InternalEditorUtility.AddTag(addTagResult.Value);
                     AssetDatabase.SaveAssets();
                     return new SuccessResponse($"Tag '{addTagResult.Value}' added.");
 
                 case "remove_tag":
                     var removeTagResult = p.GetRequired("tag_name", "'tag_name' parameter required.");
-                    if (!removeTagResult.IsSuccess) return new ErrorResponse(removeTagResult.ErrorMessage);
+                    if (!removeTagResult.IsSuccess) return new ErrorResponse("MISSING_PARAM", removeTagResult.ErrorMessage);
                     if (!InternalEditorUtility.tags.Contains(removeTagResult.Value))
-                        return new ErrorResponse($"Tag '{removeTagResult.Value}' does not exist.");
+                        return new ErrorResponse("TAG_NOT_FOUND", $"Tag '{removeTagResult.Value}' does not exist.");
                     InternalEditorUtility.RemoveTag(removeTagResult.Value);
                     AssetDatabase.SaveAssets();
                     return new SuccessResponse($"Tag '{removeTagResult.Value}' removed.");
@@ -103,23 +103,23 @@ namespace HeraAgent.Tools
                     return ManageLayer(action, p);
 
                 default:
-                    return new ErrorResponse($"Unknown action: '{action}'.");
+                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action: '{action}'.");
             }
         }
 
         private static object ManageLayer(string action, ToolParams p)
         {
             var nameResult = p.GetRequired("layer_name", "'layer_name' parameter required.");
-            if (!nameResult.IsSuccess) return new ErrorResponse(nameResult.ErrorMessage);
+            if (!nameResult.IsSuccess) return new ErrorResponse("MISSING_PARAM", nameResult.ErrorMessage);
 
             var tagManagerAssets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/TagManager.asset");
             if (tagManagerAssets == null || tagManagerAssets.Length == 0)
-                return new ErrorResponse("Could not access TagManager asset.");
+                return new ErrorResponse("TAGMANAGER_ACCESS_FAILED", "Could not access TagManager asset.");
 
             using var tagManager = new SerializedObject(tagManagerAssets[0]);
             var layersProp = tagManager.FindProperty("layers");
             if (layersProp == null || !layersProp.isArray)
-                return new ErrorResponse("Could not find 'layers' property.");
+                return new ErrorResponse("TAGMANAGER_PROPERTY_NOT_FOUND", "Could not find 'layers' property.");
 
             if (action == "add_layer")
             {
@@ -128,11 +128,11 @@ namespace HeraAgent.Tools
                 {
                     var sp = layersProp.GetArrayElementAtIndex(i);
                     if (sp != null && nameResult.Value.Equals(sp.stringValue, StringComparison.OrdinalIgnoreCase))
-                        return new ErrorResponse($"Layer '{nameResult.Value}' already exists at index {i}.");
+                        return new ErrorResponse("LAYER_ALREADY_EXISTS", $"Layer '{nameResult.Value}' already exists at index {i}.");
                     if (firstEmpty == -1 && i >= FirstUserLayerIndex && (sp == null || string.IsNullOrEmpty(sp.stringValue)))
                         firstEmpty = i;
                 }
-                if (firstEmpty == -1) return new ErrorResponse("No empty layer slots available.");
+                if (firstEmpty == -1) return new ErrorResponse("LAYER_SLOTS_FULL", "No empty layer slots available.");
                 layersProp.GetArrayElementAtIndex(firstEmpty).stringValue = nameResult.Value;
                 tagManager.ApplyModifiedProperties();
                 AssetDatabase.SaveAssets();
@@ -151,7 +151,7 @@ namespace HeraAgent.Tools
                         return new SuccessResponse($"Layer '{nameResult.Value}' removed from slot {i}.");
                     }
                 }
-                return new ErrorResponse($"User layer '{nameResult.Value}' not found.");
+                return new ErrorResponse("LAYER_NOT_FOUND", $"User layer '{nameResult.Value}' not found.");
             }
         }
 

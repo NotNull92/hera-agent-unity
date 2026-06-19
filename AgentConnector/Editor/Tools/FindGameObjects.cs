@@ -62,7 +62,7 @@ namespace HeraAgent.Tools
         public static object HandleCommand(JObject parameters)
         {
             if (parameters == null)
-                return new ErrorResponse("Parameters cannot be null.");
+                return new ErrorResponse("MISSING_PARAM", "Parameters cannot be null.");
 
             var p = new ToolParams(parameters);
 
@@ -83,14 +83,14 @@ namespace HeraAgent.Tools
                 if (int.TryParse(layerStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var idx))
                 {
                     if (idx < 0 || idx > 31)
-                        return new ErrorResponse($"Invalid 'layer' index: {idx}. Must be 0..31.");
+                        return new ErrorResponse("INVALID_LAYER_INDEX", $"Invalid 'layer' index: {idx}. Must be 0..31.");
                     layerIndex = idx;
                 }
                 else
                 {
                     var resolved = LayerMask.NameToLayer(layerStr);
                     if (resolved < 0)
-                        return new ErrorResponse($"Unknown layer name: '{layerStr}'. Use the Tags & Layers inspector to add it, or pass an integer index.");
+                        return new ErrorResponse("UNKNOWN_LAYER_NAME", $"Unknown layer name: '{layerStr}'. Use the Tags & Layers inspector to add it, or pass an integer index.");
                     layerIndex = resolved;
                 }
             }
@@ -115,7 +115,7 @@ namespace HeraAgent.Tools
                 try { pathRegex = GlobToRegex(pathGlob); }
                 catch (ArgumentException ex)
                 {
-                    return new ErrorResponse($"Invalid path_glob '{pathGlob}': {ex.Message}");
+                    return new ErrorResponse("INVALID_PATH_GLOB", $"Invalid path_glob '{pathGlob}': {ex.Message}");
                 }
             }
 

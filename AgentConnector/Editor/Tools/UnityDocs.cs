@@ -32,14 +32,14 @@ namespace HeraAgent.Tools
 
         public static object HandleCommand(JObject parameters)
         {
-            if (parameters == null) return new ErrorResponse("Parameters cannot be null.");
+            if (parameters == null) return new ErrorResponse("MISSING_PARAM", "Parameters cannot be null.");
             var p = new ToolParams(parameters);
             var argsToken = p.GetRaw("args") as JArray;
 
             string query = p.Get("query")
                 ?? (argsToken != null && argsToken.Count >= 1 ? argsToken[0].ToString() : null);
             if (string.IsNullOrEmpty(query))
-                return new ErrorResponse("'query' required. Examples: 'Rigidbody', 'Rigidbody.mass', 'GameObject.AddComponent'.");
+                return new ErrorResponse("MISSING_PARAM", "'query' required. Examples: 'Rigidbody', 'Rigidbody.mass', 'GameObject.AddComponent'.");
 
             // Surface a load-time failure (bundled file missing / unreadable)
             // with a structured code so the caller can tell it apart from a

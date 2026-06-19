@@ -90,6 +90,7 @@ namespace HeraAgent.Tools
 
         // ---- create ----
 
+        [HeraAction]
         public static object Create(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -97,7 +98,7 @@ namespace HeraAgent.Tools
                 ?? ((p.GetRaw("args") as JArray)?.Count >= 2 ? ((JArray)p.GetRaw("args"))[1].ToString() : null))
                 ?.ToLowerInvariant();
             if (string.IsNullOrEmpty(element))
-                return new ErrorResponse("'element' required for create: canvas, panel, image, button, text, empty.");
+                return new ErrorResponse("MISSING_PARAM", "'element' required for create: canvas, panel, image, button, text, empty.");
 
             var created = new List<string>();
 
@@ -105,7 +106,7 @@ namespace HeraAgent.Tools
             if (element == "canvas")
             {
                 var (canvas, cErr) = CreateCanvas(p.Get("name"), created);
-                if (cErr != null) return new ErrorResponse(cErr);
+                if (cErr != null) return cErr;
                 Finalize(canvas, created);
                 return WithJuice("canvas", new SuccessResponse($"Created Canvas: {canvas.name}", BuildCreateShape(canvas, created)));
             }
@@ -116,13 +117,13 @@ namespace HeraAgent.Tools
             if (parentToken != null && parentToken.Type != JTokenType.Null && !string.IsNullOrEmpty(parentToken.ToString()))
             {
                 var (pt, pErr) = TargetResolver.ResolveTransform(parentToken.ToString());
-                if (pErr != null) return new ErrorResponse(pErr);
+                if (pErr != null) return pErr;
                 parent = pt;
             }
             else
             {
                 var (canvasGo, cErr) = EnsureCanvas(created);
-                if (cErr != null) return new ErrorResponse(cErr);
+                if (cErr != null) return cErr;
                 parent = canvasGo.transform;
             }
 
@@ -141,12 +142,13 @@ namespace HeraAgent.Tools
                 case "button": (go, buildErr) = BuildButton(name, content, textEngine, created); break;
                 default:
                     return new ErrorResponse(
+                        "UNKNOWN_ELEMENT",
                         $"Unknown element: '{element}'. Use canvas, panel, image, button, text, empty.");
             }
             if (buildErr != null)
             {
                 if (go != null) Object.DestroyImmediate(go);
-                return new ErrorResponse(buildErr);
+                return buildErr;
             }
 
             // Interactive elements need an EventSystem to receive input
@@ -173,7 +175,7 @@ namespace HeraAgent.Tools
             return resp;
         }
 
-        private static (GameObject go, string err) CreateCanvas(string name, List<string> created)
+        private static (GameObject go, ErrorResponse err) CreateCanvas(string name, List<string> created)
         {
             var go = new GameObject(string.IsNullOrEmpty(name) ? "Canvas" : name);
             var canvas = go.AddComponent<Canvas>();
@@ -181,30 +183,31 @@ namespace HeraAgent.Tools
             if (AddByName(go, "CanvasScaler") == null)
             {
                 Object.DestroyImmediate(go);
-                return (null, "Could not add CanvasScaler — is com.unity.ugui installed?");
+                return (null, new ErrorResponse("UI_MISSING_UGUI", "Could not add CanvasScaler — is com.unity.ugui installed?"));
             }
             if (AddByName(go, "GraphicRaycaster") == null)
             {
                 Object.DestroyImmediate(go);
-                return (null, "Could not add GraphicRaycaster — is com.unity.ugui installed?");
+                return (null, new ErrorResponse("UI_MISSING_UGUI", "Could not add GraphicRaycaster — is com.unity.ugui installed?"));
             }
             created.Add("Canvas");
+            // EventSystem is best-effort; a missing one doesn't fail canvas creation.
             EnsureEventSystem(created);
             return (go, null);
         }
 
         // Returns an existing Canvas or creates one (recording it in `created`).
-        private static (GameObject go, string err) EnsureCanvas(List<string> created)
+        private static (GameObject go, ErrorResponse err) EnsureCanvas(List<string> created)
         {
             var existing = Object.FindFirstObjectByType<Canvas>();
             if (existing != null) return (existing.gameObject, null);
             return CreateCanvas("Canvas", created);
         }
 
-        private static string EnsureEventSystem(List<string> created)
+        private static ErrorResponse EnsureEventSystem(List<string> created)
         {
             var esType = ComponentTypeResolver.Resolve("EventSystem");
-            if (esType == null) return "EventSystem type not found (com.unity.ugui missing).";
+            if (esType == null) return new ErrorResponse("UI_MISSING_EVENTSYSTEM", "EventSystem type not found (com.unity.ugui missing).");
             var existing = Object.FindFirstObjectByType(esType);
             if (existing != null) return null;
 
@@ -212,7 +215,7 @@ namespace HeraAgent.Tools
             if (go.AddComponent(esType) == null)
             {
                 Object.DestroyImmediate(go);
-                return "Could not add EventSystem.";
+                return new ErrorResponse("UI_EVENTSYSTEM_CREATE_FAILED", "Could not add EventSystem.");
             }
             // Pick the input module that matches the project's *active* input
             // handling, not just which type happens to be loadable. Unity sets
@@ -233,27 +236,27 @@ namespace HeraAgent.Tools
             return null;
         }
 
-        private static (GameObject go, string err) BuildEmpty(string name)
+        private static (GameObject go, ErrorResponse err) BuildEmpty(string name)
         {
             var go = new GameObject(string.IsNullOrEmpty(name) ? "UIElement" : name, typeof(RectTransform));
             SizeTo(go, 100, 100);
             return (go, null);
         }
 
-        private static (GameObject go, string err) BuildImage(string name)
+        private static (GameObject go, ErrorResponse err) BuildImage(string name)
         {
             var go = new GameObject(string.IsNullOrEmpty(name) ? "Image" : name, typeof(RectTransform));
             if (AddByName(go, "Image") == null)
-                return (go, "Could not add Image — is com.unity.ugui installed?");
+                return (go, new ErrorResponse("UI_MISSING_UGUI", "Could not add Image — is com.unity.ugui installed?"));
             SizeTo(go, 100, 100);
             return (go, null);
         }
 
-        private static (GameObject go, string err) BuildPanel(string name)
+        private static (GameObject go, ErrorResponse err) BuildPanel(string name)
         {
             var go = new GameObject(string.IsNullOrEmpty(name) ? "Panel" : name, typeof(RectTransform));
             var img = AddByName(go, "Image");
-            if (img == null) return (go, "Could not add Image — is com.unity.ugui installed?");
+            if (img == null) return (go, new ErrorResponse("UI_MISSING_UGUI", "Could not add Image — is com.unity.ugui installed?"));
             // Panels stretch to fill their parent with a faint translucent fill,
             // matching Unity's GameObject > UI > Panel default.
             var rt = go.GetComponent<RectTransform>();
@@ -265,7 +268,7 @@ namespace HeraAgent.Tools
             return (go, null);
         }
 
-        private static (GameObject go, string err) BuildText(string name, string content, string engine)
+        private static (GameObject go, ErrorResponse err) BuildText(string name, string content, string engine)
         {
             var go = new GameObject(string.IsNullOrEmpty(name) ? "Text" : name, typeof(RectTransform));
             var (text, err) = AddTextComponent(go, engine);
@@ -275,13 +278,13 @@ namespace HeraAgent.Tools
             return (go, null);
         }
 
-        private static (GameObject go, string err) BuildButton(string name, string content, string engine, List<string> created)
+        private static (GameObject go, ErrorResponse err) BuildButton(string name, string content, string engine, List<string> created)
         {
             var go = new GameObject(string.IsNullOrEmpty(name) ? "Button" : name, typeof(RectTransform));
             var img = AddByName(go, "Image");
-            if (img == null) return (go, "Could not add Image — is com.unity.ugui installed?");
+            if (img == null) return (go, new ErrorResponse("UI_MISSING_UGUI", "Could not add Image — is com.unity.ugui installed?"));
             var btn = AddByName(go, "Button");
-            if (btn == null) return (go, "Could not add Button — is com.unity.ugui installed?");
+            if (btn == null) return (go, new ErrorResponse("UI_MISSING_UGUI", "Could not add Button — is com.unity.ugui installed?"));
             TrySetProp(btn, "targetGraphic", img);
             SizeTo(go, 160, 30);
 
@@ -302,7 +305,7 @@ namespace HeraAgent.Tools
         // Adds a TMP text component when requested/available, else legacy Text.
         // Engine: "tmp"/"textmeshpro" forces TMP, "legacy"/"text" forces legacy,
         // null auto-detects (TMP when TextMeshProUGUI resolves).
-        private static (Component comp, string err) AddTextComponent(GameObject go, string engine)
+        private static (Component comp, ErrorResponse err) AddTextComponent(GameObject go, string engine)
         {
             string e = engine?.ToLowerInvariant();
             bool wantTmp;
@@ -316,12 +319,12 @@ namespace HeraAgent.Tools
                 if (tmp != null) return (tmp, null);
                 // Forced TMP but unavailable.
                 if (e == "tmp" || e == "textmeshpro" || e == "textmeshprougui")
-                    return (null, "TextMeshProUGUI not found — TextMeshPro package is not installed.");
+                    return (null, new ErrorResponse("TMP_NOT_INSTALLED", "TextMeshProUGUI not found — TextMeshPro package is not installed."));
             }
 
             var legacy = AddByName(go, "Text");
             if (legacy == null)
-                return (null, "Could not add a Text component — is com.unity.ugui installed?");
+                return (null, new ErrorResponse("UI_MISSING_UGUI", "Could not add a Text component — is com.unity.ugui installed?"));
             // Legacy Text ships with no font; assign Unity's built-in so it
             // renders. Fonts live in the builtin resources (not the "extra"
             // set), matching UnityEngine.UI's own DefaultControls.
@@ -332,21 +335,23 @@ namespace HeraAgent.Tools
 
         // ---- get_rect ----
 
+        [HeraAction]
         public static object GetRect(JObject raw)
         {
             var p = new ToolParams(raw);
             var (rt, err) = TargetResolver.ResolveComponent<RectTransform>(p);
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
             return new SuccessResponse($"OK", BuildRectShape(rt));
         }
 
         // ---- set_anchor ----
 
+        [HeraAction]
         public static object SetAnchor(JObject raw)
         {
             var p = new ToolParams(raw);
             var (rt, err) = TargetResolver.ResolveComponent<RectTransform>(p);
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             Vector2 newMin, newMax, presetPivot;
             bool havePivot = false;
@@ -363,9 +368,9 @@ namespace HeraAgent.Tools
                 var minToken = p.GetRaw("anchor_min");
                 var maxToken = p.GetRaw("anchor_max");
                 if (minToken == null || maxToken == null)
-                    return new ErrorResponse("set_anchor needs either 'preset' or both 'anchor_min' and 'anchor_max'.");
-                if (!TryParseVector2(minToken, out newMin, out var e1)) return new ErrorResponse($"Invalid 'anchor_min': {e1}");
-                if (!TryParseVector2(maxToken, out newMax, out var e2)) return new ErrorResponse($"Invalid 'anchor_max': {e2}");
+                    return new ErrorResponse("MISSING_PARAM", "set_anchor needs either 'preset' or both 'anchor_min' and 'anchor_max'.");
+                if (!TryParseVector2(minToken, out newMin, out var e1)) return new ErrorResponse("INVALID_PARAM", $"Invalid 'anchor_min': {e1}");
+                if (!TryParseVector2(maxToken, out newMax, out var e2)) return new ErrorResponse("INVALID_PARAM", $"Invalid 'anchor_max': {e2}");
                 presetPivot = rt.pivot;
             }
 
@@ -385,7 +390,7 @@ namespace HeraAgent.Tools
             var pivotToken = p.GetRaw("pivot");
             if (pivotToken != null && pivotToken.Type != JTokenType.Null)
             {
-                if (!TryParseVector2(pivotToken, out var pv, out var pe)) return new ErrorResponse($"Invalid 'pivot': {pe}");
+                if (!TryParseVector2(pivotToken, out var pv, out var pe)) return new ErrorResponse("INVALID_PARAM", $"Invalid 'pivot': {pe}");
                 rt.pivot = pv;
             }
             else if (snap && havePivot)
@@ -413,11 +418,12 @@ namespace HeraAgent.Tools
 
         // ---- set_rect ----
 
+        [HeraAction]
         public static object SetRect(JObject raw)
         {
             var p = new ToolParams(raw);
             var (rt, err) = TargetResolver.ResolveComponent<RectTransform>(p);
-            if (err != null) return new ErrorResponse(err);
+            if (err != null) return err;
 
             Undo.RecordObject(rt, "Hera Set Rect");
             bool any = false;
@@ -425,40 +431,40 @@ namespace HeraAgent.Tools
             var pivotToken = p.GetRaw("pivot");
             if (pivotToken != null && pivotToken.Type != JTokenType.Null)
             {
-                if (!TryParseVector2(pivotToken, out var pv, out var pe)) return new ErrorResponse($"Invalid 'pivot': {pe}");
+                if (!TryParseVector2(pivotToken, out var pv, out var pe)) return new ErrorResponse("INVALID_PARAM", $"Invalid 'pivot': {pe}");
                 rt.pivot = pv; any = true;
             }
 
             var apToken = p.GetRaw("anchored_position");
             if (apToken != null && apToken.Type != JTokenType.Null)
             {
-                if (!TryParseVector2(apToken, out var ap, out var ae)) return new ErrorResponse($"Invalid 'anchored_position': {ae}");
+                if (!TryParseVector2(apToken, out var ap, out var ae)) return new ErrorResponse("INVALID_PARAM", $"Invalid 'anchored_position': {ae}");
                 rt.anchoredPosition = ap; any = true;
             }
 
             var sdToken = p.GetRaw("size_delta");
             if (sdToken != null && sdToken.Type != JTokenType.Null)
             {
-                if (!TryParseVector2(sdToken, out var sd, out var se)) return new ErrorResponse($"Invalid 'size_delta': {se}");
+                if (!TryParseVector2(sdToken, out var sd, out var se)) return new ErrorResponse("INVALID_PARAM", $"Invalid 'size_delta': {se}");
                 rt.sizeDelta = sd; any = true;
             }
 
             var omToken = p.GetRaw("offset_min");
             if (omToken != null && omToken.Type != JTokenType.Null)
             {
-                if (!TryParseVector2(omToken, out var om, out var oe)) return new ErrorResponse($"Invalid 'offset_min': {oe}");
+                if (!TryParseVector2(omToken, out var om, out var oe)) return new ErrorResponse("INVALID_PARAM", $"Invalid 'offset_min': {oe}");
                 rt.offsetMin = om; any = true;
             }
 
             var oMaxToken = p.GetRaw("offset_max");
             if (oMaxToken != null && oMaxToken.Type != JTokenType.Null)
             {
-                if (!TryParseVector2(oMaxToken, out var oMax, out var oe2)) return new ErrorResponse($"Invalid 'offset_max': {oe2}");
+                if (!TryParseVector2(oMaxToken, out var oMax, out var oe2)) return new ErrorResponse("INVALID_PARAM", $"Invalid 'offset_max': {oe2}");
                 rt.offsetMax = oMax; any = true;
             }
 
             if (!any)
-                return new ErrorResponse("set_rect needs at least one of: anchored_position, size_delta, pivot, offset_min, offset_max.");
+                return new ErrorResponse("MISSING_PARAM", "set_rect needs at least one of: anchored_position, size_delta, pivot, offset_min, offset_max.");
 
             MarkDirty(rt);
             return new SuccessResponse($"Set rect on {rt.name}.", BuildRectShape(rt));
@@ -612,19 +618,10 @@ namespace HeraAgent.Tools
                 name = go.name,
                 path = HierarchyPath.Build(go.transform),
                 scene = go.scene.name,
-                components = ComponentNames(go),
+                components = GameObjectComponents.GetNames(go),
                 created = created.ToArray(),
                 rect = rt != null ? BuildRectShape(rt) : null,
             };
-        }
-
-        private static string[] ComponentNames(GameObject go)
-        {
-            var comps = go.GetComponents<Component>();
-            var names = new List<string>(comps.Length);
-            foreach (var c in comps)
-                if (c != null) names.Add(c.GetType().Name);
-            return names.ToArray();
         }
 
         private static object V2(Vector2 v) => new { x = v.x, y = v.y };

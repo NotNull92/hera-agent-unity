@@ -46,7 +46,7 @@ namespace HeraAgent.Tools
             var typeName = p.Get("type")
                 ?? (p.GetRaw("args") as JArray)?[0]?.ToString();
             if (string.IsNullOrWhiteSpace(typeName))
-                return new ErrorResponse("'type' parameter required.");
+                return new ErrorResponse("MISSING_PARAM", "'type' parameter required.");
 
             var filterRaw = p.Get("members") ?? "methods";
             var membersFilter = filterRaw.ToLowerInvariant();
@@ -56,7 +56,7 @@ namespace HeraAgent.Tools
 
             var resolved = ResolveType(typeName);
             if (resolved == null)
-                return new ErrorResponse($"Type '{typeName}' not found in loaded assemblies. Try the full name (e.g. 'UnityEditor.EditorApplication') or run list_assemblies to confirm the package is loaded.");
+                return new ErrorResponse("TYPE_NOT_FOUND", $"Type '{typeName}' not found in loaded assemblies. Try the full name (e.g. 'UnityEditor.EditorApplication') or run list_assemblies to confirm the package is loaded.");
 
             var bindingPublic = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
             var bindingAll = bindingPublic | BindingFlags.NonPublic;

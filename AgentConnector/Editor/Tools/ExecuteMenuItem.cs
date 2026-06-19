@@ -22,14 +22,14 @@ namespace HeraAgent.Tools
             string menuPath = p.Get("menu_path")
                 ?? (p.GetRaw("args") as JArray)?[0]?.ToString();
             if (string.IsNullOrWhiteSpace(menuPath))
-                return new ErrorResponse("'menu_path' parameter required.");
+                return new ErrorResponse("MISSING_PARAM", "'menu_path' parameter required.");
 
             if (Blacklist.Contains(menuPath))
-                return new ErrorResponse($"Execution of '{menuPath}' is blocked for safety.");
+                return new ErrorResponse("MENU_BLOCKED", $"Execution of '{menuPath}' is blocked for safety.");
 
             bool executed = EditorApplication.ExecuteMenuItem(menuPath);
             if (!executed)
-                return new ErrorResponse($"Failed to execute menu item '{menuPath}'.");
+                return new ErrorResponse("MENU_EXECUTION_FAILED", $"Failed to execute menu item '{menuPath}'.");
 
             return new SuccessResponse($"Executed menu item: '{menuPath}'.");
         }

@@ -1,0 +1,34 @@
+Usage: hera-agent-unity html-to-uidoc --file <html> [options]
+
+Convert a simple HTML mobile layout into ui_doc/2 JSON that can be applied to
+a Unity uGUI Canvas with `ui_doc apply --file <json>`.
+
+Supported HTML:
+  - Inline styles only (class-based CSS is not parsed by this prototype).
+  - Absolute positioning: position:absolute; left:<px>; top:<px>.
+  - Size: width:<px>; height:<px>.
+  - Background: background-color:<hex|rgb|name>.
+  - Border radius: border-radius:<px> (generates a rounded_rect sprite).
+  - Tags: <div>, <span>, <button>, <img>.
+
+Coordinate mapping:
+  - HTML top-left origin, y downward.
+  - uGUI top-left anchor, pivot [0,1], y upward.
+  - HTML `top: 200px` becomes uGUI `pos.y = -200`.
+  - When the target CanvasScaler reference_resolution matches the HTML design
+    size (set via --width/--height), 1 HTML pixel = 1 uGUI canvas unit.
+
+Options:
+  --file <path>       Input HTML file (required).
+  --out <path>        Output JSON file. Default: print to stdout.
+  --width <N>         Design canvas width in pixels (default: 1080).
+  --height <N>        Design canvas height in pixels (default: 1920).
+
+Examples:
+  hera-agent-unity html-to-uidoc --file design.html --out ui_doc.json
+  hera-agent-unity html-to-uidoc --file design.html --width 1920 --height 1080
+  hera-agent-unity html-to-uidoc --file design.html | hera-agent-unity ui_doc apply
+
+See also:
+  docs/UI_DOC_IR.md
+  hera-agent-unity ui_doc apply --help

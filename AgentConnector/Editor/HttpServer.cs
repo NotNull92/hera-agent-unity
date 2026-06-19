@@ -199,7 +199,7 @@ namespace HeraAgent
             }
             catch (Exception ex)
             {
-                item.Tcs.TrySetResult(new ErrorResponse(ex.Message));
+                item.Tcs.TrySetResult(new ErrorResponse("INTERNAL_ERROR", $"Request handling error: {ex.Message}"));
             }
         }
 
@@ -259,7 +259,7 @@ namespace HeraAgent
             {
                 if (request.HttpMethod != "POST")
                 {
-                    result = new ErrorResponse($"Expected POST, got {request.HttpMethod} {request.Url.AbsolutePath}");
+                    result = new ErrorResponse("METHOD_NOT_ALLOWED", $"Expected POST, got {request.HttpMethod} {request.Url.AbsolutePath}");
                     response.StatusCode = 400;
                 }
                 else
@@ -273,7 +273,7 @@ namespace HeraAgent
                             result = await HandleBatchCommand(request);
                             break;
                         default:
-                            result = new ErrorResponse($"Expected POST /command or POST /commands, got {request.HttpMethod} {request.Url.AbsolutePath}");
+                            result = new ErrorResponse("NOT_FOUND", $"Expected POST /command or POST /commands, got {request.HttpMethod} {request.Url.AbsolutePath}");
                             response.StatusCode = 400;
                             break;
                     }
@@ -281,7 +281,7 @@ namespace HeraAgent
             }
             catch (Exception ex)
             {
-                result = new ErrorResponse($"Request error: {ex.Message}");
+                result = new ErrorResponse("INTERNAL_ERROR", $"Request error: {ex.Message}");
                 response.StatusCode = 500;
                 DebugLogging.LogError("unknown", ex);
             }
@@ -307,7 +307,7 @@ namespace HeraAgent
             if (string.IsNullOrEmpty(command))
             {
                 DebugLogging.LogError("unknown", new Exception("Missing 'command' field"));
-                return new ErrorResponse("Missing 'command' field");
+                return new ErrorResponse("MISSING_PARAM", "Missing 'command' field");
             }
 
             var tcs = new TaskCompletionSource<object>();
@@ -332,7 +332,7 @@ namespace HeraAgent
             var commandsArray = json["commands"] as JArray;
             if (commandsArray == null)
             {
-                return new ErrorResponse("Missing 'commands' field");
+                return new ErrorResponse("MISSING_PARAM", "Missing 'commands' field");
             }
 
             var items = new List<CommandRouter.BatchCommandItem>();

@@ -51,13 +51,19 @@ Tests, TUI, batch engine, and asset-config layer sit on top — but the engine t
 ```
 hera-agent-unity/
 ├── cmd/                          # Go CLI commands
-│   ├── root.go                   # Entry point, flag parsing, help
+│   ├── root.go                   # Entry point, flag parsing, help, dispatch
 │   ├── editor.go                 # editor play/stop/pause/refresh
 │   ├── status.go                 # status, waitForAlive, waitForReady
 │   ├── test.go                   # test runner
 │   ├── update.go                 # self-update from GitHub
 │   ├── version_check.go          # periodic update notice
 │   ├── asset_config.go           # asset-config subcommand
+│   ├── batch.go                  # batch command execution
+│   ├── ui_doc.go                 # ui_doc dispatch + CLI-side sample/catalog
+│   ├── manage_packages.go        # async package job polling
+│   ├── unity_docs.go             # unity_docs passthrough
+│   ├── doctor.go                 # self-diagnostic
+│   ├── install.go / uninstall.go # installer hooks
 │   └── *_test.go                 # Unit tests
 ├── internal/
 │   ├── client/
@@ -67,19 +73,29 @@ hera-agent-unity/
 │   │   └── process_windows.go    # Windows PID check
 │   ├── assetconfig/
 │   │   └── config.go             # asset-config.json read/write
-│   └── tui/
-│       └── assetconfig.go        # bubbletea TUI
+│   ├── tui/
+│   │   └── assetconfig.go        # bubbletea TUI
+│   ├── poll/
+│   │   └── poll.go               # async job result polling
+│   ├── paths/
+│   │   └── paths.go              # hera state/config path helpers
+│   └── unitystate/
+│       └── state.go              # Unity state constants
 ├── AgentConnector/               # C# Unity package (UPM)
 │   └── Editor/
 │       ├── HttpServer.cs         # localhost HTTP server
-│       ├── CommandRouter.cs      # command dispatch + locking
-│       ├── ToolDiscovery.cs      # reflection-based tool scanning
+│       ├── CommandRouter.cs      # command dispatch + locking + batch
+│       ├── ToolDiscovery.cs      # reflection-based tool scanning + schemas
 │       ├── Heartbeat.cs          # instance state file writer
+│       ├── HeraAgentAssetConfigWindow.cs  # Hera > Settings window
 │       ├── Attributes/           # [HeraTool], [ToolParameter]
-│       ├── Core/                 # Response types, param coercion
+│       ├── Core/                 # Response types, param coercion, type resolution, docs store
+│       ├── Data/                 # Bundled Unity ScriptReference data
 │       ├── Tools/                # Built-in tool implementations
 │       └── TestRunner/           # Unity Test Framework integration
-├── Docs/                         # This documentation
+├── docs/                         # This documentation
+├── tools/
+│   └── build-unity-docs/         # Unity docs bundle generator
 ├── install.sh                    # macOS/Linux installer
 ├── install.ps1                   # Windows installer
 ├── go.mod                        # Go module

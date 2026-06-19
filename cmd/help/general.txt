@@ -71,6 +71,15 @@ Documentation:
                                                   Data ships inside the UPM package — no
                                                   docs folder on your machine required.
 
+UI Doc (HTML -> uGUI):
+  html-to-uidoc --file design.html                Convert an HTML mobile layout to
+                                                  ui_doc/2 JSON for Unity uGUI.
+  html-to-uidoc --file design.html --out doc.json
+  html-to-uidoc --file design.html --width 1920 --height 1080
+                                                  Design canvas size (default 1080x1920).
+                                                  Reference Resolution is set to this size,
+                                                  so HTML px values map 1:1 to uGUI units.
+
 Components:
   manage_components add --path /Player --type Rigidbody
   manage_components list --instance_id <N>

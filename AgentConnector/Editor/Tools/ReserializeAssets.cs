@@ -1,6 +1,4 @@
 using Newtonsoft.Json.Linq;
-using UnityEditor;
-using UnityEngine;
 
 namespace HeraAgent.Tools
 {
@@ -33,16 +31,11 @@ namespace HeraAgent.Tools
             else
                 paths = null;
 
-            if (paths == null || paths.Length == 0)
-            {
-                AssetDatabase.ForceReserializeAssets();
-                Debug.Log("[Hera] ForceReserializeAssets: entire project");
+            var result = AssetReserializer.Reserialize(paths);
+            if (result.wholeProject)
                 return new SuccessResponse("Reserialized entire project");
-            }
 
-            AssetDatabase.ForceReserializeAssets(paths);
-            Debug.Log($"[Hera] ForceReserializeAssets: {string.Join(", ", paths)}");
-            return new SuccessResponse($"Reserialized {paths.Length} asset(s)", new { paths });
+            return new SuccessResponse($"Reserialized {result.paths.Length} asset(s)", new { paths = result.paths });
         }
     }
 }

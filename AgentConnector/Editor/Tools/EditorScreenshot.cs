@@ -51,12 +51,12 @@ namespace HeraAgent.Tools
                     case "game":
                         return CaptureGameView(width, height, outputPath);
                     default:
-                        return new ErrorResponse($"Unknown view '{view}'. Valid: scene, game.");
+                        return new ErrorResponse("INVALID_PARAM", $"Unknown view '{view}'. Valid: scene, game.");
                 }
             }
             catch (Exception e)
             {
-                return new ErrorResponse($"Screenshot failed: {e.Message}");
+                return new ErrorResponse("SCREENSHOT_FAILED", $"Screenshot failed: {e.Message}");
             }
         }
 
@@ -76,11 +76,11 @@ namespace HeraAgent.Tools
         {
             var sceneView = SceneView.lastActiveSceneView;
             if (!sceneView)
-                return new ErrorResponse("No active SceneView found.");
+                return new ErrorResponse("SCENEVIEW_NOT_FOUND", "No active SceneView found.");
 
             var camera = sceneView.camera;
             if (!camera)
-                return new ErrorResponse("SceneView camera is null.");
+                return new ErrorResponse("SCENEVIEW_CAMERA_NULL", "SceneView camera is null.");
 
             return CaptureCamera(camera, width, height, outputPath);
         }
@@ -96,7 +96,7 @@ namespace HeraAgent.Tools
                 camera = UnityEngine.Object.FindObjectOfType<Camera>();
 #endif
                 if (!camera)
-                    return new ErrorResponse("No camera found in scene.");
+                    return new ErrorResponse("CAMERA_NOT_FOUND", "No camera found in scene.");
             }
 
             return CaptureCamera(camera, width, height, outputPath);

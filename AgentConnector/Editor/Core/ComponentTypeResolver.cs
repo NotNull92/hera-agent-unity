@@ -8,20 +8,71 @@ namespace HeraAgent
     /// <summary>
     /// Resolves a CLI-provided component type name (short like "Rigidbody" or
     /// fully-qualified like "UnityEngine.Rigidbody") to the corresponding
-    /// System.Type. Backed by TypeCache so the scan stays roughly free after
-    /// the first call. Used by find_gameobjects and manage_components.
+    /// System.Type. Backed by a snapshot of TypeCache that is rebuilt once per
+    /// domain reload, so repeated lookups avoid scanning the entire derived-type
+    /// graph. Used by find_gameobjects and manage_components.
     /// </summary>
+    [InitializeOnLoad]
     public static class ComponentTypeResolver
     {
+        private static readonly object s_Gate = new object();
+        private static Dictionary<string, Type> s_ByName;
+        private static Dictionary<string, Type> s_ByFullName;
+
+        static ComponentTypeResolver()
+        {
+            AssemblyReloadEvents.afterAssemblyReload += RebuildCache;
+            EditorApplication.quitting += ClearCache;
+            RebuildCache();
+        }
+
+        private static void RebuildCache()
+        {
+            var byName = new Dictionary<string, Type>(StringComparer.Ordinal);
+            var byFullName = new Dictionary<string, Type>(StringComparer.Ordinal);
+
+            foreach (var t in TypeCache.GetTypesDerivedFrom<Component>())
+            {
+                if (t == null) continue;
+                if (!byName.ContainsKey(t.Name)) byName[t.Name] = t;
+                if (!byFullName.ContainsKey(t.FullName)) byFullName[t.FullName] = t;
+            }
+
+            lock (s_Gate)
+            {
+                s_ByName = byName;
+                s_ByFullName = byFullName;
+            }
+        }
+
+        private static void ClearCache()
+        {
+            lock (s_Gate)
+            {
+                s_ByName = null;
+                s_ByFullName = null;
+            }
+        }
+
+        private static void EnsureCache()
+        {
+            lock (s_Gate)
+            {
+                if (s_ByName != null) return;
+            }
+            RebuildCache();
+        }
+
         public static Type Resolve(string name)
         {
             if (string.IsNullOrEmpty(name)) return null;
-            foreach (var t in TypeCache.GetTypesDerivedFrom<Component>())
+            EnsureCache();
+            lock (s_Gate)
             {
-                if (t.Name == name || t.FullName == name)
-                    return t;
+                if (s_ByName.TryGetValue(name, out var t)) return t;
+                if (s_ByFullName.TryGetValue(name, out t)) return t;
+                return null;
             }
-            return null;
         }
 
         /// <summary>
@@ -33,11 +84,15 @@ namespace HeraAgent
         {
             if (string.IsNullOrEmpty(name)) return new List<string>();
 
+            EnsureCache();
             var candidates = new List<(string name, int dist)>();
-            foreach (var t in TypeCache.GetTypesDerivedFrom<Component>())
+            lock (s_Gate)
             {
-                var d = Levenshtein.Distance(name, t.Name);
-                if (d <= maxDistance) candidates.Add((t.Name, d));
+                foreach (var pair in s_ByName)
+                {
+                    var d = Levenshtein.Distance(name, pair.Key);
+                    if (d <= maxDistance) candidates.Add((pair.Key, d));
+                }
             }
             candidates.Sort((a, b) => a.dist.CompareTo(b.dist));
 
