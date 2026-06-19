@@ -30,7 +30,7 @@ namespace HeraAgent
             }
 
             AssetDatabase.ForceReserializeAssets(paths);
-            Debug.Log($"[Hera] ForceReserializeAssets: {string.Join(\", \", paths)}");
+            Debug.Log("[Hera] ForceReserializeAssets: " + string.Join(", ", paths));
             return new Result { wholeProject = false, paths = paths };
         }
     }
