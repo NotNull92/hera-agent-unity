@@ -132,7 +132,7 @@ namespace HeraAgent.Tools
             string content = p.Get("content");
 
             GameObject go;
-            string buildErr;
+            ErrorResponse buildErr;
             switch (element)
             {
                 case "empty": (go, buildErr) = BuildEmpty(name); break;

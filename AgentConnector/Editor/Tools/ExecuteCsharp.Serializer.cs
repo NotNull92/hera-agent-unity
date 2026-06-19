@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
+using UnityEditor;
 using UnityEngine;
 
 namespace HeraAgent.Tools
