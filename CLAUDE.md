@@ -21,7 +21,7 @@ Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free und
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
 - **단일 에디터 모델 (멀티 에디터 미지원)** 🔒: 한 머신에 Unity 에디터 하나를 전제. 포트 바인딩 구조상 같은 머신에서 멀티 에디터는 실사용 불가 — instance discovery 는 "한" 인스턴스를 해석하고, 재시도·재해석(`doWithReloadRetry` 의 `DiscoverInstance` 포트 추종 등)이 *다른* 에디터를 집을 위험은 **모델 밖**. "여러 에디터 구분/디스앰비규에이션 추가하자", "재해석이 substring 매치로 잘못된 에디터를 고를 수 있다", "PID 로 정확 매칭하자" 같은 지적·제안은 모델 밖 — 멀티 인스턴스 충돌은 발생하지 않는 전제이므로 새 문제로 제기 금지.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
-  - **표준 envelope tool 명령** (`exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_ui`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
+  - **표준 envelope tool 명령** (`exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_ui`, `ui_doc`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
   - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
   - **자체 출력 경로 명령** (`asset-config`, `ping`): `printResponse` 를 거치지 않고 직접 출력. `asset-config` 는 기본 styled + `--json` 로 AI 모드. `ping` 은 단일 라인 `port=N alive=N state=... age_ms=N`. `doctor` 도 human 카테고리지만 `--json` / `--agent-rules` 분기 별도.
   - "tool 에러도 인간이 읽는다"는 가정은 audience reality와 어긋남 (실제로 tool 호출 = AI). 새 명령 추가 시 `humanCategories` 등재 여부가 출력 모드를 결정한다.
@@ -45,6 +45,9 @@ cmd/                  # Go CLI — thin passthrough layer
   batch.go            # batch (multi-command) dispatch + --dry-run preview
   manage_packages.go  # async job_id dispatch + pollResultFile (file-bus, like test)
   unity_docs.go       # thin passthrough — connector ships its own data set
+  ui_doc.go           # ui_doc tool: CLI-side sample (color measure) + catalog
+                      # (folder scan → manifest, image decode, no Unity);
+                      # apply/import inject --file→doc param
   install.go          # self-install onto PATH + legacy scrub
   uninstall.go        # self-uninstall (+ uninstall_{unix,windows}.go variants)
   doctor.go           # self-diagnostic; embeds AGENT.md for --agent-rules
@@ -81,9 +84,20 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # HeraSettings (reads shared asset-config.json at dispatch
                       # time — JuicyMode + DotweenPreferred, mtime-cached),
                       # UIJuiceGuide (Game UI/UX Bible juice recipes per UI
-                      # element, DOTween-aware — manage_ui agent_hint source)
+                      # element, DOTween-aware — manage_ui agent_hint source),
+                      # TargetResolver (GameObject/component lookup from
+                      # ToolParams — instance_id > path; shared target helper),
+                      # EntityIdCompat (instanceID→EntityId rename shim,
+                      # Unity 6000.5 gate — int instance_id contract preserved),
+                      # SchemaUtility (C#→JSON-Schema type map for
+                      # ToolDiscovery/ToolMetadata),
+                      # ProceduralSprite (Tier-1 sprite bake+import:
+                      # solid/rounded_rect/gradient/nine_slice — ui_doc
+                      # gen_sprite/apply; Assets/HeraGenerated default),
+                      # UiDocSchema (ui_doc/2 IR: uGUI subtree ↔ compact JSON,
+                      # ExportNode/ApplyNode + anchor presets/layout)
     Tools/            # Tool implementations (auto-registered via [HeraTool]).
-                      # 24 [HeraTool] classes. Name= explicit unless noted
+                      # 25 [HeraTool] classes. Name= explicit unless noted
                       # (no Name= → filename snake_case). ExecCompileCache.cs is
                       # NOT a tool — internal helper for exec compile caching.
                       #   exec        ExecuteCsharp
@@ -103,6 +117,10 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # uGUI queue v0.0.15 (shipped): manage_ui ManageUI
                       #   (RectTransform anchor/pivot/preset + UI-aware create;
                       #   UI/TMP types via TypeCache → no com.unity.ugui compile dep).
+                      # HTML→UI pipeline: ui_doc UiDoc — export/apply (ui_doc/2
+                      #   IR via UiDocSchema) / gen_sprite (ProceduralSprite) /
+                      #   capture (overlay-canvas render) / import (external
+                      #   sprites → Sprite assets) / sample + catalog (CLI-side).
     Data/             # Bundled data (UPM-shipped, immutable). Currently
                       # unity_docs_6.0.jsonl.gz.bytes — pre-parsed Unity 6
                       # ScriptReference, ~1.2 MiB gzipped, regenerated by
@@ -203,6 +221,8 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | `manage_components` SerializedProperty 패턴 | 🔒 의도된 설계 (v0.0.8) | `Core/SerializedPropertyValue` 가 *모든 후속 manage_\* (material/animation/vfx/SO/prefab)* 의 property-set 토대. raw `m_X` 경로 그대로, friendly-name mapping *미적용* — Unity 가 실제 직렬화하는 이름과 1:1 유지. 다시 friendly mapping 제안 금지 |
 | `manage_packages` 비동기 패턴 | 🔒 의도된 설계 (v0.0.6) | `add/remove/embed` 는 `job_id` 발급 후 파일버스. `list` 만 동기 (CommandRouter 락 안에서 60s budget). 도메인 리로드 후 `[InitializeOnLoad]` 가 `Client.List` 로 결과 검증. 다시 *전부 동기* 또는 *전부 비동기* 통일 제안 금지 |
 | UI Juicy Mode | ✅ 완료 (Connector v0.0.19) | Hera Settings 체크박스(`asset-config.json` 의 `ui_juicy_mode`) ON → `manage_ui create` 응답에 `agent_hint` 로 Game UI/UX Bible juice 레시피(element별) 주입. **가이드 주입 방식 🔒**(런타임 컴포넌트 자동부착 아님 — connector Editor 전용 유지, manage_ui scope 경계 유지). DOTween 우선은 기존 `dotween`/`dotween_pro` `enabled` 플래그 참조(`Core/HeraSettings.DotweenPreferred`) → DOScale vs lerp 분기. juice 지식은 `Core/UIJuiceGuide` 순수 문자열(Data 에셋 아님). connector 가 dispatch 시 `asset-config.json` 을 mtime-cache 로 읽음(`Core/HeraSettings`). CLI 는 `asset-config juicy [on\|off]` + `--json` 의 `ui_juicy_mode`/`dotween_preferred` 로 표면화. Go struct 에 `DefaultCscPath`/`DefaultDotnetPath` round-trip 필드 추가(CLI Save 가 Editor 컴파일러 경로 안 지우도록). 다시 *자동부착(runtime asmdef)* 또는 *친절-매핑* 제안 금지 |
+| `ui_doc` HTML→UI 파이프라인 | ✅ 완료 (Connector 0.0.21 최초, IR v2 0.0.26, capture/sample 0.0.27; CLAUDE.md 등재는 2026-06-18) | `UiDoc` 도구 + `Core/UiDocSchema`(ui_doc/2 IR) + `Core/ProceduralSprite`(절차 스프라이트). 액션: `export`/`apply`(IR↔uGUI, `--mode create\|upsert`) / `gen_sprite` / `capture`(overlay 캔버스 throwaway-camera 렌더) / `sample`(레퍼런스 색 측정, CLI측). v0.0.14 cohort 선례 따라 root.go help 미등재(README/docs/COMMANDS/UI_DOC_IR/CHANGELOG만). 컴파일 의존성 0 🔒: uGUI/TMP 타입 전부 TypeCache+리플렉션 해석. 도구 자체는 이전에 출시됐으나 CLAUDE.md 인벤토리에 누락돼 있던 것을 등재 |
+| `ui_doc catalog` / `import` (UI 에셋 목업) | ✅ 완료 (2026-06-18, Connector v0.0.38 + CLI) | 사용자 UI 에셋 폴더 → 목업. `catalog`(CLI측, Unity 무관): 폴더 재귀 스캔 → 이미지별 매니페스트(size/has_alpha/opaque_bounds/palette/`nine_slice_hint [l,b,r,t]`/name_hint, GIF=reference_only/frames). `import`(connector): 절대경로 원본 → `Assets/`(기본 `HeraImported`) 복사 + Sprite 임포트(border/ppu/filter/pivot). **분류 주체 🔒**: "어떤 UI인가" 판단은 비전 가진 에이전트가 PNG 직접 읽어서 — 도구(Go/C#)는 픽셀 못 봄, 메타+힌트만 제공. **GIF 🔒**: catalog엔 reference_only로 등장, import는 skip(Unity GIF→Sprite 없음). import `TextureImporter` 세팅은 `ProceduralSprite` 블록 복제(2번째 소비자=replicate, 3번째에 Core 추출). 다시 *도구측 자동분류(휴리스틱 단정)* 또는 *GIF import* 제안 금지 |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 

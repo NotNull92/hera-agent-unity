@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.38 + CLI — `ui_doc` mock up from your own UI kit: `catalog` + `import`)
+
+Two new `ui_doc` actions let the agent build UI from *your* sprite art instead of
+only procedural placeholders, while keeping the "what UI is this" judgment with the
+vision-capable agent (the CLI/connector can't see pixels):
+
+- **`ui_doc catalog --dir <abs>`** (CLI-side, no Unity) recursively scans a folder of
+  UI sprites into a compact manifest — per image: size, aspect, `has_alpha`,
+  `opaque_bounds` (trim box), dominant `palette`, a conservative `nine_slice_hint`
+  (`[left,bottom,right,top]`, ready for `import --border`), and a filename-derived
+  `name_hint`. The agent then reads the listed PNGs to classify them. GIFs are
+  catalogued `reference_only` (animated, frame count); Unity-only formats Go can't
+  decode (tga/psd/exr…) are listed with `decoded:false`. `--max` caps the count (300).
+- **`ui_doc import`** (Connector) copies external sprite files (absolute paths) into
+  the project as `Sprite` assets so `apply` can reference them by `Assets/` path.
+  Single sprite via `--src` + shared flags, or many with per-sprite settings via
+  `--file` `{into?, items:[{src, name?, border?, ppu?, filter?, pivot?}]}`. A `border`
+  sets `Image.type = Sliced` (FullRect mesh), the same fixed-corner scaling as a
+  `nine_slice` gen sprite but on your own art. Default dest `Assets/HeraImported/`;
+  GIFs are skipped (Unity has no GIF→Sprite import). Returns
+  `{into, imported:[{src,asset,instance_id,sliced}], skipped, errors, count}`.
+
+Flow: `catalog` (scan) → agent reads PNGs to classify → `import` (bring chosen
+sprites into the project) → `apply` (IR references them by `Assets/` path).
+
 ### Changed (Connector 0.0.36 — UI Juicy Mode: deeper Game-Feel coverage)
 
 Audited `Core/UIJuiceGuide` against the "Secrets of Game Feel and Juice" playbook

@@ -747,9 +747,11 @@ HTML→Unity UI pipeline (uGUI). The agent is fluent in HTML/CSS but weak at uGU
 
 - **`export`** serializes a live UI subtree to the IR (defaults omitted) — *grounding* so the agent maps an HTML design onto the project's real structure instead of guessing.
 - **`apply`** builds an IR document under a parent (always-create) and reports a compact summary.
+- **`import`** copies your own sprite files (absolute paths — a downloaded UI kit, exported art) into the project as `Sprite` assets so `apply` can reference them by `Assets/` path. Optional per-sprite 9-slice `border`, `ppu`, `filter`, `pivot`. GIFs are skipped (Unity has no GIF→Sprite import).
 - **`gen_sprite`** bakes a Tier-1 procedural sprite (CSS-shape vocabulary) and imports it — **no external dependency**.
 - **`capture`** renders the live UI to a PNG so the agent can *see* what it built and compare it to the reference. ScreenSpaceOverlay canvases are composited after the camera, so a normal `screenshot` misses them; `capture` routes every root non-world canvas through a throwaway camera + RenderTexture.
 - **`sample`** reads measured hex colors out of a reference image (point or region averages). Lets the agent *measure* colors instead of eyeballing them. Runs CLI-side — no Unity round-trip — since it only reads a static file.
+- **`catalog`** scans a folder of UI sprites into a manifest (size, alpha, dominant palette, a conservative 9-slice border suggestion, a filename-derived element guess). The vision-capable agent then reads the listed PNGs to classify them and compose a mockup from your own art. CLI-side — no Unity round-trip. GIFs are catalogued reference-only.
 
 > The agent owns the creative middle (image/text → HTML mockup → IR); `ui_doc` owns the Unity-side read/write. Bitmap art (illustrations) is out of scope — it would require an external image model.
 >
@@ -763,9 +765,11 @@ hera-agent-unity ui_doc <action> [flags]
 |:---|:---|:---|
 | `export` | `--path </path>` or `--instance_id <id>`; `[--depth N]` | Serialize the subtree to the `ui_doc/2` IR. Depth defaults to 8. |
 | `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | Realize the IR under the parent (default: existing/auto Canvas). `create` (default) always makes new objects; `upsert` matches existing children by name and updates rect/graphic/text in place (no duplicates, no deletes). Pass the doc via `--file` so it never rides inline in context. |
+| `import` | `--src <abs path>` **or** `--file <imports.json>`; `[--into Assets/...]`; `[--border l,b,r,t]`; `[--ppu N]`; `[--filter point\|bilinear]`; `[--pivot x,y]` | Copy external sprite file(s) into the project as `Sprite` assets. Single sprite via `--src` + shared flags; many (with per-sprite settings) via `--file` `{into?, items:[{src, name?, border?, ppu?, filter?, pivot?}]}`. Default dest: `Assets/HeraImported/`. A `border` sets `Image.type = Sliced` (FullRect mesh). GIFs are skipped. Returns `{into, imported:[{src,asset,instance_id,sliced}], skipped, errors, count}`. |
 | `gen_sprite` | `--spec '{...}'` or `--kind/--size/--color/...`; `[--out Assets/...]` | Bake + import a sprite. Kinds: `solid`, `rounded_rect`, `gradient`, `nine_slice` (rounded box + 9-slice `border [l,b,r,t]`, default = radius). Default out: `Assets/HeraGenerated/`. |
 | `capture` | `[--out <file.png>]`; `[--width N] [--height N]`; `[--bg #RRGGBBAA]`; `[--canvas </path> or <id>]` | Render the live overlay UI to a PNG. Size defaults to the canvas pixel size (current game view); `bg` defaults to opaque dark (`alpha 0` = transparent); without `--canvas` it captures all root non-world canvases. Default out: a temp file. Returns `{path,width,height,bytes,canvases}`. |
 | `sample` | `--image <ref.png>`; `--at "x,y"` and/or `--region "x,y,w,h"`; `[--kernel N]` | Read measured colors from a reference image. Coordinates are **normalized [0,1], top-left origin**; `;`-separate several (`--at "0.5,0.5;0.1,0.2"`). Points are averaged over a `±kernel` px box (default 2) to shrug off antialiasing. Returns each as `{at/region, px, hex, rgba}`. CLI-side — no Unity needed. |
+| `catalog` | `--dir <abs folder>`; `[--max N]` | Recursively scan a folder of UI sprites into a manifest. Per image: `{path, format, w, h, aspect, has_alpha, opaque_bounds, palette, nine_slice_hint, name_hint}` (defaults omitted). `nine_slice_hint` is `[left,bottom,right,top]`, ready to pass to `import --border`. GIFs get `{animated, frames, reference_only}` (not importable). Undecodable Unity-only formats (tga/psd/exr…) are listed with `decoded:false`. `--max` caps the count (default 300). CLI-side — no Unity needed. |
 
 **IR shape (`ui_doc/2`)** — a node tree; defaults are omitted on export (`anchor` uses the same preset names as `manage_ui set_anchor`, else `anchor_min`/`anchor_max`). Full reference: [`UI_DOC_IR.md`](UI_DOC_IR.md).
 
@@ -790,6 +794,10 @@ hera-agent-unity ui_doc export --path /Canvas/HUD
 
 # Apply an agent-authored design
 hera-agent-unity ui_doc apply --file design.json --parent /Canvas
+
+# Scan your own UI kit, then bring the chosen sprites into the project
+hera-agent-unity ui_doc catalog --dir /Users/me/Downloads/SciFiUIKit
+hera-agent-unity ui_doc import --src .../btn_blue.png --into Assets/UI --border 16,16,16,16
 
 # Bake a button background
 hera-agent-unity ui_doc gen_sprite --spec '{"kind":"rounded_rect","size":[240,64],"color":"#1A1A2EFF","radius":12}' --out Assets/UI/btn_bg.png

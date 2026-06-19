@@ -12,20 +12,22 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "ui_doc",
-        Description = "HTML→Unity UI pipeline (uGUI). export: serialize a UI subtree to the compact ui_doc IR (grounding for the agent). apply: realize a ui_doc IR under a parent — pass the doc via --file; --mode create (default, always-new) or upsert (match existing children by name and update rect/graphic/text in place). gen_sprite: Tier-1 procedural sprite (solid/rounded_rect/gradient/nine_slice) baked + imported, no external dependency. capture: render the live UI (overlay Canvases, which a normal camera render misses) to a PNG so the agent can verify what it built against a reference. (sample — read colors from a reference image — is handled CLI-side, no Unity round-trip.) Element property edits beyond the IR stay in manage_components; juice recipes ride apply's agent_hint when UI Juicy Mode is on.",
+        Description = "HTML→Unity UI pipeline (uGUI). export: serialize a UI subtree to the compact ui_doc IR (grounding for the agent). apply: realize a ui_doc IR under a parent — pass the doc via --file; --mode create (default, always-new) or upsert (match existing children by name and update rect/graphic/text in place). import: copy external sprite files (absolute paths, e.g. a downloaded UI kit) into the project as Sprite assets (textureType=Sprite, optional 9-slice border/ppu/pivot) so apply can reference them by Assets/ path — pass items via --file or a single --src. gen_sprite: Tier-1 procedural sprite (solid/rounded_rect/gradient/nine_slice) baked + imported, no external dependency. capture: render the live UI (overlay Canvases, which a normal camera render misses) to a PNG so the agent can verify what it built against a reference. (sample — read colors from a reference image — and catalog — scan a UI-asset folder into a manifest of size/alpha/palette/9-slice/name hints — are handled CLI-side, no Unity round-trip; the agent reads the catalogued PNGs to classify them, GIFs are reference-only.) Element property edits beyond the IR stay in manage_components; juice recipes ride apply's agent_hint when UI Juicy Mode is on.",
         Examples = new[]
         {
-            "hera-agent-unity ui_doc export --path /Canvas/Panel",
-            "hera-agent-unity ui_doc apply --file design.json",
+            "hera-agent-unity ui_doc catalog --dir /Users/me/Downloads/UIKit",
+            "hera-agent-unity ui_doc import --src /Users/me/Downloads/UIKit/btn.png --into Assets/UI --border 12,12,12,12",
+            "hera-agent-unity ui_doc import --file imports.json",
             "hera-agent-unity ui_doc apply --file design.json --parent /Canvas",
             "hera-agent-unity ui_doc gen_sprite --spec '{\"kind\":\"rounded_rect\",\"size\":[240,64],\"color\":\"#1A1A2EFF\",\"radius\":12}' --out Assets/UI/btn_bg.png",
             "hera-agent-unity ui_doc capture --out /tmp/ui.png",
         },
         ExampleDescriptions = new[]
         {
-            "Export the current state of a subtree as the ui_doc IR (compact, defaults omitted)",
-            "Build a UI doc under an existing/auto Canvas",
-            "Build a UI doc under an explicit parent",
+            "Scan a folder of UI sprites into a manifest (CLI-side; the agent then reads the PNGs to classify them)",
+            "Import one external sprite as a 9-slice Sprite asset under Assets/UI",
+            "Import many sprites with per-sprite settings (into/items via a JSON file)",
+            "Build a UI doc under an explicit parent (reference the imported sprites by Assets/ path)",
             "Bake + import a rounded-rect sprite under Assets/",
             "Render the live overlay UI to a PNG for visual verification",
         })]
@@ -33,7 +35,7 @@ namespace HeraAgent.Tools
     {
         public class Parameters
         {
-            [ToolParameter("Action: export, apply, gen_sprite, capture. (sample is CLI-side.)", Required = true)]
+            [ToolParameter("Action: export, apply, import, gen_sprite, capture. (sample and catalog are CLI-side.)", Required = true)]
             public string Action { get; set; }
 
             [ToolParameter("export: target subtree by hierarchy path. Alternative to instance_id.")]
@@ -71,6 +73,24 @@ namespace HeraAgent.Tools
 
             [ToolParameter("capture: restrict to one Canvas by path/InstanceID. Default: all root non-world canvases.")]
             public string Canvas { get; set; }
+
+            [ToolParameter("import: source image absolute path (single-sprite form). Use --file for many sprites / per-sprite settings.")]
+            public string Src { get; set; }
+
+            [ToolParameter("import: destination folder under Assets/ (default Assets/HeraImported). The --file doc may also carry 'into'.")]
+            public string Into { get; set; }
+
+            [ToolParameter("import: 9-slice sprite border [left,bottom,right,top] in px — sets the sprite to Sliced so corners stay fixed when scaled.")]
+            public string Border { get; set; }
+
+            [ToolParameter("import: pixels-per-unit for the imported sprite(s). Default 100.")]
+            public float? Ppu { get; set; }
+
+            [ToolParameter("import: filter mode — 'point' (pixel art) or 'bilinear' (default).")]
+            public string Filter { get; set; }
+
+            [ToolParameter("import: sprite pivot [x,y] in 0..1 (custom alignment). Default center.")]
+            public string Pivot { get; set; }
         }
 
         public static object HandleCommand(JObject raw)
@@ -84,11 +104,12 @@ namespace HeraAgent.Tools
             {
                 case "export": return Export(raw);
                 case "apply": return Apply(raw);
+                case "import": return Import(raw);
                 case "gen_sprite":
                 case "gensprite": return GenSprite(raw);
                 case "capture": return Capture(raw);
                 default:
-                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: export, apply, gen_sprite, capture.");
+                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: export, apply, import, gen_sprite, capture.");
             }
         }
 
@@ -208,6 +229,171 @@ namespace HeraAgent.Tools
                 asset = path,
                 instance_id = spr != null ? EntityIdCompat.IdOf(spr) : 0,
             });
+        }
+
+        // Default landing folder for imported external art (parallels
+        // ProceduralSprite.DefaultDir for generated art).
+        const string DefaultImportDir = "Assets/HeraImported";
+
+        // Import copies external sprite files (absolute paths — a downloaded UI
+        // kit, exported art) into the project and imports them as Sprite assets so
+        // apply can reference them by Assets/ path. The agent picks files from a
+        // `catalog` scan and decides each sprite's role/border by sight; this just
+        // realizes that choice. GIFs are skipped (Unity has no GIF→Sprite import).
+        static object Import(JObject raw)
+        {
+            var p = new ToolParams(raw);
+
+            string into = p.Get("into");
+            var doc = AsObject(p.GetRaw("doc"));
+            if (string.IsNullOrWhiteSpace(into) && doc?["into"] != null)
+                into = doc["into"].ToString();
+            if (string.IsNullOrWhiteSpace(into)) into = DefaultImportDir;
+            into = into.Replace('\\', '/').TrimEnd('/');
+            if (into != "Assets" && !into.StartsWith("Assets/"))
+                return new ErrorResponse("INVALID_DEST", $"[Hera] I can only import under Assets/ (got '{into}').");
+
+            // Rich form: --file doc = { into?, items: [ {src, name?, border?, ppu?, filter?, pivot?}, ... ] }.
+            var items = new List<JObject>();
+            if (doc?["items"] is JArray arr)
+                foreach (var it in arr)
+                    if (it is JObject io) items.Add(io);
+
+            // Simple form: a single sprite from --src (or the first positional arg) + shared flags.
+            if (items.Count == 0)
+            {
+                string src = p.Get("src");
+                if (string.IsNullOrEmpty(src) && p.GetRaw("args") is JArray a && a.Count > 1)
+                    src = a[1]?.ToString(); // args[0] is the action ("import")
+                if (string.IsNullOrEmpty(src))
+                    return new ErrorResponse("MISSING_PARAM", "import needs items (via --file) or --src <absolute path>.");
+                var single = new JObject { ["src"] = src };
+                CopyIfPresent(p, single, "name");
+                CopyIfPresent(p, single, "border");
+                CopyIfPresent(p, single, "ppu");
+                CopyIfPresent(p, single, "filter");
+                CopyIfPresent(p, single, "pivot");
+                items.Add(single);
+            }
+
+            try { if (!Directory.Exists(into)) Directory.CreateDirectory(into); }
+            catch (System.Exception e)
+            {
+                return new ErrorResponse("DEST_CREATE_FAILED", $"[Hera] I couldn't create '{into}': {e.Message}");
+            }
+
+            var imported = new List<object>();
+            var skipped = new List<object>();
+            var errors = new List<string>();
+
+            foreach (var item in items)
+            {
+                var src = item["src"]?.ToString();
+                if (string.IsNullOrEmpty(src)) { errors.Add("an item is missing 'src'."); continue; }
+                if (!File.Exists(src)) { errors.Add($"source not found: {src}"); continue; }
+
+                var ext = Path.GetExtension(src).ToLowerInvariant();
+                if (ext == ".gif")
+                {
+                    skipped.Add(new { src, reason = "gif is reference-only — Unity has no GIF→Sprite import." });
+                    continue;
+                }
+                if (!IsImportableImage(ext))
+                {
+                    skipped.Add(new { src, reason = $"unsupported image type '{ext}'." });
+                    continue;
+                }
+
+                var name = item["name"]?.ToString();
+                if (string.IsNullOrEmpty(name)) name = Path.GetFileNameWithoutExtension(src);
+                var dest = AssetDatabase.GenerateUniqueAssetPath($"{into}/{SanitizeFileName(name)}{ext}");
+
+                try { File.Copy(src, dest, overwrite: false); }
+                catch (System.Exception e) { errors.Add($"copy '{src}': {e.Message}"); continue; }
+
+                AssetDatabase.ImportAsset(dest, ImportAssetOptions.ForceUpdate);
+
+                Vector4? border = null;
+                if (item["border"] != null && SerializedPropertyValue.TryParseFloats(item["border"], 4, out var bd, out _))
+                    border = new Vector4(bd[0], bd[1], bd[2], bd[3]);
+                Vector2? pivot = null;
+                if (item["pivot"] != null && SerializedPropertyValue.TryParseFloats(item["pivot"], 2, out var pv, out _))
+                    pivot = new Vector2(pv[0], pv[1]);
+                float ppu = item["ppu"]?.Value<float>() ?? 100f;
+                bool point = string.Equals(item["filter"]?.ToString(), "point", System.StringComparison.OrdinalIgnoreCase);
+
+                ConfigureSpriteImporter(dest, border, ppu, point, pivot);
+
+                var spr = AssetDatabase.LoadAssetAtPath<Sprite>(dest);
+                imported.Add(new
+                {
+                    src,
+                    asset = dest,
+                    instance_id = spr != null ? EntityIdCompat.IdOf(spr) : 0,
+                    sliced = border.HasValue,
+                });
+            }
+
+            AssetDatabase.Refresh();
+
+            var msg = $"Imported {imported.Count} sprite(s) into {into}";
+            if (skipped.Count > 0) msg += $", {skipped.Count} skipped";
+            if (errors.Count > 0) msg += $", {errors.Count} errors";
+            return new SuccessResponse(msg, new { into, imported, skipped, errors, count = imported.Count });
+        }
+
+        // Configures a freshly-imported texture as a Sprite. Replicates
+        // ProceduralSprite's importer settings block (this is the 2nd consumer;
+        // extract to a Core helper at the 3rd per the repo's replicate-then-extract
+        // convention) and adds ppu / point-filter / custom-pivot for real art.
+        static void ConfigureSpriteImporter(string path, Vector4? border, float ppu, bool point, Vector2? pivot)
+        {
+            if (!(AssetImporter.GetAtPath(path) is TextureImporter importer)) return;
+            importer.textureType = TextureImporterType.Sprite;
+            importer.spriteImportMode = SpriteImportMode.Single;
+            importer.alphaIsTransparency = true;
+            importer.mipmapEnabled = false;
+            importer.wrapMode = TextureWrapMode.Clamp;
+            importer.filterMode = point ? FilterMode.Point : FilterMode.Bilinear;
+            if (ppu > 0) importer.spritePixelsPerUnit = ppu;
+
+            if (border.HasValue || pivot.HasValue)
+            {
+                var settings = new TextureImporterSettings();
+                importer.ReadTextureSettings(settings);
+                if (border.HasValue)
+                {
+                    settings.spriteBorder = border.Value; // (left, bottom, right, top)
+                    settings.spriteMeshType = SpriteMeshType.FullRect;
+                }
+                if (pivot.HasValue)
+                {
+                    settings.spriteAlignment = (int)SpriteAlignment.Custom;
+                    settings.spritePivot = pivot.Value;
+                }
+                importer.SetTextureSettings(settings);
+            }
+            importer.SaveAndReimport();
+        }
+
+        // Raster types Unity imports as textures (Go can't decode tga/psd/exr/etc,
+        // but the editor can). GIF is handled separately (reference-only).
+        static bool IsImportableImage(string ext)
+        {
+            switch (ext)
+            {
+                case ".png": case ".jpg": case ".jpeg": case ".tga":
+                case ".psd": case ".bmp": case ".exr": case ".tif": case ".tiff":
+                    return true;
+                default: return false;
+            }
+        }
+
+        static string SanitizeFileName(string name)
+        {
+            foreach (var c in Path.GetInvalidFileNameChars())
+                name = name.Replace(c, '_');
+            return name;
         }
 
         // Capture renders the live UI to a PNG. ScreenSpaceOverlay canvases are

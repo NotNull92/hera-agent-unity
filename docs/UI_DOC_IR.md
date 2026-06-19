@@ -202,6 +202,44 @@ resolution so absolute coordinates are reproducible:
 Tier-1 only (zero external dependency). Bespoke art (icons/illustrations) must be
 real sprite assets (`image.sprite.asset`) or icon-font glyphs (`text.font`).
 
+## Bring your own art (`catalog` → `import`)
+
+When you have a sprite kit instead of procedural shapes, two actions feed real
+`image.sprite.asset` references into the IR:
+
+- **`catalog --dir <abs>`** (CLI-side, no Unity) recursively scans a folder and
+  returns a manifest — one entry per image. The vision-capable agent **reads the
+  listed PNGs** to classify them; the metadata only grounds that read.
+
+  ```jsonc
+  { "dir": "...", "count": 12, "images": [
+    { "path": "/abs/btn_blue.png", "format": "png", "decoded": true,
+      "w": 240, "h": 64, "aspect": 3.75, "has_alpha": true,
+      "opaque_bounds": [4,4,232,56],         // [x,y,w,h] trimmed content (top-left origin)
+      "palette": [ {"hex":"#1A1A2E","pct":62}, {"hex":"#4ED0FF","pct":18} ],
+      "nine_slice_hint": [16,16,16,16],      // [left,bottom,right,top] — pass straight to import --border
+      "name_hint": "button" },               // element guess from the filename
+    { "path": "/abs/spinner.gif", "format": "gif", "decoded": true,
+      "animated": true, "frames": 24, "reference_only": true } ] }
+  ```
+  GIFs are catalogued `reference_only` (Unity has no GIF→Sprite import).
+  Unity-only formats Go can't decode (tga/psd/exr…) appear with `decoded:false`.
+
+- **`import`** (Connector) copies the chosen files into the project as `Sprite`
+  assets, then `apply` references them by their new `Assets/` path. Single sprite
+  via `--src` + shared flags, or many via `--file`:
+
+  ```jsonc
+  { "into": "Assets/UI/Imported",          // default Assets/HeraImported
+    "items": [
+      { "src": "/abs/btn_blue.png", "name": "btn_blue", "border": [16,16,16,16] },
+      { "src": "/abs/panel.png", "border": [24,24,24,24], "ppu": 100, "filter": "point", "pivot": [0.5,0.5] }
+    ] }
+  ```
+  A `border` sets the sprite to `Sliced` (FullRect mesh) so corners stay fixed —
+  the same effect as a `nine_slice` gen sprite, but on your own art. Returns
+  `{into, imported:[{src,asset,instance_id,sliced}], skipped, errors, count}`.
+
 ## Apply semantics
 
 - `apply --file <doc.json>` (doc passed by file, never inline in context).

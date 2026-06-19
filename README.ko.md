@@ -92,15 +92,17 @@ AI한테 Unity UI를 만들라고 시켜 보면 헤맵니다. HTML/CSS는 빠삭
 
 에이전트가 스크린샷에서 *진짜* 색을 읽어내고, UI를 만들고, 만든 그대로(오버레이 캔버스까지) 렌더하고, 타깃과 diff 떠서, 스스로 고칩니다.
 
-### 5개 엔드포인트, 하나의 계약
+### 7개 엔드포인트, 하나의 계약
 
 | 엔드포인트 | 실행 위치 | 설명 |
 |---|---|---|
 | `export`     | 커넥터 | 라이브 UI 서브트리 → `ui_doc/2` IR 직렬화(기본값 생략). 에이전트가 구조를 지어내는 대신 프로젝트의 **실제** 구조 위에 설계를 올림. |
 | `apply`      | 커넥터 | `--parent` 아래에 IR 빌드. `--mode create`(기본) 또는 **`upsert`**(이름으로 자식 매칭, **제자리** 편집 — export → edit → apply 왕복 완성). doc은 `--file`로 전달되어 에이전트 컨텍스트를 부풀리지 않음. |
+| `import`     | 커넥터 | **내 스프라이트 파일**(절대경로 — 다운로드한 UI 키트, 내보낸 아트)을 프로젝트로 들여와 `Sprite` 에셋으로 import(9-slice **border** / `ppu` / `pivot` 선택). 이후 `apply`가 `Assets/` 경로로 참조. GIF은 제외(GIF→Sprite import 없음). |
 | `gen_sprite` | 커넥터 | 절차적 스프라이트(`solid` / `rounded_rect` / `gradient` / `nine_slice`)를 베이크해 `Sprite`로 import — **외부 의존성 0**, 이미지 모델도, 에셋 팩도 없음. |
 | `capture`    | 커넥터 | 라이브 UI 렌더 → PNG(시각 diff용). 일반 `screenshot`이 카메라 *이후* 합성해 조용히 누락하는 `ScreenSpaceOverlay` 캔버스까지 포함. |
 | `sample`     | CLI     | 레퍼런스 이미지에서 **측정된** hex 색 읽기(`--at "x,y"` 포인트 / `--region "x,y,w,h"`, 정규화 [0,1]). 순수 stdlib 디코드 — Unity 왕복 없음, 오브젝트가 하나도 없는 상태에서도 사용 가능. |
+| `catalog`    | CLI     | UI 스프라이트 폴더를 스캔(`--dir <abs>`, 재귀)해 매니페스트로 — 이미지별 크기·알파·대표 팔레트·보수적 **9-slice border** 추정·파일명 기반 element 힌트. 이후 비전 가진 에이전트가 **나열된 PNG를 직접 읽어 분류**하고 내 아트로 목업 구성. 순수 stdlib 디코드 — Unity 왕복 없음. GIF은 참조 전용으로 카탈로그. |
 
 ### 스크린샷 한 장으로 게임 HUD 재구축
 
@@ -119,6 +121,25 @@ hera-agent-unity ui_doc capture --out hud_built.png
 ```
 
 억지로 만든 데모가 아닙니다 — `capture`가 레퍼런스와 맞을 때까지 스크린샷 한 장으로 실제 게임 HUD를 재구축하며 **도그푸딩으로 탄생한** 기능입니다.
+
+### 내 UI 키트로 목업하기
+
+스프라이트 폴더를 가리키면 에이전트가 절차적 placeholder가 아니라 *내* 아트로 UI를 빌드합니다:
+
+```bash
+# 1 ─ 키트 스캔 → 매니페스트(크기·알파·팔레트·9-slice + element 힌트)
+hera-agent-unity ui_doc catalog --dir /Users/me/Downloads/SciFiUIKit
+#     …에이전트가 나열된 PNG를 읽어 각 스프라이트가 무엇인지 판단.
+
+# 2 ─ 선택한 스프라이트를 프로젝트로 들여와 Sprite 에셋화
+hera-agent-unity ui_doc import --src .../btn_blue.png --into Assets/UI --border 16,16,16,16
+#     (--file imports.json 로 여러 개 + 스프라이트별 border 한 번에)
+
+# 3 ─ 그것들을 참조하는 IR 작성 후 빌드
+hera-agent-unity ui_doc apply --file design.json --parent /Canvas
+```
+
+`catalog`·`import`은 CLI 측 스캔 + 일회성 프로젝트 import일 뿐, "이게 어떤 UI인가" 분류는 실제 픽셀을 읽는 비전 가진 에이전트의 몫입니다.
 
 ### 왜 실제로 통하는가
 

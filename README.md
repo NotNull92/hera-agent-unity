@@ -92,15 +92,17 @@ This is what makes a reproduction *faithful* instead of "close enough" — and i
 
 The agent reads the *true* colors straight out of your screenshot, builds the UI, renders exactly what it built (overlay canvases and all), diffs it against the target, and corrects — on its own.
 
-### Five endpoints, one contract
+### Seven endpoints, one contract
 
 | Endpoint | Runs in | What it does |
 |---|---|---|
 | `export`     | Connector | Serialize a live UI subtree → `ui_doc/2` IR (defaults omitted), so the agent grounds its design on the project's **real** structure instead of hallucinating one. |
 | `apply`      | Connector | Build the IR under a `--parent`. `--mode create` (default) or **`upsert`** (match children by name, edit **in place** — the full export → edit → apply round-trip). The doc rides via `--file`, never bloating the agent's context. |
+| `import`     | Connector | Bring **your own** sprite files (absolute paths — a downloaded UI kit, exported art) into the project as `Sprite` assets (optional 9-slice **border** / `ppu` / `pivot`), so `apply` can reference them by `Assets/` path. GIFs are skipped (no GIF→Sprite import). |
 | `gen_sprite` | Connector | Bake a procedural sprite (`solid` / `rounded_rect` / `gradient` / `nine_slice`) and import it as a `Sprite` — **zero external dependency**, no image model, no asset pack. |
 | `capture`    | Connector | Render the live UI — including the `ScreenSpaceOverlay` canvases a normal `screenshot` composites *after* the camera and silently drops — to a PNG for visual diffing. |
 | `sample`     | CLI       | Read **measured** hex colors out of a reference image (`--at "x,y"` points / `--region "x,y,w,h"`, normalized [0,1]). Pure stdlib decode — no Unity round-trip, usable before a single object exists. |
+| `catalog`    | CLI       | Scan a folder of UI sprites (`--dir <abs>`, recursive) into a manifest — per image: size, alpha, dominant palette, a conservative **9-slice border** suggestion, and a filename-derived element guess. The vision-capable agent then **reads the listed PNGs to classify them** and composes a mockup from your own art. Pure stdlib decode — no Unity round-trip. GIFs are catalogued reference-only. |
 
 ### Watch it rebuild a game HUD from one screenshot
 
@@ -119,6 +121,25 @@ hera-agent-unity ui_doc capture --out hud_built.png
 ```
 
 That isn't a contrived demo — it's how the feature was **dogfooded into existence**, rebuilding a real game HUD from a single screenshot until `capture` matched the reference.
+
+### Mock up from your own UI kit
+
+Point the agent at a folder of sprites and it builds the UI from *your* art, not procedural placeholders:
+
+```bash
+# 1 ─ Scan the kit → manifest (size, alpha, palette, 9-slice + element hints)
+hera-agent-unity ui_doc catalog --dir /Users/me/Downloads/SciFiUIKit
+#     …the agent reads the listed PNGs and decides what each sprite is.
+
+# 2 ─ Bring the chosen sprites into the project as Sprite assets
+hera-agent-unity ui_doc import --src .../btn_blue.png --into Assets/UI --border 16,16,16,16
+#     (or many at once, with per-sprite borders, via --file imports.json)
+
+# 3 ─ Author the IR referencing them, then build it
+hera-agent-unity ui_doc apply --file design.json --parent /Canvas
+```
+
+`catalog` and `import` are CLI-side scan + a one-shot project import; classifying "what UI is this" stays with the vision-capable agent that reads the actual pixels.
 
 ### Why it actually holds up
 
