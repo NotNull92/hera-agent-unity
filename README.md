@@ -419,9 +419,9 @@ Also check that the Unity package is installed and Unity has finished compiling.
 
 <div align="center">
 
-<video src="https://github.com/user-attachments/assets/a2b31a46-b60d-4de6-8238-58cb67683388" controls muted loop playsinline width="80%"></video>
+![NoMoreRolls Play Mode preview](docs/sample/NoMoreRolls_Play_preview.gif)
 
-<sub><b>NoMoreRolls</b> — Play Mode capture from a Unity game built with Hera-assisted editor work.</sub>
+<sub><b>NoMoreRolls</b> — Play Mode capture from a Unity game built with Hera-assisted editor work. [Watch the full MP4](docs/sample/NoMoreRolls_Play.mp4).</sub>
 
 </div>
 
