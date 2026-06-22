@@ -13,6 +13,7 @@ coverage.out
 .omx/
 .claude/
 .agents/skills/hyper-mode/
+.agents/skills/review-hera-agent-unity/
 .agents/skills/sync-claude-md/
 
 # Internal dev scratch (refactoring session log)
