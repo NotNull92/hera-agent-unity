@@ -166,6 +166,9 @@ func TestWaitForFile_InvalidJSON(t *testing.T) {
 	if !strings.Contains(err.Error(), "failed to parse test-op") {
 		t.Fatalf("expected parse error, got %v", err)
 	}
+	if _, statErr := os.Stat(resultPath); statErr != nil {
+		t.Fatalf("expected invalid result file to be preserved, got %v", statErr)
+	}
 }
 
 func TestWaitForFile_UnityStopped(t *testing.T) {

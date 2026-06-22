@@ -32,7 +32,8 @@ Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free und
 
 ```
 cmd/                  # Go CLI — thin passthrough layer
-  root.go             # Entry point, flag/arg parsing, humanCategories, default passthrough
+  root.go             # Entry point, flag/arg parsing, humanCategories, response printing
+  dispatch.go         # Standalone vs Unity-backed command routing
   editor.go           # editor command (waitForReady polling)
   test.go             # test command (PlayMode result polling via pollResultFile)
   poll.go             # shared pollResultFile: file-bus result poller w/ exponential
@@ -71,6 +72,8 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
     HeraAgent.asmdef
     HeraAgentAssetConfigWindow.cs   # Editor GUI for asset-config
     Core/             # Response, ParamCoercion, ToolParams,
+                      # AtomicFile (temp-write + replace for JSON file bus),
+                      # AssetPathGuard (normalized Assets/ containment),
                       # StringCaseUtility, ToolMetadata, UnityPitfalls,
                       # HierarchyPath (Build: Transform→path; Find:
                       # path→GameObject, inactive-aware — shared by
@@ -224,6 +227,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | UI Juicy Mode | ✅ 완료 (Connector v0.0.19) | Hera Settings 체크박스(`asset-config.json` 의 `ui_juicy_mode`) ON → `manage_ui create` 응답에 `agent_hint` 로 Game UI/UX Bible juice 레시피(element별) 주입. **가이드 주입 방식 🔒**(런타임 컴포넌트 자동부착 아님 — connector Editor 전용 유지, manage_ui scope 경계 유지). DOTween 우선은 기존 `dotween`/`dotween_pro` `enabled` 플래그 참조(`Core/HeraSettings.DotweenPreferred`) → DOScale vs lerp 분기. juice 지식은 `Core/UIJuiceGuide` 순수 문자열(Data 에셋 아님). connector 가 dispatch 시 `asset-config.json` 을 mtime-cache 로 읽음(`Core/HeraSettings`). CLI 는 `asset-config juicy [on\|off]` + `--json` 의 `ui_juicy_mode`/`dotween_preferred` 로 표면화. Go struct 에 `DefaultCscPath`/`DefaultDotnetPath` round-trip 필드 추가(CLI Save 가 Editor 컴파일러 경로 안 지우도록). 다시 *자동부착(runtime asmdef)* 또는 *친절-매핑* 제안 금지 |
 | `ui_doc` HTML→UI pipeline | ✅ 완료 (Connector 0.0.21 최초, IR v2 0.0.26, capture/sample 0.0.27; CanvasScaler config + root-canvas-at-scene-root 0.0.39, CLI `html-to-uidoc` 0.0.27; CLAUDE.md 등재는 2026-06-18) | `UiDoc` 도구 + `Core/UiDocSchema`(ui_doc/2 IR) + `Core/ProceduralSprite`(절차 스프라이트). 액션: `export`/`apply`(IR↔uGUI, `--mode create\|upsert`) / `gen_sprite` / `capture`(overlay 캔버스 throwaway-camera 렌더) / `sample`(레퍼런스 색 측정, CLI측). `apply` 가 IR 최상위 `canvas` 블록으로 `CanvasScaler` 를 설정하고 root `element:"canvas"` 는 씬 루트에 생성. CLI `html-to-uidoc` 는 인라인 스타일 HTML → `ui_doc/2` JSON. v0.0.14 cohort 선례 따라 root.go help 미등재(README/docs/COMMANDS/UI_DOC_IR/CHANGELOG만). 컴파일 의존성 0 🔒: uGUI/TMP 타입 전부 TypeCache+리플렉션 해석 |
 | `ui_doc catalog` / `import` (UI 에셋 목업) | ✅ 완료 (2026-06-18, Connector v0.0.38 + CLI) | 사용자 UI 에셋 폴더 → 목업. `catalog`(CLI측, Unity 무관): 폴더 재귀 스캔 → 이미지별 매니페스트(size/has_alpha/opaque_bounds/palette/`nine_slice_hint [l,b,r,t]`/name_hint, GIF=reference_only/frames). `import`(connector): 절대경로 원본 → `Assets/`(기본 `HeraImported`) 복사 + Sprite 임포트(border/ppu/filter/pivot). **분류 주체 🔒**: "어떤 UI인가" 판단은 비전 가진 에이전트가 PNG 직접 읽어서 — 도구(Go/C#)는 픽셀 못 봄, 메타+힌트만 제공. **GIF 🔒**: catalog엔 reference_only로 등장, import는 skip(Unity GIF→Sprite 없음). import `TextureImporter` 세팅은 `ProceduralSprite` 블록 복제(2번째 소비자=replicate, 3번째에 Core 추출). 다시 *도구측 자동분류(휴리스틱 단정)* 또는 *GIF import* 제안 금지 |
+| 파일버스/경로 안전 리팩토링 | ✅ 완료 (2026-06-22, Connector v0.0.42 / CLI v0.0.29) | `Core/AtomicFile` 로 heartbeat/package/test 결과 JSON 을 temp-write+replace 방식으로 통일하고 Go poller 는 parse 성공 후 삭제. `Core/AssetPathGuard` 로 `ui_doc import`/`gen_sprite` 의 `Assets/` traversal escape 차단. `cmd/dispatch.go` 로 routing 분리, `--params` 명시 플래그 override 회귀 테스트와 embedded help topic 테스트 추가. 단방향 HTTP/파일버스 모델은 유지 |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 

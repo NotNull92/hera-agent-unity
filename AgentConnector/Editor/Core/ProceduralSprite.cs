@@ -78,8 +78,9 @@ namespace HeraAgent
             Object.DestroyImmediate(tex);
             if (png == null) return (null, "failed to encode PNG");
 
-            string path = string.IsNullOrWhiteSpace(outPath) ? AutoPath(spec, kind, w, h) : outPath.Replace('\\', '/');
-            if (!path.StartsWith("Assets/")) return (null, $"out path must be under Assets/ (got '{path}')");
+            string requestedPath = string.IsNullOrWhiteSpace(outPath) ? AutoPath(spec, kind, w, h) : outPath;
+            if (!AssetPathGuard.TryNormalizeAssetFile(requestedPath, out var path, out var pathErr))
+                return (null, pathErr);
             if (!path.EndsWith(".png")) path += ".png";
 
             try

@@ -139,8 +139,7 @@ namespace HeraAgent.TestRunner
 
             try
             {
-                Directory.CreateDirectory(StatusDir);
-                File.WriteAllText(ResultsFilePath(port), JsonConvert.SerializeObject(data));
+                HeraAgent.AtomicFile.WriteAllText(ResultsFilePath(port), JsonConvert.SerializeObject(data));
             }
             catch (Exception ex)
             {

@@ -95,6 +95,27 @@ func TestBuildParams_BaseParams(t *testing.T) {
 	}
 }
 
+func TestBuildParams_ExplicitFlagsOverrideParamsJSON(t *testing.T) {
+	p, _, err := buildParams([]string{
+		"--params", `{"lines":10,"clear":false,"filter":"warning"}`,
+		"--lines", "20",
+		"--clear",
+		"--filter", "error",
+	}, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p["lines"] != 20 {
+		t.Errorf("expected lines=20, got %v", p["lines"])
+	}
+	if p["clear"] != true {
+		t.Errorf("expected clear=true, got %v", p["clear"])
+	}
+	if p["filter"] != "error" {
+		t.Errorf("expected filter=error, got %v", p["filter"])
+	}
+}
+
 // Regression: `exec --depth 2 --file x.cs` must still read the file. The "2"
 // (value of --depth) was previously mistaken for positional code, so --file was
 // silently skipped and the caller hit MISSING_PARAM: 'code' required.

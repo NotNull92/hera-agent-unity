@@ -29,11 +29,11 @@ func WaitForFile(resultPath string, port int, timeout time.Duration, opName stri
 
 		data, err := os.ReadFile(resultPath)
 		if err == nil {
-			_ = os.Remove(resultPath)
 			var resp client.CommandResponse
 			if err := json.Unmarshal(data, &resp); err != nil {
 				return nil, fmt.Errorf("failed to parse %s: %w", opName, err)
 			}
+			_ = os.Remove(resultPath)
 			return &resp, nil
 		}
 

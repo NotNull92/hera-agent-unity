@@ -1,0 +1,9 @@
+Usage:
+  hera-agent-unity uninstall
+
+Remove the installed hera-agent-unity binary from PATH-managed install locations
+and delete CLI configuration files.
+
+Notes:
+  - On Windows, deferred .bak/.tmp cleanup handles files still locked by the running process.
+  - This does not remove the Unity UPM package from projects.

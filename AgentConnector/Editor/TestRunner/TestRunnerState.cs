@@ -27,8 +27,7 @@ namespace HeraAgent.TestRunner
             var pending = new { port, filter = filter ?? "" };
             try
             {
-                Directory.CreateDirectory(RunTests.StatusDir);
-                File.WriteAllText(PendingFilePath(port), JsonConvert.SerializeObject(pending));
+                HeraAgent.AtomicFile.WriteAllText(PendingFilePath(port), JsonConvert.SerializeObject(pending));
             }
             catch { }
         }

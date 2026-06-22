@@ -8,7 +8,8 @@ This document describes the Go CLI codebase structure, execution flow, and key f
 
 ```
 cmd/                  # Cobra-free command implementation
-  root.go             # Entry point, flag/arg parsing, default passthrough
+  root.go             # Entry point, flag/arg parsing, response printing
+  dispatch.go         # Standalone / Unity-backed command routing
   editor.go           # editor command (waitForReady polling)
   test.go             # test command (PlayMode result polling)
   status.go           # status, waitForAlive, waitForReady, ping
@@ -48,7 +49,7 @@ internal/
 
 ---
 
-## Execution Flow (root.go)
+## Execution Flow (root.go + dispatch.go)
 
 ```go
 // main.go → cmd.Execute()
@@ -96,8 +97,8 @@ func Execute() error {
 | Function | Role |
 |:---|:---|
 | `Execute()` | Entry point. Parses flags → discovers instance → dispatches command → prints response. |
-| `runStandaloneCommand()` | Handles commands that don't need a live Unity connection. |
-| `runUnityCommand()` | Handles commands that require a live Unity connection (including batch and file-injection for exec/ui_doc). |
+| `runStandaloneCommand()` | Handles commands that don't need a live Unity connection. Lives in `dispatch.go`. |
+| `runUnityCommand()` | Handles commands that require a live Unity connection (including batch and file-injection for exec/ui_doc). Lives in `dispatch.go`. |
 | `ResponsePrinter.Print()` | Formats Unity JSON response for terminal. Plain strings print raw. Objects print indented or compact JSON depending on command category. |
 | `printTimings()` | Prints per-phase timings to stderr when `--verbose` is set. |
 | `buildParams()` | Converts `--key value` pairs into a map. Supports `--params '{"k":"v"}'` for raw JSON. |

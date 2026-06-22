@@ -257,9 +257,8 @@ namespace HeraAgent.Tools
             if (string.IsNullOrWhiteSpace(into) && doc?["into"] != null)
                 into = doc["into"].ToString();
             if (string.IsNullOrWhiteSpace(into)) into = DefaultImportDir;
-            into = into.Replace('\\', '/').TrimEnd('/');
-            if (into != "Assets" && !into.StartsWith("Assets/"))
-                return new ErrorResponse("INVALID_DEST", $"[Hera] I can only import under Assets/ (got '{into}').");
+            if (!AssetPathGuard.TryNormalizeAssetFolder(into, out into, out var pathErr))
+                return new ErrorResponse("INVALID_DEST", $"[Hera] I can only import under Assets/: {pathErr}");
 
             // Rich form: --file doc = { into?, items: [ {src, name?, border?, ppu?, filter?, pivot?}, ... ] }.
             var items = new List<JObject>();

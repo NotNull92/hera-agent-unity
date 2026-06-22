@@ -118,16 +118,7 @@ namespace HeraAgent
 
             try
             {
-                Directory.CreateDirectory(s_Dir);
-                var path = GetFilePath();
-                var tmp = path + ".tmp";
-                File.WriteAllText(tmp, JsonConvert.SerializeObject(status));
-                // Atomic replace: a concurrent reader either sees the full prior
-                // file or the full new one, never a partial JSON document.
-                if (File.Exists(path))
-                    File.Replace(tmp, path, null);
-                else
-                    File.Move(tmp, path);
+                AtomicFile.WriteAllText(GetFilePath(), JsonConvert.SerializeObject(status));
             }
             catch (Exception ex)
             {

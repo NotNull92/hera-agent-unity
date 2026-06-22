@@ -47,7 +47,7 @@ namespace HeraAgent
                     identifier,
                     started_unix_ms = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 };
-                File.WriteAllText(PendingPath(port, jobId), JsonConvert.SerializeObject(pending));
+                AtomicFile.WriteAllText(PendingPath(port, jobId), JsonConvert.SerializeObject(pending));
             }
             catch { }
         }
@@ -246,8 +246,7 @@ namespace HeraAgent
         {
             try
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
-                File.WriteAllText(path, JsonConvert.SerializeObject(payload));
+                AtomicFile.WriteAllText(path, JsonConvert.SerializeObject(payload));
             }
             catch { }
         }

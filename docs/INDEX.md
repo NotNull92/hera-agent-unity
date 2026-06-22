@@ -25,7 +25,7 @@ Tests, TUI, batch engine, and asset-config layer sit on top — but the engine t
 ## Quick Mental Model
 
 1. **Unity Editor opens** → C# `HttpServer` starts on localhost (port 8090+)
-2. **C# `Heartbeat`** writes a JSON file to `~/.hera-agent-unity/instances/<hash>.json` every 0.5s
+2. **C# `Heartbeat`** writes a JSON file to `~/.hera-agent-unity/instances/<hash>.json` every 1.0s
 3. **Go CLI runs** → scans instance files → finds Unity → sends HTTP POST `/command`
 4. **C# `CommandRouter`** receives the command → dispatches to the right tool handler
 5. **JSON response** flows back to the terminal
@@ -51,7 +51,8 @@ Tests, TUI, batch engine, and asset-config layer sit on top — but the engine t
 ```
 hera-agent-unity/
 ├── cmd/                          # Go CLI commands
-│   ├── root.go                   # Entry point, flag parsing, help, dispatch
+│   ├── root.go                   # Entry point, flag parsing, response printing
+│   ├── dispatch.go               # Standalone / Unity-backed command routing
 │   ├── editor.go                 # editor play/stop/pause/refresh
 │   ├── status.go                 # status, waitForAlive, waitForReady
 │   ├── test.go                   # test runner

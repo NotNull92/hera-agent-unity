@@ -1,0 +1,25 @@
+Usage:
+  hera-agent-unity ui_doc <action> [options]
+
+Actions:
+  export                         Serialize a live UI subtree to ui_doc/2 JSON
+  apply                          Build or upsert a ui_doc/2 document into uGUI
+  import                         Copy external sprite files under Assets/ as Sprite assets
+  gen_sprite                     Bake a procedural sprite under Assets/
+  capture                        Render overlay UI canvases to a PNG
+  sample                         Measure colors from a reference image (CLI-side)
+  catalog                        Scan a UI sprite folder into a manifest (CLI-side)
+
+Common examples:
+  hera-agent-unity ui_doc export --path /Canvas/HUD
+  hera-agent-unity ui_doc apply --file design.json --parent /Canvas
+  hera-agent-unity ui_doc import --src C:\art\btn.png --into Assets/UI --border 16,16,16,16
+  hera-agent-unity ui_doc gen_sprite --spec '{"kind":"rounded_rect","size":[240,64],"color":"#1A1A2EFF","radius":12}' --out Assets/UI/btn_bg.png
+  hera-agent-unity ui_doc capture --out built.png
+  hera-agent-unity ui_doc sample --image ref.png --at "0.5,0.12"
+  hera-agent-unity ui_doc catalog --dir C:\art\UIKit
+
+Notes:
+  - Full IR reference: docs/UI_DOC_IR.md
+  - Full command reference: docs/COMMANDS.md#ui_doc
+  - import/gen_sprite destinations must remain inside Assets/

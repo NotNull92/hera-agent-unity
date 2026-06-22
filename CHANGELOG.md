@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Connector 0.0.42 / CLI 0.0.29 — refactor safety pass)
+
+- **Async file-bus result writes are now atomic.** Heartbeat, PlayMode test
+  pending/results, and Package Manager job pending/results now write to a temp
+  file and replace the final JSON only after the payload is complete. The Go
+  poller now removes a result file only after JSON parse succeeds, so a corrupt
+  or partial file is preserved for diagnosis instead of being deleted first.
+- **`ui_doc` asset destinations are containment-checked.** `gen_sprite --out`
+  and `import --into` now share an `Assets/` path guard that rejects traversal
+  such as `Assets/../...` while preserving normalized `Assets/...` asset paths.
+- **CLI dispatch moved out of `root.go`.** Standalone and Unity-backed command
+  routing now lives in `cmd/dispatch.go`; `root.go` keeps global flag parsing,
+  response printing, and parameter parsing. Behavior is unchanged.
+- **Help drift is covered.** Added missing `ui_doc` and `uninstall` help topics,
+  included `ui_doc` in general help, and added tests that fail when routed help
+  topics are missing from the embedded `cmd/help` tree.
+- **`--params` collision semantics now match the agent guide.** Explicit
+  `--key value` flags override the same key supplied through `--params`.
+
 ### Added (Connector 0.0.38 + CLI — `ui_doc` mock up from your own UI kit: `catalog` + `import`)
 
 Two new `ui_doc` actions let the agent build UI from *your* sprite art instead of
