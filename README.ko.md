@@ -10,9 +10,9 @@
 [![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
-**AI가 열려 있는 Unity Editor를 직접 만지게 해 주는 작은 명령어 도구입니다.**
+**AI 코딩 에이전트를 위한 토큰 절약형 Unity Editor 조작 CLI입니다.**
 
-<sub>MCP 설정 없음 · Python 없음 · Go 바이너리 하나 · Unity 패키지 하나 · MIT</sub>
+<sub>Codex, Claude, Cursor, Copilot, AntiGravity가 열린 Unity 프로젝트를 직접 확인하고 수정하게 합니다 — MCP 설정 없음, Python 서버 없음.</sub>
 
 <br>
 
@@ -26,9 +26,9 @@
 
 ## 무엇인가요?
 
-`hera-agent-unity`는 AI 코딩 에이전트와 Unity를 이어 주는 다리입니다.
+`hera-agent-unity`는 AI 코딩 에이전트가 실행 중인 Unity Editor를 낮은 토큰 비용으로 조작하게 해 주는 CLI입니다.
 
-쉽게 말하면, AI에게 Unity 리모컨을 쥐여 주는 도구입니다.
+쉽게 말하면, AI에게 살아 있는 Unity Editor 리모컨을 쥐여 주는 도구입니다.
 
 | AI가 하고 싶은 일 | Hera가 해 주는 일 |
 |:---|:---|
@@ -39,7 +39,7 @@
 | 오브젝트 만들기/고치기 | Unity API로 직접 처리합니다. |
 | UI 만들기 | 진짜 Unity UI 오브젝트를 만들고 캡처합니다. |
 
-AI가 추측하지 않아도 됩니다. 보고, 실행하고, 다시 확인할 수 있습니다.
+AI가 오래된 학습 데이터로 추측하지 않아도 됩니다. 실제 Editor를 보고, 실행하고, 결과를 다시 확인할 수 있습니다.
 
 ```text
 AI 에이전트  ->  hera-agent-unity  ->  Unity Editor
@@ -421,7 +421,7 @@ hera-agent-unity doctor --json
 
 ![NoMoreRolls Play Mode preview](docs/sample/NoMoreRolls_Play_preview.gif)
 
-<sub><b>NoMoreRolls</b> — Hera로 Unity Editor 작업을 보조하며 만든 게임의 Play Mode 캡처입니다. [전체 MP4 보기](docs/sample/NoMoreRolls_Play.mp4).</sub>
+<sub><b>NoMoreRolls</b> — Hera로 Unity Editor 작업을 보조하며 만든 게임의 Play Mode 프리뷰입니다. [GitHub에서 전체 영상 보기](https://github.com/NotNull92/hera-agent-unity/blob/main/docs/sample/NoMoreRolls_Play_full_preview.mp4).</sub>
 
 </div>
 

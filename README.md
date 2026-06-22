@@ -10,9 +10,9 @@
 [![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
-**A tiny command tool that lets AI use your open Unity Editor.**
+**Low-token Unity Editor control for AI coding agents.**
 
-<sub>No MCP setup · no Python · one Go binary · one Unity package · MIT</sub>
+<sub>Let Codex, Claude, Cursor, Copilot, and AntiGravity inspect and change your live Unity project — no MCP setup, no Python server.</sub>
 
 <br>
 
@@ -26,9 +26,9 @@
 
 ## What It Is
 
-`hera-agent-unity` is a bridge between an AI coding agent and Unity.
+`hera-agent-unity` is a low-token CLI that lets AI coding agents control a running Unity Editor.
 
-Think of it like a remote control:
+Think of it like a remote control for the live Editor:
 
 | You want the AI to... | Hera lets it... |
 |:---|:---|
@@ -39,7 +39,7 @@ Think of it like a remote control:
 | Create or edit objects | use Unity APIs safely |
 | Build UI | create real Unity UI objects and capture the result |
 
-The AI does not need to guess. It can look, act, and check again.
+The AI does not need to guess from stale training data. It can inspect the real Editor, act on it, and check the result.
 
 ```text
 AI agent  ->  hera-agent-unity  ->  Unity Editor
@@ -421,7 +421,7 @@ Also check that the Unity package is installed and Unity has finished compiling.
 
 ![NoMoreRolls Play Mode preview](docs/sample/NoMoreRolls_Play_preview.gif)
 
-<sub><b>NoMoreRolls</b> — Play Mode capture from a Unity game built with Hera-assisted editor work. [Watch the full MP4](docs/sample/NoMoreRolls_Play.mp4).</sub>
+<sub><b>NoMoreRolls</b> — Play Mode preview from a Unity game built with Hera-assisted editor work. [Watch the full video on GitHub](https://github.com/NotNull92/hera-agent-unity/blob/main/docs/sample/NoMoreRolls_Play_full_preview.mp4).</sub>
 
 </div>
 
