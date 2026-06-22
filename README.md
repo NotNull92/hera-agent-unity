@@ -16,7 +16,7 @@
 
 <br>
 
-[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [Unity Versions](#unity-versions) · [FAQ](#faq)
+[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [UI Juicy Mode](#ui-juicy-mode) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
 
 **English** · [한국어](README.ko.md)
 
@@ -83,6 +83,7 @@ This release focuses on two simple things: more Unity versions and fewer tokens.
 | **Unity 6000.3 / 6000.5 checked separately** | Unity 6 minor versions can differ, so they are tested separately. |
 | **93-token tool list** | `list --compact` is small enough to use often. |
 | **49-55-token object handoff** | `find_gameobjects --ids` returns only the IDs an agent needs for the next command. |
+| **Signature: UI Juicy Mode** | Hera can tell the agent how to make generated UI feel alive, not static. |
 
 Measured versions:
 
@@ -139,7 +140,19 @@ There are two parts:
 
 ### CLI
 
-**Recommended**
+**Windows PowerShell**
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.ps1 | iex"
+```
+
+Open a new terminal after install, then check:
+
+```powershell
+hera-agent-unity version
+```
+
+**macOS / Linux**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.sh | bash
@@ -255,6 +268,36 @@ This is the main idea: do not guess the UI. Measure it.
 
 ---
 
+## UI Juicy Mode
+
+AI can make a button that works. UI Juicy Mode helps it make a button that feels like a game.
+
+When this mode is on, Hera adds an `agent_hint` to UI creation results. The hint gives concrete game-feel recipes: hover scale, press squash, release bounce, popup overshoot, count-up numbers, damage text motion, haptics, and reduce-motion reminders.
+
+It is guidance, not runtime bloat. Hera does not attach heavy gameplay components for you. The agent receives the recipe, then applies the animation or feedback through normal Unity edits.
+
+Turn it on in Unity:
+
+```text
+HeraAgent -> Hera Settings -> UI Juicy Mode
+```
+
+If DOTween is enabled in the same Hera Settings panel, the hint suggests DOTween-style tweens. If not, it falls back to coroutine or lerp-style guidance.
+
+Common recipes:
+
+| UI element | Juicy guidance |
+|:---|:---|
+| Button | Hover grow, press squash, release bounce, click sound, haptic. |
+| Popup / panel | Pop-in entrance, screen dim, fast quiet exit. |
+| Text | Staggered text, count-up numbers, floating damage text. |
+| Image / reward | Pop-in, rarity pulse, glow, hover lift. |
+| Bar | Instant fill drop, delayed chip bar, low-value pulse, segment ticks. |
+
+Detailed command docs: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
+
+---
+
 ## Unity Versions
 
 | Unity version | Status | Notes |
@@ -269,21 +312,37 @@ This is the main idea: do not guess the UI. Measure it.
 
 ## Add Project Rules For Agents
 
-Put Hera rules in your Unity project so agents know how to use it.
+Put Hera rules in your Unity project so agents know how to use it before they start guessing.
+
+This repository includes ready-to-use rule files for the main coding agents:
+
+| Agent | File to add | Why |
+|:---|:---|:---|
+| Codex / Claude / Gemini CLI / most agents | `AGENTS.md` | One shared guide for shell-based agents. |
+| Cursor | `.cursor/rules/hera-agent-unity.mdc` | Cursor needs `.mdc` frontmatter to activate project rules. |
+| GitHub Copilot | `.github/copilot-instructions.md` | Repo-wide Copilot instructions. |
+| GitHub Copilot, file-specific | `.github/instructions/hera-agent-unity.instructions.md` | Applies Hera rules to Unity files like `.cs`, `.prefab`, `.unity`, and `Assets/**`. |
+| Google AntiGravity | `GEMINI.md`, `.agents/agents.md`, `.agents/skills/hera-agent-unity/SKILL.md` | Project entry rule, workspace handoff, and on-demand skill. |
+| Continue.dev | `.continuerules` | Plain markdown rules. |
+
+Fast setup for the common shared file:
 
 ```bash
 hera-agent-unity doctor --agent-rules >> AGENTS.md
 ```
 
-For Cursor:
+Cursor setup:
 
 ```bash
 hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
 ```
 
+Copilot, AntiGravity, and Continue templates are in [examples/rules](examples/rules). This repo also contains live examples at [.github/copilot-instructions.md](.github/copilot-instructions.md), [.github/instructions/hera-agent-unity.instructions.md](.github/instructions/hera-agent-unity.instructions.md), [GEMINI.md](GEMINI.md), and [.agents/skills/hera-agent-unity/SKILL.md](.agents/skills/hera-agent-unity/SKILL.md).
+
 The most important rules are:
 
 - use `list --compact` to find available tools;
+- use `find_gameobjects --ids` when the next command only needs object IDs;
 - return `null` from side-effecting `exec` calls;
 - do not return big Unity objects directly;
 - read `console --type error` instead of guessing errors.
@@ -357,6 +416,14 @@ Also check that the Unity package is installed and Unity has finished compiling.
 | Project | Notes |
 |:---|:---|
 | **NoMoreRolls** | Solo-developed Unity game. Built with AI driving the Editor through Hera. |
+
+<div align="center">
+
+<video src="https://github.com/user-attachments/assets/a2b31a46-b60d-4de6-8238-58cb67683388" controls muted loop playsinline width="80%"></video>
+
+<sub><b>NoMoreRolls</b> — Play Mode capture from a Unity game built with Hera-assisted editor work.</sub>
+
+</div>
 
 ---
 

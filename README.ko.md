@@ -16,7 +16,7 @@
 
 <br>
 
-[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [Unity 버전](#unity-버전) · [FAQ](#faq)
+[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [UI Juicy Mode](#ui-juicy-mode) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
 
 [English](README.md) · **한국어**
 
@@ -83,6 +83,7 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 | **Unity 6000.3 / 6000.5 따로 확인** | Unity 6 안에서도 버전 차이가 있어서 따로 테스트했습니다. |
 | **93 토큰 도구 목록** | `list --compact`는 자주 써도 부담이 작습니다. |
 | **49-55 토큰 오브젝트 전달** | `find_gameobjects --ids`는 다음 명령에 필요한 ID만 보냅니다. |
+| **시그니처: UI Juicy Mode** | Hera가 AI에게 정적인 UI가 아니라 살아 있는 게임 UI를 만드는 힌트를 줍니다. |
 
 측정한 버전:
 
@@ -139,7 +140,19 @@ hera-agent-unity test --mode PlayMode
 
 ### CLI
 
-**추천**
+**Windows PowerShell**
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.ps1 | iex"
+```
+
+설치 후 새 터미널을 열고 확인합니다:
+
+```powershell
+hera-agent-unity version
+```
+
+**macOS / Linux**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.sh | bash
@@ -255,6 +268,36 @@ hera-agent-unity ui_doc capture --out hud_built.png
 
 ---
 
+## UI Juicy Mode
+
+AI는 작동하는 버튼은 만들 수 있습니다. UI Juicy Mode는 그 버튼이 게임처럼 느껴지게 도와줍니다.
+
+이 모드를 켜면 Hera가 UI 생성 결과에 `agent_hint`를 붙입니다. 이 힌트에는 hover 확대, press 눌림, release bounce, 팝업 overshoot, 숫자 카운트업, 데미지 텍스트 움직임, 햅틱, reduce-motion 같은 구체적인 game-feel 레시피가 들어갑니다.
+
+이 기능은 가이드이지 무거운 런타임 기능이 아닙니다. Hera가 씬에 큰 컴포넌트를 자동으로 붙이지 않습니다. 에이전트가 레시피를 받고, 평소처럼 Unity 수정 명령으로 애니메이션과 피드백을 적용합니다.
+
+Unity에서 켭니다:
+
+```text
+HeraAgent -> Hera Settings -> UI Juicy Mode
+```
+
+같은 Hera Settings 패널에서 DOTween이 켜져 있으면 DOTween 방식의 트윈을 추천합니다. 없으면 coroutine이나 lerp 방식으로 안내합니다.
+
+대표 레시피:
+
+| UI 요소 | Juicy 힌트 |
+|:---|:---|
+| Button | hover 확대, press 눌림, release bounce, 클릭음, 햅틱. |
+| Popup / panel | pop-in 등장, 화면 dim, 빠르고 조용한 퇴장. |
+| Text | 줄별 등장, 숫자 카운트업, 떠오르는 데미지 텍스트. |
+| Image / reward | pop-in, 희귀도 pulse, glow, hover lift. |
+| Bar | 즉시 줄어드는 fill, 늦게 따라오는 chip bar, 낮은 수치 pulse, segment tick. |
+
+자세한 명령 문서: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
+
+---
+
 ## Unity 버전
 
 | Unity 버전 | 상태 | 설명 |
@@ -269,7 +312,20 @@ hera-agent-unity ui_doc capture --out hud_built.png
 
 ## AI용 규칙 넣기
 
-프로젝트에 Hera 규칙을 넣으면 AI가 Hera를 더 잘 씁니다.
+프로젝트에 Hera 규칙을 넣으면 AI가 추측하기 전에 Hera부터 사용합니다.
+
+이 저장소에는 주요 코딩 에이전트용 규칙 파일이 준비되어 있습니다:
+
+| 에이전트 | 넣을 파일 | 뜻 |
+|:---|:---|:---|
+| Codex / Claude / Gemini CLI / 대부분의 에이전트 | `AGENTS.md` | 셸 명령을 실행하는 에이전트가 함께 읽는 기본 가이드입니다. |
+| Cursor | `.cursor/rules/hera-agent-unity.mdc` | Cursor는 `.mdc` frontmatter가 있어야 프로젝트 규칙이 켜집니다. |
+| GitHub Copilot | `.github/copilot-instructions.md` | 저장소 전체에 적용되는 Copilot 지침입니다. |
+| GitHub Copilot, 파일별 | `.github/instructions/hera-agent-unity.instructions.md` | `.cs`, `.prefab`, `.unity`, `Assets/**` 같은 Unity 파일에 적용됩니다. |
+| Google AntiGravity | `GEMINI.md`, `.agents/agents.md`, `.agents/skills/hera-agent-unity/SKILL.md` | 프로젝트 진입 규칙, 워크스페이스 연결, 온디맨드 스킬입니다. |
+| Continue.dev | `.continuerules` | 일반 Markdown 규칙입니다. |
+
+가장 흔한 공통 파일은 이렇게 만듭니다:
 
 ```bash
 hera-agent-unity doctor --agent-rules >> AGENTS.md
@@ -281,9 +337,12 @@ Cursor용:
 hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
 ```
 
+Copilot, AntiGravity, Continue 템플릿은 [examples/rules](examples/rules)에 있습니다. 이 저장소에는 실제 예시도 들어 있습니다: [.github/copilot-instructions.md](.github/copilot-instructions.md), [.github/instructions/hera-agent-unity.instructions.md](.github/instructions/hera-agent-unity.instructions.md), [GEMINI.md](GEMINI.md), [.agents/skills/hera-agent-unity/SKILL.md](.agents/skills/hera-agent-unity/SKILL.md).
+
 가장 중요한 규칙:
 
 - 도구 목록은 `list --compact`로 작게 읽기;
+- 다음 명령에 오브젝트 ID만 필요하면 `find_gameobjects --ids` 쓰기;
 - 씬을 바꾸는 `exec`는 보통 `return null;`로 끝내기;
 - 큰 Unity 오브젝트를 그대로 반환하지 않기;
 - 에러는 추측하지 말고 `console --type error`로 읽기.
@@ -357,6 +416,14 @@ hera-agent-unity doctor --json
 | 프로젝트 | 설명 |
 |:---|:---|
 | **NoMoreRolls** | AI가 Hera로 Unity Editor를 조작하며 만든 Unity 게임입니다. |
+
+<div align="center">
+
+<video src="https://github.com/user-attachments/assets/a2b31a46-b60d-4de6-8238-58cb67683388" controls muted loop playsinline width="80%"></video>
+
+<sub><b>NoMoreRolls</b> — Hera로 Unity Editor 작업을 보조하며 만든 게임의 Play Mode 캡처입니다.</sub>
+
+</div>
 
 ---
 
