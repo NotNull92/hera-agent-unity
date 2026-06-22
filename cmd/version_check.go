@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/paths"
@@ -46,6 +48,51 @@ func saveCache(path string, c *versionCache) {
 	_ = os.WriteFile(path, data, 0644)
 }
 
+func isNewerRelease(current, latest string) bool {
+	if latest == "" || latest == current {
+		return false
+	}
+
+	currentVersion, currentOK := parseReleaseTag(current)
+	latestVersion, latestOK := parseReleaseTag(latest)
+	if !latestOK {
+		return false
+	}
+	if !currentOK {
+		return true
+	}
+
+	for i := range latestVersion {
+		if latestVersion[i] > currentVersion[i] {
+			return true
+		}
+		if latestVersion[i] < currentVersion[i] {
+			return false
+		}
+	}
+	return false
+}
+
+func parseReleaseTag(tag string) ([3]int, bool) {
+	var version [3]int
+	raw := strings.TrimPrefix(tag, "v")
+	if core, _, ok := strings.Cut(raw, "-"); ok {
+		raw = core
+	}
+	parts := strings.Split(raw, ".")
+	if len(parts) != len(version) {
+		return version, false
+	}
+	for i, part := range parts {
+		n, err := strconv.Atoi(part)
+		if err != nil || n < 0 {
+			return version, false
+		}
+		version[i] = n
+	}
+	return version, true
+}
+
 // printUpdateNotice checks for a newer version and prints a notice if available.
 // Silently does nothing on any error (no network, bad cache, etc.).
 func printUpdateNotice(category string) {
@@ -62,7 +109,7 @@ func printUpdateNotice(category string) {
 	cache, _ := loadCache(path)
 	latestNotice := ""
 
-	if cache != nil && cache.Outdated && cache.Latest != "" && cache.Latest != Version {
+	if cache != nil && cache.Outdated && isNewerRelease(Version, cache.Latest) {
 		latestNotice = cache.Latest
 	}
 
@@ -92,7 +139,7 @@ func printUpdateNotice(category string) {
 	nextCache := &versionCache{
 		CheckedAt: now,
 		Latest:    release.TagName,
-		Outdated:  release.TagName != "" && release.TagName != Version,
+		Outdated:  isNewerRelease(Version, release.TagName),
 	}
 	saveCache(path, nextCache)
 

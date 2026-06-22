@@ -42,7 +42,7 @@ namespace HeraAgent.Tools
         // Client.List returns a ListRequest that resolves on EditorApplication.update
         // ticks. We yield with Task.Delay so Unity's main loop keeps pumping
         // (Thread.Sleep would freeze it and the request would never complete).
-        [HeraAction]
+        [HeraAction(Name = "list")]
         public static async Task<object> ListAsync(JObject raw)
         {
             var request = Client.List(offlineMode: false, includeIndirectDependencies: true);

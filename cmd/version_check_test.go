@@ -79,6 +79,32 @@ func TestPrintUpdateNotice_UsesCachedOutdatedNoticeWithinInterval(t *testing.T) 
 	}
 }
 
+func TestPrintUpdateNotice_IgnoresCachedOlderReleaseWithinInterval(t *testing.T) {
+	path := prepareVersionCheckEnv(t, "v0.0.29")
+	saveCache(path, &versionCache{
+		CheckedAt: time.Now().Unix(),
+		Latest:    "v0.0.28",
+		Outdated:  true,
+	})
+
+	fetchCalled := false
+	fetchLatestReleaseFn = func() (*githubRelease, error) {
+		fetchCalled = true
+		return &githubRelease{TagName: "v0.0.30"}, nil
+	}
+
+	output := captureStderr(t, func() {
+		printUpdateNotice("status")
+	})
+
+	if fetchCalled {
+		t.Fatal("expected no remote fetch while cache interval is still valid")
+	}
+	if output != "" {
+		t.Fatalf("expected no notice for older cached release, got %q", output)
+	}
+}
+
 func TestPrintUpdateNotice_RefreshesCacheAndPrintsOnceWhenStillOutdated(t *testing.T) {
 	path := prepareVersionCheckEnv(t, "v0.3.10")
 	saveCache(path, &versionCache{
@@ -108,6 +134,32 @@ func TestPrintUpdateNotice_RefreshesCacheAndPrintsOnceWhenStillOutdated(t *testi
 	}
 	if loaded.Latest != "v0.3.12" || !loaded.Outdated {
 		t.Fatalf("unexpected cache after refresh: %+v", loaded)
+	}
+}
+
+func TestIsNewerRelease(t *testing.T) {
+	tests := []struct {
+		name    string
+		current string
+		latest  string
+		want    bool
+	}{
+		{"newer patch", "v0.0.28", "v0.0.29", true},
+		{"same version", "v0.0.29", "v0.0.29", false},
+		{"older patch", "v0.0.29", "v0.0.28", false},
+		{"newer minor", "v0.1.9", "v0.2.0", true},
+		{"current dev can update", "dev", "v0.0.29", true},
+		{"invalid latest is ignored", "v0.0.29", "latest", false},
+		{"empty latest is ignored", "v0.0.29", "", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := isNewerRelease(tt.current, tt.latest)
+			if got != tt.want {
+				t.Fatalf("isNewerRelease(%q, %q) = %v, want %v", tt.current, tt.latest, got, tt.want)
+			}
+		})
 	}
 }
 
