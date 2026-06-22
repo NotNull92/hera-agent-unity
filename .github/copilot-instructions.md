@@ -1,6 +1,6 @@
 # GitHub Copilot Instructions
 
-This repository builds `hera-agent-unity`: a Go CLI plus Unity Editor UPM connector. The full cross-tool guide is [`AGENTS.md`](../../AGENTS.md); use it as the source of truth.
+This repository builds `hera-agent-unity`: a Go CLI plus Unity Editor UPM connector. The full cross-tool guide is [`AGENTS.md`](../AGENTS.md); use it as the source of truth.
 
 ## Use Hera First For Unity Work
 

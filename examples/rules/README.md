@@ -11,9 +11,9 @@ The agent ecosystem is converging on **`AGENTS.md` at the project root** as the 
 | `cursor.mdc`                       | `.cursor/rules/hera-agent-unity.mdc`     | Cursor               | `.cursorrules` is deprecated — use this.           |
 | `copilot-instructions.md`          | `.github/copilot-instructions.md`        | GitHub Copilot       | Repo-wide. Pair with `.github/instructions/*.instructions.md` for file-pattern rules. |
 | `continuerules`                    | `.continuerules`                         | Continue.dev         | Plain markdown.                                    |
-| `GEMINI.md`                        | `GEMINI.md` (project root)               | Google AntiGravity   | Reads `AGENTS.md` too, but `GEMINI.md` wins. Add the on-demand skill at `.agents/skills/hera-agent-unity/SKILL.md`. |
+| `GEMINI.md`                        | `GEMINI.md` (project root)               | Google AntiGravity   | Pair with `.agents/agents.md` and `.agents/skills/hera-agent-unity/SKILL.md`. |
 
-**AntiGravity** (VS Code fork, Gemini-based, Agent-first) reads `GEMINI.md` at the project root with higher priority than `AGENTS.md`. Copy [`GEMINI.md`](GEMINI.md) there. It also supports on-demand skills — drop [`../../.agents/skills/hera-agent-unity/SKILL.md`](../../.agents/skills/hera-agent-unity/SKILL.md) into `.agents/skills/hera-agent-unity/SKILL.md` so the agent can invoke it with `@hera-agent-unity`. (`.agents/skills/` is the current default; AntiGravity still reads the legacy singular `.agent/skills/` for backward compatibility.)
+**AntiGravity** uses the `.agents/` directory for workspace agents, workflows, and skills. Put the project entry rule at `GEMINI.md`, add the workspace handoff at `.agents/agents.md`, and keep the on-demand skill at `.agents/skills/hera-agent-unity/SKILL.md` so the agent can invoke it with `@hera-agent-unity`.
 
 ## Why a template for each agent?
 
@@ -23,7 +23,7 @@ Most agents accept plain markdown — `AGENTS.md`, `CLAUDE.md`, `copilot-instruc
 
 **Static (copy the template here).** Fastest, works offline, ships with the rule body baked in.
 
-**Dynamic (have the CLI emit it).** Stays in sync with `AGENT.md` over time:
+**Dynamic (have the CLI emit it).** Stays in sync with `AGENTS.md` over time:
 
 ```bash
 # Claude Code / Codex / Copilot / Continue.dev — plain markdown
@@ -37,4 +37,4 @@ hera-agent-unity doctor --agent-rules >> GEMINI.md
 hera-agent-unity doctor --agent-rules --format antigravity > .agents/skills/hera-agent-unity/SKILL.md
 ```
 
-Either path works. The CLI output is a strict superset of the static templates (it pulls the full Quick Rules + Pitfalls sections from `AGENT.md`).
+Either path works. The CLI output is a strict superset of the static templates (it pulls the full Quick Rules + Pitfalls sections from `AGENTS.md`).

@@ -970,14 +970,14 @@ up front:
 
 | Form | Returns | Use when |
 |:---|:---|:---|
-| `list --names` | flat array of tool names only | cheapest discovery (the AGENTS.md bootstrap runs this) |
-| `list --compact` | same as `list --names` | compact catalogue discovery from agents or scripts |
+| `list --names` | flat array of tool names only | cheapest discovery |
+| `list --compact` | same as `list --names` | compact catalogue discovery from agents or scripts (the AGENTS.md bootstrap runs this) |
 | `list` | `{name, description}` per tool, no schema | you want a one-line hint per tool |
 | `list --tool <name>` | full parameter + output schema for one tool | you're about to call that tool |
 
 ```bash
-hera-agent-unity list --names
 hera-agent-unity list --compact
+hera-agent-unity list --names
 hera-agent-unity list
 hera-agent-unity list --tool exec
 ```

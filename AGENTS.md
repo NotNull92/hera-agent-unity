@@ -13,6 +13,7 @@
 >     - `CLAUDE.md` → `> See AGENTS.md.` (Claude Code reads `AGENTS.md` natively since late 2025)
 >     - `.cursor/rules/hera-agent-unity.mdc` → frontmatter + the same body (Cursor also supports plain `AGENTS.md` as a fallback)
 >     - `.github/copilot-instructions.md` → repository-wide pointer to `AGENTS.md` (Copilot uses nearest-file precedence; `.github/skills/` is for Agent Skills)
+>     - `GEMINI.md` + `.agents/agents.md` + `.agents/skills/hera-agent-unity/SKILL.md` → AntiGravity project entry + workspace handoff + on-demand skill
 >     - `.continuerules` → identical body
 >
 > **Per-tool target paths (2026-current)**:
@@ -23,6 +24,7 @@
 > | Claude Code | `AGENTS.md` (or `CLAUDE.md`) | Reads `AGENTS.md` natively. `CLAUDE.md` still works for path-scoped rules and imports. |
 > | Cursor | `.cursor/rules/*.mdc` | YAML frontmatter required for activation. `.cursorrules` (single-file) is **deprecated** and ignored by Agent mode. |
 > | GitHub Copilot | `.github/copilot-instructions.md` | Nearest-file precedence. Optional: `.github/instructions/*.instructions.md` with `applyTo` frontmatter; `.github/skills/` for Agent Skills. |
+> | Google AntiGravity | `GEMINI.md`, `.agents/agents.md`, `.agents/skills/*/SKILL.md` | `.agents/` is the native workspace extension directory for agents, workflows, and skills. |
 > | Continue.dev | `.continuerules` | Plain markdown. |
 > | Other | Tool-specific rules file | Most accept plain markdown. |
 >
@@ -36,6 +38,10 @@
 >
 >     # Cursor — frontmatter prepended automatically
 >     hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+>
+>     # AntiGravity — project rule + on-demand skill
+>     hera-agent-unity doctor --agent-rules >> GEMINI.md
+>     hera-agent-unity doctor --agent-rules --format antigravity > .agents/skills/hera-agent-unity/SKILL.md
 >     ```
 
 `hera-agent-unity` is a CLI that drives a running Unity Editor over HTTP. Common uses: execute C# inside the Editor, read console logs, query the active scene, run tests, capture screenshots, batch several commands in one round-trip. Each call is a tool round-trip; response bytes become your input tokens, so reads cost as much as your own writes.
@@ -64,7 +70,7 @@ When the user invites you to engage hera-agent-unity — in any language, any ph
 
 1. `hera-agent-unity doctor --json` — verifies the binary is on PATH, no duplicate installs, and the connector can see at least one Unity instance. JSON envelope is parseable.
 2. `hera-agent-unity status` — confirms the active editor's port, project path, Unity version, PID, and current state (`ready`, `compiling`, …).
-3. `hera-agent-unity list --names` — discovers what tools (built-in + custom `[HeraTool]` classes) this project exposes, so subsequent prompts can be answered without re-scanning.
+3. `hera-agent-unity list --compact` — discovers what tools (built-in + custom `[HeraTool]` classes) this project exposes with the smallest practical payload, so subsequent prompts can be answered without re-scanning.
 
 **Report shape** (one line first, then optional details):
 
@@ -168,7 +174,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
 | Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
-| List all tools | `list --names` or `list --compact` | 30s in-memory + on-disk cache. Both forms return a flat names array; use `list` only when you need one-line descriptions. |
+| List all tools | `list --compact` or `list --names` | 30s in-memory + on-disk cache. Both forms return a flat names array; use `list` only when you need one-line descriptions. |
 | Run multiple commands in one HTTP round-trip | `batch --file <path.json>` or pipe JSON | Sequential. `fail_fast` on first error by default. |
 | Compile-check without executing | `exec --check "<code>"` | Returns success on clean compile, `EXEC_COMPILE_ERROR` otherwise. No side effects. |
 | List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system] [--include_version]` | Returns bare name strings by default; `--filter` to scope, `--include_version` for `{name, version}` objects. |
@@ -447,7 +453,7 @@ Common `code` values you might branch on:
 - `EXEC_LOGGED_ERROR` — `--strict` mode only. `data.logged_errors: [{type, message}, ...]`, `data.returned` is the value the snippet would have returned.
 - `EXEC_CSC_NOT_FOUND` / `EXEC_DOTNET_NOT_FOUND` — `suggestions[]` tells the user how to recover
 - `EXEC_COMPILE_TIMEOUT` — 30s csc timeout
-- `UNKNOWN_COMMAND` — typo'd command name. `data.did_you_mean: [...]` lists up to 3 commands within Levenshtein distance 2; act on the first match before re-running `list --names`.
+- `UNKNOWN_COMMAND` — typo'd command name. `data.did_you_mean: [...]` lists up to 3 commands within Levenshtein distance 2; act on the first match before re-running `list --compact`.
 - `READCONSOLE_INIT_FAILED` — Unity internal API drift; `data.unity_version` for triage
 
 ### 5.3 Environment variables

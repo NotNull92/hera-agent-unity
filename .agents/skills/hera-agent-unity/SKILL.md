@@ -15,7 +15,7 @@ Drive a **running Unity Editor** from the terminal over localhost HTTP. Use this
 - Running EditMode / PlayMode tests (`test`).
 - Driving Play Mode (`editor play` / `stop`).
 - Executing arbitrary C# inside the Editor when no dedicated command fits (`exec`).
-- Inspecting live types / methods (`describe_type`, `find_method`, `list`).
+- Inspecting live types / methods (`describe_type`, `find_method`, `list --compact`).
 
 ## Pre-flight
 
@@ -24,6 +24,7 @@ Before any real work, confirm the Editor is reachable:
 ```bash
 hera-agent-unity status                 # port, project, unity version, state
 hera-agent-unity doctor --json          # binary on PATH? Unity reachable?
+hera-agent-unity list --compact         # cheapest tool discovery
 ```
 
 If `status` returns no instances, tell the user to open Unity with the UPM connector package and stop — don't retry blindly.
@@ -32,6 +33,8 @@ If `status` returns no instances, tell the user to open Unity with the UPM conne
 
 - **Call sequentially, never in parallel.** The connector serializes every command on the Unity main thread; concurrent calls just queue.
 - **Pass `--compact-json`** on every tool call — AntiGravity consumes the JSON, so keep it small.
+- **Use compact discovery.** Prefer `list --compact`; use `list --tool <name>` only when one full schema is required.
+- **Use IDs for object handoff.** Prefer `find_gameobjects --ids`; add `--fields instance_id,name,path` only when duplicate names need context.
 - **`exec`: default to `return null;`** (or omit the return). A verbose status string is wasted tokens; the OK response is 3 bytes.
 - **`exec`: never return a `UnityEngine.Object`** (`Transform`, `GameObject`, `Material`, …). They expand to thousands of bytes. Return `new { name = go.name, instanceID = go.GetInstanceID() }`.
 - **Branch on the `code` field**, not the message: `EXEC_COMPILE_ERROR`, `EXEC_RUNTIME_ERROR`, `UNKNOWN_COMMAND` (has `data.did_you_mean`), `EXEC_CSC_NOT_FOUND`, etc.
@@ -74,7 +77,10 @@ hera-agent-unity test --mode PlayMode --filter MyGame.Tests --compact-json
 # 6. Inspect a type instead of guessing its API
 hera-agent-unity describe_type UnityEditor.AssetDatabase --members methods --limit 30 --compact-json
 
-# 7. Drive Play Mode and read what broke
+# 7. Handoff object IDs cheaply
+hera-agent-unity find_gameobjects --ids --compact-json
+
+# 8. Drive Play Mode and read what broke
 hera-agent-unity editor play --wait && hera-agent-unity console --type error --compact-json
 ```
 
