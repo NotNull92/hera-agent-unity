@@ -168,7 +168,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
 | Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
-| List all tools | `list` or `list --compact` | 30s in-memory + on-disk cache. `--compact` keeps name + description + parameters (~50% smaller). |
+| List all tools | `list --names` or `list --compact` | 30s in-memory + on-disk cache. Both forms return a flat names array; use `list` only when you need one-line descriptions. |
 | Run multiple commands in one HTTP round-trip | `batch --file <path.json>` or pipe JSON | Sequential. `fail_fast` on first error by default. |
 | Compile-check without executing | `exec --check "<code>"` | Returns success on clean compile, `EXEC_COMPILE_ERROR` otherwise. No side effects. |
 | List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system] [--include_version]` | Returns bare name strings by default; `--filter` to scope, `--include_version` for `{name, version}` objects. |
@@ -414,7 +414,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
 | `reserialize [paths...]` | Force YAML reserialize | (no args = whole project) |
 | `log "<msg>"` | Write to Unity console | `--level log\|warning\|error` |
-| `list` | List registered tools (names → name+desc → schema) | `--names` (names only), `--tool <name>` (full schema) |
+| `list` | List registered tools (names → name+desc → schema) | `--names` / `--compact` (names only), `--tool <name>` (full schema) |
 | `batch` | Run multiple commands in one HTTP request | `--file path.json`, or pipe JSON; `options.fail_fast` |
 | `list_assemblies` | List loaded assembly names | `--filter`, `--include_system`, `--include_version` |
 | `describe_type <name>` | Type info + Unity-pitfalls | `--members fields\|properties\|methods\|all`, `--limit N` |

@@ -53,7 +53,7 @@ namespace HeraAgent.Tools
                     suggestions: new List<string>
                     {
                         "Reinstall the AgentConnector UPM package — the docs file ships inside it.",
-                        "If you're working from a local checkout, run `go run ./tools/build-unity-docs` to regenerate Editor/Data/unity_docs_6.0.jsonl.gz.bytes.",
+                        "If you're working from a local checkout, run `go run ./tools/build-unity-docs --unity-version 6000.0` to regenerate Editor/Data/unity_docs_6000.0.jsonl.gz.bytes.",
                     });
             }
 
@@ -62,12 +62,13 @@ namespace HeraAgent.Tools
             {
                 var entry = UnityDocsStore.Lookup(key);
                 if (entry == null) continue;
-                // Minimal response shape — caller already knows `query`, the
-                // scriptreference_url is derivable from the key, the data set
-                // is single-version (6.0). manual_url + scriptreference_url
-                // are dropped from the default reply to keep typical lookups
-                // ~30 tokens; the original entry is still in the in-memory
-                // dict if a follow-up tool ever needs the long form.
+                var loadedDocsVersion = UnityDocsStore.LoadedDocsVersion;
+                var entryUnityVersion = string.IsNullOrEmpty(entry.unity_version)
+                    ? loadedDocsVersion
+                    : entry.unity_version;
+                if (entryUnityVersion == "6.0" && loadedDocsVersion == UnityVersionCompat.Docs6000_0)
+                    entryUnityVersion = loadedDocsVersion;
+
                 return new SuccessResponse(
                     $"unity_docs: {entry.title ?? key}",
                     new
@@ -75,6 +76,8 @@ namespace HeraAgent.Tools
                         title = entry.title,
                         signature = entry.signature,
                         summary = entry.summary,
+                        unity_version = entryUnityVersion,
+                        docs_version = loadedDocsVersion,
                     });
             }
 

@@ -13,11 +13,9 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 namespace HeraAgent
 {
     /// <summary>
-    /// Loads the connector-bundled Unity ScriptReference data set
-    /// (`AgentConnector/Editor/Data/unity_docs_6.0.jsonl.gz.bytes`) into a
-    /// keyed dictionary on first access. The file ships inside the UPM
-    /// package itself so consumers don't have to point at a local
-    /// Documentation folder.
+    /// Loads the connector-bundled Unity ScriptReference data set into a keyed
+    /// dictionary on first access. The file ships inside the UPM package itself
+    /// so consumers don't have to point at a local Documentation folder.
     ///
     /// Replaces the earlier UnityDocsParser/UnityDocsIndex pair that read
     /// HTML from a user-configured docs_root and parsed it per call. The
@@ -38,11 +36,13 @@ namespace HeraAgent
             public string unity_version;
         }
 
-        const string DataRelativePath = "Editor/Data/unity_docs_6.0.jsonl.gz.bytes";
+        const string DataDir = "Editor/Data";
+        const string FallbackDocsVersion = UnityVersionCompat.Docs6000_0;
 
         static Dictionary<string, Entry> s_index;
         static string[] s_keys;
         static string s_loadError;
+        static string s_loadedDocsVersion;
         static readonly object s_lock = new object();
 
         // Lazy prefix-bucket index — keys grouped by lowercase first char.
@@ -67,6 +67,11 @@ namespace HeraAgent
         public static int Count
         {
             get { EnsureLoaded(); return s_index == null ? 0 : s_index.Count; }
+        }
+
+        public static string LoadedDocsVersion
+        {
+            get { EnsureLoaded(); return s_loadedDocsVersion; }
         }
 
         /// <summary>
@@ -181,10 +186,11 @@ namespace HeraAgent
             {
                 if (s_index != null || s_loadError != null) return;
 
-                var path = ResolveDataPath();
+                var requestedDocsVersion = UnityVersionCompat.CurrentDocsVersion();
+                var path = ResolveDataPath(requestedDocsVersion, out var loadedDocsVersion);
                 if (path == null)
                 {
-                    s_loadError = $"could not resolve UPM package path for {DataRelativePath}";
+                    s_loadError = $"could not resolve bundled docs file for Unity docs {requestedDocsVersion} (fallback {FallbackDocsVersion})";
                     return;
                 }
                 if (!File.Exists(path))
@@ -212,6 +218,7 @@ namespace HeraAgent
                         }
                     }
                     s_index = index;
+                    s_loadedDocsVersion = loadedDocsVersion;
                     var keys = new string[index.Count];
                     int i = 0;
                     foreach (var k in index.Keys) keys[i++] = k;
@@ -224,26 +231,76 @@ namespace HeraAgent
             }
         }
 
-        static string ResolveDataPath()
+        static string ResolveDataPath(string requestedDocsVersion, out string loadedDocsVersion)
         {
+            loadedDocsVersion = null;
+            var candidateVersions = CandidateDocsVersions(requestedDocsVersion);
+
             PackageInfo pi = null;
             try { pi = PackageInfo.FindForAssembly(typeof(UnityDocsStore).Assembly); }
             catch { /* fall through to the AssetDatabase-based fallback */ }
 
             if (pi != null && !string.IsNullOrEmpty(pi.resolvedPath))
-                return Path.Combine(pi.resolvedPath, DataRelativePath);
+            {
+                foreach (var version in candidateVersions)
+                {
+                    foreach (var fileName in DocsFileNames(version))
+                    {
+                        var path = Path.Combine(pi.resolvedPath, DataDir, fileName);
+                        if (File.Exists(path))
+                        {
+                            loadedDocsVersion = version;
+                            return path;
+                        }
+                    }
+                }
+            }
 
             // Fallback for in-project (non-UPM) checkouts: search via
             // AssetDatabase so embedded copies in Assets/ still resolve.
-            var guids = AssetDatabase.FindAssets("unity_docs_6.0 t:DefaultAsset");
-            foreach (var g in guids)
+            foreach (var version in candidateVersions)
             {
-                var assetPath = AssetDatabase.GUIDToAssetPath(g);
-                if (assetPath.EndsWith("unity_docs_6.0.jsonl.gz.bytes",
-                    StringComparison.OrdinalIgnoreCase))
-                    return assetPath;
+                foreach (var fileName in DocsFileNames(version))
+                {
+                    var guids = AssetDatabase.FindAssets(DocsAssetSearch(fileName));
+                    foreach (var g in guids)
+                    {
+                        var assetPath = AssetDatabase.GUIDToAssetPath(g);
+                        if (assetPath.EndsWith(fileName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            loadedDocsVersion = version;
+                            return assetPath;
+                        }
+                    }
+                }
             }
             return null;
+        }
+
+        static List<string> CandidateDocsVersions(string requestedDocsVersion)
+        {
+            var versions = new List<string>();
+            if (!string.IsNullOrEmpty(requestedDocsVersion))
+                versions.Add(requestedDocsVersion);
+            if (!versions.Contains(FallbackDocsVersion))
+                versions.Add(FallbackDocsVersion);
+            return versions;
+        }
+
+        static IEnumerable<string> DocsFileNames(string docsVersion)
+        {
+            yield return "unity_docs_" + docsVersion + ".jsonl.gz.bytes";
+            if (docsVersion == UnityVersionCompat.Docs6000_0)
+                yield return "unity_docs_6.0.jsonl.gz.bytes";
+        }
+
+        static string DocsAssetSearch(string fileName)
+        {
+            const string suffix = ".jsonl.gz.bytes";
+            var stem = fileName.EndsWith(suffix, StringComparison.Ordinal)
+                ? fileName.Substring(0, fileName.Length - suffix.Length)
+                : Path.GetFileNameWithoutExtension(fileName);
+            return stem + " t:DefaultAsset";
         }
     }
 }

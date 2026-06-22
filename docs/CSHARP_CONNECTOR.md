@@ -43,7 +43,7 @@ AgentConnector/
     │   ├── ProceduralSprite.cs          # solid/rounded/gradient/nine_slice sprite baking
     │   └── UiDocSchema.cs               # ui_doc/2 IR export/apply/layout engine
     ├── Data/
-    │   └── unity_docs_6.0.jsonl.gz.bytes # bundled Unity 6 ScriptReference index
+    │   └── unity_docs_*.jsonl.gz.bytes   # bundled Unity ScriptReference indexes
     ├── Tools/
     │   ├── ManageEditor.cs              # play, stop, pause, tags, layers
     │   ├── ExecuteCsharp.cs             # exec tool entry point (partial class)
@@ -171,7 +171,7 @@ The 120-second timeout is the lock-acquisition timeout, not the per-command exec
 
 ### Dispatch Flow
 
-1. If `command == "list"` → return tool schemas from `ToolDiscovery.GetToolSchemas()`
+1. If `command == "list"` → return names, summaries, or one full schema via `ToolDiscovery.GetToolNames()`, `GetToolSummaries()`, or `GetToolSchema(tool)`
 2. Extract `action` from parameters (`action` field or first positional arg)
 3. Resolve handler: action handler first (`ToolDiscovery.FindActionHandler`), then default `HandleCommand` (`ToolDiscovery.FindDefaultHandler`). Both `[HeraAction]` methods and legacy implicit action methods are considered.
 4. If handler is static → invoke directly; if instance → create via `Activator.CreateInstance()`
@@ -312,7 +312,7 @@ The CLI sends `manage_ui get_rect` directly without a monolithic `HandleCommand`
 - Output schema
 - Metadata flags (enum support, default support, custom types)
 
-`GetToolSummaries()` returns name + description only (cheap). `GetToolNames()` returns names only (cheapest).
+`GetToolSummaries()` returns name + description only (cheap). `GetToolNames()` returns names only (cheapest) and is also used for `list --compact`.
 
 ### "Did you mean"
 
@@ -435,11 +435,11 @@ Edit-distance helper with a bounded early-exit variant used by command/type/docs
 
 ### UnityDocsStore.cs
 
-Loads the bundled `unity_docs_6.0.jsonl.gz.bytes` (ships inside the UPM package) into a dictionary keyed by class/property/method name. Provides exact lookup and prefix-bucketed Levenshtein suggestions.
+Selects the bundled `unity_docs_<version>.jsonl.gz.bytes` file for the current Unity version, falling back to the 6000.0 bundle when an exact bucket is not present. Loads it into a dictionary keyed by class/property/method name. Provides exact lookup and prefix-bucketed Levenshtein suggestions.
 
 ### UnityPitfalls.cs
 
-Curated catalog of Unity API pitfalls attached to `describe_type` responses. Targets Unity 6 (6000.0+) only.
+Curated catalog of Unity API pitfalls attached to `describe_type` responses. Entries can carry a minimum docs bucket so Unity 6-only advice is hidden on 2022.3/2023.2.
 
 ### HeraSettings.cs
 
@@ -513,12 +513,13 @@ The `ui_doc/2` IR engine:
 
 ## Data Bundle
 
-`AgentConnector/Editor/Data/unity_docs_6.0.jsonl.gz.bytes` is a gzipped JSONL file imported as a `TextAsset`. It contains ~31k Unity 6 ScriptReference entries consumed by `UnityDocsStore`. Regenerate it with:
+`AgentConnector/Editor/Data/unity_docs_<version>.jsonl.gz.bytes` files are gzipped JSONL imported as `TextAsset`s. The current checkout still includes the legacy `unity_docs_6.0.jsonl.gz.bytes` file, which `UnityDocsStore` treats as the 6000.0 fallback. Regenerate a versioned bundle with:
 
 ```bash
 go run ./tools/build-unity-docs \
     --in  <path-to-Documentation/en> \
-    --out AgentConnector/Editor/Data/unity_docs_6.0.jsonl.gz.bytes
+    --out AgentConnector/Editor/Data/unity_docs_6000.0.jsonl.gz.bytes \
+    --unity-version 6000.0
 ```
 
 ---

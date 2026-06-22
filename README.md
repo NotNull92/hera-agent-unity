@@ -7,22 +7,76 @@
 [![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent-unity?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent-unity/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go](https://img.shields.io/badge/go-%5E1.25-00ADD8?style=flat-square&logo=go)](https://go.dev)
-[![Unity](https://img.shields.io/badge/unity-6000.0%2B-000000?style=flat-square&logo=unity)](https://unity.com)
+[![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
-**Measurement, not guessing — give AI hands on the live Editor.**
+**Let Codex, Claude, Cursor, and any shell-capable agent control the live Unity Editor.**
 
-<sub>One Go CLI · one C# UPM package · zero runtime dependencies · MIT.</sub>
+<sub>No MCP setup · no Python · one Go binary · one C# UPM package · MIT.</sub>
 
 <br>
 
-[Install](#installation) · [Quick Start](#quick-start) · [Showcase](#showcase) · [Mockup → UI](#-mockup--live-unity-ui) · [Commands](#commands) · [Batch](#batch--scripted-workflows) · [Custom Tools](#custom-tools) · [Architecture](#architecture) · [FAQ](#faq)
+[30-second proof](#30-second-proof) · [Flagship demo](#flagship-demo) · [Token Benchmarks](#token-budget-benchmarks) · [Install](#installation) · [Quick Start](#quick-start) · [Commands](#commands) · [Mockup → UI](#-mockup--live-unity-ui) · [Custom Tools](#custom-tools) · [Architecture](#architecture) · [FAQ](#faq)
 
 **English** · [한국어](README.ko.md)
+
+<br>
+
+<strong>NEW:</strong> Unity 2022.3 LTS / 2023.2 support and token-saving discovery ship together. Hera is no longer a Unity 6-only target, and the common agent bootstrap path is now measured at <strong>93 estimated tokens</strong>.
+
+<sub>Verified on Unity 2022.3.62f2, 2023.2.22f1, 6000.3.5f2, and 6000.5.0f1: <code>list --compact</code> = 93 T; <code>find_gameobjects --ids</code> = 49-55 T for realistic 20-object handoff searches.</sub>
 
 </div>
 
 ---
+
+## Release Highlights
+
+This release makes the project easier to trust before you install it:
+
+| Highlight | Why it matters |
+|:---|:---|
+| **NEW: Unity 2022.3 LTS / 2023.2 support** | Teams on long-lived production Unity versions can use Hera without upgrading to Unity 6 first. |
+| **NEW: token-budget release path** | The repeated discovery loop is now benchmarked: `list --compact` is 93 T and `find_gameobjects --ids` is 49-55 T across the measured editor versions. |
+| **Unity 6000.3 and 6000.5 verified separately** | Unity 6 minor versions are not treated as identical; the docs bucket and compatibility layer switch by editor version. |
+| **93-token discovery path** | `list --compact` is now the safe bootstrap command for agents that care about context budget. |
+| **49-55-token object handoff** | `find_gameobjects --ids` gives agents the IDs they need for follow-up edits without shipping hierarchy details by default. |
+
+The detailed benchmark reports are split by Unity version under [docs/benchmarks/token-reduction/](docs/benchmarks/token-reduction/README.md), because API surface, package resolution, and scene state differ by editor.
+
+---
+
+## 30-second proof
+
+Your AI agent does not have to guess what is happening in Unity. It can ask the Editor directly, run code inside the loaded project, enter Play Mode, read the real console, and fix what it observes.
+
+```bash
+# Is the Editor connected?
+hera-agent-unity status
+
+# Run C# inside the live Unity Editor
+hera-agent-unity exec "return Application.dataPath;"
+
+# Enter Play Mode and wait until Unity confirms it
+hera-agent-unity editor play --wait
+
+# Read the actual errors Unity logged
+hera-agent-unity console --type error
+```
+
+That is the core loop: **observe the real Editor → act → verify → repeat**. No generated MCP config, no sidecar server, no Python environment, no agent-specific integration.
+
+## Flagship demo
+
+Give an agent a reference screenshot or HTML mockup. Hera turns it into a real uGUI hierarchy, captures what Unity rendered, and lets the agent compare and correct the result.
+
+```bash
+hera-agent-unity ui_doc sample --image hud_ref.png --region "0,0,1,0.2"
+hera-agent-unity ui_doc apply --file hud.json --parent /Canvas --mode upsert
+hera-agent-unity ui_doc capture --out hud_built.png
+```
+
+This is the part that changes Unity UI work for agents: they design in a compact HTML-shaped IR, Hera builds the Unity hierarchy, then the agent verifies pixels instead of eyeballing anchor math. See [Mockup → Live Unity UI](#-mockup--live-unity-ui) for the full loop.
 
 ## Why hera-agent-unity
 
@@ -51,6 +105,31 @@ Hera responds to commands — never inferring, never assuming. It returns what y
 
 ---
 
+## Token Budget Benchmarks
+
+Hera's release bar is not just "can an agent control Unity?" It is "can it do that with a small enough payload that a CLI remains worth using instead of a heavier integration." The v0.0.43 connector changes were smoke-tested in realistic Unity scenes across editor versions, with output bytes converted to estimated agent input tokens as `ceil(bytes / 4)`.
+
+| Unity Editor | `list --compact` | `find_gameobjects --ids` | Default `find_gameobjects` | Verbose `--fields all` | Benchmark |
+|:---|---:|---:|---:|---:|:---|
+| 2022.3.62f2 | **93 T** | **54 T** | 253 T | 714 T | [details](docs/benchmarks/token-reduction/2022.3.62f2.md) |
+| 2023.2.22f1 | **93 T** | **54 T** | 253 T | 714 T | [details](docs/benchmarks/token-reduction/2023.2.22f1.md) |
+| 6000.3.5f2 | **93 T** | **49 T** | 248 T | 709 T | [details](docs/benchmarks/token-reduction/6000.3.5f2.md) |
+| 6000.5.0f1 | **93 T** | **55 T** | 287 T | 797 T | [details](docs/benchmarks/token-reduction/6000.5.0f1.md) |
+
+Key release result: `list --compact` now aliases `list --names`, cutting the previous discovery hotspot from about **1844 T** to **93 T** on the 2022.3 smoke test. `find_gameobjects` now defaults to `{instance_id,name}` and exposes `--ids`, `--names`, and `--fields` so hierarchy paths, scene names, and active-state data are paid for only when needed.
+
+Recommended agent path:
+
+```bash
+hera-agent-unity list --compact
+hera-agent-unity find_gameobjects --name Pickup --limit 20 --ids
+hera-agent-unity list --tool find_gameobjects
+```
+
+Full methodology and per-version notes live in [docs/benchmarks/token-reduction/README.md](docs/benchmarks/token-reduction/README.md).
+
+---
+
 ## Showcase
 
 A game prototype built primarily with hera-agent-unity — the AI agent drove the live Editor through Hera (scene setup, component wiring, Play Mode iteration), not blind code generation.
@@ -69,9 +148,29 @@ A game prototype built primarily with hera-agent-unity — the AI agent drove th
 
 > *Hand your agent a reference screenshot or an HTML mockup. Get back a real, pixel-measured uGUI hierarchy — built and verified, not approximated.*
 
+This is Hera's flagship workflow: the agent starts from pixels, builds real Unity UI, captures the result, compares it to the target, and iterates with evidence.
+
 Ask any AI to build a Unity UI and watch it flail. It knows HTML and CSS cold — but uGUI is a different planet: `RectTransform` anchors, pivots, stretch offsets, nested `LayoutGroup`s, 9-sliced sprites. So the model guesses the anchor math, hardcodes absolute positions that shatter at the next resolution, and — the real problem — has **no way to check its own work** against the reference. You get a layout that's vaguely right and pixel-wrong, then burn an afternoon nudging values by hand.
 
 **`ui_doc` turns UI from the agent's worst Unity skill into a deterministic, _self-correcting_ pipeline.** The agent designs in the one language it's genuinely fluent in — a compact, HTML-shaped JSON IR (`ui_doc/2`) — and Hera performs the exact Unity-side translation. Then it closes the loop almost no AI tooling even attempts: it **measures** the built result against your reference and fixes the difference, instead of eyeballing it and moving on.
+
+### Start here: rebuild a HUD from one screenshot
+
+```bash
+# 1. Ground on the project's real hierarchy
+hera-agent-unity ui_doc export --path /Canvas/HUD
+
+# 2. Pull exact colors from the reference art
+hera-agent-unity ui_doc sample --image hud_ref.png --region "0,0,1,0.2"
+
+# 3. Build the IR under the Canvas
+hera-agent-unity ui_doc apply --file hud.json --parent /Canvas --mode upsert
+
+# 4. Render exactly what Unity built; compare, fix, repeat
+hera-agent-unity ui_doc capture --out hud_built.png
+```
+
+That is not a contrived demo — it is how the feature was dogfooded into existence, rebuilding a real game HUD from a single screenshot until `capture` matched the reference.
 
 ### The measure-don't-guess loop
 
@@ -103,24 +202,6 @@ The agent reads the *true* colors straight out of your screenshot, builds the UI
 | `capture`    | Connector | Render the live UI — including the `ScreenSpaceOverlay` canvases a normal `screenshot` composites *after* the camera and silently drops — to a PNG for visual diffing. |
 | `sample`     | CLI       | Read **measured** hex colors out of a reference image (`--at "x,y"` points / `--region "x,y,w,h"`, normalized [0,1]). Pure stdlib decode — no Unity round-trip, usable before a single object exists. |
 | `catalog`    | CLI       | Scan a folder of UI sprites (`--dir <abs>`, recursive) into a manifest — per image: size, alpha, dominant palette, a conservative **9-slice border** suggestion, and a filename-derived element guess. The vision-capable agent then **reads the listed PNGs to classify them** and composes a mockup from your own art. Pure stdlib decode — no Unity round-trip. GIFs are catalogued reference-only. |
-
-### Watch it rebuild a game HUD from one screenshot
-
-```bash
-# 1 ─ Ground on the project's real hierarchy (don't guess the structure)
-hera-agent-unity ui_doc export --path /Canvas/HUD
-
-# 2 ─ Pull the actual colors out of the reference art
-hera-agent-unity ui_doc sample --image hud_ref.png --region "0,0,1,0.2"
-
-# 3 ─ Author the IR in HTML-shaped JSON, then build it under the Canvas
-hera-agent-unity ui_doc apply --file hud.json --parent /Canvas --mode upsert
-
-# 4 ─ Render exactly what shipped, compare to the reference, fix, repeat
-hera-agent-unity ui_doc capture --out hud_built.png
-```
-
-That isn't a contrived demo — it's how the feature was **dogfooded into existence**, rebuilding a real game HUD from a single screenshot until `capture` matched the reference.
 
 ### Mock up from your own UI kit
 
@@ -264,15 +345,17 @@ Or add to `Packages/manifest.json`:
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
-> The connector starts automatically. No configuration. Requires Unity 6 (6000.0+).
+> The connector starts automatically. No configuration. Requires Unity 2022.3+.
 
 ### Compatible Unity versions
 
 | Unity version | Status | Notes |
 |---|---|---|
+| **2022.3 LTS** | NEW · Supported | Verified on `2022.3.62f2`. Core connector compiles below Unity 6; `unity_docs` selects the 2022.3 docs bucket when bundled. |
+| **2023.2** | NEW · Supported | Verified on `2023.2.22f1`. `unity_docs` selects the 2023.2 docs bucket when bundled. |
 | **6000.0 – 6000.4** | ✅ Supported | Unity 6 (LTS + Tech stream) |
 | **6000.5+** (incl. betas, e.g. `6000.5.0b11`) | ✅ Supported | Needs **Connector 0.0.20+**. Unity 6000.5 promoted the legacy `EditorUtility.InstanceIDToObject` / `Object.GetInstanceID` APIs to hard compile errors (replaced by the new `EntityId` API); the connector adapts automatically behind a `UNITY_6000_5_OR_NEWER` gate. |
-| **2022.x and earlier** | ❌ Not supported | Minimum is Unity 6 (`6000.0`). |
+| **Older than 2022.3** | ❌ Not supported | Minimum is Unity 2022.3. |
 
 > **Symptom of a too-old connector on Unity 6000.5+:** the **HeraAgent** menu is missing and `hera-agent-unity status` reports no instance (the assembly failed to compile, so no menu items or HTTP server register). Fix: update the connector to **0.0.20+** — in Package Manager update the package, or re-resolve the git package (delete its entry from `Packages/packages-lock.json` and refocus the Editor) — then let Unity recompile.
 
@@ -280,21 +363,33 @@ Or add to `Packages/manifest.json`:
 
 ## Quick Start
 
-You only ever type four commands at this CLI. Everything else — `exec`, `editor`, `console`, `scene`, `batch`, `profiler`, `describe_type`, … — is what your **AI agent** calls on your behalf once you've handed it the wheel.
+After the CLI and UPM package are installed, verify the connection once:
 
 ```bash
-# 1. Install the CLI (one-time, see Installation above)
-# 2. Open Unity with the AgentConnector UPM package — the heartbeat appears
-
-# Is Unity connected?
 hera-agent-unity status
-
-# Later, as maintenance:
-hera-agent-unity update           # pull the latest CLI release
-hera-agent-unity uninstall        # remove the CLI from PATH
 ```
 
-That's the **human** loop — install, verify, occasionally update. The next section is where the real work happens: hand the agent a one-line trigger and it drives the rest.
+Then give your agent a concrete Unity task and let it use the CLI as its hands:
+
+```text
+Check the Unity console, enter Play Mode, reproduce the issue, and fix it.
+```
+
+The agent can now call commands like:
+
+```bash
+hera-agent-unity console --type error
+hera-agent-unity editor play --wait
+hera-agent-unity exec "return EditorSceneManager.GetActiveScene().name;"
+hera-agent-unity test --mode PlayMode
+```
+
+For maintenance:
+
+```bash
+hera-agent-unity update
+hera-agent-unity uninstall
+```
 
 ---
 
@@ -304,7 +399,7 @@ Open Claude Code, Codex, Cursor — any agent that can run a shell command. Ask:
 
 > **"Check if hera-agent-unity is installed and explore its capabilities."**
 
-The agent will discover the CLI, run `list`, and start driving Unity.
+The agent should run `doctor --json`, `status`, and `list --names`, then start driving Unity from the observed project state.
 
 ### Compatibility
 
@@ -366,7 +461,7 @@ Grouped by what they touch. Run `hera-agent-unity <cmd> --help` for the full fla
 | `scene`              | Info / load / save / list / close. |
 | `manage_gameobject`  | Create / destroy / move / re-parent / set_active / rename / get_transform. |
 | `manage_components`  | Component CRUD on a GameObject: `add` / `remove` / `list` / `get` / `set`. Property paths are raw `SerializedProperty` paths. |
-| `find_gameobjects`   | Filter scene GameObjects (name / tag / layer / component / path glob) with pagination. |
+| `find_gameobjects`   | Filter scene GameObjects (name / tag / layer / component / path glob) with pagination and token-friendly projections (`--ids`, `--names`, `--fields`). |
 | `manage_prefab`      | Prefab asset ops: `create` (GameObject → prefab) / `instantiate` / headless `add_component` / `remove_component`. |
 | `manage_ui`          | uGUI authoring: `create` (UI element + auto Canvas/EventSystem) / `get_rect` / `set_anchor` (named preset grid) / `set_rect`. RectTransform anchor/pivot math without raw `m_` paths. With **UI Juicy Mode** on, `create` returns DOTween-aware Game UI/UX Bible juice recipes as an `agent_hint`. |
 | `ui_doc`             | HTML→Unity UI pipeline (uGUI): `export` (live subtree → compact `ui_doc/2` JSON, for grounding) / `apply` (IR → UI; `--mode create` or `upsert` to update existing in place; doc via `--file`) / `gen_sprite` (Tier-1 procedural sprite — solid/rounded_rect/gradient/nine_slice — baked + imported, no external dep) / `capture` (render the live overlay UI → PNG for visual verification) / `sample` (read measured hex colors from a reference image — point/region, no Unity round-trip). Juice recipes ride `apply`'s `agent_hint` (deduped per element type) when Juicy Mode is on. |
@@ -436,19 +531,20 @@ The five-tool queue locked-in at 2026-05-28 is complete. Each entry filled a gap
 |---|---|---|
 | `manage_gameobject` | v0.0.5 | Create / destroy / move / re-parent / set_active / rename / get_transform. Shallow `instance_id` return survives renames and reparenting. |
 | `manage_packages`   | v0.0.6 | `Client.Add` / `Remove` / `Embed` / `List` driver. Async jobs (`job_id`) ride through the resolver's domain reload via an `[InitializeOnLoad]` watcher + a `Client.List` post-reload verifier. |
-| `find_gameobjects`  | v0.0.7 | Filter scene GameObjects by name / tag / layer / component / path glob, with stable pagination over a hierarchy-sorted result set. |
+| `find_gameobjects`  | v0.0.7 → **v0.0.43** | Filter scene GameObjects by name / tag / layer / component / path glob, with stable pagination over a hierarchy-sorted result set. v0.0.43 makes the default projection `{instance_id,name}` and adds `--ids` / `--names` / `--fields` to control payload size. Benchmarked at 49-55 T for a 20-result `--ids` handoff across 2022.3, 2023.2, 6000.3, and 6000.5. |
 | `manage_components` | v0.0.8 | Component CRUD via raw `SerializedProperty` paths (`m_Mass`, `m_Materials.Array.data[0]`). Reference fields accept an InstanceID, an asset path, or a `{instance_id\|asset_path}` envelope. Establishes the property-set pattern every future `manage_*` will reuse. |
 | `unity_docs`        | v0.0.10 → **v0.0.12** | Offline Unity 6 ScriptReference lookup. **31,581 entries ship inside the UPM package itself** as a 1.2 MiB gzipped JSONL — no docs folder on the user's machine, no network access, no rate limits. |
 | `describe_shader` · `manage_material` · `manage_prefab` · `manage_asset_import` | **v0.0.14** | Asset-editing set. `describe_shader` (inspect/search shaders) pairs with `manage_material` (material CRUD, reuses `SerializedPropertyValue`); `manage_prefab` edits prefab assets headlessly via `LoadPrefabContents`; `manage_asset_import` drives import settings through `AssetImporter` (the `manage_components` pattern). |
 | `manage_ui` | **v0.0.15** | uGUI authoring. `create` spins up UI elements (canvas / panel / image / button / text / empty) with auto Canvas + EventSystem scaffolding; `set_anchor` exposes Unity's named anchor-preset grid and keeps the rect visually fixed (or `--snap` for Alt+Shift fill); `get_rect` / `set_rect` round out RectTransform editing. UI/TMP types resolve via `TypeCache`, so the connector still compiles in projects without com.unity.ugui. Element property edits stay in `manage_components`. |
 | `TargetResolver` + tests + benchmark | **v0.0.16** | `TargetResolver` extracts shared GameObject/Component resolution from `manage_components` / `manage_gameobject` / `manage_ui`. Go test coverage expanded (`doctor`, `install`, `poll`, `assetconfig`). C# `HierarchyPath` editor tests. Smoke test benchmark: 7 calls = 725B (~181T), avg 26T/call — no token cost increase from refactoring. |
 | UI Juicy Mode | **v0.0.19** | Opt-in toggle that makes `manage_ui create` return Game UI/UX Bible "juice" recipes so AI-built UIs feel alive instead of dead. See the dedicated [**✨ UI Juicy Mode**](#-ui-juicy-mode--uis-that-feel-alive-not-just-functional) section above. |
+| Unity 2022.3 / 2023.2 compat + token budget | **NEW · v0.0.43** | Hera is no longer positioned as Unity 6-only. The connector now routes docs lookup through version buckets for 2022.3, 2023.2, 6000.0, 6000.3, and 6000.5, while the release documents a 93 T `list --compact` path and 49-55 T `find_gameobjects --ids` handoff across measured editor versions. |
 | Unity 6000.5 compat | **v0.0.20** | `Core/EntityIdCompat` shim (gated by `UNITY_6000_5_OR_NEWER`) routes 27 call sites through the new `EntityId` API on 6000.5+ and the legacy `InstanceID` API on 6000.0–6000.4. Unity 6000.5 promoted the old APIs to hard compile errors — without the shim the connector silently fails to compile and the **HeraAgent menu vanishes**. |
 | `ui_doc` | **v0.0.21 → v0.0.27** | HTML→Unity UI pipeline (uGUI) — the agent's weakest area. `export` / `apply` (`create` + `upsert`) / `gen_sprite` / `capture` / `sample` around a compact JSON IR (`ui_doc/2`). Grew into a full layout system (Horizontal / Vertical / Grid `LayoutGroup`, `LayoutElement`, `ContentSizeFitter`), Image fill modes + 9-slice, stretch offsets, text color / align / font, and a *measure-don't-guess* verify loop. Zero external dependency; still no compile-time `com.unity.ugui` link. The flagship [**🎨 Mockup → Live Unity UI**](#-mockup--live-unity-ui) section walks the whole loop. |
 | Performance & reliability | **v0.0.28** | Conservative pass: VBCSCompiler pre-warm on startup, `refs-meta.json` reference cache (skips the full AppDomain scan), in-memory assembly cache 32 → 128, per-type `Serialize` reflection cache, faster known-path compiler discovery. CLI side: `batch` nil-pointer fix, compact/quiet `batch` output, `SendBatch` reusing the domain-reload retry, and a 50 MB response guard. No user-facing default changed. |
 | `exec` on macOS / Linux | **v0.0.31** | The snippet compiler now runs a Windows-PE `csc.exe` through Unity's bundled **Mono** host on macOS / Linux (a managed PE can't be exec'd directly) instead of failing with `EXEC_LAUNCH_FAILED`. Resolves a `defaultCscPath` → `csc.exe` config that pointed exec at a PE. Windows path unchanged. |
 | `exec` on Windows / Unity 6.5 | **v0.0.32 → v0.0.34** | Fixed `exec` failing to compile *anything* on non-Latin (Korean / Japanese / Chinese) Windows under Unity 6.5+ — every snippet returned `EXEC_COMPILE_ERROR` with a `System.Text.Encoding.CodePages` load failure. Unity 6.5 relocated the SDK Roslyn to `DotNetSdk/sdk/<version>/Roslyn/bincore/csc.dll`, and the resolver was short-circuiting to the bundled **Mono `csc.exe`**, which crashes on a CP949 console. Now prefers `csc.dll` (recursive, version-agnostic), forces `-utf8output` + a UTF-8 BOM, and ignores a stale Mono `csc.exe` `defaultCscPath`. Verified no regression on 6.3. |
-| Discovery token cuts | **v0.0.35** | Leaner agent-discovery surface: `list` default drops the per-tool JSON schemas (~−73%), `list --names` returns a bare name array (~−95%), `list_assemblies` returns bare names by default (`--include_version` to enrich, ~−49%), and `find_method` / `describe_type` drop the redundant `is_static` field (the signature already encodes `static`). |
+| Discovery token cuts | **v0.0.35 → v0.0.43** | Leaner agent-discovery surface: `list` default drops the per-tool JSON schemas (~−73%), `list --names` returns a bare name array (~−95%), `list_assemblies` returns bare names by default (`--include_version` to enrich, ~−49%), and `find_method` / `describe_type` drop the redundant `is_static` field (the signature already encodes `static`). v0.0.43 makes `list --compact` equal to `list --names`, measured at 93 T on every benchmarked Unity version; see [Token Budget Benchmarks](#token-budget-benchmarks). |
 | Tool-error de-dup | **CLI v0.0.24** | A failed tool command printed its message twice — once as the compact JSON envelope, once as a human `Error: command failed: …` line. AI-target commands now emit the JSON only, halving the error's token cost. |
 | `editor refresh --compile` bounded | **CLI v0.0.25** | The recompile wait used a hidden 5-minute cap and ignored `--timeout`, so a wrapping agent (Claude Code's 120 s bash budget) backgrounded the still-running process. It now honors `--timeout` (60 s default; raise for big projects) and reports a timeout distinctly from a compile that produced errors. |
 | UI Juicy Mode — deeper coverage + `bar` | **v0.0.36** | Audited `Core/UIJuiceGuide` against the *Secrets of Game Feel and Juice* playbook and enriched the existing recipes with four cross-cutting techniques (randomized click-SFX pitch + rising-pitch count-up combos, canvas hit-pause ~30–80 ms, image flash-on-hit with tween-interrupt + knockback, and an explicit "double down on the screen's purpose; keep precision/input UI calm" golden rule). Added a genuine new element type — **`bar`** (health/progress) — with the signature fill juice (instant drop + delayed "chip" bar, low-value danger pulse, segment ticks). It fires through `ui_doc apply`: a filled image node (`image.fill` / `type=filled`) is classified as `bar` for the hint. `manage_ui`'s `--element` set stays locked. |

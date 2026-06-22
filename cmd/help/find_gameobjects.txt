@@ -1,7 +1,8 @@
 Usage: hera-agent-unity find_gameobjects [filters] [pagination]
 
-Searches every loaded-scene GameObject (active + inactive by default) and
-returns a shallow entry per match. Filters combine with AND.
+Searches every loaded-scene GameObject (active + inactive by default).
+Filters combine with AND. Results default to the leanest useful object
+projection: {instance_id, name}.
 
 Filters:
   --name <substr>            Name substring (case-insensitive).
@@ -20,6 +21,12 @@ Pagination:
   --limit  <N>               Max results (default 50). 0 = no cap.
   --offset <N>               Skip the first N matches (default 0).
 
+Output projection:
+  --ids                      Return results as bare instance IDs (lowest tokens).
+  --names                    Return results as bare names.
+  --fields <csv>             Comma-separated fields: instance_id, name, path,
+                             scene, active, or all. Default: instance_id,name.
+
 Results are sorted by hierarchy path for stable pagination across calls.
 
 Output:
@@ -30,8 +37,7 @@ Output:
     "limit":     <echoed limit>,
     "has_more":  <true if more pages remain>,
     "results": [
-      { "instance_id": ..., "name": "...", "path": "/Root/...",
-        "scene": "...", "active": true|false }
+      { "instance_id": ..., "name": "..." }
     ]
   }
 
@@ -40,6 +46,7 @@ Notes:
     things a user would see in the Hierarchy window are returned.
   - Combine with manage_gameobject by feeding 'instance_id' back in
     (survives renames and reparenting; preferred over path).
+  - Use --fields all for the legacy verbose shape with path, scene, and active.
 
 Examples:
   hera-agent-unity find_gameobjects --name Player
@@ -48,4 +55,5 @@ Examples:
   hera-agent-unity find_gameobjects --path_glob /Root/**/Pickup
   hera-agent-unity find_gameobjects --layer UI
   hera-agent-unity find_gameobjects --limit 50 --offset 100
-
+  hera-agent-unity find_gameobjects --component Rigidbody --ids
+  hera-agent-unity find_gameobjects --name Pickup --fields instance_id,name,path

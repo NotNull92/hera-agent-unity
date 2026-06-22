@@ -11,7 +11,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "find_gameobjects",
-        Description = "Search loaded-scene GameObjects with filters (name substring, exact tag, layer name or index, component type, hierarchy path glob) and built-in pagination. Returns shallow entries {instance_id, name, path, active}. Prefer this over `exec` for any 'list/find/count GameObjects with X' question — it scales without serializing the whole hierarchy and respects inactive subtrees by default.",
+        Description = "Search loaded-scene GameObjects with filters (name substring, exact tag, layer name or index, component type, hierarchy path glob) and built-in pagination. Returns lean entries {instance_id, name} by default; pass --fields, --ids, or --names to control payload size. Prefer this over `exec` for any 'list/find/count GameObjects with X' question — it scales without serializing the whole hierarchy and respects inactive subtrees by default.",
         Examples = new[]
         {
             "find_gameobjects --name Player",
@@ -20,6 +20,8 @@ namespace HeraAgent.Tools
             "find_gameobjects --path_glob /Root/**/Pickup",
             "find_gameobjects --layer UI",
             "find_gameobjects --limit 50 --offset 100",
+            "find_gameobjects --component Rigidbody --ids",
+            "find_gameobjects --name Pickup --fields instance_id,name,path",
         },
         ExampleDescriptions = new[]
         {
@@ -29,6 +31,8 @@ namespace HeraAgent.Tools
             "Glob match on hierarchy path (** spans multiple segments)",
             "Layer filter accepts a layer name or an integer index",
             "Skip the first 100 matches — pair limit + offset for pagination",
+            "Return only instance IDs for the lowest-token handoff to manage_* tools",
+            "Request extra fields only when you need them",
         })]
     public static class FindGameObjects
     {
@@ -57,6 +61,15 @@ namespace HeraAgent.Tools
 
             [ToolParameter("Skip the first N matches (default 0). Pair with limit for pagination.")]
             public int? Offset { get; set; }
+
+            [ToolParameter("Comma-separated output fields: instance_id, name, path, scene, active, or all. Default: instance_id,name.")]
+            public string Fields { get; set; }
+
+            [ToolParameter("Return results as bare instance IDs. Lowest-token projection; mutually exclusive with names/fields.")]
+            public bool? Ids { get; set; }
+
+            [ToolParameter("Return results as bare names. Mutually exclusive with ids/fields.")]
+            public bool? Names { get; set; }
         }
 
         public static object HandleCommand(JObject parameters)
@@ -76,6 +89,9 @@ namespace HeraAgent.Tools
             int offset = p.GetInt("offset", 0) ?? 0;
             if (limit < 0) limit = 0;
             if (offset < 0) offset = 0;
+
+            var projection = ResolveProjection(p);
+            if (!projection.IsSuccess) return projection.Error;
 
             int? layerIndex = null;
             if (!string.IsNullOrEmpty(layerStr))
@@ -155,7 +171,7 @@ namespace HeraAgent.Tools
             for (int i = offset; i < matched.Count; i++)
             {
                 if (limit > 0 && returned >= limit) break;
-                results.Add(BuildShallow(matched[i]));
+                results.Add(Project(matched[i], projection));
                 returned++;
             }
 
@@ -174,16 +190,122 @@ namespace HeraAgent.Tools
 
         // ---- helpers ----
 
-        private static object BuildShallow(GameObject go)
+        private sealed class Projection
         {
-            return new
+            public bool IsSuccess;
+            public ErrorResponse Error;
+            public bool IdsOnly;
+            public bool NamesOnly;
+            public List<string> Fields;
+        }
+
+        private static Projection ResolveProjection(ToolParams p)
+        {
+            bool idsOnly = p.GetBool("ids", false);
+            bool namesOnly = p.GetBool("names", false);
+            string fieldsText = p.Get("fields");
+            int explicitModes = (idsOnly ? 1 : 0) + (namesOnly ? 1 : 0) + (!string.IsNullOrEmpty(fieldsText) ? 1 : 0);
+            if (explicitModes > 1)
             {
-                instance_id = EntityIdCompat.IdOf(go),
-                name = go.name,
-                path = HierarchyPath.Build(go.transform),
-                scene = go.scene.name,
-                active = go.activeInHierarchy,
-            };
+                return new Projection
+                {
+                    IsSuccess = false,
+                    Error = new ErrorResponse("INVALID_PROJECTION", "Use only one of --ids, --names, or --fields.")
+                };
+            }
+
+            if (idsOnly)
+                return new Projection { IsSuccess = true, IdsOnly = true };
+            if (namesOnly)
+                return new Projection { IsSuccess = true, NamesOnly = true };
+
+            var fields = new List<string>();
+            if (string.IsNullOrEmpty(fieldsText))
+            {
+                fields.Add("instance_id");
+                fields.Add("name");
+            }
+            else
+            {
+                foreach (var raw in fieldsText.Split(','))
+                {
+                    var field = NormalizeField(raw);
+                    if (field == "all")
+                    {
+                        fields.Clear();
+                        fields.Add("instance_id");
+                        fields.Add("name");
+                        fields.Add("path");
+                        fields.Add("scene");
+                        fields.Add("active");
+                        break;
+                    }
+                    if (field == null)
+                    {
+                        return new Projection
+                        {
+                            IsSuccess = false,
+                            Error = new ErrorResponse(
+                                "INVALID_FIELDS",
+                                $"Unknown field in --fields: '{raw.Trim()}'. Allowed: instance_id, name, path, scene, active, all.")
+                        };
+                    }
+                    if (!fields.Contains(field))
+                        fields.Add(field);
+                }
+            }
+
+            return new Projection { IsSuccess = true, Fields = fields };
+        }
+
+        private static string NormalizeField(string raw)
+        {
+            var field = (raw ?? "").Trim().ToLowerInvariant();
+            if (field == "id") field = "instance_id";
+            switch (field)
+            {
+                case "all":
+                case "instance_id":
+                case "name":
+                case "path":
+                case "scene":
+                case "active":
+                    return field;
+                default:
+                    return null;
+            }
+        }
+
+        private static object Project(GameObject go, Projection projection)
+        {
+            if (projection.IdsOnly)
+                return EntityIdCompat.IdOf(go);
+            if (projection.NamesOnly)
+                return go.name;
+
+            var result = new Dictionary<string, object>();
+            foreach (var field in projection.Fields)
+            {
+                switch (field)
+                {
+                    case "instance_id":
+                        result["instance_id"] = EntityIdCompat.IdOf(go);
+                        break;
+                    case "name":
+                        result["name"] = go.name;
+                        break;
+                    case "path":
+                        result["path"] = HierarchyPath.Build(go.transform);
+                        break;
+                    case "scene":
+                        result["scene"] = go.scene.name;
+                        break;
+                    case "active":
+                        result["active"] = go.activeInHierarchy;
+                        break;
+                }
+            }
+            return result;
         }
 
         private static Regex GlobToRegex(string glob)

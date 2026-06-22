@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Connector 0.0.43 — token-saving discovery benchmarks)
+
+- Documented the v0.0.43 token-reduction release surface in the README and
+  Korean README: `list --compact` is now shown as the 93-token bootstrap path,
+  and `find_gameobjects --ids` is shown as the 49-55-token object handoff path
+  across Unity 2022.3.62f2, 2023.2.22f1, 6000.3.5f2, and 6000.5.0f1.
+- Highlighted Unity 2022.3 LTS / 2023.2 compatibility and the measured token-saving
+  release path as paired headlines instead of presenting Hera as a Unity 6-only
+  connector.
+- Added links from the README release narrative to the version-split benchmark
+  reports under `docs/benchmarks/token-reduction/`, preserving separate results
+  per Unity editor version.
+
 ### Changed (Connector 0.0.42 / CLI 0.0.29 — refactor safety pass)
 
 - **Async file-bus result writes are now atomic.** Heartbeat, PlayMode test

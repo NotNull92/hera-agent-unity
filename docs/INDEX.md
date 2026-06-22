@@ -43,6 +43,7 @@ Tests, TUI, batch engine, and asset-config layer sit on top — but the engine t
 | [`COMMANDS.md`](COMMANDS.md) | All CLI commands, flags, parameters | Adding/changing commands |
 | [`CUSTOM_TOOLS.md`](CUSTOM_TOOLS.md) | How to write new C# tools that the CLI can call | Extending functionality |
 | [`DEVELOPMENT.md`](DEVELOPMENT.md) | Build, test, lint, release workflows | Setting up dev env or releasing |
+| [`benchmarks/token-reduction/README.md`](benchmarks/token-reduction/README.md) | Versioned token-reduction benchmarks for `list --compact` and `find_gameobjects` projections | Evaluating agent token cost by Unity version |
 
 ---
 

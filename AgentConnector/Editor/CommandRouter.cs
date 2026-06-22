@@ -234,7 +234,9 @@ namespace HeraAgent
 
             var namesOnly = parameters?["names"]?.Type == JTokenType.Boolean
                 && parameters["names"].Value<bool>();
-            if (namesOnly)
+            var compact = parameters?["compact"]?.Type == JTokenType.Boolean
+                && parameters["compact"].Value<bool>();
+            if (namesOnly || compact)
                 return new SuccessResponse("Available tools", ToolDiscovery.GetToolNames());
 
             return new SuccessResponse("Available tools", ToolDiscovery.GetToolSummaries());

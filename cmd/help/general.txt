@@ -112,6 +112,8 @@ GameObjects (find):
   find_gameobjects --path_glob /Root/**/Pickup      Glob on hierarchy path (* segment, ** multiple)
   find_gameobjects --include_inactive false         Active in hierarchy only (default includes inactive)
   find_gameobjects --limit 100 --offset 50          Pagination
+  find_gameobjects --ids                            Return bare InstanceIDs (lowest tokens)
+  find_gameobjects --fields instance_id,name,path   Request extra fields only when needed
 
 GameObjects:
   manage_gameobject create --name <n> [--primitive <kind>] [--parent <id|path>] [--position x,y,z]
@@ -169,8 +171,9 @@ Profiler:
   profiler clear                 Clear all captured frames
 
 Custom Tools:
-  list                          List tools (slim: name + description + schema)
-  list --names                  Names only (one entry per tool — token-efficient)
+  list                          List tools (slim: name + description, no schema)
+  list --names                  Names only (flat array — token-efficient)
+  list --compact                Alias of --names for catalogue discovery
   list --tool <name>            Full schema for a single tool (params + output + metadata)
   <name>                        Call a custom tool directly
   <name> --params '{"k":"v"}'   Call with JSON parameters

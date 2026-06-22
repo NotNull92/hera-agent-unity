@@ -5,13 +5,14 @@
 //
 //	go run ./tools/build-unity-docs \
 //	    --in  C:\Users\PC\Downloads\UnityDocumentation\Documentation\en \
-//	    --out AgentConnector/Editor/Data/unity_docs_6.0.jsonl
+//	    --out AgentConnector/Editor/Data/unity_docs_6000.0.jsonl \
+//	    --unity-version 6000.0
 //
 // Output line shape:
 //
 //	{"name":"Rigidbody-mass","title":"Rigidbody.mass","signature":"public float mass;",
 //	 "summary":"The mass of the rigidbody.","manual_url":"Manual/class-Rigidbody.html",
-//	 "scriptreference_url":"ScriptReference/Rigidbody-mass.html","unity_version":"6.0"}
+//	 "scriptreference_url":"ScriptReference/Rigidbody-mass.html","unity_version":"6000.0"}
 //
 // `name` is the filename without `.html` so the Connector's existing
 // query→candidate-filename mapping doubles as the dict lookup key.
@@ -66,6 +67,8 @@ func main() {
 		"Path to the Documentation/en directory (containing ScriptReference/).")
 	out := flag.String("out", "",
 		"Output JSONL path (e.g. AgentConnector/Editor/Data/unity_docs_6.0.jsonl).")
+	unityVersion := flag.String("unity-version", "",
+		"Unity version label to write into every entry (e.g. 2022.3, 2023.2, 6000.5). If empty, parse per page.")
 	flag.Parse()
 
 	if *in == "" || *out == "" {
@@ -80,7 +83,7 @@ func main() {
 	}
 
 	start := time.Now()
-	entries, skipped, err := scanDir(srDir)
+	entries, skipped, err := scanDir(srDir, strings.TrimSpace(*unityVersion))
 	if err != nil {
 		log.Fatalf("scan failed: %v", err)
 	}
@@ -97,7 +100,7 @@ func main() {
 		len(entries), humanSize(info.Size()), time.Since(start).Round(time.Millisecond), skipped)
 }
 
-func scanDir(srDir string) ([]Entry, int, error) {
+func scanDir(srDir string, unityVersion string) ([]Entry, int, error) {
 	var entries []Entry
 	skipped := 0
 
@@ -127,7 +130,7 @@ func scanDir(srDir string) ([]Entry, int, error) {
 		if err != nil {
 			return fmt.Errorf("read %s: %w", path, err)
 		}
-		entry, ok := parse(base, string(data))
+		entry, ok := parse(base, string(data), unityVersion)
 		if !ok {
 			skipped++
 			return nil
@@ -141,7 +144,7 @@ func scanDir(srDir string) ([]Entry, int, error) {
 	return entries, skipped, nil
 }
 
-func parse(name, body string) (Entry, bool) {
+func parse(name, body string, unityVersion string) (Entry, bool) {
 	e := Entry{
 		Name:               name,
 		ScriptReferenceURL: "ScriptReference/" + name + ".html",
@@ -161,7 +164,9 @@ func parse(name, body string) (Entry, bool) {
 	} else if m := reManualHrefFirst.FindStringSubmatch(body); m != nil {
 		e.ManualURL = normalizeRelativeURL(m[1])
 	}
-	if m := reVersion.FindStringSubmatch(body); m != nil {
+	if unityVersion != "" {
+		e.UnityVersion = unityVersion
+	} else if m := reVersion.FindStringSubmatch(body); m != nil {
 		e.UnityVersion = m[1]
 	}
 

@@ -11,27 +11,23 @@ namespace HeraAgent
     {
         public string Text { get; }
         public string DocSlug { get; }
+        public string MinDocsVersion { get; }
 
-        public PitfallEntry(string text, string docSlug = null)
+        public PitfallEntry(string text, string docSlug = null, string minDocsVersion = null)
         {
             Text = text;
             DocSlug = docSlug;
+            MinDocsVersion = minDocsVersion;
         }
     }
 
-    /// <summary>
-    /// Static catalog of Unity Editor / uGUI / MonoBehaviour pitfalls for Unity 6 (6000.0+).
-    ///
-    /// Connector requires Unity 6, so the catalog targets that version exclusively — no version
-    /// branching. Add only entries that are stable across Unity 6.x minor versions; package-
-    /// specific quirks (Entities 1.x, Addressables 2.x) belong in introspection, not here.
-    /// </summary>
     internal static class UnityPitfalls
     {
         // Unity 6 (6000.0+) Korean manual.
         private const string ManualBase = "https://docs.unity3d.com/kr/current/Manual/";
 
-        private static readonly Dictionary<string, PitfallEntry[]> s_Catalog = new(StringComparer.Ordinal)
+        private static readonly Dictionary<string, PitfallEntry[]> s_Catalog =
+            new Dictionary<string, PitfallEntry[]>(StringComparer.Ordinal)
         {
             ["UnityEditor.EditorApplication"] = new[]
             {
@@ -156,16 +152,19 @@ namespace HeraAgent
                     "Coroutines"),
                 new PitfallEntry(
                     "Unity 6 exposes MonoBehaviour.destroyCancellationToken. Pass it to async methods so they cancel automatically when the component is destroyed — prefer this over manual CancellationTokenSource bookkeeping.",
-                    "class-Awaitable"),
+                    "class-Awaitable",
+                    UnityVersionCompat.Docs6000_0),
             },
             ["UnityEngine.Awaitable"] = new[]
             {
                 new PitfallEntry(
                     "Awaitable is Unity 6's main-thread-aware async primitive — Awaitable.NextFrameAsync(), Awaitable.WaitForSecondsAsync(), Awaitable.MainThreadAsync(). Composes with destroyCancellationToken for auto-cancel on destruction.",
-                    "class-Awaitable"),
+                    "class-Awaitable",
+                    UnityVersionCompat.Docs6000_0),
                 new PitfallEntry(
                     "Awaitable.FromAsyncOperation wraps an AsyncOperation (e.g. SceneManager.LoadSceneAsync) into an awaitable. The recommended pattern for await-based scene/asset loading in Unity 6.",
-                    "class-Awaitable"),
+                    "class-Awaitable",
+                    UnityVersionCompat.Docs6000_0),
             },
             ["UnityEngine.WaitForSeconds"] = new[]
             {
@@ -291,9 +290,20 @@ namespace HeraAgent
             if (string.IsNullOrEmpty(fullTypeName)) return Array.Empty<RenderedPitfall>();
             if (!s_Catalog.TryGetValue(fullTypeName, out var entries)) return Array.Empty<RenderedPitfall>();
 
+            var docsVersion = UnityVersionCompat.CurrentDocsVersion();
             var rendered = new List<RenderedPitfall>(entries.Length);
-            foreach (var e in entries) rendered.Add(Render(e));
+            foreach (var e in entries)
+            {
+                if (!IsApplicable(e, docsVersion)) continue;
+                rendered.Add(Render(e));
+            }
             return rendered;
+        }
+
+        private static bool IsApplicable(PitfallEntry e, string docsVersion)
+        {
+            return string.IsNullOrEmpty(e.MinDocsVersion)
+                || UnityVersionCompat.DocsVersionAtLeast(docsVersion, e.MinDocsVersion);
         }
 
         private static RenderedPitfall Render(PitfallEntry e)
