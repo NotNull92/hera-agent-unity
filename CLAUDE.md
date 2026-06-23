@@ -42,7 +42,8 @@ cmd/                  # Go CLI — thin passthrough layer
                       # (heartbeat reads, same backoff)
   update.go           # self-update from GitHub releases (download + rename dance)
   version_check.go    # periodic update notice (12h interval, human-only)
-  asset_config.go     # asset plugin config (TUI default + --json for AI)
+  asset_config.go     # asset plugin config (TUI default + --json for AI,
+                      # includes Ultra Hera loopEngineeringMode for agent rules)
   batch.go            # batch (multi-command) dispatch + --dry-run preview
   manage_packages.go  # async job_id dispatch + pollResultFile (file-bus, like test)
   unity_docs.go       # thin passthrough — connector ships its own data set
@@ -59,7 +60,8 @@ cmd/                  # Go CLI — thin passthrough layer
   AGENT.md            # embedded copy for `doctor --agent-rules` (go:embed)
 internal/client/      # Unity HTTP client, instance discovery, SendBatch
                       # + process_{unix,windows}.go (PID liveness check)
-internal/assetconfig/ # Asset plugin configuration persistence (config.go only)
+internal/assetconfig/ # Asset plugin configuration persistence
+                      # (assets + ui_juicy_mode + loopEngineeringMode)
 internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
 tools/build-unity-docs/ # One-shot maintainer Go script: Documentation/en/ScriptReference
                         # → unity_docs_<ver>.jsonl(.gz)(.bytes). Run per Unity version.
@@ -225,11 +227,46 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | `manage_components` SerializedProperty 패턴 | 🔒 의도된 설계 (v0.0.8) | `Core/SerializedPropertyValue` 가 *모든 후속 manage_\* (material/animation/vfx/SO/prefab)* 의 property-set 토대. raw `m_X` 경로 그대로, friendly-name mapping *미적용* — Unity 가 실제 직렬화하는 이름과 1:1 유지. 다시 friendly mapping 제안 금지 |
 | `manage_packages` 비동기 패턴 | 🔒 의도된 설계 (v0.0.6) | `add/remove/embed` 는 `job_id` 발급 후 파일버스. `list` 만 동기 (CommandRouter 락 안에서 60s budget). 도메인 리로드 후 `[InitializeOnLoad]` 가 `Client.List` 로 결과 검증. 다시 *전부 동기* 또는 *전부 비동기* 통일 제안 금지 |
 | UI Juicy Mode | ✅ 완료 (Connector v0.0.19) | Hera Settings 체크박스(`asset-config.json` 의 `ui_juicy_mode`) ON → `manage_ui create` 응답에 `agent_hint` 로 Game UI/UX Bible juice 레시피(element별) 주입. **가이드 주입 방식 🔒**(런타임 컴포넌트 자동부착 아님 — connector Editor 전용 유지, manage_ui scope 경계 유지). DOTween 우선은 기존 `dotween`/`dotween_pro` `enabled` 플래그 참조(`Core/HeraSettings.DotweenPreferred`) → DOScale vs lerp 분기. juice 지식은 `Core/UIJuiceGuide` 순수 문자열(Data 에셋 아님). connector 가 dispatch 시 `asset-config.json` 을 mtime-cache 로 읽음(`Core/HeraSettings`). CLI 는 `asset-config juicy [on\|off]` + `--json` 의 `ui_juicy_mode`/`dotween_preferred` 로 표면화. Go struct 에 `DefaultCscPath`/`DefaultDotnetPath` round-trip 필드 추가(CLI Save 가 Editor 컴파일러 경로 안 지우도록). 다시 *자동부착(runtime asmdef)* 또는 *친절-매핑* 제안 금지 |
+| Ultra Hera | ✅ 완료 | Hera Settings 에서 `Ultra Hera`를 `Off` / `Light` / `Ultra` 중 하나만 선택. 저장 키는 `asset-config.json` 의 `loopEngineeringMode`, 기본값은 `light`. **가이드 주입 방식 🔒**: Hera가 AI 작업 루프를 직접 실행하지 않음. `doctor --agent-rules`가 현재 모드를 읽어 Codex/Claude/기타 agent 규칙에 검증 강도 지침을 넣는다. `Ultra` 선택 시 모든 작업은 Light 확인(컴파일 상태·최근 콘솔 에러·변경 대상 확인)을 적용하고, `ultra`/`strict`/`꼼꼼히`/`정확히`/`검증까지`/`테스트까지`/`플레이해서 확인`/`UI 맞춰줘`/`스크린샷` 같은 키워드나 PlayMode·시각 UI·scene/prefab·release/PR 검증 작업에서 Ultra 확인(PlayMode, 테스트, 스크린샷, 씬 점검)으로 승격. 사용자 문구는 초등학생도 이해할 수 있는 쉬운 문장 유지. 내부 키 이름은 기능 의미 보존을 위해 `loopEngineeringMode` 유지, UI 표시명만 `Ultra Hera` |
 | `ui_doc` HTML→UI pipeline | ✅ 완료 (Connector 0.0.21 최초, IR v2 0.0.26, capture/sample 0.0.27; CanvasScaler config + root-canvas-at-scene-root 0.0.39, CLI `html-to-uidoc` 0.0.27; CLAUDE.md 등재는 2026-06-18) | `UiDoc` 도구 + `Core/UiDocSchema`(ui_doc/2 IR) + `Core/ProceduralSprite`(절차 스프라이트). 액션: `export`/`apply`(IR↔uGUI, `--mode create\|upsert`) / `gen_sprite` / `capture`(overlay 캔버스 throwaway-camera 렌더) / `sample`(레퍼런스 색 측정, CLI측). `apply` 가 IR 최상위 `canvas` 블록으로 `CanvasScaler` 를 설정하고 root `element:"canvas"` 는 씬 루트에 생성. CLI `html-to-uidoc` 는 인라인 스타일 HTML → `ui_doc/2` JSON. v0.0.14 cohort 선례 따라 root.go help 미등재(README/docs/COMMANDS/UI_DOC_IR/CHANGELOG만). 컴파일 의존성 0 🔒: uGUI/TMP 타입 전부 TypeCache+리플렉션 해석 |
 | `ui_doc catalog` / `import` (UI 에셋 목업) | ✅ 완료 (2026-06-18, Connector v0.0.38 + CLI) | 사용자 UI 에셋 폴더 → 목업. `catalog`(CLI측, Unity 무관): 폴더 재귀 스캔 → 이미지별 매니페스트(size/has_alpha/opaque_bounds/palette/`nine_slice_hint [l,b,r,t]`/name_hint, GIF=reference_only/frames). `import`(connector): 절대경로 원본 → `Assets/`(기본 `HeraImported`) 복사 + Sprite 임포트(border/ppu/filter/pivot). **분류 주체 🔒**: "어떤 UI인가" 판단은 비전 가진 에이전트가 PNG 직접 읽어서 — 도구(Go/C#)는 픽셀 못 봄, 메타+힌트만 제공. **GIF 🔒**: catalog엔 reference_only로 등장, import는 skip(Unity GIF→Sprite 없음). import `TextureImporter` 세팅은 `ProceduralSprite` 블록 복제(2번째 소비자=replicate, 3번째에 Core 추출). 다시 *도구측 자동분류(휴리스틱 단정)* 또는 *GIF import* 제안 금지 |
 | 파일버스/경로 안전 리팩토링 | ✅ 완료 (2026-06-22, Connector v0.0.42 / CLI v0.0.29) | `Core/AtomicFile` 로 heartbeat/package/test 결과 JSON 을 temp-write+replace 방식으로 통일하고 Go poller 는 parse 성공 후 삭제. `Core/AssetPathGuard` 로 `ui_doc import`/`gen_sprite` 의 `Assets/` traversal escape 차단. `cmd/dispatch.go` 로 routing 분리, `--params` 명시 플래그 override 회귀 테스트와 embedded help topic 테스트 추가. 단방향 HTTP/파일버스 모델은 유지 |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
+
+### Ultra Hera 상세 프로토콜
+
+`loopEngineeringMode` 기본값은 `light`다. Hera Settings 에서는 `Ultra Hera` 항목으로 보이며 `Off` / `Light` / `Ultra` 중 하나만 선택한다. Hera가 AI 작업을 직접 실행하는 기능이 아니라, `doctor --agent-rules`가 Codex/Claude/기타 agent에게 검증 강도를 알려주는 기능이다.
+
+**Light Mode** — 모든 Unity 코딩/에디터/인스펙터 작업에 부담 없이 적용한다.
+
+1. 목표를 한 문장으로 확정
+2. 필요한 현재 상태만 compact하게 관측
+3. 코드/씬/Inspector 변경
+4. compile 또는 상태 검증
+5. console error 확인
+6. 변경 대상만 재조회
+7. 실패하면 최대 1~2회 수정 반복
+8. 최종 증거를 짧게 보고
+
+대표 명령: `hera-agent-unity status`, `hera-agent-unity console --type error --lines 20`, `hera-agent-unity editor refresh --compile`, `hera-agent-unity find_gameobjects --ids`, `hera-agent-unity manage_components get ...`, `hera-agent-unity exec --depth 1 ...`.
+
+Light Mode의 목표는 "틀린 상태로 끝내지 않기"다. PlayMode, screenshot, 전체 테스트는 기본 강제하지 않는다.
+
+**Ultra Mode** — 사용자가 "정확히 검증해줘", "플레이해서 확인해줘", "UI 맞춰줘", "인스펙터까지 확실히 봐줘" 같은 요청을 했을 때 쓰는 엄격 모드다.
+
+1. 목표를 성공 기준으로 분해
+2. 변경 전 상태 snapshot
+3. 변경 적용
+4. compile
+5. console error 0건 확인
+6. Inspector/GameObject/asset 상태 재조회
+7. PlayMode 또는 Unity Test 실행
+8. 필요하면 screenshot/ui_doc capture
+9. 실패 원인 분류 후 반복
+10. 최종 증거와 남은 리스크 보고
+
+대표 명령: `hera-agent-unity editor refresh --compile`, `hera-agent-unity console --type error --lines 50`, `hera-agent-unity test --mode EditMode`, `hera-agent-unity test --mode PlayMode`, `hera-agent-unity editor play --wait`, `hera-agent-unity screenshot --view game`, `hera-agent-unity ui_doc capture --out ...`.
 
 ### Why Additional Unit Tests Are Not Added
 

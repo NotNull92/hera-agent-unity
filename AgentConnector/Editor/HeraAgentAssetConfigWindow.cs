@@ -154,6 +154,7 @@ namespace HeraAgent.Editor
             InitializeCategoryStates();
 
             BuildToolbar();
+            BuildUltraHeraSection();
             BuildJuicyModeSection();
             BuildCompilerPathSection();
             BuildCategoryPills();

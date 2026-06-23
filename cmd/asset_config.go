@@ -94,6 +94,7 @@ func assetConfigList() error {
 	if cfg.JuicyMode {
 		juicy = "on"
 	}
+	loopMode := string(cfg.LoopEngineeringMode)
 
 	type listRow struct {
 		Enabled   bool
@@ -121,6 +122,7 @@ func assetConfigList() error {
 	if tui.ColorEnabled() {
 		fmt.Println(tui.TitleStyle.Render(fmt.Sprintf("Asset Config v%s", cfg.Version)))
 		fmt.Println(tui.PathStyle.Render(assetconfig.ConfigFilePath()))
+		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Ultra Hera:"), tui.StatusBadge(loopMode))
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("UI Juicy Mode:"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.JuicyMode]))
 		fmt.Println()
 		for _, sec := range sections {
@@ -147,6 +149,7 @@ func assetConfigList() error {
 
 	// Plain output — kept stable for script/AI parsing.
 	fmt.Printf("Asset Config v%s — %s\n", cfg.Version, assetconfig.ConfigFilePath())
+	fmt.Printf("Ultra Hera: %s\n", loopMode)
 	fmt.Printf("UI Juicy Mode: %s\n\n", juicy)
 	for _, sec := range sections {
 		fmt.Printf("  %s\n", sec.Title)
@@ -362,10 +365,11 @@ func jsonOutputForAI() ([]byte, error) {
 	}
 
 	return json.MarshalIndent(map[string]interface{}{
-		"enabled_assets":    assets,
-		"total":             len(assets),
-		"ui_juicy_mode":     cfg.JuicyMode,
-		"dotween_preferred": dotweenPreferred,
+		"enabled_assets":        assets,
+		"total":                 len(assets),
+		"loop_engineering_mode": cfg.LoopEngineeringMode,
+		"ui_juicy_mode":         cfg.JuicyMode,
+		"dotween_preferred":     dotweenPreferred,
 	}, "", "  ")
 }
 

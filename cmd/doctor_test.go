@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/NotNull92/hera-agent-unity/internal/assetconfig"
 )
 
 func TestExtractMdSection(t *testing.T) {
@@ -95,6 +97,9 @@ func TestExtractAgentRules(t *testing.T) {
 		if !strings.Contains(out, "## 0. Bootstrap") {
 			t.Error("expected Bootstrap section")
 		}
+		if !strings.Contains(out, "## Ultra Hera") {
+			t.Error("expected Ultra Hera section")
+		}
 		if !strings.Contains(out, "## 1. Quick Rules") {
 			t.Error("expected Quick Rules section")
 		}
@@ -111,6 +116,9 @@ func TestExtractAgentRules(t *testing.T) {
 		if !strings.Contains(out, "alwaysApply: true") {
 			t.Error("expected alwaysApply frontmatter field")
 		}
+		if !strings.Contains(out, "## Ultra Hera") {
+			t.Error("expected Ultra Hera section")
+		}
 		if !strings.Contains(out, "## 0. Bootstrap") {
 			t.Error("expected Bootstrap section")
 		}
@@ -119,6 +127,61 @@ func TestExtractAgentRules(t *testing.T) {
 		}
 		if !strings.Contains(out, "## 4. Pitfalls") {
 			t.Error("expected Pitfalls section")
+		}
+	})
+}
+
+func TestBuildUltraHeraAgentRules(t *testing.T) {
+	tests := []struct {
+		name string
+		mode assetconfig.LoopEngineeringMode
+		want string
+	}{
+		{name: "off", mode: assetconfig.LoopEngineeringOff, want: "Current setting: `off`"},
+		{name: "light", mode: assetconfig.LoopEngineeringLight, want: "Current setting: `light`"},
+		{name: "ultra", mode: assetconfig.LoopEngineeringUltra, want: "Current setting: `ultra`"},
+		{name: "invalid", mode: assetconfig.LoopEngineeringMode("invalid"), want: "Current setting: `light`"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildUltraHeraAgentRules(tt.mode)
+			if !strings.Contains(got, tt.want) {
+				t.Errorf("buildUltraHeraAgentRules(%q) missing %q in %q", tt.mode, tt.want, got)
+			}
+			if !strings.Contains(got, "Hera does not do the AI work by itself") {
+				t.Errorf("buildUltraHeraAgentRules(%q) missing boundary sentence", tt.mode)
+			}
+		})
+	}
+
+	t.Run("light details", func(t *testing.T) {
+		got := buildUltraHeraAgentRules(assetconfig.LoopEngineeringLight)
+		for _, want := range []string{
+			"Light loop:",
+			"hera-agent-unity console --type error --lines 20",
+			"hera-agent-unity exec --depth 1 ...",
+			"PlayMode, screenshots, and full tests are not required by default",
+		} {
+			if !strings.Contains(got, want) {
+				t.Errorf("light rules missing %q", want)
+			}
+		}
+	})
+
+	t.Run("ultra details", func(t *testing.T) {
+		got := buildUltraHeraAgentRules(assetconfig.LoopEngineeringUltra)
+		for _, want := range []string{
+			"Light loop:",
+			"Ultra loop:",
+			"hera-agent-unity test --mode EditMode",
+			"hera-agent-unity test --mode PlayMode",
+			"hera-agent-unity screenshot --view game",
+			"hera-agent-unity ui_doc capture --out ...",
+		} {
+			if !strings.Contains(got, want) {
+				t.Errorf("ultra rules missing %q", want)
+			}
 		}
 	})
 }

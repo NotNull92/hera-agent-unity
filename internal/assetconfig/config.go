@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/NotNull92/hera-agent-unity/internal/paths"
@@ -22,10 +23,20 @@ type AssetEntry struct {
 	ReferencePath string `json:"reference_path,omitempty"`
 }
 
+// LoopEngineeringMode controls the Ultra Hera agent verification guidance.
+type LoopEngineeringMode string
+
+const (
+	LoopEngineeringOff   LoopEngineeringMode = "off"
+	LoopEngineeringLight LoopEngineeringMode = "light"
+	LoopEngineeringUltra LoopEngineeringMode = "ultra"
+)
+
 // AssetConfig holds the full configuration.
 type AssetConfig struct {
-	Version string       `json:"version"`
-	Assets  []AssetEntry `json:"assets"`
+	Version             string              `json:"version"`
+	Assets              []AssetEntry        `json:"assets"`
+	LoopEngineeringMode LoopEngineeringMode `json:"loopEngineeringMode"`
 
 	// JuicyMode mirrors ui_juicy_mode in the shared asset-config.json. When on,
 	// the connector's manage_ui attaches Game UI/UX Bible juice guidance to its
@@ -51,6 +62,21 @@ func ConfigFilePath() string {
 		configPath = paths.AssetConfigPath()
 	})
 	return configPath
+}
+
+// NormalizeLoopEngineeringMode accepts persisted/user-provided mode text and
+// falls back to Light, the product default.
+func NormalizeLoopEngineeringMode(mode string) LoopEngineeringMode {
+	switch LoopEngineeringMode(strings.ToLower(strings.TrimSpace(mode))) {
+	case LoopEngineeringOff:
+		return LoopEngineeringOff
+	case LoopEngineeringUltra:
+		return LoopEngineeringUltra
+	case LoopEngineeringLight:
+		return LoopEngineeringLight
+	default:
+		return LoopEngineeringLight
+	}
 }
 
 // DefaultAssets returns the built-in list of known asset plugins.
@@ -118,8 +144,9 @@ func Load() (*AssetConfig, error) {
 		if os.IsNotExist(err) {
 			// First run — create defaults and save
 			cfg := &AssetConfig{
-				Version: "1.0.0",
-				Assets:  DefaultAssets(),
+				Version:             "1.0.0",
+				Assets:              DefaultAssets(),
+				LoopEngineeringMode: LoopEngineeringLight,
 			}
 			_ = Save(cfg)
 			return cfg, nil
@@ -131,6 +158,7 @@ func Load() (*AssetConfig, error) {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, err
 	}
+	cfg.LoopEngineeringMode = NormalizeLoopEngineeringMode(string(cfg.LoopEngineeringMode))
 
 	// Merge with defaults. User state (Enabled, Installed) is preserved per ID.
 	// Immutable metadata (Name, Description, Category, DocURL, ReferencePath)
@@ -166,6 +194,7 @@ func Load() (*AssetConfig, error) {
 
 // Save writes the asset config to disk.
 func Save(cfg *AssetConfig) error {
+	cfg.LoopEngineeringMode = NormalizeLoopEngineeringMode(string(cfg.LoopEngineeringMode))
 	dir := filepath.Dir(ConfigFilePath())
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
@@ -177,6 +206,22 @@ func Save(cfg *AssetConfig) error {
 	}
 
 	return os.WriteFile(ConfigFilePath(), data, 0644)
+}
+
+// LoadLoopEngineeringModeNoCreate reads only Ultra Hera mode for agent-rules
+// generation. Missing or unreadable config returns the default without writing.
+func LoadLoopEngineeringModeNoCreate() LoopEngineeringMode {
+	data, err := os.ReadFile(ConfigFilePath())
+	if err != nil {
+		return LoopEngineeringLight
+	}
+	var cfg struct {
+		LoopEngineeringMode LoopEngineeringMode `json:"loopEngineeringMode"`
+	}
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return LoopEngineeringLight
+	}
+	return NormalizeLoopEngineeringMode(string(cfg.LoopEngineeringMode))
 }
 
 // ToggleAsset flips the enabled state of an asset by ID.
@@ -226,6 +271,19 @@ func SetJuicyMode(enabled bool) (*AssetConfig, error) {
 		return nil, err
 	}
 	cfg.JuicyMode = enabled
+	if err := Save(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+// SetLoopEngineeringMode sets the Ultra Hera verification mode and persists it.
+func SetLoopEngineeringMode(mode LoopEngineeringMode) (*AssetConfig, error) {
+	cfg, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	cfg.LoopEngineeringMode = NormalizeLoopEngineeringMode(string(mode))
 	if err := Save(cfg); err != nil {
 		return nil, err
 	}

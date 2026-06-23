@@ -16,7 +16,7 @@
 
 <br>
 
-[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [UI Juicy Mode](#ui-juicy-mode) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
+[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [UI Juicy Mode](#ui-juicy-mode) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
 
 **English** · [한국어](README.ko.md)
 
@@ -74,7 +74,7 @@ No Python server. No generated MCP config. No special agent plugin. If an agent 
 
 ## Release Highlights
 
-This release focuses on two simple things: more Unity versions and fewer tokens.
+This release focuses on three simple things: more Unity versions, fewer tokens, and safer agent verification.
 
 | Highlight | Simple meaning |
 |:---|:---|
@@ -84,6 +84,7 @@ This release focuses on two simple things: more Unity versions and fewer tokens.
 | **93-token tool list** | `list --compact` is small enough to use often. |
 | **49-55-token object handoff** | `find_gameobjects --ids` returns only the IDs an agent needs for the next command. |
 | **Signature: UI Juicy Mode** | Hera can tell the agent how to make generated UI feel alive, not static. |
+| **NEW: Ultra Hera** | Agents can use light checks by default and upgrade to strict Unity verification when the task asks for it. |
 
 Measured versions:
 
@@ -295,6 +296,48 @@ Common recipes:
 | Bar | Instant fill drop, delayed chip bar, low-value pulse, segment ticks. |
 
 Detailed command docs: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
+
+---
+
+## Ultra Hera
+
+Ultra Hera is a setting for AI agent rules. It does not do the AI work by itself. It tells agents how carefully they should check Unity work after using Hera.
+
+Find it here:
+
+```text
+HeraAgent -> Hera Settings -> Ultra Hera
+```
+
+Modes:
+
+| Mode | Simple meaning |
+|:---|:---|
+| `Off` | The agent does not have to check again after using Hera. |
+| `Light` | Default. The agent checks the goal, reads only needed state, changes code/scene/Inspector, compiles or checks state, reads console errors, re-reads the changed target, and retries once or twice if needed. |
+| `Ultra` | The agent still uses Light checks for every task, then upgrades strict requests to deeper checks such as tests, Play Mode, Inspector re-read, screenshots, or `ui_doc` capture. |
+
+Light is for not finishing in a wrong state. Ultra is for requests like "verify exactly", "play it and confirm", "match the UI", or "check the Inspector too".
+
+Representative Light commands:
+
+```bash
+hera-agent-unity status
+hera-agent-unity console --type error --lines 20
+hera-agent-unity editor refresh --compile
+hera-agent-unity find_gameobjects --ids
+hera-agent-unity exec --depth 1 ...
+```
+
+Representative Ultra commands:
+
+```bash
+hera-agent-unity test --mode EditMode
+hera-agent-unity test --mode PlayMode
+hera-agent-unity editor play --wait
+hera-agent-unity screenshot --view game
+hera-agent-unity ui_doc capture --out ...
+```
 
 ---
 

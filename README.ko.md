@@ -16,7 +16,7 @@
 
 <br>
 
-[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [UI Juicy Mode](#ui-juicy-mode) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
+[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [UI Juicy Mode](#ui-juicy-mode) · [Ultra Hera](#ultra-hera) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
 
 [English](README.md) · **한국어**
 
@@ -74,7 +74,7 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 
 ## 릴리스 하이라이트
 
-이번 릴리스의 핵심은 두 가지입니다: 더 많은 Unity 버전, 더 적은 토큰.
+이번 릴리스의 핵심은 세 가지입니다: 더 많은 Unity 버전, 더 적은 토큰, 더 안전한 AI 검증.
 
 | 하이라이트 | 쉬운 뜻 |
 |:---|:---|
@@ -84,6 +84,7 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 | **93 토큰 도구 목록** | `list --compact`는 자주 써도 부담이 작습니다. |
 | **49-55 토큰 오브젝트 전달** | `find_gameobjects --ids`는 다음 명령에 필요한 ID만 보냅니다. |
 | **시그니처: UI Juicy Mode** | Hera가 AI에게 정적인 UI가 아니라 살아 있는 게임 UI를 만드는 힌트를 줍니다. |
+| **NEW: Ultra Hera** | 기본은 가볍게 확인하고, 중요한 요청은 더 꼼꼼한 Unity 검증으로 올립니다. |
 
 측정한 버전:
 
@@ -295,6 +296,48 @@ HeraAgent -> Hera Settings -> UI Juicy Mode
 | Bar | 즉시 줄어드는 fill, 늦게 따라오는 chip bar, 낮은 수치 pulse, segment tick. |
 
 자세한 명령 문서: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
+
+---
+
+## Ultra Hera
+
+Ultra Hera는 AI 에이전트 규칙 설정입니다. 이 기능이 AI 작업을 대신 하지는 않습니다. AI가 Hera로 Unity 작업을 한 뒤 얼마나 꼼꼼히 확인해야 하는지 알려줍니다.
+
+위치:
+
+```text
+HeraAgent -> Hera Settings -> Ultra Hera
+```
+
+모드:
+
+| 모드 | 쉬운 뜻 |
+|:---|:---|
+| `Off` | AI가 Hera 사용 후 다시 확인하지 않아도 됩니다. |
+| `Light` | 기본값입니다. AI가 목표를 확인하고, 필요한 상태만 읽고, 코드/씬/Inspector를 바꾸고, 컴파일 또는 상태를 확인하고, 콘솔 에러를 읽고, 바꾼 대상만 다시 본 뒤, 필요하면 한두 번 고칩니다. |
+| `Ultra` | 모든 작업에는 Light 확인을 쓰고, 중요한 요청은 테스트, Play Mode, Inspector 재확인, screenshot, `ui_doc` capture 같은 더 강한 확인으로 올립니다. |
+
+Light는 "틀린 상태로 끝내지 않기"가 목표입니다. Ultra는 "정확히 검증해줘", "플레이해서 확인해줘", "UI 맞춰줘", "인스펙터까지 봐줘" 같은 요청에 씁니다.
+
+대표 Light 명령:
+
+```bash
+hera-agent-unity status
+hera-agent-unity console --type error --lines 20
+hera-agent-unity editor refresh --compile
+hera-agent-unity find_gameobjects --ids
+hera-agent-unity exec --depth 1 ...
+```
+
+대표 Ultra 명령:
+
+```bash
+hera-agent-unity test --mode EditMode
+hera-agent-unity test --mode PlayMode
+hera-agent-unity editor play --wait
+hera-agent-unity screenshot --view game
+hera-agent-unity ui_doc capture --out ...
+```
 
 ---
 

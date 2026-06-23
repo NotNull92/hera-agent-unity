@@ -13,7 +13,7 @@ AgentConnector/
     ├── CommandRouter.cs                 # command dispatch + locking + batch
     ├── ToolDiscovery.cs                 # reflection-based tool scanning and schemas
     ├── Heartbeat.cs                     # instance state file writer
-    ├── HeraAgentAssetConfigWindow.cs    # Settings window (Hera > Settings)
+    ├── HeraAgentAssetConfigWindow.cs    # Settings window (Hera > Settings, Ultra Hera + asset config)
     ├── HeraAgentAssetConfigWindow.Model.cs
     ├── HeraAgentAssetConfigWindow.View.cs
     ├── Attributes/

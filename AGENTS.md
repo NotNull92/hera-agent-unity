@@ -154,6 +154,67 @@ Default `--depth` is `3`, which fully reflects Unity Objects in the response. Pa
 //   → exit 1, code=EXEC_LOGGED_ERROR
 ```
 
+## 1.5 Ultra Hera
+
+Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.
+
+Modes are saved in `asset-config.json` as `loopEngineeringMode`:
+
+- `off`: AI does not have to check again after using Hera.
+- `light` (default): use the Light loop for every Unity coding, Editor, and Inspector task.
+- `ultra`: use the Light loop for every task, then upgrade to the Ultra loop for strict requests or important Unity work.
+
+Light loop:
+
+1. Confirm the goal in one sentence.
+2. Observe only the needed current state in a compact way.
+3. Change code, scene, or Inspector state.
+4. Verify compile or state.
+5. Check console errors.
+6. Re-read only the changed target.
+7. If it failed, fix and repeat up to 1-2 times.
+8. Report short final evidence.
+
+Representative Light commands:
+
+```bash
+hera-agent-unity status
+hera-agent-unity console --type error --lines 20
+hera-agent-unity editor refresh --compile
+hera-agent-unity find_gameobjects --ids
+hera-agent-unity manage_components get ...
+hera-agent-unity exec --depth 1 ...
+```
+
+Light Mode's goal is: do not finish in a wrong state. PlayMode, screenshots, and full tests are not required by default.
+
+Ultra loop:
+
+1. Split the goal into success criteria.
+2. Take a before-change state snapshot.
+3. Apply the change.
+4. Compile.
+5. Confirm console errors are 0.
+6. Re-read Inspector, GameObject, or asset state.
+7. Run PlayMode or Unity tests.
+8. If needed, capture a screenshot or `ui_doc` capture.
+9. Classify the failure cause and repeat.
+10. Report final evidence and remaining risk.
+
+Representative Ultra commands:
+
+```bash
+hera-agent-unity editor refresh --compile
+hera-agent-unity console --type error --lines 50
+hera-agent-unity test --mode EditMode
+hera-agent-unity test --mode PlayMode
+hera-agent-unity editor play --wait
+hera-agent-unity screenshot --view game
+hera-agent-unity ui_doc capture --out ...
+```
+
+Use Ultra when the user asks for strict verification, for example `정확히 검증해줘`, `플레이해서 확인해줘`, `UI 맞춰줘`, or `인스펙터까지 확실히 봐줘`.
+
 ---
 
 ## 2. Tool Selection Cheatsheet

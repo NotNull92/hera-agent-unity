@@ -92,6 +92,9 @@ func TestLoadConfig_NoFile_ReturnsDefaultsAndCreatesFile(t *testing.T) {
 	if len(cfg.Assets) != len(DefaultAssets()) {
 		t.Errorf("expected %d assets, got %d", len(DefaultAssets()), len(cfg.Assets))
 	}
+	if cfg.LoopEngineeringMode != LoopEngineeringLight {
+		t.Errorf("expected loop mode %q, got %q", LoopEngineeringLight, cfg.LoopEngineeringMode)
+	}
 
 	// File should have been created.
 	if _, err := os.Stat(ConfigFilePath()); err != nil {
@@ -103,7 +106,7 @@ func TestLoadConfig_ValidJSON(t *testing.T) {
 	withTempHome(t)
 	path := paths.AssetConfigPath()
 	_ = os.MkdirAll(filepath.Dir(path), 0755)
-	data := `{"version":"2.0.0","assets":[{"id":"dotween","name":"DOTween","enabled":true,"installed":true,"category":"animation","description":"test"}]}`
+	data := `{"version":"2.0.0","loopEngineeringMode":"ultra","assets":[{"id":"dotween","name":"DOTween","enabled":true,"installed":true,"category":"animation","description":"test"}]}`
 	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
 		t.Fatalf("write file: %v", err)
 	}
@@ -114,6 +117,9 @@ func TestLoadConfig_ValidJSON(t *testing.T) {
 	}
 	if cfg.Version != "2.0.0" {
 		t.Errorf("expected version 2.0.0, got %s", cfg.Version)
+	}
+	if cfg.LoopEngineeringMode != LoopEngineeringUltra {
+		t.Errorf("expected loop mode %q, got %q", LoopEngineeringUltra, cfg.LoopEngineeringMode)
 	}
 
 	// Merged with defaults: dotween should preserve enabled/installed, but metadata refreshed.
@@ -142,6 +148,24 @@ func TestLoadConfig_ValidJSON(t *testing.T) {
 	}
 }
 
+func TestLoadConfig_InvalidLoopEngineeringMode_DefaultsToLight(t *testing.T) {
+	withTempHome(t)
+	path := paths.AssetConfigPath()
+	_ = os.MkdirAll(filepath.Dir(path), 0755)
+	data := `{"version":"2.0.0","loopEngineeringMode":"careful","assets":[]}`
+	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if cfg.LoopEngineeringMode != LoopEngineeringLight {
+		t.Errorf("expected loop mode %q, got %q", LoopEngineeringLight, cfg.LoopEngineeringMode)
+	}
+}
+
 func TestLoadConfig_InvalidJSON(t *testing.T) {
 	withTempHome(t)
 	path := paths.AssetConfigPath()
@@ -165,6 +189,7 @@ func TestSaveConfig_RoundTrip(t *testing.T) {
 		t.Fatalf("Load error: %v", err)
 	}
 	cfg.Version = "1.2.3"
+	cfg.LoopEngineeringMode = LoopEngineeringUltra
 	for i := range cfg.Assets {
 		if cfg.Assets[i].ID == "dotween" {
 			cfg.Assets[i].Enabled = true
@@ -182,6 +207,9 @@ func TestSaveConfig_RoundTrip(t *testing.T) {
 	if loaded.Version != "1.2.3" {
 		t.Errorf("version mismatch: want %s, got %s", cfg.Version, loaded.Version)
 	}
+	if loaded.LoopEngineeringMode != LoopEngineeringUltra {
+		t.Errorf("expected loop mode %q after round-trip, got %q", LoopEngineeringUltra, loaded.LoopEngineeringMode)
+	}
 
 	var found bool
 	for _, a := range loaded.Assets {
@@ -197,6 +225,26 @@ func TestSaveConfig_RoundTrip(t *testing.T) {
 	}
 	if !found {
 		t.Error("dotween not found after round-trip")
+	}
+}
+
+func TestSetLoopEngineeringMode(t *testing.T) {
+	withTempHome(t)
+
+	cfg, err := SetLoopEngineeringMode(LoopEngineeringUltra)
+	if err != nil {
+		t.Fatalf("SetLoopEngineeringMode error: %v", err)
+	}
+	if cfg.LoopEngineeringMode != LoopEngineeringUltra {
+		t.Errorf("expected loop mode %q, got %q", LoopEngineeringUltra, cfg.LoopEngineeringMode)
+	}
+
+	cfg, err = SetLoopEngineeringMode(LoopEngineeringMode("unknown"))
+	if err != nil {
+		t.Fatalf("SetLoopEngineeringMode error: %v", err)
+	}
+	if cfg.LoopEngineeringMode != LoopEngineeringLight {
+		t.Errorf("expected invalid mode to normalize to %q, got %q", LoopEngineeringLight, cfg.LoopEngineeringMode)
 	}
 }
 
@@ -255,6 +303,26 @@ func TestSetAssetEnabled(t *testing.T) {
 	_, err = SetAssetEnabled("nonexistent", true)
 	if err == nil {
 		t.Error("expected error for nonexistent asset")
+	}
+}
+
+func TestLoadLoopEngineeringModeNoCreate(t *testing.T) {
+	home := withTempHome(t)
+
+	if got := LoadLoopEngineeringModeNoCreate(); got != LoopEngineeringLight {
+		t.Errorf("expected missing config to return %q, got %q", LoopEngineeringLight, got)
+	}
+	if _, err := os.Stat(filepath.Join(home, ".hera-agent-unity", "asset-config.json")); !os.IsNotExist(err) {
+		t.Fatalf("expected no config file to be created, stat err=%v", err)
+	}
+
+	path := paths.AssetConfigPath()
+	_ = os.MkdirAll(filepath.Dir(path), 0755)
+	if err := os.WriteFile(path, []byte(`{"loopEngineeringMode":" Ultra "}`), 0644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	if got := LoadLoopEngineeringModeNoCreate(); got != LoopEngineeringUltra {
+		t.Errorf("expected loop mode %q, got %q", LoopEngineeringUltra, got)
 	}
 }
 

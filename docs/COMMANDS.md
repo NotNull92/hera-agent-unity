@@ -1059,7 +1059,7 @@ hera-agent-unity asset-config <subcommand>
 
 | Flag | Description | Default |
 |:---|:---|:---|
-| `--json` | Output enabled assets + `ui_juicy_mode` + `dotween_preferred` as JSON | `false` |
+| `--json` | Output enabled assets + `loop_engineering_mode` + `ui_juicy_mode` + `dotween_preferred` as JSON | `false` |
 
 ---
 

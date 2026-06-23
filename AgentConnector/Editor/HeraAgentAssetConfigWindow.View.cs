@@ -887,6 +887,103 @@ namespace HeraAgent.Editor
             UpdateJuicyDotweenLabel();
         }
 
+        private void BuildUltraHeraSection()
+        {
+            var section = new VisualElement();
+            section.style.backgroundColor = ColorBgCard;
+            section.style.borderTopWidth = 1;
+            section.style.borderBottomWidth = 1;
+            section.style.borderTopColor = ColorBorder;
+            section.style.borderBottomColor = ColorBorder;
+            section.style.paddingTop = 10;
+            section.style.paddingBottom = 10;
+            section.style.paddingLeft = 12;
+            section.style.paddingRight = 12;
+            section.style.marginBottom = 6;
+            section.style.flexShrink = 0;
+            section.style.flexGrow = 0;
+
+            var header = new VisualElement();
+            header.style.flexDirection = FlexDirection.Row;
+            header.style.alignItems = Align.Center;
+
+            var headerIcon = new Label("◆");
+            headerIcon.style.fontSize = 13;
+            headerIcon.style.marginRight = 4;
+            headerIcon.style.color = ColorGold;
+            header.Add(headerIcon);
+
+            var headerLbl = new Label("Ultra Hera");
+            headerLbl.style.fontSize = 13;
+            headerLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
+            headerLbl.style.color = ColorGold;
+            header.Add(headerLbl);
+            section.Add(header);
+
+            var desc = new Label(
+                "Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself.");
+            desc.style.fontSize = 10;
+            desc.style.color = ColorTextSecondary;
+            desc.style.whiteSpace = WhiteSpace.Normal;
+            desc.style.marginTop = 6;
+            section.Add(desc);
+
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.flexWrap = Wrap.Wrap;
+            row.style.marginTop = 8;
+            section.Add(row);
+
+            var currentMode = NormalizeLoopEngineeringMode(_config?.loopEngineeringMode);
+            var toggles = new Dictionary<string, Toggle>();
+
+            void AddModeToggle(string mode, string label, string tooltip)
+            {
+                var toggle = new Toggle(label);
+                toggle.value = currentMode == mode;
+                toggle.tooltip = tooltip;
+                toggle.style.marginRight = 12;
+                toggle.style.marginBottom = 4;
+                toggle.style.color = ColorTextPrimary;
+                row.Add(toggle);
+                toggles[mode] = toggle;
+
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (_config == null) return;
+
+                    if (!evt.newValue)
+                    {
+                        if (NormalizeLoopEngineeringMode(_config.loopEngineeringMode) == mode)
+                            toggle.SetValueWithoutNotify(true);
+                        return;
+                    }
+
+                    _config.loopEngineeringMode = mode;
+                    foreach (var pair in toggles)
+                        pair.Value.SetValueWithoutNotify(pair.Key == mode);
+
+                    _isDirty = true;
+                    SaveConfig();
+                    UpdateStatusBar();
+                });
+            }
+
+            AddModeToggle(LoopEngineeringOff, "Off", "AI does not have to check again after using Hera.");
+            AddModeToggle(LoopEngineeringLight, "Light", "AI makes a change, then quickly checks that Unity is okay.");
+            AddModeToggle(LoopEngineeringUltra, "Ultra", "AI checks quickly like Light. Important work gets stricter checks.");
+
+            var modeHelp = new Label(
+                "Light is the default. Ultra uses Light for every task. Important words can make AI check more carefully by playing, testing, or taking a screenshot.");
+            modeHelp.style.fontSize = 10;
+            modeHelp.style.color = ColorMuted;
+            modeHelp.style.whiteSpace = WhiteSpace.Normal;
+            modeHelp.style.marginTop = 4;
+            section.Add(modeHelp);
+
+            _root.Add(section);
+        }
+
         // Reflects whether DOTween is enabled in the asset list — the same signal
         // HeraSettings/manage_ui use to pick DOScale tweens over a lerp fallback.
         private void UpdateJuicyDotweenLabel()

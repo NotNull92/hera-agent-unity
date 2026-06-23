@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.44 / CLI 0.0.30 — Ultra Hera verification modes)
+
+- Added `Ultra Hera` to Hera Settings with mutually exclusive `Off` / `Light` /
+  `Ultra` modes, saved as `loopEngineeringMode` in shared `asset-config.json`
+  with `light` as the default.
+- `doctor --agent-rules` now reads the saved mode and emits mode-specific
+  Light/Ultra verification loops for Codex, Claude, Cursor, Copilot, and other
+  agents. `Ultra` mode applies Light checks to every task and upgrades strict
+  requests to compile, console, state, test, PlayMode, screenshot, or `ui_doc`
+  evidence.
+- `asset-config --json` now includes `loop_engineering_mode`, and
+  `asset-config list` displays the current Ultra Hera mode.
+- Documented the Light and Ultra loops in `AGENTS.md`, `AGENT.md`,
+  `cmd/AGENT.md`, `CLAUDE.md`, and command/internal docs.
+
 ### Changed (Connector 0.0.43 — token-saving discovery benchmarks)
 
 - Documented the v0.0.43 token-reduction release surface in the README and

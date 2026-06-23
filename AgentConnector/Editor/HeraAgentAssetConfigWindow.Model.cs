@@ -32,12 +32,17 @@ namespace HeraAgent.Editor
             public List<AssetEntry> assets = new List<AssetEntry>();
             public string defaultCscPath;
             public string defaultDotnetPath;
+            public string loopEngineeringMode;
 
             // UI Juicy Mode — when on, manage_ui attaches Game UI/UX Bible juice
             // guidance (DOTween-aware) to its create responses. Read at dispatch
             // time by HeraSettings; surfaced to the CLI via asset-config.json.
             public bool ui_juicy_mode;
         }
+
+        private const string LoopEngineeringOff = "off";
+        private const string LoopEngineeringLight = "light";
+        private const string LoopEngineeringUltra = "ultra";
 
         private static string GetConfigPath()
         {
@@ -94,21 +99,42 @@ namespace HeraAgent.Editor
             if (_config == null)
                 _config = new AssetConfig();
 
+            bool changed = false;
+            var normalizedMode = NormalizeLoopEngineeringMode(_config.loopEngineeringMode);
+            if (_config.loopEngineeringMode != normalizedMode)
+            {
+                _config.loopEngineeringMode = normalizedMode;
+                changed = true;
+            }
+
             var defaults = GetDefaultAssets();
             var existingIds = new HashSet<string>(_config.assets.Select(a => a.id));
-            bool added = false;
 
             foreach (var def in defaults)
             {
                 if (!existingIds.Contains(def.id))
                 {
                     _config.assets.Add(def);
-                    added = true;
+                    changed = true;
                 }
             }
 
-            if (added)
+            if (changed)
                 SaveConfig();
+        }
+
+        private static string NormalizeLoopEngineeringMode(string mode)
+        {
+            switch ((mode ?? string.Empty).Trim().ToLowerInvariant())
+            {
+                case LoopEngineeringOff:
+                    return LoopEngineeringOff;
+                case LoopEngineeringUltra:
+                    return LoopEngineeringUltra;
+                case LoopEngineeringLight:
+                default:
+                    return LoopEngineeringLight;
+            }
         }
 
         private void InitializeCategoryStates()
