@@ -12,6 +12,20 @@ When the user says any of "find hera-agent-unity", "hera-agent-unity 찾아봐",
 
 Report one line: `Connected: <project> · port=<N> · unity=<version> · state=<state> · tools=<N>`. If any step fails, surface the error verbatim and stop — do not silently retry.
 
+## Ultra Hera
+
+Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself; it tells agents how carefully to verify Unity work after using Hera.
+
+Modes are saved in `asset-config.json` as `loopEngineeringMode`:
+
+- `off`: no extra checking rule.
+- `light` (default): use the Light loop for every Unity coding, Editor, and Inspector task.
+- `ultra`: use the Light loop for every task, then upgrade strict or important work to the Ultra loop.
+
+Light loop: confirm the goal, observe only needed state, change code/scene/Inspector, verify compile or state, check console errors, re-read only the changed target, retry 1-2 times if needed, and report short evidence.
+
+Ultra loop: compile, confirm console errors are 0, re-read Inspector/GameObject/asset state, run PlayMode or Unity tests, capture screenshot or `ui_doc` output if needed, and report evidence plus remaining risk.
+
 ## When to use it
 
 | Need                                            | Command                                                                |

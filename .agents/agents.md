@@ -28,6 +28,15 @@ Connected: <project> · port=<N> · unity=<version> · state=<state> · tools=<N
 
 If the Editor is unreachable, tell the user to open Unity with the UPM connector package and stop.
 
+## Ultra Hera
+
+Ultra Hera is Hera's verification rule for AI Unity work. It tells the agent how carefully to check Unity after using Hera.
+
+- `light` is the default. Light loop: every Unity coding, Editor, and Inspector task gets a compact check loop.
+- `ultra` applies Light to every task, then upgrades strict or important work to compile, console, state, PlayMode/test, screenshot, or `ui_doc` evidence.
+
+Use Ultra when the user asks to verify exactly, play and confirm, match UI, or check Inspector state.
+
 ## Token-Saving Defaults
 
 - Use `list --compact` for discovery.

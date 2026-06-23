@@ -29,6 +29,22 @@ hera-agent-unity list --compact         # cheapest tool discovery
 
 If `status` returns no instances, tell the user to open Unity with the UPM connector package and stop — don't retry blindly.
 
+## Ultra Hera
+
+Ultra Hera is the verification mode for AI-assisted Unity work. Hera does not do the AI work by itself; it tells the agent how carefully to check Unity after using Hera.
+
+Modes are saved in `asset-config.json` as `loopEngineeringMode`:
+
+- `off`: no extra checking rule.
+- `light` (default): use the Light loop for every Unity coding, Editor, and Inspector task.
+- `ultra`: use the Light loop for every task, then upgrade strict or important work to the Ultra loop.
+
+Light loop: confirm the goal, observe only needed state, change code/scene/Inspector, verify compile or state, check console errors, re-read only the changed target, retry 1-2 times if needed, and report short final evidence.
+
+Ultra loop: split the goal into success criteria, take a before-change snapshot, apply the change, compile, confirm console errors are 0, re-read Inspector/GameObject/asset state, run PlayMode or Unity tests, capture screenshot or `ui_doc` output if needed, classify failures, and report evidence plus remaining risk.
+
+Use Ultra when the user asks for strict verification, for example `정확히 검증해줘`, `플레이해서 확인해줘`, `UI 맞춰줘`, or `인스펙터까지 확실히 봐줘`.
+
 ## Command rules
 
 - **Call sequentially, never in parallel.** The connector serializes every command on the Unity main thread; concurrent calls just queue.

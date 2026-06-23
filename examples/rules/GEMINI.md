@@ -14,6 +14,20 @@ When the user says anything like "find hera-agent-unity", "hera-agent-unity 찾�
 
 Report one line: `Connected: <project> · port=<N> · unity=<version> · state=<state> · tools=<N>`. If any step fails, surface the error verbatim and stop — don't silently retry.
 
+## Ultra Hera
+
+Ultra Hera is the verification rule for AI-assisted Unity work. It does not replace the AI; it tells the agent how carefully to check Unity before reporting completion.
+
+The saved mode is `asset-config.json` → `loopEngineeringMode`:
+
+- `off`: no extra checking rule.
+- `light` (default): every Unity coding, Editor, and Inspector task gets a light verification loop.
+- `ultra`: every task still gets Light, and strict or important requests upgrade to deeper verification.
+
+Light loop: confirm the goal, read only needed state, change code/scene/Inspector, verify compile or state, read recent console errors, re-read only the changed target, retry 1-2 times if needed, and report short evidence.
+
+Ultra loop: split success criteria, snapshot before changing, apply the change, compile, confirm console errors are 0, re-read Inspector/GameObject/asset state, run PlayMode or Unity tests, capture screenshot or `ui_doc` output if needed, then report evidence and remaining risk.
+
 ## AntiGravity-specific notes
 
 - **Terminal/Bash tool only.** hera-agent-unity is a plain shell binary returning JSON — call it through AntiGravity's terminal tool, never as an MCP server. There is no daemon to start; every call is a stateless HTTP round-trip.

@@ -9,6 +9,7 @@
 coverage.out
 
 # Local agent tooling (not shared — public repo)
+.omo/
 .omc/
 .omx/
 .claude/

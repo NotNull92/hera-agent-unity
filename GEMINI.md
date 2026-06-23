@@ -20,6 +20,22 @@ Connected: <project> · port=<N> · unity=<version> · state=<state> · tools=<N
 
 If any step fails, surface the error verbatim and stop.
 
+## Ultra Hera
+
+Ultra Hera is the verification rule for AI-assisted Unity work. It does not replace the AI; it tells the agent how carefully to check Unity before reporting completion.
+
+The saved mode is `asset-config.json` → `loopEngineeringMode`:
+
+- `off`: no extra checking rule.
+- `light` (default): every Unity coding, Editor, and Inspector task gets a light verification loop.
+- `ultra`: every task still gets Light, and strict or important requests upgrade to deeper verification.
+
+Light loop: confirm the goal, read only needed state, change code/scene/Inspector, verify compile or state, read recent console errors, re-read only the changed target, retry 1-2 times if needed, and report short evidence.
+
+Ultra loop: split success criteria, snapshot before changing, apply the change, compile, confirm console errors are 0, re-read Inspector/GameObject/asset state, run PlayMode or Unity tests, capture screenshot or `ui_doc` output if needed, then report evidence and remaining risk.
+
+Use Ultra when the user asks for strict verification, for example `정확히 검증해줘`, `플레이해서 확인해줘`, `UI 맞춰줘`, or `인스펙터까지 확실히 봐줘`.
+
 ## AntiGravity rules
 
 - Use the terminal for `hera-agent-unity`; it is a CLI, not an MCP server.

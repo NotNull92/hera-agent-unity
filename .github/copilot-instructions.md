@@ -20,6 +20,22 @@ Connected: <project> · port=<N> · unity=<version> · state=<state> · tools=<N
 
 If any step fails, surface the failure and stop.
 
+## Ultra Hera
+
+Ultra Hera is Hera's verification guidance for AI-assisted Unity work. Hera does not do the AI work by itself; it tells the agent how carefully to check Unity after using Hera.
+
+The saved setting is `asset-config.json` → `loopEngineeringMode`:
+
+- `off`: no extra checking rule.
+- `light` (default): apply a light check to every Unity coding, Editor, and Inspector task.
+- `ultra`: apply Light to every task, then upgrade strict or important work to deeper verification.
+
+Light check: confirm the goal, read only needed state, make the change, verify compile or state, read recent console errors, re-read the changed target, retry once or twice if needed, and report short evidence.
+
+Ultra check: compile, confirm console errors are 0, re-read Inspector/GameObject/asset state, run PlayMode or Unity tests, capture screenshot or `ui_doc` output when needed, and report evidence plus remaining risk.
+
+Use Ultra when the user asks for strict verification, for example "play it and confirm", "match the UI", "check the Inspector too", or `정확히 검증해줘`.
+
 ## Token-Saving Defaults
 
 - Use `hera-agent-unity list --compact` for repeated discovery.
