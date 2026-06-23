@@ -301,7 +301,29 @@ Detailed command docs: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
 
 ## Ultra Hera
 
-Ultra Hera is a setting for AI agent rules. It does not do the AI work by itself. It tells agents how carefully they should check Unity work after using Hera.
+<div align="center">
+
+<img src="docs/assets/ultra_hera_logo.png" width="42%" alt="Ultra Hera">
+
+<br>
+
+**Hera's signature verification mode for AI-assisted Unity work.**
+
+<sub>Ultra Hera helps an AI agent check its Unity work before it says "done".</sub>
+
+</div>
+
+Ultra Hera is Hera's safety belt for AI Unity work.
+
+When an AI changes code, a scene, or the Inspector, it can be wrong in small ways: Unity may not compile, the Console may have errors, a GameObject may not have the component you expected, or Play Mode may fail after the edit.
+
+Ultra Hera gives the agent a simple rule:
+
+```text
+Do the work. Check the work. Only then report the result.
+```
+
+It does not replace the AI. It tells the AI how carefully to verify Unity work after using Hera.
 
 Find it here:
 
@@ -313,11 +335,28 @@ Modes:
 
 | Mode | Simple meaning |
 |:---|:---|
-| `Off` | The agent does not have to check again after using Hera. |
-| `Light` | Default. The agent checks the goal, reads only needed state, changes code/scene/Inspector, compiles or checks state, reads console errors, re-reads the changed target, and retries once or twice if needed. |
-| `Ultra` | The agent still uses Light checks for every task, then upgrades strict requests to deeper checks such as tests, Play Mode, Inspector re-read, screenshots, or `ui_doc` capture. |
+| `Off` | No extra checking rule. |
+| `Light` | Default. The agent does a small check after every Unity task, so it does not finish in a clearly wrong state. |
+| `Ultra` | The agent uses Light checks for every task, then upgrades important requests to stronger checks like tests, Play Mode, Inspector reads, screenshots, or `ui_doc` capture. |
 
-Light is for not finishing in a wrong state. Ultra is for requests like "verify exactly", "play it and confirm", "match the UI", or "check the Inspector too".
+Think of the modes like this:
+
+| Mode | Like a... | What it checks |
+|:---|:---|:---|
+| `Light` | Quick seatbelt check | "Did Unity compile? Are there Console errors? Did the thing I changed really change?" |
+| `Ultra` | Full pre-flight check | "Does it compile, run, look right, and match the user's request with evidence?" |
+
+Use Light for everyday coding and Inspector edits. Use Ultra when the user says things like "verify exactly", "play it and confirm", "match the UI", or "check the Inspector too".
+
+What Ultra Hera makes agents do better:
+
+- Check Unity instead of guessing.
+- Read only the state they need.
+- Compile after edits.
+- Read real Console errors.
+- Re-check the changed GameObject, component, asset, or UI.
+- Use Play Mode, tests, screenshots, or `ui_doc` capture when the task needs stronger proof.
+- Report short evidence instead of a vague "it should work".
 
 Representative Light commands:
 
@@ -338,6 +377,8 @@ hera-agent-unity editor play --wait
 hera-agent-unity screenshot --view game
 hera-agent-unity ui_doc capture --out ...
 ```
+
+The goal is simple: the agent should not close the task while Unity is still broken.
 
 ---
 
