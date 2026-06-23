@@ -505,7 +505,9 @@ Also check that the Unity package is installed and Unity has finished compiling.
 
 ![NoMoreRolls Play Mode preview](docs/sample/NoMoreRolls_Play_preview.gif)
 
-<sub><b>NoMoreRolls</b> — Play Mode preview from a Unity game built with Hera-assisted editor work. [Watch the full video on GitHub](https://github.com/NotNull92/hera-agent-unity/blob/main/docs/sample/NoMoreRolls_Play_full_preview.mp4).</sub>
+https://github.com/user-attachments/assets/15d353e4-b7bb-4534-bbca-c27de0792147
+
+<sub><b>NoMoreRolls</b> — Play Mode preview from a Unity game built with Hera-assisted editor work. Full video hosted as a GitHub attachment.</sub>
 
 </div>
 
