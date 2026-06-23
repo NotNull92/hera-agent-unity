@@ -478,6 +478,14 @@ GitHub: [@NotNull92](https://github.com/NotNull92)
 
 ---
 
+## 후원
+
+Hera는 무료이며 MIT 라이선스로 제공됩니다. Hera가 시간을 아껴줬다면 개발을 후원할 수 있습니다:
+
+[![Support on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/notnull92)
+
+---
+
 ## 라이선스
 
 MIT. [LICENSE](LICENSE)를 확인하세요.
