@@ -462,11 +462,9 @@ hera-agent-unity doctor --json
 
 <div align="center">
 
-![NoMoreRolls Play Mode preview](docs/sample/NoMoreRolls_Play_preview.gif)
-
 https://github.com/user-attachments/assets/15d353e4-b7bb-4534-bbca-c27de0792147
 
-<sub><b>NoMoreRolls</b> — Hera로 Unity Editor 작업을 보조하며 만든 게임의 Play Mode 프리뷰입니다. 전체 영상은 GitHub 첨부 파일로 호스팅됩니다.</sub>
+<sub><b>NoMoreRolls</b> — Hera로 Unity Editor 작업을 보조하며 만든 Unity 게임의 전체 Play Mode 영상입니다.</sub>
 
 </div>
 
