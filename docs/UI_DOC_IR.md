@@ -4,10 +4,11 @@ The contract between the agent and Unity for the **HTML→Unity UI** pipeline. T
 agent is fluent in HTML/CSS but weak at uGUI; it designs in HTML, then translates
 to this IR, which `ui_doc apply` realizes deterministically as uGUI.
 
-This document is the **static schema** — it mirrors uGUI's serialized model
-(Unity 6000.0 / `com.unity.ugui@2.0`) so the agent never needs to read the raw
-component JSON at runtime. Field → uGUI mappings and enum values are given
-exactly.
+This document is the **static schema**. It mirrors uGUI's serialized model and
+is paired with version-aware fixer rules from [`UGUI_VERSION_RULES.md`](UGUI_VERSION_RULES.md):
+Unity 2022 uses `com.unity.ugui@1.0`, Unity 2023 / 6000.0 / 6000.3 use
+`com.unity.ugui@2.0`, and Unity 6000.5+ uses `com.unity.ugui@2.5`.
+Field → uGUI mappings and enum values are given exactly.
 
 ## Pipeline
 
@@ -269,6 +270,14 @@ When you have a sprite kit instead of procedural shapes, two actions feed real
 - `--mode create` (default): always new objects.
 - `--mode upsert`: match existing children by name; update rect/image/text/layout
   in place (no duplicates, no deletes). Button labels are reused.
-- Response: compact summary `{created, updated, sprites, errors, root_id}`.
+- Before realization, `apply` runs the official-manual-backed uGUI fixer. It
+  auto-corrects deterministic IR issues such as stretched RectTransforms using
+  `size`/`pos` instead of offsets and filled Images missing `type:"filled"`.
+- Response: compact summary
+  `{created, updated, sprites, docs_version, ugui_package, manual_url, fixes, diagnostics, errors, root_id}`.
+  `fixes` are deterministic mutations applied to the input IR before objects are
+  created/updated. `diagnostics` are version-specific warnings or errors where
+  the official docs show likely broken uGUI structure but the agent must decide
+  the intended fix.
 - With UI Juicy Mode on, `apply` adds per-distinct-element-type juice recipes as an
   `agent_hint` (guidance only).

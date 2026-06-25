@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.45 — official uGUI docs fixer for `ui_doc apply`)
+
+- Added `UiDocFixer`, a version-aware uGUI fixer that selects the official
+  documentation bucket from the connected Editor version: `2022.3`
+  (`com.unity.ugui@1.0`), `2023.2` / `6000.0` / `6000.3`
+  (`com.unity.ugui@2.0`), or `6000.5+` (`com.unity.ugui@2.5`).
+- `ui_doc apply` now reports `docs_version`, `ugui_package`, `manual_url`,
+  `fixes`, and `diagnostics` so agents can see which official uGUI rules were
+  selected and which deterministic corrections were applied.
+- The first fixer pass corrects unambiguous IR shape issues such as full-stretch
+  RectTransforms missing zero offsets and filled Images missing `type:"filled"`,
+  while reporting ambiguous uGUI structure as diagnostics.
+- Added `docs/UGUI_VERSION_RULES.md` as the official-manual-backed rule
+  catalogue for future `ui_doc` / `manage_ui` fixer expansion.
+
 ### Added (Connector 0.0.44 / CLI 0.0.30 — Ultra Hera verification modes)
 
 - Added `Ultra Hera` to Hera Settings with mutually exclusive `Off` / `Light` /

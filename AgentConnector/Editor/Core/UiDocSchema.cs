@@ -35,6 +35,9 @@ namespace HeraAgent
             public int Created;
             public int Updated;
             public int Sprites;
+            public readonly UiDocFixer.Profile FixerProfile = UiDocFixer.CurrentProfile();
+            public readonly List<UiDocFixer.Report> Fixes = new List<UiDocFixer.Report>();
+            public readonly List<UiDocFixer.Report> Diagnostics = new List<UiDocFixer.Report>();
             public readonly List<string> Errors = new List<string>();
             public readonly HashSet<string> ElementTypes = new HashSet<string>();
         }
@@ -160,11 +163,12 @@ namespace HeraAgent
         /// element-type changes, no deletion of objects absent from the doc).
         /// Returns the realized root GameObject.
         /// </summary>
-        public static GameObject ApplyNode(JObject node, Transform parent, ApplyStats stats, bool upsert, JObject canvasConfig = null)
+        public static GameObject ApplyNode(JObject node, Transform parent, ApplyStats stats, bool upsert, JObject canvasConfig = null, string path = null)
         {
             if (node == null) return null;
             string element = (node["element"]?.ToString() ?? "empty").ToLowerInvariant();
             string name = node["name"]?.ToString();
+            path = string.IsNullOrEmpty(path) ? "/" + (string.IsNullOrEmpty(name) ? Capitalize(element) : name) : path;
 
             GameObject go = null;
             if (upsert && !string.IsNullOrEmpty(name))
@@ -183,11 +187,14 @@ namespace HeraAgent
                 stats.Updated++;
             }
 
+            UiDocFixer.NormalizeNode(node, parent as RectTransform, path, stats.Fixes, stats.Diagnostics);
+
             if (node["rect"] is JObject rect) ApplyRect(go, rect);
             ApplyImage(go, node["image"] as JObject, name, stats);
             ApplyText(go, node["text"] as JObject, element, stats);
             // Layout group goes on before children so they auto-arrange as created.
             ApplyLayout(go, node);
+            UiDocFixer.DiagnoseGameObject(go, path, stats.Diagnostics);
 
             // A filled image is the idiomatic progress / HP bar — surface the
             // bar-specific juice recipe (instant drop + delayed chip bar, segment
@@ -198,7 +205,12 @@ namespace HeraAgent
             // receive null so they keep default scaler settings.
             if (node["children"] is JArray children)
                 foreach (var child in children)
-                    if (child is JObject co) ApplyNode(co, go.transform, stats, upsert, null);
+                    if (child is JObject co)
+                    {
+                        var childName = co["name"]?.ToString();
+                        var childElement = co["element"]?.ToString() ?? "empty";
+                        ApplyNode(co, go.transform, stats, upsert, null, path + "/" + (string.IsNullOrEmpty(childName) ? Capitalize(childElement) : childName));
+                    }
 
             return go;
         }

@@ -41,6 +41,7 @@ Tests, TUI, batch engine, and asset-config layer sit on top — but the engine t
 | [`GO_CLI.md`](GO_CLI.md) | Go CLI code structure, entry point, command dispatch | Modifying Go code |
 | [`CSHARP_CONNECTOR.md`](CSHARP_CONNECTOR.md) | C# Unity side — HttpServer, CommandRouter, ToolDiscovery | Modifying C# code |
 | [`COMMANDS.md`](COMMANDS.md) | All CLI commands, flags, parameters | Adding/changing commands |
+| [`UGUI_VERSION_RULES.md`](UGUI_VERSION_RULES.md) | Official Unity uGUI version rules for UI diagnostics/fixer behavior | Changing `ui_doc`, `manage_ui`, or UI generation/fixer behavior |
 | [`CUSTOM_TOOLS.md`](CUSTOM_TOOLS.md) | How to write new C# tools that the CLI can call | Extending functionality |
 | [`DEVELOPMENT.md`](DEVELOPMENT.md) | Build, test, lint, release workflows | Setting up dev env or releasing |
 | [`benchmarks/token-reduction/README.md`](benchmarks/token-reduction/README.md) | Versioned token-reduction benchmarks for `list --compact` and `find_gameobjects` projections | Evaluating agent token cost by Unity version |

@@ -755,7 +755,7 @@ hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-
 HTML→Unity UI pipeline (uGUI). The agent is fluent in HTML/CSS but weak at uGUI; `ui_doc` closes the gap by giving it **deterministic** endpoints plus a compact JSON IR (`ui_doc/2`) as the contract:
 
 - **`export`** serializes a live UI subtree to the IR (defaults omitted) — *grounding* so the agent maps an HTML design onto the project's real structure instead of guessing.
-- **`apply`** builds an IR document under a parent (always-create) and reports a compact summary.
+- **`apply`** builds or upserts an IR document under a parent and reports a compact summary plus the active official uGUI docs bucket, deterministic fixes, and diagnostics.
 - **`import`** copies your own sprite files (absolute paths — a downloaded UI kit, exported art) into the project as `Sprite` assets so `apply` can reference them by `Assets/` path. Optional per-sprite 9-slice `border`, `ppu`, `filter`, `pivot`. GIFs are skipped (Unity has no GIF→Sprite import).
 - **`gen_sprite`** bakes a Tier-1 procedural sprite (CSS-shape vocabulary) and imports it — **no external dependency**.
 - **`capture`** renders the live UI to a PNG so the agent can *see* what it built and compare it to the reference. ScreenSpaceOverlay canvases are composited after the camera, so a normal `screenshot` misses them; `capture` routes every root non-world canvas through a throwaway camera + RenderTexture.
@@ -773,7 +773,7 @@ hera-agent-unity ui_doc <action> [flags]
 | Action | Flags | Description |
 |:---|:---|:---|
 | `export` | `--path </path>` or `--instance_id <id>`; `[--depth N]` | Serialize the subtree to the `ui_doc/2` IR. Depth defaults to 8. |
-| `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | Realize the IR under the parent (default: existing/auto Canvas). `create` (default) always makes new objects; `upsert` matches existing children by name and updates rect/graphic/text in place (no duplicates, no deletes). Pass the doc via `--file` so it never rides inline in context. |
+| `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | Realize the IR under the parent (default: existing/auto Canvas). `create` (default) always makes new objects; `upsert` matches existing children by name and updates rect/graphic/text in place (no duplicates, no deletes). Before realizing, runs the official uGUI docs fixer for the current Unity bucket. Pass the doc via `--file` so it never rides inline in context. |
 | `import` | `--src <abs path>` **or** `--file <imports.json>`; `[--into Assets/...]`; `[--border l,b,r,t]`; `[--ppu N]`; `[--filter point\|bilinear]`; `[--pivot x,y]` | Copy external sprite file(s) into the project as `Sprite` assets. Single sprite via `--src` + shared flags; many (with per-sprite settings) via `--file` `{into?, items:[{src, name?, border?, ppu?, filter?, pivot?}]}`. Default dest: `Assets/HeraImported/`. A `border` sets `Image.type = Sliced` (FullRect mesh). GIFs are skipped. Returns `{into, imported:[{src,asset,instance_id,sliced}], skipped, errors, count}`. |
 | `gen_sprite` | `--spec '{...}'` or `--kind/--size/--color/...`; `[--out Assets/...]` | Bake + import a sprite. Kinds: `solid`, `rounded_rect`, `gradient`, `nine_slice` (rounded box + 9-slice `border [l,b,r,t]`, default = radius). Default out: `Assets/HeraGenerated/`. |
 | `capture` | `[--out <file.png>]`; `[--width N] [--height N]`; `[--bg #RRGGBBAA]`; `[--canvas </path> or <id>]` | Render the live overlay UI to a PNG. Size defaults to the canvas pixel size (current game view); `bg` defaults to opaque dark (`alpha 0` = transparent); without `--canvas` it captures all root non-world canvases. Default out: a temp file. Returns `{path,width,height,bytes,canvases}`. |
@@ -817,6 +817,32 @@ hera-agent-unity ui_doc sample --image ref.png --at "0.5,0.12;0.5,0.95" --region
 # Render what you built and compare it to the reference
 hera-agent-unity ui_doc capture --out /tmp/built.png
 ```
+
+`apply` returns the current docs bucket and the fixer result:
+
+```jsonc
+{
+  "created": 4,
+  "updated": 0,
+  "sprites": 1,
+  "docs_version": "6000.5",
+  "ugui_package": "com.unity.ugui@2.5",
+  "manual_url": "https://docs.unity3d.com/Packages/com.unity.ugui@2.5/manual/index.html",
+  "fixes": [
+    { "rule": "image.fill_type", "path": "/Canvas/HP", "message": "Set Image.type to Filled because image.fill is present." }
+  ],
+  "diagnostics": [
+    { "rule": "canvas_scaler.no_reference_resolution", "severity": "warning", "path": "/", "message": "..." }
+  ],
+  "errors": [],
+  "root_id": 12345
+}
+```
+
+The fixer mutates only deterministic IR shape problems backed by the official
+uGUI manuals, such as stretched RectTransforms missing offsets or filled Images
+missing `type:"filled"`. Ambiguous structure is reported in `diagnostics`.
+Rule details live in [`UGUI_VERSION_RULES.md`](UGUI_VERSION_RULES.md).
 
 **UI Juicy Mode** — when enabled, `apply` adds an `agent_hint` with the Game UI/UX Bible juice recipes for each *distinct* element type in the doc (deduped once, not per element — strong signature, lean tokens). Guidance only; no runtime components are attached.
 

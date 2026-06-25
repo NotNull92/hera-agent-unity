@@ -41,7 +41,8 @@ AgentConnector/
     │   ├── AssetDetector.cs             # third-party asset detection + config sync
     │   ├── AssetReserializer.cs         # ForceReserializeAssets helper
     │   ├── ProceduralSprite.cs          # solid/rounded/gradient/nine_slice sprite baking
-    │   └── UiDocSchema.cs               # ui_doc/2 IR export/apply/layout engine
+    │   ├── UiDocSchema.cs               # ui_doc/2 IR export/apply/layout engine
+    │   └── UiDocFixer.cs                # official uGUI docs fixes/diagnostics
     ├── Data/
     │   └── unity_docs_*.jsonl.gz.bytes   # bundled Unity ScriptReference indexes
     ├── Tools/
@@ -475,6 +476,13 @@ The `ui_doc/2` IR engine:
 - `ApplyNode` — realizes IR under a parent (create or upsert)
 - Layout group / layout element / content size fitter support
 - Anchor preset grid (replicated from `ManageUI` pending Core extraction)
+
+### UiDocFixer.cs
+
+Version-aware official uGUI manual fixer for `ui_doc apply`. It selects the
+current docs bucket through `UnityVersionCompat`, applies deterministic IR
+corrections before realization, and reports non-deterministic uGUI structure
+issues through diagnostics.
 
 ---
 

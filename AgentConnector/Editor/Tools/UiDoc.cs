@@ -12,7 +12,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "ui_doc",
-        Description = "HTML→Unity UI pipeline (uGUI). export: serialize a UI subtree to the compact ui_doc IR (grounding for the agent). apply: realize a ui_doc IR under a parent — pass the doc via --file; --mode create (default, always-new) or upsert (match existing children by name and update rect/graphic/text in place). import: copy external sprite files (absolute paths, e.g. a downloaded UI kit) into the project as Sprite assets (textureType=Sprite, optional 9-slice border/ppu/pivot) so apply can reference them by Assets/ path — pass items via --file or a single --src. gen_sprite: Tier-1 procedural sprite (solid/rounded_rect/gradient/nine_slice) baked + imported, no external dependency. capture: render the live UI (overlay Canvases, which a normal camera render misses) to a PNG so the agent can verify what it built against a reference. (sample — read colors from a reference image — and catalog — scan a UI-asset folder into a manifest of size/alpha/palette/9-slice/name hints — are handled CLI-side, no Unity round-trip; the agent reads the catalogued PNGs to classify them, GIFs are reference-only.) Element property edits beyond the IR stay in manage_components; juice recipes ride apply's agent_hint when UI Juicy Mode is on.",
+        Description = "HTML→Unity UI pipeline (uGUI). export: serialize a UI subtree to the compact ui_doc IR (grounding for the agent). apply: realize a ui_doc IR under a parent — pass the doc via --file; --mode create (default, always-new) or upsert (match existing children by name and update rect/graphic/text in place). apply also reports the current official uGUI docs bucket plus deterministic fixes and diagnostics from the version-aware fixer. import: copy external sprite files (absolute paths, e.g. a downloaded UI kit) into the project as Sprite assets (textureType=Sprite, optional 9-slice border/ppu/pivot) so apply can reference them by Assets/ path — pass items via --file or a single --src. gen_sprite: Tier-1 procedural sprite (solid/rounded_rect/gradient/nine_slice) baked + imported, no external dependency. capture: render the live UI (overlay Canvases, which a normal camera render misses) to a PNG so the agent can verify what it built against a reference. (sample — read colors from a reference image — and catalog — scan a UI-asset folder into a manifest of size/alpha/palette/9-slice/name hints — are handled CLI-side, no Unity round-trip; the agent reads the catalogued PNGs to classify them, GIFs are reference-only.) Element property edits beyond the IR stay in manage_components; juice recipes ride apply's agent_hint when UI Juicy Mode is on.",
         Examples = new[]
         {
             "hera-agent-unity ui_doc catalog --dir /Users/me/Downloads/UIKit",
@@ -180,6 +180,7 @@ namespace HeraAgent.Tools
             bool upsert = string.Equals(p.Get("mode"), "upsert", System.StringComparison.OrdinalIgnoreCase);
 
             var stats = new UiDocSchema.ApplyStats();
+            UiDocFixer.PreflightDocument(doc, stats.Diagnostics);
             var canvasConfig = doc["canvas"] as JObject;
             var root = UiDocSchema.ApplyNode(rootNode, parent, stats, upsert, canvasConfig);
 
@@ -201,6 +202,11 @@ namespace HeraAgent.Tools
                 created = stats.Created,
                 updated = stats.Updated,
                 sprites = stats.Sprites,
+                docs_version = stats.FixerProfile.docs_version,
+                ugui_package = stats.FixerProfile.ugui_package,
+                manual_url = stats.FixerProfile.manual_url,
+                fixes = stats.Fixes,
+                diagnostics = stats.Diagnostics,
                 errors = stats.Errors,
                 root_id = root != null ? EntityIdCompat.IdOf(root) : 0,
             });

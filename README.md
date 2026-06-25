@@ -85,6 +85,7 @@ This release focuses on three simple things: more Unity versions, fewer tokens, 
 | **49-55-token object handoff** | `find_gameobjects --ids` returns only the IDs an agent needs for the next command. |
 | **Signature: UI Juicy Mode** | Hera can tell the agent how to make generated UI feel alive, not static. |
 | **NEW: Ultra Hera** | Agents can use light checks by default and upgrade to strict Unity verification when the task asks for it. |
+| **NEW: uGUI docs fixer** | `ui_doc apply` selects the official uGUI rule set for the open Unity Editor version and reports fixes/diagnostics. |
 
 Measured versions:
 
@@ -265,7 +266,10 @@ hera-agent-unity ui_doc apply --file hud.json --parent /Canvas --mode upsert
 hera-agent-unity ui_doc capture --out hud_built.png
 ```
 
-This is the main idea: do not guess the UI. Measure it.
+This is the main idea: do not guess the UI. Measure it. During `ui_doc apply`,
+Hera also reports the active official uGUI docs bucket (`2022.3`, `2023.2`,
+`6000.0`, `6000.3`, or `6000.5`), deterministic `fixes`, and remaining
+`diagnostics` so the agent can correct version-specific uGUI structure.
 
 ---
 
@@ -276,6 +280,10 @@ AI can make a button that works. UI Juicy Mode helps it make a button that feels
 When this mode is on, Hera adds an `agent_hint` to UI creation results. The hint gives concrete game-feel recipes: hover scale, press squash, release bounce, popup overshoot, count-up numbers, damage text motion, haptics, and reduce-motion reminders.
 
 It is guidance, not runtime bloat. Hera does not attach heavy gameplay components for you. The agent receives the recipe, then applies the animation or feedback through normal Unity edits.
+
+The uGUI fixer is separate from the juice recipe: `ui_doc apply` always reports
+manual-backed `fixes` / `diagnostics`, while UI Juicy Mode only adds optional
+game-feel guidance in `agent_hint`.
 
 Turn it on in Unity:
 
