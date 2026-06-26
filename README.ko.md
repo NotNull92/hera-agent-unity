@@ -485,6 +485,8 @@ https://github.com/user-attachments/assets/15d353e4-b7bb-4534-bbca-c27de0792147
 
 GitHub: [@NotNull92](https://github.com/NotNull92)
 
+Discord: [Hera 커뮤니티 참여하기](https://discord.gg/QBzEVuYwK)
+
 ---
 
 ## 후원

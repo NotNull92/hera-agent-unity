@@ -525,6 +525,8 @@ https://github.com/user-attachments/assets/15d353e4-b7bb-4534-bbca-c27de0792147
 
 GitHub: [@NotNull92](https://github.com/NotNull92)
 
+Discord: [Join the Hera community](https://discord.gg/QBzEVuYwK)
+
 ---
 
 ## Support
