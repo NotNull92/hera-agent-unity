@@ -4,8 +4,8 @@ namespace HeraAgent
 {
     /// <summary>
     /// The "juice" playbook surfaced through manage_ui's agent_hint when UI Juicy
-    /// Mode is on. Concrete numbers are lifted from the Game UI/UX Bible (Juice /
-    /// Game Feel) so the calling agent applies feedback with real parameters
+    /// Mode is on. Concrete numbers are lifted from the Game Feel & Juice Bible + UI
+    /// Feedback Design Guide so the calling agent applies feedback with real parameters
     /// instead of guessing. Pure strings — no Unity dependency, no allocation
     /// beyond the composed hint. Element property edits still go through
     /// manage_components; this only advises what to add.
@@ -98,7 +98,7 @@ namespace HeraAgent
             return Header + string.Join("\n\n", bodies) + "\n" + TweenLine(dotweenPreferred) + "\n" + Footer;
         }
 
-        const string Header = "[Hera] UI Juicy Mode is on — make this feel alive (Game UI/UX Bible). Maximum output for minimum input.\n";
+        const string Header = "[Hera] UI Juicy Mode is on — make this feel alive (Game Feel & Juice Bible). Maximum output for minimum input.\n";
         const string Footer = "Golden rule — double down on the screen's purpose: reward / celebration UI earns big, exaggerated juice (bigger = more important); precision or input-heavy UI (forms, drag, text entry, competitive HUD) stays calm and steady so it stays readable. Always gate strong motion behind a reduce-motion / intensity option, and match feedback weight to action weight.";
 
         static string TweenLine(bool dotweenPreferred) => dotweenPreferred

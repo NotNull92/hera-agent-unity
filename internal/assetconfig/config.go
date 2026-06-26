@@ -39,7 +39,7 @@ type AssetConfig struct {
 	LoopEngineeringMode LoopEngineeringMode `json:"loopEngineeringMode"`
 
 	// JuicyMode mirrors ui_juicy_mode in the shared asset-config.json. When on,
-	// the connector's manage_ui attaches Game UI/UX Bible juice guidance to its
+	// the connector's manage_ui attaches Game Feel & Juice Bible + UI Feedback Design Guide juice guidance to its
 	// create responses. The Hera Settings window is the primary editor.
 	JuicyMode bool `json:"ui_juicy_mode"`
 

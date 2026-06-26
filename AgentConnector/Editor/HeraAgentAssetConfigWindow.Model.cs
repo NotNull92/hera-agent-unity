@@ -34,7 +34,7 @@ namespace HeraAgent.Editor
             public string defaultDotnetPath;
             public string loopEngineeringMode;
 
-            // UI Juicy Mode — when on, manage_ui attaches Game UI/UX Bible juice
+            // UI Juicy Mode — when on, manage_ui attaches Game Feel & Juice Bible + UI Feedback Design Guide juice
             // guidance (DOTween-aware) to its create responses. Read at dispatch
             // time by HeraSettings; surfaced to the CLI via asset-config.json.
             public bool ui_juicy_mode;

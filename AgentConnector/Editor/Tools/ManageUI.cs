@@ -165,7 +165,7 @@ namespace HeraAgent.Tools
         }
 
         // When UI Juicy Mode is on (Hera Settings), attach the element's juice
-        // recipe — concrete Game UI/UX Bible parameters, DOTween-aware — as an
+        // recipe — concrete Game Feel & Juice Bible + UI Feedback Design Guide parameters, DOTween-aware — as an
         // agent_hint so the calling agent can make the UI feel alive. No-op when
         // the toggle is off (agent_hint stays null → omitted from the response).
         private static SuccessResponse WithJuice(string element, SuccessResponse resp)

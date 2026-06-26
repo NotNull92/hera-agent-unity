@@ -850,7 +850,7 @@ namespace HeraAgent.Editor
             header.Add(headerLbl);
 
             var toggle = new Toggle { value = _config?.ui_juicy_mode ?? false };
-            toggle.tooltip = "When on, manage_ui create attaches Game UI/UX Bible juice guidance to its responses.";
+            toggle.tooltip = "When on, manage_ui create attaches Game Feel & Juice Bible juice guidance to its responses.";
             header.Add(toggle);
 
             section.Add(header);
