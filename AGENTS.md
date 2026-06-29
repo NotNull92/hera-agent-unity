@@ -231,7 +231,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Enter / exit play mode | `editor play [--wait]` / `editor stop` | `--wait` blocks until fully entered. |
 | Force recompile | `editor refresh --compile` | Waits until compile finishes or `--timeout` (60s default) elapses — raise `--timeout` for big projects, or use `refresh_unity --compile request` to fire-and-forget. |
 | Trigger a menu item | `menu "Window/General/Console"` | `File/Quit` is blocked for safety. |
-| Capture screenshot | `screenshot [--view game]` | Default scene view, 1920×1080. |
+| Capture screenshot | `screenshot [--view game]` / `screenshot --isolated --target /Player` | Default scene view, 1920×1080; isolated mode renders one GameObject. |
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
 | Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
@@ -241,12 +241,13 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system] [--include_version]` | Returns bare name strings by default; `--filter` to scope, `--include_version` for `{name, version}` objects. |
 | Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
 | Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
+| Find / create / move project assets | `manage_assets find --type Texture2D --filter icon` / `manage_assets mkdir --path Assets/Generated` | Compact `AssetDatabase` operations constrained to `Assets/`; use before falling back to `exec` for basic asset file work. |
 | Ground an HTML→UI design on the real UI | `ui_doc export --path </path>` | Returns the compact `ui_doc/2` IR (defaults omitted). Read it before authoring. |
 | Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...] [--mode upsert]` | `create` (default) or `upsert` (update existing children in place). Pass the doc via `--file` so it never rides inline in context. |
 | Bake a procedural sprite | `ui_doc gen_sprite --spec '{...}' --out Assets/...` | Tier-1: `solid` / `rounded_rect` / `gradient` / `nine_slice` (border for 9-slice). No external dependency. |
 | Measure colors off a reference image | `ui_doc sample --image ref.png --at "x,y" [--region "x,y,w,h"]` | Normalized [0,1] top-left coords (`;`-separate many). Returns measured `hex`/`rgba`. Measure colors — don't eyeball them. CLI-side, no Unity needed. |
 | See what you built (verify) | `ui_doc capture --out /tmp/built.png` | Renders the live overlay UI to PNG (a normal `screenshot` misses overlay canvases). Read it and compare to the reference. |
-| Anything else (read prop, AssetDatabase, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
+| Anything else (read prop, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
 
 **Compile-check only** (validate syntax/types without executing):
 ```bash
@@ -478,7 +479,7 @@ bash equivalent: same idea, replace `@'...'@` with `<<'EOF'` heredoc or single-q
 | `scene info` / `load` / `save` / `close` / `list` | Scene management | `--mode single\|additive\|additive_without_loading` (load) |
 | `editor play \| stop \| pause \| refresh` | Editor lifecycle | `--wait` (play), `--compile`, `--force` (refresh) |
 | `menu "<path>"` | Execute menu item | (none) |
-| `screenshot` | Capture view | `--view scene\|game`, `--width`, `--height`, `--output_path` |
+| `screenshot` | Capture view or isolated target | `--view scene\|game`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
 | `test` | Run tests | `--mode EditMode\|PlayMode`, `--filter <ns.class>` |
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
 | `reserialize [paths...]` | Force YAML reserialize | (no args = whole project) |
@@ -486,6 +487,7 @@ bash equivalent: same idea, replace `@'...'@` with `<<'EOF'` heredoc or single-q
 | `list` | List registered tools (names → name+desc → schema) | `--names` / `--compact` (names only), `--tool <name>` (full schema) |
 | `batch` | Run multiple commands in one HTTP request | `--file path.json`, or pipe JSON; `options.fail_fast` |
 | `list_assemblies` | List loaded assembly names | `--filter`, `--include_system`, `--include_version` |
+| `manage_assets` | AssetDatabase file/folder operations | `find`, `mkdir`, `copy`, `move`, `delete` |
 | `describe_type <name>` | Type info + Unity-pitfalls | `--members fields\|properties\|methods\|all`, `--limit N` |
 | `find_method <pat>` | Search methods across assemblies | `--namespace`, `--limit` (default 50) |
 | `asset-config set-csc <path>` / `set-dotnet <path>` | Persist a default csc / dotnet path | (no flags) |

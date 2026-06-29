@@ -62,6 +62,16 @@ Packages (Package Manager):
     manage_packages remove com.unity.ai.navigation
     manage_packages embed com.unity.test-framework
 
+Assets:
+  manage_assets find --type Texture2D --filter icon  Find assets with compact path/type/guid output
+  manage_assets mkdir --path Assets/Generated/UI     Create an Assets/ folder recursively
+  manage_assets copy --path Assets/A.mat --new_path Assets/B.mat
+                                                     Copy one asset file
+  manage_assets move --path Assets/Old.mat --new_path Assets/New.mat
+                                                     Move or rename one asset file
+  manage_assets delete --path Assets/Generated/Temp.mat
+                                                     Delete one asset file or folder
+
 Documentation:
   unity_docs <query>                              Offline Unity ScriptReference lookup.
                                                   Query: Rigidbody | Rigidbody.mass |
@@ -142,6 +152,10 @@ Menu:
 Screenshot:
   screenshot                          Capture scene view (default)
   screenshot --view game              Capture game view
+  screenshot --isolated --target /Player
+                                      Capture only one GameObject
+  screenshot --isolated --target /Player --angles front,right,top
+                                      Capture an angle contact sheet
   screenshot --output_path <path>     Custom output path
 
 Reserialize:

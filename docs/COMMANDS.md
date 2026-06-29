@@ -269,6 +269,39 @@ hera-agent-unity manage_packages embed com.unity.test-framework
 
 ---
 
+## manage_assets
+
+Compact `AssetDatabase` operations for common file and folder work. Paths are constrained to `Assets/`.
+
+```bash
+hera-agent-unity manage_assets <action> [flags]
+```
+
+| Action | Required flags | Description |
+|:---|:---|:---|
+| `find` | `--filter`, `--type`, or both | Search assets and return compact `{path,guid,name,type}` entries. |
+| `mkdir` | `--path Assets/...` | Create an `Assets/` folder recursively. Existing folders succeed with `created:false`. |
+| `copy` | `--path`, `--new_path` | Copy one asset file. |
+| `move` | `--path`, `--new_path` | Move or rename one asset file. |
+| `delete` | `--path` | Delete one asset file or folder. Refuses to delete `Assets`. |
+
+| Flag | Description | Default |
+|:---|:---|:---|
+| `--filter` | AssetDatabase search text for `find` | |
+| `--type` | Asset type filter, e.g. `Texture2D`, `Material`, `Prefab` | |
+| `--limit` | Maximum `find` results | `50` (max `500`) |
+| `--include_folders` | Include folders in `find` output | `false` |
+
+```bash
+hera-agent-unity manage_assets find --type Texture2D --filter icon --limit 20
+hera-agent-unity manage_assets mkdir --path Assets/Generated/UI
+hera-agent-unity manage_assets copy --path Assets/A.prefab --new_path Assets/B.prefab
+hera-agent-unity manage_assets move --path Assets/Old.asset --new_path Assets/New.asset
+hera-agent-unity manage_assets delete --path Assets/Generated/Temp.asset
+```
+
+---
+
 ## unity_docs
 
 Offline Unity ScriptReference lookup. Returns a slim, JSON-ready shape suitable for AI agents who need to verify an API exists at this Unity version before running it through `exec`. No network, no rate limits.
@@ -602,7 +635,7 @@ hera-agent-unity menu "Window/General/Console"
 
 ## screenshot
 
-Capture a screenshot of the Unity editor.
+Capture a screenshot of the Unity editor or an isolated GameObject.
 
 ```bash
 hera-agent-unity screenshot [flags]
@@ -614,12 +647,20 @@ hera-agent-unity screenshot [flags]
 | `--width` | Image width in pixels | `1920` |
 | `--height` | Image height in pixels | `1080` |
 | `--output_path` | Output path (absolute or relative to project) | `Screenshots/screenshot.png` |
+| `--isolated` | Render only one target GameObject through a temporary camera | `false` |
+| `--target` / `--path` | Hierarchy path for isolated capture | |
+| `--instance_id` | InstanceID for isolated capture | |
+| `--angles` | Comma-separated `iso`, `front`, `back`, `left`, `right`, `top`, `bottom`; multiple angles become one contact sheet | `iso` |
+| `--background` | `#RRGGBB`, `#RRGGBBAA`, or `transparent` | `#2B2B2BFF` |
+| `--padding` | Isolated camera padding fraction | `0.15` |
 
 ```bash
 hera-agent-unity screenshot
 hera-agent-unity screenshot --view game
 hera-agent-unity screenshot --width 3840 --height 2160
 hera-agent-unity screenshot --output_path captures/my_scene.png
+hera-agent-unity screenshot --isolated --target /Player --output_path captures/player.png
+hera-agent-unity screenshot --isolated --target /Player --angles front,right,top --background transparent
 ```
 
 ---

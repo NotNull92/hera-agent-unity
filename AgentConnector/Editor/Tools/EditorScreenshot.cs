@@ -6,8 +6,8 @@ using UnityEngine;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Name = "screenshot", Description = "Capture a screenshot of the Unity editor. Views: scene, game.")]
-    public static class EditorScreenshot
+    [HeraTool(Name = "screenshot", Description = "Capture a screenshot of the Unity editor. Views: scene, game, or isolated target.")]
+    public static partial class EditorScreenshot
     {
         private const int DefaultWidth = 1920;
         private const int DefaultHeight = 1080;
@@ -25,6 +25,27 @@ namespace HeraAgent.Tools
 
             [ToolParameter("Output file path, absolute or relative to project root (default: Screenshots/screenshot.png)", Required = false)]
             public string OutputPath { get; set; }
+
+            [ToolParameter("Capture only one GameObject by --target, --path, or --instance_id.", Required = false)]
+            public bool Isolated { get; set; }
+
+            [ToolParameter("Hierarchy path for isolated capture (same as --path, e.g. /Player).", Required = false)]
+            public string Target { get; set; }
+
+            [ToolParameter("Hierarchy path for isolated capture (e.g. /Player).", Required = false)]
+            public string Path { get; set; }
+
+            [ToolParameter("InstanceID for isolated capture.", Required = false)]
+            public int InstanceId { get; set; }
+
+            [ToolParameter("Isolated capture angles: iso, front, back, left, right, top, bottom; comma-separated.", Required = false)]
+            public string Angles { get; set; }
+
+            [ToolParameter("Isolated background color: #RRGGBB, #RRGGBBAA, or transparent.", Required = false)]
+            public string Background { get; set; }
+
+            [ToolParameter("Isolated camera padding fraction (default 0.15).", Required = false)]
+            public float Padding { get; set; }
         }
 
         public static object HandleCommand(JObject @params)
@@ -37,12 +58,19 @@ namespace HeraAgent.Tools
             var width = p.GetInt("width", DefaultWidth).Value;
             var height = p.GetInt("height", DefaultHeight).Value;
             var outputPath = ResolveOutputPath(p.Get("output_path"));
+            var wantsIsolated = p.GetBool("isolated")
+                || p.GetRaw("target") != null
+                || p.GetRaw("path") != null
+                || p.GetRaw("instance_id") != null;
 
             try
             {
                 var dir = Path.GetDirectoryName(outputPath);
                 if (!string.IsNullOrEmpty(dir))
                     Directory.CreateDirectory(dir);
+
+                if (wantsIsolated)
+                    return CaptureIsolated(p, width, height, outputPath);
 
                 switch (view)
                 {

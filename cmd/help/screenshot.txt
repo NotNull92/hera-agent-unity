@@ -1,6 +1,6 @@
 Usage: hera-agent-unity screenshot [options]
 
-Capture a screenshot of the Unity editor.
+Capture a screenshot of the Unity editor, or an isolated GameObject.
 
 Options:
   --view <mode>      scene (default), game
@@ -8,10 +8,20 @@ Options:
   --height <N>       Image height in pixels (default: 1080)
   --output_path <path>  Output path, absolute or relative to project root
                         (default: Screenshots/screenshot.png)
+  --isolated         Render only one GameObject through a temporary camera
+  --target <path>    Hierarchy path for isolated capture (same as --path)
+  --path <path>      Hierarchy path for isolated capture
+  --instance_id <N>  InstanceID for isolated capture
+  --angles <list>    Comma-separated: iso, front, back, left, right, top, bottom
+                     (default: iso). Multiple angles are saved as one contact sheet.
+  --background <c>   #RRGGBB, #RRGGBBAA, or transparent (default: #2B2B2BFF)
+  --padding <N>      Camera padding fraction for isolated capture (default: 0.15)
 
 Examples:
   hera-agent-unity screenshot
   hera-agent-unity screenshot --view game
   hera-agent-unity screenshot --view scene --width 3840 --height 2160
   hera-agent-unity screenshot --output_path captures/my_scene.png
+  hera-agent-unity screenshot --isolated --target /Player --output_path captures/player.png
+  hera-agent-unity screenshot --isolated --target /Player --angles front,right,top --background transparent
 

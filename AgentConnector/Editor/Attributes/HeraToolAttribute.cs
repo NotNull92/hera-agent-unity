@@ -16,6 +16,11 @@ namespace HeraAgent
         public bool EnableDebugLogging { get; set; } = false;
         public string[] Groups { get; set; } = Array.Empty<string>();
         public bool Enabled { get; set; } = true;
+        public bool ReadOnly { get; set; } = false;
+        public bool Destructive { get; set; } = false;
+        public bool Idempotent { get; set; } = false;
+        public bool MayReloadDomain { get; set; } = false;
+        public bool RequiresPlayMode { get; set; } = false;
 
         /// <summary>
         /// CLI invocation strings demonstrating typical usage. Paired by index

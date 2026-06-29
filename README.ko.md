@@ -213,11 +213,12 @@ AI가 가장 자주 쓰는 명령어입니다.
 | `editor stop` | Play Mode를 멈춥니다. |
 | `scene info` | 현재 씬 정보를 봅니다. |
 | `find_gameobjects` | 열린 씬에서 오브젝트를 찾습니다. |
+| `manage_assets` | `Assets/` 아래 프로젝트 에셋을 찾고, 만들고, 복사하고, 옮기고, 삭제합니다. |
 | `manage_gameobject` | GameObject를 만들고, 옮기고, 이름을 바꿉니다. |
 | `manage_components` | 컴포넌트를 추가, 삭제, 조회, 수정합니다. |
 | `ui_doc` | Unity UI를 만들고 캡처합니다. |
 | `test` | Unity 테스트를 실행합니다. |
-| `screenshot` | Scene 뷰나 Game 뷰를 캡처합니다. |
+| `screenshot` | Scene/Game 뷰나 단일 GameObject를 캡처합니다. |
 | `batch` | 여러 명령을 한 번에 실행합니다. |
 
 전체 명령어: [docs/COMMANDS.md](docs/COMMANDS.md)

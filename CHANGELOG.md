@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.46 / CLI 0.0.31 — CLI-native asset ops and isolated screenshots)
+
+- Added `manage_assets` for compact `AssetDatabase` operations: `find`,
+  `mkdir`, `copy`, `move`, and `delete`, with every path constrained to
+  `Assets/`.
+- Added `screenshot --isolated` for one-GameObject captures by hierarchy path
+  or InstanceID, including comma-separated angle contact sheets.
+- Added optional `[HeraTool]` safety metadata surfaced only through
+  `list --tool <name>`, preserving the cheap `list --compact` discovery path.
+
 ### Added (Connector 0.0.45 — official uGUI docs fixer for `ui_doc apply`)
 
 - Added `UiDocFixer`, a version-aware uGUI fixer that selects the official

@@ -213,11 +213,12 @@ Here are the commands most agents use first.
 | `editor stop` | Stops Play Mode. |
 | `scene info` | Shows the active scene. |
 | `find_gameobjects` | Finds objects in the loaded scenes. |
+| `manage_assets` | Finds, creates, copies, moves, or deletes project assets under `Assets/`. |
 | `manage_gameobject` | Creates, moves, renames, parents, or deletes GameObjects. |
 | `manage_components` | Adds, removes, reads, or edits components. |
 | `ui_doc` | Builds and captures Unity UI. |
 | `test` | Runs Unity tests. |
-| `screenshot` | Captures Scene or Game view. |
+| `screenshot` | Captures Scene/Game view or one isolated GameObject. |
 | `batch` | Runs several commands in one request. |
 
 Full command list: [docs/COMMANDS.md](docs/COMMANDS.md)

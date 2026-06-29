@@ -249,6 +249,14 @@ namespace HeraAgent
                         default_support = HasDefaultSupport(paramsType),
                         output_schema_support = HasOutputSchemaSupport(paramsType),
                         custom_types = GetCustomTypes(paramsType),
+                        safety = new
+                        {
+                            read_only = attr.ReadOnly,
+                            destructive = attr.Destructive,
+                            idempotent = attr.Idempotent,
+                            may_reload_domain = attr.MayReloadDomain,
+                            requires_play_mode = attr.RequiresPlayMode,
+                        },
                     },
                 };
             }
