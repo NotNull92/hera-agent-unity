@@ -7,6 +7,11 @@ using UnityEngine;
 
 namespace HeraAgent.Tools
 {
+    [HeraActionSafety("find", ReadOnly = true, Idempotent = true)]
+    [HeraActionSafety("mkdir", Idempotent = true, MayReloadDomain = true)]
+    [HeraActionSafety("copy", MayReloadDomain = true)]
+    [HeraActionSafety("move", Destructive = true, MayReloadDomain = true)]
+    [HeraActionSafety("delete", Destructive = true, MayReloadDomain = true)]
     [HeraTool(
         Name = "manage_assets",
         Description = "Compact AssetDatabase operations: find, mkdir, copy, move, delete. Paths are constrained to Assets/.",

@@ -249,14 +249,13 @@ namespace HeraAgent
                         default_support = HasDefaultSupport(paramsType),
                         output_schema_support = HasOutputSchemaSupport(paramsType),
                         custom_types = GetCustomTypes(paramsType),
-                        safety = new
-                        {
-                            read_only = attr.ReadOnly,
-                            destructive = attr.Destructive,
-                            idempotent = attr.Idempotent,
-                            may_reload_domain = attr.MayReloadDomain,
-                            requires_play_mode = attr.RequiresPlayMode,
-                        },
+                        safety = BuildSafetyMetadata(
+                            attr.ReadOnly,
+                            attr.Destructive,
+                            attr.Idempotent,
+                            attr.MayReloadDomain,
+                            attr.RequiresPlayMode),
+                        action_safety = BuildActionSafetyMetadata(type),
                     },
                 };
             }
@@ -282,6 +281,61 @@ namespace HeraAgent
                 });
             }
             return result;
+        }
+
+        private static object BuildSafetyMetadata(
+            bool readOnly,
+            bool destructive,
+            bool idempotent,
+            bool mayReloadDomain,
+            bool requiresPlayMode)
+        {
+            return new
+            {
+                read_only = readOnly,
+                destructive,
+                idempotent,
+                may_reload_domain = mayReloadDomain,
+                requires_play_mode = requiresPlayMode,
+            };
+        }
+
+        private static Dictionary<string, object> BuildActionSafetyMetadata(Type toolType)
+        {
+            var result = new Dictionary<string, object>();
+
+            foreach (var safety in toolType.GetCustomAttributes<HeraActionSafetyAttribute>())
+            {
+                if (string.IsNullOrWhiteSpace(safety.Action))
+                    continue;
+                result[safety.Action.ToLowerInvariant()] = BuildSafetyMetadata(safety);
+            }
+
+            foreach (var method in toolType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+            {
+                foreach (var safety in method.GetCustomAttributes<HeraActionSafetyAttribute>())
+                {
+                    var action = safety.Action;
+                    if (string.IsNullOrWhiteSpace(action))
+                    {
+                        var actionAttr = method.GetCustomAttribute<HeraActionAttribute>();
+                        action = actionAttr?.Name ?? StringCaseUtility.ToSnakeCase(method.Name);
+                    }
+                    result[action.ToLowerInvariant()] = BuildSafetyMetadata(safety);
+                }
+            }
+
+            return result;
+        }
+
+        private static object BuildSafetyMetadata(HeraActionSafetyAttribute safety)
+        {
+            return BuildSafetyMetadata(
+                safety.ReadOnly,
+                safety.Destructive,
+                safety.Idempotent,
+                safety.MayReloadDomain,
+                safety.RequiresPlayMode);
         }
 
         private static IEnumerable<(string name, Type type, HeraToolAttribute attr)> EnumerateTools()

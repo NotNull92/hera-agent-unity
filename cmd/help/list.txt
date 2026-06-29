@@ -3,7 +3,8 @@ Usage: hera-agent-unity list [options]
 List registered tools (built-in + custom).
 
 Default output is slim — one entry per tool with name and description only.
-For full per-tool detail (output_schema + metadata) use --tool <name>.
+For full per-tool detail (output_schema + metadata, including action_safety
+when a tool declares per-action safety) use --tool <name>.
 
 Options:
   --names            Names only — flat JSON array (most token-efficient)

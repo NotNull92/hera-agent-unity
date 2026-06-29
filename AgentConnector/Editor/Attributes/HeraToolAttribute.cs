@@ -36,6 +36,26 @@ namespace HeraAgent
         public string[] ExampleDescriptions { get; set; } = Array.Empty<string>();
     }
 
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
+    public class HeraActionSafetyAttribute : Attribute
+    {
+        public HeraActionSafetyAttribute()
+        {
+        }
+
+        public HeraActionSafetyAttribute(string action)
+        {
+            Action = action;
+        }
+
+        public string Action { get; set; }
+        public bool ReadOnly { get; set; } = false;
+        public bool Destructive { get; set; } = false;
+        public bool Idempotent { get; set; } = false;
+        public bool MayReloadDomain { get; set; } = false;
+        public bool RequiresPlayMode { get; set; } = false;
+    }
+
     /// <summary>
     /// Marks a property in a nested Parameters class as a tool parameter.
     /// Used for auto-generating help text and parameter schemas.

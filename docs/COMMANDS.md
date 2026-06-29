@@ -1040,7 +1040,7 @@ up front:
 | `list --names` | flat array of tool names only | cheapest discovery |
 | `list --compact` | same as `list --names` | compact catalogue discovery from agents or scripts (the AGENTS.md bootstrap runs this) |
 | `list` | `{name, description}` per tool, no schema | you want a one-line hint per tool |
-| `list --tool <name>` | full parameter + output schema for one tool | you're about to call that tool |
+| `list --tool <name>` | full parameter + output schema + metadata for one tool | you're about to call that tool |
 
 ```bash
 hera-agent-unity list --compact
@@ -1050,6 +1050,12 @@ hera-agent-unity list --tool exec
 ```
 
 Useful for discovering custom tools added to the project.
+
+`metadata.safety` describes the whole tool. Multi-action tools may also expose
+`metadata.action_safety`, so agents can treat a read-only action such as
+`manage_assets find` differently from destructive actions such as
+`manage_assets move` or `manage_assets delete`. This detail is only returned by
+`list --tool <name>`; `list --compact` stays names-only.
 
 ---
 

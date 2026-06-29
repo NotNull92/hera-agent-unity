@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Connector 0.0.47 — action-level safety metadata)
+
+- Added `metadata.action_safety` to `list --tool <name>` for multi-action
+  tools, starting with `manage_assets`, so agents can identify read-only
+  `find` separately from destructive `move` and `delete` without inflating
+  `list --compact`.
+
 ### Added (Connector 0.0.46 / CLI 0.0.31 — CLI-native asset ops and isolated screenshots)
 
 - Added `manage_assets` for compact `AssetDatabase` operations: `find`,
