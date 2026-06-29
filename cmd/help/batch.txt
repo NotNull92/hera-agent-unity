@@ -13,20 +13,28 @@ JSON format:
       {"command": "manage_editor", "params": {"action": "play"}},
       {"command": "exec",          "params": {"code": "return ..."}}
     ],
-    "options": { "fail_fast": true }
+    "options": { "fail_fast": true, "atomic": false }
   }
 
 Options:
   --file <path>    Path to the JSON batch file. If omitted, reads stdin.
   --dry-run        Print the plan without executing it.
+  --atomic         Force atomic mode (same as "options": {"atomic": true}).
 
 fail_fast:
   true   Stop on first failure; return results up to that point.
   false  Execute every command regardless of individual failures.
+
+atomic:
+  Wrap the whole batch in one editor Undo group and revert it if any command
+  fails (all-or-nothing). CAVEAT: only Undo-aware editor mutations roll back —
+  scene / GameObject / component edits. exec, AssetDatabase and file-system
+  side effects are NOT transactional and will persist even after a revert.
 
 Examples:
   hera-agent-unity batch --file ./play_and_test.json
   echo '{"commands":[{"command":"refresh_unity","params":{"compile":"request"}}]}' \
     | hera-agent-unity batch
   hera-agent-unity batch --file ./plan.json --dry-run
+  hera-agent-unity batch --file ./scene_edits.json --atomic
 

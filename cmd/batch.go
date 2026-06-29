@@ -52,8 +52,18 @@ func batchCmd(ctx context.Context, args []string, sendBatch SendBatchFunc, resol
 		return fmt.Errorf("invalid JSON in batch data: %w", err)
 	}
 
+	// --atomic forces atomic mode regardless of the JSON options block, so
+	// callers don't have to hand-write "options": {"atomic": true}.
+	if atomic, ok := params["atomic"].(bool); ok && atomic {
+		req.Options.Atomic = true
+	}
+
 	if dryRun {
-		fmt.Println(tui.InfoPanel("War Council", fmt.Sprintf("Would execute %d command(s)", len(req.Commands))))
+		header := fmt.Sprintf("Would execute %d command(s)", len(req.Commands))
+		if req.Options.Atomic {
+			header += " (atomic: revert all on any failure)"
+		}
+		fmt.Println(tui.InfoPanel("War Council", header))
 		for i, cmd := range req.Commands {
 			fmt.Printf("  %s %s\n", tui.MutedStyle.Render(fmt.Sprintf("[%d]", i+1)), cmd.Command)
 		}

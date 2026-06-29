@@ -2,6 +2,8 @@ Usage: hera-agent-unity manage_gameobject <action> [flags]
 
 Actions:
   create          Make a new GameObject (empty or primitive).
+  duplicate       Copy the target N times. Editor-fidelity (the Ctrl+D path):
+                  prefab connection, overrides and child objects survive.
   destroy         Delete the target GameObject.
   move            Set position (world default; --space local for local).
   set_parent      Reparent or unparent (--parent none).
@@ -25,14 +27,22 @@ Flags:
   --space <world|local>              Coordinate space for move (default: world).
   --active <true|false>              Active state for set_active.
   --world_position_stays <bool>      Match Transform.SetParent flag (default: true).
+  --count <N>                        Number of copies for duplicate (default 1,
+                                     max 100). With --name, copies are suffixed
+                                     " (1)", " (2)", …
 
-Return shape (depth 1, every action):
+Return shape (depth 1, every action except duplicate):
   { instance_id, name, path, scene, scene_path, active,
     transform: { position:{x,y,z}, rotation:{x,y,z}, scale:{x,y,z} } }
+
+Return shape (duplicate):
+  { source: { instance_id, name }, count,
+    clones: [ { instance_id, name, path }, … ] }
 
 Examples:
   hera-agent-unity manage_gameobject create --name Player
   hera-agent-unity manage_gameobject create --name Cube --primitive cube --position 0,1,0
+  hera-agent-unity manage_gameobject duplicate --path /Enemies/Goblin --count 5 --name Goblin
   hera-agent-unity manage_gameobject set_parent --path /Player --parent /Root
   hera-agent-unity manage_gameobject set_parent --path /Player --parent none
   hera-agent-unity manage_gameobject set_active --path /Player --active false
@@ -42,5 +52,8 @@ Examples:
 Notes:
   - Every action marks the scene dirty — save the scene to persist changes.
   - Edits register Undo entries (Ctrl+Z in the editor).
+  - duplicate uses Unity's own duplicate command, so it clobbers the editor
+    copy/paste buffer (the same as pressing Ctrl+D). The prior selection is
+    restored afterward.
   - GameObjects created in play mode are discarded on play exit (Unity behavior).
 

@@ -349,6 +349,7 @@ namespace HeraAgent
             var options = new CommandRouter.BatchOptions
             {
                 FailFast = optionsObj?["fail_fast"]?.Value<bool>() ?? true,
+                Atomic = optionsObj?["atomic"]?.Value<bool>() ?? false,
             };
 
             var tcs = new TaskCompletionSource<object>();

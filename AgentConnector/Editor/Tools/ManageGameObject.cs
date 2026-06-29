@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -9,11 +10,12 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "manage_gameobject",
-        Description = "GameObject CRUD: create, destroy, move, set_parent, set_active, set_name, get_transform. Target by instance_id or hierarchy path.",
+        Description = "GameObject CRUD: create, destroy, duplicate, move, set_parent, set_active, set_name, get_transform. Target by instance_id or hierarchy path.",
         Examples = new[]
         {
             "manage_gameobject create --name Player",
             "manage_gameobject create --name Cube --primitive cube --position 0,1,0",
+            "manage_gameobject duplicate --path /Enemies/Goblin --count 5 --name Goblin",
             "manage_gameobject set_parent --instance_id 12345 --parent /Root",
             "manage_gameobject get_transform --path /Root/Player",
         },
@@ -21,6 +23,7 @@ namespace HeraAgent.Tools
         {
             "Create an empty GameObject in the active scene",
             "Create a primitive cube at world (0,1,0)",
+            "Duplicate 5x (Editor-fidelity: keeps prefab link + overrides)",
             "Reparent an object under /Root (worldPositionStays default true)",
             "Read position/rotation/scale of /Root/Player",
         })]
@@ -28,7 +31,7 @@ namespace HeraAgent.Tools
     {
         public class Parameters
         {
-            [ToolParameter("Action: create, destroy, move, set_parent, set_active, set_name, get_transform", Required = true)]
+            [ToolParameter("Action: create, destroy, duplicate, move, set_parent, set_active, set_name, get_transform", Required = true)]
             public string Action { get; set; }
 
             [ToolParameter("Target by InstanceID (all actions except create)")]
@@ -57,6 +60,9 @@ namespace HeraAgent.Tools
 
             [ToolParameter("worldPositionStays for set_parent (default true)")]
             public bool? WorldPositionStays { get; set; }
+
+            [ToolParameter("Number of copies for duplicate (default 1, max 100)")]
+            public int? Count { get; set; }
         }
 
         // ---- sub-actions ----
@@ -107,6 +113,90 @@ namespace HeraAgent.Tools
             Undo.RegisterCreatedObjectUndo(go, $"Hera Create {go.name}");
             EditorSceneManager.MarkSceneDirty(go.scene);
             return new SuccessResponse($"Created GameObject: {go.name}", BuildShallow(go));
+        }
+
+        [HeraAction]
+        public static object Duplicate(JObject raw)
+        {
+            var p = new ToolParams(raw);
+            var (src, err) = TargetResolver.ResolveGameObject(p, altPathKey: "target");
+            if (err != null) return err;
+
+            int count = p.GetInt("count") ?? 1;
+            if (count < 1)
+                return new ErrorResponse("INVALID_PARAM", "'count' must be >= 1.");
+            if (count > 100)
+                return new ErrorResponse("INVALID_PARAM", "'count' is capped at 100 per call.");
+
+            string newName = p.Get("name");
+
+            // Optional reparent target for the clones.
+            var parentToken = p.GetRaw("parent");
+            bool hasParentOverride = parentToken != null
+                && parentToken.Type != JTokenType.Null
+                && !IsEmptyOrNoneString(parentToken);
+            Transform overrideParent = null;
+            if (hasParentOverride)
+            {
+                var (parent, parentErr) = ResolveParent(parentToken);
+                if (parentErr != null) return parentErr;
+                overrideParent = parent != null ? parent.transform : null;
+            }
+
+            // Use Unity's own duplicate (the Ctrl+D path) so prefab connections,
+            // property overrides and nested children survive — Object.Instantiate
+            // would produce a disconnected copy instead. It drives the editor
+            // Selection and clobbers the copy/paste buffer, so snapshot and
+            // restore the prior selection around the loop.
+            var scene = src.scene;
+            int srcRawId = src.GetInstanceID();
+            var prevSelection = Selection.objects;
+            int undoGroup = Undo.GetCurrentGroup();
+            var clones = new List<object>();
+            try
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    Selection.objects = new UnityEngine.Object[] { src };
+                    Unsupported.DuplicateGameObjectsUsingPasteboard();
+
+                    var clone = Selection.activeGameObject;
+                    if (clone == null || clone.GetInstanceID() == srcRawId)
+                        return new ErrorResponse("DUPLICATE_FAILED",
+                            "[Hera] I asked Unity to duplicate the object but no new GameObject appeared.");
+
+                    if (hasParentOverride)
+                        Undo.SetTransformParent(clone.transform, overrideParent, "Hera Duplicate (reparent)");
+
+                    if (!string.IsNullOrEmpty(newName))
+                    {
+                        Undo.RecordObject(clone, "Hera Duplicate (rename)");
+                        clone.name = count > 1 ? $"{newName} ({i + 1})" : newName;
+                    }
+
+                    clones.Add(new
+                    {
+                        instance_id = EntityIdCompat.IdOf(clone),
+                        name = clone.name,
+                        path = HierarchyPath.Build(clone.transform),
+                    });
+                }
+            }
+            finally
+            {
+                Selection.objects = prevSelection;
+            }
+
+            // Collapse duplicate + rename + reparent into a single Undo step.
+            Undo.CollapseUndoOperations(undoGroup);
+            if (scene.IsValid()) EditorSceneManager.MarkSceneDirty(scene);
+
+            return new SuccessResponse($"Duplicated {src.name} x{clones.Count}.", new
+            {
+                source = new { instance_id = EntityIdCompat.IdOf(src), name = src.name },
+                count = clones.Count,
+                clones,
+            });
         }
 
         [HeraAction]

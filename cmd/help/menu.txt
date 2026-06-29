@@ -1,11 +1,26 @@
 Usage: hera-agent-unity menu "<path>"
+       hera-agent-unity menu list [--filter <substr>] [--limit <N>]
 
-Execute a Unity menu item by its path.
+Execute a Unity menu item by its path, or discover available items.
 
-Examples:
+Execute:
   hera-agent-unity menu "File/Save Project"
   hera-agent-unity menu "Assets/Refresh"
   hera-agent-unity menu "Window/General/Console"
 
-Note: File/Quit is blocked for safety.
+Discover (menu list):
+  Without --filter, returns the top-level groups and their item counts
+  instead of a flat list — a project can declare hundreds of menu items, so
+  the grouped view keeps the response tiny and never silently truncates.
+  With --filter, returns the matching items (case-insensitive substring),
+  capped at --limit with an explicit "truncated" flag.
 
+  hera-agent-unity menu list                     -> { total, groups:[{name,count}] }
+  hera-agent-unity menu list --filter Assets     -> { total, returned, truncated, items:[...] }
+  hera-agent-unity menu list --filter "Tools/" --limit 50
+
+Notes:
+  - Only items declared with the [MenuItem] attribute are listed. Native
+    built-in menus (e.g. File/Save) carry no attribute and are not enumerated,
+    but can still be executed by path.
+  - File/Quit is blocked for safety.

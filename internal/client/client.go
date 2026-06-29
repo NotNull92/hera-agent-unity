@@ -86,6 +86,10 @@ type BatchCommandItem struct {
 // BatchOptions controls batch execution behavior.
 type BatchOptions struct {
 	FailFast bool `json:"fail_fast"`
+	// Atomic wraps the batch in a single editor Undo group and reverts it if
+	// any command fails. Only Undo-aware editor mutations roll back — exec,
+	// AssetDatabase and file-system effects are not transactional.
+	Atomic bool `json:"atomic"`
 }
 
 // BatchCommandRequest sends multiple commands in one HTTP call.

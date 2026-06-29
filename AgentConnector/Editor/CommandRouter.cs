@@ -34,6 +34,12 @@ namespace HeraAgent
         public class BatchOptions
         {
             public bool FailFast { get; set; } = true;
+
+            // When true, wrap the whole batch in a single editor Undo group and
+            // revert it if any command fails. Only Undo-aware editor mutations
+            // (scene / GameObject / component edits) roll back — exec,
+            // AssetDatabase and file-system side effects are NOT transactional.
+            public bool Atomic { get; set; }
         }
 
         public class BatchCommandResponse
@@ -82,6 +88,17 @@ namespace HeraAgent
             var results = new List<object>();
             int failed = 0;
 
+            // Atomic batches run inside one Undo group so the whole sequence can be
+            // reverted as a unit on failure. Caveat: only Undo-aware editor
+            // mutations roll back — exec / AssetDatabase / file effects do not.
+            int undoGroup = -1;
+            if (options.Atomic)
+            {
+                UnityEditor.Undo.IncrementCurrentGroup();
+                undoGroup = UnityEditor.Undo.GetCurrentGroup();
+                UnityEditor.Undo.SetCurrentGroupName("Hera Batch");
+            }
+
             try
             {
                 foreach (var item in commands)
@@ -99,6 +116,14 @@ namespace HeraAgent
                     {
                         break;
                     }
+                }
+
+                if (options.Atomic && undoGroup >= 0)
+                {
+                    if (failed > 0)
+                        UnityEditor.Undo.RevertAllDownToGroup(undoGroup);
+                    else
+                        UnityEditor.Undo.CollapseUndoOperations(undoGroup);
                 }
             }
             finally

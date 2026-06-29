@@ -214,12 +214,12 @@ Here are the commands most agents use first.
 | `scene info` | Shows the active scene. |
 | `find_gameobjects` | Finds objects in the loaded scenes. |
 | `manage_assets` | Finds, creates, copies, moves, or deletes project assets under `Assets/`. |
-| `manage_gameobject` | Creates, moves, renames, parents, or deletes GameObjects. |
+| `manage_gameobject` | Creates, duplicates, moves, renames, parents, or deletes GameObjects. |
 | `manage_components` | Adds, removes, reads, or edits components. |
 | `ui_doc` | Builds and captures Unity UI. |
 | `test` | Runs Unity tests. |
 | `screenshot` | Captures Scene/Game view or one isolated GameObject. |
-| `batch` | Runs several commands in one request. |
+| `batch` | Runs several commands in one request (optionally atomic). |
 
 Full command list: [docs/COMMANDS.md](docs/COMMANDS.md)
 

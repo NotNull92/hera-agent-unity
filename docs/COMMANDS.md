@@ -554,6 +554,7 @@ hera-agent-unity manage_gameobject <action> [flags]
 | Action | Description |
 |:---|:---|
 | `create` | Make a new GameObject (empty or primitive). |
+| `duplicate` | Copy the target `--count` times. Editor-fidelity (the Ctrl+D path): prefab connection, property overrides and child objects survive — unlike `Object.Instantiate`. |
 | `destroy` | Delete the target GameObject (`DestroyImmediate` in edit mode, `Destroy` in play mode). |
 | `move` | Set position. World by default, `--space local` for local. |
 | `set_parent` | Reparent to another GameObject or unparent (`--parent none`). |
@@ -574,12 +575,14 @@ hera-agent-unity manage_gameobject <action> [flags]
 | `--space <world\|local>` | Coordinate space. | `move` (default `world`) |
 | `--active <true\|false>` | Active state. | `set_active` |
 | `--world_position_stays <true\|false>` | Match `Transform.SetParent` flag. | `set_parent` (default `true`) |
+| `--count <N>` | Number of copies (default `1`, max `100`). With `--name`, copies are suffixed ` (1)`, ` (2)`, … | `duplicate` |
 
 ### Examples
 
 ```bash
 hera-agent-unity manage_gameobject create --name Player
 hera-agent-unity manage_gameobject create --name Cube --primitive cube --position 0,1,0
+hera-agent-unity manage_gameobject duplicate --path /Enemies/Goblin --count 5 --name Goblin
 hera-agent-unity manage_gameobject move --instance_id 12345 --position 5,0,0
 hera-agent-unity manage_gameobject set_parent --path /Player --parent /Root
 hera-agent-unity manage_gameobject set_parent --path /Player --parent none
@@ -590,7 +593,7 @@ hera-agent-unity manage_gameobject get_transform --path /Root/Player
 
 ### Return shape
 
-All actions return a depth-1 snapshot:
+All actions except `duplicate` return a depth-1 snapshot:
 
 ```json
 {
@@ -608,19 +611,33 @@ All actions return a depth-1 snapshot:
 }
 ```
 
+`duplicate` returns the source plus the clones it made:
+
+```json
+{
+  "source": { "instance_id": 12345, "name": "Goblin" },
+  "count": 5,
+  "clones": [
+    { "instance_id": 12350, "name": "Goblin (1)", "path": "/Enemies/Goblin (1)" }
+  ]
+}
+```
+
 **Notes**:
 - Every action calls `EditorSceneManager.MarkSceneDirty` — save the scene afterward to persist changes.
 - All edits register `Undo` entries so the user can `Ctrl+Z` your AI agent.
+- `duplicate` uses Unity's own duplicate command, so it clobbers the editor copy/paste buffer (same as pressing `Ctrl+D`). The prior selection is restored afterward.
 - `create` in play mode produces a runtime GameObject that Unity discards on play exit — expected behavior, not a bug.
 
 ---
 
 ## menu
 
-Execute a Unity menu item by path.
+Execute a Unity menu item by path, or discover available items with `menu list`.
 
 ```bash
 hera-agent-unity menu "<path>"
+hera-agent-unity menu list [--filter <substr>] [--limit <N>]
 ```
 
 ```bash
@@ -629,7 +646,27 @@ hera-agent-unity menu "Assets/Refresh"
 hera-agent-unity menu "Window/General/Console"
 ```
 
-**Note**: `File/Quit` is blocked for safety.
+### menu list
+
+Discover menu items declared with the `[MenuItem]` attribute.
+
+| Flag | Description | Default |
+|:---|:---|:---|
+| `--filter <substr>` | Case-insensitive substring match on the menu path. Omit to get top-level groups instead of a flat list. | |
+| `--limit <N>` | Max items returned when filtering. | `300` |
+
+Without `--filter`, the response is the **top-level groups and their counts**, not a flat list — a project can declare hundreds of items (the bundled Unity 6 editor alone exposes ~300), so the grouped view keeps the payload tiny and never silently truncates the agent's context. Drill in with `--filter`.
+
+```bash
+hera-agent-unity menu list                  # -> { total, groups: [ { name, count } ] }
+hera-agent-unity menu list --filter Assets  # -> { total, returned, truncated, items: [...] }
+hera-agent-unity menu list --filter "Tools/" --limit 50
+```
+
+**Notes**:
+- Only `[MenuItem]`-attributed items are listed. Native built-in menus (e.g. `File/Save`) carry no attribute and are not enumerated, but can still be executed by path.
+- When a filtered result is capped at `--limit`, the response sets `truncated: true` and an `agent_hint` so a partial list is never mistaken for a complete one.
+- `File/Quit` is blocked for execution for safety.
 
 ---
 
