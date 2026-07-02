@@ -1,8 +1,11 @@
 using System;
 using System.IO;
+using System.Reflection;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
+using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace HeraAgent.Tools
 {
@@ -106,15 +109,26 @@ namespace HeraAgent.Tools
             if (!sceneView)
                 return new ErrorResponse("SCENEVIEW_NOT_FOUND", "No active SceneView found.");
 
+            var sceneCapture = CaptureSceneViewWindow(sceneView, width, height, outputPath);
+            if (sceneCapture != null)
+                return sceneCapture;
+
             var camera = sceneView.camera;
             if (!camera)
                 return new ErrorResponse("SCENEVIEW_CAMERA_NULL", "SceneView camera is null.");
+
+            if (!CanUseDirectCameraRender())
+                return DirectCameraRenderUnavailable("SceneView");
 
             return CaptureCamera(camera, width, height, outputPath);
         }
 
         private static object CaptureGameView(int width, int height, string outputPath)
         {
+            var gameCapture = CaptureGameViewWindow(width, height, outputPath);
+            if (gameCapture != null)
+                return gameCapture;
+
             var camera = Camera.main;
             if (!camera)
             {
@@ -127,7 +141,127 @@ namespace HeraAgent.Tools
                     return new ErrorResponse("CAMERA_NOT_FOUND", "No camera found in scene.");
             }
 
+            if (!CanUseDirectCameraRender())
+                return DirectCameraRenderUnavailable("GameView");
+
             return CaptureCamera(camera, width, height, outputPath);
+        }
+
+        private static object CaptureSceneViewWindow(SceneView sceneView, int width, int height, string outputPath)
+        {
+            sceneView.Focus();
+            sceneView.Repaint();
+
+            var sceneCapture = CaptureEditorRenderTexture(
+                width,
+                height,
+                outputPath,
+                rt => TryInvokeInternalEditorCapture(
+                    "CaptureSceneView",
+                    new[] { typeof(SceneView), typeof(RenderTexture) },
+                    sceneView,
+                    rt));
+            if (sceneCapture != null)
+                return sceneCapture;
+
+            return CaptureEditorRenderTexture(
+                width,
+                height,
+                outputPath,
+                rt => TryInvokeInternalEditorCapture(
+                    "CaptureEditorWindow",
+                    new[] { typeof(EditorWindow), typeof(RenderTexture) },
+                    sceneView,
+                    rt));
+        }
+
+        private static object CaptureGameViewWindow(int width, int height, string outputPath)
+        {
+            var gameViewType = Type.GetType("UnityEditor.GameView,UnityEditor");
+            if (gameViewType == null) return null;
+
+            var gameView = EditorWindow.GetWindow(gameViewType);
+            if (!gameView) return null;
+            gameView.Focus();
+            gameView.Repaint();
+
+            return CaptureEditorRenderTexture(
+                width,
+                height,
+                outputPath,
+                rt => TryInvokeInternalEditorCapture(
+                    "CaptureEditorWindow",
+                    new[] { typeof(EditorWindow), typeof(RenderTexture) },
+                    gameView,
+                    rt));
+        }
+
+        private static bool TryInvokeInternalEditorCapture(
+            string methodName,
+            Type[] parameterTypes,
+            UnityEngine.Object target,
+            RenderTexture rt)
+        {
+            var method = typeof(InternalEditorUtility).GetMethod(
+                methodName,
+                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
+                null,
+                parameterTypes,
+                null);
+            if (method == null) return false;
+
+            return method.Invoke(null, new object[] { target, rt }) is bool ok && ok;
+        }
+
+        private static object CaptureEditorRenderTexture(
+            int width,
+            int height,
+            string outputPath,
+            Func<RenderTexture, bool> capture)
+        {
+            var previousRT = RenderTexture.active;
+            RenderTexture rt = null;
+            Texture2D tex = null;
+
+            try
+            {
+                rt = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
+                if (!capture(rt))
+                    return null;
+
+                RenderTexture.active = rt;
+                tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                tex.Apply();
+
+                File.WriteAllBytes(outputPath, tex.EncodeToPNG());
+
+                return new SuccessResponse($"Screenshot saved to {outputPath}",
+                    new { path = outputPath, width, height });
+            }
+            finally
+            {
+                RenderTexture.active = previousRT;
+                if (rt) UnityEngine.Object.DestroyImmediate(rt);
+                if (tex) UnityEngine.Object.DestroyImmediate(tex);
+            }
+        }
+
+        private static bool CanUseDirectCameraRender()
+        {
+            var pipeline = GraphicsSettings.currentRenderPipeline;
+            if (!pipeline)
+                return true;
+
+            var pipelineType = pipeline.GetType().FullName ?? string.Empty;
+            return pipelineType.IndexOf("UniversalRenderPipeline", StringComparison.OrdinalIgnoreCase) < 0;
+        }
+
+        private static ErrorResponse DirectCameraRenderUnavailable(string view)
+        {
+            return new ErrorResponse(
+                "SCREENSHOT_FAILED",
+                $"[Hera] I couldn't capture {view} through the editor window, and direct Camera.Render fallback is disabled for URP because it can trigger Unity 6 RenderGraph errors.");
         }
 
         private static object CaptureCamera(Camera camera, int width, int height, string outputPath)

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.49 — Unity 6 URP screenshot capture)
+
+- `screenshot --view scene` and `screenshot --view game` now capture the
+  focused Unity Editor window before falling back to direct camera rendering.
+  This avoids forcing `Camera.Render()` through Unity 6 URP 2D RenderGraph,
+  which could log `DrawRenderer2DPass.SetGlobalLightTextures` /
+  `Blitter.BlitTexture` null-reference errors even while the visible Game View
+  rendered correctly.
+- Direct `Camera.Render()` fallback is disabled when the active render pipeline
+  is URP and editor-window capture is unavailable, returning a structured
+  `SCREENSHOT_FAILED` error instead of polluting the Unity Console with
+  RenderGraph exceptions.
+
 ### Changed (Connector 0.0.47 — action-level safety metadata)
 
 - Added `metadata.action_safety` to `list --tool <name>` for multi-action
