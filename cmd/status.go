@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
@@ -31,14 +32,21 @@ func statusCmd(inst *client.Instance) error {
 	}
 
 	if tui.ColorEnabled() {
+		rows := [][2]string{
+			{"State", tui.DotStatus(status.State)},
+			{"Project", tui.PathStyle.Render(status.ProjectPath)},
+			{"Version", status.UnityVersion},
+		}
+		if status.DocsVersion != "" {
+			rows = append(rows, [2]string{"Docs", status.DocsVersion})
+		}
+		if status.Compiler != nil {
+			rows = append(rows, [2]string{"Compiler", compilerStatus(status.Compiler)})
+		}
+		rows = append(rows, [2]string{"PID", fmt.Sprintf("%d", status.PID)})
 		fmt.Println(tui.StatusPanel(
 			fmt.Sprintf("Unity Editor — port %d", status.Port),
-			[][2]string{
-				{"State", tui.DotStatus(status.State)},
-				{"Project", tui.PathStyle.Render(status.ProjectPath)},
-				{"Version", status.UnityVersion},
-				{"PID", fmt.Sprintf("%d", status.PID)},
-			},
+			rows,
 		))
 		return nil
 	}
@@ -47,8 +55,32 @@ func statusCmd(inst *client.Instance) error {
 	fmt.Printf("Unity (port %d): %s\n", status.Port, status.State)
 	fmt.Printf("  Project: %s\n", status.ProjectPath)
 	fmt.Printf("  Version: %s\n", status.UnityVersion)
+	if status.DocsVersion != "" {
+		fmt.Printf("  Docs:    %s\n", status.DocsVersion)
+	}
+	if status.Compiler != nil {
+		fmt.Printf("  Compiler: %s\n", compilerStatus(status.Compiler))
+	}
 	fmt.Printf("  PID:     %d\n", status.PID)
 	return nil
+}
+
+func compilerStatus(info *client.CompilerInfo) string {
+	if info == nil {
+		return "unknown"
+	}
+	if info.Error != "" {
+		return "error: " + info.Error
+	}
+	csc := info.CscKind
+	if csc == "" {
+		csc = "unknown"
+	}
+	dotnet := info.DotnetKind
+	if dotnet == "" {
+		dotnet = "unknown"
+	}
+	return fmt.Sprintf("csc=%s dotnet=%s", csc, dotnet)
 }
 
 // pingCmd is a token-cheap liveness probe for agents. Reads the instance
@@ -143,11 +175,9 @@ func waitForState(resolve instanceResolver, timeoutMs int, category string, targ
 			if err != nil {
 				return false
 			}
-			for _, t := range targets {
-				if inst.State == t {
-					matchedState = inst.State
-					return true
-				}
+			if slices.Contains(targets, inst.State) {
+				matchedState = inst.State
+				return true
 			}
 			return false
 		},

@@ -141,7 +141,7 @@ func Execute() error {
 
 | Function | Role |
 |:---|:---|
-| `statusCmd()` | Reads instance file and prints JSON state |
+| `statusCmd()` | Reads instance file and prints human state, including Unity version, docs bucket, and compiler kind when the heartbeat provides them |
 | `pingCmd()` | Token-cheap liveness probe; reads heartbeat file directly (no Unity HTTP round-trip) |
 | `waitForAlive()` | Polls instance files until Unity is alive (or timeout) |
 | `waitForReady()` | Polls instance files until `state == "ready"`. Returns `compileErrors` status. |
@@ -172,7 +172,7 @@ Simple passthrough to the `unity_docs` connector tool for offline Unity ScriptRe
 
 ### doctor.go
 
-Self-diagnostic: binary path checks, duplicate-install detection, connector visibility, and (with `--agent-rules`) AGENTS.md content generation.
+Self-diagnostic: binary path checks, duplicate-install detection, connector visibility, docs/compiler heartbeat details, and (with `--agent-rules`) AGENTS.md content generation.
 
 ### update.go
 
@@ -196,15 +196,21 @@ Self-diagnostic: binary path checks, duplicate-install detection, connector visi
 
 ```go
 type Instance struct {
-    State         string `json:"state"`
-    ProjectPath   string `json:"projectPath"`
-    Port          int    `json:"port"`
-    PID           int    `json:"pid"`
-    UnityVersion  string `json:"unityVersion,omitempty"`
-    Timestamp     int64  `json:"timestamp,omitempty"`
-    CompileErrors bool   `json:"compileErrors,omitempty"`
+    State         string        `json:"state"`
+    ProjectPath   string        `json:"projectPath"`
+    Port          int           `json:"port"`
+    PID           int           `json:"pid"`
+    UnityVersion  string        `json:"unityVersion,omitempty"`
+    DocsVersion   string        `json:"docsVersion,omitempty"`
+    Compiler      *CompilerInfo `json:"compiler,omitempty"`
+    Timestamp     int64         `json:"timestamp,omitempty"`
+    CompileErrors bool          `json:"compileErrors,omitempty"`
 }
 ```
+
+`CompilerInfo` carries the resolved `csc` and `dotnet` paths plus kind labels
+such as `unity_dotnet_sdk_roslyn`, `unity_netcore_runtime`, `external`,
+`missing`, or `path`.
 
 ### Discovery Priority
 

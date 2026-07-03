@@ -53,7 +53,7 @@ namespace HeraAgent.Tools
                     suggestions: new List<string>
                     {
                         "Reinstall the AgentConnector UPM package — the docs file ships inside it.",
-                        "If you're working from a local checkout, run `go run ./tools/build-unity-docs --unity-version 6000.0` to regenerate Editor/Data/unity_docs_6000.0.jsonl.gz.bytes.",
+                        "If you're working from a local checkout, run `go run ./tools/build-unity-docs --in <Documentation/en> --out AgentConnector/Editor/Data/unity_docs_6000.0.jsonl.gz.bytes --unity-version 6000.0`.",
                     });
             }
 

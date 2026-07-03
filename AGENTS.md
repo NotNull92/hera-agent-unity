@@ -154,6 +154,13 @@ Default `--depth` is `3`, which fully reflects Unity Objects in the response. Pa
 //   → exit 1, code=EXEC_LOGGED_ERROR
 ```
 
+**[Rule 9]** Do not put your current machine's absolute paths in shared docs,
+rules, examples, generated Markdown, or checked-in scripts. Prefer
+repo-relative paths, documented environment variables, or explicit CLI flags.
+For Unity Hub editor inventory, write paths with `%UNITY_HUB_EDITOR%` and state
+that the default Windows resolver is `%ProgramFiles%\Unity\Hub\Editor`; let
+users override the real root with `-HubRoot` or their own environment.
+
 ## 1.5 Ultra Hera
 
 Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.

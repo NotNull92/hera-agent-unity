@@ -458,15 +458,19 @@ namespace HeraAgent.Editor
                 return true;
 
             var dir = Path.GetDirectoryName(path);
-            var parentDirName = Path.GetFileName(Path.GetDirectoryName(dir));
+            for (var current = dir; !string.IsNullOrEmpty(current); current = Directory.GetParent(current)?.FullName)
+            {
+                var dirName = Path.GetFileName(current);
+                if (System.Text.RegularExpressions.Regex.IsMatch(dirName ?? "", @"^\d+\.\d+"))
+                    return true;
+            }
 
-            // .NET SDK path: sdk/{version}/Roslyn/csc.dll
-            // dotnet exec resolves dependencies from the shared framework.
-            if (System.Text.RegularExpressions.Regex.IsMatch(parentDirName ?? "", @"^\d+\.\d+"))
+            if (dir == null)
+                return false;
+
+            if (path.Replace('\\', '/').IndexOf("/DotNetSdkRoslyn/", StringComparison.OrdinalIgnoreCase) >= 0)
                 return true;
 
-            // Unity internal path or other standalone deployments:
-            // required companion DLLs must exist in the same directory.
             var requiredDeps = new[] { "System.Text.Encoding.CodePages.dll" };
             foreach (var dep in requiredDeps)
             {

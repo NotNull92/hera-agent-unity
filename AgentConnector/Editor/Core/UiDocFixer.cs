@@ -25,7 +25,11 @@ namespace HeraAgent
 
         public static Profile CurrentProfile()
         {
-            var docs = UnityVersionCompat.CurrentDocsVersion();
+            return ProfileForDocsVersion(UnityVersionCompat.CurrentDocsVersion());
+        }
+
+        internal static Profile ProfileForDocsVersion(string docs)
+        {
             var pkg = docs == UnityVersionCompat.Docs2022_3 ? "com.unity.ugui@1.0"
                 : docs == UnityVersionCompat.Docs6000_5 ? "com.unity.ugui@2.5"
                 : "com.unity.ugui@2.0";

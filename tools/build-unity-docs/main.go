@@ -4,8 +4,8 @@
 // the Connector can drop its HTML-parsing path entirely.
 //
 //	go run ./tools/build-unity-docs \
-//	    --in  C:\Users\PC\Downloads\UnityDocumentation\Documentation\en \
-//	    --out AgentConnector/Editor/Data/unity_docs_6000.0.jsonl \
+//	    --in  "$UNITY_DOCS_ROOT/Documentation/en" \
+//	    --out AgentConnector/Editor/Data/unity_docs_6000.0.jsonl.gz.bytes \
 //	    --unity-version 6000.0
 //
 // Output line shape:

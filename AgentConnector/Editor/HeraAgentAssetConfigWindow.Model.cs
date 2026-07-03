@@ -7,6 +7,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using HeraAgent.Tools;
 
 namespace HeraAgent.Editor
 {
@@ -352,21 +353,17 @@ namespace HeraAgent.Editor
 
         private string FindValidCscPath()
         {
-            // 1) Saved config
-            if (!string.IsNullOrEmpty(_config?.defaultCscPath) && IsValidCscPath(_config.defaultCscPath))
-                return _config.defaultCscPath;
-
-            // 2) In-process cache
             if (!string.IsNullOrEmpty(s_CachedCscPath) && IsValidCscPath(s_CachedCscPath))
                 return s_CachedCscPath;
 
-            // 3) Collect all candidates with versions, then pick the best
-            var candidates = new List<(string path, Version version)>();
-
-            // Unity built-in (lowest priority among valid compilers)
             var unityCsc = FindUnityBuiltInCsc();
             if (!string.IsNullOrEmpty(unityCsc))
-                candidates.Add((unityCsc, new Version(0, 0)));
+            {
+                s_CachedCscPath = unityCsc;
+                return unityCsc;
+            }
+
+            var candidates = new List<(string path, Version version)>();
 
             // Platform-specific SDKs
             switch (Application.platform)
@@ -410,20 +407,8 @@ namespace HeraAgent.Editor
             // sdk/<version>/Roslyn/bincore/csc.dll) and macOS nests under
             // Resources/Scripting, so fast-path the stable layouts then fall back
             // to a recursive csc.dll search.
-            var dllCandidates = new[]
-            {
-                Path.Combine(appContents, "DotNetSdkRoslyn", "csc.dll"),
-                Path.Combine(appContents, "Resources", "Scripting", "DotNetSdkRoslyn", "csc.dll"),
-            };
-            foreach (var c in dllCandidates)
-                if (IsValidCscPath(c)) return c;
-
-            try
-            {
-                foreach (var file in Directory.GetFiles(appContents, "csc.dll", SearchOption.AllDirectories))
-                    if (IsValidCscPath(file)) return file;
-            }
-            catch { }
+            var csc = ExecCompileCache.FindBundledCsc(appContents);
+            if (!string.IsNullOrEmpty(csc) && IsValidCscPath(csc)) return csc;
 
             // Mono csc.exe is a last resort only — it fails to load
             // System.Text.Encoding.CodePages on a non-Latin Windows console, so we
@@ -552,13 +537,16 @@ namespace HeraAgent.Editor
 
         private string FindValidDotnetPath()
         {
-            // 1) Check saved config
-            if (!string.IsNullOrEmpty(_config?.defaultDotnetPath) && File.Exists(_config.defaultDotnetPath))
-                return _config.defaultDotnetPath;
-
-            // 2) Check in-process cache
             if (!string.IsNullOrEmpty(s_CachedDotnetPath) && File.Exists(s_CachedDotnetPath))
                 return s_CachedDotnetPath;
+
+            var name = "dotnet" + (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "");
+            var bundled = ExecCompileCache.FindBundledDotnet(EditorApplication.applicationContentsPath, name);
+            if (!string.IsNullOrEmpty(bundled))
+            {
+                s_CachedDotnetPath = bundled;
+                return bundled;
+            }
 
             // 3) Platform-specific standard paths
             string found;

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.50 / CLI 0.0.33 — exact Unity version guidance)
+
+- Added exact bundled ScriptReference indexes for the supported docs buckets:
+  `2022.3`, `2023.2`, `6000.0`, `6000.3`, and `6000.5`. `unity_docs`
+  now selects the bundle that matches the connected Editor's docs bucket before
+  falling back to `6000.0` / legacy `6.0`.
+- Added Unity Editor inventory tooling and documentation for the checked
+  editor layouts, package versions, bundled compiler/runtime locations, and
+  official ScriptReference bundle counts.
+- `status` and `doctor --json` now report the Editor docs bucket and compiler
+  summary from heartbeat data, so agents can see which version guidance and
+  compiler path class Hera is using.
+- Compiler discovery now prefers the running Unity Editor's bundled
+  `DotNetSdkRoslyn`, `NetCoreRuntime`, or versioned `DotNetSdk` layout and
+  ignores stale saved Unity-local paths from a different editor install.
+- `ui_doc apply` diagnostics now select the uGUI manual profile from the
+  version bucket: `2022.3 -> com.unity.ugui@1.0`,
+  `2023.2` / `6000.0` / `6000.3 -> com.unity.ugui@2.0`, and
+  `6000.5 -> com.unity.ugui@2.5`.
+- `manage_gameobject duplicate` now routes source/clone ID comparison through
+  `EntityIdCompat`, keeping the int `instance_id` contract compatible with
+  Unity 6000.5's `EntityId` rename.
+
 ### Fixed (Connector 0.0.49 — Unity 6 URP screenshot capture)
 
 - `screenshot --view scene` and `screenshot --view game` now capture the

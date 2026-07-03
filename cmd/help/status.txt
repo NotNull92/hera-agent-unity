@@ -1,6 +1,7 @@
 Usage: hera-agent-unity status
 
-Show the current Unity Editor state: port, project path, version, PID.
+Show the current Unity Editor state: port, project path, version, docs bucket,
+compiler/runtime kind, PID.
 Reports "not responding" if heartbeat is older than 3 seconds.
 
 Example:

@@ -149,7 +149,7 @@ namespace HeraAgent.Tools
             // Selection and clobbers the copy/paste buffer, so snapshot and
             // restore the prior selection around the loop.
             var scene = src.scene;
-            int srcRawId = src.GetInstanceID();
+            int srcRawId = EntityIdCompat.IdOf(src);
             var prevSelection = Selection.objects;
             int undoGroup = Undo.GetCurrentGroup();
             var clones = new List<object>();
@@ -161,7 +161,7 @@ namespace HeraAgent.Tools
                     Unsupported.DuplicateGameObjectsUsingPasteboard();
 
                     var clone = Selection.activeGameObject;
-                    if (clone == null || clone.GetInstanceID() == srcRawId)
+                    if (clone == null || EntityIdCompat.IdOf(clone) == srcRawId)
                         return new ErrorResponse("DUPLICATE_FAILED",
                             "[Hera] I asked Unity to duplicate the object but no new GameObject appeared.");
 

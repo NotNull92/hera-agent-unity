@@ -5,6 +5,7 @@ using System.Text;
 using Newtonsoft.Json;
 using UnityEditor;
 using UnityEngine;
+using HeraAgent.Tools;
 
 namespace HeraAgent
 {
@@ -112,6 +113,8 @@ namespace HeraAgent
                 port = HttpServer.Port,
                 pid = System.Diagnostics.Process.GetCurrentProcess().Id,
                 unityVersion = Application.unityVersion,
+                docsVersion = UnityVersionCompat.CurrentDocsVersion(),
+                compiler = GetCompilerSummary(),
                 timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 compileErrors = EditorUtility.scriptCompilationFailed,
             };
@@ -124,6 +127,51 @@ namespace HeraAgent
             {
                 UnityEngine.Debug.LogError($"[Hera] Heartbeat write failed: {ex.Message}");
             }
+        }
+
+        static CompilerSummary GetCompilerSummary()
+        {
+            try
+            {
+                var csc = ExecCompileCache.ResolveCsc(null);
+                var dotnet = ExecCompileCache.ResolveDotnet(null);
+                return new CompilerSummary
+                {
+                    cscPath = csc,
+                    cscKind = ClassifyToolPath(csc),
+                    cscFound = !string.IsNullOrEmpty(csc) && File.Exists(csc),
+                    dotnetPath = dotnet,
+                    dotnetKind = ClassifyToolPath(dotnet),
+                    dotnetFound = !string.IsNullOrEmpty(dotnet) && File.Exists(dotnet),
+                };
+            }
+            catch (Exception ex)
+            {
+                return new CompilerSummary { error = ex.Message };
+            }
+        }
+
+        static string ClassifyToolPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return "missing";
+            var p = path.Replace('\\', '/');
+            if (p.IndexOf("/DotNetSdkRoslyn/", StringComparison.OrdinalIgnoreCase) >= 0) return "unity_dotnet_sdk_roslyn";
+            if (p.IndexOf("/DotNetSdk/sdk/", StringComparison.OrdinalIgnoreCase) >= 0) return "unity_dotnet_sdk";
+            if (p.IndexOf("/DotNetSdk/", StringComparison.OrdinalIgnoreCase) >= 0) return "unity_dotnet_sdk";
+            if (p.IndexOf("/NetCoreRuntime/", StringComparison.OrdinalIgnoreCase) >= 0) return "unity_netcore_runtime";
+            if (p.IndexOf("/MonoBleedingEdge/", StringComparison.OrdinalIgnoreCase) >= 0) return "unity_mono";
+            return File.Exists(path) ? "external" : "path";
+        }
+
+        sealed class CompilerSummary
+        {
+            public string cscPath;
+            public string cscKind;
+            public bool cscFound;
+            public string dotnetPath;
+            public string dotnetKind;
+            public bool dotnetFound;
+            public string error;
         }
 
         static string GetState()

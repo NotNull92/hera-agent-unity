@@ -209,7 +209,7 @@ namespace HeraAgent.Tools
                 // non-Latin (CP949 etc.) Windows console — breaking every exec. Fall
                 // through to FindCsc, which resolves the working csc.dll, so a stale
                 // or auto-detected Mono path can't override the fix.
-                if (!string.IsNullOrEmpty(configPath) && File.Exists(configPath) && !IsMonoCsc(configPath))
+                if (IsUsableConfiguredCsc(configPath))
                     s_CscPath = configPath;
                 else
                     s_CscPath = FindCsc();
@@ -224,7 +224,7 @@ namespace HeraAgent.Tools
             {
                 if (s_DotnetPath != null && File.Exists(s_DotnetPath)) return s_DotnetPath;
                 var configPath = HeraSettings.DefaultDotnetPath;
-                if (!string.IsNullOrEmpty(configPath) && File.Exists(configPath))
+                if (IsUsableConfiguredDotnet(configPath))
                     s_DotnetPath = configPath;
                 else
                     s_DotnetPath = FindDotnet();
@@ -327,6 +327,62 @@ namespace HeraAgent.Tools
                 && p.IndexOf("MonoBleedingEdge", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
+        internal static bool IsUsableConfiguredCsc(string path)
+        {
+            return !string.IsNullOrEmpty(path)
+                && File.Exists(path)
+                && !IsMonoCsc(path)
+                && !IsBundledToolPathForDifferentEditor(path, EditorApplication.applicationContentsPath);
+        }
+
+        internal static bool IsUsableConfiguredDotnet(string path)
+        {
+            return !string.IsNullOrEmpty(path)
+                && File.Exists(path)
+                && !IsBundledToolPathForDifferentEditor(path, EditorApplication.applicationContentsPath);
+        }
+
+        internal static bool IsBundledToolPathForDifferentEditor(string path, string applicationContentsPath)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(applicationContentsPath))
+                return false;
+
+            var normalizedPath = NormalizePath(path);
+            var normalizedContent = NormalizePath(applicationContentsPath);
+            if (normalizedPath == null || normalizedContent == null)
+                return false;
+
+            if (IsPathUnder(normalizedPath, normalizedContent))
+                return false;
+
+            return normalizedPath.IndexOf("/DotNetSdkRoslyn/", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedPath.IndexOf("/DotNetSdk/", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedPath.IndexOf("/NetCoreRuntime/", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedPath.IndexOf("/MonoBleedingEdge/", StringComparison.OrdinalIgnoreCase) >= 0
+                || normalizedPath.IndexOf("/Resources/Scripting/", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string NormalizePath(string path)
+        {
+            try
+            {
+                return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Replace('\\', '/');
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool IsPathUnder(string path, string root)
+        {
+            if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(root))
+                return false;
+
+            return path.Equals(root, StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith(root + "/", StringComparison.OrdinalIgnoreCase);
+        }
+
         private static string FindCsc()
         {
             var content = EditorApplication.applicationContentsPath;
@@ -336,6 +392,16 @@ namespace HeraAgent.Tools
             // bincore/csc.dll (version-numbered) — and macOS nests everything
             // under Resources/Scripting, so the recursive SearchFile below is the
             // real resolver. These are only fast-path hits for the stable layouts.
+            var bundled = FindBundledCsc(content);
+            if (bundled != null) return bundled;
+
+            return null;
+        }
+
+        internal static string FindBundledCsc(string content)
+        {
+            if (string.IsNullOrEmpty(content)) return null;
+
             var dllCandidates = new[]
             {
                 Path.Combine(content, "DotNetSdkRoslyn", "csc.dll"),
@@ -343,6 +409,9 @@ namespace HeraAgent.Tools
             };
             foreach (var c in dllCandidates)
                 if (File.Exists(c)) return c;
+
+            var sdkCsc = FindVersionedSdkCsc(content);
+            if (sdkCsc != null) return sdkCsc;
 
             // Always prefer ANY csc.dll over Mono csc.exe — recursive so it finds
             // the version-numbered 6.5 SDK path too. (A previous MonoBleedingEdge
@@ -362,20 +431,50 @@ namespace HeraAgent.Tools
             return null;
         }
 
+        private static string FindVersionedSdkCsc(string content)
+        {
+            var sdkRoots = new[]
+            {
+                Path.Combine(content, "DotNetSdk", "sdk"),
+                Path.Combine(content, "Resources", "Scripting", "DotNetSdk", "sdk"),
+            };
+
+            var candidates = new List<(string path, Version version)>();
+            foreach (var root in sdkRoots)
+            {
+                if (!Directory.Exists(root)) continue;
+                foreach (var dir in Directory.GetDirectories(root))
+                {
+                    var path = Path.Combine(dir, "Roslyn", "bincore", "csc.dll");
+                    if (File.Exists(path))
+                        candidates.Add((path, ExtractSdkVersionFromPath(dir)));
+
+                    path = Path.Combine(dir, "Roslyn", "csc.dll");
+                    if (File.Exists(path))
+                        candidates.Add((path, ExtractSdkVersionFromPath(dir)));
+                }
+            }
+
+            return candidates
+                .OrderByDescending(c => c.version)
+                .ThenBy(c => c.path, StringComparer.Ordinal)
+                .Select(c => c.path)
+                .FirstOrDefault();
+        }
+
+        private static Version ExtractSdkVersionFromPath(string sdkDirectoryPath)
+        {
+            var dirName = Path.GetFileName(sdkDirectoryPath);
+            return Version.TryParse(dirName, out var version) ? version : new Version(0, 0);
+        }
+
         private static string FindDotnet()
         {
             var name = "dotnet" + (Application.platform == RuntimePlatform.WindowsEditor ? ".exe" : "");
             var content = EditorApplication.applicationContentsPath;
-            var candidates = new[]
-            {
-                Path.Combine(content, "dotnet", name),
-                Path.Combine(content, name),
-            };
-            foreach (var c in candidates)
-                if (File.Exists(c)) return c;
+            var bundled = FindBundledDotnet(content, name);
+            if (bundled != null) return bundled;
 
-            var found = SearchFile(content, name);
-            if (found != null) return found;
             if (Application.platform != RuntimePlatform.WindowsEditor)
             {
                 var macPaths = new[]
@@ -388,6 +487,28 @@ namespace HeraAgent.Tools
                     if (File.Exists(p)) return p;
             }
             return name;
+        }
+
+        internal static string FindBundledDotnet(string content, string name)
+        {
+            if (string.IsNullOrEmpty(content) || string.IsNullOrEmpty(name))
+                return null;
+
+            var candidates = new[]
+            {
+                Path.Combine(content, "DotNetSdk", name),
+                Path.Combine(content, "NetCoreRuntime", name),
+                Path.Combine(content, "dotnet", name),
+                Path.Combine(content, name),
+                Path.Combine(content, "Resources", "Scripting", "DotNetSdk", name),
+                Path.Combine(content, "Resources", "Scripting", "NetCoreRuntime", name),
+                Path.Combine(content, "Resources", "Scripting", "dotnet", name),
+                Path.Combine(content, "Resources", "Scripting", name),
+            };
+            foreach (var c in candidates)
+                if (File.Exists(c)) return c;
+
+            return SearchFile(content, name);
         }
 
         private static string FindMono()

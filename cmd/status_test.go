@@ -1,9 +1,11 @@
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -93,5 +95,49 @@ func TestDiscoverStatusInstance_PortAllowsStoppedInstance(t *testing.T) {
 	}
 	if got.Port != 8090 {
 		t.Errorf("Port: got %d, want 8090", got.Port)
+	}
+}
+
+func TestStatusCmd_PrintsDocsAndCompiler(t *testing.T) {
+	inst := client.Instance{
+		State:        unitystate.Ready,
+		ProjectPath:  "/home/user/MyProject",
+		Port:         8090,
+		PID:          os.Getpid(),
+		UnityVersion: "6000.0.35f1",
+		DocsVersion:  "6000.0",
+		Compiler: &client.CompilerInfo{
+			CscKind:    "unity_dotnet_sdk_roslyn",
+			DotnetKind: "unity_netcore_runtime",
+		},
+		Timestamp: time.Now().UnixMilli(),
+	}
+	writeInstanceFile(t, inst)
+
+	var out bytes.Buffer
+	oldStdout := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+	err = statusCmd(&inst)
+	_ = w.Close()
+	os.Stdout = oldStdout
+	if err != nil {
+		t.Fatalf("statusCmd returned error: %v", err)
+	}
+	if _, err := out.ReadFrom(r); err != nil {
+		t.Fatal(err)
+	}
+	got := out.String()
+	for _, want := range []string{
+		"Version: 6000.0.35f1",
+		"Docs:    6000.0",
+		"Compiler: csc=unity_dotnet_sdk_roslyn dotnet=unity_netcore_runtime",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("status output missing %q in %q", want, got)
+		}
 	}
 }

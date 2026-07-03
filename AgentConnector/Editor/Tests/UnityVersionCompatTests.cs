@@ -11,6 +11,7 @@ namespace HeraAgent.Tests
             bool allPassed = true;
             allPassed &= Expect("2022.3.45f1", UnityVersionCompat.Docs2022_3);
             allPassed &= Expect("2023.2.20f1", UnityVersionCompat.Docs2023_2);
+            allPassed &= Expect("6000.0.35f1", UnityVersionCompat.Docs6000_0);
             allPassed &= Expect("6000.0.58f2", UnityVersionCompat.Docs6000_0);
             allPassed &= Expect("6000.2.9f1", UnityVersionCompat.Docs6000_0);
             allPassed &= Expect("6000.3.5f1", UnityVersionCompat.Docs6000_3);

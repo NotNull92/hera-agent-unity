@@ -2,7 +2,8 @@ Usage: hera-agent-unity doctor
 
 Run a self-diagnostic. Reports the running binary path, what 'hera-agent-unity'
 resolves to on PATH, duplicate installs, shell-specific gotchas, and any
-Unity instances visible to the Connector.
+Unity instances visible to the Connector, including docs bucket and compiler
+summary when the heartbeat provides them.
 
 Does NOT require Unity to be running. Use this first when 'hera-agent-unity' is
 not found, points at the wrong copy, or can't see your Unity Editor.
