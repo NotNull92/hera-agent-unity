@@ -38,12 +38,19 @@ type AssetConfig struct {
 	Assets              []AssetEntry        `json:"assets"`
 	LoopEngineeringMode LoopEngineeringMode `json:"loopEngineeringMode"`
 
-	// GameFeelMode mirrors game_feel_ui_mode in the shared asset-config.json. When
-	// on, the connector's manage_ui attaches Game Feel & Juice Bible + UI Feedback
-	// Design Guide juice guidance to its create responses. The Hera Settings window
-	// is the primary editor. (Persisted under the old `ui_juicy_mode` key before
-	// the Game Feel UI Mode rename; Load migrates that key transparently.)
-	GameFeelMode bool `json:"game_feel_ui_mode"`
+	// GameFeelUIMode mirrors game_feel_ui_mode in the shared asset-config.json.
+	// When on, the connector's manage_ui attaches Game Feel & Juice Bible + UI
+	// Feedback Design Guide juice guidance to its create responses. The Hera
+	// Settings window is the primary editor. (Persisted under the old
+	// `ui_juicy_mode` key before the Game Feel UI Mode rename; Load migrates
+	// that key transparently.)
+	GameFeelUIMode bool `json:"game_feel_ui_mode"`
+
+	// GameFeelMode mirrors game_feel_mode — the gameplay-wide Game Feel Mode
+	// (Beta). When on, `doctor --agent-rules` and connector tool responses point
+	// agents at the bundled game_feel knowledge base (Game Feel & Juice Bible +
+	// Ethical Engagement Framework).
+	GameFeelMode bool `json:"game_feel_mode"`
 
 	// DefaultCscPath/DefaultDotnetPath are written by the Hera Settings window.
 	// The CLI doesn't edit them, but it must round-trip them so a CLI-side Save
@@ -170,7 +177,7 @@ func Load() (*AssetConfig, error) {
 		Legacy   *bool `json:"ui_juicy_mode"`
 	}
 	if json.Unmarshal(data, &compat) == nil && compat.GameFeel == nil && compat.Legacy != nil {
-		cfg.GameFeelMode = *compat.Legacy
+		cfg.GameFeelUIMode = *compat.Legacy
 	}
 
 	// Merge with defaults. User state (Enabled, Installed) is preserved per ID.
@@ -277,7 +284,20 @@ func SetAssetEnabled(id string, enabled bool) (*AssetConfig, error) {
 	return nil, fmt.Errorf("asset %q not found in config", id)
 }
 
-// SetGameFeelMode sets the Game Feel UI Mode (Beta) flag and persists it.
+// SetGameFeelUIMode sets the Game Feel UI Mode (Beta) flag and persists it.
+func SetGameFeelUIMode(enabled bool) (*AssetConfig, error) {
+	cfg, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	cfg.GameFeelUIMode = enabled
+	if err := Save(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+// SetGameFeelMode sets the Game Feel Mode (Beta) flag and persists it.
 func SetGameFeelMode(enabled bool) (*AssetConfig, error) {
 	cfg, err := Load()
 	if err != nil {
@@ -288,6 +308,23 @@ func SetGameFeelMode(enabled bool) (*AssetConfig, error) {
 		return nil, err
 	}
 	return cfg, nil
+}
+
+// LoadGameFeelModeNoCreate reads only the Game Feel Mode (Beta) flag for
+// agent-rules generation. Missing or unreadable config reads as off without
+// writing a config file.
+func LoadGameFeelModeNoCreate() bool {
+	data, err := os.ReadFile(ConfigFilePath())
+	if err != nil {
+		return false
+	}
+	var cfg struct {
+		GameFeelMode bool `json:"game_feel_mode"`
+	}
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return false
+	}
+	return cfg.GameFeelMode
 }
 
 // SetLoopEngineeringMode sets the Ultra Hera verification mode and persists it.

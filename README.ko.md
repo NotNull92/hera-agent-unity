@@ -16,7 +16,7 @@
 
 <br>
 
-[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
+[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
 
 [English](README.md) · **한국어**
 
@@ -83,6 +83,7 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 | **Unity 6000.3 / 6000.5 따로 확인** | Unity 6 안에서도 버전 차이가 있어서 따로 테스트했습니다. |
 | **93 토큰 도구 목록** | `list --compact`는 자주 써도 부담이 작습니다. |
 | **49-55 토큰 오브젝트 전달** | `find_gameobjects --ids`는 다음 명령에 필요한 ID만 보냅니다. |
+| **시그니처: Game Feel Mode (Beta)** | Hera가 AI에게 게임플레이 손맛을 만드는 법을 알려줍니다 — 윤리 원칙 내장. |
 | **시그니처: Game Feel UI Mode (Beta)** | Hera가 AI에게 정적인 UI가 아니라 살아 있는 게임 UI를 만드는 힌트를 줍니다. |
 | **NEW: Ultra Hera** | 기본은 가볍게 확인하고, 중요한 요청은 더 꼼꼼한 Unity 검증으로 올립니다. |
 | **NEW: uGUI 공식문서 fixer** | `ui_doc apply`가 열린 Unity Editor 버전에 맞는 공식 uGUI 규칙을 고르고 fixes/diagnostics를 보고합니다. |
@@ -217,6 +218,7 @@ AI가 가장 자주 쓰는 명령어입니다.
 | `manage_gameobject` | GameObject를 만들고, 복제하고, 옮기고, 이름을 바꿉니다. |
 | `manage_components` | 컴포넌트를 추가, 삭제, 조회, 수정합니다. |
 | `ui_doc` | Unity UI를 만들고 캡처합니다. |
+| `game_feel` | 게임 필 레시피를 조회합니다 (screen shake, hit stop, honest juice 등). |
 | `test` | Unity 테스트를 실행합니다. |
 | `screenshot` | Scene/Game 뷰나 단일 GameObject를 캡처합니다. |
 | `batch` | 여러 명령을 한 번에 실행합니다 (atomic 롤백 옵션). |
@@ -275,11 +277,37 @@ hera-agent-unity ui_doc capture --out hud_built.png
 
 ---
 
+## Game Feel Mode (Beta)
+
+AI는 돌아가는 게임은 만들 수 있습니다. Game Feel Mode (Beta)는 그 게임이 *제대로 느껴지게* 도와줍니다.
+
+이 모드를 켜면 Hera로 작업하는 에이전트가 게임플레이 자체의 game feel 가이드를 받습니다 — screen shake, hit stop, knockback, 조작감(coyote time, input buffering), 카메라, 사운드, 보상 연출 — *Game Feel & Juice Bible*과 *Ethical Engagement Game Feel Framework*에서 가져온 구체적 수치(px, 초, %, Hz)와 함께.
+
+윤리 원칙은 나중에 검사하는 게 아니라 레시피에 내장되어 있습니다. 모든 레시피가 제약을 함께 담습니다 — screen shake 강도 옵션, 광과민성 flash 감소, 정직한 보상 연출, 확률 투명성 — 그래서 에이전트가 만든 결과물은 애초에 윤리 체크리스트를 통과하는 구조입니다 (**Honest Juice**: 연출 강도는 실제 성취 가치와 일치해야 한다).
+
+세 가지 표면이 함께 동작합니다:
+
+- `hera-agent-unity game_feel <토픽>` — 동봉 지식 베이스 (54개 토픽, ethics 우선 정렬), 항상 사용 가능
+- `doctor --agent-rules` — 모드가 켜져 있으면 핵심 원칙 + 워크플로 주입
+- 도구 힌트 — `manage_components`로 Camera / ParticleSystem / AudioSource / Rigidbody / Light / Animator를 붙이면 관련 토픽을 안내
+
+가이드만 제공합니다 — Hera가 런타임 컴포넌트를 자동으로 붙이지 않습니다.
+
+Unity에서 켭니다:
+
+```text
+HeraAgent -> Hera Settings -> Game Feel Mode (Beta)
+```
+
+CLI에서는: `hera-agent-unity asset-config gamefeel on`
+
+---
+
 ## Game Feel UI Mode (Beta)
 
 AI는 작동하는 버튼은 만들 수 있습니다. Game Feel UI Mode (Beta)는 그 버튼이 게임처럼 느껴지게 도와줍니다.
 
-이 모드를 켜면 Hera가 UI 생성 결과에 `agent_hint`를 붙입니다. 이 힌트에는 hover 확대, press 눌림, release bounce, 팝업 overshoot, 숫자 카운트업, 데미지 텍스트 움직임, 햅틱, reduce-motion 같은 구체적인 game-feel 레시피가 들어갑니다.
+이 모드를 켜면 Hera가 UI 생성 결과에 `agent_hint`를 붙입니다. 이 힌트에는 hover 확대, press 눌림, release bounce, 대칭 선택 버튼을 갖춘 팝업 overshoot, 등급별 보상 연출 사다리, 크리티컬 스펙을 포함한 숫자 카운트업, dual-response 체력바, 차지/쿨다운 패턴, ECN-DMN 밀도 가이드, 햅틱, 접근성 기본 요건 같은 구체적인 game-feel 레시피가 들어갑니다. 힌트 끝에는 `game_feel` 지식 베이스의 `ui` 카테고리 포인터가 붙어 — 요소별 스펙 표, 인지 부하 이론, 선택 대칭 윤리, 2026 트렌드 — 필요할 때 깊이 조회할 수 있습니다.
 
 이 기능은 가이드이지 무거운 런타임 기능이 아닙니다. Hera가 씬에 큰 컴포넌트를 자동으로 붙이지 않습니다. 에이전트가 레시피를 받고, 평소처럼 Unity 수정 명령으로 애니메이션과 피드백을 적용합니다.
 

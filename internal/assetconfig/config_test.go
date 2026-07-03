@@ -240,13 +240,17 @@ func TestSetGameFeelMode(t *testing.T) {
 		t.Error("expected GameFeelMode true after enable")
 	}
 
-	// Persisted under the current key and survives a reload.
+	// Persisted under the current key and survives a reload; the UI flag is
+	// independent and stays off.
 	loaded, err := Load()
 	if err != nil {
 		t.Fatalf("Load error: %v", err)
 	}
 	if !loaded.GameFeelMode {
 		t.Error("expected GameFeelMode true after reload")
+	}
+	if loaded.GameFeelUIMode {
+		t.Error("expected GameFeelUIMode to stay off — flags are independent")
 	}
 
 	if _, err := SetGameFeelMode(false); err != nil {
@@ -258,8 +262,51 @@ func TestSetGameFeelMode(t *testing.T) {
 	}
 }
 
+func TestSetGameFeelUIMode(t *testing.T) {
+	withTempHome(t)
+
+	cfg, err := SetGameFeelUIMode(true)
+	if err != nil {
+		t.Fatalf("SetGameFeelUIMode error: %v", err)
+	}
+	if !cfg.GameFeelUIMode {
+		t.Error("expected GameFeelUIMode true after enable")
+	}
+	if cfg.GameFeelMode {
+		t.Error("expected GameFeelMode to stay off — flags are independent")
+	}
+
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if !loaded.GameFeelUIMode {
+		t.Error("expected GameFeelUIMode true after reload")
+	}
+}
+
+func TestLoadGameFeelModeNoCreate(t *testing.T) {
+	home := withTempHome(t)
+
+	if LoadGameFeelModeNoCreate() {
+		t.Error("expected missing config to read as off")
+	}
+	if _, err := os.Stat(filepath.Join(home, ".hera-agent-unity", "asset-config.json")); !os.IsNotExist(err) {
+		t.Fatalf("expected no config file to be created, stat err=%v", err)
+	}
+
+	path := paths.AssetConfigPath()
+	_ = os.MkdirAll(filepath.Dir(path), 0755)
+	if err := os.WriteFile(path, []byte(`{"game_feel_mode":true}`), 0644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	if !LoadGameFeelModeNoCreate() {
+		t.Error("expected game_feel_mode true to be read")
+	}
+}
+
 // A config written before the rename stores the flag under ui_juicy_mode; Load
-// must migrate it onto GameFeelMode, and Save must drop the legacy key.
+// must migrate it onto GameFeelUIMode, and Save must drop the legacy key.
 func TestLoadConfig_MigratesLegacyJuicyKey(t *testing.T) {
 	withTempHome(t)
 	path := paths.AssetConfigPath()
@@ -273,8 +320,8 @@ func TestLoadConfig_MigratesLegacyJuicyKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load error: %v", err)
 	}
-	if !cfg.GameFeelMode {
-		t.Fatal("expected legacy ui_juicy_mode=true to migrate to GameFeelMode")
+	if !cfg.GameFeelUIMode {
+		t.Fatal("expected legacy ui_juicy_mode=true to migrate to GameFeelUIMode")
 	}
 
 	// After a save the legacy key is gone and only game_feel_ui_mode remains.
@@ -307,7 +354,7 @@ func TestLoadConfig_NewKeyWinsOverLegacy(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load error: %v", err)
 	}
-	if cfg.GameFeelMode {
+	if cfg.GameFeelUIMode {
 		t.Error("expected explicit game_feel_ui_mode=false to win over legacy ui_juicy_mode=true")
 	}
 }

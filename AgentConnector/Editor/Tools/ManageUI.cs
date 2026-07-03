@@ -170,7 +170,7 @@ namespace HeraAgent.Tools
         // the toggle is off (agent_hint stays null → omitted from the response).
         private static SuccessResponse WithJuice(string element, SuccessResponse resp)
         {
-            if (HeraSettings.GameFeelMode)
+            if (HeraSettings.GameFeelUiMode)
                 resp.agent_hint = UIJuiceGuide.ForElement(element, HeraSettings.DotweenPreferred);
             return resp;
         }

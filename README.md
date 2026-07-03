@@ -16,7 +16,7 @@
 
 <br>
 
-[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
+[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
 
 **English** · [한국어](README.ko.md)
 
@@ -83,6 +83,7 @@ This release focuses on three simple things: more Unity versions, fewer tokens, 
 | **Unity 6000.3 / 6000.5 checked separately** | Unity 6 minor versions can differ, so they are tested separately. |
 | **93-token tool list** | `list --compact` is small enough to use often. |
 | **49-55-token object handoff** | `find_gameobjects --ids` returns only the IDs an agent needs for the next command. |
+| **Signature: Game Feel Mode (Beta)** | Hera can tell the agent how to make gameplay feel right — with the ethics built in. |
 | **Signature: Game Feel UI Mode (Beta)** | Hera can tell the agent how to make generated UI feel alive, not static. |
 | **NEW: Ultra Hera** | Agents can use light checks by default and upgrade to strict Unity verification when the task asks for it. |
 | **NEW: uGUI docs fixer** | `ui_doc apply` selects the official uGUI rule set for the open Unity Editor version and reports fixes/diagnostics. |
@@ -217,6 +218,7 @@ Here are the commands most agents use first.
 | `manage_gameobject` | Creates, duplicates, moves, renames, parents, or deletes GameObjects. |
 | `manage_components` | Adds, removes, reads, or edits components. |
 | `ui_doc` | Builds and captures Unity UI. |
+| `game_feel` | Looks up game-feel recipes (screen shake, hit stop, honest juice, ...). |
 | `test` | Runs Unity tests. |
 | `screenshot` | Captures Scene/Game view or one isolated GameObject. |
 | `batch` | Runs several commands in one request (optionally atomic). |
@@ -274,11 +276,37 @@ Hera also reports the active official uGUI docs bucket (`2022.3`, `2023.2`,
 
 ---
 
+## Game Feel Mode (Beta)
+
+AI can make a game that works. Game Feel Mode (Beta) helps it make a game that *feels* right.
+
+When this mode is on, agents working through Hera get game-feel guidance for gameplay itself — screen shake, hit stop, knockback, control feel (coyote time, input buffering), camera work, sound design, reward presentation — with concrete parameters (px, seconds, %, Hz) from the *Game Feel & Juice Bible* and the *Ethical Engagement Game Feel Framework*.
+
+The ethics are built in, not bolted on. Every recipe carries its constraints — screen-shake intensity options, flash-reduction for photosensitivity, honest reward presentation, transparent probabilities — so what the agent builds passes the ethics checklist by construction (**Honest Juice**: presentation intensity must match real achievement).
+
+Three surfaces work together:
+
+- `hera-agent-unity game_feel <topic>` — the bundled knowledge base (54 topics, ethics listed first), always available
+- `doctor --agent-rules` — injects the core principles + workflow when the mode is on
+- Tool hints — adding a Camera / ParticleSystem / AudioSource / Rigidbody / Light / Animator via `manage_components` points the agent at the matching topics
+
+Guidance only — Hera never attaches runtime components for you.
+
+Turn it on in Unity:
+
+```text
+HeraAgent -> Hera Settings -> Game Feel Mode (Beta)
+```
+
+Or from the CLI: `hera-agent-unity asset-config gamefeel on`
+
+---
+
 ## Game Feel UI Mode (Beta)
 
 AI can make a button that works. Game Feel UI Mode (Beta) helps it make a button that feels like a game.
 
-When this mode is on, Hera adds an `agent_hint` to UI creation results. The hint gives concrete game-feel recipes: hover scale, press squash, release bounce, popup overshoot, count-up numbers, damage text motion, haptics, and reduce-motion reminders.
+When this mode is on, Hera adds an `agent_hint` to UI creation results. The hint gives concrete game-feel recipes: hover scale, press squash, release bounce, popup overshoot with symmetric choice buttons, rarity-laddered reward presentation, count-up numbers with critical specs, dual-response health bars, charge/cooldown patterns, ECN-DMN density guidance, haptics, and accessibility baselines. Each hint ends with a pointer into the `game_feel` knowledge base's `ui` category — per-element spec tables, cognitive-load theory, choice-symmetry ethics, and 2026 trends — for depth on demand.
 
 It is guidance, not runtime bloat. Hera does not attach heavy gameplay components for you. The agent receives the recipe, then applies the animation or feedback through normal Unity edits.
 

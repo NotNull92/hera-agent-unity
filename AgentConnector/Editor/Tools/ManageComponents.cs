@@ -101,13 +101,50 @@ namespace HeraAgent.Tools
                 return new ErrorResponse("ADD_COMPONENT_NULL", $"AddComponent returned null — '{type.Name}' may forbid duplicates on this GameObject (e.g. via DisallowMultipleComponent).");
 
             EditorSceneManager.MarkSceneDirty(go.scene);
-            return new SuccessResponse(
+            var resp = new SuccessResponse(
                 $"Added {type.Name} to {go.name}.",
                 new
                 {
                     instance_id = EntityIdCompat.IdOf(go),
                     component = BuildComponentShape(comp, includeProperties: false),
                 });
+            return WithGameFeelHint(type, resp);
+        }
+
+        // When Game Feel Mode (Beta) is on (Hera Settings), point the calling
+        // agent at the bundled game_feel topics relevant to the component it
+        // just added — a one-line pointer, not the recipe body, so the token
+        // cost stays flat. No-op when the toggle is off or the type has no
+        // mapped topics (agent_hint stays null → omitted from the response).
+        private static SuccessResponse WithGameFeelHint(Type type, SuccessResponse resp)
+        {
+            if (!HeraSettings.GameFeelMode) return resp;
+            var topics = GameFeelTopicsFor(type.Name);
+            if (topics == null) return resp;
+            resp.agent_hint =
+                $"[Hera] Game Feel Mode (Beta) is on — before wiring feel/feedback for this {type.Name}, " +
+                $"run `game_feel {topics[0]}`" +
+                (topics.Length > 1 ? $" (also: {string.Join(", ", topics, 1, topics.Length - 1)})" : "") +
+                " for concrete parameters. Honest Juice: presentation intensity must match real achievement.";
+            return resp;
+        }
+
+        private static string[] GameFeelTopicsFor(string typeName)
+        {
+            switch (typeName)
+            {
+                case "Camera": return new[] { "camera", "screen_shake" };
+                case "ParticleSystem": return new[] { "particles" };
+                case "AudioSource": return new[] { "sound" };
+                case "Rigidbody":
+                case "Rigidbody2D":
+                case "CharacterController": return new[] { "control_feel", "knockback" };
+                case "Light":
+                case "Light2D": return new[] { "dynamic_lighting" };
+                case "Animator":
+                case "Animation": return new[] { "squash_stretch", "tweening_easing" };
+                default: return null;
+            }
         }
 
         [HeraAction]

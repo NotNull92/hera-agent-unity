@@ -44,7 +44,8 @@ AgentConnector/
     │   ├── UiDocSchema.cs               # ui_doc/2 IR export/apply/layout engine
     │   └── UiDocFixer.cs                # official uGUI docs fixes/diagnostics
     ├── Data/
-    │   └── unity_docs_*.jsonl.gz.bytes   # bundled Unity ScriptReference indexes
+    │   ├── unity_docs_*.jsonl.gz.bytes   # bundled Unity ScriptReference indexes
+    │   └── game_feel_1.0.jsonl.gz.bytes  # Game Feel Mode knowledge base
     ├── Tools/
     │   ├── ManageEditor.cs              # play, stop, pause, tags, layers
     │   ├── ExecuteCsharp.cs             # exec tool entry point (partial class)
@@ -438,6 +439,10 @@ Edit-distance helper with a bounded early-exit variant used by command/type/docs
 
 Selects the bundled `unity_docs_<version>.jsonl.gz.bytes` file for the current Unity version, falling back to the 6000.0 bundle when an exact bucket is not present. Loads it into a dictionary keyed by class/property/method name. Provides exact lookup and prefix-bucketed Levenshtein suggestions.
 
+### GameFeelStore.cs
+
+Loads the bundled `game_feel_1.0.jsonl.gz.bytes` knowledge base (Game Feel & Juice Bible + Ethical Engagement Game Feel Framework, 39 topics) into a dictionary keyed by topic. Provides exact lookup, a category-grouped index (ethics first), and full-scan Levenshtein suggestions — the corpus is small enough that UnityDocsStore's prefix-bucket optimization would be premature.
+
 ### UnityPitfalls.cs
 
 Curated catalog of Unity API pitfalls attached to `describe_type` responses. Entries can carry a minimum docs bucket so Unity 6-only advice is hidden on 2022.3/2023.2.
@@ -445,7 +450,8 @@ Curated catalog of Unity API pitfalls attached to `describe_type` responses. Ent
 ### HeraSettings.cs
 
 Reads `~/.hera-agent-unity/asset-config.json` by last-write-time cache. Exposes:
-- `JuicyMode` → drives `manage_ui` / `ui_doc` juice hints
+- `GameFeelUiMode` → drives `manage_ui` / `ui_doc` juice hints (legacy `ui_juicy_mode` key read as fallback)
+- `GameFeelMode` → drives `manage_components add` game-feel topic hints
 - `DotweenPreferred` → tween backend hint
 - `DefaultCscPath` / `DefaultDotnetPath` → compiler defaults for `exec`
 
@@ -514,6 +520,7 @@ issues through diagnostics.
 | `describe_type` | `DescribeType.cs` | type introspection + Unity pitfalls |
 | `describe_shader` | `DescribeShader.cs` | shader property inspection/search |
 | `unity_docs` | `UnityDocs.cs` | offline ScriptReference lookup |
+| `game_feel` | `GameFeel.cs` | offline game-feel/juice recipe lookup (ethics built in) |
 | `ui_doc` | `UiDoc.cs` | export, apply, import, gen_sprite, capture (sample/catalog are CLI-side) |
 | `log` | `LogToConsole.cs` | write to Unity console |
 
@@ -529,6 +536,8 @@ go run ./tools/build-unity-docs \
     --out AgentConnector/Editor/Data/unity_docs_6000.0.jsonl.gz.bytes \
     --unity-version 6000.0
 ```
+
+`game_feel_1.0.jsonl.gz.bytes` is the Game Feel Mode knowledge base. Its checked-in source of truth is `tools/build-game-feel-docs/game_feel.jsonl`; regenerate with `go run ./tools/build-game-feel-docs`.
 
 ---
 

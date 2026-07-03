@@ -815,7 +815,75 @@ namespace HeraAgent.Editor
             btn.style.height = 26;
         }
 
+        // Game Feel Mode (Beta) — gameplay-wide game-feel guidance toggle.
+        // When on, `doctor --agent-rules` and tool responses point agents at the
+        // bundled game_feel knowledge base (Game Feel & Juice Bible + Ethical
+        // Engagement Framework, ethics first).
         private void BuildGameFeelModeSection()
+        {
+            var section = new VisualElement();
+            section.style.backgroundColor = ColorBgCard;
+            section.style.borderTopWidth = 1;
+            section.style.borderBottomWidth = 1;
+            section.style.borderTopColor = ColorBorder;
+            section.style.borderBottomColor = ColorBorder;
+            section.style.paddingTop = 10;
+            section.style.paddingBottom = 10;
+            section.style.paddingLeft = 12;
+            section.style.paddingRight = 12;
+            section.style.marginBottom = 6;
+            section.style.flexShrink = 0;
+            section.style.flexGrow = 0;
+
+            // Header row: icon + title + the toggle on the right.
+            var header = new VisualElement();
+            header.style.flexDirection = FlexDirection.Row;
+            header.style.alignItems = Align.Center;
+
+            var headerIcon = new Label("✦");
+            headerIcon.style.fontSize = 14;
+            headerIcon.style.marginRight = 4;
+            headerIcon.style.color = ColorGold;
+            header.Add(headerIcon);
+
+            var headerLbl = new Label("Game Feel Mode (Beta)");
+            headerLbl.style.fontSize = 13;
+            headerLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
+            headerLbl.style.color = ColorGold;
+            headerLbl.style.flexGrow = 1;
+            header.Add(headerLbl);
+
+            var toggle = new Toggle { value = _config?.game_feel_mode ?? false };
+            toggle.tooltip = "When on, AI agents are guided by the bundled Game Feel knowledge base (Juice Bible + Ethical Engagement Framework) while building gameplay feel.";
+            header.Add(toggle);
+
+            section.Add(header);
+
+            // Description.
+            var desc = new Label(
+                "When on, agents working through hera-agent-unity get game-feel guidance "
+                + "for gameplay itself — screen shake, hit stop, control feel, camera, sound, "
+                + "reward presentation — with concrete parameters and the ethics built in: "
+                + "presentation intensity honestly matches real achievement (Honest Juice).");
+            desc.style.fontSize = 10;
+            desc.style.color = ColorTextSecondary;
+            desc.style.whiteSpace = WhiteSpace.Normal;
+            desc.style.marginTop = 6;
+            section.Add(desc);
+
+            toggle.RegisterValueChangedCallback(evt =>
+            {
+                if (_config == null) return;
+                _config.game_feel_mode = evt.newValue;
+                _isDirty = true;
+                SaveConfig();
+                UpdateStatusBar();
+            });
+
+            _root.Add(section);
+        }
+
+        private void BuildGameFeelUiModeSection()
         {
             var section = new VisualElement();
             section.style.backgroundColor = ColorBgCard;

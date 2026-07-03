@@ -210,7 +210,7 @@ namespace HeraAgent.Tools
                 errors = stats.Errors,
                 root_id = root != null ? EntityIdCompat.IdOf(root) : 0,
             });
-            if (HeraSettings.GameFeelMode)
+            if (HeraSettings.GameFeelUiMode)
                 resp.agent_hint = UIJuiceGuide.ForElements(stats.ElementTypes, HeraSettings.DotweenPreferred);
             return resp;
         }

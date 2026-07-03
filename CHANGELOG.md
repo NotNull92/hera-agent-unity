@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.56 / CLI 0.0.37 — Game Feel Mode (Beta))
+
+- **Game Feel Mode (Beta)** — the gameplay-wide counterpart to Game Feel UI
+  Mode. A new independent Hera Settings toggle (`game_feel_mode` in
+  `asset-config.json`; CLI `asset-config gamefeel [on|off]`) that guides AI
+  agents on making gameplay *feel* right, with the ethics built in.
+- New `game_feel` tool + bundled knowledge base
+  (`AgentConnector/Editor/Data/game_feel_1.0.jsonl.gz.bytes`, 54 topics,
+  ~38 KiB gzipped) curated from the *Game Feel & Juice Bible*, the
+  *Ethical Engagement Game Feel Framework*, the *UI Feedback Design Guide*,
+  and *UI/UX Visual Theory & Trends*: theory (juice, feedback loop,
+  control feel), techniques T1–T12 with concrete px/sec/%/Hz parameters,
+  a 15-topic `ui` category (per-element feedback specs, ECN-DMN framework,
+  cognitive load, choice symmetry, 2026 trends), workflow phases,
+  anti-patterns (Golden Rule, Honest Juice), validation checklists, and
+  14 ethics topics listed first — recipes carry their accessibility/honesty
+  constraints so results pass the ethics checklist by construction.
+  `game_feel` (no args) returns the topic index; misses get Levenshtein
+  `did_you_mean`. Always available regardless of the toggle.
+- **Game Feel UI Mode (Beta) enriched** — the `UIJuiceGuide` recipes behind
+  `manage_ui create` / `ui_doc apply` hints now fold in the UI Feedback
+  Design Guide, UI/UX Visual Theory & Trends, and the Ethical Engagement
+  Framework: panel recipes carry choice-symmetry ethics (equal
+  accept/decline visibility, prompt cooldowns, no abrupt mid-play popups)
+  and a toast pattern; image recipes get the honest 5-tier rarity ladder
+  and the acquisition flow; text recipes get the critical-hit spec with
+  overlap offsets; bar recipes get the hit-flash timing, accelerating
+  low-health pulse, and charge/cooldown pattern; canvas recipes get
+  ECN-DMN density profiles, the 100ms / 7±2 / ≤30% budgets, the
+  screen-transition table, and the accessibility baseline; button recipes
+  get symmetric per-choice feedback tones. Every hint now ends with a
+  per-element pointer into the `game_feel` `ui` topics for full tables and
+  theory.
+- With the mode ON: `doctor --agent-rules` emits an independent "Game Feel
+  Mode (Beta)" section (core principles, query workflow, final quality
+  questions), and `manage_components add` attaches a one-line `agent_hint`
+  pointing at matching topics for Camera / ParticleSystem / AudioSource /
+  Rigidbody / CharacterController / Light / Animator.
+- New maintainer tool `tools/build-game-feel-docs` — validates and gzips the
+  checked-in `game_feel.jsonl` source of truth into the bundle.
+- CLI subcommand reshuffle: `asset-config gamefeel` now drives the new
+  gameplay mode; the UI mode moved to `asset-config gamefeel-ui` (`juicy`
+  stays as its legacy alias). `--json` now reports both `game_feel_mode`
+  and `game_feel_ui_mode`. (No released CLI ever shipped `gamefeel` with the
+  old meaning — the last tag is v0.0.36, before the rename.)
+
 ### Changed (Connector 0.0.55 / CLI 0.0.37 — UI Juicy Mode renamed to Game Feel UI Mode (Beta))
 
 - Renamed the feature **UI Juicy Mode → Game Feel UI Mode (Beta)** across the

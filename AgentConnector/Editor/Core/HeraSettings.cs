@@ -15,12 +15,23 @@ namespace HeraAgent
     {
         private static readonly object s_lock = new object();
         private static long s_stampTicks = long.MinValue;
+        private static bool s_gameFeelUiMode;
         private static bool s_gameFeelMode;
         private static bool s_dotweenPreferred;
         private static string s_defaultCscPath;
         private static string s_defaultDotnetPath;
 
         /// <summary>Game Feel UI Mode (Beta) toggle. False when unset or unreadable.</summary>
+        public static bool GameFeelUiMode
+        {
+            get { Refresh(); return s_gameFeelUiMode; }
+        }
+
+        /// <summary>
+        /// Game Feel Mode (Beta) toggle — gameplay-wide game-feel guidance
+        /// (screen shake, hit stop, control feel, honest juice, ...). False when
+        /// unset or unreadable.
+        /// </summary>
         public static bool GameFeelMode
         {
             get { Refresh(); return s_gameFeelMode; }
@@ -67,6 +78,7 @@ namespace HeraAgent
                     if (!File.Exists(path))
                     {
                         s_stampTicks = long.MinValue;
+                        s_gameFeelUiMode = false;
                         s_gameFeelMode = false;
                         s_dotweenPreferred = false;
                         s_defaultCscPath = null;
@@ -81,7 +93,8 @@ namespace HeraAgent
                     var root = JObject.Parse(File.ReadAllText(path));
                     // Prefer the current key; fall back to the pre-rename `ui_juicy_mode`
                     // so a config not yet re-saved after the Game Feel UI Mode rename still honours the toggle.
-                    s_gameFeelMode = root.Value<bool?>("game_feel_ui_mode") ?? root.Value<bool?>("ui_juicy_mode") ?? false;
+                    s_gameFeelUiMode = root.Value<bool?>("game_feel_ui_mode") ?? root.Value<bool?>("ui_juicy_mode") ?? false;
+                    s_gameFeelMode = root.Value<bool?>("game_feel_mode") ?? false;
                     s_defaultCscPath = root.Value<string>("defaultCscPath");
                     s_defaultDotnetPath = root.Value<string>("defaultDotnetPath");
 
@@ -103,6 +116,7 @@ namespace HeraAgent
                 catch
                 {
                     // A malformed or locked file should never break a tool call.
+                    s_gameFeelUiMode = false;
                     s_gameFeelMode = false;
                     s_dotweenPreferred = false;
                     s_defaultCscPath = null;

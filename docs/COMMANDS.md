@@ -376,6 +376,71 @@ Run this only when Unity ships a new docs revision or when adding a new version 
 
 ---
 
+## game_feel
+
+Offline Game Feel / Juice design knowledge base. Returns implementation-ready recipes — concrete px / seconds / % / Hz parameters — curated from the *Game Feel & Juice Bible*, the *Ethical Engagement Game Feel Framework*, the *UI Feedback Design Guide*, and *UI/UX Visual Theory & Trends*, with the ethical and accessibility constraints built into each topic (Honest Juice: presentation intensity must match real achievement).
+
+The data set **ships inside the UPM connector package**, under `AgentConnector/Editor/Data/game_feel_1.0.jsonl.gz.bytes` (~38 KiB gzipped, 54 topics). The tool is always available; **Game Feel Mode (Beta)** (Hera Settings, or `asset-config gamefeel on`) additionally makes `doctor --agent-rules` and tool responses (e.g. `manage_components add` for Camera / ParticleSystem / AudioSource / Rigidbody / Light / Animator) point agents at the relevant topics via `agent_hint`. The `ui` category is also the deep layer behind **Game Feel UI Mode (Beta)** — `manage_ui create` / `ui_doc apply` hints end with a per-element pointer into it.
+
+```bash
+hera-agent-unity game_feel              # topic index, grouped by category (ethics first)
+hera-agent-unity game_feel <topic>      # one topic body
+```
+
+### Topic categories
+
+| Category | Topics |
+|:---|:---|
+| `ethics` (listed first — apply while building, not after) | `engagement_core`, `engagement_loop`, `value_preservation`, `anticipation_reward`, `balanced_hurdles`, `community_synergy`, `cognitive_comfort`, `salience_balance`, `copywriting_framing`, `information_transparency`, `engagement_scenarios`, `friendly_signals`, `engagement_validation`, `ethics_checklist` |
+| `theory` | `juice_definition`, `game_feel_structure`, `feedback_loop`, `control_feel` |
+| `technique` | `tweening_easing`, `squash_stretch`, `particles`, `screen_shake`, `hit_stop`, `knockback`, `camera`, `sound`, `haptics`, `permanence`, `personality`, `dynamic_lighting` |
+| `ui` | `ui_button`, `ui_popup`, `ui_number_change`, `ui_bar`, `ui_notification`, `ui_inventory`, `ui_screen_transition`, `ui_microinteractions`, `ui_multimodal`, `ui_choice_symmetry`, `ecn_dmn_framework`, `cognitive_load`, `ui_trends_2026`, `glassmorphism_neumorphism`, `accessibility_baseline` |
+| `workflow` | `workflow_phases` |
+| `anti_pattern` | `golden_rule`, `honest_juice`, `anti_patterns`, `balancing_principles` |
+| `checklist` | `checklist_all`, `checklist_action`, `checklist_casual`, `checklist_mobile` |
+
+### Return shape
+
+```json
+{
+  "key": "screen_shake",
+  "category": "technique",
+  "title": "Screen Shake",
+  "body": "Definition\n... | Intensity | ... | 2–5px | 5–15px | 15–30px |\n..."
+}
+```
+
+Topic bodies are a few hundred tokens each — query on demand instead of loading everything.
+
+### Errors
+
+| Code | Meaning |
+|:---|:---|
+| `GAME_FEEL_BUNDLE_UNAVAILABLE` | The bundled data file is missing or unreadable on this connector install. Reinstall the UPM package; or in a local checkout, run `go run ./tools/build-game-feel-docs`. |
+| `TOPIC_NOT_FOUND` | Query did not map to any topic key. `data.did_you_mean[]` holds nearest keys; `suggestions[]` carries them as ready-to-run CLI calls. |
+
+### Examples
+
+```bash
+hera-agent-unity game_feel
+hera-agent-unity game_feel screen_shake
+hera-agent-unity game_feel control_feel
+hera-agent-unity game_feel honest_juice
+hera-agent-unity game_feel ethics_checklist
+```
+
+### Regenerating the data set
+
+The checked-in source of truth is `tools/build-game-feel-docs/game_feel.jsonl`. After editing it:
+
+```bash
+go run ./tools/build-game-feel-docs
+```
+
+Commit both files, cut a new connector release.
+
+---
+
 ## manage_components
 
 Component CRUD on a target GameObject. Property paths are raw `SerializedProperty` paths (`m_Name`, `m_LocalScale.x`, `m_Materials.Array.data[0]`) — no friendly-name mapping. Reference fields accept an InstanceID, an asset path, or a `{instance_id|asset_path}` envelope.
@@ -824,7 +889,7 @@ hera-agent-unity manage_ui set_anchor --path /Canvas/Bg --preset stretch --snap 
 hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-40 --size_delta 300,60
 ```
 
-**Game Feel UI Mode (Beta)** — when enabled (Hera Settings window, or `asset-config gamefeel on`), each `create` response carries an `agent_hint` with concrete Game Feel & Juice Bible + UI Feedback Design Guide juice recipes for the element just made (hover/press/release easing, squash & stretch, popup overshoot, damage-number/count-up timing, haptics). The recipe is DOTween-aware: with DOTween enabled in Hera Settings it suggests `DOScale`-based tweens, otherwise a coroutine/lerp fallback. The hint is advisory — element property edits still go through `manage_components`. When the mode is off, no hint is added.
+**Game Feel UI Mode (Beta)** — when enabled (Hera Settings window, or `asset-config gamefeel-ui on`), each `create` response carries an `agent_hint` with concrete juice recipes for the element just made, curated from the Game Feel & Juice Bible, the UI Feedback Design Guide, UI/UX Visual Theory & Trends, and the Ethical Engagement Framework: hover/press/release easing, popup overshoot with symmetric choice buttons (ethics built in), rarity-laddered reward presentation, damage-number/count-up timing with critical specs, dual-response bars with charge/cooldown patterns, ECN-DMN density guidance and accessibility baselines at the canvas level. The recipe is DOTween-aware: with DOTween enabled in Hera Settings it suggests `DOScale`-based tweens, otherwise a coroutine/lerp fallback. Each hint ends with a pointer into the `game_feel` knowledge base (`ui` category) for the full tables and theory. The hint is advisory — element property edits still go through `manage_components`. When the mode is off, no hint is added.
 
 ---
 
@@ -922,7 +987,7 @@ uGUI manuals, such as stretched RectTransforms missing offsets or filled Images
 missing `type:"filled"`. Ambiguous structure is reported in `diagnostics`.
 Rule details live in [`UGUI_VERSION_RULES.md`](UGUI_VERSION_RULES.md).
 
-**Game Feel UI Mode (Beta)** — when enabled, `apply` adds an `agent_hint` with the Game Feel & Juice Bible + UI Feedback Design Guide juice recipes for each *distinct* element type in the doc (deduped once, not per element — strong signature, lean tokens). Guidance only; no runtime components are attached.
+**Game Feel UI Mode (Beta)** — when enabled, `apply` adds an `agent_hint` with the juice recipes for each *distinct* element type in the doc (deduped once, not per element — strong signature, lean tokens), plus one combined pointer into the `game_feel` knowledge base's `ui` category for deep specs. Guidance only; no runtime components are attached.
 
 ### Icons (no SVG needed)
 
@@ -1164,14 +1229,15 @@ hera-agent-unity asset-config <subcommand>
 | `enable <id>` | Enable an asset |
 | `disable <id>` | Disable an asset |
 | `toggle <id>` | Flip an asset ON/OFF |
-| `gamefeel [on\|off]` | Show or set Game Feel UI Mode (Beta) (drives `manage_ui` juice guidance) |
+| `gamefeel [on\|off]` | Show or set Game Feel Mode (Beta) (gameplay game-feel guidance via `game_feel` + agent rules) |
+| `gamefeel-ui [on\|off]` | Show or set Game Feel UI Mode (Beta) (drives `manage_ui` juice guidance); `juicy` is a legacy alias |
 | `detect` | Auto-detect installed assets (requires Unity) |
 | `get <id>` | Show a single asset's state |
 | `path` | Print the config file path |
 
 | Flag | Description | Default |
 |:---|:---|:---|
-| `--json` | Output enabled assets + `loop_engineering_mode` + `game_feel_ui_mode` + `dotween_preferred` as JSON | `false` |
+| `--json` | Output enabled assets + `loop_engineering_mode` + `game_feel_mode` + `game_feel_ui_mode` + `dotween_preferred` as JSON | `false` |
 
 ---
 

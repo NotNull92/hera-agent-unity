@@ -42,6 +42,12 @@ namespace HeraAgent.Editor
             // CLI via asset-config.json. (Persisted under `ui_juicy_mode` before the
             // rename; LoadConfig migrates that key transparently.)
             public bool game_feel_ui_mode;
+
+            // Game Feel Mode (Beta) — gameplay-wide counterpart. When on, agent
+            // rules and tool responses point agents at the bundled game_feel
+            // knowledge base (Game Feel & Juice Bible + Ethical Engagement
+            // Framework). Read at dispatch time by HeraSettings.
+            public bool game_feel_mode;
         }
 
         private const string LoopEngineeringOff = "off";

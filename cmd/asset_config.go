@@ -53,8 +53,10 @@ func assetConfigCmd(args []string) error {
 			return fmt.Errorf("usage: asset-config toggle <id>")
 		}
 		return assetConfigToggleAction(subArgs[0])
-	case "gamefeel", "juicy": // "juicy" kept as a backward-compat alias
+	case "gamefeel":
 		return assetConfigGameFeel(subArgs)
+	case "gamefeel-ui", "juicy": // "juicy" kept as a backward-compat alias (UI mode)
+		return assetConfigGameFeelUI(subArgs)
 	case "detect":
 		return assetConfigDetect()
 	case "get":
@@ -94,6 +96,10 @@ func assetConfigList() error {
 	if cfg.GameFeelMode {
 		gameFeel = "on"
 	}
+	gameFeelUI := "off"
+	if cfg.GameFeelUIMode {
+		gameFeelUI = "on"
+	}
 	loopMode := string(cfg.LoopEngineeringMode)
 
 	type listRow struct {
@@ -123,7 +129,8 @@ func assetConfigList() error {
 		fmt.Println(tui.TitleStyle.Render(fmt.Sprintf("Asset Config v%s", cfg.Version)))
 		fmt.Println(tui.PathStyle.Render(assetconfig.ConfigFilePath()))
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Ultra Hera:"), tui.StatusBadge(loopMode))
-		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Game Feel UI Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.GameFeelMode]))
+		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Game Feel Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.GameFeelMode]))
+		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Game Feel UI Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.GameFeelUIMode]))
 		fmt.Println()
 		for _, sec := range sections {
 			fmt.Println("  " + tui.HelpSectionStyle.Render(sec.Title))
@@ -150,7 +157,8 @@ func assetConfigList() error {
 	// Plain output — kept stable for script/AI parsing.
 	fmt.Printf("Asset Config v%s — %s\n", cfg.Version, assetconfig.ConfigFilePath())
 	fmt.Printf("Ultra Hera: %s\n", loopMode)
-	fmt.Printf("Game Feel UI Mode (Beta): %s\n\n", gameFeel)
+	fmt.Printf("Game Feel Mode (Beta): %s\n", gameFeel)
+	fmt.Printf("Game Feel UI Mode (Beta): %s\n\n", gameFeelUI)
 	for _, sec := range sections {
 		fmt.Printf("  %s\n", sec.Title)
 		for _, r := range sec.Rows {
@@ -221,6 +229,20 @@ func printToggleResult(id, state string) {
 }
 
 func assetConfigGameFeel(args []string) error {
+	return assetConfigBoolFlag(args, "gamefeel", "game_feel_mode",
+		func(cfg *assetconfig.AssetConfig) bool { return cfg.GameFeelMode },
+		assetconfig.SetGameFeelMode)
+}
+
+func assetConfigGameFeelUI(args []string) error {
+	return assetConfigBoolFlag(args, "gamefeel-ui", "game_feel_ui_mode",
+		func(cfg *assetconfig.AssetConfig) bool { return cfg.GameFeelUIMode },
+		assetconfig.SetGameFeelUIMode)
+}
+
+// assetConfigBoolFlag shows or sets a boolean asset-config flag — shared by
+// the gamefeel / gamefeel-ui subcommands, which differ only in key and setter.
+func assetConfigBoolFlag(args []string, subcommand, key string, get func(*assetconfig.AssetConfig) bool, set func(bool) (*assetconfig.AssetConfig, error)) error {
 	// No arg → report current state.
 	if len(args) == 0 {
 		cfg, err := assetconfig.Load()
@@ -228,10 +250,10 @@ func assetConfigGameFeel(args []string) error {
 			return err
 		}
 		state := "off"
-		if cfg.GameFeelMode {
+		if get(cfg) {
 			state = "on"
 		}
-		fmt.Printf("game_feel_ui_mode: %s\n", state)
+		fmt.Printf("%s: %s\n", key, state)
 		return nil
 	}
 
@@ -242,10 +264,10 @@ func assetConfigGameFeel(args []string) error {
 	case "off", "disable", "false":
 		enabled = false
 	default:
-		return fmt.Errorf("usage: asset-config gamefeel [on|off]")
+		return fmt.Errorf("usage: asset-config %s [on|off]", subcommand)
 	}
 
-	if _, err := assetconfig.SetGameFeelMode(enabled); err != nil {
+	if _, err := set(enabled); err != nil {
 		return err
 	}
 
@@ -256,11 +278,11 @@ func assetConfigGameFeel(args []string) error {
 	if tui.ColorEnabled() {
 		fmt.Printf("%s %s %s\n",
 			tui.CheckStyle.Render("✓"),
-			tui.PathStyle.Render("game_feel_ui_mode"),
+			tui.PathStyle.Render(key),
 			tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[enabled]))
 		return nil
 	}
-	fmt.Printf("✓ game_feel_ui_mode %s\n", state)
+	fmt.Printf("✓ %s %s\n", key, state)
 	return nil
 }
 
@@ -307,7 +329,8 @@ Subcommands:
   enable <id>                   Enable an asset
   disable <id>                  Disable an asset
   toggle <id>                   Toggle an asset (flip ON/OFF)
-  gamefeel [on|off]             Show or set Game Feel UI Mode (Beta) (manage_ui juice guidance)
+  gamefeel [on|off]             Show or set Game Feel Mode (Beta) (gameplay game-feel guidance)
+  gamefeel-ui [on|off]          Show or set Game Feel UI Mode (Beta) (manage_ui juice guidance)
   detect                        Auto-detect installed assets (requires Unity)
   get <id>                      Show a single asset's state
   path                          Print the config file path
@@ -368,7 +391,8 @@ func jsonOutputForAI() ([]byte, error) {
 		"enabled_assets":        assets,
 		"total":                 len(assets),
 		"loop_engineering_mode": cfg.LoopEngineeringMode,
-		"game_feel_ui_mode":     cfg.GameFeelMode,
+		"game_feel_mode":        cfg.GameFeelMode,
+		"game_feel_ui_mode":     cfg.GameFeelUIMode,
 		"dotween_preferred":     dotweenPreferred,
 	}, "", "  ")
 }

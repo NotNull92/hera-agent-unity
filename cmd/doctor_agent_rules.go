@@ -27,6 +27,10 @@ func extractAgentRules(format string) string {
 	out.WriteString("Full guide: https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md\n\n")
 	out.WriteString(buildUltraHeraAgentRules(assetconfig.LoadLoopEngineeringModeNoCreate()))
 	out.WriteString("\n")
+	if assetconfig.LoadGameFeelModeNoCreate() {
+		out.WriteString(gameFeelAgentRules)
+		out.WriteString("\n")
+	}
 	out.WriteString(extractMdSection(agentGuide, "## 0. Bootstrap"))
 	out.WriteString("\n")
 	out.WriteString(extractMdSection(agentGuide, "## 1. Quick Rules"))
@@ -35,6 +39,25 @@ func extractAgentRules(format string) string {
 	out.WriteString("\n")
 	return out.String()
 }
+
+// gameFeelAgentRules is emitted only while Game Feel Mode (Beta) is ON in Hera
+// Settings. Independent of Ultra Hera — it guides *what to build* (game-feel
+// parameters with the ethics built in), not how strictly to verify.
+const gameFeelAgentRules = "## Game Feel Mode (Beta)\n\n" +
+	"Game Feel Mode is ON. When you build or modify anything the player feels — combat feedback, movement, camera, audio, rewards, presentation — do not guess parameters. Use the bundled Game Feel knowledge base (Game Feel & Juice Bible + Ethical Engagement Game Feel Framework).\n\n" +
+	"Core principles:\n\n" +
+	"1. Maximum output for minimum input — every player action gets multi-channel feedback (visual, audio, haptic, temporal).\n" +
+	"2. Juice is an amplifier, not the source of fun — it amplifies real achievement, it does not replace it.\n" +
+	"3. Honest Juice first: presentation intensity must match the actual value of the accomplishment. Never glorify a poor result; keep probabilities and pity counters transparent.\n" +
+	"4. Golden rule: juice intensity is proportional to the screen's purpose — reward/celebration screens earn exaggeration, precision/input-heavy screens stay calm.\n" +
+	"5. Accessibility is non-negotiable: screen-shake/flash/haptic intensity or off options, reduce-motion support, mobile shake at 70-80%.\n\n" +
+	"Workflow:\n\n" +
+	"1. Start from the topic index: `hera-agent-unity game_feel` (ethics topics listed first — apply them while building, not after).\n" +
+	"2. Query concrete parameters before implementing: `hera-agent-unity game_feel screen_shake`, `game_feel hit_stop`, `game_feel tweening_easing`, `game_feel control_feel`; for UI work the `ui` category has per-element specs and theory: `game_feel ui_button`, `game_feel ui_bar`, `game_feel ecn_dmn_framework`, `game_feel ui_choice_symmetry`, ...\n" +
+	"3. Before reporting done, validate the result against `game_feel ethics_checklist` and `game_feel checklist_all`.\n\n" +
+	"Final quality questions (Ethical Engagement Framework):\n\n" +
+	"- Does this design help the player actively enjoy the game because they genuinely want to, in every moment?\n" +
+	"- Does the Juice on this screen sensorially amplify the joy of the pure achievement the player has earned?\n"
 
 func buildUltraHeraAgentRules(mode assetconfig.LoopEngineeringMode) string {
 	const intro = "## Ultra Hera\n\nHera does not do the AI work by itself. This setting only tells AI agents how carefully to check Unity work.\n\n"
