@@ -43,6 +43,9 @@ namespace HeraAgent
         static string[] s_keys;
         static string s_loadError;
         static string s_loadedDocsVersion;
+        static string s_loadedDataPath;
+        static long s_loadedDataLength;
+        static DateTime s_loadedDataLastWriteUtc;
         static readonly object s_lock = new object();
 
         // Lazy prefix-bucket index — keys grouped by lowercase first char.
@@ -180,24 +183,26 @@ namespace HeraAgent
 
         static void EnsureLoaded()
         {
-            if (s_index != null || s_loadError != null) return;
+            var requestedDocsVersion = UnityVersionCompat.CurrentDocsVersion();
+            var path = ResolveDataPath(requestedDocsVersion, out var loadedDocsVersion);
+            if (path == null)
+            {
+                if (s_index != null || s_loadError != null) return;
+                s_loadError = $"could not resolve bundled docs file for Unity docs {requestedDocsVersion} (fallback {FallbackDocsVersion})";
+                return;
+            }
+            if (!File.Exists(path))
+            {
+                if (s_index != null || s_loadError != null) return;
+                s_loadError = $"bundled docs file missing: {path}";
+                return;
+            }
 
             lock (s_lock)
             {
-                if (s_index != null || s_loadError != null) return;
-
-                var requestedDocsVersion = UnityVersionCompat.CurrentDocsVersion();
-                var path = ResolveDataPath(requestedDocsVersion, out var loadedDocsVersion);
-                if (path == null)
-                {
-                    s_loadError = $"could not resolve bundled docs file for Unity docs {requestedDocsVersion} (fallback {FallbackDocsVersion})";
+                var info = new FileInfo(path);
+                if (IsLoadedDataCurrent(path, info))
                     return;
-                }
-                if (!File.Exists(path))
-                {
-                    s_loadError = $"bundled docs file missing: {path}";
-                    return;
-                }
 
                 try
                 {
@@ -219,16 +224,37 @@ namespace HeraAgent
                     }
                     s_index = index;
                     s_loadedDocsVersion = loadedDocsVersion;
+                    s_loadedDataPath = path;
+                    s_loadedDataLength = info.Length;
+                    s_loadedDataLastWriteUtc = info.LastWriteTimeUtc;
                     var keys = new string[index.Count];
                     int i = 0;
                     foreach (var k in index.Keys) keys[i++] = k;
                     s_keys = keys;
+                    s_loadError = null;
+                    s_prefixBuckets = null;
                 }
                 catch (Exception ex)
                 {
                     s_loadError = $"failed to load {path}: {ex.Message}";
+                    s_index = null;
+                    s_keys = null;
+                    s_loadedDocsVersion = null;
+                    s_loadedDataPath = null;
+                    s_loadedDataLength = 0;
+                    s_loadedDataLastWriteUtc = default(DateTime);
+                    s_prefixBuckets = null;
                 }
             }
+        }
+
+        static bool IsLoadedDataCurrent(string path, FileInfo info)
+        {
+            return s_index != null
+                && s_loadError == null
+                && string.Equals(s_loadedDataPath, path, StringComparison.OrdinalIgnoreCase)
+                && s_loadedDataLength == info.Length
+                && s_loadedDataLastWriteUtc == info.LastWriteTimeUtc;
         }
 
         static string ResolveDataPath(string requestedDocsVersion, out string loadedDocsVersion)

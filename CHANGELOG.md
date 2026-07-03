@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.53 / CLI 0.0.36 — docs cache refresh)
+
+- `UnityDocsStore` now invalidates its in-memory index when the resolved
+  bundled docs file path, timestamp, or size changes, so a running Editor sees
+  updated ScriptReference bundles immediately after a git package update.
+- Strengthened the Unity docs smoke test to require a signature on
+  `Rigidbody.mass`, catching stale fallback-only indexes.
+
 ### Fixed (Connector 0.0.52 / CLI 0.0.35 — full ScriptReference bundles)
 
 - Rebuilt all supported bundled ScriptReference indexes from Unity's official

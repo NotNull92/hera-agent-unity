@@ -1,6 +1,6 @@
 {
   "name": "com.notnull92.hera-agent-unity",
-  "version": "0.0.52",
+  "version": "0.0.53",
   "displayName": "Hera Agent Unity",
   "description": "Control Unity Editor from the command line. Unified successor to hera-agent and hera-agent-pro — single Go CLI, localhost HTTP bridge, runtime C# execution, [HeraTool] custom-tool dispatch. MIT licensed.",
   "unity": "2022.3",
