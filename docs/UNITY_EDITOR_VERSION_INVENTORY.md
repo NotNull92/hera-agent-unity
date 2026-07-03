@@ -54,12 +54,12 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
   legacy `GameObject` page, and verifies typo suggestions.
 - Runtime `unity_docs GameObject` on `6000.0.35f1` returned
   `docs_version: 6000.0`.
-- Exact ScriptReference bundles were generated from the official Unity docs
-  roots for all checked buckets: `2022.3` (26861 entries), `2023.2` (3893
-  entries), `6000.0` (4037 entries), `6000.3` (4454 entries), and `6000.5`
-  (4754 entries). Each bundle contains a `GameObject` entry. The `6000.0`
-  official toc currently includes one dead `Android.UserBuildSettings` page
-  that returns 404, so the bundle is built from the available HTML files.
+- Exact ScriptReference bundles were generated from Unity's official offline
+  documentation zips for all checked buckets: `2022.3` (28201 entries),
+  `2023.2` (30573 entries), `6000.0` (31610 entries), `6000.3` (35442
+  entries), and `6000.5` (41901 entries). Each bundle contains full member
+  pages for representative checks such as `Rigidbody.mass`,
+  `GameObject.AddComponent`, and `AssetDatabase.Refresh`.
 - Heartbeat/status reporting now exposes the running Editor's docs bucket and
   compiler/runtime kind. Verified on `6000.0.35f1` with local CLI output:
   `Docs: 6000.0` and `Compiler: csc=external dotnet=external` for the current

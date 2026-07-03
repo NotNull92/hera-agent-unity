@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.52 / CLI 0.0.35 — full ScriptReference bundles)
+
+- Rebuilt all supported bundled ScriptReference indexes from Unity's official
+  offline documentation zips, so `unity_docs` resolves member pages with
+  signatures across `2022.3`, `2023.2`, `6000.0`, `6000.3`, and `6000.5`.
+- Expanded the non-legacy bundle sizes from class-page-only indexes to full
+  ScriptReference indexes: `2022.3` (28201 entries), `2023.2` (30573),
+  `6000.0` (31610), `6000.3` (35442), and `6000.5` (41901).
+
 ### Fixed (Connector 0.0.51 / CLI 0.0.34 — ScriptReference member lookup)
 
 - Rebuilt the `2022.3` bundled ScriptReference index with linked member
