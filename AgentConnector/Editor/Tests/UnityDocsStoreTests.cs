@@ -17,6 +17,9 @@ namespace HeraAgent.Tests
                 "loaded docs version matches current bucket or fallback",
                 loadedDocsVersion == currentDocsVersion || loadedDocsVersion == UnityVersionCompat.Docs6000_0);
             allPassed &= ExpectTrue("legacy GameObject page present", UnityDocsStore.Lookup("GameObject") != null);
+            allPassed &= ExpectTrue("property page present", UnityDocsStore.Lookup("Rigidbody-mass") != null);
+            allPassed &= ExpectTrue("method page present", UnityDocsStore.Lookup("GameObject.AddComponent") != null);
+            allPassed &= ExpectTrue("editor method page present", UnityDocsStore.Lookup("AssetDatabase.Refresh") != null);
             allPassed &= ExpectTrue("suggestions available", UnityDocsStore.SuggestSimilar("GameObjekt").Count > 0);
 
             if (allPassed)

@@ -24,12 +24,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"html"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -44,23 +42,6 @@ type Entry struct {
 	ScriptReferenceURL string `json:"scriptreference_url"`
 	UnityVersion       string `json:"unity_version,omitempty"`
 }
-
-var (
-	reH1 = regexp.MustCompile(
-		`<h1\s+class="heading\s+inherit">([\s\S]*?)</h1>`)
-	reSig = regexp.MustCompile(
-		`<div\s+class="signature-CS\s+sig-block">([\s\S]*?)</div>`)
-	reSummary = regexp.MustCompile(
-		`<h3>\s*Description\s*</h3>\s*<p>([\s\S]*?)</p>`)
-	reManualClassFirst = regexp.MustCompile(
-		`<a[^>]*class\s*=\s*['"][^'"]*switch-link[^'"]*['"][^>]*href\s*=\s*['"]([^'"]+)['"]`)
-	reManualHrefFirst = regexp.MustCompile(
-		`<a[^>]*href\s*=\s*['"]([^'"]+)['"][^>]*class\s*=\s*['"][^'"]*switch-link`)
-	reVersion = regexp.MustCompile(
-		`Version:\s*<b>Unity\s+(\d+\.\d+)</b>`)
-	reHTMLTag    = regexp.MustCompile(`<[^>]+>`)
-	reWhitespace = regexp.MustCompile(`\s+`)
-)
 
 func main() {
 	in := flag.String("in", "",
@@ -101,7 +82,7 @@ func main() {
 }
 
 func scanDir(srDir string, unityVersion string) ([]Entry, int, error) {
-	var entries []Entry
+	byName := make(map[string]Entry)
 	skipped := 0
 
 	err := filepath.Walk(srDir, func(path string, info os.FileInfo, walkErr error) error {
@@ -130,77 +111,29 @@ func scanDir(srDir string, unityVersion string) ([]Entry, int, error) {
 		if err != nil {
 			return fmt.Errorf("read %s: %w", path, err)
 		}
-		entry, ok := parse(base, string(data), unityVersion)
+		body := string(data)
+		entry, ok := parse(base, body, unityVersion)
 		if !ok {
 			skipped++
 			return nil
 		}
-		entries = append(entries, entry)
+		byName[entry.Name] = entry
+		for _, linked := range parseLinkedMemberEntries(entry, body, unityVersion) {
+			if _, exists := byName[linked.Name]; exists {
+				continue
+			}
+			byName[linked.Name] = linked
+		}
 		return nil
 	})
 	if err != nil {
 		return nil, 0, err
 	}
+	entries := make([]Entry, 0, len(byName))
+	for _, entry := range byName {
+		entries = append(entries, entry)
+	}
 	return entries, skipped, nil
-}
-
-func parse(name, body string, unityVersion string) (Entry, bool) {
-	e := Entry{
-		Name:               name,
-		ScriptReferenceURL: "ScriptReference/" + name + ".html",
-	}
-
-	if m := reH1.FindStringSubmatch(body); m != nil {
-		e.Title = cleanText(m[1])
-	}
-	if m := reSig.FindStringSubmatch(body); m != nil {
-		e.Signature = cleanText(m[1])
-	}
-	if m := reSummary.FindStringSubmatch(body); m != nil {
-		e.Summary = cleanText(m[1])
-	}
-	if m := reManualClassFirst.FindStringSubmatch(body); m != nil {
-		e.ManualURL = normalizeRelativeURL(m[1])
-	} else if m := reManualHrefFirst.FindStringSubmatch(body); m != nil {
-		e.ManualURL = normalizeRelativeURL(m[1])
-	}
-	if unityVersion != "" {
-		e.UnityVersion = unityVersion
-	} else if m := reVersion.FindStringSubmatch(body); m != nil {
-		e.UnityVersion = m[1]
-	}
-
-	// A real ScriptReference page has at least a title; pages without one
-	// (redirects, partials, deprecated stubs) get dropped to keep the data
-	// file lean.
-	if e.Title == "" {
-		return e, false
-	}
-	return e, true
-}
-
-func cleanText(s string) string {
-	if s == "" {
-		return s
-	}
-	s = reHTMLTag.ReplaceAllString(s, " ")
-	s = html.UnescapeString(s)
-	s = reWhitespace.ReplaceAllString(s, " ")
-	return strings.TrimSpace(s)
-}
-
-func normalizeRelativeURL(raw string) string {
-	if raw == "" {
-		return raw
-	}
-	s := strings.ReplaceAll(raw, "\\", "/")
-	for strings.HasPrefix(s, "../") {
-		s = strings.TrimPrefix(s, "../")
-	}
-	for strings.HasPrefix(s, "./") {
-		s = strings.TrimPrefix(s, "./")
-	}
-	return s
 }
 
 func writeJSONL(path string, entries []Entry) error {

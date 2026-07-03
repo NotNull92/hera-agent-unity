@@ -55,7 +55,7 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 - Runtime `unity_docs GameObject` on `6000.0.35f1` returned
   `docs_version: 6000.0`.
 - Exact ScriptReference bundles were generated from the official Unity docs
-  roots for all checked buckets: `2022.3` (3555 entries), `2023.2` (3893
+  roots for all checked buckets: `2022.3` (26861 entries), `2023.2` (3893
   entries), `6000.0` (4037 entries), `6000.3` (4454 entries), and `6000.5`
   (4754 entries). Each bundle contains a `GameObject` entry. The `6000.0`
   official toc currently includes one dead `Android.UserBuildSettings` page

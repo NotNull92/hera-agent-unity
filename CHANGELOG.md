@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.51 / CLI 0.0.34 — ScriptReference member lookup)
+
+- Rebuilt the `2022.3` bundled ScriptReference index with linked member
+  entries from class pages, so `unity_docs` can resolve member queries such as
+  `Rigidbody.mass`, `GameObject.AddComponent`, and
+  `UnityEditor.AssetDatabase.Refresh` instead of returning `DOC_NOT_FOUND`.
+- Updated the Unity docs bundle builder to emit member-link fallback entries
+  from official class-page tables while preserving full member pages when they
+  are available.
+
 ### Added (Connector 0.0.50 / CLI 0.0.33 — exact Unity version guidance)
 
 - Added exact bundled ScriptReference indexes for the supported docs buckets:
