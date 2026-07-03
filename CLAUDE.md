@@ -18,6 +18,7 @@ Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free und
 **파생 원칙** — decoupled/비대칭이 *의도된* 곳에 결합·통일 제안 금지:
 
 - **CLI ↔ Connector 버전 핸드셰이크 불필요**: 두 버전이 일치한다는 전제 자체가 없음. HTTP+JSON forward-compat과 동적 dispatch가 자연 처리. "버전 매칭 검사 추가하자"는 제안은 모델 밖.
+- **버전 용어 분리 필수**: CLI release tag(`hera-agent-unity vX.Y.Z`, git tag)는 Go 바이너리 버전이다. Unity UPM connector 버전은 `AgentConnector/package.json` 의 `version` 값(`0.0.N`)이다. 둘은 독립 버전이므로 같은 숫자라고 말하거나, UPM 패키지 버전을 CLI tag처럼 `vX.Y.Z`로 부르지 않는다. Git lock hash/commit 은 "어느 커밋의 connector를 받았는지"만 증명하며 UPM package version 자체가 아니다.
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
 - **단일 에디터 모델 (멀티 에디터 미지원)** 🔒: 한 머신에 Unity 에디터 하나를 전제. 포트 바인딩 구조상 같은 머신에서 멀티 에디터는 실사용 불가 — instance discovery 는 "한" 인스턴스를 해석하고, 재시도·재해석(`doWithReloadRetry` 의 `DiscoverInstance` 포트 추종 등)이 *다른* 에디터를 집을 위험은 **모델 밖**. "여러 에디터 구분/디스앰비규에이션 추가하자", "재해석이 substring 매치로 잘못된 에디터를 고를 수 있다", "PID 로 정확 매칭하자" 같은 지적·제안은 모델 밖 — 멀티 인스턴스 충돌은 발생하지 않는 전제이므로 새 문제로 제기 금지.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
@@ -337,6 +338,8 @@ CLI(Go)와 Connector(C#)는 독립 버전. 변경된 쪽만 올린다.
 
 - **Connector** (`AgentConnector/package.json`): C# 코드 변경 시 버전 갱신.
 - **CLI** (`git tag vX.Y.Z`): Go 코드 변경 시 태그 생성 + push → `release.yml` workflow가 cross-build + GitHub Release 자동 생성.
+- **명명 규칙**: `hera-agent-unity version` 출력은 CLI 버전이다. Unity Package Manager의 `com.notnull92.hera-agent-unity` 버전은 UPM connector 버전이며 `AgentConnector/package.json` 과 `manage_packages list` 의 `version` 으로 확인한다.
+- **검증 표현**: `packages-lock.json` 의 git `hash` 는 설치된 connector 소스 커밋을 가리킨다. 이 hash가 CLI release tag 커밋과 같아도 "UPM이 vX.Y.Z"라고 쓰지 말고, "UPM connector package version 0.0.N이 commit <sha>에서 설치됨"처럼 분리해서 기록한다.
 
 둘 다 바뀌면 둘 다 올린다. 한쪽만 바뀌면 한쪽만.
 

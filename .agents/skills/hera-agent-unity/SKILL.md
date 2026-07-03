@@ -47,6 +47,7 @@ Use Ultra when the user asks for strict verification, for example `정확히 검
 
 ## Command rules
 
+- **Keep CLI and UPM versions separate.** `hera-agent-unity version` is the Go CLI release tag (`vX.Y.Z`); Unity Package Manager shows the connector package version from `AgentConnector/package.json` (`0.0.N`). Do not call the UPM package `vX.Y.Z`, do not assume the numbers match, and do not treat a git lock hash as the package version.
 - **Call sequentially, never in parallel.** The connector serializes every command on the Unity main thread; concurrent calls just queue.
 - **Pass `--compact-json`** on every tool call — AntiGravity consumes the JSON, so keep it small.
 - **Use compact discovery.** Prefer `list --compact`; use `list --tool <name>` only when one full schema is required.

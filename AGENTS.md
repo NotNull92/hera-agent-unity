@@ -161,6 +161,13 @@ For Unity Hub editor inventory, write paths with `%UNITY_HUB_EDITOR%` and state
 that the default Windows resolver is `%ProgramFiles%\Unity\Hub\Editor`; let
 users override the real root with `-HubRoot` or their own environment.
 
+**[Rule 10]** Keep CLI and UPM connector versions separate. `hera-agent-unity
+version` reports the Go CLI release tag (`vX.Y.Z`). Unity Package Manager reports
+the connector package version from `AgentConnector/package.json` (for example
+`0.0.N`). Do not call the UPM package `vX.Y.Z`, do not assume the two numbers
+match, and do not use a git lock hash as the package version. A lock hash only
+identifies the connector source commit that Unity resolved.
+
 ## 1.5 Ultra Hera
 
 Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.

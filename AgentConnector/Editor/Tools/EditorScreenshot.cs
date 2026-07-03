@@ -132,7 +132,9 @@ namespace HeraAgent.Tools
             var camera = Camera.main;
             if (!camera)
             {
-#if UNITY_2023_1_OR_NEWER
+#if UNITY_6000_5_OR_NEWER
+                camera = UnityEngine.Object.FindAnyObjectByType<Camera>();
+#elif UNITY_2023_1_OR_NEWER
                 camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
 #else
                 camera = UnityEngine.Object.FindObjectOfType<Camera>();

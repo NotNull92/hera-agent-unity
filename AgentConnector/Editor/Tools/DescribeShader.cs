@@ -4,6 +4,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace HeraAgent.Tools
 {
@@ -78,25 +79,28 @@ namespace HeraAgent.Tools
                     suggestions: hints);
             }
 
-            var count = ShaderUtil.GetPropertyCount(shader);
+            var count = shader.GetPropertyCount();
             var shown = Math.Min(count, limit);
             var properties = new List<object>(shown);
             for (var i = 0; i < shown; i++)
             {
-                var type = ShaderUtil.GetPropertyType(shader, i);
+                var type = shader.GetPropertyType(i);
                 var prop = new Dictionary<string, object>
                 {
-                    ["name"] = ShaderUtil.GetPropertyName(shader, i),
+                    ["name"] = shader.GetPropertyName(i),
                     ["type"] = type.ToString(),
                 };
-                var display = ShaderUtil.GetPropertyDescription(shader, i);
+                var display = shader.GetPropertyDescription(i);
                 if (!string.IsNullOrEmpty(display)) prop["display"] = display;
-                if (type == ShaderUtil.ShaderPropertyType.Range)
+                if (type == ShaderPropertyType.Range)
+                {
+                    var range = shader.GetPropertyRangeLimits(i);
                     prop["range"] = new[]
                     {
-                        ShaderUtil.GetRangeLimits(shader, i, 1),
-                        ShaderUtil.GetRangeLimits(shader, i, 2),
+                        range.x,
+                        range.y,
                     };
+                }
                 properties.Add(prop);
             }
 

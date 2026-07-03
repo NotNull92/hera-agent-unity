@@ -44,6 +44,12 @@ Use Ultra when the user asks for strict verification, for example "play it and c
 - Use `find_gameobjects --fields instance_id,name,path` only when duplicate names require hierarchy context.
 - Avoid broad reads like plain `list`, `find_gameobjects --fields all`, or `console --lines 0` unless the extra data is needed.
 
+## Version Vocabulary
+
+- `hera-agent-unity version` reports the Go CLI release tag (`vX.Y.Z`).
+- Unity Package Manager reports the connector package version from `AgentConnector/package.json` (`0.0.N`).
+- Do not call the UPM package `vX.Y.Z`, do not assume CLI and connector version numbers match, and do not treat a git lock hash as the package version. The hash only identifies the resolved connector source commit.
+
 ## Exec Rules
 
 - Prefer dedicated commands (`scene info`, `console`, `editor play`, `test`, `describe_type`, `unity_docs`, `ui_doc`) before custom `exec`.

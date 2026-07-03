@@ -199,7 +199,13 @@ namespace HeraAgent.Tools
         // Returns an existing Canvas or creates one (recording it in `created`).
         private static (GameObject go, ErrorResponse err) EnsureCanvas(List<string> created)
         {
+#if UNITY_6000_5_OR_NEWER
+            var existing = Object.FindAnyObjectByType<Canvas>();
+#elif UNITY_2023_1_OR_NEWER
             var existing = Object.FindFirstObjectByType<Canvas>();
+#else
+            var existing = Object.FindObjectOfType<Canvas>();
+#endif
             if (existing != null) return (existing.gameObject, null);
             return CreateCanvas("Canvas", created);
         }
@@ -208,7 +214,13 @@ namespace HeraAgent.Tools
         {
             var esType = ComponentTypeResolver.Resolve("EventSystem");
             if (esType == null) return new ErrorResponse("UI_MISSING_EVENTSYSTEM", "EventSystem type not found (com.unity.ugui missing).");
+#if UNITY_6000_5_OR_NEWER
+            var existing = Object.FindAnyObjectByType(esType);
+#elif UNITY_2023_1_OR_NEWER
             var existing = Object.FindFirstObjectByType(esType);
+#else
+            var existing = Object.FindObjectOfType(esType);
+#endif
             if (existing != null) return null;
 
             var go = new GameObject("EventSystem");

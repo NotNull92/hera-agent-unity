@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace HeraAgent.Tools
 {
@@ -93,7 +94,7 @@ namespace HeraAgent.Tools
             {
                 path,
                 shader = shader.name,
-                property_count = ShaderUtil.GetPropertyCount(shader),
+                property_count = shader.GetPropertyCount(),
             });
         }
 
@@ -119,13 +120,13 @@ namespace HeraAgent.Tools
                 });
             }
 
-            var count = ShaderUtil.GetPropertyCount(shader);
+            var count = shader.GetPropertyCount();
             var shown = count < limit ? count : limit;
             var props = new List<object>(shown);
             for (var i = 0; i < shown; i++)
             {
-                var name = ShaderUtil.GetPropertyName(shader, i);
-                var type = ShaderUtil.GetPropertyType(shader, i);
+                var name = shader.GetPropertyName(i);
+                var type = shader.GetPropertyType(i);
                 props.Add(new
                 {
                     name,
@@ -194,68 +195,68 @@ namespace HeraAgent.Tools
             {
                 path,
                 shader = shader.name,
-                property_count = ShaderUtil.GetPropertyCount(shader),
+                property_count = shader.GetPropertyCount(),
             });
         }
 
         // ---- helpers ----
 
-        private static ShaderUtil.ShaderPropertyType? PropType(Shader shader, string property)
+        private static ShaderPropertyType? PropType(Shader shader, string property)
         {
-            var count = ShaderUtil.GetPropertyCount(shader);
+            var count = shader.GetPropertyCount();
             for (var i = 0; i < count; i++)
-                if (ShaderUtil.GetPropertyName(shader, i) == property)
-                    return ShaderUtil.GetPropertyType(shader, i);
+                if (shader.GetPropertyName(i) == property)
+                    return shader.GetPropertyType(i);
             return null;
         }
 
-        private static object ReadValue(Material mat, string property, ShaderUtil.ShaderPropertyType? type)
+        private static object ReadValue(Material mat, string property, ShaderPropertyType? type)
         {
             switch (type)
             {
-                case ShaderUtil.ShaderPropertyType.Color:
+                case ShaderPropertyType.Color:
                     var c = mat.GetColor(property);
                     return new { r = c.r, g = c.g, b = c.b, a = c.a };
-                case ShaderUtil.ShaderPropertyType.Float:
-                case ShaderUtil.ShaderPropertyType.Range:
+                case ShaderPropertyType.Float:
+                case ShaderPropertyType.Range:
                     return mat.GetFloat(property);
-                case ShaderUtil.ShaderPropertyType.Vector:
+                case ShaderPropertyType.Vector:
                     var v = mat.GetVector(property);
                     return new { x = v.x, y = v.y, z = v.z, w = v.w };
-                case ShaderUtil.ShaderPropertyType.TexEnv:
+                case ShaderPropertyType.Texture:
                     var tex = mat.GetTexture(property);
                     return tex == null ? null : (object)new { instance_id = EntityIdCompat.IdOf(tex), name = tex.name, type = tex.GetType().Name };
-                case ShaderUtil.ShaderPropertyType.Int:
+                case ShaderPropertyType.Int:
                     return mat.GetInteger(property);
                 default:
                     return null;
             }
         }
 
-        private static (bool ok, string err) ApplyValue(Material mat, string property, ShaderUtil.ShaderPropertyType? type, JToken value)
+        private static (bool ok, string err) ApplyValue(Material mat, string property, ShaderPropertyType? type, JToken value)
         {
             switch (type)
             {
-                case ShaderUtil.ShaderPropertyType.Color:
+                case ShaderPropertyType.Color:
                     if (!SerializedPropertyValue.TryParseColor(value, out var col, out var colErr)) return (false, colErr);
                     mat.SetColor(property, col);
                     return (true, null);
-                case ShaderUtil.ShaderPropertyType.Float:
-                case ShaderUtil.ShaderPropertyType.Range:
+                case ShaderPropertyType.Float:
+                case ShaderPropertyType.Range:
                     mat.SetFloat(property, value.Value<float>());
                     return (true, null);
-                case ShaderUtil.ShaderPropertyType.Vector:
+                case ShaderPropertyType.Vector:
                     if (!SerializedPropertyValue.TryParseFloats(value, 4, out var vec, out var vecErr)) return (false, vecErr);
                     mat.SetVector(property, new Vector4(vec[0], vec[1], vec[2], vec[3]));
                     return (true, null);
-                case ShaderUtil.ShaderPropertyType.TexEnv:
+                case ShaderPropertyType.Texture:
                     var (obj, refErr) = SerializedPropertyValue.ResolveReference(value);
                     if (refErr != null) return (false, refErr);
                     var tex = obj as Texture;
                     if (obj != null && tex == null) return (false, $"asset is {obj.GetType().Name}, not a Texture");
                     mat.SetTexture(property, tex);
                     return (true, null);
-                case ShaderUtil.ShaderPropertyType.Int:
+                case ShaderPropertyType.Int:
                     mat.SetInteger(property, value.Value<int>());
                     return (true, null);
                 default:

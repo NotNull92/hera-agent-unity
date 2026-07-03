@@ -48,6 +48,7 @@ Use Ultra when the user asks for strict verification, for example `정확히 검
 
 ## Must-follow rules
 
+- **Keep CLI and UPM versions separate.** `hera-agent-unity version` is the Go CLI release tag (`vX.Y.Z`); Unity Package Manager shows the connector package version from `AgentConnector/package.json` (`0.0.N`). Do not call the UPM package `vX.Y.Z`, do not assume the numbers match, and do not treat a git lock hash as the package version.
 - **`exec` is the most powerful tool.** Use it before inventing custom C# scripts.
 - **Default to `return null;`** (or no return). The CLI surfaces return values as JSON — a verbose status string just spends your tokens.
 - **Use compact discovery.** Prefer `list --compact`; use `list --tool <name>` only when one full schema is required.

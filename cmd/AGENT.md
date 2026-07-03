@@ -148,6 +148,13 @@ Default `--depth` is `3`, which fully reflects Unity Objects in the response. Pa
 //   → exit 1, code=EXEC_LOGGED_ERROR
 ```
 
+**[Rule 9]** Keep CLI and UPM connector versions separate. `hera-agent-unity
+version` reports the Go CLI release tag (`vX.Y.Z`). Unity Package Manager reports
+the connector package version from `AgentConnector/package.json` (for example
+`0.0.N`). Do not call the UPM package `vX.Y.Z`, do not assume the two numbers
+match, and do not use a git lock hash as the package version. A lock hash only
+identifies the connector source commit that Unity resolved.
+
 ## 1.5 Ultra Hera
 
 Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.

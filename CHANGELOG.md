@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.54 / CLI 0.0.36 — Unity 6000.5 warning cleanup)
+
+- Replaced obsolete shader property inspection calls with `Shader`
+  instance APIs so `describe_shader` and `manage_material` compile cleanly
+  on Unity `6000.5`.
+- Switched Unity `6000.5` object lookup paths to warning-free
+  `FindAnyObjectByType` / `FindObjectsByType` overloads while preserving
+  older-editor fallbacks.
+- Documented that CLI release tags and UPM connector package versions are
+  independent so agents do not conflate `hera-agent-unity vX.Y.Z` with
+  `AgentConnector/package.json` versions.
+
 ### Fixed (Connector 0.0.53 / CLI 0.0.36 — docs cache refresh)
 
 - `UnityDocsStore` now invalidates its in-memory index when the resolved

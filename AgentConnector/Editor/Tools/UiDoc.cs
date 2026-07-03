@@ -419,7 +419,11 @@ namespace HeraAgent.Tools
         {
             var p = new ToolParams(raw);
 
+#if UNITY_6000_5_OR_NEWER
+            var all = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude);
+#else
             var all = Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+#endif
             Canvas only = null;
             var canvasSel = p.Get("canvas");
             if (!string.IsNullOrEmpty(canvasSel))
@@ -543,7 +547,13 @@ namespace HeraAgent.Tools
 
         static GameObject EnsureCanvas()
         {
+#if UNITY_6000_5_OR_NEWER
+            var existing = Object.FindAnyObjectByType<Canvas>();
+#elif UNITY_2023_1_OR_NEWER
             var existing = Object.FindFirstObjectByType<Canvas>();
+#else
+            var existing = Object.FindObjectOfType<Canvas>();
+#endif
             if (existing != null) return existing.gameObject;
 
             var go = new GameObject("Canvas");
@@ -555,7 +565,7 @@ namespace HeraAgent.Tools
             if (ray != null) go.AddComponent(ray);
 
             var esType = ComponentTypeResolver.Resolve("EventSystem");
-            if (esType != null && Object.FindFirstObjectByType(esType) == null)
+            if (esType != null && FindAnyObjectByType(esType) == null)
             {
                 var esgo = new GameObject("EventSystem");
                 esgo.AddComponent(esType);
@@ -571,6 +581,17 @@ namespace HeraAgent.Tools
 
             Undo.RegisterCreatedObjectUndo(go, "Hera ui_doc Canvas");
             return go;
+        }
+
+        static Object FindAnyObjectByType(System.Type type)
+        {
+#if UNITY_6000_5_OR_NEWER
+            return Object.FindAnyObjectByType(type);
+#elif UNITY_2023_1_OR_NEWER
+            return Object.FindFirstObjectByType(type);
+#else
+            return Object.FindObjectOfType(type);
+#endif
         }
     }
 }
