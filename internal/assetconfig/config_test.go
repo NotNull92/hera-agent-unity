@@ -3,6 +3,7 @@ package assetconfig
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"testing"
 
@@ -225,6 +226,89 @@ func TestSaveConfig_RoundTrip(t *testing.T) {
 	}
 	if !found {
 		t.Error("dotween not found after round-trip")
+	}
+}
+
+func TestSetGameFeelMode(t *testing.T) {
+	withTempHome(t)
+
+	cfg, err := SetGameFeelMode(true)
+	if err != nil {
+		t.Fatalf("SetGameFeelMode error: %v", err)
+	}
+	if !cfg.GameFeelMode {
+		t.Error("expected GameFeelMode true after enable")
+	}
+
+	// Persisted under the current key and survives a reload.
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if !loaded.GameFeelMode {
+		t.Error("expected GameFeelMode true after reload")
+	}
+
+	if _, err := SetGameFeelMode(false); err != nil {
+		t.Fatalf("SetGameFeelMode error: %v", err)
+	}
+	loaded, _ = Load()
+	if loaded.GameFeelMode {
+		t.Error("expected GameFeelMode false after disable")
+	}
+}
+
+// A config written before the rename stores the flag under ui_juicy_mode; Load
+// must migrate it onto GameFeelMode, and Save must drop the legacy key.
+func TestLoadConfig_MigratesLegacyJuicyKey(t *testing.T) {
+	withTempHome(t)
+	path := paths.AssetConfigPath()
+	_ = os.MkdirAll(filepath.Dir(path), 0755)
+	data := `{"version":"2.0.0","assets":[],"ui_juicy_mode":true}`
+	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if !cfg.GameFeelMode {
+		t.Fatal("expected legacy ui_juicy_mode=true to migrate to GameFeelMode")
+	}
+
+	// After a save the legacy key is gone and only game_feel_ui_mode remains.
+	if err := Save(cfg); err != nil {
+		t.Fatalf("Save error: %v", err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read file: %v", err)
+	}
+	if strings.Contains(string(raw), "ui_juicy_mode") {
+		t.Errorf("expected legacy ui_juicy_mode key to be dropped after save, got: %s", raw)
+	}
+	if !strings.Contains(string(raw), "game_feel_ui_mode") {
+		t.Errorf("expected game_feel_ui_mode key after save, got: %s", raw)
+	}
+}
+
+// When the new key is present it wins even if the legacy key disagrees.
+func TestLoadConfig_NewKeyWinsOverLegacy(t *testing.T) {
+	withTempHome(t)
+	path := paths.AssetConfigPath()
+	_ = os.MkdirAll(filepath.Dir(path), 0755)
+	data := `{"version":"2.0.0","assets":[],"game_feel_ui_mode":false,"ui_juicy_mode":true}`
+	if err := os.WriteFile(path, []byte(data), 0644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if cfg.GameFeelMode {
+		t.Error("expected explicit game_feel_ui_mode=false to win over legacy ui_juicy_mode=true")
 	}
 }
 

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Connector 0.0.55 / CLI 0.0.37 — UI Juicy Mode renamed to Game Feel UI Mode (Beta))
+
+- Renamed the feature **UI Juicy Mode → Game Feel UI Mode (Beta)** across the
+  Hera Settings window, CLI, and docs. The setting is unchanged in behaviour —
+  only the name.
+- The persisted config key `ui_juicy_mode` is now `game_feel_ui_mode`; existing
+  `asset-config.json` files are migrated transparently on load (Go `Load`, C#
+  `LoadConfig`, and the `HeraSettings` dispatch-time read), and the legacy key is
+  dropped on the next save. No user setting is lost.
+- The CLI subcommand is now `asset-config gamefeel [on|off]`; `juicy` stays as a
+  backward-compatible alias. The `--json` output field `ui_juicy_mode` is now
+  `game_feel_ui_mode`.
+- The internal `UIJuiceGuide` recipe knowledge, "juice" game-feel vocabulary, and
+  the "Game Feel & Juice Bible" citation are unchanged.
+
 ### Fixed (Connector 0.0.54 / CLI 0.0.36 — Unity 6000.5 warning cleanup)
 
 - Replaced obsolete shader property inspection calls with `Shader`

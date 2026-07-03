@@ -824,7 +824,7 @@ hera-agent-unity manage_ui set_anchor --path /Canvas/Bg --preset stretch --snap 
 hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-40 --size_delta 300,60
 ```
 
-**UI Juicy Mode** — when enabled (Hera Settings window, or `asset-config juicy on`), each `create` response carries an `agent_hint` with concrete Game Feel & Juice Bible + UI Feedback Design Guide juice recipes for the element just made (hover/press/release easing, squash & stretch, popup overshoot, damage-number/count-up timing, haptics). The recipe is DOTween-aware: with DOTween enabled in Hera Settings it suggests `DOScale`-based tweens, otherwise a coroutine/lerp fallback. The hint is advisory — element property edits still go through `manage_components`. When the mode is off, no hint is added.
+**Game Feel UI Mode (Beta)** — when enabled (Hera Settings window, or `asset-config gamefeel on`), each `create` response carries an `agent_hint` with concrete Game Feel & Juice Bible + UI Feedback Design Guide juice recipes for the element just made (hover/press/release easing, squash & stretch, popup overshoot, damage-number/count-up timing, haptics). The recipe is DOTween-aware: with DOTween enabled in Hera Settings it suggests `DOScale`-based tweens, otherwise a coroutine/lerp fallback. The hint is advisory — element property edits still go through `manage_components`. When the mode is off, no hint is added.
 
 ---
 
@@ -922,7 +922,7 @@ uGUI manuals, such as stretched RectTransforms missing offsets or filled Images
 missing `type:"filled"`. Ambiguous structure is reported in `diagnostics`.
 Rule details live in [`UGUI_VERSION_RULES.md`](UGUI_VERSION_RULES.md).
 
-**UI Juicy Mode** — when enabled, `apply` adds an `agent_hint` with the Game Feel & Juice Bible + UI Feedback Design Guide juice recipes for each *distinct* element type in the doc (deduped once, not per element — strong signature, lean tokens). Guidance only; no runtime components are attached.
+**Game Feel UI Mode (Beta)** — when enabled, `apply` adds an `agent_hint` with the Game Feel & Juice Bible + UI Feedback Design Guide juice recipes for each *distinct* element type in the doc (deduped once, not per element — strong signature, lean tokens). Guidance only; no runtime components are attached.
 
 ### Icons (no SVG needed)
 
@@ -1164,14 +1164,14 @@ hera-agent-unity asset-config <subcommand>
 | `enable <id>` | Enable an asset |
 | `disable <id>` | Disable an asset |
 | `toggle <id>` | Flip an asset ON/OFF |
-| `juicy [on\|off]` | Show or set UI Juicy Mode (drives `manage_ui` juice guidance) |
+| `gamefeel [on\|off]` | Show or set Game Feel UI Mode (Beta) (drives `manage_ui` juice guidance) |
 | `detect` | Auto-detect installed assets (requires Unity) |
 | `get <id>` | Show a single asset's state |
 | `path` | Print the config file path |
 
 | Flag | Description | Default |
 |:---|:---|:---|
-| `--json` | Output enabled assets + `loop_engineering_mode` + `ui_juicy_mode` + `dotween_preferred` as JSON | `false` |
+| `--json` | Output enabled assets + `loop_engineering_mode` + `game_feel_ui_mode` + `dotween_preferred` as JSON | `false` |
 
 ---
 

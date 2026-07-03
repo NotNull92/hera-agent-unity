@@ -53,8 +53,8 @@ func assetConfigCmd(args []string) error {
 			return fmt.Errorf("usage: asset-config toggle <id>")
 		}
 		return assetConfigToggleAction(subArgs[0])
-	case "juicy":
-		return assetConfigJuicy(subArgs)
+	case "gamefeel", "juicy": // "juicy" kept as a backward-compat alias
+		return assetConfigGameFeel(subArgs)
 	case "detect":
 		return assetConfigDetect()
 	case "get":
@@ -90,9 +90,9 @@ func assetConfigList() error {
 		categorized[a.Category] = append(categorized[a.Category], a)
 	}
 
-	juicy := "off"
-	if cfg.JuicyMode {
-		juicy = "on"
+	gameFeel := "off"
+	if cfg.GameFeelMode {
+		gameFeel = "on"
 	}
 	loopMode := string(cfg.LoopEngineeringMode)
 
@@ -123,7 +123,7 @@ func assetConfigList() error {
 		fmt.Println(tui.TitleStyle.Render(fmt.Sprintf("Asset Config v%s", cfg.Version)))
 		fmt.Println(tui.PathStyle.Render(assetconfig.ConfigFilePath()))
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Ultra Hera:"), tui.StatusBadge(loopMode))
-		fmt.Printf("%s %s\n", tui.LabelStyle.Render("UI Juicy Mode:"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.JuicyMode]))
+		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Game Feel UI Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.GameFeelMode]))
 		fmt.Println()
 		for _, sec := range sections {
 			fmt.Println("  " + tui.HelpSectionStyle.Render(sec.Title))
@@ -150,7 +150,7 @@ func assetConfigList() error {
 	// Plain output — kept stable for script/AI parsing.
 	fmt.Printf("Asset Config v%s — %s\n", cfg.Version, assetconfig.ConfigFilePath())
 	fmt.Printf("Ultra Hera: %s\n", loopMode)
-	fmt.Printf("UI Juicy Mode: %s\n\n", juicy)
+	fmt.Printf("Game Feel UI Mode (Beta): %s\n\n", gameFeel)
 	for _, sec := range sections {
 		fmt.Printf("  %s\n", sec.Title)
 		for _, r := range sec.Rows {
@@ -220,7 +220,7 @@ func printToggleResult(id, state string) {
 	fmt.Printf("✓ %s %s\n", id, state)
 }
 
-func assetConfigJuicy(args []string) error {
+func assetConfigGameFeel(args []string) error {
 	// No arg → report current state.
 	if len(args) == 0 {
 		cfg, err := assetconfig.Load()
@@ -228,10 +228,10 @@ func assetConfigJuicy(args []string) error {
 			return err
 		}
 		state := "off"
-		if cfg.JuicyMode {
+		if cfg.GameFeelMode {
 			state = "on"
 		}
-		fmt.Printf("ui_juicy_mode: %s\n", state)
+		fmt.Printf("game_feel_ui_mode: %s\n", state)
 		return nil
 	}
 
@@ -242,10 +242,10 @@ func assetConfigJuicy(args []string) error {
 	case "off", "disable", "false":
 		enabled = false
 	default:
-		return fmt.Errorf("usage: asset-config juicy [on|off]")
+		return fmt.Errorf("usage: asset-config gamefeel [on|off]")
 	}
 
-	if _, err := assetconfig.SetJuicyMode(enabled); err != nil {
+	if _, err := assetconfig.SetGameFeelMode(enabled); err != nil {
 		return err
 	}
 
@@ -256,11 +256,11 @@ func assetConfigJuicy(args []string) error {
 	if tui.ColorEnabled() {
 		fmt.Printf("%s %s %s\n",
 			tui.CheckStyle.Render("✓"),
-			tui.PathStyle.Render("ui_juicy_mode"),
+			tui.PathStyle.Render("game_feel_ui_mode"),
 			tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[enabled]))
 		return nil
 	}
-	fmt.Printf("✓ ui_juicy_mode %s\n", state)
+	fmt.Printf("✓ game_feel_ui_mode %s\n", state)
 	return nil
 }
 
@@ -307,7 +307,7 @@ Subcommands:
   enable <id>                   Enable an asset
   disable <id>                  Disable an asset
   toggle <id>                   Toggle an asset (flip ON/OFF)
-  juicy [on|off]                Show or set UI Juicy Mode (manage_ui juice guidance)
+  gamefeel [on|off]             Show or set Game Feel UI Mode (Beta) (manage_ui juice guidance)
   detect                        Auto-detect installed assets (requires Unity)
   get <id>                      Show a single asset's state
   path                          Print the config file path
@@ -324,7 +324,7 @@ Examples:
   hera-agent-unity asset-config enable dotween
   hera-agent-unity asset-config list
   hera-agent-unity asset-config toggle odin_inspector
-  hera-agent-unity asset-config juicy on
+  hera-agent-unity asset-config gamefeel on
 
 TUI Controls:
   ↑/k          Move up
@@ -368,7 +368,7 @@ func jsonOutputForAI() ([]byte, error) {
 		"enabled_assets":        assets,
 		"total":                 len(assets),
 		"loop_engineering_mode": cfg.LoopEngineeringMode,
-		"ui_juicy_mode":         cfg.JuicyMode,
+		"game_feel_ui_mode":     cfg.GameFeelMode,
 		"dotween_preferred":     dotweenPreferred,
 	}, "", "  ")
 }

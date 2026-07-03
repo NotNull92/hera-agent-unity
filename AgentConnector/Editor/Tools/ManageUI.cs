@@ -164,13 +164,13 @@ namespace HeraAgent.Tools
             return WithJuice(element, new SuccessResponse($"Created {element}: {go.name}", BuildCreateShape(go, created)));
         }
 
-        // When UI Juicy Mode is on (Hera Settings), attach the element's juice
+        // When Game Feel UI Mode (Beta) is on (Hera Settings), attach the element's juice
         // recipe — concrete Game Feel & Juice Bible + UI Feedback Design Guide parameters, DOTween-aware — as an
         // agent_hint so the calling agent can make the UI feel alive. No-op when
         // the toggle is off (agent_hint stays null → omitted from the response).
         private static SuccessResponse WithJuice(string element, SuccessResponse resp)
         {
-            if (HeraSettings.JuicyMode)
+            if (HeraSettings.GameFeelMode)
                 resp.agent_hint = UIJuiceGuide.ForElement(element, HeraSettings.DotweenPreferred);
             return resp;
         }

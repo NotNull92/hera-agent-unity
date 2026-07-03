@@ -38,14 +38,16 @@ type AssetConfig struct {
 	Assets              []AssetEntry        `json:"assets"`
 	LoopEngineeringMode LoopEngineeringMode `json:"loopEngineeringMode"`
 
-	// JuicyMode mirrors ui_juicy_mode in the shared asset-config.json. When on,
-	// the connector's manage_ui attaches Game Feel & Juice Bible + UI Feedback Design Guide juice guidance to its
-	// create responses. The Hera Settings window is the primary editor.
-	JuicyMode bool `json:"ui_juicy_mode"`
+	// GameFeelMode mirrors game_feel_ui_mode in the shared asset-config.json. When
+	// on, the connector's manage_ui attaches Game Feel & Juice Bible + UI Feedback
+	// Design Guide juice guidance to its create responses. The Hera Settings window
+	// is the primary editor. (Persisted under the old `ui_juicy_mode` key before
+	// the Game Feel UI Mode rename; Load migrates that key transparently.)
+	GameFeelMode bool `json:"game_feel_ui_mode"`
 
 	// DefaultCscPath/DefaultDotnetPath are written by the Hera Settings window.
 	// The CLI doesn't edit them, but it must round-trip them so a CLI-side Save
-	// (e.g. toggling an asset or juicy mode) doesn't drop a user's compiler paths.
+	// (e.g. toggling an asset or Game Feel UI Mode) doesn't drop a user's compiler paths.
 	DefaultCscPath    string `json:"defaultCscPath,omitempty"`
 	DefaultDotnetPath string `json:"defaultDotnetPath,omitempty"`
 }
@@ -160,6 +162,17 @@ func Load() (*AssetConfig, error) {
 	}
 	cfg.LoopEngineeringMode = NormalizeLoopEngineeringMode(string(cfg.LoopEngineeringMode))
 
+	// Migrate the pre-rename `ui_juicy_mode` key onto game_feel_ui_mode. Detect
+	// key presence with pointers so an explicit `false` isn't confused with absent.
+	// The legacy key is dropped on the next Save (the struct only writes the new key).
+	var compat struct {
+		GameFeel *bool `json:"game_feel_ui_mode"`
+		Legacy   *bool `json:"ui_juicy_mode"`
+	}
+	if json.Unmarshal(data, &compat) == nil && compat.GameFeel == nil && compat.Legacy != nil {
+		cfg.GameFeelMode = *compat.Legacy
+	}
+
 	// Merge with defaults. User state (Enabled, Installed) is preserved per ID.
 	// Immutable metadata (Name, Description, Category, DocURL, ReferencePath)
 	// is refreshed from defaults so existing configs pick up upstream changes
@@ -264,13 +277,13 @@ func SetAssetEnabled(id string, enabled bool) (*AssetConfig, error) {
 	return nil, fmt.Errorf("asset %q not found in config", id)
 }
 
-// SetJuicyMode sets the UI Juicy Mode flag and persists it.
-func SetJuicyMode(enabled bool) (*AssetConfig, error) {
+// SetGameFeelMode sets the Game Feel UI Mode (Beta) flag and persists it.
+func SetGameFeelMode(enabled bool) (*AssetConfig, error) {
 	cfg, err := Load()
 	if err != nil {
 		return nil, err
 	}
-	cfg.JuicyMode = enabled
+	cfg.GameFeelMode = enabled
 	if err := Save(cfg); err != nil {
 		return nil, err
 	}

@@ -15,15 +15,15 @@ namespace HeraAgent
     {
         private static readonly object s_lock = new object();
         private static long s_stampTicks = long.MinValue;
-        private static bool s_juicyMode;
+        private static bool s_gameFeelMode;
         private static bool s_dotweenPreferred;
         private static string s_defaultCscPath;
         private static string s_defaultDotnetPath;
 
-        /// <summary>UI Juicy Mode toggle. False when unset or unreadable.</summary>
-        public static bool JuicyMode
+        /// <summary>Game Feel UI Mode (Beta) toggle. False when unset or unreadable.</summary>
+        public static bool GameFeelMode
         {
-            get { Refresh(); return s_juicyMode; }
+            get { Refresh(); return s_gameFeelMode; }
         }
 
         /// <summary>
@@ -67,7 +67,7 @@ namespace HeraAgent
                     if (!File.Exists(path))
                     {
                         s_stampTicks = long.MinValue;
-                        s_juicyMode = false;
+                        s_gameFeelMode = false;
                         s_dotweenPreferred = false;
                         s_defaultCscPath = null;
                         s_defaultDotnetPath = null;
@@ -79,7 +79,9 @@ namespace HeraAgent
                     s_stampTicks = stamp;
 
                     var root = JObject.Parse(File.ReadAllText(path));
-                    s_juicyMode = root.Value<bool?>("ui_juicy_mode") ?? false;
+                    // Prefer the current key; fall back to the pre-rename `ui_juicy_mode`
+                    // so a config not yet re-saved after the Game Feel UI Mode rename still honours the toggle.
+                    s_gameFeelMode = root.Value<bool?>("game_feel_ui_mode") ?? root.Value<bool?>("ui_juicy_mode") ?? false;
                     s_defaultCscPath = root.Value<string>("defaultCscPath");
                     s_defaultDotnetPath = root.Value<string>("defaultDotnetPath");
 
@@ -101,7 +103,7 @@ namespace HeraAgent
                 catch
                 {
                     // A malformed or locked file should never break a tool call.
-                    s_juicyMode = false;
+                    s_gameFeelMode = false;
                     s_dotweenPreferred = false;
                     s_defaultCscPath = null;
                     s_defaultDotnetPath = null;

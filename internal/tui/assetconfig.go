@@ -55,7 +55,7 @@ var (
 )
 
 type model struct {
-	cfg      *assetconfig.AssetConfig // loaded config — preserved on save (JuicyMode, compiler paths)
+	cfg      *assetconfig.AssetConfig // loaded config — preserved on save (GameFeelMode, compiler paths)
 	assets   []assetconfig.AssetEntry
 	cursor   int
 	quitting bool
@@ -164,7 +164,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.changed = true
 			} else {
 				// "Quit" selected — save and quit. Preserve the loaded config's
-				// other fields (JuicyMode, compiler paths); only assets changed.
+				// other fields (GameFeelMode, compiler paths); only assets changed.
 				if m.changed {
 					m.cfg.Assets = m.assets
 					_ = assetconfig.Save(m.cfg)

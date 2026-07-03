@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -35,10 +36,12 @@ namespace HeraAgent.Editor
             public string defaultDotnetPath;
             public string loopEngineeringMode;
 
-            // UI Juicy Mode — when on, manage_ui attaches Game Feel & Juice Bible + UI Feedback Design Guide juice
-            // guidance (DOTween-aware) to its create responses. Read at dispatch
-            // time by HeraSettings; surfaced to the CLI via asset-config.json.
-            public bool ui_juicy_mode;
+            // Game Feel UI Mode (Beta) — when on, manage_ui attaches Game Feel & Juice
+            // Bible + UI Feedback Design Guide juice guidance (DOTween-aware) to its
+            // create responses. Read at dispatch time by HeraSettings; surfaced to the
+            // CLI via asset-config.json. (Persisted under `ui_juicy_mode` before the
+            // rename; LoadConfig migrates that key transparently.)
+            public bool game_feel_ui_mode;
         }
 
         private const string LoopEngineeringOff = "off";
@@ -65,10 +68,19 @@ namespace HeraAgent.Editor
             {
                 var json = File.ReadAllText(_configPath);
                 _config = JsonConvert.DeserializeObject<AssetConfig>(json);
+
+                // Migrate the pre-rename `ui_juicy_mode` key onto game_feel_ui_mode.
+                // The old key isn't a field anymore, so it's dropped on the next Save.
+                if (_config != null)
+                {
+                    var raw = JObject.Parse(json);
+                    if (raw["game_feel_ui_mode"] == null && raw["ui_juicy_mode"] != null)
+                        _config.game_feel_ui_mode = raw.Value<bool>("ui_juicy_mode");
+                }
             }
             catch (Exception ex)
             {
-                Debug.LogWarning($"[Hera] Failed to load asset-config.json: {ex.Message}");
+                Debug.LogWarning($"[Hera] I couldn't load asset-config.json: {ex.Message}");
                 _config = new AssetConfig();
             }
         }

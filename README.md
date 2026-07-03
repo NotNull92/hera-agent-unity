@@ -16,7 +16,7 @@
 
 <br>
 
-[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [UI Juicy Mode](#ui-juicy-mode) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
+[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
 
 **English** · [한국어](README.ko.md)
 
@@ -83,7 +83,7 @@ This release focuses on three simple things: more Unity versions, fewer tokens, 
 | **Unity 6000.3 / 6000.5 checked separately** | Unity 6 minor versions can differ, so they are tested separately. |
 | **93-token tool list** | `list --compact` is small enough to use often. |
 | **49-55-token object handoff** | `find_gameobjects --ids` returns only the IDs an agent needs for the next command. |
-| **Signature: UI Juicy Mode** | Hera can tell the agent how to make generated UI feel alive, not static. |
+| **Signature: Game Feel UI Mode (Beta)** | Hera can tell the agent how to make generated UI feel alive, not static. |
 | **NEW: Ultra Hera** | Agents can use light checks by default and upgrade to strict Unity verification when the task asks for it. |
 | **NEW: uGUI docs fixer** | `ui_doc apply` selects the official uGUI rule set for the open Unity Editor version and reports fixes/diagnostics. |
 
@@ -274,22 +274,22 @@ Hera also reports the active official uGUI docs bucket (`2022.3`, `2023.2`,
 
 ---
 
-## UI Juicy Mode
+## Game Feel UI Mode (Beta)
 
-AI can make a button that works. UI Juicy Mode helps it make a button that feels like a game.
+AI can make a button that works. Game Feel UI Mode (Beta) helps it make a button that feels like a game.
 
 When this mode is on, Hera adds an `agent_hint` to UI creation results. The hint gives concrete game-feel recipes: hover scale, press squash, release bounce, popup overshoot, count-up numbers, damage text motion, haptics, and reduce-motion reminders.
 
 It is guidance, not runtime bloat. Hera does not attach heavy gameplay components for you. The agent receives the recipe, then applies the animation or feedback through normal Unity edits.
 
 The uGUI fixer is separate from the juice recipe: `ui_doc apply` always reports
-manual-backed `fixes` / `diagnostics`, while UI Juicy Mode only adds optional
+manual-backed `fixes` / `diagnostics`, while Game Feel UI Mode (Beta) only adds optional
 game-feel guidance in `agent_hint`.
 
 Turn it on in Unity:
 
 ```text
-HeraAgent -> Hera Settings -> UI Juicy Mode
+HeraAgent -> Hera Settings -> Game Feel UI Mode (Beta)
 ```
 
 If DOTween is enabled in the same Hera Settings panel, the hint suggests DOTween-style tweens. If not, it falls back to coroutine or lerp-style guidance.

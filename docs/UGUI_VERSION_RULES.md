@@ -37,7 +37,7 @@ User-provided official entry points:
   are unambiguous.
 - It must not rewrite creative layout intent when the official docs describe a
   tradeoff rather than a single correct value.
-- It must not add runtime gameplay or animation components. UI Juicy Mode remains
+- It must not add runtime gameplay or animation components. Game Feel UI Mode (Beta) remains
   advisory through `agent_hint`.
 
 Recommended response additions:

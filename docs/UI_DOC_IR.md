@@ -279,5 +279,5 @@ When you have a sprite kit instead of procedural shapes, two actions feed real
   created/updated. `diagnostics` are version-specific warnings or errors where
   the official docs show likely broken uGUI structure but the agent must decide
   the intended fix.
-- With UI Juicy Mode on, `apply` adds per-distinct-element-type juice recipes as an
+- With Game Feel UI Mode (Beta) on, `apply` adds per-distinct-element-type juice recipes as an
   `agent_hint` (guidance only).

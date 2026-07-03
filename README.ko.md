@@ -16,7 +16,7 @@
 
 <br>
 
-[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [UI Juicy Mode](#ui-juicy-mode) · [Ultra Hera](#ultra-hera) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
+[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
 
 [English](README.md) · **한국어**
 
@@ -83,7 +83,7 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 | **Unity 6000.3 / 6000.5 따로 확인** | Unity 6 안에서도 버전 차이가 있어서 따로 테스트했습니다. |
 | **93 토큰 도구 목록** | `list --compact`는 자주 써도 부담이 작습니다. |
 | **49-55 토큰 오브젝트 전달** | `find_gameobjects --ids`는 다음 명령에 필요한 ID만 보냅니다. |
-| **시그니처: UI Juicy Mode** | Hera가 AI에게 정적인 UI가 아니라 살아 있는 게임 UI를 만드는 힌트를 줍니다. |
+| **시그니처: Game Feel UI Mode (Beta)** | Hera가 AI에게 정적인 UI가 아니라 살아 있는 게임 UI를 만드는 힌트를 줍니다. |
 | **NEW: Ultra Hera** | 기본은 가볍게 확인하고, 중요한 요청은 더 꼼꼼한 Unity 검증으로 올립니다. |
 | **NEW: uGUI 공식문서 fixer** | `ui_doc apply`가 열린 Unity Editor 버전에 맞는 공식 uGUI 규칙을 고르고 fixes/diagnostics를 보고합니다. |
 
@@ -275,22 +275,22 @@ hera-agent-unity ui_doc capture --out hud_built.png
 
 ---
 
-## UI Juicy Mode
+## Game Feel UI Mode (Beta)
 
-AI는 작동하는 버튼은 만들 수 있습니다. UI Juicy Mode는 그 버튼이 게임처럼 느껴지게 도와줍니다.
+AI는 작동하는 버튼은 만들 수 있습니다. Game Feel UI Mode (Beta)는 그 버튼이 게임처럼 느껴지게 도와줍니다.
 
 이 모드를 켜면 Hera가 UI 생성 결과에 `agent_hint`를 붙입니다. 이 힌트에는 hover 확대, press 눌림, release bounce, 팝업 overshoot, 숫자 카운트업, 데미지 텍스트 움직임, 햅틱, reduce-motion 같은 구체적인 game-feel 레시피가 들어갑니다.
 
 이 기능은 가이드이지 무거운 런타임 기능이 아닙니다. Hera가 씬에 큰 컴포넌트를 자동으로 붙이지 않습니다. 에이전트가 레시피를 받고, 평소처럼 Unity 수정 명령으로 애니메이션과 피드백을 적용합니다.
 
-uGUI fixer는 Juicy 레시피와 별개입니다. `ui_doc apply`는 항상 공식문서 기반
-`fixes` / `diagnostics`를 보고하고, UI Juicy Mode는 선택적으로 game-feel
+uGUI fixer는 juice 레시피와 별개입니다. `ui_doc apply`는 항상 공식문서 기반
+`fixes` / `diagnostics`를 보고하고, Game Feel UI Mode (Beta)는 선택적으로 game-feel
 가이드를 `agent_hint`에 붙입니다.
 
 Unity에서 켭니다:
 
 ```text
-HeraAgent -> Hera Settings -> UI Juicy Mode
+HeraAgent -> Hera Settings -> Game Feel UI Mode (Beta)
 ```
 
 같은 Hera Settings 패널에서 DOTween이 켜져 있으면 DOTween 방식의 트윈을 추천합니다. 없으면 coroutine이나 lerp 방식으로 안내합니다.

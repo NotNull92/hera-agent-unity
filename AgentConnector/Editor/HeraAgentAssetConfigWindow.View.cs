@@ -410,7 +410,7 @@ namespace HeraAgent.Editor
                 asset.enabled = evt.newValue;
                 _isDirty = true;
                 card.style.borderLeftColor = asset.enabled ? ColorGold : new Color(0.18f, 0.18f, 0.18f);
-                UpdateJuicyDotweenLabel();
+                UpdateGameFeelDotweenLabel();
                 UpdateStatusBar();
             });
             topRow.Add(toggle);
@@ -815,7 +815,7 @@ namespace HeraAgent.Editor
             btn.style.height = 26;
         }
 
-        private void BuildJuicyModeSection()
+        private void BuildGameFeelModeSection()
         {
             var section = new VisualElement();
             section.style.backgroundColor = ColorBgCard;
@@ -842,14 +842,14 @@ namespace HeraAgent.Editor
             headerIcon.style.color = ColorGold;
             header.Add(headerIcon);
 
-            var headerLbl = new Label("UI Juicy Mode");
+            var headerLbl = new Label("Game Feel UI Mode (Beta)");
             headerLbl.style.fontSize = 13;
             headerLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
             headerLbl.style.color = ColorGold;
             headerLbl.style.flexGrow = 1;
             header.Add(headerLbl);
 
-            var toggle = new Toggle { value = _config?.ui_juicy_mode ?? false };
+            var toggle = new Toggle { value = _config?.game_feel_ui_mode ?? false };
             toggle.tooltip = "When on, manage_ui create attaches Game Feel & Juice Bible juice guidance to its responses.";
             header.Add(toggle);
 
@@ -867,24 +867,24 @@ namespace HeraAgent.Editor
             section.Add(desc);
 
             // DOTween preference status — driven by the asset toggles above.
-            _juicyDotweenLabel = new Label();
-            _juicyDotweenLabel.style.fontSize = 10;
-            _juicyDotweenLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            _juicyDotweenLabel.style.marginTop = 6;
-            section.Add(_juicyDotweenLabel);
+            _gameFeelDotweenLabel = new Label();
+            _gameFeelDotweenLabel.style.fontSize = 10;
+            _gameFeelDotweenLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            _gameFeelDotweenLabel.style.marginTop = 6;
+            section.Add(_gameFeelDotweenLabel);
 
             toggle.RegisterValueChangedCallback(evt =>
             {
                 if (_config == null) return;
-                _config.ui_juicy_mode = evt.newValue;
+                _config.game_feel_ui_mode = evt.newValue;
                 _isDirty = true;
                 SaveConfig();
-                UpdateJuicyDotweenLabel();
+                UpdateGameFeelDotweenLabel();
                 UpdateStatusBar();
             });
 
             _root.Add(section);
-            UpdateJuicyDotweenLabel();
+            UpdateGameFeelDotweenLabel();
         }
 
         private void BuildUltraHeraSection()
@@ -986,22 +986,22 @@ namespace HeraAgent.Editor
 
         // Reflects whether DOTween is enabled in the asset list — the same signal
         // HeraSettings/manage_ui use to pick DOScale tweens over a lerp fallback.
-        private void UpdateJuicyDotweenLabel()
+        private void UpdateGameFeelDotweenLabel()
         {
-            if (_juicyDotweenLabel == null || _config == null) return;
+            if (_gameFeelDotweenLabel == null || _config == null) return;
 
             bool dotween = _config.assets.Exists(a =>
                 (a.id == "dotween" || a.id == "dotween_pro") && a.enabled);
 
             if (dotween)
             {
-                _juicyDotweenLabel.text = "● DOTween preferred — juice guidance will use DOScale tweens.";
-                _juicyDotweenLabel.style.color = ColorSuccessText;
+                _gameFeelDotweenLabel.text = "● DOTween preferred — juice guidance will use DOScale tweens.";
+                _gameFeelDotweenLabel.style.color = ColorSuccessText;
             }
             else
             {
-                _juicyDotweenLabel.text = "○ DOTween not enabled — guidance falls back to a coroutine/lerp.";
-                _juicyDotweenLabel.style.color = ColorMuted;
+                _gameFeelDotweenLabel.text = "○ DOTween not enabled — guidance falls back to a coroutine/lerp.";
+                _gameFeelDotweenLabel.style.color = ColorMuted;
             }
         }
 
