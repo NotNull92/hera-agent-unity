@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added (Connector 0.0.57 / CLI 0.0.37 — Input QA EventSystem backend)
+### Added (Connector 0.0.57 / CLI 0.0.38 — Input QA EventSystem backend)
 
 - New `input` Hera tool for Unity UI input QA when external Computer Use cannot
   acquire Unity screenshot state. The first implementation slice supports
