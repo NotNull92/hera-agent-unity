@@ -168,6 +168,15 @@ the connector package version from `AgentConnector/package.json` (for example
 match, and do not use a git lock hash as the package version. A lock hash only
 identifies the connector source commit that Unity resolved.
 
+**[Rule 11]** Separate Unity EventSystem input QA from physical OS click QA.
+Use `input state` / `input inspect` / `input click` / `input submit` / `input
+scroll` / `input drag` to verify uGUI behavior when Computer Use cannot obtain a
+Unity screenshot state. These commands synthesize Unity EventSystem events; they
+do **not** prove that a physical OS/window click worked. If Computer Use still
+cannot capture Unity screenshot state and no native OS/window input backend is
+available, record the physical-click criterion as **BLOCKED** even when
+EventSystem input QA passes.
+
 ## 1.5 Ultra Hera
 
 Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.
@@ -246,6 +255,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Force recompile | `editor refresh --compile` | Waits until compile finishes or `--timeout` (60s default) elapses — raise `--timeout` for big projects, or use `refresh_unity --compile request` to fire-and-forget. |
 | Trigger a menu item | `menu "Window/General/Console"` | `File/Quit` is blocked for safety. |
 | Capture screenshot | `screenshot [--view game]` / `screenshot --isolated --target /Player` | Default scene view, 1920×1080; isolated mode renders one GameObject. |
+| Drive Unity UI input for QA | `input state` / `input inspect --path ...` / `input click --path ...` | Sends uGUI EventSystem events inside Unity. This is not a physical OS click; use it when Computer Use coordinates are blocked but UI logic still needs Play Mode QA. |
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
 | Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
@@ -268,6 +278,11 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 hera-agent-unity exec "var x = SomeType.SomeMethod();" --check
 ```
 Useful when you're not sure a refactor compiles before issuing a destructive call.
+
+**Input QA (`input`)** — use this when you need to verify Unity UI behavior and Computer Use cannot obtain a Unity screenshot state. `input` resolves targets by hierarchy path, instance ID, or normalized screen/canvas position, then dispatches uGUI EventSystem events (`click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, `drag`). Start with `input state` to confirm an EventSystem + raycasters exist, then `input inspect --path /Canvas/Button --details true` before sending events. Evidence should be classified precisely:
+
+- **Unity EventSystem input QA:** PASS/FAIL based on `input` results, console logs, state reads, Play Mode tests, or UI callbacks.
+- **Physical OS click QA:** BLOCKED if Computer Use still cannot capture Unity screenshot state and Hera has no native OS/window input backend for that action.
 
 **ui_doc IR (`ui_doc/2`)** — the contract for HTML→UI. You're fluent in HTML/CSS but weak at uGUI; design in HTML, then `export` the live UI to ground yourself, and `apply` a node tree (defaults omitted). `anchor` uses `manage_ui`'s preset names (e.g. `top-center`, `stretch`) or raw `anchor_min`/`anchor_max`. Full reference: `docs/UI_DOC_IR.md`:
 

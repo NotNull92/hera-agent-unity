@@ -11,6 +11,7 @@ Drive a **running Unity Editor** from the terminal over localhost HTTP. Use this
 
 - Manipulating the Editor: scenes, GameObjects, components, prefabs, materials, UI (`scene`, `manage_gameobject`, `manage_components`, `manage_prefab`, `manage_material`, `manage_ui`).
 - Building UI from an HTML design: `ui_doc export` (live UI → compact JSON to ground on), `ui_doc apply --file <doc.json>` (JSON → UI; `--mode create` default or `upsert` to edit existing in place), `ui_doc gen_sprite` (procedural sprite — no external dep), `ui_doc capture` (render the live UI → PNG to verify against a reference). Design in HTML, export to ground, apply the `ui_doc/2` IR.
+- QAing Unity UI input without Computer Use coordinates: `input state`, `input inspect --path ...`, then `input click` / `submit` / `scroll` / `drag`. This sends uGUI EventSystem events inside Unity; it is not a physical OS click.
 - Reading the **real** console: errors, warnings, stack traces (`console`).
 - Running EditMode / PlayMode tests (`test`).
 - Driving Play Mode (`editor play` / `stop`).
@@ -51,6 +52,7 @@ Use Ultra when the user asks for strict verification, for example `정확히 검
 - **Call sequentially, never in parallel.** The connector serializes every command on the Unity main thread; concurrent calls just queue.
 - **Pass `--compact-json`** on every tool call — AntiGravity consumes the JSON, so keep it small.
 - **Use compact discovery.** Prefer `list --compact`; use `list --tool <name>` only when one full schema is required.
+- **Separate input evidence.** `input` can prove Unity EventSystem UI behavior in Play Mode, but physical OS click QA is still BLOCKED when Computer Use cannot capture Unity screenshot state.
 - **Use IDs for object handoff.** Prefer `find_gameobjects --ids`; add `--fields instance_id,name,path` only when duplicate names need context.
 - **`exec`: default to `return null;`** (or omit the return). A verbose status string is wasted tokens; the OK response is 3 bytes.
 - **`exec`: never return a `UnityEngine.Object`** (`Transform`, `GameObject`, `Material`, …). They expand to thousands of bytes. Return `new { name = go.name, instanceID = go.GetInstanceID() }`.

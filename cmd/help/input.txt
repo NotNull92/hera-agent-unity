@@ -1,0 +1,52 @@
+Input QA:
+  hera-agent-unity input <action> [flags]
+
+  input state                         Report EventSystem/raycaster availability
+  input inspect --path /Canvas/Button Raycast target point and report blockers
+  input click --path /Canvas/Button   Drive pointer enter/down/up/click through EventSystem
+  input pointer_down --path /Canvas/Button
+                                      Drive pointer enter/down
+  input pointer_up --path /Canvas/Button
+                                      Drive pointer up
+  input submit --path /Canvas/Button  Select target and execute submit
+  input scroll --path /Canvas/List --scroll_delta 0,-3
+                                      Execute scroll handler
+  input drag --path /Canvas/Handle --to_normalized 0.8,0.5
+                                      Execute begin/drag/end handlers
+
+  Target:
+    --path </Canvas/Button>           Target by hierarchy path
+    --instance_id <N>                 Target by Unity instance/entity id
+    --target <path|id>                Convenience target selector
+
+  Point:
+    --position x,y                    Screen point in Unity bottom-left coordinates
+    --normalized x,y                  Point inside target rect (0..1)
+    --offset x,y                      Offset from target rect center in UI pixels
+    --to_position x,y                 Drag end screen point (alias: --to)
+    --to_normalized x,y               Drag end point inside target rect
+
+  Options:
+    --backend eventsystem             Current implementation (default)
+    --button left|right|middle        Pointer button (default: left)
+    --click_count <N>                 Click count (default: 1)
+    --scroll_delta x,y                Scroll delta (default: 0,-1; alias: --delta)
+    --steps <N>                       Drag move steps (default: 8)
+    --hold_ms <N>                     Down/up delay in ms (default: 50)
+    --settle_frames <N>               Editor updates to wait after click (default: 1)
+    --strict true|false               Fail when blocked/not reached (default: true)
+    --details true                    Return full raycast/handler diagnostics
+
+  Examples:
+    input state
+    input inspect --path /Canvas/StartButton --details true
+    input click --path /Canvas/StartButton --settle_frames 2
+    input submit --path /Canvas/StartButton
+    input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
+    input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
+
+  Evidence:
+    This is Unity EventSystem input QA, not physical OS click QA. It verifies
+    EventSystem.RaycastAll plus ExecuteEvents pointer handlers. If Computer Use
+    cannot acquire Unity screenshot state, physical coordinate-click QA can
+    still be BLOCKED while this command PASSes Unity-level UI input.

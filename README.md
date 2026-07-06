@@ -218,6 +218,7 @@ Here are the commands most agents use first.
 | `manage_gameobject` | Creates, duplicates, moves, renames, parents, or deletes GameObjects. |
 | `manage_components` | Adds, removes, reads, or edits components. |
 | `ui_doc` | Builds and captures Unity UI. |
+| `input` | Verifies uGUI interaction through Unity EventSystem raycasts and pointer handlers. |
 | `game_feel` | Looks up game-feel recipes (screen shake, hit stop, honest juice, ...). |
 | `test` | Runs Unity tests. |
 | `screenshot` | Captures Scene/Game view or one isolated GameObject. |
@@ -333,6 +334,8 @@ Common recipes:
 | Bar | Instant fill drop, delayed chip bar, low-value pulse, segment ticks. |
 
 Detailed command docs: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
+
+Input QA note: `input inspect` and `input click` are Unity EventSystem-level checks, not physical OS clicks. If Computer Use cannot capture Unity screenshot state, report physical click QA as blocked and use `input` as separate Unity UI evidence.
 
 ---
 

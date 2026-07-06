@@ -893,6 +893,51 @@ hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-
 
 ---
 
+## input
+
+Unity input QA for uGUI. This command is for the case where an external automation surface cannot acquire Unity screenshot state and therefore cannot safely click physical screen coordinates. It does **not** claim to be a physical OS click. It verifies Unity's UI event path by using `EventSystem.RaycastAll` and `ExecuteEvents` pointer handlers inside the running Editor.
+
+```bash
+hera-agent-unity input <action> [flags]
+```
+
+| Action | Flags | Description |
+|:---|:---|:---|
+| `state` | `[--backend eventsystem]` | Report EventSystem, input module, raycaster, InputSystem availability, and native-Windows backend status. |
+| `inspect` | `--path </path>` or `--instance_id <id>` or `--target <path\|id>`; `[--position x,y]`; `[--normalized x,y]`; `[--offset x,y]`; `[--details true]` | Resolve the target point, raycast through the EventSystem, and report top hit, blocker, handlers, and interactability. |
+| `click` | same target/point flags; `[--button left\|right\|middle]`; `[--click_count N]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--strict true\|false]`; `[--details true]` | Drive pointer enter/down/up/click through `ExecuteEvents`. In strict mode, fails if another object blocks the target or the expected click handler is not reached. |
+| `pointer_down` | same target/point flags | Drive pointer enter/down without a matching up. Useful for press-state QA; no cross-command press state is retained. |
+| `pointer_up` | same target/point flags | Drive pointer up at the target point. Useful as a standalone handler check; no cross-command press state is retained. |
+| `submit` | `--path </path>` or `--instance_id <id>` or `--target <path\|id>`; `[--settle_frames N]`; `[--strict true\|false]` | Select the target and execute `ISubmitHandler` through `ExecuteEvents.submitHandler`. |
+| `scroll` | same target/point flags; `[--scroll_delta x,y]` or `[--delta x,y]`; `[--settle_frames N]`; `[--strict true\|false]` | Execute `IScrollHandler` through `ExecuteEvents.ExecuteHierarchy`. Default scroll delta is `0,-1`. |
+| `drag` | same target/point flags; `--to_position x,y` or `--to x,y` or `--to_normalized x,y`; `[--steps N]`; `[--settle_frames N]`; `[--strict true\|false]` | Execute initialize-potential-drag, begin-drag, drag steps, and end-drag handlers. Default steps: 8. |
+
+```bash
+hera-agent-unity input state
+hera-agent-unity input inspect --path /Canvas/StartButton --details true
+hera-agent-unity input click --path /Canvas/StartButton --settle_frames 2
+hera-agent-unity input submit --path /Canvas/StartButton
+hera-agent-unity input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
+hera-agent-unity input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
+```
+
+**Evidence classification** — report this separately from OS-level click QA:
+
+```text
+Physical OS click QA: BLOCKED if Computer Use cannot acquire Unity screenshot state.
+Unity EventSystem input QA: PASS when input inspect/click reaches the target through EventSystem.RaycastAll and ExecuteEvents.
+```
+
+Current backend status:
+
+| Backend | Status |
+|:---|:---|
+| `eventsystem` | Implemented for `state`, `inspect`, `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, and `drag`. |
+| `inputsystem` | Planned; not selected by `auto` yet. |
+| `native-win32` | Planned optional fallback; never a default backend. |
+
+---
+
 ## ui_doc
 
 HTML→Unity UI pipeline (uGUI). The agent is fluent in HTML/CSS but weak at uGUI; `ui_doc` closes the gap by giving it **deterministic** endpoints plus a compact JSON IR (`ui_doc/2`) as the contract:

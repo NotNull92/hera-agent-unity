@@ -42,6 +42,7 @@ Use Ultra when the user asks for strict verification, for example `정확히 검
 | Test an assumption                              | `hera-agent-unity exec "return EditorSceneManager.GetActiveScene().name;"` |
 | See real console errors                         | `hera-agent-unity console --type error`                                |
 | Drive Play Mode                                 | `hera-agent-unity editor play --wait`                                  |
+| QA Unity UI without OS coordinates              | `hera-agent-unity input state`; `hera-agent-unity input click --path /Canvas/Button` |
 | Run tests                                       | `hera-agent-unity test --mode PlayMode`                                |
 | Discover the full catalogue                     | `hera-agent-unity list --compact`                                      |
 | Handoff object references cheaply               | `hera-agent-unity find_gameobjects --ids`                              |
@@ -53,6 +54,7 @@ Use Ultra when the user asks for strict verification, for example `정확히 검
 - **Default to `return null;`** (or no return). The CLI surfaces return values as JSON — a verbose status string just spends your tokens.
 - **Use compact discovery.** Prefer `list --compact`; use `list --tool <name>` only when one full schema is required.
 - **Use IDs for object handoff.** Prefer `find_gameobjects --ids`; add `--fields instance_id,name,path` only when duplicate names need context.
+- **Separate input evidence.** `input` sends Unity uGUI EventSystem events for UI QA; it is not a physical OS click. If Computer Use cannot capture Unity screenshot state, report physical-click QA as BLOCKED even when `input` passes.
 - **Never return Unity objects directly.** Return primitive fields or IDs instead of `GameObject`, `Transform`, `Component`, `Material`, or `Scene`.
 - **Read before you write.** `describe_type` + `console --type error` are usually cheaper than running `exec` and parsing failure.
 - **One call per assumption.** Batch via `hera-agent-unity batch --file plan.json` when you have an ordered multi-step plan.

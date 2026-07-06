@@ -218,6 +218,7 @@ AI가 가장 자주 쓰는 명령어입니다.
 | `manage_gameobject` | GameObject를 만들고, 복제하고, 옮기고, 이름을 바꿉니다. |
 | `manage_components` | 컴포넌트를 추가, 삭제, 조회, 수정합니다. |
 | `ui_doc` | Unity UI를 만들고 캡처합니다. |
+| `input` | Unity EventSystem raycast와 pointer handler로 uGUI 상호작용을 검증합니다. |
 | `game_feel` | 게임 필 레시피를 조회합니다 (screen shake, hit stop, honest juice 등). |
 | `test` | Unity 테스트를 실행합니다. |
 | `screenshot` | Scene/Game 뷰나 단일 GameObject를 캡처합니다. |
@@ -334,6 +335,8 @@ HeraAgent -> Hera Settings -> Game Feel UI Mode (Beta)
 | Bar | 즉시 줄어드는 fill, 늦게 따라오는 chip bar, 낮은 수치 pulse, segment tick. |
 
 자세한 명령 문서: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
+
+Input QA 참고: `input inspect`와 `input click`은 물리 OS 클릭이 아니라 Unity EventSystem 레벨 검증입니다. Computer Use가 Unity screenshot state를 얻지 못하면 물리 클릭 QA는 BLOCKED로 기록하고, `input` 결과는 별도의 Unity UI 입력 증거로 보고하세요.
 
 ---
 

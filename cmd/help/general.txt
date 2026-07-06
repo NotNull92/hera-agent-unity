@@ -101,6 +101,11 @@ UI Doc (HTML -> uGUI):
                                                   Reference Resolution is set to this size,
                                                   so HTML px values map 1:1 to uGUI units.
 
+Input QA:
+  input state                                      Report EventSystem/raycaster availability
+  input inspect --path /Canvas/StartButton        Raycast a target point and report blockers
+  input click --path /Canvas/StartButton          Drive pointer handlers through EventSystem
+
 Components:
   manage_components add --path /Player --type Rigidbody
   manage_components list --instance_id <N>

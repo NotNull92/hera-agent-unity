@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.57 / CLI 0.0.37 — Input QA EventSystem backend)
+
+- New `input` Hera tool for Unity UI input QA when external Computer Use cannot
+  acquire Unity screenshot state. The first implementation slice supports
+  `input state`, `input inspect`, and `input click` through Unity's uGUI
+  `EventSystem.RaycastAll` and `ExecuteEvents` pointer handlers.
+- `input inspect` reports the target point, raycast stack, blocker, handlers,
+  and interactability without mutating the scene. `input click` drives pointer
+  enter/down/up/click and fails in strict mode when another object blocks the
+  target or the expected click handler is not reached.
+- Expanded EventSystem actions now include standalone `pointer_down`,
+  `pointer_up`, `submit`, `scroll`, and stepped `drag`.
+- Docs now distinguish physical OS click QA from Unity EventSystem input QA:
+  physical click can remain `BLOCKED` while `input` provides separate
+  Unity-level evidence.
+
 ### Added (Connector 0.0.56 / CLI 0.0.37 — Game Feel Mode (Beta))
 
 - **Game Feel Mode (Beta)** — the gameplay-wide counterpart to Game Feel UI

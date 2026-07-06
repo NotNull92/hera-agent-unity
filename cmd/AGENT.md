@@ -155,6 +155,15 @@ the connector package version from `AgentConnector/package.json` (for example
 match, and do not use a git lock hash as the package version. A lock hash only
 identifies the connector source commit that Unity resolved.
 
+**[Rule 10]** Separate Unity EventSystem input QA from physical OS click QA.
+Use `input state` / `input inspect` / `input click` / `input submit` / `input
+scroll` / `input drag` to verify uGUI behavior when Computer Use cannot obtain a
+Unity screenshot state. These commands synthesize Unity EventSystem events; they
+do **not** prove that a physical OS/window click worked. If Computer Use still
+cannot capture Unity screenshot state and no native OS/window input backend is
+available, record the physical-click criterion as **BLOCKED** even when
+EventSystem input QA passes.
+
 ## 1.5 Ultra Hera
 
 Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.
@@ -233,6 +242,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Force recompile | `editor refresh --compile` | Waits until compile finishes or `--timeout` (60s default) elapses — raise `--timeout` for big projects, or use `refresh_unity --compile request` to fire-and-forget. |
 | Trigger a menu item | `menu "Window/General/Console"` | `File/Quit` is blocked for safety. |
 | Capture screenshot | `screenshot [--view game]` | Default scene view, 1920×1080. |
+| Drive Unity UI input for QA | `input state` / `input inspect --path ...` / `input click --path ...` | Sends uGUI EventSystem events inside Unity. This is not a physical OS click; use it when Computer Use coordinates are blocked but UI logic still needs Play Mode QA. |
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
 | Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
@@ -249,6 +259,8 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 hera-agent-unity exec "var x = SomeType.SomeMethod();" --check
 ```
 Useful when you're not sure a refactor compiles before issuing a destructive call.
+
+**Input QA (`input`)** — use this when Computer Use cannot capture Unity screenshot state but you still need to verify Unity UI behavior. Start with `input state`, inspect the target with `input inspect --path /Canvas/Button --details true`, then send `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, or `drag`. Report **Unity EventSystem input QA** separately from **physical OS click QA**; the latter remains BLOCKED if no Computer Use screenshot state or native OS/window input backend is available.
 
 ---
 

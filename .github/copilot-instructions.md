@@ -40,6 +40,7 @@ Use Ultra when the user asks for strict verification, for example "play it and c
 
 - Use `hera-agent-unity list --compact` for repeated discovery.
 - Use `hera-agent-unity list --tool <name>` only when one full schema is needed.
+- Use `hera-agent-unity input state` and `input inspect --path ...` before `input click`/`submit`/`scroll`/`drag` when Computer Use coordinates are unavailable but Unity UI logic still needs QA.
 - Use `find_gameobjects --ids` when the next command only needs object IDs.
 - Use `find_gameobjects --fields instance_id,name,path` only when duplicate names require hierarchy context.
 - Avoid broad reads like plain `list`, `find_gameobjects --fields all`, or `console --lines 0` unless the extra data is needed.
@@ -53,6 +54,7 @@ Use Ultra when the user asks for strict verification, for example "play it and c
 ## Exec Rules
 
 - Prefer dedicated commands (`scene info`, `console`, `editor play`, `test`, `describe_type`, `unity_docs`, `ui_doc`) before custom `exec`.
+- Treat `input` as Unity EventSystem QA, not a physical OS click. If Computer Use cannot capture Unity screenshot state, physical-click QA remains BLOCKED even if `input` passes.
 - In side-effecting `exec`, return `null` or omit the return.
 - Never return `UnityEngine.Object`, `GameObject`, `Transform`, `Component`, `Material`, or `Scene` directly.
 - Branch on response `code`, not human message text.
