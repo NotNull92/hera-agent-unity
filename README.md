@@ -16,7 +16,7 @@
 
 <br>
 
-[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
+[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [Input QA](#input-qa) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
 
 **English** · [한국어](README.ko.md)
 
@@ -38,6 +38,7 @@ Think of it like a remote control for the live Editor:
 | Enter Play Mode | press Play and wait |
 | Create or edit objects | use Unity APIs safely |
 | Build UI | create real Unity UI objects and capture the result |
+| Verify UI input | send Unity EventSystem events without relying on screen coordinates |
 
 The AI does not need to guess from stale training data. It can inspect the real Editor, act on it, and check the result.
 
@@ -74,19 +75,23 @@ No Python server. No generated MCP config. No special agent plugin. If an agent 
 
 ## Release Highlights
 
-This release focuses on three simple things: more Unity versions, fewer tokens, and safer agent verification.
+Latest release: **v0.0.38**. This release adds Hera-driven Unity UI input QA and keeps the existing low-token Unity version support.
 
 | Highlight | Simple meaning |
 |:---|:---|
-| **NEW: Unity 2022.3 LTS support** | Teams do not need to upgrade to Unity 6 first. |
-| **NEW: Unity 2023.2 support** | The connector and docs lookup work below Unity 6. |
+| **Input QA EventSystem backend** | Agents can inspect and drive uGUI through Unity's `EventSystem`, even when external Computer Use cannot safely click coordinates. |
+| **Separate physical-click evidence** | `input` proves Unity UI event behavior; it does not pretend to be an OS/window click. Physical-click QA can still be reported as blocked. |
+| **Click, submit, scroll, and drag** | `input` supports `state`, `inspect`, `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, and stepped `drag`. |
+| **Connector 0.0.57** | The Unity package includes the new input tool, tests, docs, and agent-rule guidance. |
+| **Unity 2022.3 LTS support** | Teams do not need to upgrade to Unity 6 first. |
+| **Unity 2023.2 support** | The connector and docs lookup work below Unity 6. |
 | **Unity 6000.3 / 6000.5 checked separately** | Unity 6 minor versions can differ, so they are tested separately. |
 | **93-token tool list** | `list --compact` is small enough to use often. |
 | **49-55-token object handoff** | `find_gameobjects --ids` returns only the IDs an agent needs for the next command. |
 | **Signature: Game Feel Mode (Beta)** | Hera can tell the agent how to make gameplay feel right — with the ethics built in. |
 | **Signature: Game Feel UI Mode (Beta)** | Hera can tell the agent how to make generated UI feel alive, not static. |
-| **NEW: Ultra Hera** | Agents can use light checks by default and upgrade to strict Unity verification when the task asks for it. |
-| **NEW: uGUI docs fixer** | `ui_doc apply` selects the official uGUI rule set for the open Unity Editor version and reports fixes/diagnostics. |
+| **Ultra Hera** | Agents can use light checks by default and upgrade to strict Unity verification when the task asks for it. |
+| **uGUI docs fixer** | `ui_doc apply` selects the official uGUI rule set for the open Unity Editor version and reports fixes/diagnostics. |
 
 Measured versions:
 
@@ -277,6 +282,32 @@ Hera also reports the active official uGUI docs bucket (`2022.3`, `2023.2`,
 
 ---
 
+## Input QA
+
+Some agent environments cannot capture a reliable Unity screenshot state, so they refuse physical coordinate clicks. Hera's `input` command gives agents a separate Unity-level QA path.
+
+```bash
+hera-agent-unity input state
+hera-agent-unity input inspect --path /Canvas/StartButton --details true
+hera-agent-unity input click --path /Canvas/StartButton --settle_frames 2
+hera-agent-unity input submit --path /Canvas/StartButton
+hera-agent-unity input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
+hera-agent-unity input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
+```
+
+`input` uses Unity's uGUI `EventSystem.RaycastAll` and `ExecuteEvents` pointer handlers. It can prove that the Unity UI event path works, including blockers, handlers, interactability, submit, scroll, and drag behavior.
+
+It is not a physical OS/window click. Report evidence separately:
+
+| QA criterion | How to report |
+|:---|:---|
+| Unity EventSystem input QA | PASS/FAIL from `input inspect`, `input click`, callbacks, console logs, and Play Mode tests. |
+| Physical OS click QA | BLOCKED if Computer Use still cannot capture Unity screenshot state or use a native window input backend. |
+
+Detailed command docs: [docs/COMMANDS.md](docs/COMMANDS.md#input)
+
+---
+
 ## Game Feel Mode (Beta)
 
 AI can make a game that works. Game Feel Mode (Beta) helps it make a game that *feels* right.
@@ -311,7 +342,7 @@ When this mode is on, Hera adds an `agent_hint` to UI creation results. The hint
 
 It is guidance, not runtime bloat. Hera does not attach heavy gameplay components for you. The agent receives the recipe, then applies the animation or feedback through normal Unity edits.
 
-The uGUI fixer is separate from the juice recipe: `ui_doc apply` always reports
+The uGUI fixer is separate from the game-feel recipe: `ui_doc apply` always reports
 manual-backed `fixes` / `diagnostics`, while Game Feel UI Mode (Beta) only adds optional
 game-feel guidance in `agent_hint`.
 
@@ -325,7 +356,7 @@ If DOTween is enabled in the same Hera Settings panel, the hint suggests DOTween
 
 Common recipes:
 
-| UI element | Juicy guidance |
+| UI element | Game-feel guidance |
 |:---|:---|
 | Button | Hover grow, press squash, release bounce, click sound, haptic. |
 | Popup / panel | Pop-in entrance, screen dim, fast quiet exit. |
@@ -334,8 +365,6 @@ Common recipes:
 | Bar | Instant fill drop, delayed chip bar, low-value pulse, segment ticks. |
 
 Detailed command docs: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
-
-Input QA note: `input inspect` and `input click` are Unity EventSystem-level checks, not physical OS clicks. If Computer Use cannot capture Unity screenshot state, report physical click QA as blocked and use `input` as separate Unity UI evidence.
 
 ---
 
@@ -426,8 +455,8 @@ The goal is simple: the agent should not close the task while Unity is still bro
 
 | Unity version | Status | Notes |
 |:---|:---|:---|
-| 2022.3 LTS | NEW · Supported | Verified on `2022.3.62f2`. |
-| 2023.2 | NEW · Supported | Verified on `2023.2.22f1`. |
+| 2022.3 LTS | Supported | Verified on `2022.3.62f2`. |
+| 2023.2 | Supported | Verified on `2023.2.22f1`. |
 | 6000.0 - 6000.4 | Supported | Unity 6. |
 | 6000.5+ | Supported | Uses Unity's newer object ID system when needed. |
 | Older than 2022.3 | Not supported | Minimum supported version is Unity 2022.3. |
