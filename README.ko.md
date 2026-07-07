@@ -193,6 +193,12 @@ https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
+최신을 따라가지 않고 특정 커넥터(UPM) 버전을 고정하려면 `connector-<버전>` git 태그를 뒤에 붙입니다:
+
+```json
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.58"
+```
+
 Unity가 열리면 커넥터가 자동으로 시작합니다.
 
 ---

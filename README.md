@@ -193,6 +193,12 @@ Or add this to `Packages/manifest.json`:
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
+To pin a specific connector (UPM) version instead of tracking the latest, append its `connector-<version>` git tag:
+
+```json
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.58"
+```
+
 The connector starts by itself when Unity opens.
 
 ---
