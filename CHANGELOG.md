@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.58 / CLI 0.0.39 — manage_assets create + reliability/efficiency pass)
+
+- **`manage_assets create`** — instantiate a ScriptableObject subclass as a new
+  `Assets/` `.asset`. The type is resolved by short or fully-qualified name via
+  `TypeCache` (with ambiguity / not-found errors), and `.asset` is appended if
+  omitted. Optional initial serialized fields via
+  `--params '{"properties":{...}}'` reuse the `manage_components` property-set
+  path; the response reports `applied` / `failed` per field. Removes the `exec`
+  boilerplate previously needed for data-driven ScriptableObject authoring.
+
+### Changed
+
+- **Heartbeat** computes its domain-invariant fields (PID, project path, Unity
+  version, docs bucket, compiler summary) once per domain load instead of
+  rebuilding them — and allocating an undisposed `Process` handle plus ~4
+  filesystem stats — on every 1.0s tick.
+- **`manage_packages list`** polls the UPM request by awaiting the next editor
+  update, keeping the continuation on the main thread (the `Request` and the
+  returned `PackageCollection` must be read there) instead of resuming on a
+  thread-pool thread via `Task.Delay`.
+- **`HttpServer`** only forces a full editor repaint to wake the command pump
+  when the editor is backgrounded; when focused it already pumps frequently, so
+  the per-command `RepaintAllViews` is skipped.
+- Data-less tool responses omit the `data` field instead of emitting
+  `"data":null`.
+- Input QA raycaster / EventSystem lookups use the non-deprecated
+  `FindObjectsByType` / `FindFirstObjectByType` (available on 2022.3+),
+  removing 2023.2+ deprecation warnings and a dead version branch.
+
+### Fixed
+
+- **`HttpServer`** serializes and writes each response inside a guarded block,
+  so a non-serializable result or a client that disconnects mid-write can no
+  longer skip `response.Close()` and leave the CLI blocked until its own
+  timeout — it emits a best-effort 500 and always closes the response.
+- The self-update GitHub calls (release check + binary download) use HTTP
+  clients with timeouts, so a stalled connection can no longer hang the release
+  check that runs after human commands.
+- `list --tool` no longer rebuilds a tool's metadata by reflection twice per
+  call, and the bundled `unity_docs` / `game_feel` stores skip re-resolving
+  their data path and re-stat'ing the file on every lookup once loaded.
+- Internal cleanups: `benchmark.yml` follows `go.mod`'s Go version and current
+  artifact-action majors; removed a dead env-var write and a stale build-tool
+  no-op; `internal/client` reload-retry uses its receiver instead of the
+  package-level delegators.
+
 ### Added (Connector 0.0.57 / CLI 0.0.38 — Input QA EventSystem backend)
 
 - New `input` Hera tool for Unity UI input QA when external Computer Use cannot

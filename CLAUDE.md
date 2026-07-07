@@ -37,8 +37,8 @@ cmd/                  # Go CLI — thin passthrough layer
   dispatch.go         # Standalone vs Unity-backed command routing
   editor.go           # editor command (waitForReady polling)
   test.go             # test command (PlayMode result polling via pollResultFile)
-  poll.go             # shared pollResultFile: file-bus result poller w/ exponential
-                      # backoff (100ms→1.5s) + state/PID liveness checks (test + packages)
+  internal/poll/      # (extracted from cmd/) shared pollResultFile file-bus poller
+                      # w/ exponential backoff (100ms→1.5s) + state/PID liveness (test + packages)
   status.go           # status + ping + waitForAlive/waitForState/waitForReady
                       # (heartbeat reads, same backoff)
   update.go           # self-update from GitHub releases (download + rename dance)
@@ -117,7 +117,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # UiDocFixer (official uGUI docs bucket selection +
                       # deterministic fixes/diagnostics for ui_doc apply)
     Tools/            # Tool implementations (auto-registered via [HeraTool]).
-                      # 26 [HeraTool] classes. Name= explicit unless noted
+                      # 29 [HeraTool] classes. Name= explicit unless noted
                       # (no Name= → filename snake_case). ExecCompileCache.cs is
                       # NOT a tool — internal helper for exec compile caching.
                       #   exec        ExecuteCsharp
@@ -137,7 +137,9 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       #   DescribeShader / manage_material ManageMaterial /
                       #   manage_prefab ManagePrefab / manage_asset_import ManageAssetImport.
                       # AssetDatabase utility v0.0.46: manage_assets ManageAssets
-                      #   (find/mkdir/copy/move/delete, Assets/ containment).
+                      #   (find/mkdir/create/copy/move/delete, Assets/ containment;
+                      #   create = ScriptableObject .asset authoring via TypeCache
+                      #   + optional SerializedPropertyValue field set).
                       # uGUI queue v0.0.15 (shipped): manage_ui ManageUI
                       #   (RectTransform anchor/pivot/preset + UI-aware create;
                       #   UI/TMP types via TypeCache → no com.unity.ugui compile dep).
@@ -260,6 +262,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | `status`/`doctor` 버전 bucket reporting | ✅ 완료 (2026-07-03) | `Heartbeat` 가 `docsVersion` 과 `compiler` 요약을 instance JSON 에 기록하고, CLI `status`/`doctor --json` 이 이를 노출한다. `compiler` 는 full local path 와 함께 `unity_dotnet_sdk_roslyn`/`unity_dotnet_sdk`/`unity_netcore_runtime`/`unity_mono`/`external`/`missing` kind 를 제공한다. 공유 문서에는 로컬 절대경로 대신 kind 와 `%UNITY_HUB_EDITOR%` 토큰만 기록 |
 | `ui_doc` uGUI 버전별 diagnostics profile | ✅ 완료 (2026-07-03) | `UiDocFixer.ProfileForDocsVersion` 이 docs bucket 별 uGUI manual package 를 고정한다: `2022.3 -> com.unity.ugui@1.0`, `2023.2`/`6000.0`/`6000.3 -> com.unity.ugui@2.0`, `6000.5 -> com.unity.ugui@2.5`. 테스트: `HeraAgent/Tests/UiDocFixer`; runtime `ui_doc apply` on `6000.0.35f1` 에서 `docs_version=6000.0`, `ugui_package=com.unity.ugui@2.0` 확인 |
 | `EntityIdCompat` 6000.5 rename gate | ✅ 완료 (2026-07-03) | `Object.GetInstanceID()` / `EditorUtility.InstanceIDToObject(int)` 직접 사용은 `EntityIdCompat` 내부로 격리한다. 외부 도구는 int `instance_id` 계약을 유지하면서 `EntityIdCompat.IdOf/ToObject` 만 사용. `manage_gameobject duplicate` 의 source/clone 비교도 shim 으로 교체. 테스트: `HeraAgent/Tests/EntityIdCompat`; runtime duplicate probe on `6000.0.35f1` 통과 |
+| reliability/efficiency pass + `manage_assets create` (Connector 0.0.58 / CLI 0.0.39) | ✅ 완료 (2026-07-07) | 3-갈래 분석 후 최적화 배치, 전부 live 에디터(6000.3.5f2) 스모크 검증. **C#**: Heartbeat 불변 필드(pid/projectPath/unityVersion/docsVersion/compiler) 도메인당 1회 계산 — 매 1.0s 틱마다 `Process` 할당 + ~4 File.Exists stat 제거(v0.0.13 은 *interval* 만 완화, 필드 캐싱은 별개) · `manage_packages list` 폴링을 `Task.Delay`→`NextEditorUpdate`(continuation 을 메인스레드에 유지 — UPM `Request`/`PackageCollection` 은 메인스레드 read 필요; 헬퍼는 InputQaEventSystem 이어 2번째 소비자라 **local 유지**, 3번째에 Core 추출) · `HttpServer` 응답 직렬화+쓰기를 try/catch/finally 로 감싸 `response.Close()` 보장(비직렬화 그래프/클라 조기 종료 시 CLI 무한대기 방지, best-effort 500) · `ForceEditorUpdate` 는 `!InternalEditorUtility.isApplicationActive` 일 때만 RepaintAllViews(포커스 시 per-command churn 제거, 백그라운드=CLI 상용 경로는 그대로) · `Response.data` 에 `NullValueHandling.Ignore` · InputQaResolver deprecated `FindObjectsOfType`/`FindObjectOfType` → `FindObjectsByType(FindObjectsSortMode.None)`/`FindFirstObjectByType`(2022.3+ 지원, CS0618 경고 + 동일-내용 dead `#elif` 제거) · `ToolMetadataRegistry` 캐시 히트 추가(`GetToolSchema` 가 도구당 리플렉션 2회→1회) · UnityDocsStore/GameFeelStore `EnsureLoaded` early-out(조회당 `PackageInfo.FindForAssembly`+FileInfo stat 제거 — 번들은 도메인 수명 불변). **Go(CLI)**: `update.go` GitHub 호출(release-check + download)에 타임아웃 클라이언트(release-check 가 human 명령 후 동기 실행돼 stall 시 무한대기 위험 차단) · 죽은 `UNITY_AGENT_ENABLED_ASSETS` env write 제거 · `reload_retry` 가 package-level delegator 대신 리시버 호출 · `internal/poll` min/max 빌트인 · `build-unity-docs` `filepath.WalkDir` + dead `io.Discard` 제거 · `benchmark.yml` 을 `go-version-file: go.mod` + `upload-artifact@v7` 로 정렬. **신규 기능**: `manage_assets create`(ScriptableObject `.asset` 저작, TypeCache 타입 해석 + `SerializedPropertyValue.Apply` 재사용한 optional 필드 set). 전부 다시 제기 금지 |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 

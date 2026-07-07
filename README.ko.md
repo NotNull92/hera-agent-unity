@@ -75,16 +75,16 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 
 ## 릴리스 하이라이트
 
-최신 릴리스는 **v0.0.38**입니다(2026년 7월 6일 공개). 이번 릴리스의 초점은 Unity 자체 EventSystem을 통한 Hera 기반 Unity UI 입력 QA입니다. 대응되는 Unity 패키지 버전은 **Connector 0.0.57**입니다.
+최신 릴리스는 **v0.0.39**입니다(2026년 7월 7일 공개). 이번 릴리스는 ScriptableObject 에셋 저작과 커넥터 전반의 신뢰성·효율성 개선에 초점을 둡니다. 대응되는 Unity 패키지 버전은 **Connector 0.0.58**입니다.
 
-| v0.0.38 변경 사항 | 쉬운 뜻 |
+| v0.0.39 변경 사항 | 쉬운 뜻 |
 |:---|:---|
-| **Input QA EventSystem backend** | 외부 Computer Use가 좌표 클릭을 안전하게 못 해도, AI가 Unity `EventSystem`으로 uGUI를 검사하고 입력할 수 있습니다. |
-| **동작 전 대상 검사** | `input inspect`가 씬을 바꾸지 않고 target point, raycast stack, blocker, handler, interactability를 보고합니다. |
-| **Click, submit, scroll, drag** | `input`은 `state`, `inspect`, `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, 단계별 `drag`를 지원합니다. |
-| **엄격한 blocker/handler 검사** | `input click`은 다른 오브젝트가 대상을 가리거나 기대한 click handler에 도달하지 못하면 실패로 보고할 수 있습니다. |
-| **물리 클릭 증거 분리** | `input`은 Unity UI 이벤트 동작을 증명합니다. OS/window 물리 클릭이라고 포장하지 않습니다. 물리 클릭 QA는 여전히 BLOCKED로 남을 수 있습니다. |
-| **AI 규칙 안내 갱신** | 생성되는 agent rules가 Unity EventSystem input QA와 physical OS click QA를 분리해서 보고하도록 안내합니다. |
+| **ScriptableObject 저작** | `manage_assets create`로 `exec` 없이 타입이 지정된 `.asset`을 만들고 초기 필드까지 설정할 수 있습니다. |
+| **안정된 하트비트** | 에디터 상태 하트비트가 매초 상수 필드를 다시 만들고 프로세스 핸들을 할당하던 동작을 없애 유휴 부하를 줄였습니다. |
+| **안전한 패키지 목록** | `manage_packages list`가 Unity 패키지 매니저를 메인 스레드에서 폴링합니다. |
+| **응답 멈춤 방지** | 커넥터가 응답을 항상 닫아서, 드문 직렬화 실패가 CLI를 타임아웃까지 붙잡는 일이 없습니다. |
+| **포커스 시 조용하게** | 명령 펌프를 깨우는 강제 리페인트를 에디터가 백그라운드일 때만 하고, 매 명령마다 하지 않습니다. |
+| **셀프 업데이트 멈춤 방지** | 업데이트 확인과 다운로드가 멈춘 연결에서 무한 대기하지 않고 타임아웃됩니다. |
 
 현재 검증 기준:
 
@@ -212,7 +212,7 @@ AI가 가장 자주 쓰는 명령어입니다.
 | `editor stop` | Play Mode를 멈춥니다. |
 | `scene info` | 현재 씬 정보를 봅니다. |
 | `find_gameobjects` | 열린 씬에서 오브젝트를 찾습니다. |
-| `manage_assets` | `Assets/` 아래 프로젝트 에셋을 찾고, 만들고, 복사하고, 옮기고, 삭제합니다. |
+| `manage_assets` | `Assets/` 아래 프로젝트 에셋을 찾고, 폴더를 만들고, ScriptableObject `.asset`을 생성하고, 복사·이동·삭제합니다. |
 | `manage_gameobject` | GameObject를 만들고, 복제하고, 옮기고, 이름을 바꿉니다. |
 | `manage_components` | 컴포넌트를 추가, 삭제, 조회, 수정합니다. |
 | `ui_doc` | Unity UI를 만들고 캡처합니다. |
@@ -491,9 +491,9 @@ Unity 패키지가 작은 로컬 HTTP 서버를 엽니다. CLI가 그 서버에 
 
 아니요.
 
-### Unity Editor가 여러 개 켜져 있으면요?
+### 어떤 Unity Editor에 연결되나요?
 
-`--project`나 `--port`로 고를 수 있습니다.
+한 머신에 Unity 에디터 하나를 전제로 설계되어 있습니다. 이전 세션에서 남은 하트비트 등으로 인스턴스가 둘 이상 탐지되면 `--project`나 `--port`로 하나를 고르세요.
 
 ```bash
 hera-agent-unity --project MyGame status

@@ -271,7 +271,7 @@ hera-agent-unity manage_packages embed com.unity.test-framework
 
 ## manage_assets
 
-Compact `AssetDatabase` operations for common file and folder work. Paths are constrained to `Assets/`.
+Compact `AssetDatabase` operations for common file, folder, and asset-authoring work. Paths are constrained to `Assets/`.
 
 ```bash
 hera-agent-unity manage_assets <action> [flags]
@@ -281,6 +281,7 @@ hera-agent-unity manage_assets <action> [flags]
 |:---|:---|:---|
 | `find` | `--filter`, `--type`, or both | Search assets and return compact `{path,guid,name,type}` entries. |
 | `mkdir` | `--path Assets/...` | Create an `Assets/` folder recursively. Existing folders succeed with `created:false`. |
+| `create` | `--type`, `--path Assets/....asset` | Instantiate a ScriptableObject subclass as a new `.asset` (`.asset` is appended if omitted). Optional initial serialized fields via `--params '{"properties":{...}}'`. |
 | `copy` | `--path`, `--new_path` | Copy one asset file. |
 | `move` | `--path`, `--new_path` | Move or rename one asset file. |
 | `delete` | `--path` | Delete one asset file or folder. Refuses to delete `Assets`. |
@@ -288,13 +289,16 @@ hera-agent-unity manage_assets <action> [flags]
 | Flag | Description | Default |
 |:---|:---|:---|
 | `--filter` | AssetDatabase search text for `find` | |
-| `--type` | Asset type filter, e.g. `Texture2D`, `Material`, `Prefab` | |
+| `--type` | `find`: asset type filter (`Texture2D`, `Material`, `Prefab`). `create`: the ScriptableObject subclass to instantiate — short name (`GameConfig`) or fully-qualified (`My.Namespace.GameConfig`). | |
 | `--limit` | Maximum `find` results | `50` (max `500`) |
 | `--include_folders` | Include folders in `find` output | `false` |
+| `--params '{"properties":{...}}'` | `create` only: raw SerializedProperty name → value map applied to the new asset. The response reports `applied` / `failed` per field. | |
 
 ```bash
 hera-agent-unity manage_assets find --type Texture2D --filter icon --limit 20
 hera-agent-unity manage_assets mkdir --path Assets/Generated/UI
+hera-agent-unity manage_assets create --type GameConfig --path Assets/Config/Game.asset
+hera-agent-unity manage_assets create --type EnemyStats --path Assets/Data/Goblin.asset --params '{"properties":{"m_MaxHealth":30}}'
 hera-agent-unity manage_assets copy --path Assets/A.prefab --new_path Assets/B.prefab
 hera-agent-unity manage_assets move --path Assets/Old.asset --new_path Assets/New.asset
 hera-agent-unity manage_assets delete --path Assets/Generated/Temp.asset

@@ -75,16 +75,16 @@ No Python server. No generated MCP config. No special agent plugin. If an agent 
 
 ## Release Highlights
 
-Latest release: **v0.0.38** (published July 6, 2026). This release is focused on Hera-driven Unity UI input QA through Unity's own EventSystem. The matching Unity package version is **Connector 0.0.57**.
+Latest release: **v0.0.39** (published July 7, 2026). This release adds ScriptableObject asset authoring and a connector-wide reliability and efficiency pass. The matching Unity package version is **Connector 0.0.58**.
 
-| v0.0.38 change | Simple meaning |
+| v0.0.39 change | Simple meaning |
 |:---|:---|
-| **Input QA EventSystem backend** | Agents can inspect and drive uGUI through Unity's `EventSystem`, even when external Computer Use cannot safely click coordinates. |
-| **Target inspection before action** | `input inspect` reports the target point, raycast stack, blockers, handlers, and interactability without mutating the scene. |
-| **Click, submit, scroll, and drag** | `input` supports `state`, `inspect`, `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, and stepped `drag`. |
-| **Strict blocker and handler checks** | `input click` can fail when another object blocks the target or the expected click handler is not reached. |
-| **Separate physical-click evidence** | `input` proves Unity UI event behavior; it does not pretend to be an OS/window click. Physical-click QA can still be reported as blocked. |
-| **Updated agent guidance** | Generated agent rules now tell agents to separate Unity EventSystem input QA from physical OS click QA. |
+| **ScriptableObject authoring** | `manage_assets create` makes a typed `.asset` — and can set its initial fields — without dropping to `exec`. |
+| **Steadier heartbeat** | The editor status heartbeat no longer rebuilds constant fields (and allocates a process handle) every second, cutting idle overhead. |
+| **Safer package listing** | `manage_packages list` polls Unity's package manager on the main thread. |
+| **No more stuck responses** | The connector always closes a response, so a rare serialization failure can no longer hang the CLI until its own timeout. |
+| **Quieter when focused** | The editor is force-repainted to wake the command pump only when it is in the background, not on every command. |
+| **Self-update won't hang** | The update check and download now time out instead of blocking on a stalled connection. |
 
 Current verified baseline:
 
@@ -212,7 +212,7 @@ Here are the commands most agents use first.
 | `editor stop` | Stops Play Mode. |
 | `scene info` | Shows the active scene. |
 | `find_gameobjects` | Finds objects in the loaded scenes. |
-| `manage_assets` | Finds, creates, copies, moves, or deletes project assets under `Assets/`. |
+| `manage_assets` | Finds, makes folders, authors ScriptableObject `.asset` files, copies, moves, or deletes project assets under `Assets/`. |
 | `manage_gameobject` | Creates, duplicates, moves, renames, parents, or deletes GameObjects. |
 | `manage_components` | Adds, removes, reads, or edits components. |
 | `ui_doc` | Builds and captures Unity UI. |
@@ -531,9 +531,9 @@ No. It is a normal CLI. That is why it works with Codex, Claude Code, Cursor, an
 
 No.
 
-### Does it work when several Unity Editors are open?
+### Which Unity Editor does it talk to?
 
-Yes. Use `--project` or `--port` when you need to choose one.
+It is built around a single Unity editor per machine. If more than one instance is discovered — for example a leftover heartbeat from a previous session — use `--project` or `--port` to pick one.
 
 ```bash
 hera-agent-unity --project MyGame status

@@ -265,7 +265,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system] [--include_version]` | Returns bare name strings by default; `--filter` to scope, `--include_version` for `{name, version}` objects. |
 | Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
 | Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
-| Find / create / move project assets | `manage_assets find --type Texture2D --filter icon` / `manage_assets mkdir --path Assets/Generated` | Compact `AssetDatabase` operations constrained to `Assets/`; use before falling back to `exec` for basic asset file work. |
+| Find / create / move project assets | `manage_assets find --type Texture2D --filter icon` / `manage_assets create --type GameConfig --path Assets/Config/Game.asset` | Compact `AssetDatabase` operations constrained to `Assets/`; `create` authors a ScriptableObject `.asset` (optional `--params '{"properties":{...}}'`). Use before falling back to `exec` for basic asset work. |
 | Ground an HTML→UI design on the real UI | `ui_doc export --path </path>` | Returns the compact `ui_doc/2` IR (defaults omitted). Read it before authoring. |
 | Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...] [--mode upsert]` | `create` (default) or `upsert` (update existing children in place). Pass the doc via `--file` so it never rides inline in context. |
 | Bake a procedural sprite | `ui_doc gen_sprite --spec '{...}' --out Assets/...` | Tier-1: `solid` / `rounded_rect` / `gradient` / `nine_slice` (border for 9-slice). No external dependency. |
@@ -516,7 +516,7 @@ bash equivalent: same idea, replace `@'...'@` with `<<'EOF'` heredoc or single-q
 | `list` | List registered tools (names → name+desc → schema) | `--names` / `--compact` (names only), `--tool <name>` (full schema) |
 | `batch` | Run multiple commands in one HTTP request | `--file path.json`, or pipe JSON; `options.fail_fast` |
 | `list_assemblies` | List loaded assembly names | `--filter`, `--include_system`, `--include_version` |
-| `manage_assets` | AssetDatabase file/folder operations | `find`, `mkdir`, `copy`, `move`, `delete` |
+| `manage_assets` | AssetDatabase file/folder operations + ScriptableObject authoring | `find`, `mkdir`, `create`, `copy`, `move`, `delete` |
 | `describe_type <name>` | Type info + Unity-pitfalls | `--members fields\|properties\|methods\|all`, `--limit N` |
 | `find_method <pat>` | Search methods across assemblies | `--namespace`, `--limit` (default 50) |
 | `asset-config set-csc <path>` / `set-dotnet <path>` | Persist a default csc / dotnet path | (no flags) |
