@@ -241,7 +241,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Enter / exit play mode | `editor play [--wait]` / `editor stop` | `--wait` blocks until fully entered. |
 | Force recompile | `editor refresh --compile` | Waits until compile finishes or `--timeout` (60s default) elapses — raise `--timeout` for big projects, or use `refresh_unity --compile request` to fire-and-forget. |
 | Trigger a menu item | `menu "Window/General/Console"` | `File/Quit` is blocked for safety. |
-| Capture screenshot | `screenshot [--view game]` | Default scene view, 1920×1080. |
+| Capture screenshot | `screenshot [--view game]` / `screenshot --isolated --target /Player` | Default scene view, 1920×1080; isolated mode renders one GameObject. |
 | Drive Unity UI input for QA | `input state` / `input inspect --path ...` / `input click --path ...` | Sends uGUI EventSystem events inside Unity. This is not a physical OS click; use it when Computer Use coordinates are blocked but UI logic still needs Play Mode QA. |
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
@@ -489,7 +489,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `scene info` / `load` / `save` / `close` / `list` | Scene management | `--mode single\|additive\|additive_without_loading` (load) |
 | `editor play \| stop \| pause \| refresh` | Editor lifecycle | `--wait` (play), `--compile`, `--force` (refresh) |
 | `menu "<path>"` | Execute menu item | (none) |
-| `screenshot` | Capture view | `--view scene\|game`, `--width`, `--height`, `--output_path` |
+| `screenshot` | Capture view or isolated target | `--view scene\|game`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
 | `test` | Run tests | `--mode EditMode\|PlayMode`, `--filter <ns.class>` |
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
 | `reserialize [paths...]` | Force YAML reserialize | (no args = whole project) |
