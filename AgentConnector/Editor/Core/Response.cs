@@ -7,6 +7,8 @@ namespace HeraAgent
     {
         public bool success = true;
         public string message;
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public object data;
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
@@ -32,7 +34,9 @@ namespace HeraAgent
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<string> suggestions;
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public object data;
+
         public Dictionary<string, long> timings;
 
         public ErrorResponse(string message, object data = null)

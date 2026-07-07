@@ -166,7 +166,16 @@ namespace HeraAgent
 
         static void ForceEditorUpdate()
         {
-            try { UnityEditorInternal.InternalEditorUtility.RepaintAllViews(); }
+            // Wake the queue pump with a repaint only when the editor is in the
+            // background — Unity throttles EditorApplication.update hard when
+            // unfocused, so a queued command could otherwise wait seconds. When
+            // the editor is the active app it already pumps frequently, so a full
+            // RepaintAllViews on every command is wasted churn.
+            try
+            {
+                if (UnityEditorInternal.InternalEditorUtility.isApplicationActive) return;
+                UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+            }
             catch { }
         }
 
@@ -286,11 +295,43 @@ namespace HeraAgent
                 DebugLogging.LogError("unknown", ex);
             }
 
-            var responseJson = JsonConvert.SerializeObject(result);
-            var buffer = Encoding.UTF8.GetBytes(responseJson);
-            response.ContentLength64 = buffer.Length;
-            await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
-            response.Close();
+            try
+            {
+                var responseJson = JsonConvert.SerializeObject(result);
+                var buffer = Encoding.UTF8.GetBytes(responseJson);
+                response.ContentLength64 = buffer.Length;
+                await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+            }
+            catch (Exception ex)
+            {
+                // A non-serializable result graph, or a client that disconnected
+                // mid-write, would otherwise fault this task and skip Close(),
+                // leaving the CLI blocked until its own timeout instead of getting
+                // an error. Best-effort emit a 500, then always close the response.
+                DebugLogging.LogError("response-write", ex);
+                TryWriteError(response);
+            }
+            finally
+            {
+                try { response.Close(); } catch { }
+            }
+        }
+
+        // Best-effort 500 when the normal response could not be serialized or
+        // sent. Silently gives up if headers were already flushed or the client
+        // is gone — the finally-block Close() is what actually unblocks the CLI.
+        static void TryWriteError(HttpListenerResponse response)
+        {
+            try
+            {
+                if (!response.OutputStream.CanWrite) return;
+                response.StatusCode = 500;
+                var buf = Encoding.UTF8.GetBytes(
+                    "{\"success\":false,\"code\":\"RESPONSE_WRITE_FAILED\",\"message\":\"[Hera] I built a response I couldn't serialize or send.\"}");
+                response.ContentLength64 = buf.Length;
+                response.OutputStream.Write(buf, 0, buf.Length);
+            }
+            catch { }
         }
 
         static async Task<object> HandleSingleCommand(HttpListenerRequest request)

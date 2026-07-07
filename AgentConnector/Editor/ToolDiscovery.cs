@@ -232,6 +232,7 @@ namespace HeraAgent
             {
                 if (name != toolName) continue;
                 var paramsType = type.GetNestedType("Parameters");
+                var toolMeta = GetToolMetadata(type);
                 return new
                 {
                     name,
@@ -239,9 +240,9 @@ namespace HeraAgent
                     group = attr.Group ?? "",
                     groups = attr.Groups ?? new string[0],
                     examples = BuildExamples(attr),
-                    schema = GetToolMetadata(type)?.ParametersSchema
+                    schema = toolMeta?.ParametersSchema
                         ?? GetLegacyParameterSchema(paramsType),
-                    output_schema = GetToolMetadata(type)?.OutputSchema
+                    output_schema = toolMeta?.OutputSchema
                         ?? GetDefaultOutputSchema(),
                     metadata = new
                     {
@@ -350,6 +351,8 @@ namespace HeraAgent
             {
                 var attr = toolType.GetCustomAttribute<HeraToolAttribute>();
                 var toolName = attr?.Name ?? StringCaseUtility.ToSnakeCase(toolType.Name);
+                var cached = ToolMetadataRegistry.GetTool(toolName);
+                if (cached != null) return cached;
                 ToolMetadataRegistry.Register(toolType);
                 return ToolMetadataRegistry.GetTool(toolName);
             }

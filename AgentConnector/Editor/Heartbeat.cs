@@ -23,6 +23,18 @@ namespace HeraAgent
         static bool s_SawCompileStart;
         static string s_FilePath;
 
+        // Domain-lifetime invariants. These never change between reloads, so we
+        // compute them once instead of rebuilding them on every 1.0s tick (a
+        // Process allocation + ~4 File.Exists stats + a version re-parse that
+        // otherwise run forever, even when the editor is idle). Statics reset on
+        // domain reload, which is exactly when these could change anyway.
+        static bool s_InvariantsReady;
+        static int s_Pid;
+        static string s_ProjectPath;
+        static string s_UnityVersion;
+        static string s_DocsVersion;
+        static CompilerSummary s_Compiler;
+
         static Heartbeat()
         {
             EditorApplication.update += Tick;
@@ -104,17 +116,30 @@ namespace HeraAgent
             return s_FilePath;
         }
 
+        static void EnsureInvariants()
+        {
+            if (s_InvariantsReady) return;
+            using (var proc = System.Diagnostics.Process.GetCurrentProcess())
+                s_Pid = proc.Id;
+            s_ProjectPath = Application.dataPath.Replace("/Assets", "");
+            s_UnityVersion = Application.unityVersion;
+            s_DocsVersion = UnityVersionCompat.CurrentDocsVersion();
+            s_Compiler = GetCompilerSummary();
+            s_InvariantsReady = true;
+        }
+
         static void Write()
         {
+            EnsureInvariants();
             var status = new
             {
                 state = s_ForcedState ?? GetState(),
-                projectPath = Application.dataPath.Replace("/Assets", ""),
+                projectPath = s_ProjectPath,
                 port = HttpServer.Port,
-                pid = System.Diagnostics.Process.GetCurrentProcess().Id,
-                unityVersion = Application.unityVersion,
-                docsVersion = UnityVersionCompat.CurrentDocsVersion(),
-                compiler = GetCompilerSummary(),
+                pid = s_Pid,
+                unityVersion = s_UnityVersion,
+                docsVersion = s_DocsVersion,
+                compiler = s_Compiler,
                 timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 compileErrors = EditorUtility.scriptCompilationFailed,
             };

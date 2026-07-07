@@ -141,6 +141,10 @@ namespace HeraAgent
 
         static void EnsureLoaded()
         {
+            // Already resolved (loaded or terminally failed). The bundled file is
+            // immutable UPM content, so skip the per-call path resolution +
+            // FileInfo stat once we have an answer.
+            if (s_index != null || s_loadError != null) return;
             var path = ResolveDataPath();
             if (path == null)
             {

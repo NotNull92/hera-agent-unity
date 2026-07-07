@@ -9,18 +9,20 @@ namespace HeraAgent.Tools
 {
     [HeraActionSafety("find", ReadOnly = true, Idempotent = true)]
     [HeraActionSafety("mkdir", Idempotent = true, MayReloadDomain = true)]
+    [HeraActionSafety("create", MayReloadDomain = true)]
     [HeraActionSafety("copy", MayReloadDomain = true)]
     [HeraActionSafety("move", Destructive = true, MayReloadDomain = true)]
     [HeraActionSafety("delete", Destructive = true, MayReloadDomain = true)]
     [HeraTool(
         Name = "manage_assets",
-        Description = "Compact AssetDatabase operations: find, mkdir, copy, move, delete. Paths are constrained to Assets/.",
+        Description = "Compact AssetDatabase operations: find, mkdir, create, copy, move, delete. create instantiates a ScriptableObject subclass as an Assets/ .asset (optional initial field values via --params '{\"properties\":{...}}'). Paths are constrained to Assets/.",
         Destructive = true,
         MayReloadDomain = true,
         Examples = new[]
         {
             "manage_assets find --type Texture2D --filter icon --limit 20",
             "manage_assets mkdir --path Assets/Generated/UI",
+            "manage_assets create --type GameConfig --path Assets/Config/Game.asset",
             "manage_assets copy --path Assets/A.prefab --new_path Assets/B.prefab",
             "manage_assets move --path Assets/Old.asset --new_path Assets/New.asset",
             "manage_assets delete --path Assets/Generated/Temp.asset",
@@ -29,6 +31,7 @@ namespace HeraAgent.Tools
         {
             "Find project assets with a compact path/type/guid payload",
             "Create an Assets/ folder recursively; existing folders are accepted",
+            "Create a ScriptableObject asset of the named subclass (add --params '{\"properties\":{\"m_Field\":1}}' to set fields)",
             "Copy one asset file to another Assets/ path",
             "Move or rename one asset file",
             "Delete one asset file or folder under Assets/",
@@ -37,10 +40,10 @@ namespace HeraAgent.Tools
     {
         public class Parameters
         {
-            [ToolParameter("Action: find, mkdir, copy, move, delete.", Required = true)]
+            [ToolParameter("Action: find, mkdir, create, copy, move, delete.", Required = true)]
             public string Action { get; set; }
 
-            [ToolParameter("Source path for mkdir/copy/move/delete, under Assets/.", Required = false)]
+            [ToolParameter("Path for mkdir/create/copy/move/delete, under Assets/. For create, the .asset destination ('.asset' is appended if omitted).", Required = false)]
             public string Path { get; set; }
 
             [ToolParameter("Destination path for copy/move, under Assets/.", Required = false)]
@@ -49,8 +52,11 @@ namespace HeraAgent.Tools
             [ToolParameter("AssetDatabase.FindAssets filter text.", Required = false)]
             public string Filter { get; set; }
 
-            [ToolParameter("Asset type filter, e.g. Texture2D, Material, Prefab.", Required = false)]
+            [ToolParameter("For find: asset type filter (Texture2D, Material, Prefab). For create: the ScriptableObject subclass to instantiate — short name 'GameConfig' or fully-qualified 'My.Namespace.GameConfig'.", Required = false)]
             public string Type { get; set; }
+
+            [ToolParameter("For create only: JSON map of raw SerializedProperty name → value to set on the new asset, e.g. {\"m_Speed\":5}. Pass via --params.", Required = false)]
+            public object Properties { get; set; }
 
             [ToolParameter("Maximum find results (default 50, max 500).", Required = false)]
             public int Limit { get; set; }
@@ -64,17 +70,18 @@ namespace HeraAgent.Tools
             var p = new ToolParams(@params ?? new JObject());
             var action = (p.GetRaw("args") as JArray)?[0]?.ToString() ?? p.Get("action");
             if (string.IsNullOrWhiteSpace(action))
-                return new ErrorResponse("MISSING_PARAM", "'action' required: find, mkdir, copy, move, or delete.");
+                return new ErrorResponse("MISSING_PARAM", "'action' required: find, mkdir, create, copy, move, or delete.");
 
             switch (action.ToLowerInvariant())
             {
                 case "find": return Find(p);
                 case "mkdir": return Mkdir(p.Get("path"));
+                case "create": return Create(p);
                 case "copy": return Copy(p.Get("path"), p.Get("new_path"));
                 case "move": return Move(p.Get("path"), p.Get("new_path"));
                 case "delete": return Delete(p.Get("path"));
                 default:
-                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: find, mkdir, copy, move, delete.");
+                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: find, mkdir, create, copy, move, delete.");
             }
         }
 
@@ -147,6 +154,89 @@ namespace HeraAgent.Tools
 
             AssetDatabase.Refresh();
             return new SuccessResponse("Folder created", new { path, created = true });
+        }
+
+        private static object Create(ToolParams p)
+        {
+            var (type, typeErr) = ResolveScriptableObjectType(p.Get("type"));
+            if (typeErr != null) return typeErr;
+
+            if (!AssetPathGuard.TryNormalizeAssetFile(p.Get("path"), out var path, out var pathErr))
+                return new ErrorResponse("INVALID_PATH", pathErr);
+            if (!path.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+                path += ".asset";
+            if (AssetDatabase.LoadMainAssetAtPath(path) != null)
+                return new ErrorResponse("ASSET_EXISTS", $"An asset already exists at '{path}'.");
+            if (!ParentExists(path, out var parent))
+                return new ErrorResponse("PARENT_FOLDER_MISSING", $"Parent folder '{parent}' does not exist. Create it with mkdir first.");
+
+            var instance = ScriptableObject.CreateInstance(type);
+            if (instance == null)
+                return new ErrorResponse("ASSET_CREATE_FAILED", $"Unity could not instantiate '{type.FullName}'.");
+
+            // Optional initial field values, reusing the manage_components
+            // property-set path so create + populate is one call.
+            List<string> applied = null;
+            List<object> failed = null;
+            if (p.GetRaw("properties") is JObject props && props.Count > 0)
+            {
+                applied = new List<string>();
+                failed = new List<object>();
+                using var so = new SerializedObject(instance);
+                foreach (var kv in props)
+                {
+                    var prop = so.FindProperty(kv.Key);
+                    if (prop == null)
+                    {
+                        failed.Add(new { property = kv.Key, error = "no serialized property" });
+                        continue;
+                    }
+                    var (ok, applyErr) = SerializedPropertyValue.Apply(prop, kv.Value);
+                    if (ok) applied.Add(kv.Key);
+                    else failed.Add(new { property = kv.Key, error = applyErr });
+                }
+                so.ApplyModifiedProperties();
+            }
+
+            AssetDatabase.CreateAsset(instance, path);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+
+            var guid = AssetDatabase.AssetPathToGUID(path);
+            object data = applied == null
+                ? new { path, type = type.FullName, guid }
+                : new { path, type = type.FullName, guid, applied, failed };
+            return new SuccessResponse("Asset created", data);
+        }
+
+        private static (Type type, ErrorResponse err) ResolveScriptableObjectType(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return (null, new ErrorResponse("MISSING_PARAM", "'type' required for create (a ScriptableObject subclass name)."));
+
+            Type fullMatch = null;
+            var shortMatches = new List<Type>();
+            foreach (var t in TypeCache.GetTypesDerivedFrom<ScriptableObject>())
+            {
+                if (t.IsAbstract || t.IsGenericTypeDefinition)
+                    continue;
+                if (t.FullName == name)
+                {
+                    fullMatch = t;
+                    break;
+                }
+                if (t.Name == name)
+                    shortMatches.Add(t);
+            }
+
+            if (fullMatch != null) return (fullMatch, null);
+            if (shortMatches.Count == 1) return (shortMatches[0], null);
+            if (shortMatches.Count > 1)
+                return (null, new ErrorResponse("AMBIGUOUS_TYPE",
+                    $"'{name}' matches {shortMatches.Count} ScriptableObject types — use the fully-qualified name.",
+                    data: shortMatches.ConvertAll(t => t.FullName)));
+            return (null, new ErrorResponse("TYPE_NOT_FOUND",
+                $"No non-abstract ScriptableObject subclass named '{name}'. Provide its class name or fully-qualified name."));
         }
 
         private static object Copy(string rawPath, string rawNewPath)

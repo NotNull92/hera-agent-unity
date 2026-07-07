@@ -183,6 +183,11 @@ namespace HeraAgent
 
         static void EnsureLoaded()
         {
+            // Already resolved (loaded or terminally failed). The bundled bucket
+            // is fixed for the Unity version, which can't change without a domain
+            // reload (statics reset then), so skip the per-call path resolution +
+            // FileInfo stat once we have an answer.
+            if (s_index != null || s_loadError != null) return;
             var requestedDocsVersion = UnityVersionCompat.CurrentDocsVersion();
             var path = ResolveDataPath(requestedDocsVersion, out var loadedDocsVersion);
             if (path == null)
