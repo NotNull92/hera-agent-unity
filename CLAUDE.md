@@ -117,7 +117,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # UiDocFixer (official uGUI docs bucket selection +
                       # deterministic fixes/diagnostics for ui_doc apply)
     Tools/            # Tool implementations (auto-registered via [HeraTool]).
-                      # 29 [HeraTool] classes. Name= explicit unless noted
+                      # 30 [HeraTool] classes. Name= explicit unless noted
                       # (no Name= → filename snake_case). ExecCompileCache.cs is
                       # NOT a tool — internal helper for exec compile caching.
                       #   exec        ExecuteCsharp
@@ -147,6 +147,11 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       #   IR via UiDocSchema) / gen_sprite (ProceduralSprite) /
                       #   capture (overlay-canvas render) / import (external
                       #   sprites → Sprite assets) / sample + catalog (CLI-side).
+                      # Animation authoring v0.0.59: manage_animation ManageAnimation
+                      #   (create_clip/set_curve → AnimationClip float curves;
+                      #   create_controller/add_parameter/add_state/add_transition
+                      #   → AnimatorController state machine on base layer;
+                      #   animation types = built-in engine module → no asmdef ref).
     Data/             # Bundled data (UPM-shipped, immutable). Versioned
                       # unity_docs_<bucket>.jsonl.gz.bytes bundles for
                       # 2022.3 / 2023.2 / 6000.0 / 6000.3 / 6000.5 plus
@@ -263,6 +268,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | `ui_doc` uGUI 버전별 diagnostics profile | ✅ 완료 (2026-07-03) | `UiDocFixer.ProfileForDocsVersion` 이 docs bucket 별 uGUI manual package 를 고정한다: `2022.3 -> com.unity.ugui@1.0`, `2023.2`/`6000.0`/`6000.3 -> com.unity.ugui@2.0`, `6000.5 -> com.unity.ugui@2.5`. 테스트: `HeraAgent/Tests/UiDocFixer`; runtime `ui_doc apply` on `6000.0.35f1` 에서 `docs_version=6000.0`, `ugui_package=com.unity.ugui@2.0` 확인 |
 | `EntityIdCompat` 6000.5 rename gate | ✅ 완료 (2026-07-03) | `Object.GetInstanceID()` / `EditorUtility.InstanceIDToObject(int)` 직접 사용은 `EntityIdCompat` 내부로 격리한다. 외부 도구는 int `instance_id` 계약을 유지하면서 `EntityIdCompat.IdOf/ToObject` 만 사용. `manage_gameobject duplicate` 의 source/clone 비교도 shim 으로 교체. 테스트: `HeraAgent/Tests/EntityIdCompat`; runtime duplicate probe on `6000.0.35f1` 통과 |
 | reliability/efficiency pass + `manage_assets create` (Connector 0.0.58 / CLI 0.0.39) | ✅ 완료 (2026-07-07) | 3-갈래 분석 후 최적화 배치, 전부 live 에디터(6000.3.5f2) 스모크 검증. **C#**: Heartbeat 불변 필드(pid/projectPath/unityVersion/docsVersion/compiler) 도메인당 1회 계산 — 매 1.0s 틱마다 `Process` 할당 + ~4 File.Exists stat 제거(v0.0.13 은 *interval* 만 완화, 필드 캐싱은 별개) · `manage_packages list` 폴링을 `Task.Delay`→`NextEditorUpdate`(continuation 을 메인스레드에 유지 — UPM `Request`/`PackageCollection` 은 메인스레드 read 필요; 헬퍼는 InputQaEventSystem 이어 2번째 소비자라 **local 유지**, 3번째에 Core 추출) · `HttpServer` 응답 직렬화+쓰기를 try/catch/finally 로 감싸 `response.Close()` 보장(비직렬화 그래프/클라 조기 종료 시 CLI 무한대기 방지, best-effort 500) · `ForceEditorUpdate` 는 `!InternalEditorUtility.isApplicationActive` 일 때만 RepaintAllViews(포커스 시 per-command churn 제거, 백그라운드=CLI 상용 경로는 그대로) · `Response.data` 에 `NullValueHandling.Ignore` · InputQaResolver deprecated `FindObjectsOfType`/`FindObjectOfType` → `FindObjectsByType(FindObjectsSortMode.None)`/`FindFirstObjectByType`(2022.3+ 지원, CS0618 경고 + 동일-내용 dead `#elif` 제거) · `ToolMetadataRegistry` 캐시 히트 추가(`GetToolSchema` 가 도구당 리플렉션 2회→1회) · UnityDocsStore/GameFeelStore `EnsureLoaded` early-out(조회당 `PackageInfo.FindForAssembly`+FileInfo stat 제거 — 번들은 도메인 수명 불변). **Go(CLI)**: `update.go` GitHub 호출(release-check + download)에 타임아웃 클라이언트(release-check 가 human 명령 후 동기 실행돼 stall 시 무한대기 위험 차단) · 죽은 `UNITY_AGENT_ENABLED_ASSETS` env write 제거 · `reload_retry` 가 package-level delegator 대신 리시버 호출 · `internal/poll` min/max 빌트인 · `build-unity-docs` `filepath.WalkDir` + dead `io.Discard` 제거 · `benchmark.yml` 을 `go-version-file: go.mod` + `upload-artifact@v7` 로 정렬. **신규 기능**: `manage_assets create`(ScriptableObject `.asset` 저작, TypeCache 타입 해석 + `SerializedPropertyValue.Apply` 재사용한 optional 필드 set). 전부 다시 제기 금지 |
+| `manage_animation` (Connector 0.0.59) | ✅ 완료 (2026-07-07) | 신규 [HeraTool] — 애니메이션 에셋 저작(구 capability-gap C2). 6 액션: `create_clip`/`set_curve`(AnimationClip float 커브, keyframe+optional tangent, `--params keys`) · `create_controller`/`add_parameter`/`add_state`/`add_transition`(AnimatorController base-layer state machine — typed param, motion+default state, condition transition). `set_curve` 컴포넌트 타입은 `ComponentTypeResolver` 재사용, 경로는 `AssetPathGuard` 로 `Assets/` containment. **asmdef 🔒**: 애니메이션 타입은 빌트인 엔진 모듈(`UnityEngine.AnimationModule`)+`UnityEditor` 라 `references:[]`/`overrideReferences:false`/`noEngineReferences:false` asmdef 에서 자동 참조 — ugui 처럼 TypeCache 우회 **불필요**(패키지가 아니라 상시 존재하는 모듈). **네임스페이스 함정**: `AnimatorControllerParameterType` 는 `UnityEngine`, `AnimatorConditionMode`/`AnimatorController`/`AnimatorState*` 는 `UnityEditor.Animations`, `AnimationUtility` 는 `UnityEditor`. live 에디터(6000.3.5f2) 6 액션 happy-path + 크로스콜 영속성 + 4 에러 경로 스모크 검증. 다시 제기 금지 |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 

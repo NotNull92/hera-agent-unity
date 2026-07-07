@@ -75,7 +75,7 @@ No Python server. No generated MCP config. No special agent plugin. If an agent 
 
 ## Release Highlights
 
-Latest release: **v0.0.39** (published July 7, 2026). This release adds ScriptableObject asset authoring and a connector-wide reliability and efficiency pass. The matching Unity package version is **Connector 0.0.58**.
+Latest release: **v0.0.39** (published July 7, 2026). This release adds ScriptableObject asset authoring and a connector-wide reliability and efficiency pass. The matching Unity package version is **Connector 0.0.59**, which also adds animation-asset authoring (`manage_animation`).
 
 | v0.0.39 change | Simple meaning |
 |:---|:---|
@@ -221,6 +221,7 @@ Here are the commands most agents use first.
 | `manage_assets` | Finds, makes folders, authors ScriptableObject `.asset` files, copies, moves, or deletes project assets under `Assets/`. |
 | `manage_gameobject` | Creates, duplicates, moves, renames, parents, or deletes GameObjects. |
 | `manage_components` | Adds, removes, reads, or edits components. |
+| `manage_animation` | Authors AnimationClips and AnimatorController state machines. |
 | `ui_doc` | Builds and captures Unity UI. |
 | `input` | Verifies uGUI interaction through Unity EventSystem raycasts and pointer handlers. |
 | `game_feel` | Looks up game-feel recipes (screen shake, hit stop, honest juice, ...). |

@@ -75,7 +75,7 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 
 ## 릴리스 하이라이트
 
-최신 릴리스는 **v0.0.39**입니다(2026년 7월 7일 공개). 이번 릴리스는 ScriptableObject 에셋 저작과 커넥터 전반의 신뢰성·효율성 개선에 초점을 둡니다. 대응되는 Unity 패키지 버전은 **Connector 0.0.58**입니다.
+최신 릴리스는 **v0.0.39**입니다(2026년 7월 7일 공개). 이번 릴리스는 ScriptableObject 에셋 저작과 커넥터 전반의 신뢰성·효율성 개선에 초점을 둡니다. 대응되는 Unity 패키지 버전은 **Connector 0.0.59**이며, 애니메이션 에셋 저작(`manage_animation`)도 추가됐습니다.
 
 | v0.0.39 변경 사항 | 쉬운 뜻 |
 |:---|:---|
@@ -221,6 +221,7 @@ AI가 가장 자주 쓰는 명령어입니다.
 | `manage_assets` | `Assets/` 아래 프로젝트 에셋을 찾고, 폴더를 만들고, ScriptableObject `.asset`을 생성하고, 복사·이동·삭제합니다. |
 | `manage_gameobject` | GameObject를 만들고, 복제하고, 옮기고, 이름을 바꿉니다. |
 | `manage_components` | 컴포넌트를 추가, 삭제, 조회, 수정합니다. |
+| `manage_animation` | AnimationClip과 AnimatorController 상태머신을 저작합니다. |
 | `ui_doc` | Unity UI를 만들고 캡처합니다. |
 | `input` | Unity EventSystem raycast와 pointer handler로 uGUI 상호작용을 검증합니다. |
 | `game_feel` | 게임 필 레시피를 조회합니다 (screen shake, hit stop, honest juice 등). |

@@ -306,6 +306,49 @@ hera-agent-unity manage_assets delete --path Assets/Generated/Temp.asset
 
 ---
 
+## manage_animation
+
+Author animation assets directly, without `exec` boilerplate. Clips use `.anim`, controllers `.controller`; paths are constrained to `Assets/`.
+
+```bash
+hera-agent-unity manage_animation <action> [flags]
+```
+
+| Action | Required flags | Description |
+|:---|:---|:---|
+| `create_clip` | `--path Assets/....anim` | Create an `AnimationClip`. `--frame_rate` (default 60), `--loop`. |
+| `set_curve` | `--path`, `--type`, `--property`, `--params '{"keys":[...]}'` | Set one float curve on a clip. |
+| `create_controller` | `--path Assets/....controller` | Create an `AnimatorController` (base layer + state machine). |
+| `add_parameter` | `--path`, `--name`, `--type` | Add a `float`/`int`/`bool`/`trigger` parameter (optional `--params '{"default":...}'`). |
+| `add_state` | `--path`, `--name` | Add a base-layer state. `--motion <clip path>`, `--default`. |
+| `add_transition` | `--path`, `--from`, `--to` | Add a transition. Conditions via `--params`. |
+
+| Flag | Description | Default |
+|:---|:---|:---|
+| `--frame_rate` | `create_clip` sampling rate (fps) | `60` |
+| `--loop` | `create_clip` loops the clip | `false` |
+| `--type` | `set_curve`: animated component type. `add_parameter`: `float`\|`int`\|`bool`\|`trigger` | |
+| `--property` | `set_curve` animated property, e.g. `localPosition.y` | |
+| `--relative_path` | `set_curve` GameObject path relative to the Animator root | `""` (root) |
+| `--name` | `add_parameter` / `add_state` name | |
+| `--motion` | `add_state` motion clip asset path | |
+| `--default` | `add_state` makes it the base-layer default state | `false` |
+| `--from` / `--to` | `add_transition` source / destination state names | |
+| `--params` | `set_curve` `keys` `[{time,value[,in_tangent,out_tangent]}]`; `add_parameter` `default`; `add_transition` `conditions` `[{parameter,mode,threshold}]` / `has_exit_time` / `duration` | |
+
+Condition `mode` is one of `If`, `IfNot`, `Greater`, `Less`, `Equals`, `NotEqual`.
+
+```bash
+hera-agent-unity manage_animation create_clip --path Assets/Anim/Bob.anim --frame_rate 60 --loop true
+hera-agent-unity manage_animation set_curve --path Assets/Anim/Bob.anim --type Transform --property localPosition.y --params '{"keys":[{"time":0,"value":0},{"time":0.5,"value":0.3},{"time":1,"value":0}]}'
+hera-agent-unity manage_animation create_controller --path Assets/Anim/Player.controller
+hera-agent-unity manage_animation add_parameter --path Assets/Anim/Player.controller --name Speed --type float
+hera-agent-unity manage_animation add_state --path Assets/Anim/Player.controller --name Run --motion Assets/Anim/Bob.anim --default true
+hera-agent-unity manage_animation add_transition --path Assets/Anim/Player.controller --from Idle --to Run --params '{"conditions":[{"parameter":"Speed","mode":"Greater","threshold":0.1}]}'
+```
+
+---
+
 ## unity_docs
 
 Offline Unity ScriptReference lookup. Returns a slim, JSON-ready shape suitable for AI agents who need to verify an API exists at this Unity version before running it through `exec`. No network, no rate limits.

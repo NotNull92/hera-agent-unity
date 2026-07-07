@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.59 — animation authoring)
+
+- **`manage_animation`** — a new tool that authors animation assets without
+  `exec` boilerplate:
+  - `create_clip` / `set_curve` build an `AnimationClip` (`.anim`) and its float
+    curves (keyframes with optional tangents via `--params`).
+  - `create_controller` / `add_parameter` / `add_state` / `add_transition`
+    build an `AnimatorController` (`.controller`) state machine on its base
+    layer — typed parameters, states with an optional motion clip + default,
+    and transitions with conditions.
+  - Paths are `Assets/`-constrained; the animated component type for `set_curve`
+    resolves through the shared `ComponentTypeResolver`. Animation types come
+    from the built-in engine module, so no extra asmdef reference is needed.
+
 ### Added (Connector 0.0.58 / CLI 0.0.39 — manage_assets create + reliability/efficiency pass)
 
 - **`manage_assets create`** — instantiate a ScriptableObject subclass as a new
