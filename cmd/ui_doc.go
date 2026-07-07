@@ -664,13 +664,7 @@ func hex8(r, g, b, a int) string {
 }
 
 func clampInt(v, lo, hi int) int {
-	if v < lo {
-		return lo
-	}
-	if v > hi {
-		return hi
-	}
-	return v
+	return min(max(v, lo), hi)
 }
 
 // splitList splits a ';'-separated list of coordinate specs, trimming blanks.

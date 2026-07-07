@@ -4,14 +4,33 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 const repoAPI = "https://api.github.com/repos/NotNull92/hera-agent-unity/releases/latest"
+
+// githubAPIClient bounds the release-check request. fetchLatestRelease is
+// reached synchronously from printUpdateNotice after every human command once
+// the 12h cache expires, so a black-holed connection must not hang an
+// otherwise-instant status/doctor.
+var githubAPIClient = &http.Client{Timeout: 15 * time.Second}
+
+// githubDownloadClient bounds connect / TLS-handshake / response-header stalls
+// without capping the body transfer itself, so a slow-but-progressing binary
+// download on a poor link is not killed mid-stream.
+var githubDownloadClient = &http.Client{
+	Transport: &http.Transport{
+		DialContext:           (&net.Dialer{Timeout: 10 * time.Second}).DialContext,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ResponseHeaderTimeout: 30 * time.Second,
+	},
+}
 
 type githubRelease struct {
 	TagName string        `json:"tag_name"`
@@ -109,7 +128,7 @@ func updateCmd(args []string) error {
 }
 
 func fetchLatestRelease() (*githubRelease, error) {
-	resp, err := http.Get(repoAPI)
+	resp, err := githubAPIClient.Get(repoAPI)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +178,7 @@ func sweepBackups(dir string) {
 }
 
 func download(url string, targetDir string) (string, error) {
-	resp, err := http.Get(url)
+	resp, err := githubDownloadClient.Get(url)
 	if err != nil {
 		return "", err
 	}

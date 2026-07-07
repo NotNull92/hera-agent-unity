@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/NotNull92/hera-agent-unity/internal/assetconfig"
@@ -12,9 +11,6 @@ import (
 )
 
 func assetConfigCmd(args []string) error {
-	// Load enabled assets into env for AI agent consumption
-	loadEnabledAssetsEnv()
-
 	// Check for --json flag early
 	for _, arg := range args {
 		if arg == "--json" {
@@ -395,22 +391,4 @@ func jsonOutputForAI() ([]byte, error) {
 		"game_feel_ui_mode":     cfg.GameFeelUIMode,
 		"dotween_preferred":     dotweenPreferred,
 	}, "", "  ")
-}
-
-// loadEnabledAssetsEnv loads enabled asset IDs into UNITY_AGENT_ENABLED_ASSETS env var.
-// Only called when needed, not via init().
-func loadEnabledAssetsEnv() {
-	cfg, err := assetconfig.Load()
-	if err != nil {
-		return
-	}
-	var enabled []string
-	for _, a := range cfg.Assets {
-		if a.Enabled {
-			enabled = append(enabled, a.ID)
-		}
-	}
-	if len(enabled) > 0 {
-		_ = os.Setenv("UNITY_AGENT_ENABLED_ASSETS", strings.Join(enabled, ","))
-	}
 }

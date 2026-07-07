@@ -85,7 +85,7 @@ func scanDir(srDir string, unityVersion string) ([]Entry, int, error) {
 	byName := make(map[string]Entry)
 	skipped := 0
 
-	err := filepath.Walk(srDir, func(path string, info os.FileInfo, walkErr error) error {
+	err := filepath.WalkDir(srDir, func(path string, info os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
@@ -180,7 +180,3 @@ func humanSize(b int64) string {
 		return fmt.Sprintf("%d B", b)
 	}
 }
-
-// Reserved for an alternate stream-based parser that does not load the full
-// HTML into memory; current pages are small (~10-25KB) so io.ReadAll is fine.
-var _ = io.Discard

@@ -64,7 +64,7 @@ When the user invites you to engage hera-agent-unity — in any language, any ph
 
 1. `hera-agent-unity doctor --json` — verifies the binary is on PATH, no duplicate installs, and the connector can see at least one Unity instance. JSON envelope is parseable.
 2. `hera-agent-unity status` — confirms the active editor's port, project path, Unity version, PID, and current state (`ready`, `compiling`, …).
-3. `hera-agent-unity list --names` — discovers what tools (built-in + custom `[HeraTool]` classes) this project exposes, so subsequent prompts can be answered without re-scanning.
+3. `hera-agent-unity list --compact` — discovers what tools (built-in + custom `[HeraTool]` classes) this project exposes with the smallest practical payload, so subsequent prompts can be answered without re-scanning.
 
 **Report shape** (one line first, then optional details):
 
@@ -525,7 +525,7 @@ Common `code` values you might branch on:
 - `EXEC_LOGGED_ERROR` — `--strict` mode only. `data.logged_errors: [{type, message}, ...]`, `data.returned` is the value the snippet would have returned.
 - `EXEC_CSC_NOT_FOUND` / `EXEC_DOTNET_NOT_FOUND` — `suggestions[]` tells the user how to recover
 - `EXEC_COMPILE_TIMEOUT` — 30s csc timeout
-- `UNKNOWN_COMMAND` — typo'd command name. `data.did_you_mean: [...]` lists up to 3 commands within Levenshtein distance 2; act on the first match before re-running `list --names`.
+- `UNKNOWN_COMMAND` — typo'd command name. `data.did_you_mean: [...]` lists up to 3 commands within Levenshtein distance 2; act on the first match before re-running `list --compact`.
 - `READCONSOLE_INIT_FAILED` — Unity internal API drift; `data.unity_version` for triage
 
 ### 5.3 Environment variables

@@ -37,8 +37,8 @@ func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Insta
 		if time.Now().After(deadline) {
 			break
 		}
-		ClearInstanceCache()
-		next, derr := DiscoverInstance(project, 0)
+		c.ClearInstanceCache()
+		next, derr := c.DiscoverInstance(project, 0)
 		if derr != nil {
 			return nil, fmt.Errorf("cannot reach Unity for project %q (editor no longer running?): %w", project, lastErr)
 		}

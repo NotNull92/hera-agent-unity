@@ -20,10 +20,7 @@ func ExponentialBackoffLoop(timeout, baseInterval, maxInterval time.Duration, co
 			return nil
 		}
 		if interval < maxInterval {
-			interval *= 2
-			if interval > maxInterval {
-				interval = maxInterval
-			}
+			interval = min(interval*2, maxInterval)
 		}
 	}
 	return fmt.Errorf("timed out")

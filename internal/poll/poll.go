@@ -57,10 +57,7 @@ func WaitForFile(resultPath string, port int, timeout time.Duration, opName stri
 		}
 
 		if interval < maxInterval {
-			interval *= 2
-			if interval > maxInterval {
-				interval = maxInterval
-			}
+			interval = min(interval*2, maxInterval)
 		}
 	}
 
