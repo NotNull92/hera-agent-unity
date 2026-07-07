@@ -75,25 +75,18 @@ No Python server. No generated MCP config. No special agent plugin. If an agent 
 
 ## Release Highlights
 
-Latest release: **v0.0.38**. This release adds Hera-driven Unity UI input QA and keeps the existing low-token Unity version support.
+Latest release: **v0.0.38** (published July 6, 2026). This release is focused on Hera-driven Unity UI input QA through Unity's own EventSystem. The matching Unity package version is **Connector 0.0.57**.
 
-| Highlight | Simple meaning |
+| v0.0.38 change | Simple meaning |
 |:---|:---|
 | **Input QA EventSystem backend** | Agents can inspect and drive uGUI through Unity's `EventSystem`, even when external Computer Use cannot safely click coordinates. |
-| **Separate physical-click evidence** | `input` proves Unity UI event behavior; it does not pretend to be an OS/window click. Physical-click QA can still be reported as blocked. |
+| **Target inspection before action** | `input inspect` reports the target point, raycast stack, blockers, handlers, and interactability without mutating the scene. |
 | **Click, submit, scroll, and drag** | `input` supports `state`, `inspect`, `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, and stepped `drag`. |
-| **Connector 0.0.57** | The Unity package includes the new input tool, tests, docs, and agent-rule guidance. |
-| **Unity 2022.3 LTS support** | Teams do not need to upgrade to Unity 6 first. |
-| **Unity 2023.2 support** | The connector and docs lookup work below Unity 6. |
-| **Unity 6000.3 / 6000.5 checked separately** | Unity 6 minor versions can differ, so they are tested separately. |
-| **93-token tool list** | `list --compact` is small enough to use often. |
-| **49-55-token object handoff** | `find_gameobjects --ids` returns only the IDs an agent needs for the next command. |
-| **Signature: Game Feel Mode (Beta)** | Hera can tell the agent how to make gameplay feel right — with the ethics built in. |
-| **Signature: Game Feel UI Mode (Beta)** | Hera can tell the agent how to make generated UI feel alive, not static. |
-| **Ultra Hera** | Agents can use light checks by default and upgrade to strict Unity verification when the task asks for it. |
-| **uGUI docs fixer** | `ui_doc apply` selects the official uGUI rule set for the open Unity Editor version and reports fixes/diagnostics. |
+| **Strict blocker and handler checks** | `input click` can fail when another object blocks the target or the expected click handler is not reached. |
+| **Separate physical-click evidence** | `input` proves Unity UI event behavior; it does not pretend to be an OS/window click. Physical-click QA can still be reported as blocked. |
+| **Updated agent guidance** | Generated agent rules now tell agents to separate Unity EventSystem input QA from physical OS click QA. |
 
-Measured versions:
+Current verified baseline:
 
 | Unity Editor | `list --compact` | `find_gameobjects --ids` | Details |
 |:---|---:|---:|:---|
@@ -351,6 +344,8 @@ Turn it on in Unity:
 ```text
 HeraAgent -> Hera Settings -> Game Feel UI Mode (Beta)
 ```
+
+Or from the CLI: `hera-agent-unity asset-config gamefeel-ui on`
 
 If DOTween is enabled in the same Hera Settings panel, the hint suggests DOTween-style tweens. If not, it falls back to coroutine or lerp-style guidance.
 

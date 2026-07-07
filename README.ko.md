@@ -75,25 +75,18 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 
 ## 릴리스 하이라이트
 
-최신 릴리스는 **v0.0.38**입니다. 이번 릴리스는 Hera 기반 Unity UI 입력 QA를 추가하고, 기존의 낮은 토큰 비용 Unity 버전 지원을 유지합니다.
+최신 릴리스는 **v0.0.38**입니다(2026년 7월 6일 공개). 이번 릴리스의 초점은 Unity 자체 EventSystem을 통한 Hera 기반 Unity UI 입력 QA입니다. 대응되는 Unity 패키지 버전은 **Connector 0.0.57**입니다.
 
-| 하이라이트 | 쉬운 뜻 |
+| v0.0.38 변경 사항 | 쉬운 뜻 |
 |:---|:---|
 | **Input QA EventSystem backend** | 외부 Computer Use가 좌표 클릭을 안전하게 못 해도, AI가 Unity `EventSystem`으로 uGUI를 검사하고 입력할 수 있습니다. |
-| **물리 클릭 증거 분리** | `input`은 Unity UI 이벤트 동작을 증명합니다. OS/window 물리 클릭이라고 포장하지 않습니다. 물리 클릭 QA는 여전히 BLOCKED로 남을 수 있습니다. |
+| **동작 전 대상 검사** | `input inspect`가 씬을 바꾸지 않고 target point, raycast stack, blocker, handler, interactability를 보고합니다. |
 | **Click, submit, scroll, drag** | `input`은 `state`, `inspect`, `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, 단계별 `drag`를 지원합니다. |
-| **Connector 0.0.57** | Unity 패키지에 새 input 도구, 테스트, 문서, agent 규칙 안내가 포함됩니다. |
-| **Unity 2022.3 LTS 지원** | Unity 6으로 올리지 않아도 쓸 수 있습니다. |
-| **Unity 2023.2 지원** | Unity 6보다 낮은 버전에서도 커넥터와 문서 조회가 동작합니다. |
-| **Unity 6000.3 / 6000.5 따로 확인** | Unity 6 안에서도 버전 차이가 있어서 따로 테스트했습니다. |
-| **93 토큰 도구 목록** | `list --compact`는 자주 써도 부담이 작습니다. |
-| **49-55 토큰 오브젝트 전달** | `find_gameobjects --ids`는 다음 명령에 필요한 ID만 보냅니다. |
-| **시그니처: Game Feel Mode (Beta)** | Hera가 AI에게 게임플레이 손맛을 만드는 법을 알려줍니다 — 윤리 원칙 내장. |
-| **시그니처: Game Feel UI Mode (Beta)** | Hera가 AI에게 정적인 UI가 아니라 살아 있는 게임 UI를 만드는 힌트를 줍니다. |
-| **Ultra Hera** | 기본은 가볍게 확인하고, 중요한 요청은 더 꼼꼼한 Unity 검증으로 올립니다. |
-| **uGUI 공식문서 fixer** | `ui_doc apply`가 열린 Unity Editor 버전에 맞는 공식 uGUI 규칙을 고르고 fixes/diagnostics를 보고합니다. |
+| **엄격한 blocker/handler 검사** | `input click`은 다른 오브젝트가 대상을 가리거나 기대한 click handler에 도달하지 못하면 실패로 보고할 수 있습니다. |
+| **물리 클릭 증거 분리** | `input`은 Unity UI 이벤트 동작을 증명합니다. OS/window 물리 클릭이라고 포장하지 않습니다. 물리 클릭 QA는 여전히 BLOCKED로 남을 수 있습니다. |
+| **AI 규칙 안내 갱신** | 생성되는 agent rules가 Unity EventSystem input QA와 physical OS click QA를 분리해서 보고하도록 안내합니다. |
 
-측정한 버전:
+현재 검증 기준:
 
 | Unity Editor | `list --compact` | `find_gameobjects --ids` | 상세 |
 |:---|---:|---:|:---|
@@ -352,6 +345,8 @@ Unity에서 켭니다:
 ```text
 HeraAgent -> Hera Settings -> Game Feel UI Mode (Beta)
 ```
+
+CLI에서는: `hera-agent-unity asset-config gamefeel-ui on`
 
 같은 Hera Settings 패널에서 DOTween이 켜져 있으면 DOTween 방식의 트윈을 추천합니다. 없으면 coroutine이나 lerp 방식으로 안내합니다.
 
