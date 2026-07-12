@@ -77,8 +77,9 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 
 최신 릴리스는 **v0.0.39**입니다(2026년 7월 7일 공개). 이번 릴리스는 ScriptableObject 에셋 저작과 커넥터 전반의 신뢰성·효율성 개선에 초점을 둡니다. 대응되는 Unity 패키지 버전은 **Connector 0.0.59**이며, 애니메이션 에셋 저작(`manage_animation`)도 추가됐습니다.
 
-| v0.0.39 변경 사항 | 쉬운 뜻 |
+| 현재 하이라이트 | 쉬운 뜻 |
 |:---|:---|
+| **애니메이션 에셋 저작** | `manage_animation`으로 직접 Editor C#을 쓰지 않고 `.anim` 클립, float curve, `.controller`, 파라미터, 상태, 전이를 만들 수 있습니다. |
 | **ScriptableObject 저작** | `manage_assets create`로 `exec` 없이 타입이 지정된 `.asset`을 만들고 초기 필드까지 설정할 수 있습니다. |
 | **안정된 하트비트** | 에디터 상태 하트비트가 매초 상수 필드를 다시 만들고 프로세스 핸들을 할당하던 동작을 없애 유휴 부하를 줄였습니다. |
 | **안전한 패키지 목록** | `manage_packages list`가 Unity 패키지 매니저를 메인 스레드에서 폴링합니다. |
@@ -196,7 +197,7 @@ https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 최신을 따라가지 않고 특정 커넥터(UPM) 버전을 고정하려면 `connector-<버전>` git 태그를 뒤에 붙입니다:
 
 ```json
-"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.58"
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.59"
 ```
 
 Unity가 열리면 커넥터가 자동으로 시작합니다.

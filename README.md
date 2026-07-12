@@ -77,8 +77,9 @@ No Python server. No generated MCP config. No special agent plugin. If an agent 
 
 Latest release: **v0.0.39** (published July 7, 2026). This release adds ScriptableObject asset authoring and a connector-wide reliability and efficiency pass. The matching Unity package version is **Connector 0.0.59**, which also adds animation-asset authoring (`manage_animation`).
 
-| v0.0.39 change | Simple meaning |
+| Current highlight | Simple meaning |
 |:---|:---|
+| **Animation asset authoring** | `manage_animation` creates `.anim` clips, float curves, `.controller` assets, parameters, states, and transitions without hand-written Editor C#. |
 | **ScriptableObject authoring** | `manage_assets create` makes a typed `.asset` — and can set its initial fields — without dropping to `exec`. |
 | **Steadier heartbeat** | The editor status heartbeat no longer rebuilds constant fields (and allocates a process handle) every second, cutting idle overhead. |
 | **Safer package listing** | `manage_packages list` polls Unity's package manager on the main thread. |
@@ -196,7 +197,7 @@ Or add this to `Packages/manifest.json`:
 To pin a specific connector (UPM) version instead of tracking the latest, append its `connector-<version>` git tag:
 
 ```json
-"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.58"
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.59"
 ```
 
 The connector starts by itself when Unity opens.
