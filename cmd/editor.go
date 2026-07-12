@@ -63,6 +63,7 @@ func editorCmd(args []string, send SendFunc, resolve instanceResolver, category 
 			if !resp.Success {
 				return resp, nil
 			}
+			client.ClearInstanceCache()
 			ready, hasErrors := waitForReady(resolve, flagTimeout, category)
 			if !ready {
 				return nil, fmt.Errorf("compilation still running after %ds — raise --timeout, or poll `status` / `console` for completion", flagTimeout/1000)
