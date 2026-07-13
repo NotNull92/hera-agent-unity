@@ -5,6 +5,15 @@
 CLI tool to control Unity Editor from the command line.
 Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free under MIT.
 
+## 협업 개발 (Claude ↔ Codex)
+
+hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하는 프로젝트다. 목표는 완벽한 hera를 함께 만드는 것 — 한 에이전트가 놓친 것을 다른 에이전트가 잡는다. (이건 hera를 *사용*하는 이야기가 아니라 hera라는 도구 *자체를 개발*하는 협업 원칙이다.)
+
+- **git 히스토리 = 공유 인계 채널.** Codex는 대화 맥락이 아니라 git 커밋 히스토리로 프로젝트 상태를 파악한다. 그래서 작업은 명확한 conventional-commit 메시지로 커밋하고, 큰 기능은 `docs/CODEX_HANDOFF_*.md` 같은 인계 문서를 남겨 다음 에이전트가 이어받게 한다.
+- **교차검증.** 한쪽이 구현하면 다른 쪽이 리뷰·검증하는 것을 기본으로 한다. 자기 작업을 자기가 승인하지 않는다.
+- **공통 규약 준수.** 둘 다 이 `CLAUDE.md`(설계 의도·체크리스트·"이미 처리된 항목" 표)와 `AGENTS.md`(hera 사용 규약)를 따르고, 🔒 잠긴 설계 결정을 존중한다.
+- **정확성 우선.** 추측 대신 실측으로 근거를 만든다 — `hera-agent-unity`로 라이브 Unity를 확인하고, 버전별 사실은 바이너리 리플렉션에서 뽑는다.
+
 ## 설계 의도
 
 **CLI(단일 Go 바이너리 + localhost HTTP) 구성은 의도된 선택이다.** MCP / WebSocket relay / 영속 서버 / Python 런타임 같은 대안으로 전환하자는 제안은 하지 말 것.

@@ -621,3 +621,26 @@ If you find yourself wanting `--depth 3` for a Transform, ask whether you really
 If something here contradicts what `hera-agent-unity <cmd> --help` says, trust `--help`. This guide is a curated subset, not the authoritative reference. The catalog at `docs/COMMANDS.md` is also authoritative for flag tables.
 
 If you find a real bug or want to suggest a pattern, file an issue at `https://github.com/NotNull92/hera-agent-unity/issues`.
+
+---
+
+## 7. Developing hera-agent-unity itself (co-development)
+
+> **Scope:** this section is ONLY for AI agents *building* hera-agent-unity (its Go
+> CLI + C# connector). It is NOT about *using* the CLI in your own Unity project —
+> if you copied this `AGENTS.md` into a downstream project to use hera, ignore this
+> section; everything above still applies.
+
+hera-agent-unity is **co-developed by Claude (Claude Code) and Codex.** The two
+agents collaborate to build one polished tool — one catches what the other misses:
+
+- **git history is the shared handoff channel.** Codex tracks project state through
+  git commits, not chat context. So development work is committed with clear
+  conventional-commit messages, and larger features leave a `docs/CODEX_HANDOFF_*.md`
+  doc so the next agent can pick up.
+- **cross-verification:** one agent implements, the other reviews/verifies. Neither
+  self-approves its own work.
+- both follow `CLAUDE.md` (design intent, checklists, the locked "이미 처리된 항목"
+  table) and this `AGENTS.md`, and respect 🔒 locked design decisions.
+- accuracy over guesses: verify against the live Editor via `hera-agent-unity`, and
+  pull per-version facts from binary reflection rather than assuming Unity behavior.
