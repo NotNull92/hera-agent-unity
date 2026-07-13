@@ -266,11 +266,11 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
 | Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
 | Find / create / move project assets | `manage_assets find --type Texture2D --filter icon` / `manage_assets create --type GameConfig --path Assets/Config/Game.asset` | Compact `AssetDatabase` operations constrained to `Assets/`; `create` authors a ScriptableObject `.asset` (optional `--params '{"properties":{...}}'`). Use before falling back to `exec` for basic asset work. |
-| Ground an HTML→UI design on the real UI | `ui_doc export --path </path>` | Returns the compact `ui_doc/2` IR (defaults omitted). Read it before authoring. |
-| Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...] [--mode upsert]` | `create` (default) or `upsert` (update existing children in place). Pass the doc via `--file` so it never rides inline in context. |
+| Ground an HTML→uGUI design on the real UI | `ui_doc export --path </path>` | Returns the compact uGUI `ui_doc/2` IR (defaults omitted). UI Toolkit v1 emits from an input document instead. |
+| Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...] [--mode upsert]` | `ui_system=ugui` builds the existing GameObject tree; `ui_system=uitk` requires `backend:"uitk"` and emits validated UXML/USS/PanelSettings/UIDocument scaffolding. |
 | Bake a procedural sprite | `ui_doc gen_sprite --spec '{...}' --out Assets/...` | Tier-1: `solid` / `rounded_rect` / `gradient` / `nine_slice` (border for 9-slice). No external dependency. |
 | Measure colors off a reference image | `ui_doc sample --image ref.png --at "x,y" [--region "x,y,w,h"]` | Normalized [0,1] top-left coords (`;`-separate many). Returns measured `hex`/`rgba`. Measure colors — don't eyeball them. CLI-side, no Unity needed. |
-| See what you built (verify) | `ui_doc capture --out /tmp/built.png` | Renders the live overlay UI to PNG (a normal `screenshot` misses overlay canvases). Read it and compare to the reference. |
+| See what you built (verify) | `ui_doc capture --out /tmp/built.png` | Renders live uGUI overlays to PNG (a normal `screenshot` misses overlay canvases). UITK v1 verifies generated assets/UIDocument through state reads or game screenshots. |
 | Anything else (read prop, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
 
 **Compile-check only** (validate syntax/types without executing):
@@ -284,7 +284,7 @@ Useful when you're not sure a refactor compiles before issuing a destructive cal
 - **Unity EventSystem input QA:** PASS/FAIL based on `input` results, console logs, state reads, Play Mode tests, or UI callbacks.
 - **Physical OS click QA:** BLOCKED if Computer Use still cannot capture Unity screenshot state and Hera has no native OS/window input backend for that action.
 
-**ui_doc IR (`ui_doc/2`)** — the contract for HTML→UI. You're fluent in HTML/CSS but weak at uGUI; design in HTML, then `export` the live UI to ground yourself, and `apply` a node tree (defaults omitted). `anchor` uses `manage_ui`'s preset names (e.g. `top-center`, `stretch`) or raw `anchor_min`/`anchor_max`. Full reference: `docs/UI_DOC_IR.md`:
+**ui_doc IR (`ui_doc/2`)** — `ui_system` chooses one fully separate backend per build. The default `ugui` contract below uses live export plus RectTransform anchors. `uitk` requires `asset-config ui-system uitk` and a `backend:"uitk"` document with exact runtime element names, reflected UXML attributes, and reflected USS properties. Full reference: `docs/UI_DOC_IR.md`:
 
 ```jsonc
 { "schema": "ui_doc/2", "backend": "ugui",
@@ -297,6 +297,8 @@ Useful when you're not sure a refactor compiles before issuing a destructive cal
 ```
 
 `image.sprite` = `{ "asset": "Assets/..." }` or `{ "gen": {<spec>} }` (baked on apply; `nine_slice` auto-sets Image type Sliced). `text` takes `value` + optional `engine` (auto/tmp/legacy), `color` (#hex), `align` (center/left/right/top-left), `font` (asset path to a TMP/legacy font — also the icon-font-glyph path). With Game Feel UI Mode (Beta) on, `apply` returns per-element-type juice recipes as an `agent_hint`.
+
+**UI Toolkit v1** — `ui_doc apply` emits `.uxml` + shared `.hera-*` `.uss` + a screen-space `PanelSettings` and wired `UIDocument` into `Assets/HeraGenerated/UI`. It rejects unknown runtime elements/UXML attributes, warns and omits unsupported USS properties, and keeps MVVM data binding out of scope. World-space is allowed only when the **live runtime** is Unity `6000.2+`; never infer that from the docs bucket. `manage_ui create` follows the same backend choice; `get_rect`, `set_anchor`, and `set_rect` are uGUI-only.
 
 **Icons** (no SVG gen): reference an existing sprite via `image.sprite.asset`, or use an icon-font glyph — a `text` element whose `value` is the glyph char, then assign the icon TMP font with `manage_components set --property m_fontAsset --value <font.asset>`. See COMMANDS.md → ui_doc → Icons.
 
@@ -546,6 +548,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `manage_assets` | AssetDatabase file/folder operations + ScriptableObject authoring | `find`, `mkdir`, `create`, `copy`, `move`, `delete` |
 | `describe_type <name>` | Type info + Unity-pitfalls | `--members fields\|properties\|methods\|all`, `--limit N` |
 | `find_method <pat>` | Search methods across assemblies | `--namespace`, `--limit` (default 50) |
+| `asset-config ui-system [ugui\|uitk]` | Select the top-level UI backend (default `ugui`) | `--json` includes `ui_system` |
 | `asset-config set-csc <path>` / `set-dotnet <path>` | Persist a default csc / dotnet path | (no flags) |
 | `status` / `ping` | Editor state / liveness | (none) |
 | `doctor` | Self-diagnostic | `--json`, `--agent-rules` (this guide's TL;DR subset) |

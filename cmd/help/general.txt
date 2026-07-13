@@ -81,11 +81,11 @@ Documentation:
                                                   Data ships inside the UPM package — no
                                                   docs folder on your machine required.
 
-UI Doc (HTML -> uGUI):
-  ui_doc export --path /Canvas/HUD                 Serialize a live UI subtree
+UI Doc (uGUI or UI Toolkit):
+  ui_doc export --path /Canvas/HUD                 Serialize a live uGUI subtree
                                                   to ui_doc/2 JSON.
   ui_doc apply --file design.json --parent /Canvas
-                                                  Build or upsert uGUI from IR.
+                                                  Build the selected UI backend from IR.
   ui_doc import --src <abs.png> --into Assets/UI  Copy external sprites into
                                                   the project as Sprite assets.
   ui_doc gen_sprite --spec '{...}' --out Assets/UI/bg.png

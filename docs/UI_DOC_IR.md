@@ -1,20 +1,24 @@
 # ui_doc IR reference (`ui_doc/2`)
 
-The contract between the agent and Unity for the **HTML→Unity UI** pipeline. The
-agent is fluent in HTML/CSS but weak at uGUI; it designs in HTML, then translates
-to this IR, which `ui_doc apply` realizes deterministically as uGUI.
+The contract between the agent and Unity for the **HTML→Unity UI** pipeline.
+`ui_system` selects one separate backend per build: the existing uGUI branch or
+the UI Toolkit UXML/USS branch. They never mix a RectTransform tree with a
+VisualElement tree.
 
-This document is the **static schema**. It mirrors uGUI's serialized model and
-is paired with version-aware fixer rules from [`UGUI_VERSION_RULES.md`](UGUI_VERSION_RULES.md):
+This document is the **static schema**. The uGUI branch mirrors uGUI's serialized
+model and is paired with version-aware fixer rules from [`UGUI_VERSION_RULES.md`](UGUI_VERSION_RULES.md):
 Unity 2022 uses `com.unity.ugui@1.0`, Unity 2023 / 6000.0 / 6000.3 use
 `com.unity.ugui@2.0`, and Unity 6000.5+ uses `com.unity.ugui@2.5`.
 Field → uGUI mappings and enum values are given exactly.
 
 ## Pipeline
 
-- **New UI**: image/text → HTML mockup → IR (this schema) → `ui_doc apply`.
-- **Edit existing UI**: `ui_doc export` (current state → IR) first, then apply with
-  `--mode upsert`.
+- **uGUI new UI**: image/text → HTML mockup → IR → `ui_doc apply`.
+- **uGUI existing UI**: `ui_doc export` (current state → IR) first, then apply
+  with `--mode upsert`.
+- **UI Toolkit**: set `asset-config ui-system uitk`, author the UITK-native
+  branch below, then apply it. UXML/USS output is source scaffolding rather than
+  a conversion of a live uGUI hierarchy.
 
 Prefer **relative layout** (`layout` groups, `fill`, anchors) over absolute
 coordinates — it survives different inputs/resolutions. Reserve absolute
@@ -38,7 +42,65 @@ When reproducing a reference image, close the loop instead of eyeballing:
 { "schema": "ui_doc/2", "backend": "ugui", "root": <node> }
 ```
 
-## Node
+## UI Toolkit document (`backend: "uitk"`)
+
+When `ui_system` is `uitk`, `ui_doc apply` requires `backend: "uitk"`. It emits
+an importable `.uxml`, one shared `.uss`, a screen-space `PanelSettings` asset,
+and a `UIDocument` wired to both under `Assets/HeraGenerated/UI`. `--parent`
+only parents that `UIDocument` GameObject for scene organization; it does not
+insert a VisualElement into an existing document.
+
+```jsonc
+{
+  "schema": "ui_doc/2",
+  "backend": "uitk",
+  "name": "SettingsWindow",       // generated asset stem
+  "panel": {
+    "render_mode": "screen-space", // default; or world-space on runtime >= 6000.2
+    "reference_resolution": [1920, 1080]
+  },
+  "root": {
+    "name": "Settings",
+    "element": "VisualElement",  // exact runtime element name from UiToolkitStore
+    "style": { "flex-direction": "column", "padding-left": "24px" },
+    "children": [
+      { "name": "Title", "element": "Label",
+        "attributes": { "text": "Settings" },
+        "style": { "font-size": "28px", "margin-bottom": "12px" } },
+      { "name": "Apply", "element": "Button",
+        "attributes": { "text": "Apply" } }
+    ]
+  }
+}
+```
+
+- `element` is an **exact**, runtime-only UI Toolkit element name from the
+  connector-bundled reflection schema; editor controls and custom controls are
+  rejected.
+- `attributes` contains exact reflected UXML attributes for that element. Values
+  are scalar. `data-source*`, `binding*`, and `Bindings` are rejected because
+  MVVM/data binding is outside v1.
+- `style` is an object of exact reflected USS property names and literal USS
+  values. Each value is one scalar declaration: semicolons, braces, and line
+  breaks are rejected so a value cannot add unvalidated CSS. Unsupported
+  properties become warnings and are omitted. The emitter assigns its own
+  `.hera-*` class to every node so generated styles cannot collide with Unity's
+  `unity-*` theme classes.
+- `panel.render_mode` defaults to `screen-space`. `world-space` is accepted only
+  when the **live runtime** is Unity `6000.2` or newer; it is deliberately not
+  inferred from the docs bucket.
+- `--mode upsert` reuses the deterministic generated assets and `UIDocument` for
+  the document name. Default `create` chooses a fresh generated asset stem.
+- `ui_doc export` and `ui_doc capture` remain uGUI-only in v1. `manage_ui create`
+  maps its `canvas|panel|image|button|text|empty` aliases onto the corresponding
+  runtime UI Toolkit element and emits the same scaffold; RectTransform actions
+  (`get_rect`, `set_anchor`, `set_rect`) are unavailable in UITK mode.
+
+`apply` reports `uitk_version`, `uxml_traits`, `uxml_api`, generated asset paths,
+`fixes`, and `diagnostics`. The detailed version contract is
+[`UITK_VERSION_RULES.md`](UITK_VERSION_RULES.md).
+
+## uGUI node
 
 ```jsonc
 {

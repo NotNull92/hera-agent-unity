@@ -2,8 +2,8 @@ Usage:
   hera-agent-unity ui_doc <action> [options]
 
 Actions:
-  export                         Serialize a live UI subtree to ui_doc/2 JSON
-  apply                          Build or upsert a ui_doc/2 document into uGUI
+  export                         Serialize a live uGUI subtree to ui_doc/2 JSON
+  apply                          Build the selected uGUI or UI Toolkit ui_doc/2 backend
   import                         Copy external sprite files under Assets/ as Sprite assets
   gen_sprite                     Bake a procedural sprite under Assets/
   capture                        Render overlay UI canvases to a PNG
@@ -20,8 +20,10 @@ Common examples:
   hera-agent-unity ui_doc catalog --dir C:\art\UIKit
 
 Notes:
+  - Set `asset-config ui-system uitk` before applying a `backend: "uitk"` document.
+    UITK apply emits validated UXML + USS + PanelSettings + UIDocument scaffolding.
   - Full IR reference: docs/UI_DOC_IR.md
   - Full command reference: docs/COMMANDS.md#ui_doc
-  - apply reports docs_version, ugui_package, fixes, and diagnostics from the
-    official uGUI manual bucket for the connected Unity version
+  - uGUI apply reports docs_version / ugui_package; UITK apply reports
+    uitk_version / uxml_traits / uxml_api. Both report fixes and diagnostics.
   - import/gen_sprite destinations must remain inside Assets/

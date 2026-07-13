@@ -1,4 +1,4 @@
-# UI Toolkit Version Rules for Hera UI (Skeleton)
+# UI Toolkit Version Rules for Hera UI
 
 This document is the intended source of truth for `ui_doc` / `manage_ui`
 diagnostics and generation **when `ui_system` is `uitk`** (UI Toolkit /
@@ -52,11 +52,11 @@ model, sourced from live reflection instead of HTML).
 | 6000.3 - 6000.4 | `6000.3` | `docs.unity3d.com/6000.3` | restructured + `accessibility/` | source-gen; traits obsolete `[verified]` |
 | 6000.5+ | `6000.5` | `docs.unity3d.com/6000.5` | restructured | source-gen; traits obsolete; factory registry retired `[verified]` |
 
-> The "UXML authoring API" column (classic `UxmlFactory`/`UxmlTraits` vs
-> source-generated `[UxmlElement]`/`[UxmlAttribute]`, and whether traits types
-> are `[Obsolete]`) is **not asserted** here — it will be filled from the
-> reflection dump. Do not treat any per-version API-generation claim as
-> established until then.
+> The "UXML authoring API" column is established by the committed reflection
+> bundles: 2022.3 has traits and no source-generated attribute; 2023.2 has both;
+> 6000.0+ has the source-generated attribute and obsolete traits. Emitters do not
+> generate custom `[UxmlElement]` controls in v1; these facts select diagnostics
+> only.
 
 Official landing pages (crawled, `[verified]`):
 
@@ -151,7 +151,7 @@ its README). The maintainer runs `dump_uitk_schema.cs` via `hera-agent-unity exe
 `VisualElementFactoryRegistry.factories` + `StylePropertyUtil` and writes a JSONL,
 which `go run ./tools/build-uitk-schema` validates and gzips into
 `AgentConnector/Editor/Data/uitk_schema_<bucket>.jsonl.gz.bytes` (loaded by a
-`UiToolkitStore` mirroring `UnityDocsStore` — loader not yet written).
+version-bucketed `UiToolkitStore` mirroring `UnityDocsStore`).
 
 ### Extraction status
 
@@ -200,14 +200,14 @@ present in both 2022.3 and 6000.x; `animatable` via `IsAnimatable(id)`. The newe
 `inherited` was dropped from the schema — no reliable reflection source; not
 inferred.
 
-Per-line entry shape (draft):
+Per-line entry shape:
 
 ```jsonc
 {
+  "kind": "element",
   "element": "Slider",
   "full_type": "UnityEngine.UIElements.Slider",
   "surface": "runtime",              // runtime | editor  (from namespace)
-  "uxml_tag": "ui:Slider",
   "attributes": [
     { "name": "low-value", "type": "float", "default": "0" },
     { "name": "high-value", "type": "float", "default": "10" },
@@ -243,11 +243,13 @@ generation), recorded with the `%UNITY_HUB_EDITOR%` token (no absolute paths).
 `UiToolkitFixer` (analog of `UiDocFixer`) applies before/during `ui_doc apply`
 when `ui_system` is `uitk`:
 
-- Report `uitk_version` (bucket) and `uxml_api` in the apply response.
+- Report `uitk_version` (bucket), `uxml_traits`, `uxml_api`, and the verified
+  manual index URL in the apply response.
 - Separate `fixes` from `diagnostics` (same `info`/`warning`/`error` model).
-- **Validate against the reflection allow-list**: unknown element → `error`;
-  Editor-only element for a runtime target → `error`; unsupported USS property
-  for the bucket → `warning`.
+- **Validate against the reflection allow-list**: unknown element or UXML
+  attribute → `error`; unsupported USS property for the bucket → `warning` and
+  is omitted. The store contains runtime elements only, so an Editor-only
+  control cannot be emitted through this path.
 - Auto-fix only deterministic, unambiguous shape problems.
 - Do not rewrite creative intent; do not add runtime gameplay/animation
   components. Game Feel stays advisory via `agent_hint`.
@@ -274,15 +276,23 @@ class list (`UIE-USS-Selectors.html`), enumerated USS property list
 (`UIE-uss-properties.html`), UXML namespaces and template syntax (`UIE-UXML.html`).
 Exact USS property support per version comes from `[reflection]`, not these pages.
 
-## Initial Scope (Phase 1)
+## Phase 1 behavior
 
-1. Report version profile: `uitk_version`, `uxml_api`, manual index URL.
-2. Emit `.uxml` (built-in **runtime** elements only) + shared `.uss` classes into
-   `Assets/HeraGenerated/UI` (AssetPathGuard containment).
-3. Validate every emitted element/attribute/USS property against the bucket's
-   reflection allow-list; reject/downgrade unsupported with diagnostics.
-4. Flexbox-first layout (no RectTransform concepts).
-5. `fixes` / `diagnostics` with per-rule IDs.
+1. `asset-config.json` stores the top-level `ui_system` (`ugui` default or
+   `uitk`), above Game Feel in Hera Settings. A single build is always one
+   backend, never a mixed uGUI/UITK tree.
+2. `ui_doc apply` with `backend:"uitk"` and `manage_ui create` emit built-in
+   **runtime** UXML elements, shared `.hera-*` USS classes, a `PanelSettings`
+   asset, and a wired `UIDocument` into `Assets/HeraGenerated/UI`
+   (AssetPathGuard containment).
+3. Validate every user-supplied element, UXML attribute, and USS property
+   against the reflection bundle; reject/downgrade unsupported input with
+   diagnostics. Flexbox/USS replaces RectTransform concepts.
+4. Screen-space is the default. World-space is allowed only when the **live
+   runtime** Unity version is `6000.2+`, never based on the docs bucket.
+5. v1 remains layout scaffolding: no custom controls, `[UxmlElement]` authoring,
+   or MVVM/data-binding attributes. Game Feel is USS-first advisory `agent_hint`
+   guidance, not runtime animation components.
 
 Phase 1 must not: emit Editor-only elements into a runtime target; emit custom
 controls or `[UxmlElement]` C# authoring; emit data-binding attributes; guess
@@ -290,9 +300,4 @@ visual design intent or invent USS beyond the allow-list.
 
 ## Open Items
 
-- Run the reflection dump → resolve every `[reflection]` tag (authoring API per
-  version, exact element surface + attributes, USS property allow-list).
 - Crawl the `[manual-todo]` pages to fill Flexbox/selector/UXML rule categories.
-- Decide the IR: extend `ui_doc/2` or a UITK-native IR for the UXML tree.
-- Decide shared `.uss` class prefix (`.hera-*`) to avoid colliding with built-in
-  `unity-*` theme classes.

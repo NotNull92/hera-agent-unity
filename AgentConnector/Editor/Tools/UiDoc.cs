@@ -12,7 +12,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "ui_doc",
-        Description = "HTML→Unity UI pipeline (uGUI). export: serialize a UI subtree to the compact ui_doc IR (grounding for the agent). apply: realize a ui_doc IR under a parent — pass the doc via --file; --mode create (default, always-new) or upsert (match existing children by name and update rect/graphic/text in place). apply also reports the current official uGUI docs bucket plus deterministic fixes and diagnostics from the version-aware fixer. import: copy external sprite files (absolute paths, e.g. a downloaded UI kit) into the project as Sprite assets (textureType=Sprite, optional 9-slice border/ppu/pivot) so apply can reference them by Assets/ path — pass items via --file or a single --src. gen_sprite: Tier-1 procedural sprite (solid/rounded_rect/gradient/nine_slice) baked + imported, no external dependency. capture: render the live UI (overlay Canvases, which a normal camera render misses) to a PNG so the agent can verify what it built against a reference. (sample — read colors from a reference image — and catalog — scan a UI-asset folder into a manifest of size/alpha/palette/9-slice/name hints — are handled CLI-side, no Unity round-trip; the agent reads the catalogued PNGs to classify them, GIFs are reference-only.) Element property edits beyond the IR stay in manage_components; juice recipes ride apply's agent_hint when Game Feel UI Mode (Beta) is on.",
+        Description = "Unity UI pipeline. With ui_system=ugui, export/apply build the existing compact ui_doc/2 GameObject + RectTransform IR. With ui_system=uitk, apply accepts backend=uitk and emits validated runtime UXML + shared USS + PanelSettings + UIDocument scaffolding under Assets/HeraGenerated/UI; every runtime element, UXML attribute, and USS property is checked against the connected Editor's bundled reflection schema. import/gen_sprite remain asset helpers; capture/export are uGUI-only. Element property edits stay in manage_components; juice recipes ride apply's agent_hint when Game Feel UI Mode (Beta) is on.",
         Examples = new[]
         {
             "hera-agent-unity ui_doc catalog --dir /Users/me/Downloads/UIKit",
@@ -35,7 +35,7 @@ namespace HeraAgent.Tools
     {
         public class Parameters
         {
-            [ToolParameter("Action: export, apply, import, gen_sprite, capture. (sample and catalog are CLI-side.)", Required = true)]
+            [ToolParameter("Action: export, apply, import, gen_sprite, capture. (sample and catalog are CLI-side.) UI Toolkit supports apply; export/capture remain uGUI-only.", Required = true)]
             public string Action { get; set; }
 
             [ToolParameter("export: target subtree by hierarchy path. Alternative to instance_id.")]
@@ -47,7 +47,7 @@ namespace HeraAgent.Tools
             [ToolParameter("export: max child depth to walk (default 8).")]
             public int? Depth { get; set; }
 
-            [ToolParameter("apply: the ui_doc/2 IR document (schema in docs/UI_DOC_IR.md). Nodes carry rect (anchor + pos/size or stretch offset_min/max), image (color/sprite + type/fill for progress bars + extras), text (value/color/align/font), and the layout system (layout group + layout_element + fit) for relative arrangement. The CLI injects this from --file so the doc never rides inline in the agent's context; inline JSON is also accepted.")]
+            [ToolParameter("apply: a ui_doc/2 document (schema in docs/UI_DOC_IR.md). ui_system=ugui uses rect/image/text/layout nodes. ui_system=uitk requires backend=uitk and runtime element names with attributes plus style (USS) objects. The CLI injects this from --file so the doc never rides inline in the agent's context; inline JSON is also accepted.")]
             public string Doc { get; set; }
 
             [ToolParameter("apply: parent path/InstanceID to attach the doc root under. Default: an existing/auto-created Canvas.")]
@@ -102,12 +102,16 @@ namespace HeraAgent.Tools
 
             switch (action.ToLowerInvariant())
             {
-                case "export": return Export(raw);
+                case "export": return HeraSettings.UsesUiToolkit
+                    ? new ErrorResponse("UITK_ACTION_UNSUPPORTED", "ui_doc export only serializes live uGUI GameObjects; UI Toolkit v1 emits UXML/USS from an input document.")
+                    : Export(raw);
                 case "apply": return Apply(raw);
                 case "import": return Import(raw);
                 case "gen_sprite":
                 case "gensprite": return GenSprite(raw);
-                case "capture": return Capture(raw);
+                case "capture": return HeraSettings.UsesUiToolkit
+                    ? new ErrorResponse("UITK_ACTION_UNSUPPORTED", "ui_doc capture renders overlay Canvases and is unavailable for UI Toolkit output.")
+                    : Capture(raw);
                 default:
                     return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: export, apply, import, gen_sprite, capture.");
             }
@@ -151,6 +155,9 @@ namespace HeraAgent.Tools
             var doc = AsObject(p.GetRaw("doc"));
             if (doc == null)
                 return new ErrorResponse("MISSING_PARAM", "apply needs 'doc' (the ui_doc IR; pass --file design.json).");
+
+            if (HeraSettings.UsesUiToolkit)
+                return ApplyUiToolkitDocument(doc, raw);
 
             var rootNode = doc["root"] as JObject ?? doc; // allow a bare node too
             if (rootNode["name"] == null && rootNode["element"] == null)
@@ -213,6 +220,59 @@ namespace HeraAgent.Tools
             if (HeraSettings.GameFeelUiMode)
                 resp.agent_hint = UIJuiceGuide.ForElements(stats.ElementTypes, HeraSettings.DotweenPreferred);
             return resp;
+        }
+
+        internal static object ApplyUiToolkitDocument(JObject doc, JObject raw)
+        {
+            if (!string.Equals(doc?["backend"]?.ToString(), "uitk", System.StringComparison.OrdinalIgnoreCase))
+                return new ErrorResponse("UI_SYSTEM_MISMATCH", "ui_system is uitk, so ui_doc apply requires a document with backend: 'uitk'.");
+
+            var p = new ToolParams(raw);
+            Transform parent = null;
+            var parentToken = p.GetRaw("parent");
+            if (parentToken != null && parentToken.Type != JTokenType.Null && !string.IsNullOrEmpty(parentToken.ToString()))
+            {
+                var (target, error) = TargetResolver.ResolveTransform(parentToken.ToString());
+                if (error != null) return error;
+                parent = target;
+            }
+
+            var upsert = string.Equals(p.Get("mode"), "upsert", System.StringComparison.OrdinalIgnoreCase);
+            var result = UiToolkitDocument.Apply(doc, parent, upsert);
+            if (result.Errors.Count > 0)
+            {
+                return new ErrorResponse("UITK_VALIDATION_FAILED", "UI Toolkit document was not emitted.", new
+                {
+                    uitk_version = result.FixerProfile.uitk_version,
+                    uxml_traits = result.FixerProfile.uxml_traits,
+                    uxml_api = result.FixerProfile.uxml_api,
+                    manual_url = result.FixerProfile.manual_url,
+                    fixes = result.Fixes,
+                    diagnostics = result.Diagnostics,
+                    errors = result.Errors,
+                });
+            }
+
+            var response = new SuccessResponse("Applied UI Toolkit document", new
+            {
+                created = result.Created,
+                updated = result.Updated,
+                elements = result.Elements,
+                uitk_version = result.FixerProfile.uitk_version,
+                uxml_traits = result.FixerProfile.uxml_traits,
+                uxml_api = result.FixerProfile.uxml_api,
+                manual_url = result.FixerProfile.manual_url,
+                uxml_asset = result.UxmlAsset,
+                uss_asset = result.UssAsset,
+                panel_settings_asset = result.PanelSettingsAsset,
+                world_space = result.WorldSpace,
+                fixes = result.Fixes,
+                diagnostics = result.Diagnostics,
+                root_id = result.RootId,
+            });
+            if (HeraSettings.GameFeelUiMode)
+                response.agent_hint = UIJuiceGuide.ForUiToolkitElements(result.ElementTypes);
+            return response;
         }
 
         static object GenSprite(JObject raw)

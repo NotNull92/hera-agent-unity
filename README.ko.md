@@ -16,7 +16,7 @@
 
 <br>
 
-[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [Input QA](#input-qa) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
+[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [UI 시스템](#ui-시스템) · [Input QA](#input-qa) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
 
 [English](README.md) · **한국어**
 
@@ -223,7 +223,7 @@ AI가 가장 자주 쓰는 명령어입니다.
 | `manage_gameobject` | GameObject를 만들고, 복제하고, 옮기고, 이름을 바꿉니다. |
 | `manage_components` | 컴포넌트를 추가, 삭제, 조회, 수정합니다. |
 | `manage_animation` | AnimationClip과 AnimatorController 상태머신을 저작합니다. |
-| `ui_doc` | Unity UI를 만들고 캡처합니다. |
+| `ui_doc` | uGUI 또는 UI Toolkit 스캐폴드를 만들고, uGUI overlay를 캡처합니다. |
 | `input` | Unity EventSystem raycast와 pointer handler로 uGUI 상호작용을 검증합니다. |
 | `game_feel` | 게임 필 레시피를 조회합니다 (screen shake, hit stop, honest juice 등). |
 | `test` | Unity 테스트를 실행합니다. |
@@ -281,6 +281,27 @@ hera-agent-unity ui_doc capture --out hud_built.png
 예를 들어 Unity 6000.3은 `com.unity.ugui@2.0`, Unity 6000.5+는
 `com.unity.ugui@2.5` 규칙을 사용합니다. 자동으로 고친 항목은 `fixes`,
 판단이 필요한 구조 문제는 `diagnostics`에 나옵니다.
+
+---
+
+## UI 시스템
+
+기본값 `ugui`는 기존 Canvas, GameObject, RectTransform 워크플로를 그대로
+사용합니다. 런타임 UI Toolkit 프로젝트라면 `uitk`를 설정합니다:
+
+```bash
+hera-agent-unity asset-config ui-system uitk
+hera-agent-unity ui_doc apply --file settings-uitk.json
+```
+
+UITK 문서는 `backend: "uitk"`를 사용하고, 정확한 runtime element 이름,
+리플렉션으로 검증된 UXML attribute, 리플렉션으로 검증된 USS property를
+사용합니다. Hera는 `Assets/HeraGenerated/UI` 아래에 `.uxml`, 공유
+`.hera-*` `.uss`, screen-space `PanelSettings`, 연결된 `UIDocument`를
+만듭니다. world-space는 라이브 Unity runtime이 6000.2 이상일 때만
+가능하며 docs bundle bucket과 별개로 판정합니다. UI Toolkit v1은 layout
+scaffolding 범위이고 MVVM data binding은 의도적으로 포함하지 않습니다.
+두 backend 계약은 [UI_DOC_IR.md](docs/UI_DOC_IR.md)를 참고하세요.
 
 ---
 

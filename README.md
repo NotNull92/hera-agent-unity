@@ -16,7 +16,7 @@
 
 <br>
 
-[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [Input QA](#input-qa) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
+[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [UI Systems](#ui-systems) · [Input QA](#input-qa) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
 
 **English** · [한국어](README.ko.md)
 
@@ -223,7 +223,7 @@ Here are the commands most agents use first.
 | `manage_gameobject` | Creates, duplicates, moves, renames, parents, or deletes GameObjects. |
 | `manage_components` | Adds, removes, reads, or edits components. |
 | `manage_animation` | Authors AnimationClips and AnimatorController state machines. |
-| `ui_doc` | Builds and captures Unity UI. |
+| `ui_doc` | Builds uGUI or UI Toolkit scaffolding; captures live uGUI overlays. |
 | `input` | Verifies uGUI interaction through Unity EventSystem raycasts and pointer handlers. |
 | `game_feel` | Looks up game-feel recipes (screen shake, hit stop, honest juice, ...). |
 | `test` | Runs Unity tests. |
@@ -280,6 +280,27 @@ This is the main idea: do not guess the UI. Measure it. During `ui_doc apply`,
 Hera also reports the active official uGUI docs bucket (`2022.3`, `2023.2`,
 `6000.0`, `6000.3`, or `6000.5`), deterministic `fixes`, and remaining
 `diagnostics` so the agent can correct version-specific uGUI structure.
+
+---
+
+## UI Systems
+
+`ugui` is the default and keeps the existing Canvas, GameObject, and
+RectTransform workflow. Set `uitk` when the project uses runtime UI Toolkit:
+
+```bash
+hera-agent-unity asset-config ui-system uitk
+hera-agent-unity ui_doc apply --file settings-uitk.json
+```
+
+The UITK document uses `backend: "uitk"`, exact runtime element names,
+reflection-validated UXML attributes, and reflection-validated USS properties.
+Hera emits `.uxml`, shared `.hera-*` `.uss`, a screen-space `PanelSettings`, and
+a wired `UIDocument` under `Assets/HeraGenerated/UI`. World-space is available
+only on a live Unity runtime version of 6000.2 or newer; that gate is independent
+of the docs-bundle bucket. UI Toolkit v1 is layout scaffolding—MVVM data binding
+is intentionally out of scope. See [UI_DOC_IR.md](docs/UI_DOC_IR.md) for the
+two backend contracts.
 
 ---
 

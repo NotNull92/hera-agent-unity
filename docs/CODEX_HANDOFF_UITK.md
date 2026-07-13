@@ -89,26 +89,27 @@ window) to start from. uGUI and UI Toolkit are entirely different systems
 - **v1 = layout scaffolding** (`.uxml` + shared `.uss` classes). MVVM data binding
   (`data-source`, SerializedObject binding) is OUT of v1.
 
-## NEXT — what Codex should build
+## Completed by Codex (2026-07-13, Connector 0.0.60)
 
-1. **`ui_system` toggle** (mirror the `game_feel_ui_mode` plumbing exactly):
-   - `internal/assetconfig` (Go): add `ui_system` field with round-trip + default `ugui`.
-   - C# `Core/HeraSettings`: read `ui_system` (mtime-cached) at dispatch.
-   - CLI: `asset-config ui-system [ugui|uitk]` + surface in `--json`.
-   - Hera Settings window: a selector ABOVE the Game Feel section.
-2. **Emitter** — `ui_doc` / `manage_ui` branch on `ui_system`:
-   - uitk path emits `.uxml` + shared `.uss` classes (prefix `.hera-*` to avoid
-     colliding with built-in `unity-*` theme classes) into `Assets/HeraGenerated/UI`
-     (via `Core/AssetPathGuard`).
-   - Consume `UiToolkitStore` to validate every emitted element/attribute/USS
-     property; reject/downgrade unsupported with diagnostics. Flexbox layout, not
-     RectTransform. Screen-space PanelSettings by default; world-space only when
-     runtime version `>= 6000.2`.
-   - Compile deps: UI/UITK types resolved via TypeCache/reflection (asmdef
-     `references: []` stays — same as the uGUI `manage_ui` approach).
-3. **`UiToolkitFixer`** (analog of `Core/UiDocFixer`): report `uitk_version` /
-   `uxml_traits`; validate against `UiToolkitStore`; separate `fixes` from
-   `diagnostics`; advisory Game Feel via `agent_hint`.
+1. **`ui_system` toggle** mirrors the Game Feel plumbing: Go config round-trips
+   `ui_system` with default `ugui`; `HeraSettings` mtime-caches it; CLI exposes
+   `asset-config ui-system [ugui|uitk]` and `--json`; Hera Settings places the
+   selector above Game Feel.
+2. **Emitter** — `ui_doc apply` and `manage_ui create` branch on `ui_system`.
+   UITK emits `.uxml`, shared `.hera-*` `.uss`, `PanelSettings`, and a wired
+   `UIDocument` in `Assets/HeraGenerated/UI`; types resolve through reflection,
+   leaving asmdef `references: []` unchanged. Exact runtime elements/UXML
+   attributes/USS properties are validated via `UiToolkitStore`; bad attributes
+   reject, bad USS properties warn and are omitted.
+3. **`UiToolkitFixer`** reports `uitk_version`, `uxml_traits`, and `uxml_api`,
+   separates fixes from diagnostics, rejects data binding, and supplies the
+   system-aware Game Feel advisory hint. World-space gates on the live runtime
+   parser (`>=6000.2`), never the docs bucket.
+4. **Verification completed** — Go asset-config tests passed; live Unity 6000.5
+   compile had zero console errors; a real UXML/USS/PanelSettings/UIDocument
+   scaffold, `manage_ui` bridge, validation rejection/downgrade paths, and
+   `HeraAgent/Tests/UiToolkitFixer` all passed. Test artifacts were removed and
+   the shared config was restored to `ugui`.
 
 ## How to work (project rules)
 

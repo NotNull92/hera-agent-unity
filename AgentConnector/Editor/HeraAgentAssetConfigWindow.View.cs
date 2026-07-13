@@ -815,6 +815,86 @@ namespace HeraAgent.Editor
             btn.style.height = 26;
         }
 
+        private void BuildUiSystemSection()
+        {
+            var section = new VisualElement();
+            section.style.backgroundColor = ColorBgCard;
+            section.style.borderTopWidth = 1;
+            section.style.borderBottomWidth = 1;
+            section.style.borderTopColor = ColorBorder;
+            section.style.borderBottomColor = ColorBorder;
+            section.style.paddingTop = 10;
+            section.style.paddingBottom = 10;
+            section.style.paddingLeft = 12;
+            section.style.paddingRight = 12;
+            section.style.marginBottom = 6;
+            section.style.flexShrink = 0;
+            section.style.flexGrow = 0;
+
+            var header = new VisualElement();
+            header.style.flexDirection = FlexDirection.Row;
+            header.style.alignItems = Align.Center;
+            var icon = new Label("▣");
+            icon.style.fontSize = 13;
+            icon.style.marginRight = 4;
+            icon.style.color = ColorGold;
+            header.Add(icon);
+            var title = new Label("UI System");
+            title.style.fontSize = 13;
+            title.style.unityFontStyleAndWeight = FontStyle.Bold;
+            title.style.color = ColorGold;
+            header.Add(title);
+            section.Add(header);
+
+            var description = new Label(
+                "Choose the one UI authoring system Hera emits. uGUI keeps the existing "
+                + "GameObject + RectTransform workflow. UI Toolkit emits runtime UXML + USS "
+                + "scaffolding under Assets/HeraGenerated/UI.");
+            description.style.fontSize = 10;
+            description.style.color = ColorTextSecondary;
+            description.style.whiteSpace = WhiteSpace.Normal;
+            description.style.marginTop = 6;
+            section.Add(description);
+
+            var row = new VisualElement();
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.marginTop = 8;
+            section.Add(row);
+
+            var current = NormalizeUiSystem(_config?.ui_system);
+            var toggles = new Dictionary<string, Toggle>();
+
+            void AddSystemToggle(string system, string label, string tooltip)
+            {
+                var toggle = new Toggle(label) { value = current == system, tooltip = tooltip };
+                toggle.style.marginRight = 12;
+                toggle.style.color = ColorTextPrimary;
+                row.Add(toggle);
+                toggles[system] = toggle;
+                toggle.RegisterValueChangedCallback(evt =>
+                {
+                    if (_config == null) return;
+                    if (!evt.newValue)
+                    {
+                        if (NormalizeUiSystem(_config.ui_system) == system)
+                            toggle.SetValueWithoutNotify(true);
+                        return;
+                    }
+
+                    _config.ui_system = system;
+                    foreach (var pair in toggles)
+                        pair.Value.SetValueWithoutNotify(pair.Key == system);
+                    _isDirty = true;
+                    SaveConfig();
+                    UpdateStatusBar();
+                });
+            }
+
+            AddSystemToggle(UiSystemUGUI, "uGUI", "GameObject + RectTransform UI (the existing default).");
+            AddSystemToggle(UiSystemUITK, "UI Toolkit", "Runtime UXML + USS scaffolding, validated against this Editor version.");
+            _root.Add(section);
+        }
+
         // Game Feel Mode (Beta) — gameplay-wide game-feel guidance toggle.
         // When on, `doctor --agent-rules` and tool responses point agents at the
         // bundled game_feel knowledge base (Game Feel & Juice Bible + Ethical

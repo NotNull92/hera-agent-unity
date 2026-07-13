@@ -13,11 +13,15 @@ namespace HeraAgent
     /// </summary>
     public static class HeraSettings
     {
+        public const string UiSystemUGUI = "ugui";
+        public const string UiSystemUITK = "uitk";
+
         private static readonly object s_lock = new object();
         private static long s_stampTicks = long.MinValue;
         private static bool s_gameFeelUiMode;
         private static bool s_gameFeelMode;
         private static bool s_dotweenPreferred;
+        private static string s_uiSystem = UiSystemUGUI;
         private static string s_defaultCscPath;
         private static string s_defaultDotnetPath;
 
@@ -45,6 +49,14 @@ namespace HeraAgent
         {
             get { Refresh(); return s_dotweenPreferred; }
         }
+
+        /// <summary>Selected UI authoring system. Defaults to uGUI when unset or unreadable.</summary>
+        public static string UiSystem
+        {
+            get { Refresh(); return s_uiSystem; }
+        }
+
+        public static bool UsesUiToolkit => UiSystem == UiSystemUITK;
 
         /// <summary>
         /// User-configured csc path from asset-config.json, or null when unset/unreadable.
@@ -81,6 +93,7 @@ namespace HeraAgent
                         s_gameFeelUiMode = false;
                         s_gameFeelMode = false;
                         s_dotweenPreferred = false;
+                        s_uiSystem = UiSystemUGUI;
                         s_defaultCscPath = null;
                         s_defaultDotnetPath = null;
                         return;
@@ -95,6 +108,7 @@ namespace HeraAgent
                     // so a config not yet re-saved after the Game Feel UI Mode rename still honours the toggle.
                     s_gameFeelUiMode = root.Value<bool?>("game_feel_ui_mode") ?? root.Value<bool?>("ui_juicy_mode") ?? false;
                     s_gameFeelMode = root.Value<bool?>("game_feel_mode") ?? false;
+                    s_uiSystem = NormalizeUiSystem(root.Value<string>("ui_system"));
                     s_defaultCscPath = root.Value<string>("defaultCscPath");
                     s_defaultDotnetPath = root.Value<string>("defaultDotnetPath");
 
@@ -119,10 +133,18 @@ namespace HeraAgent
                     s_gameFeelUiMode = false;
                     s_gameFeelMode = false;
                     s_dotweenPreferred = false;
+                    s_uiSystem = UiSystemUGUI;
                     s_defaultCscPath = null;
                     s_defaultDotnetPath = null;
                 }
             }
+        }
+
+        private static string NormalizeUiSystem(string value)
+        {
+            return string.Equals(value?.Trim(), UiSystemUITK, StringComparison.OrdinalIgnoreCase)
+                ? UiSystemUITK
+                : UiSystemUGUI;
         }
     }
 }

@@ -35,6 +35,7 @@ namespace HeraAgent.Editor
             public string defaultCscPath;
             public string defaultDotnetPath;
             public string loopEngineeringMode;
+            public string ui_system = "ugui";
 
             // Game Feel UI Mode (Beta) — when on, manage_ui attaches Game Feel & Juice
             // Bible + UI Feedback Design Guide juice guidance (DOTween-aware) to its
@@ -53,6 +54,8 @@ namespace HeraAgent.Editor
         private const string LoopEngineeringOff = "off";
         private const string LoopEngineeringLight = "light";
         private const string LoopEngineeringUltra = "ultra";
+        private const string UiSystemUGUI = "ugui";
+        private const string UiSystemUITK = "uitk";
 
         private static string GetConfigPath()
         {
@@ -126,6 +129,13 @@ namespace HeraAgent.Editor
                 changed = true;
             }
 
+            var normalizedUiSystem = NormalizeUiSystem(_config.ui_system);
+            if (_config.ui_system != normalizedUiSystem)
+            {
+                _config.ui_system = normalizedUiSystem;
+                changed = true;
+            }
+
             var defaults = GetDefaultAssets();
             var existingIds = new HashSet<string>(_config.assets.Select(a => a.id));
 
@@ -154,6 +164,13 @@ namespace HeraAgent.Editor
                 default:
                     return LoopEngineeringLight;
             }
+        }
+
+        private static string NormalizeUiSystem(string system)
+        {
+            return string.Equals(system?.Trim(), UiSystemUITK, StringComparison.OrdinalIgnoreCase)
+                ? UiSystemUITK
+                : UiSystemUGUI;
         }
 
         private void InitializeCategoryStates()

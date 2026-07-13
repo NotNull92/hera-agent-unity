@@ -910,7 +910,11 @@ hera-agent-unity manage_asset_import set --path Assets/Tex/icon.png --property m
 
 ## manage_ui
 
-uGUI authoring. The value-add over `manage_components`'s raw `m_` paths is the **RectTransform anchor/pivot math**: named anchor presets and visual-position-preserving re-anchoring. UI and TextMeshPro types resolve through `TypeCache`, so the connector still compiles in a project without `com.unity.ugui` installed. Element *property* edits (Image color, Button colors, Text font) stay in `manage_components`.
+UI authoring selected by `asset-config ui-system`. In the default `ugui` mode,
+the value-add over `manage_components`'s raw `m_` paths is **RectTransform
+anchor/pivot math**. In `uitk` mode, `create` emits a reflection-validated
+runtime UXML/USS/PanelSettings/UIDocument scaffold; UI Toolkit uses Flexbox, so
+the RectTransform-only actions return an explicit unsupported-action error.
 
 ```bash
 hera-agent-unity manage_ui <action> [flags]
@@ -918,10 +922,10 @@ hera-agent-unity manage_ui <action> [flags]
 
 | Action | Flags | Description |
 |:---|:---|:---|
-| `create` | `--element <kind>` `[--name <n>]` `[--content <text>]` `[--text tmp\|legacy]` `[--parent </path> or <id>]` | Create a UI element. Kinds: `canvas`, `panel`, `image`, `button`, `text`, `empty`. Auto-creates a Canvas + EventSystem when one is missing; non-canvas elements default to the existing/auto Canvas as parent. |
-| `get_rect` | `--instance_id <id>` or `--path </path>` | Read the full RectTransform (anchors, pivot, offsets, size) + detected preset. |
-| `set_anchor` | `--preset <name>` or `--anchor_min x,y --anchor_max x,y`; `[--snap true]` `[--pivot x,y]` | Re-anchor. By default the rect stays visually fixed (offsets recomputed); `--snap` zeroes offsets / fills and moves the pivot to match (Unity's Alt+Shift click). |
-| `set_rect` | `[--anchored_position x,y]` `[--size_delta x,y]` `[--pivot x,y]` `[--offset_min x,y]` `[--offset_max x,y]` | Set any subset of RectTransform fields directly. |
+| `create` | `--element <kind>` `[--name <n>]` `[--content <text>]` `[--text tmp\|legacy]` `[--parent </path> or <id>]` | uGUI: create an element from `canvas`, `panel`, `image`, `button`, `text`, `empty`, auto-creating Canvas + EventSystem. UITK: map those aliases (or use an exact reflected runtime UITK element) and emit the generated UXML/USS scaffold. |
+| `get_rect` | `--instance_id <id>` or `--path </path>` | Read the full RectTransform in uGUI mode; unavailable in UITK mode. |
+| `set_anchor` | `--preset <name>` or `--anchor_min x,y --anchor_max x,y`; `[--snap true]` `[--pivot x,y]` | Re-anchor in uGUI mode; unavailable in UITK mode. |
+| `set_rect` | `[--anchored_position x,y]` `[--size_delta x,y]` `[--pivot x,y]` `[--offset_min x,y]` `[--offset_max x,y]` | Set RectTransform fields in uGUI mode; unavailable in UITK mode. |
 
 **Text engine** — `create text` / `create button` use TextMeshPro when the package is present, else the legacy `UnityEngine.UI.Text`; force either with `--text tmp` / `--text legacy`.
 
@@ -987,10 +991,12 @@ Current backend status:
 
 ## ui_doc
 
-HTML→Unity UI pipeline (uGUI). The agent is fluent in HTML/CSS but weak at uGUI; `ui_doc` closes the gap by giving it **deterministic** endpoints plus a compact JSON IR (`ui_doc/2`) as the contract:
+HTML→Unity UI pipeline. `ui_system=ugui` uses the existing uGUI IR;
+`ui_system=uitk` uses a separate UI Toolkit UXML/USS branch. The two backends
+never mix GameObject/RectTransform nodes with VisualElement nodes:
 
 - **`export`** serializes a live UI subtree to the IR (defaults omitted) — *grounding* so the agent maps an HTML design onto the project's real structure instead of guessing.
-- **`apply`** builds or upserts an IR document under a parent and reports a compact summary plus the active official uGUI docs bucket, deterministic fixes, and diagnostics.
+- **`apply`** builds or upserts the selected backend. uGUI reports its official package profile; UITK emits runtime UXML + `.hera-*` USS + PanelSettings + UIDocument, reporting the reflection bucket and diagnostics.
 - **`import`** copies your own sprite files (absolute paths — a downloaded UI kit, exported art) into the project as `Sprite` assets so `apply` can reference them by `Assets/` path. Optional per-sprite 9-slice `border`, `ppu`, `filter`, `pivot`. GIFs are skipped (Unity has no GIF→Sprite import).
 - **`gen_sprite`** bakes a Tier-1 procedural sprite (CSS-shape vocabulary) and imports it — **no external dependency**.
 - **`capture`** renders the live UI to a PNG so the agent can *see* what it built and compare it to the reference. ScreenSpaceOverlay canvases are composited after the camera, so a normal `screenshot` misses them; `capture` routes every root non-world canvas through a throwaway camera + RenderTexture.
@@ -1008,14 +1014,14 @@ hera-agent-unity ui_doc <action> [flags]
 | Action | Flags | Description |
 |:---|:---|:---|
 | `export` | `--path </path>` or `--instance_id <id>`; `[--depth N]` | Serialize the subtree to the `ui_doc/2` IR. Depth defaults to 8. |
-| `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | Realize the IR under the parent (default: existing/auto Canvas). `create` (default) always makes new objects; `upsert` matches existing children by name and updates rect/graphic/text in place (no duplicates, no deletes). Before realizing, runs the official uGUI docs fixer for the current Unity bucket. Pass the doc via `--file` so it never rides inline in context. |
+| `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | uGUI: realize the IR under the parent (default: existing/auto Canvas) and run the uGUI fixer. UITK: require `backend:"uitk"`, validate runtime elements/attributes/USS against `UiToolkitStore`, then emit `.uxml` + `.uss` + PanelSettings + UIDocument under `Assets/HeraGenerated/UI`. Screen-space is default; world-space requires runtime Unity 6000.2+. Pass the doc via `--file` so it never rides inline in context. |
 | `import` | `--src <abs path>` **or** `--file <imports.json>`; `[--into Assets/...]`; `[--border l,b,r,t]`; `[--ppu N]`; `[--filter point\|bilinear]`; `[--pivot x,y]` | Copy external sprite file(s) into the project as `Sprite` assets. Single sprite via `--src` + shared flags; many (with per-sprite settings) via `--file` `{into?, items:[{src, name?, border?, ppu?, filter?, pivot?}]}`. Default dest: `Assets/HeraImported/`. A `border` sets `Image.type = Sliced` (FullRect mesh). GIFs are skipped. Returns `{into, imported:[{src,asset,instance_id,sliced}], skipped, errors, count}`. |
 | `gen_sprite` | `--spec '{...}'` or `--kind/--size/--color/...`; `[--out Assets/...]` | Bake + import a sprite. Kinds: `solid`, `rounded_rect`, `gradient`, `nine_slice` (rounded box + 9-slice `border [l,b,r,t]`, default = radius). Default out: `Assets/HeraGenerated/`. |
 | `capture` | `[--out <file.png>]`; `[--width N] [--height N]`; `[--bg #RRGGBBAA]`; `[--canvas </path> or <id>]` | Render the live overlay UI to a PNG. Size defaults to the canvas pixel size (current game view); `bg` defaults to opaque dark (`alpha 0` = transparent); without `--canvas` it captures all root non-world canvases. Default out: a temp file. Returns `{path,width,height,bytes,canvases}`. |
 | `sample` | `--image <ref.png>`; `--at "x,y"` and/or `--region "x,y,w,h"`; `[--kernel N]` | Read measured colors from a reference image. Coordinates are **normalized [0,1], top-left origin**; `;`-separate several (`--at "0.5,0.5;0.1,0.2"`). Points are averaged over a `±kernel` px box (default 2) to shrug off antialiasing. Returns each as `{at/region, px, hex, rgba}`. CLI-side — no Unity needed. |
 | `catalog` | `--dir <abs folder>`; `[--max N]` | Recursively scan a folder of UI sprites into a manifest. Per image: `{path, format, w, h, aspect, has_alpha, opaque_bounds, palette, nine_slice_hint, name_hint}` (defaults omitted). `nine_slice_hint` is `[left,bottom,right,top]`, ready to pass to `import --border`. GIFs get `{animated, frames, reference_only}` (not importable). Undecodable Unity-only formats (tga/psd/exr…) are listed with `decoded:false`. `--max` caps the count (default 300). CLI-side — no Unity needed. |
 
-**IR shape (`ui_doc/2`)** — a node tree; defaults are omitted on export (`anchor` uses the same preset names as `manage_ui set_anchor`, else `anchor_min`/`anchor_max`). Full reference: [`UI_DOC_IR.md`](UI_DOC_IR.md).
+**IR shape (`ui_doc/2`)** — backend-specific node tree. uGUI defaults are omitted on export (`anchor` uses the same preset names as `manage_ui set_anchor`, else `anchor_min`/`anchor_max`). UITK accepts exact runtime element names plus `attributes` and `style`. Full reference: [`UI_DOC_IR.md`](UI_DOC_IR.md).
 
 ```jsonc
 { "schema": "ui_doc/2", "backend": "ugui",
@@ -1308,7 +1314,8 @@ hera-agent-unity version
 
 ## asset-config
 
-Manage asset configuration (interactive TUI or command-based).
+Manage asset configuration (interactive TUI or command-based), including the
+top-level UI authoring backend.
 
 ```bash
 hera-agent-unity asset-config <subcommand>
@@ -1323,13 +1330,14 @@ hera-agent-unity asset-config <subcommand>
 | `toggle <id>` | Flip an asset ON/OFF |
 | `gamefeel [on\|off]` | Show or set Game Feel Mode (Beta) (gameplay game-feel guidance via `game_feel` + agent rules) |
 | `gamefeel-ui [on\|off]` | Show or set Game Feel UI Mode (Beta) (drives `manage_ui` juice guidance); `juicy` is a legacy alias |
+| `ui-system [ugui\|uitk]` | Show or set the UI authoring system. `ugui` is the default; `uitk` routes `ui_doc apply` and `manage_ui create` to runtime UXML/USS emission. |
 | `detect` | Auto-detect installed assets (requires Unity) |
 | `get <id>` | Show a single asset's state |
 | `path` | Print the config file path |
 
 | Flag | Description | Default |
 |:---|:---|:---|
-| `--json` | Output enabled assets + `loop_engineering_mode` + `game_feel_mode` + `game_feel_ui_mode` + `dotween_preferred` as JSON | `false` |
+| `--json` | Output enabled assets + `loop_engineering_mode` + `ui_system` + `game_feel_mode` + `game_feel_ui_mode` + `dotween_preferred` as JSON | `false` |
 
 ---
 

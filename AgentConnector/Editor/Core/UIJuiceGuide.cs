@@ -130,7 +130,48 @@ namespace HeraAgent
             return Header + string.Join("\n\n", bodies) + "\n" + TweenLine(dotweenPreferred) + "\n" + DeepLine(keys) + Footer;
         }
 
+        public static string ForUiToolkitElements(IEnumerable<string> elements)
+        {
+            if (elements == null) return null;
+            var bodies = new List<string>();
+            var seen = new HashSet<string>();
+            var keys = new List<string>();
+            foreach (var element in elements)
+            {
+                var key = UiToolkitRecipeKey(element);
+                if (key == null || !seen.Add(key) || !Recipes.TryGetValue(key, out var recipe)) continue;
+                bodies.Add("--- " + key + " ---\n" + recipe);
+                keys.Add(key);
+            }
+            if (bodies.Count == 0) return null;
+            return UiToolkitHeader + string.Join("\n\n", bodies) + "\n" +
+                "UI Toolkit implementation: keep layout feedback in generated .hera-* USS classes. Use supported transition-* properties plus :hover/:active selectors for interaction states; reserve experimental.animation for a runtime behavior layer, not this layout scaffold.\n" +
+                DeepLine(keys) + Footer;
+        }
+
+        static string UiToolkitRecipeKey(string element)
+        {
+            switch (element)
+            {
+                case "Button":
+                case "Toggle":
+                    return "button";
+                case "Label":
+                case "TextField":
+                    return "text";
+                case "Image":
+                    return "image";
+                case "VisualElement":
+                case "Box":
+                case "ScrollView":
+                    return "panel";
+                default:
+                    return null;
+            }
+        }
+
         const string Header = "[Hera] Game Feel UI Mode (Beta) is on — make this feel alive (Game Feel & Juice Bible). Maximum output for minimum input.\n";
+        const string UiToolkitHeader = "[Hera] Game Feel UI Mode (Beta) is on — make this UI Toolkit scaffold feel alive with USS-first feedback.\n";
         const string Footer = "Golden rule — double down on the screen's purpose: reward / celebration UI earns big, exaggerated juice (bigger = more important); precision or input-heavy UI (forms, drag, text entry, competitive HUD) stays calm and steady so it stays readable. Honest Juice: presentation intensity must match the actual value of what happened. Always gate strong motion behind a reduce-motion / intensity option, and match feedback weight to action weight.";
 
         static string DeepLine(IReadOnlyList<string> keys)

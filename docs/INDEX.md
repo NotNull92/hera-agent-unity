@@ -42,6 +42,7 @@ Tests, TUI, batch engine, and asset-config layer sit on top — but the engine t
 | [`CSHARP_CONNECTOR.md`](CSHARP_CONNECTOR.md) | C# Unity side — HttpServer, CommandRouter, ToolDiscovery | Modifying C# code |
 | [`COMMANDS.md`](COMMANDS.md) | All CLI commands, flags, parameters | Adding/changing commands |
 | [`UGUI_VERSION_RULES.md`](UGUI_VERSION_RULES.md) | Official Unity uGUI version rules for UI diagnostics/fixer behavior | Changing `ui_doc`, `manage_ui`, or UI generation/fixer behavior |
+| [`UITK_VERSION_RULES.md`](UITK_VERSION_RULES.md) | Reflection-backed UI Toolkit runtime rules for UXML/USS generation | Changing `ui_system`, UITK emission, or `UiToolkitFixer` behavior |
 | [`UNITY_EDITOR_VERSION_INVENTORY.md`](UNITY_EDITOR_VERSION_INVENTORY.md) | Local Unity Editor layout inventory for Hera compatibility work | Updating Unity version buckets, compiler discovery, or version-specific probes |
 | [`INPUT_QA_DESIGN.md`](INPUT_QA_DESIGN.md) | Design for Hera-driven Unity input QA when external physical clicks are blocked | Adding or reviewing the `input` tool |
 | [`CUSTOM_TOOLS.md`](CUSTOM_TOOLS.md) | How to write new C# tools that the CLI can call | Extending functionality |

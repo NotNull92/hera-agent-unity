@@ -15,7 +15,7 @@ cmd/                  # Cobra-free command implementation
   status.go           # status, waitForAlive, waitForReady, ping
   update.go           # self-update from GitHub releases
   version_check.go    # periodic update notice (12h interval)
-  asset_config.go     # asset-config subcommand, including Ultra Hera mode JSON
+  asset_config.go     # asset-config subcommand, including ui_system and Ultra Hera JSON
   batch.go            # batch command execution
   ui_doc.go           # ui_doc dispatch + CLI-side sample/catalog
   manage_packages.go  # async package job polling
@@ -34,7 +34,7 @@ internal/
     process_unix.go        # Unix PID alive check
     process_windows.go     # Windows PID check
   assetconfig/
-    config.go              # asset-config.json read/write (assets + loopEngineeringMode)
+    config.go              # asset-config.json read/write (assets + ui_system + loopEngineeringMode)
   tui/
     assetconfig.go         # bubbletea TUI for asset-config
   poll/

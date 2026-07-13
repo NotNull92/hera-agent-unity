@@ -32,11 +32,21 @@ const (
 	LoopEngineeringUltra LoopEngineeringMode = "ultra"
 )
 
+// UISystem selects the UI authoring backend used by ui_doc and manage_ui.
+// UGUI remains the default so existing UI workflows keep their behavior.
+type UISystem string
+
+const (
+	UISystemUGUI UISystem = "ugui"
+	UISystemUITK UISystem = "uitk"
+)
+
 // AssetConfig holds the full configuration.
 type AssetConfig struct {
 	Version             string              `json:"version"`
 	Assets              []AssetEntry        `json:"assets"`
 	LoopEngineeringMode LoopEngineeringMode `json:"loopEngineeringMode"`
+	UISystem            UISystem            `json:"ui_system"`
 
 	// GameFeelUIMode mirrors game_feel_ui_mode in the shared asset-config.json.
 	// When on, the connector's manage_ui attaches Game Feel & Juice Bible + UI
@@ -86,6 +96,28 @@ func NormalizeLoopEngineeringMode(mode string) LoopEngineeringMode {
 	default:
 		return LoopEngineeringLight
 	}
+}
+
+// ParseUISystem validates a user-provided UI backend value.
+func ParseUISystem(value string) (UISystem, error) {
+	switch UISystem(strings.ToLower(strings.TrimSpace(value))) {
+	case UISystemUGUI:
+		return UISystemUGUI, nil
+	case UISystemUITK:
+		return UISystemUITK, nil
+	default:
+		return "", fmt.Errorf("unknown UI system %q (use ugui or uitk)", value)
+	}
+}
+
+// NormalizeUISystem accepts persisted UI-system text and falls back to uGUI,
+// preserving all existing UI behavior when the key is missing or malformed.
+func NormalizeUISystem(value string) UISystem {
+	system, err := ParseUISystem(value)
+	if err != nil {
+		return UISystemUGUI
+	}
+	return system
 }
 
 // DefaultAssets returns the built-in list of known asset plugins.
@@ -156,6 +188,7 @@ func Load() (*AssetConfig, error) {
 				Version:             "1.0.0",
 				Assets:              DefaultAssets(),
 				LoopEngineeringMode: LoopEngineeringLight,
+				UISystem:            UISystemUGUI,
 			}
 			_ = Save(cfg)
 			return cfg, nil
@@ -168,6 +201,7 @@ func Load() (*AssetConfig, error) {
 		return nil, err
 	}
 	cfg.LoopEngineeringMode = NormalizeLoopEngineeringMode(string(cfg.LoopEngineeringMode))
+	cfg.UISystem = NormalizeUISystem(string(cfg.UISystem))
 
 	// Migrate the pre-rename `ui_juicy_mode` key onto game_feel_ui_mode. Detect
 	// key presence with pointers so an explicit `false` isn't confused with absent.
@@ -215,6 +249,7 @@ func Load() (*AssetConfig, error) {
 // Save writes the asset config to disk.
 func Save(cfg *AssetConfig) error {
 	cfg.LoopEngineeringMode = NormalizeLoopEngineeringMode(string(cfg.LoopEngineeringMode))
+	cfg.UISystem = NormalizeUISystem(string(cfg.UISystem))
 	dir := filepath.Dir(ConfigFilePath())
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
@@ -291,6 +326,24 @@ func SetGameFeelUIMode(enabled bool) (*AssetConfig, error) {
 		return nil, err
 	}
 	cfg.GameFeelUIMode = enabled
+	if err := Save(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+// SetUISystem sets the UI authoring backend and persists it.
+func SetUISystem(system UISystem) (*AssetConfig, error) {
+	validated, err := ParseUISystem(string(system))
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	cfg.UISystem = validated
 	if err := Save(cfg); err != nil {
 		return nil, err
 	}

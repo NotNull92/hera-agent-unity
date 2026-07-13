@@ -155,6 +155,7 @@ namespace HeraAgent.Editor
 
             BuildToolbar();
             BuildUltraHeraSection();
+            BuildUiSystemSection();
             BuildGameFeelModeSection();
             BuildGameFeelUiModeSection();
             BuildCompilerPathSection();

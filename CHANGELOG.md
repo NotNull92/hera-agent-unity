@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.60 — UI Toolkit runtime scaffolding)
+
+- **UI system selector** — `asset-config.json` now persists `ui_system`
+  (`ugui` default or `uitk`), surfaced by `asset-config ui-system [ugui|uitk]`,
+  `asset-config --json`, and a Hera Settings selector above the Game Feel
+  sections. Existing uGUI behavior remains the default.
+- **UI Toolkit branch in `ui_doc apply` / `manage_ui create`** — with
+  `ui_system=uitk`, Hera emits a runtime UXML document, shared `.hera-*` USS
+  classes, a `PanelSettings` asset, and a wired `UIDocument` under
+  `Assets/HeraGenerated/UI`. It remains part of the existing tools; no new tool
+  is added.
+- **Reflection-backed UITK validation** — `UiToolkitFixer` reports
+  `uitk_version`, `uxml_traits`, and `uxml_api`; it rejects unknown runtime
+  elements and UXML attributes, downgrades unsupported USS properties to
+  diagnostics, and keeps MVVM/data-binding outside v1 layout scaffolding.
+- **Runtime world-space gate** — screen-space is the default on all supported
+  Editors. World-space is accepted only when the live runtime version is
+  `6000.2` or newer, independently of the docs bundle bucket.
+
 ### Added (Connector 0.0.59 — animation authoring)
 
 - **`manage_animation`** — a new tool that authors animation assets without
