@@ -5,6 +5,7 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent-unity?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent-unity/releases)
+[![GitHub stars](https://img.shields.io/github/stars/NotNull92/hera-agent-unity?style=flat-square&logo=github&label=stars&color=181717)](https://github.com/NotNull92/hera-agent-unity/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go](https://img.shields.io/badge/go-%5E1.25-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
@@ -16,7 +17,9 @@
 
 <br>
 
-[What it is](#what-it-is) · [Why it helps](#why-it-helps) · [Quick Start](#quick-start) · [Install](#install) · [Commands](#commands) · [Token Saving](#token-saving) · [UI Systems](#ui-systems) · [Input QA](#input-qa) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity Versions](#unity-versions) · [Agent Rules](#add-project-rules-for-agents) · [Projects](#projects-using-hera) · [FAQ](#faq)
+[Start in 60 seconds](#quick-start) · [Install](#install) · [UI systems](#ui-systems) · [Commands](#commands) · [Full docs](docs/COMMANDS.md)
+
+<sub>[What's new](#whats-new) · [Verification](#ultra-hera) · [Agent rules](#add-project-rules-for-agents) · [FAQ](#faq)</sub>
 
 **English** · [한국어](README.ko.md)
 
@@ -73,9 +76,27 @@ No Python server. No generated MCP config. No special agent plugin. If an agent 
 
 ---
 
-## Release Highlights
+## What's New
 
-Latest release: **v0.0.39** (published July 7, 2026). This release adds ScriptableObject asset authoring and a connector-wide reliability and efficiency pass. The matching Unity package version is **Connector 0.0.59**, which also adds animation-asset authoring (`manage_animation`).
+### UI Toolkit scaffolding, grounded in the live Editor
+
+The current connector source, **0.0.61**, adds a first-class UI Toolkit path
+without asking an agent to guess version-specific APIs.
+
+| Choose | Hera does | Built-in boundary |
+|:---|:---|:---|
+| `ugui` (default) | Keeps the Canvas / GameObject / RectTransform workflow | Existing uGUI pipeline |
+| `uitk` | Emits validated `.uxml`, shared `.hera-*` `.uss`, `PanelSettings`, and `UIDocument` | Runtime-only reflected elements, UXML attributes, and USS properties |
+| World-space | Enables it only on live Unity 6000.2+ | Never inferred from a documentation bucket |
+| v1 scope | Focuses on layout scaffolding | MVVM and data binding are intentionally out |
+
+[Choose a UI system →](#ui-systems) · [Read the UI document contract →](docs/UI_DOC_IR.md)
+
+### Latest CLI release — v0.0.39
+
+The latest published CLI release is **v0.0.39** (July 7, 2026). Its released
+Unity package is **Connector 0.0.59**, which also adds animation-asset authoring
+(`manage_animation`). CLI and connector versions are intentionally separate.
 
 | Current highlight | Simple meaning |
 |:---|:---|
@@ -194,11 +215,14 @@ Or add this to `Packages/manifest.json`:
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
-To pin a specific connector (UPM) version instead of tracking the latest, append its `connector-<version>` git tag:
+To pin a specific connector (UPM) version instead of tracking the latest, append
+an existing `connector-<version>` git tag:
 
 ```json
-"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.59"
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-<version>"
 ```
+
+Connector versions are separate from CLI `v*` releases.
 
 The connector starts by itself when Unity opens.
 
@@ -285,8 +309,15 @@ Hera also reports the active official uGUI docs bucket (`2022.3`, `2023.2`,
 
 ## UI Systems
 
-`ugui` is the default and keeps the existing Canvas, GameObject, and
-RectTransform workflow. Set `uitk` when the project uses runtime UI Toolkit:
+`ui_system` makes the output backend explicit. Set it in `asset-config.json`;
+each UI request stays within the selected backend.
+
+| Backend | Best for | Hera emits |
+|:---|:---|:---|
+| `ugui` (default) | Canvas-based UI | GameObjects and RectTransforms |
+| `uitk` | Runtime UI Toolkit layout | Validated UXML, shared USS, `PanelSettings`, and `UIDocument` |
+
+Choose `uitk` when the project uses runtime UI Toolkit:
 
 ```bash
 hera-agent-unity asset-config ui-system uitk
@@ -295,12 +326,16 @@ hera-agent-unity ui_doc apply --file settings-uitk.json
 
 The UITK document uses `backend: "uitk"`, exact runtime element names,
 reflection-validated UXML attributes, and reflection-validated USS properties.
-Hera emits `.uxml`, shared `.hera-*` `.uss`, a screen-space `PanelSettings`, and
-a wired `UIDocument` under `Assets/HeraGenerated/UI`. World-space is available
-only on a live Unity runtime version of 6000.2 or newer; that gate is independent
-of the docs-bundle bucket. UI Toolkit v1 is layout scaffolding—MVVM data binding
-is intentionally out of scope. See [UI_DOC_IR.md](docs/UI_DOC_IR.md) for the
-two backend contracts.
+Generated files live under `Assets/HeraGenerated/UI`.
+
+| Requirement | UI Toolkit v1 behavior |
+|:---|:---|
+| Screen-space | Default on every supported Editor |
+| World-space | Only on live Unity runtime 6000.2+; independent of the documentation-bundle bucket |
+| Validation | Exact reflected runtime element, attribute, and USS-property schema |
+| Data binding | Intentionally out of scope in v1 |
+
+See [UI_DOC_IR.md](docs/UI_DOC_IR.md) for both backend contracts.
 
 ---
 
@@ -562,12 +597,8 @@ No.
 
 ### Which Unity Editor does it talk to?
 
-It is built around a single Unity editor per machine. If more than one instance is discovered — for example a leftover heartbeat from a previous session — use `--project` or `--port` to pick one.
-
-```bash
-hera-agent-unity --project MyGame status
-hera-agent-unity --port 8091 status
-```
+Hera supports one active Unity Editor per machine. Use `--project` or `--port`
+only when you need to make that Editor's recorded heartbeat explicit.
 
 ### What should I do when it cannot connect?
 

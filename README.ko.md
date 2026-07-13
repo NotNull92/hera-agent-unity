@@ -5,6 +5,7 @@
 <br>
 
 [![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent-unity?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent-unity/releases)
+[![GitHub stars](https://img.shields.io/github/stars/NotNull92/hera-agent-unity?style=flat-square&logo=github&label=stars&color=181717)](https://github.com/NotNull92/hera-agent-unity/stargazers)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go](https://img.shields.io/badge/go-%5E1.25-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
@@ -16,7 +17,9 @@
 
 <br>
 
-[무엇인가요?](#무엇인가요) · [왜 필요한가요?](#왜-필요한가요) · [바로 시작](#바로-시작) · [설치](#설치) · [명령어](#명령어) · [토큰 절약](#토큰-절약) · [UI 시스템](#ui-시스템) · [Input QA](#input-qa) · [Game Feel Mode (Beta)](#game-feel-mode-beta) · [Game Feel UI Mode (Beta)](#game-feel-ui-mode-beta) · [Ultra Hera](#ultra-hera) · [Unity 버전](#unity-버전) · [AI 규칙](#ai용-규칙-넣기) · [사용 프로젝트](#hera를-쓰는-프로젝트) · [FAQ](#faq)
+[1분 시작](#바로-시작) · [설치](#설치) · [UI 시스템](#ui-시스템) · [명령어](#명령어) · [전체 문서](docs/COMMANDS.md)
+
+<sub>[새로운 점](#새로운-점) · [검증](#ultra-hera) · [AI 규칙](#ai용-규칙-넣기) · [FAQ](#faq)</sub>
 
 [English](README.md) · **한국어**
 
@@ -73,9 +76,28 @@ Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 
 
 ---
 
-## 릴리스 하이라이트
+## 새로운 점
 
-최신 릴리스는 **v0.0.39**입니다(2026년 7월 7일 공개). 이번 릴리스는 ScriptableObject 에셋 저작과 커넥터 전반의 신뢰성·효율성 개선에 초점을 둡니다. 대응되는 Unity 패키지 버전은 **Connector 0.0.59**이며, 애니메이션 에셋 저작(`manage_animation`)도 추가됐습니다.
+### 라이브 Editor에 근거한 UI Toolkit 스캐폴딩
+
+현재 Connector 소스 **0.0.61**은 에이전트가 버전별 API를 추측하지 않아도 되는
+UI Toolkit 경로를 추가합니다.
+
+| 선택 | Hera 동작 | 기본 경계 |
+|:---|:---|:---|
+| `ugui` (기본값) | Canvas / GameObject / RectTransform 워크플로를 유지합니다 | 기존 uGUI 파이프라인 |
+| `uitk` | 검증된 `.uxml`, 공유 `.hera-*` `.uss`, `PanelSettings`, `UIDocument`를 생성합니다 | runtime-only 리플렉션 element, UXML attribute, USS property |
+| World-space | 라이브 Unity 6000.2+에서만 활성화합니다 | 문서 bucket에서 추론하지 않음 |
+| v1 범위 | layout scaffolding에 집중합니다 | MVVM과 data binding은 의도적으로 제외 |
+
+[UI 시스템 선택하기 →](#ui-시스템) · [UI 문서 계약 보기 →](docs/UI_DOC_IR.md)
+
+### 최신 CLI 릴리스 — v0.0.39
+
+공개된 최신 CLI 릴리스는 **v0.0.39**입니다(2026년 7월 7일). 이 릴리스의
+Unity 패키지는 **Connector 0.0.59**이며, 애니메이션 에셋 저작
+(`manage_animation`)도 추가했습니다. CLI와 Connector 버전은 의도적으로
+분리되어 있습니다.
 
 | 현재 하이라이트 | 쉬운 뜻 |
 |:---|:---|
@@ -194,11 +216,14 @@ https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
-최신을 따라가지 않고 특정 커넥터(UPM) 버전을 고정하려면 `connector-<버전>` git 태그를 뒤에 붙입니다:
+최신을 따라가지 않고 특정 커넥터(UPM) 버전을 고정하려면 존재하는
+`connector-<버전>` git 태그를 뒤에 붙입니다:
 
 ```json
-"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.59"
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-<버전>"
 ```
+
+Connector 버전은 CLI `v*` 릴리스와 분리되어 있습니다.
 
 Unity가 열리면 커넥터가 자동으로 시작합니다.
 
@@ -286,8 +311,15 @@ hera-agent-unity ui_doc capture --out hud_built.png
 
 ## UI 시스템
 
-기본값 `ugui`는 기존 Canvas, GameObject, RectTransform 워크플로를 그대로
-사용합니다. 런타임 UI Toolkit 프로젝트라면 `uitk`를 설정합니다:
+`ui_system`은 출력 backend를 명시합니다. `asset-config.json`에서 설정하며,
+각 UI 요청은 선택한 backend 안에서 처리됩니다.
+
+| Backend | 적합한 용도 | Hera 생성물 |
+|:---|:---|:---|
+| `ugui` (기본값) | Canvas 기반 UI | GameObject와 RectTransform |
+| `uitk` | 런타임 UI Toolkit layout | 검증된 UXML, 공유 USS, `PanelSettings`, `UIDocument` |
+
+런타임 UI Toolkit 프로젝트라면 `uitk`를 설정합니다:
 
 ```bash
 hera-agent-unity asset-config ui-system uitk
@@ -296,11 +328,15 @@ hera-agent-unity ui_doc apply --file settings-uitk.json
 
 UITK 문서는 `backend: "uitk"`를 사용하고, 정확한 runtime element 이름,
 리플렉션으로 검증된 UXML attribute, 리플렉션으로 검증된 USS property를
-사용합니다. Hera는 `Assets/HeraGenerated/UI` 아래에 `.uxml`, 공유
-`.hera-*` `.uss`, screen-space `PanelSettings`, 연결된 `UIDocument`를
-만듭니다. world-space는 라이브 Unity runtime이 6000.2 이상일 때만
-가능하며 docs bundle bucket과 별개로 판정합니다. UI Toolkit v1은 layout
-scaffolding 범위이고 MVVM data binding은 의도적으로 포함하지 않습니다.
+사용합니다. 생성 파일은 `Assets/HeraGenerated/UI` 아래에 둡니다.
+
+| 요구 사항 | UI Toolkit v1 동작 |
+|:---|:---|
+| Screen-space | 지원하는 모든 Editor에서 기본값 |
+| World-space | 라이브 Unity runtime 6000.2+에서만 지원하며 문서 bundle bucket과 별개 |
+| 검증 | 리플렉션으로 확인한 runtime element, attribute, USS property schema |
+| Data binding | v1 범위에서 의도적으로 제외 |
+
 두 backend 계약은 [UI_DOC_IR.md](docs/UI_DOC_IR.md)를 참고하세요.
 
 ---
@@ -522,12 +558,8 @@ Unity 패키지가 작은 로컬 HTTP 서버를 엽니다. CLI가 그 서버에 
 
 ### 어떤 Unity Editor에 연결되나요?
 
-한 머신에 Unity 에디터 하나를 전제로 설계되어 있습니다. 이전 세션에서 남은 하트비트 등으로 인스턴스가 둘 이상 탐지되면 `--project`나 `--port`로 하나를 고르세요.
-
-```bash
-hera-agent-unity --project MyGame status
-hera-agent-unity --port 8091 status
-```
+Hera는 한 머신에서 활성 Unity Editor 하나를 지원합니다. 그 Editor의
+기록된 heartbeat를 명시해야 할 때만 `--project` 또는 `--port`를 사용하세요.
 
 ### 연결이 안 되면 어떻게 하나요?
 
