@@ -229,7 +229,7 @@ namespace HeraAgent
                     return null;
                 }
 
-                SetEnumProperty(panel, "renderMode", renderMode);
+                SetPanelRenderMode(panel, renderMode);
                 ApplyReferenceResolution(panel, panelConfig?["reference_resolution"] as JArray);
                 EditorUtility.SetDirty(panel);
                 return panel;
@@ -283,12 +283,13 @@ namespace HeraAgent
             return null;
         }
 
-        private static void SetEnumProperty(object target, string name, string value)
+        private static void SetPanelRenderMode(object target, string renderMode)
         {
-            var property = target.GetType().GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
+            var property = target.GetType().GetProperty("renderMode", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (property == null && string.Equals(renderMode, "ScreenSpaceOverlay", StringComparison.Ordinal)) return;
             if (property == null || !property.CanWrite || !property.PropertyType.IsEnum)
-                throw new InvalidOperationException($"{target.GetType().Name}.{name} is unavailable.");
-            property.SetValue(target, Enum.Parse(property.PropertyType, value, true));
+                throw new InvalidOperationException($"{target.GetType().Name}.renderMode is unavailable.");
+            property.SetValue(target, Enum.Parse(property.PropertyType, renderMode, true));
         }
 
         private static void ApplyReferenceResolution(object target, JArray resolution)

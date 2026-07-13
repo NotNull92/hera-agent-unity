@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.61 — UI Toolkit PanelSettings compatibility)
+
+- **Version-safe UITK PanelSettings emission** — the UXML/USS emitter now
+  resolves the runtime `PanelSettings.renderMode` property through either public
+  or non-public accessors. On legacy Editors where the property does not exist,
+  default screen-space output remains valid without attempting a write; a
+  world-space request still requires the live Unity 6000.2+ runtime gate.
+- **Regression coverage** — `HeraAgent/Tests/UiToolkitFixer` now exercises
+  real screen-space and (on supported runtimes) world-space documents in a
+  GUID-owned isolated Editor scene, reads the emitted PanelSettings back as
+  `WorldSpace`, and cleans only its own generated assets.
+
 ### Added (Connector 0.0.60 — UI Toolkit runtime scaffolding)
 
 - **UI system selector** — `asset-config.json` now persists `ui_system`

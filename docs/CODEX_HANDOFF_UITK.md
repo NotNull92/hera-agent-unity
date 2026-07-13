@@ -89,7 +89,7 @@ window) to start from. uGUI and UI Toolkit are entirely different systems
 - **v1 = layout scaffolding** (`.uxml` + shared `.uss` classes). MVVM data binding
   (`data-source`, SerializedObject binding) is OUT of v1.
 
-## Completed by Codex (2026-07-13, Connector 0.0.60)
+## Completed by Codex (2026-07-13, Connector 0.0.61)
 
 1. **`ui_system` toggle** mirrors the Game Feel plumbing: Go config round-trips
    `ui_system` with default `ugui`; `HeraSettings` mtime-caches it; CLI exposes
@@ -105,11 +105,20 @@ window) to start from. uGUI and UI Toolkit are entirely different systems
    separates fixes from diagnostics, rejects data binding, and supplies the
    system-aware Game Feel advisory hint. World-space gates on the live runtime
    parser (`>=6000.2`), never the docs bucket.
-4. **Verification completed** — Go asset-config tests passed; live Unity 6000.5
-   compile had zero console errors; a real UXML/USS/PanelSettings/UIDocument
-   scaffold, `manage_ui` bridge, validation rejection/downgrade paths, and
-   `HeraAgent/Tests/UiToolkitFixer` all passed. Test artifacts were removed and
-   the shared config was restored to `ugui`.
+4. **PanelSettings compatibility fix** — `renderMode` is written through a
+   public-or-non-public reflection lookup. If a legacy runtime exposes no
+   `renderMode`, default `ScreenSpaceOverlay` output intentionally skips the
+   write; non-default/world-space output still fails rather than inferring an
+   unavailable API. GUID-owned isolated-scene regression coverage locks both
+   paths without reusing user scaffolds.
+5. **Live verification completed** — screen-space `ui_doc apply` + `manage_ui`
+   passed on 2022.3, 2023.2, and 6000.0; world-space emission/read-back passed
+   on 6000.3 and 6000.5. Each run verified emitted UXML/USS/PanelSettings/
+   UIDocument bindings, ran `HeraAgent/Tests/UiToolkitFixer`, checked an empty
+   error console, removed its fixtures, and restored `ui_system=ugui`.
+   The exact 6000.2 Editor was not installed, so its threshold is covered by
+   the runtime-parser regression while live world-space evidence begins at
+   6000.3.
 
 ## How to work (project rules)
 

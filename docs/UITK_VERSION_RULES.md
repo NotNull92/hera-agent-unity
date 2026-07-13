@@ -294,6 +294,16 @@ Exact USS property support per version comes from `[reflection]`, not these page
    or MVVM/data-binding attributes. Game Feel is USS-first advisory `agent_hint`
    guidance, not runtime animation components.
 
+### PanelSettings compatibility `[verified]` (2026-07-13)
+
+`PanelSettings.renderMode` must be resolved from the live runtime rather than
+assumed public from a docs bucket. Live checks found no such property in 2022.3;
+the property is writable through non-public accessors in 2023.2, 6000.0, and
+6000.3; and it is public in 6000.5. Therefore the emitter skips only the default
+`ScreenSpaceOverlay` write when the property is absent. It writes either public
+or non-public properties when present, while the existing live-runtime
+`>=6000.2` gate remains mandatory for `WorldSpace`.
+
 Phase 1 must not: emit Editor-only elements into a runtime target; emit custom
 controls or `[UxmlElement]` C# authoring; emit data-binding attributes; guess
 visual design intent or invent USS beyond the allow-list.
