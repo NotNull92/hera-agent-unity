@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.40] - 2026-07-14
+
+### Added (Connector 0.0.61 / CLI 0.0.40 — reliability and authoring hardening)
+
+- **Run-scoped asynchronous EditMode results** — new CLIs receive an immediate
+  `{port, run_id}` response and poll the final result file, so an EditMode run
+  no longer holds its HTTP response open across editor lifecycle changes. Older
+  CLIs retain the direct final-response protocol.
+- **Transactional asset authoring and shared asset-config persistence** — asset
+  creation, animation changes, and configuration updates validate inputs before
+  mutation; config writers use a shared lock plus atomic replacement.
+- **Bounded HTTP and Input QA ingress** — connector request queues, payloads,
+  batches, and input-action values have explicit limits and structured errors.
+- **Deterministic tool discovery and safer exec caching** — discovery metadata is
+  sorted and validated, shallow Unity-object serialization is compact, and
+  `--no-cache` bypasses cache reads and writes.
+
+### Fixed
+
+- CLI request context and fresh-heartbeat polling now propagate through normal
+  commands, asynchronous jobs, and reload retries.
+- Batch rejection envelopes are emitted once on stderr; connector response
+  writes always close their HTTP response.
+- Console limits, UI Toolkit generation rollback, and asset mutation failures
+  now preserve their documented failure contracts without partial artifacts.
+
 ### Fixed (Connector 0.0.61 — UI Toolkit PanelSettings compatibility)
 
 - **Version-safe UITK PanelSettings emission** — the UXML/USS emitter now

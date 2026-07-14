@@ -92,21 +92,18 @@ without asking an agent to guess version-specific APIs.
 
 [Choose a UI system →](#ui-systems) · [Read the UI document contract →](docs/UI_DOC_IR.md)
 
-### Latest CLI release — v0.0.39
+### Latest CLI release — v0.0.40
 
-The latest published CLI release is **v0.0.39** (July 7, 2026). Its released
-Unity package is **Connector 0.0.59**, which also adds animation-asset authoring
-(`manage_animation`). CLI and connector versions are intentionally separate.
+The latest published CLI release is **v0.0.40** (July 14, 2026). Its released
+Unity package is **Connector 0.0.61**. CLI and connector versions are
+intentionally separate.
 
 | Current highlight | Simple meaning |
 |:---|:---|
-| **Animation asset authoring** | `manage_animation` creates `.anim` clips, float curves, `.controller` assets, parameters, states, and transitions without hand-written Editor C#. |
-| **ScriptableObject authoring** | `manage_assets create` makes a typed `.asset` — and can set its initial fields — without dropping to `exec`. |
-| **Steadier heartbeat** | The editor status heartbeat no longer rebuilds constant fields (and allocates a process handle) every second, cutting idle overhead. |
-| **Safer package listing** | `manage_packages list` polls Unity's package manager on the main thread. |
-| **No more stuck responses** | The connector always closes a response, so a rare serialization failure can no longer hang the CLI until its own timeout. |
-| **Quieter when focused** | The editor is force-repainted to wake the command pump only when it is in the background, not on every command. |
-| **Self-update won't hang** | The update check and download now time out instead of blocking on a stalled connection. |
+| **Reliable test results** | EditMode tests use run-scoped asynchronous results, so lifecycle transitions do not strand a final response. |
+| **Safer authoring** | Asset, animation, and UI Toolkit operations validate before mutation and roll back request-created output on failure. |
+| **Bounded commands** | HTTP requests, batches, queues, and Input QA values have explicit safety limits and structured errors. |
+| **Predictable automation** | Tool discovery is deterministic, shallow Unity objects stay compact, and `exec --no-cache` leaves no cache entries. |
 
 Current verified baseline:
 
