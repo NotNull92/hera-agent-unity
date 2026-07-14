@@ -1,7 +1,9 @@
 package poll
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -11,11 +13,28 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
 
+func TestExponentialBackoffLoop_WhenContextCancelled_ReturnsCancellation(t *testing.T) {
+	// Given: a caller that has already cancelled its root command context.
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	// When: polling starts.
+	err := ExponentialBackoffLoop(ctx, time.Second, time.Second, time.Second, func() bool {
+		t.Fatal("condition must not run after cancellation")
+		return false
+	})
+
+	// Then: it returns the caller cancellation without waiting for a tick.
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want context cancellation", err)
+	}
+}
+
 // ---------- ExponentialBackoffLoop tests ----------
 
 func TestExponentialBackoffLoop_ImmediateSuccess(t *testing.T) {
 	start := time.Now()
-	err := ExponentialBackoffLoop(100*time.Millisecond, 10*time.Millisecond, 50*time.Millisecond, func() bool {
+	err := ExponentialBackoffLoop(context.Background(), 100*time.Millisecond, 10*time.Millisecond, 50*time.Millisecond, func() bool {
 		return true
 	})
 	elapsed := time.Since(start)
@@ -30,7 +49,7 @@ func TestExponentialBackoffLoop_ImmediateSuccess(t *testing.T) {
 
 func TestExponentialBackoffLoop_Timeout(t *testing.T) {
 	start := time.Now()
-	err := ExponentialBackoffLoop(100*time.Millisecond, 10*time.Millisecond, 50*time.Millisecond, func() bool {
+	err := ExponentialBackoffLoop(context.Background(), 100*time.Millisecond, 10*time.Millisecond, 50*time.Millisecond, func() bool {
 		return false
 	})
 	elapsed := time.Since(start)
@@ -54,7 +73,7 @@ func TestExponentialBackoffLoop_IntervalDoubles(t *testing.T) {
 	base := 10 * time.Millisecond
 	max := 100 * time.Millisecond
 
-	err := ExponentialBackoffLoop(timeout, base, max, func() bool {
+	err := ExponentialBackoffLoop(context.Background(), timeout, base, max, func() bool {
 		calls = append(calls, time.Now())
 		return false
 	})
@@ -115,7 +134,7 @@ func TestWaitForFile_FileAppears(t *testing.T) {
 	}
 
 	// Use a long timeout; the file already exists so it should return after one sleep (100ms).
-	got, err := WaitForFile(resultPath, 0, 5*time.Second, "test-op")
+	got, err := WaitForFile(context.Background(), resultPath, 0, 5*time.Second, "test-op")
 	if err != nil {
 		t.Fatalf("WaitForFile error: %v", err)
 	}
@@ -137,7 +156,7 @@ func TestWaitForFile_Timeout(t *testing.T) {
 	resultPath := filepath.Join(dir, "nonexistent.json")
 
 	start := time.Now()
-	_, err := WaitForFile(resultPath, 0, 100*time.Millisecond, "test-op")
+	_, err := WaitForFile(context.Background(), resultPath, 0, 100*time.Millisecond, "test-op")
 	elapsed := time.Since(start)
 
 	if err == nil {
@@ -159,7 +178,7 @@ func TestWaitForFile_InvalidJSON(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	_, err := WaitForFile(resultPath, 0, 5*time.Second, "test-op")
+	_, err := WaitForFile(context.Background(), resultPath, 0, 5*time.Second, "test-op")
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")
 	}
@@ -187,7 +206,7 @@ func TestWaitForAsyncJob_Delegates(t *testing.T) {
 	data, _ := json.Marshal(resp)
 	_ = os.WriteFile(resultPath, data, 0644)
 
-	got, err := WaitForAsyncJob(resultPath, 0, 5*time.Second, "async-op")
+	got, err := WaitForAsyncJob(context.Background(), resultPath, 0, 5*time.Second, "async-op")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -202,7 +221,7 @@ func TestWaitForFile_ParseErrorIsWrapped(t *testing.T) {
 	resultPath := filepath.Join(dir, "bad.json")
 	_ = os.WriteFile(resultPath, []byte("{bad"), 0644)
 
-	_, err := WaitForFile(resultPath, 0, 5*time.Second, "my-op")
+	_, err := WaitForFile(context.Background(), resultPath, 0, 5*time.Second, "my-op")
 	if err == nil {
 		t.Fatal("expected error")
 	}

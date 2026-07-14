@@ -6,10 +6,60 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/paths"
 	"github.com/NotNull92/hera-agent-unity/internal/unitystate"
 )
+
+func TestDiscoverInstanceFresh_WhenHeartbeatChanges_IgnoresCachedSnapshot(t *testing.T) {
+	// Given: an initially-ready heartbeat that has populated the ordinary cache.
+	stubIsProcessDead(t, map[int]bool{})
+	home := writeInstanceFiles(t, map[string]Instance{
+		"current.json": {
+			State:       unitystate.Ready,
+			ProjectPath: "/projects/current",
+			Port:        8090,
+			PID:         100,
+			Timestamp:   time.Now().UnixMilli(),
+		},
+	})
+	t.Setenv("HOME", home)
+
+	if _, err := DiscoverInstance("/projects/current", 0); err != nil {
+		t.Fatalf("prime ordinary instance cache: %v", err)
+	}
+
+	updated := Instance{
+		State:       unitystate.Compiling,
+		ProjectPath: "/projects/current",
+		Port:        8091,
+		PID:         100,
+		Timestamp:   time.Now().Add(time.Second).UnixMilli(),
+	}
+	data, err := json.Marshal(updated)
+	if err != nil {
+		t.Fatalf("marshal updated heartbeat: %v", err)
+	}
+	instancePath := filepath.Join(paths.InstancesDir(), "current.json")
+	if err := os.WriteFile(instancePath, data, 0o644); err != nil {
+		t.Fatalf("write updated heartbeat: %v", err)
+	}
+
+	// When: transition polling resolves through the fresh discovery path.
+	got, err := DiscoverInstanceFresh("/projects/current", 0)
+	if err != nil {
+		t.Fatalf("fresh discovery: %v", err)
+	}
+
+	// Then: it sees the rebinding without changing the normal cache policy.
+	if got.Port != updated.Port {
+		t.Fatalf("fresh port = %d, want %d", got.Port, updated.Port)
+	}
+	if got.State != updated.State {
+		t.Fatalf("fresh state = %q, want %q", got.State, updated.State)
+	}
+}
 
 // stubIsProcessDead replaces DefaultClient's process-death checker for testing.
 // deadPIDs maps PID → true if the process is confirmed dead.

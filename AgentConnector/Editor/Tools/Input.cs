@@ -75,6 +75,9 @@ namespace HeraAgent.Tools
             [ToolParameter("drag: number of intermediate drag steps. Default 8.")]
             public int? Steps { get; set; }
 
+            [ToolParameter("Maximum raycast or raycaster diagnostics to return. Default 50, maximum 100.")]
+            public int? MaxResults { get; set; }
+
             [ToolParameter("Fail when the target is blocked or the expected click handler is not reached. Default true.")]
             public bool? Strict { get; set; }
 
@@ -95,7 +98,7 @@ namespace HeraAgent.Tools
             switch (options.Action)
             {
                 case "state":
-                    return InputQaEventSystem.State();
+                    return InputQaEventSystem.State(options);
                 case "inspect":
                     return InputQaEventSystem.Inspect(options);
                 case "click":

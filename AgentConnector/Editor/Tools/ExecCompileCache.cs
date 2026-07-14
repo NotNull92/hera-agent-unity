@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -22,6 +23,11 @@ namespace HeraAgent.Tools
     internal static class ExecCompileCache
     {
         private const int MaxInMemoryAssemblies = 128;
+        // Bump this whenever compiler inputs or the response-file recipe changes.
+        // Cache entries are executable assemblies, so incompatible compile inputs
+        // must never reuse an existing disk or in-memory entry.
+        private const string CompilationCacheFormat = "exec-cache-v2";
+        private const string CompilationRecipe = "target=library;nowarn=0105,0162,1701,1702;preferreduilang=en-US;utf8output;shared";
 
         private static readonly object Gate = new object();
         private static List<string> s_RefLocations;
@@ -114,20 +120,7 @@ namespace HeraAgent.Tools
                     return;
                 }
 
-                locations = new List<string>();
-                var seenNames = new HashSet<string>();
-                foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    try
-                    {
-                        if (asm.IsDynamic || string.IsNullOrEmpty(asm.Location)) continue;
-                        var name = asm.GetName().Name;
-                        if (!seenNames.Add(name)) continue;
-                        locations.Add(asm.Location);
-                    }
-                    catch { }
-                }
-                locations.Sort(StringComparer.Ordinal);
+                locations = CollectReferenceLocations();
                 s_RefLocations = locations;
                 s_RefHash = HashStrings(locations);
 
@@ -217,6 +210,13 @@ namespace HeraAgent.Tools
             }
         }
 
+        public static string ResolveCscUncached(string overridePath)
+        {
+            if (!string.IsNullOrEmpty(overridePath)) return overridePath;
+            var configPath = HeraSettings.DefaultCscPath;
+            return IsUsableConfiguredCsc(configPath) ? configPath : FindCsc();
+        }
+
         public static string ResolveDotnet(string overridePath)
         {
             if (!string.IsNullOrEmpty(overridePath)) return overridePath;
@@ -232,6 +232,13 @@ namespace HeraAgent.Tools
             }
         }
 
+        public static string ResolveDotnetUncached(string overridePath)
+        {
+            if (!string.IsNullOrEmpty(overridePath)) return overridePath;
+            var configPath = HeraSettings.DefaultDotnetPath;
+            return IsUsableConfiguredDotnet(configPath) ? configPath : FindDotnet();
+        }
+
         /// <summary>
         /// Resolves the bundled Mono host. On macOS/Linux this is needed to run a
         /// Windows-PE csc.exe (a managed assembly cannot be exec'd directly).
@@ -245,6 +252,11 @@ namespace HeraAgent.Tools
                 s_MonoPath = FindMono();
                 return s_MonoPath;
             }
+        }
+
+        public static string ResolveMonoUncached()
+        {
+            return FindMono();
         }
 
         public static bool TryGetAssembly(string key, out Assembly assembly)
@@ -292,12 +304,80 @@ namespace HeraAgent.Tools
             }
         }
 
-        public static string ComputeKey(string source, string langVersion)
+        public static void AppendUncachedReferenceArguments(StringBuilder responseFile)
+        {
+            foreach (var location in CollectReferenceLocations())
+                responseFile.Append("-r:\"").Append(location).Append("\"\n");
+        }
+
+        internal static string BuildCompilationIdentity(string cscPath, string hostPath, string langVersion)
+        {
+            return string.Join("\n", new[]
+            {
+                "format=" + CompilationCacheFormat,
+                "lang=" + (langVersion ?? string.Empty),
+                "recipe=" + CompilationRecipe,
+                "compiler=" + CompilerFileFingerprint(cscPath),
+                "host=" + CompilerFileFingerprint(hostPath),
+            });
+        }
+
+        public static string GetCompilationIdentity(string cscOverride, string dotnetOverride, string langVersion)
+        {
+            var csc = ResolveCsc(cscOverride);
+            string host = null;
+            if (!string.IsNullOrEmpty(csc) && csc.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                host = ResolveDotnet(dotnetOverride);
+            else if (!string.IsNullOrEmpty(csc) && Application.platform != RuntimePlatform.WindowsEditor)
+                host = ResolveMono();
+            return BuildCompilationIdentity(csc, host, langVersion);
+        }
+
+        public static string ComputeKey(string source, string langVersion, string compilationIdentity)
         {
             var refHash = GetRefHash();
-            var bytes = Encoding.UTF8.GetBytes(source + "\0" + refHash + "\0" + langVersion);
+            var bytes = Encoding.UTF8.GetBytes(source + "\0" + refHash + "\0" + langVersion + "\0" + compilationIdentity);
             using var sha = SHA256.Create();
             return ToHex(sha.ComputeHash(bytes));
+        }
+
+        private static List<string> CollectReferenceLocations()
+        {
+            var locations = new List<string>();
+            var seenNames = new HashSet<string>();
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                try
+                {
+                    if (asm.IsDynamic || string.IsNullOrEmpty(asm.Location)) continue;
+                    var name = asm.GetName().Name;
+                    if (!seenNames.Add(name)) continue;
+                    locations.Add(asm.Location);
+                }
+                catch { }
+            }
+            locations.Sort(StringComparer.Ordinal);
+            return locations;
+        }
+
+        private static string CompilerFileFingerprint(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return "missing";
+            try
+            {
+                var fullPath = Path.GetFullPath(path);
+                var info = new FileInfo(fullPath);
+                if (!info.Exists) return "missing:" + fullPath;
+
+                string version = null;
+                try { version = FileVersionInfo.GetVersionInfo(fullPath).FileVersion; }
+                catch { }
+                return string.Join("|", fullPath, info.Length, info.LastWriteTimeUtc.Ticks, version ?? "unknown");
+            }
+            catch
+            {
+                return "invalid:" + path;
+            }
         }
 
         private static string HashStrings(IEnumerable<string> values)

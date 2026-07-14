@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -16,7 +16,6 @@ import (
 
 func TestBatchCmd_Success(t *testing.T) {
 	mockInst := &client.Instance{Port: 8090}
-	mockResolve := func() (*client.Instance, error) { return mockInst, nil }
 
 	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
 		return &client.BatchCommandResponse{
@@ -34,7 +33,7 @@ func TestBatchCmd_Success(t *testing.T) {
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	defer func() { batchStdin = oldStdin }()
 
-	err := batchCmd(context.Background(), []string{}, mockSend, mockResolve, 60000)
+	err := batchCmd(context.Background(), []string{}, mockSend, mockInst, 60000)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -75,7 +74,6 @@ func (m *mockFileInfo) Sys() interface{}   { return nil }
 
 func TestBatchCmd_FailFast(t *testing.T) {
 	mockInst := &client.Instance{Port: 8090}
-	mockResolve := func() (*client.Instance, error) { return mockInst, nil }
 
 	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
 		return &client.BatchCommandResponse{
@@ -93,7 +91,7 @@ func TestBatchCmd_FailFast(t *testing.T) {
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	defer func() { batchStdin = oldStdin }()
 
-	err := batchCmd(context.Background(), []string{}, mockSend, mockResolve, 60000)
+	err := batchCmd(context.Background(), []string{}, mockSend, mockInst, 60000)
 	if err == nil {
 		t.Fatal("expected error for failed batch, got nil")
 	}
@@ -111,7 +109,6 @@ func TestBatchCmd_File(t *testing.T) {
 	}
 
 	mockInst := &client.Instance{Port: 8090}
-	mockResolve := func() (*client.Instance, error) { return mockInst, nil }
 
 	var capturedReq client.BatchCommandRequest
 	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
@@ -123,7 +120,7 @@ func TestBatchCmd_File(t *testing.T) {
 		}, nil
 	}
 
-	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, mockResolve, 60000)
+	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, mockInst, 60000)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -142,12 +139,11 @@ func TestBatchCmd_InvalidJSON(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	mockResolve := func() (*client.Instance, error) { return &client.Instance{Port: 8090}, nil }
 	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
 		return nil, errors.New("should not reach send")
 	}
 
-	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, mockResolve, 60000)
+	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, &client.Instance{Port: 8090}, 60000)
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")
 	}
@@ -156,21 +152,127 @@ func TestBatchCmd_InvalidJSON(t *testing.T) {
 	}
 }
 
-func TestBatchCmd_ResolveError(t *testing.T) {
-	mockResolve := func() (*client.Instance, error) { return nil, fmt.Errorf("no instance") }
+func TestBatchCmd_UsesInitialInstance(t *testing.T) {
+	initial := &client.Instance{Port: 8090}
 	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
-		return nil, errors.New("should not reach send")
+		if inst != initial {
+			t.Fatal("batch send did not retain the initially resolved instance")
+		}
+		return &client.BatchCommandResponse{Results: []client.CommandResponse{{Success: true}}, Completed: 1}, nil
 	}
 
 	oldStdin := batchStdin
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	defer func() { batchStdin = oldStdin }()
 
-	err := batchCmd(context.Background(), []string{}, mockSend, mockResolve, 60000)
-	if err == nil {
-		t.Fatal("expected error for resolve failure")
+	err := batchCmd(context.Background(), []string{}, mockSend, initial, 60000)
+	if err != nil {
+		t.Fatalf("batch command: %v", err)
 	}
-	if !strings.Contains(err.Error(), "no instance") {
-		t.Fatalf("expected 'no instance' in error, got: %v", err)
+}
+
+func TestBatchCmd_WhenServerRejectsEnvelope_ReturnsSentinel(t *testing.T) {
+	initial := &client.Instance{Port: 8090}
+	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
+		return &client.BatchCommandResponse{
+			Success: false,
+			Code:    "HTTP_QUEUE_FULL",
+			Message: "Too many pending requests; maximum is 64.",
+		}, nil
 	}
+
+	oldStdin := batchStdin
+	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
+	defer func() { batchStdin = oldStdin }()
+
+	_, _, err := captureBatchOutput(t, func() error {
+		return batchCmd(context.Background(), []string{}, mockSend, initial, 60_000)
+	})
+	if !errors.Is(err, ErrCommandFailed) {
+		t.Fatalf("batchCmd error = %v, want ErrCommandFailed", err)
+	}
+}
+
+func TestBatchCmd_WritesStructuredRejectionToStderrAndReturnsSentinel(t *testing.T) {
+	// Given
+	initial := &client.Instance{Port: 8090}
+	mockSend := func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error) {
+		return &client.BatchCommandResponse{
+			Success: false,
+			Code:    "HTTP_QUEUE_FULL",
+			Message: "Too many pending requests; maximum is 64.",
+			Data:    []byte(`{"maximum_pending":64}`),
+		}, nil
+	}
+
+	oldStdin := batchStdin
+	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
+	t.Cleanup(func() { batchStdin = oldStdin })
+
+	oldCompactJSON, oldQuiet, oldVerbose := flagCompactJSON, flagQuiet, flagVerbose
+	flagCompactJSON, flagQuiet, flagVerbose = false, false, false
+	t.Cleanup(func() {
+		flagCompactJSON, flagQuiet, flagVerbose = oldCompactJSON, oldQuiet, oldVerbose
+	})
+
+	// When
+	stdout, stderr, err := captureBatchOutput(t, func() error {
+		return batchCmd(context.Background(), []string{}, mockSend, initial, 60_000)
+	})
+
+	// Then
+	if !errors.Is(err, ErrCommandFailed) {
+		t.Fatalf("batchCmd error = %v, want ErrCommandFailed", err)
+	}
+	if stdout != "" {
+		t.Fatalf("stdout = %q, want empty for structured rejection", stdout)
+	}
+
+	var response client.BatchCommandResponse
+	if err := json.Unmarshal([]byte(strings.TrimSpace(stderr)), &response); err != nil {
+		t.Fatalf("stderr = %q, want one JSON rejection: %v", stderr, err)
+	}
+	if response.Code != "HTTP_QUEUE_FULL" {
+		t.Fatalf("stderr code = %q, want HTTP_QUEUE_FULL", response.Code)
+	}
+}
+
+func captureBatchOutput(t *testing.T, fn func() error) (string, string, error) {
+	t.Helper()
+
+	oldStdout, oldStderr := os.Stdout, os.Stderr
+	stdoutReader, stdoutWriter, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("open stdout pipe: %v", err)
+	}
+	stderrReader, stderrWriter, err := os.Pipe()
+	if err != nil {
+		_ = stdoutReader.Close()
+		_ = stdoutWriter.Close()
+		t.Fatalf("open stderr pipe: %v", err)
+	}
+	os.Stdout, os.Stderr = stdoutWriter, stderrWriter
+	t.Cleanup(func() {
+		os.Stdout, os.Stderr = oldStdout, oldStderr
+		_ = stdoutReader.Close()
+		_ = stdoutWriter.Close()
+		_ = stderrReader.Close()
+		_ = stderrWriter.Close()
+	})
+
+	callErr := fn()
+	_ = stdoutWriter.Close()
+	_ = stderrWriter.Close()
+	os.Stdout, os.Stderr = oldStdout, oldStderr
+
+	stdout, readStdoutErr := io.ReadAll(stdoutReader)
+	if readStdoutErr != nil {
+		t.Fatalf("read stdout: %v", readStdoutErr)
+	}
+	stderr, readStderrErr := io.ReadAll(stderrReader)
+	if readStderrErr != nil {
+		t.Fatalf("read stderr: %v", readStderrErr)
+	}
+
+	return string(stdout), string(stderr), callErr
 }

@@ -19,7 +19,7 @@ Execute C#:
   echo '<code>' | exec          Pipe code via stdin (avoids shell escaping)
   exec --file path.cs           Load code from file (positional/stdin take precedence)
   exec "<code>" --usings x,y    Add extra using directives
-  exec "<code>" --no-cache      Skip compile/assembly cache (debug only)
+  exec "<code>" --no-cache      Bypass exec caches without reading or writing DLLs
 
 Log:
   log "<message>"               Write to Unity console (no compile cost)

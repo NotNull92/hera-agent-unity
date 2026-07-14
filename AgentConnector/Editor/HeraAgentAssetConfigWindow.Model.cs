@@ -57,6 +57,17 @@ namespace HeraAgent.Editor
         private const string UiSystemUGUI = "ugui";
         private const string UiSystemUITK = "uitk";
 
+        private static readonly string[] ConfigFieldNames =
+        {
+            "version", "defaultCscPath", "defaultDotnetPath", "loopEngineeringMode",
+            "ui_system", "game_feel_ui_mode", "game_feel_mode"
+        };
+
+        private static readonly string[] AssetFieldNames =
+        {
+            "id", "name", "enabled", "installed", "category", "description", "doc_url", "reference_path"
+        };
+
         private static string GetConfigPath()
         {
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
@@ -100,12 +111,8 @@ namespace HeraAgent.Editor
 
             try
             {
-                var dir = Path.GetDirectoryName(_configPath);
-                if (!Directory.Exists(dir))
-                    Directory.CreateDirectory(dir);
-
-                var json = JsonConvert.SerializeObject(_config, Formatting.Indented);
-                File.WriteAllText(_configPath, json);
+                var desired = JObject.FromObject(_config);
+                AssetConfigFile.Update(_configPath, current => MergeConfig(current, desired));
                 _isDirty = false;
                 UpdateStatusBar();
             }
@@ -114,6 +121,74 @@ namespace HeraAgent.Editor
                 Debug.LogError($"[Hera] Failed to save asset-config.json: {ex.Message}");
                 EditorUtility.DisplayDialog("Save Failed", $"Could not write config:\n{ex.Message}", "OK");
             }
+        }
+
+        private static JObject MergeConfig(JObject current, JObject desired)
+        {
+            var merged = current == null ? new JObject() : (JObject)current.DeepClone();
+            foreach (var field in ConfigFieldNames)
+            {
+                var value = desired[field];
+                if (value == null)
+                    merged.Remove(field);
+                else
+                    merged[field] = value.DeepClone();
+            }
+            merged["assets"] = MergeAssets(merged["assets"] as JArray, desired["assets"] as JArray);
+            return merged;
+        }
+
+        private static JArray MergeAssets(JArray current, JArray desired)
+        {
+            var desiredById = new Dictionary<string, JObject>();
+            if (desired != null)
+            {
+                foreach (var token in desired)
+                {
+                    if (!(token is JObject asset)) continue;
+                    var id = asset.Value<string>("id");
+                    if (!string.IsNullOrEmpty(id)) desiredById[id] = asset;
+                }
+            }
+
+            var merged = new JArray();
+            var consumed = new HashSet<string>();
+            if (current != null)
+            {
+                foreach (var token in current)
+                {
+                    if (!(token is JObject persisted))
+                    {
+                        merged.Add(token.DeepClone());
+                        continue;
+                    }
+
+                    var id = persisted.Value<string>("id");
+                    if (string.IsNullOrEmpty(id) || !desiredById.TryGetValue(id, out var replacement))
+                    {
+                        merged.Add(persisted.DeepClone());
+                        continue;
+                    }
+
+                    var updated = (JObject)persisted.DeepClone();
+                    foreach (var field in AssetFieldNames)
+                    {
+                        var value = replacement[field];
+                        if (value == null)
+                            updated.Remove(field);
+                        else
+                            updated[field] = value.DeepClone();
+                    }
+                    merged.Add(updated);
+                    consumed.Add(id);
+                }
+            }
+
+            foreach (var pair in desiredById)
+            {
+                if (!consumed.Contains(pair.Key)) merged.Add(pair.Value.DeepClone());
+            }
+            return merged;
         }
 
         private void EnsureDefaults()

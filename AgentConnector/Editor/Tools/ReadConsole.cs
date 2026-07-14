@@ -64,7 +64,7 @@ namespace HeraAgent.Tools
             [ToolParameter("Comma-separated log types: error, warning, log. Default: error,warning,log")]
             public string Type { get; set; }
 
-            [ToolParameter("Maximum number of log entries to return")]
+            [ToolParameter("Maximum log entries to return. Default: 20; 0 returns all.")]
             public int Lines { get; set; }
 
             [ToolParameter("Stack trace mode: none (first line), user (user code frames only), full (raw). Default: user")]
@@ -73,7 +73,7 @@ namespace HeraAgent.Tools
             [ToolParameter("Clear console")]
             public bool Clear { get; set; }
 
-            [ToolParameter("Return only entries with index >= since. Use last_cursor from prior response.")]
+            [ToolParameter("Return only entries with index >= since. Use last_cursor from the prior response; a stale cursor resets after the console is cleared.")]
             public int Since { get; set; }
         }
 
@@ -112,11 +112,44 @@ namespace HeraAgent.Tools
             var type = p.Get("type", "error,warning,log").ToLower();
             var types = type.Split(',').Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
 
-            int? count = p.GetInt("lines") ?? p.GetInt("count") ?? 20;
+            if (!TryGetNonNegativeInt(p, "lines", p.GetRaw("lines") == null ? "count" : null, 20,
+                    out var requestedCount, out var countError))
+                return new ErrorResponse("INVALID_PARAM", countError);
+
+            int? count = requestedCount == 0 ? null : requestedCount;
             string stacktrace = p.Get("stacktrace", "user").ToLower();
-            int since = p.GetInt("since") ?? 0;
+            if (!TryGetNonNegativeInt(p, "since", null, 0, out var since, out var sinceError))
+                return new ErrorResponse("INVALID_PARAM", sinceError);
 
             return GetEntries(types, count, stacktrace, since);
+        }
+
+        private static bool TryGetNonNegativeInt(ToolParams p, string key, string fallbackKey, int defaultValue,
+            out int value, out string error)
+        {
+            var sourceKey = key;
+            var raw = p.GetRaw(key);
+            if (raw == null && fallbackKey != null)
+            {
+                sourceKey = fallbackKey;
+                raw = p.GetRaw(fallbackKey);
+            }
+
+            if (raw == null)
+            {
+                value = defaultValue;
+                error = null;
+                return true;
+            }
+
+            if (!int.TryParse(raw.ToString(), out value) || value < 0)
+            {
+                error = $"'{sourceKey}' must be a non-negative integer.";
+                return false;
+            }
+
+            error = null;
+            return true;
         }
 
         private static object GetEntries(List<string> types, int? count, string stacktrace, int since)
@@ -124,15 +157,16 @@ namespace HeraAgent.Tools
             var entries = new List<string>();
             int total = 0;
             int filteredTotal = 0;
-            int lastIndex = since;
+            int lastReturnedCursor = since;
             bool truncated = false;
             try
             {
                 _startGettingEntriesMethod.Invoke(null, null);
                 total = (int)_getCountMethod.Invoke(null, null);
                 object logEntry = Activator.CreateInstance(_logEntryType);
+                int startIndex = since > total ? 0 : since;
 
-                for (int i = since; i < total; i++)
+                for (int i = startIndex; i < total; i++)
                 {
                     _getEntryMethod.Invoke(null, new object[] { i, logEntry });
                     int mode = (int)_modeField.GetValue(logEntry);
@@ -147,14 +181,14 @@ namespace HeraAgent.Tools
                     if (!want) continue;
 
                     filteredTotal++;
-                    if (count.HasValue && entries.Count > count.Value)
+                    if (count.HasValue && entries.Count >= count.Value)
                     {
                         truncated = true;
                         continue;
                     }
 
                     entries.Add(FormatMessage(message, stacktrace));
-                    lastIndex = i + 1; // cursor advances past the last returned entry
+                    lastReturnedCursor = i + 1; // cursor advances past the last returned entry
                 }
             }
             finally
@@ -162,6 +196,7 @@ namespace HeraAgent.Tools
                 try { _endGettingEntriesMethod.Invoke(null, null); } catch { }
             }
 
+            int nextCursor = truncated ? lastReturnedCursor : total;
             return new SuccessResponse($"Retrieved {entries.Count} entries.", new
             {
                 entries,
@@ -169,7 +204,7 @@ namespace HeraAgent.Tools
                 matched = filteredTotal,
                 returned = entries.Count,
                 since,
-                last_cursor = lastIndex,
+                last_cursor = nextCursor,
                 truncated,
             });
         }

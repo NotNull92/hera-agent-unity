@@ -18,7 +18,7 @@ func (c *Client) debugPost(url string, body []byte) {
 	}
 }
 
-func (c *Client) processHTTPResponse(resp *http.Response, label string, start time.Time) ([]byte, error) {
+func (c *Client) processHTTPResponse(resp *http.Response, label string, start time.Time) ([]byte, int, error) {
 	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize+1))
@@ -27,23 +27,20 @@ func (c *Client) processHTTPResponse(resp *http.Response, label string, start ti
 			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
 	}
 	if err != nil {
-		return nil, fmt.Errorf("read response for %s: %w", label, err)
+		return nil, 0, fmt.Errorf("read response for %s: %w", label, err)
 	}
 	if len(respBody) > maxResponseSize {
-		return nil, fmt.Errorf("response for %s exceeded maximum size of %d bytes", label, maxResponseSize)
+		return nil, 0, fmt.Errorf("response for %s exceeded maximum size of %d bytes", label, maxResponseSize)
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		if len(respBody) > 0 {
-			return nil, fmt.Errorf("HTTP %d from Unity: %s", resp.StatusCode, string(respBody))
-		}
-		return nil, fmt.Errorf("HTTP %d from Unity (%s)", resp.StatusCode, label)
+	if resp.StatusCode != http.StatusOK && len(respBody) == 0 {
+		return nil, 0, fmt.Errorf("HTTP %d from Unity (%s)", resp.StatusCode, label)
 	}
 
-	return respBody, nil
+	return respBody, resp.StatusCode, nil
 }
 
-func (c *Client) Send(inst *Instance, command string, params any, timeoutMs int) (*CommandResponse, error) {
+func (c *Client) Send(ctx context.Context, inst *Instance, command string, params any, timeoutMs int) (*CommandResponse, error) {
 	if params == nil {
 		params = map[string]any{}
 	}
@@ -55,7 +52,6 @@ func (c *Client) Send(inst *Instance, command string, params any, timeoutMs int)
 
 	url := fmt.Sprintf("http://127.0.0.1:%d/command", inst.Port)
 
-	ctx := context.Background()
 	var cancel context.CancelFunc
 	if timeoutMs > 0 {
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(timeoutMs)*time.Millisecond)
@@ -69,7 +65,7 @@ func (c *Client) Send(inst *Instance, command string, params any, timeoutMs int)
 		return nil, err
 	}
 
-	respBody, err := c.processHTTPResponse(resp, fmt.Sprintf("command: %s", command), start)
+	respBody, statusCode, err := c.processHTTPResponse(resp, fmt.Sprintf("command: %s", command), start)
 	if err != nil {
 		return nil, err
 	}
@@ -82,17 +78,23 @@ func (c *Client) Send(inst *Instance, command string, params any, timeoutMs int)
 
 	var result CommandResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
+		if statusCode != http.StatusOK {
+			return nil, fmt.Errorf("HTTP %d from Unity returned an invalid error envelope: %w", statusCode, err)
+		}
 		return &CommandResponse{
 			Success: true,
 			Message: string(respBody),
 		}, nil
 	}
+	if statusCode != http.StatusOK && result.Code == "" {
+		return nil, fmt.Errorf("HTTP %d from Unity returned an error envelope without a code", statusCode)
+	}
 
 	return &result, nil
 }
 
-func Send(inst *Instance, command string, params any, timeoutMs int) (*CommandResponse, error) {
-	return DefaultClient.Send(inst, command, params, timeoutMs)
+func Send(ctx context.Context, inst *Instance, command string, params any, timeoutMs int) (*CommandResponse, error) {
+	return DefaultClient.Send(ctx, inst, command, params, timeoutMs)
 }
 
 func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommandRequest, timeoutMs int) (*BatchCommandResponse, error) {
@@ -124,7 +126,7 @@ func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommand
 		return nil, err
 	}
 
-	respBody, err := c.processHTTPResponse(resp, "batch", start)
+	respBody, statusCode, err := c.processHTTPResponse(resp, "batch", start)
 	if err != nil {
 		return nil, err
 	}
@@ -135,6 +137,9 @@ func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommand
 	var result BatchCommandResponse
 	if err := json.Unmarshal(respBody, &result); err != nil {
 		return nil, fmt.Errorf("unmarshal batch response: %w", err)
+	}
+	if statusCode != http.StatusOK && result.Code == "" {
+		return nil, fmt.Errorf("HTTP %d from Unity returned an error envelope without a code", statusCode)
 	}
 
 	return &result, nil

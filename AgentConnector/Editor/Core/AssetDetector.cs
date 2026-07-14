@@ -71,7 +71,6 @@ namespace HeraAgent
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 ".hera-agent-unity", "asset-config.json");
 
-            var config = LoadConfig(configPath);
             var detectedAssets = new JArray();
 
             foreach (var (id, patterns) in DetectionRules)
@@ -106,10 +105,16 @@ namespace HeraAgent
                     ["path"] = foundPath ?? (string)null,
                 });
 
-                UpdateConfig(config, id, found);
             }
 
-            SaveConfig(config, configPath);
+            AssetConfigFile.Update(configPath, config =>
+            {
+                if (config == null)
+                    throw new InvalidDataException("asset-config.json does not exist. Run asset-config before detect_assets.");
+                foreach (var detection in detectedAssets)
+                    UpdateConfig(config, detection.Value<string>("id"), detection.Value<bool>("installed"));
+                return config;
+            });
 
             return new Result
             {
@@ -117,13 +122,6 @@ namespace HeraAgent
                 configPath = configPath,
                 detected = detectedAssets
             };
-        }
-
-        private static JObject LoadConfig(string configPath)
-        {
-            if (!File.Exists(configPath)) return null;
-            try { return JObject.Parse(File.ReadAllText(configPath)); }
-            catch { return null; }
         }
 
         private static void UpdateConfig(JObject config, string id, bool installed)
@@ -138,22 +136,6 @@ namespace HeraAgent
                     asset["installed"] = installed;
                     break;
                 }
-            }
-        }
-
-        private static void SaveConfig(JObject config, string configPath)
-        {
-            if (config == null) return;
-            try
-            {
-                var configDir = Path.GetDirectoryName(configPath);
-                if (!Directory.Exists(configDir))
-                    Directory.CreateDirectory(configDir);
-                File.WriteAllText(configPath, config.ToString(Newtonsoft.Json.Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[Hera] Failed to save asset config: {ex.Message}");
             }
         }
 

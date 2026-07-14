@@ -7,8 +7,13 @@ Options:
   --filter <name>               Filter by namespace, class, or full test name
                                 Must be the full path (e.g. MyNamespace.MyClass)
 
-EditMode tests hold the connection open and return results directly.
-PlayMode tests return immediately and poll a results file (domain reload safe).
+Both EditMode and PlayMode tests start asynchronously. Their final results are
+written to ~/.hera-agent-unity/status/test-results-<port>-<run_id>.json; the CLI polls
+that file until completion (domain reload safe). There is no --wait flag.
+For an older connector response without run_id, the CLI falls back to
+test-results-<port>.json. Current connectors also write that legacy file for
+older PlayMode clients. Current CLIs send async_results=true; without it,
+EditMode keeps its legacy synchronous response for older clients.
 
 Requires the Unity Test Framework package (com.unity.test-framework).
 

@@ -354,6 +354,8 @@ hera-agent-unity input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
 
 `input` uses Unity's uGUI `EventSystem.RaycastAll` and `ExecuteEvents` pointer handlers. It can prove that the Unity UI event path works, including blockers, handlers, interactability, submit, scroll, and drag behavior.
 
+Input work and diagnostics are bounded before dispatch: `hold_ms` ≤ 5000, `settle_frames` ≤ 120, `steps` ≤ 120, `click_count` ≤ 3, and `max_results` ≤ 100 (default 50). Invalid values return `INPUT_INVALID_PARAM`.
+
 It is not a physical OS/window click. Report evidence separately:
 
 | QA criterion | How to report |

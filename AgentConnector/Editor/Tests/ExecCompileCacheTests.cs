@@ -49,6 +49,24 @@ namespace HeraAgent.Tests
                 allPassed &= ExpectFalse(
                     "external SDK csc allowed",
                     ExecCompileCache.IsBundledToolPathForDifferentEditor(externalCsc, currentEditor));
+
+                var compiler = CreateFile(root, "Compiler", "csc.dll");
+                var dotnet = CreateFile(root, "Runtime", DotnetName());
+                File.WriteAllText(compiler, "compiler-v1");
+                File.WriteAllText(dotnet, "dotnet-v1");
+                var firstIdentity = ExecCompileCache.BuildCompilationIdentity(compiler, dotnet, "latest");
+                var firstKey = ExecCompileCache.ComputeKey("return 1;", "latest", firstIdentity);
+
+                File.WriteAllText(compiler, "compiler-v2-with-a-different-length");
+                var secondIdentity = ExecCompileCache.BuildCompilationIdentity(compiler, dotnet, "latest");
+                var secondKey = ExecCompileCache.ComputeKey("return 1;", "latest", secondIdentity);
+
+                allPassed &= ExpectTrue(
+                    "cache identity has explicit format version",
+                    firstIdentity.Contains("exec-cache-v2"));
+                allPassed &= ExpectFalse(
+                    "compiler fingerprint changes cache key",
+                    string.Equals(firstKey, secondKey, StringComparison.Ordinal));
             }
             finally
             {

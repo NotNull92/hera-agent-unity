@@ -1,11 +1,13 @@
 package assetconfig
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/paths"
 )
@@ -103,6 +105,28 @@ func TestLoadConfig_NoFile_ReturnsDefaultsAndCreatesFile(t *testing.T) {
 	// File should have been created.
 	if _, err := os.Stat(ConfigFilePath()); err != nil {
 		t.Errorf("expected config file to be created: %v", err)
+	}
+}
+
+func TestLoadConfig_NoFile_ReturnsSaveError(t *testing.T) {
+	withTempHome(t)
+
+	release, err := acquireConfigLock(ConfigFilePath())
+	if err != nil {
+		t.Fatalf("acquire config lock: %v", err)
+	}
+	defer release()
+
+	previousTimeout := configLockTimeout
+	configLockTimeout = 5 * time.Millisecond
+	t.Cleanup(func() { configLockTimeout = previousTimeout })
+
+	cfg, err := Load()
+	if err == nil {
+		t.Fatal("Load succeeded when it could not persist the initial config")
+	}
+	if cfg != nil {
+		t.Fatal("Load returned defaults after the initial config save failed")
 	}
 }
 
@@ -232,6 +256,131 @@ func TestSaveConfig_RoundTrip(t *testing.T) {
 	}
 	if !found {
 		t.Error("dotween not found after round-trip")
+	}
+}
+
+func TestSaveConfig_PreservesUnknownTopLevelAndAssetFields(t *testing.T) {
+	withTempHome(t)
+	path := ConfigFilePath()
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatalf("create config directory: %v", err)
+	}
+
+	const source = `{
+	  "version":"1.0.0",
+	  "assets":[
+	    {"id":"dotween","name":"DOTween","enabled":false,"installed":true,"category":"animation","description":"old","vendor":{"license":"paid"}},
+	    {"id":"custom_plugin","name":"Custom","enabled":true,"installed":true,"category":"custom","description":"keep","custom_asset_flag":true}
+	  ],
+	  "custom_top_level":{"keep":"yes"}
+	}`
+	if err := os.WriteFile(path, []byte(source), 0644); err != nil {
+		t.Fatalf("write source config: %v", err)
+	}
+
+	if _, err := Load(); err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if _, err := SetAssetEnabled("dotween", true); err != nil {
+		t.Fatalf("set asset enabled: %v", err)
+	}
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read saved config: %v", err)
+	}
+	var root map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &root); err != nil {
+		t.Fatalf("saved config must remain valid JSON: %v", err)
+	}
+	var customTop map[string]string
+	if err := json.Unmarshal(root["custom_top_level"], &customTop); err != nil || customTop["keep"] != "yes" {
+		t.Fatalf("unknown top-level field was not preserved: %s", raw)
+	}
+
+	var assets []map[string]json.RawMessage
+	if err := json.Unmarshal(root["assets"], &assets); err != nil {
+		t.Fatalf("decode saved assets: %v", err)
+	}
+	var dotween, custom map[string]json.RawMessage
+	for _, asset := range assets {
+		var id string
+		if err := json.Unmarshal(asset["id"], &id); err != nil {
+			t.Fatalf("decode asset id: %v", err)
+		}
+		switch id {
+		case "dotween":
+			dotween = asset
+		case "custom_plugin":
+			custom = asset
+		}
+	}
+	var vendor map[string]string
+	if dotween == nil || json.Unmarshal(dotween["vendor"], &vendor) != nil || vendor["license"] != "paid" {
+		t.Fatalf("unknown dotween field was not preserved: %s", raw)
+	}
+	if custom == nil || string(custom["custom_asset_flag"]) != "true" {
+		t.Fatalf("unknown asset entry was not preserved: %s", raw)
+	}
+
+}
+
+func TestSaveConfig_ReturnsErrorWhenAnotherWriterOwnsTheLock(t *testing.T) {
+	withTempHome(t)
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+
+	release, err := acquireConfigLock(ConfigFilePath())
+	if err != nil {
+		t.Fatalf("acquire first config lock: %v", err)
+	}
+	defer release()
+
+	previousTimeout := configLockTimeout
+	configLockTimeout = 5 * time.Millisecond
+	t.Cleanup(func() { configLockTimeout = previousTimeout })
+
+	if err := Save(cfg); err == nil {
+		t.Fatal("Save succeeded while another writer held the config lock")
+	}
+}
+
+func TestSaveConfig_PreservesExtensionsAddedAfterLoad(t *testing.T) {
+	withTempHome(t)
+	path := ConfigFilePath()
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatalf("create config directory: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(`{"version":"1.0.0","assets":[{"id":"dotween","name":"DOTween","enabled":false,"installed":false,"category":"animation","description":"test"}]}`), 0644); err != nil {
+		t.Fatalf("write initial config: %v", err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(`{"version":"1.0.0","assets":[{"id":"dotween","name":"DOTween","enabled":false,"installed":false,"category":"animation","description":"test","vendor":{"license":"paid"}},{"id":"external","name":"External","enabled":true,"installed":true,"category":"custom","description":"keep"}],"external_top_level":true}`), 0644); err != nil {
+		t.Fatalf("write concurrent config: %v", err)
+	}
+
+	if err := Save(cfg); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+	var persisted map[string]json.RawMessage
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read saved config: %v", err)
+	}
+	if err := json.Unmarshal(raw, &persisted); err != nil {
+		t.Fatalf("decode saved config: %v", err)
+	}
+	if string(persisted["external_top_level"]) != "true" {
+		t.Fatalf("new top-level extension was lost: %s", raw)
+	}
+	if !strings.Contains(string(persisted["assets"]), `"external"`) || !strings.Contains(string(persisted["assets"]), `"vendor"`) {
+		t.Fatalf("new asset extensions were lost: %s", raw)
 	}
 }
 

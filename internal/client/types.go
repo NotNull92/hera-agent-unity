@@ -65,6 +65,10 @@ type BatchCommandRequest struct {
 }
 
 type BatchCommandResponse struct {
+	Success   bool              `json:"success"`
+	Message   string            `json:"message"`
+	Code      string            `json:"code,omitempty"`
+	Data      json.RawMessage   `json:"data,omitempty"`
 	Results   []CommandResponse `json:"results"`
 	Completed int               `json:"completed"`
 	Failed    int               `json:"failed"`

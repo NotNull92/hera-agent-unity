@@ -55,8 +55,6 @@ func assetConfigCmd(args []string) error {
 		return assetConfigGameFeelUI(subArgs)
 	case "ui-system":
 		return assetConfigUISystem(subArgs)
-	case "detect":
-		return assetConfigDetect()
 	case "get":
 		if len(subArgs) == 0 {
 			return fmt.Errorf("usage: asset-config get <id>")
@@ -312,28 +310,6 @@ func assetConfigBoolFlag(args []string, subcommand, key string, get func(*assetc
 		return nil
 	}
 	fmt.Printf("✓ %s %s\n", key, state)
-	return nil
-}
-
-func assetConfigDetect() error {
-	// This command shows instructions for asset detection.
-	// The actual detection requires Unity running with the Connector package.
-	if tui.ColorEnabled() {
-		fmt.Println(tui.InfoStyle.Render("Asset detection requires Unity to be running."))
-		fmt.Println(tui.InfoStyle.Render("With Unity open, run:"))
-		fmt.Println("  " + tui.PathStyle.Render("hera-agent-unity asset-config detect"))
-		fmt.Println()
-		fmt.Printf("%s %s\n",
-			tui.LabelStyle.Render("Config path:"),
-			tui.PathStyle.Render(assetconfig.ConfigFilePath()))
-		return nil
-	}
-
-	fmt.Println("Asset detection requires Unity to be running.")
-	fmt.Println("With Unity open, run:")
-	fmt.Println("  hera-agent-unity asset-config detect")
-	fmt.Println()
-	fmt.Printf("Config path: %s\n", assetconfig.ConfigFilePath())
 	return nil
 }
 

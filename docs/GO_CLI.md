@@ -9,13 +9,14 @@ This document describes the Go CLI codebase structure, execution flow, and key f
 ```
 cmd/                  # Cobra-free command implementation
   root.go             # Entry point, flag/arg parsing, response printing
+  send.go             # Context-aware send/progress helpers and fresh transition resolver
   dispatch.go         # Standalone / Unity-backed command routing
   editor.go           # editor command (waitForReady polling)
-  test.go             # test command (PlayMode result polling)
+  test.go             # test command (EditMode/PlayMode result polling)
   status.go           # status, waitForAlive, waitForReady, ping
   update.go           # self-update from GitHub releases
   version_check.go    # periodic update notice (12h interval)
-  asset_config.go     # asset-config subcommand, including ui_system and Ultra Hera JSON
+  asset_config.go     # local asset-config subcommands, including ui_system and Ultra Hera JSON
   batch.go            # batch command execution
   ui_doc.go           # ui_doc dispatch + CLI-side sample/catalog
   manage_packages.go  # async package job polling
@@ -34,7 +35,9 @@ internal/
     process_unix.go        # Unix PID alive check
     process_windows.go     # Windows PID check
   assetconfig/
-    config.go              # asset-config.json read/write (assets + ui_system + loopEngineeringMode)
+    config.go              # asset-config.json model + read/write entry points
+    json.go                # forward-compatible JSON field preservation
+    persistence.go         # cross-process lock + temp-file replacement
   tui/
     assetconfig.go         # bubbletea TUI for asset-config
   poll/
@@ -53,7 +56,7 @@ internal/
 
 ```go
 // main.go → cmd.Execute()
-func Execute() error {
+func Execute(ctx context.Context) error {
     // 1. Parse global flags (--port, --project, --timeout, --verbose, ...)
     flagArgs, cmdArgs := splitArgs(os.Args[1:])
     flag.CommandLine.Parse(flagArgs)
@@ -66,7 +69,7 @@ func Execute() error {
     switch category {
         case "status":    statusCmd(inst)
         case "update":    updateCmd(subArgs)
-        case "asset-config": assetConfigCmd(subArgs)
+        case "asset-config": assetConfigCmd(subArgs) // except detect → detect_assets
         case "version":   print version
         case "help":      print help
         case "ping":      pingCmd(...)
@@ -79,10 +82,10 @@ func Execute() error {
     inst, _ := client.DiscoverInstance(flagProject, flagPort)
 
     // 5. Wait for Unity to be alive
-    waitForAlive(resolve, flagTimeout, category)
+    inst, _ = waitForAlive(ctx, freshResolve, flagTimeout, category)
 
     // 6. Send command via HTTP (or special-case batch/editor/test/manage_packages/unity_docs/ui_doc)
-    resp, err := runUnityCommand(ctx, category, subArgs, send, resolve)
+    resp, err := runUnityCommand(ctx, category, subArgs, send, inst, freshResolve)
 
     // 7. Print response + update notice
     printer.Print(resp, category)
@@ -97,18 +100,27 @@ func Execute() error {
 | Function | Role |
 |:---|:---|
 | `Execute()` | Entry point. Parses flags → discovers instance → dispatches command → prints response. |
-| `runStandaloneCommand()` | Handles commands that don't need a live Unity connection. Lives in `dispatch.go`. |
+| `runStandaloneCommand()` | Handles commands that don't need a live Unity connection. `asset-config detect` deliberately falls through to Unity-backed dispatch. Lives in `dispatch.go`. |
 | `runUnityCommand()` | Handles commands that require a live Unity connection (including batch and file-injection for exec/ui_doc). Lives in `dispatch.go`. |
 | `ResponsePrinter.Print()` | Formats Unity JSON response for terminal. Plain strings print raw. Objects print indented or compact JSON depending on command category. |
 | `printTimings()` | Prints per-phase timings to stderr when `--verbose` is set. |
 | `buildParams()` | Converts `--key value` pairs into a map. Supports `--params '{"k":"v"}'` for raw JSON. |
 | `splitArgs()` | Separates global flags (`--port`, `--project`, `--timeout`, `--verbose`, etc.) from subcommand args. |
-| `readStdinIfPiped()` | Reads stdin when piped (e.g., `echo 'code' \| hera-agent-unity exec`). Detects pipe via `os.ModeCharDevice`. |
+| `readStdinIfPiped()` | Reads stdin when piped (e.g., `echo 'code' \| hera-agent-unity exec`). It accepts only a named pipe or regular file after excluding interactive terminals, preventing detached stdin from blocking. |
 | `readExecFileIfPresent()` | Strips `--file <path>` and prepends file contents as the first positional arg. |
-| `prepareSend()` | Builds a `SendFunc` closure that re-resolves the instance on every call so port rebinds during domain reload are followed transparently. |
-| `makeResolver()` | Returns an `instanceResolver` that follows the same project even if Unity rebinds to a new port during reload. |
+| `prepareSend()` | Builds a `SendFunc` closure from the initial instance and root context. Normal commands keep that cached one-shot resolution; reload retry re-discovers only after a refused connection. |
+| `makeFreshResolver()` | Returns an `instanceResolver` that bypasses the short-lived heartbeat cache for transition polling, following the same project if Unity rebinds during reload. |
 | `isHumanCommand()` / `shouldNarrate()` | Gate styled stderr, progress messages, and wait narration by command category. |
 | `isUserCodeDiagnostic()` | Reframes exec-related error output so snippet failures don't read as tool failures. |
+
+### Asset-config persistence
+
+The CLI, Hera Settings, and `detect_assets` use the same sibling
+`asset-config.json.lock` protocol and replace the config through a flushed
+temporary file in the same directory. Each writer preserves unrecognized
+top-level fields, asset fields, and asset entries from the latest document.
+Concurrent edits to the same recognized setting use last-writer-wins semantics;
+there is no revision-based merge for those values.
 
 ### Parameter Type Coercion
 
@@ -143,16 +155,25 @@ func Execute() error {
 |:---|:---|
 | `statusCmd()` | Reads instance file and prints human state, including Unity version, docs bucket, and compiler kind when the heartbeat provides them |
 | `pingCmd()` | Token-cheap liveness probe; reads heartbeat file directly (no Unity HTTP round-trip) |
-| `waitForAlive()` | Polls instance files until Unity is alive (or timeout) |
-| `waitForReady()` | Polls instance files until `state == "ready"`. Returns `compileErrors` status. |
-| `waitForState()` | Polls heartbeat until state matches one of the target values. |
+| `waitForAlive()` | Polls fresh instance files until Unity is alive (or timeout); returns root-context cancellation directly. |
+| `waitForReady()` | Polls fresh heartbeats until `state == "ready"`; returns `compileErrors` status or root-context cancellation. |
+| `waitForState()` | Polls fresh heartbeats until state matches one of the target values, respecting root cancellation. |
 
 ### test.go
 
 | Mode | Flow |
 |:---|:---|
-| EditMode | Synchronous execution. Direct response. |
-| PlayMode | Asynchronous. Returns `"running"` immediately. CLI polls `~/.hera-agent-unity/status/test-results-<port>.json` for results. |
+| EditMode | Starts asynchronously. The connector returns `{ port, run_id }`, writes `~/.hera-agent-unity/status/test-results-<port>-<run_id>.json`, and the CLI polls until the final result. |
+| PlayMode | Starts asynchronously. The connector returns the same metadata, writes the run-scoped result file (surviving any domain reload), and the CLI polls until the final result. |
+
+`test` has no `--wait` flag: both modes wait for their persisted final result as
+part of the command. `--timeout` bounds that polling.
+
+When a legacy connector returns `{ port }` without `run_id`, the CLI polls the
+legacy `test-results-<port>.json` path. Current connectors dual-write that path
+for older PlayMode clients while using run-scoped files as the primary contract.
+Current CLIs send `async_results=true`; without it, a current connector keeps
+the legacy synchronous EditMode response for older clients.
 
 ### manage_packages.go
 
@@ -160,7 +181,7 @@ Dispatches to `manage_packages` on the connector. `list` is synchronous; `add` /
 
 ### batch.go
 
-Reads batch JSON from `--file` or stdin, unmarshals into `client.BatchCommandRequest`, and sends it to `POST /commands`. Results are printed per step; `fail_fast` stops at the first failure.
+Reads batch JSON from `--file` or stdin, unmarshals into `client.BatchCommandRequest`, and sends it to `POST /commands`. Results are printed per step; `fail_fast` stops at the first failure. A structured non-200 ingress rejection is printed as compact JSON and returned as a CLI failure while preserving its `HTTP_*` code and `data`.
 
 ### ui_doc.go
 
@@ -228,13 +249,13 @@ such as `unity_dotnet_sdk_roslyn`, `unity_netcore_runtime`, `external`,
 ## HTTP Sending (client.Send)
 
 ```go
-func Send(inst *Instance, command string, params interface{}, timeoutMs int) (*CommandResponse, error)
+func Send(ctx context.Context, inst *Instance, command string, params any, timeoutMs int) (*CommandResponse, error)
 ```
 
 1. Marshals `CommandRequest{Command, Params}` to JSON
 2. POSTs to `http://127.0.0.1:<port>/command`
-3. HTTP client timeout = `timeoutMs` milliseconds
-4. Transparently retries while Unity's HTTP listener is down between domain reloads (`doWithReloadRetry`)
+3. The request derives from the root command context and is additionally bounded by `timeoutMs` milliseconds.
+4. Transparently retries while Unity's HTTP listener is down between domain reloads (`doWithReloadRetry`), using fresh discovery only for that retry path.
 5. If response is not JSON → wraps it in `SuccessResponse`
 
 ### CommandResponse
@@ -269,10 +290,10 @@ Unit tests use injected `sendFn` and `instanceResolver` functions to avoid real 
 
 ```go
 func TestEditorPlay(t *testing.T) {
-    mockSend := func(cmd string, params interface{}) (*client.CommandResponse, error) {
+    mockSend := func(cmd string, params any) (*client.CommandResponse, error) {
         return &client.CommandResponse{Success: true, Message: "OK"}, nil
     }
-    resp, err := editorCmd([]string{"play"}, mockSend, nil, "editor")
+    resp, err := editorCmd(context.Background(), []string{"play"}, mockSend, nil, "editor")
     // assertions...
 }
 ```

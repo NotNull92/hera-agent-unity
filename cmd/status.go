@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"slices"
@@ -115,7 +117,7 @@ func discoverStatusInstance(project string, port int) (*client.Instance, error) 
 
 // waitForAlive resolves the current target instance, then polls until a newer heartbeat appears.
 // This keeps following the same project even if Unity rebinds to a new port during reload.
-func waitForAlive(resolve instanceResolver, timeoutMs int, category string) (*client.Instance, error) {
+func waitForAlive(ctx context.Context, resolve instanceResolver, timeoutMs int, category string) (*client.Instance, error) {
 	baseline := time.Now().UnixMilli()
 	inst, err := resolve()
 	if err == nil {
@@ -132,6 +134,7 @@ func waitForAlive(resolve instanceResolver, timeoutMs int, category string) (*cl
 
 	var result *client.Instance
 	err = poll.ExponentialBackoffLoop(
+		ctx,
 		time.Duration(timeoutMs)*time.Millisecond,
 		statusPollBaseInterval,
 		1500*time.Millisecond,
@@ -148,6 +151,9 @@ func waitForAlive(resolve instanceResolver, timeoutMs int, category string) (*cl
 		},
 	)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("timed out waiting for Unity")
 	}
 	if shouldNarrate(category) {
@@ -161,12 +167,13 @@ func waitForAlive(resolve instanceResolver, timeoutMs int, category string) (*cl
 // holding the HTTP connection through the domain reload that play-mode
 // entry triggers — the listener is stopped mid-response, so the only
 // reliable confirmation channel is the filesystem heartbeat.
-func waitForState(resolve instanceResolver, timeoutMs int, category string, targets ...string) error {
+func waitForState(ctx context.Context, resolve instanceResolver, timeoutMs int, category string, targets ...string) error {
 	if shouldNarrate(category) {
 		fmt.Fprintf(os.Stderr, "Waiting for state %v...\n", targets)
 	}
 	var matchedState string
 	err := poll.ExponentialBackoffLoop(
+		ctx,
 		time.Duration(timeoutMs)*time.Millisecond,
 		statusPollBaseInterval,
 		1500*time.Millisecond,
@@ -183,6 +190,9 @@ func waitForState(resolve instanceResolver, timeoutMs int, category string, targ
 		},
 	)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return err
+		}
 		return fmt.Errorf("timed out waiting for state %v", targets)
 	}
 	if shouldNarrate(category) {
@@ -199,7 +209,7 @@ func waitForState(resolve instanceResolver, timeoutMs int, category string, targ
 // enough for a wrapping agent (e.g. Claude Code's 120s bash timeout) to
 // background the process. ready=false means it timed out still compiling —
 // distinct from a clean compile that produced errors (ready=true, hasErrors=true).
-func waitForReady(resolve instanceResolver, timeoutMs int, category string) (ready, hasErrors bool) {
+func waitForReady(ctx context.Context, resolve instanceResolver, timeoutMs int, category string) (ready, hasErrors bool, waitErr error) {
 	// Guard against a missing/zero timeout (e.g. a caller that never parsed
 	// flags) collapsing the deadline to "now" and timing out instantly.
 	if timeoutMs <= 0 {
@@ -210,6 +220,7 @@ func waitForReady(resolve instanceResolver, timeoutMs int, category string) (rea
 	}
 
 	err := poll.ExponentialBackoffLoop(
+		ctx,
 		time.Duration(timeoutMs)*time.Millisecond,
 		statusPollBaseInterval,
 		1500*time.Millisecond,
@@ -226,10 +237,13 @@ func waitForReady(resolve instanceResolver, timeoutMs int, category string) (rea
 		},
 	)
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return false, false, err
+		}
 		if shouldNarrate(category) {
 			fmt.Fprintf(os.Stderr, "Still compiling after %ds (timed out waiting).\n", timeoutMs/1000)
 		}
-		return false, false
+		return false, false, nil
 	}
 	if shouldNarrate(category) {
 		if hasErrors {
@@ -238,7 +252,7 @@ func waitForReady(resolve instanceResolver, timeoutMs int, category string) (rea
 			fmt.Fprintf(os.Stderr, "Compilation complete.\n")
 		}
 	}
-	return true, hasErrors
+	return true, hasErrors, nil
 }
 
 func shouldNarrate(category string) bool {

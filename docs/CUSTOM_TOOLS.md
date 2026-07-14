@@ -11,6 +11,7 @@ Create a C# class in `AgentConnector/Editor/Tools/` (or anywhere in an Editor as
 ```csharp
 using Newtonsoft.Json.Linq;
 using HeraAgent;
+using UnityEngine;
 
 [HeraTool(Name = "spawn_cube", Description = "Spawns a cube at the specified position")]
 public static class SpawnCubeTool
@@ -102,6 +103,8 @@ public static class AsyncTool
 
 `CommandRouter` awaits `Task<object>` and `Task` results automatically.
 
+Action handlers marked with `[HeraAction]` must be `public static`, accept exactly one `JObject`, and return `object`, `Task<object>`, or `Task`. Invalid declarations are omitted from discovery with a Unity console diagnostic.
+
 ---
 
 ## Attributes
@@ -131,7 +134,7 @@ public class Parameters
 |:---|:---|
 | `Description` | Human-readable parameter description |
 | `Required` | Whether the parameter must be provided |
-| `Default` | Default value if not provided |
+| `Default` | Default value metadata; an explicitly empty string is preserved as `""` |
 | `EnumType` | Name of enum type for enum parameters |
 | `OutputSchema` | JSON schema for the tool's output |
 
@@ -256,7 +259,8 @@ hera-agent-unity find_by_tag --params '{"tag":"Enemy"}'
    - `static Task<object> HandleCommand(JObject params)` (async static)
    - `Task<object> HandleCommand(JObject params)` (async instance)
 3. Tool name = `Name` attribute property, or `StringCaseUtility.ToSnakeCase(className)`
-4. Duplicate names are logged as errors; first found wins
+4. Duplicate names are logged as errors; the ordinal-first descriptor wins
+5. Discovery order is ordinal by assembly/type/tool/action name. A partially loadable assembly still contributes non-null `ReflectionTypeLoadException.Types` entries and logs the loader diagnostic.
 
 ---
 

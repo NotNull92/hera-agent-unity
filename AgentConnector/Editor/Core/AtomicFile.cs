@@ -14,7 +14,13 @@ namespace HeraAgent
             var tmp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
             try
             {
-                File.WriteAllText(tmp, contents);
+                using (var stream = new FileStream(tmp, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                using (var writer = new StreamWriter(stream))
+                {
+                    writer.Write(contents);
+                    writer.Flush();
+                    stream.Flush(true);
+                }
                 if (File.Exists(path))
                     File.Replace(tmp, path, null);
                 else

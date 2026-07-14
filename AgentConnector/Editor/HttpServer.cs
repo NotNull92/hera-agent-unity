@@ -66,12 +66,17 @@ namespace HeraAgent
         const int DEFAULT_PORT = 8090;
         const int FALLBACK_PORT = 8091;
         const int MAX_PORT_ATTEMPTS = 10;
+        const int MAX_COMMAND_BODY_BYTES = 1024 * 1024;
+        const int MAX_BATCH_BODY_BYTES = 4 * 1024 * 1024;
+        const int MAX_BATCH_COMMANDS = 50;
+        const int MAX_PENDING_REQUESTS = 64;
 
         static HttpListener s_Listener;
         static CancellationTokenSource s_Cts;
         static int s_Port;
 
         static readonly ConcurrentQueue<WorkItem> s_Queue = new();
+        static int s_PendingRequests;
 
         struct WorkItem
         {
@@ -210,6 +215,10 @@ namespace HeraAgent
             {
                 item.Tcs.TrySetResult(new ErrorResponse("INTERNAL_ERROR", $"Request handling error: {ex.Message}"));
             }
+            finally
+            {
+                Interlocked.Decrement(ref s_PendingRequests);
+            }
         }
 
         static async Task ListenLoop(CancellationToken ct)
@@ -255,7 +264,8 @@ namespace HeraAgent
             if (origin != null)
             {
                 response.StatusCode = 403;
-                var buf = Encoding.UTF8.GetBytes("{\"error\":\"Browser requests are not allowed\"}");
+                var buf = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
+                    new ErrorResponse("HTTP_BROWSER_REQUEST_FORBIDDEN", "Browser requests are not allowed.")));
                 response.ContentLength64 = buf.Length;
                 await response.OutputStream.WriteAsync(buf, 0, buf.Length);
                 response.Close();
@@ -268,8 +278,7 @@ namespace HeraAgent
             {
                 if (request.HttpMethod != "POST")
                 {
-                    result = new ErrorResponse("METHOD_NOT_ALLOWED", $"Expected POST, got {request.HttpMethod} {request.Url.AbsolutePath}");
-                    response.StatusCode = 400;
+                    result = new ErrorResponse("HTTP_METHOD_NOT_ALLOWED", $"Expected POST, got {request.HttpMethod} {request.Url.AbsolutePath}");
                 }
                 else
                 {
@@ -282,18 +291,20 @@ namespace HeraAgent
                             result = await HandleBatchCommand(request);
                             break;
                         default:
-                            result = new ErrorResponse("NOT_FOUND", $"Expected POST /command or POST /commands, got {request.HttpMethod} {request.Url.AbsolutePath}");
-                            response.StatusCode = 400;
+                            result = new ErrorResponse("HTTP_NOT_FOUND", $"Expected POST /command or POST /commands, got {request.HttpMethod} {request.Url.AbsolutePath}");
                             break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                result = new ErrorResponse("INTERNAL_ERROR", $"Request error: {ex.Message}");
+                result = new ErrorResponse("HTTP_INTERNAL_ERROR", $"Request error: {ex.Message}");
                 response.StatusCode = 500;
                 DebugLogging.LogError("unknown", ex);
             }
+
+            if (result is ErrorResponse error)
+                response.StatusCode = StatusCodeFor(error.code);
 
             try
             {
@@ -336,9 +347,10 @@ namespace HeraAgent
 
         static async Task<object> HandleSingleCommand(HttpListenerRequest request)
         {
-            using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
-            var body = await reader.ReadToEndAsync();
-            var json = JObject.Parse(body);
+            var (body, bodyError) = await ReadBody(request, MAX_COMMAND_BODY_BYTES);
+            if (bodyError != null) return bodyError;
+            var (json, jsonError) = ParseRequestObject(body);
+            if (jsonError != null) return jsonError;
 
             var command = json["command"]?.ToString();
             var parameters = json["params"] as JObject;
@@ -348,17 +360,17 @@ namespace HeraAgent
             if (string.IsNullOrEmpty(command))
             {
                 DebugLogging.LogError("unknown", new Exception("Missing 'command' field"));
-                return new ErrorResponse("MISSING_PARAM", "Missing 'command' field");
+                return new ErrorResponse("HTTP_MISSING_COMMAND", "Missing 'command' field");
             }
 
             var tcs = new TaskCompletionSource<object>();
-            s_Queue.Enqueue(new WorkItem
+            var queueError = Enqueue(new WorkItem
             {
                 Command = command,
                 Parameters = parameters,
                 Tcs = tcs,
             });
-            ForceEditorUpdate();
+            if (queueError != null) return queueError;
             var result = await tcs.Task;
             DebugLogging.LogResponse(command, result);
             return result;
@@ -366,23 +378,28 @@ namespace HeraAgent
 
         static async Task<object> HandleBatchCommand(HttpListenerRequest request)
         {
-            using var reader = new StreamReader(request.InputStream, Encoding.UTF8);
-            var body = await reader.ReadToEndAsync();
-            var json = JObject.Parse(body);
+            var (body, bodyError) = await ReadBody(request, MAX_BATCH_BODY_BYTES);
+            if (bodyError != null) return bodyError;
+            var (json, jsonError) = ParseRequestObject(body);
+            if (jsonError != null) return jsonError;
 
             var commandsArray = json["commands"] as JArray;
             if (commandsArray == null)
             {
-                return new ErrorResponse("MISSING_PARAM", "Missing 'commands' field");
+                return new ErrorResponse("HTTP_MISSING_COMMANDS", "Missing 'commands' field");
             }
+            if (commandsArray.Count > MAX_BATCH_COMMANDS)
+                return new ErrorResponse("HTTP_BATCH_TOO_LARGE", $"Batch contains {commandsArray.Count} commands; maximum is {MAX_BATCH_COMMANDS}.");
 
             var items = new List<CommandRouter.BatchCommandItem>();
             foreach (var cmd in commandsArray)
             {
+                if (!(cmd is JObject commandObject))
+                    return new ErrorResponse("HTTP_INVALID_JSON", "Each batch command must be a JSON object.");
                 items.Add(new CommandRouter.BatchCommandItem
                 {
-                    Command = cmd["command"]?.ToString(),
-                    Params = cmd["params"] as JObject,
+                    Command = commandObject["command"]?.ToString(),
+                    Params = commandObject["params"] as JObject,
                 });
             }
 
@@ -394,15 +411,78 @@ namespace HeraAgent
             };
 
             var tcs = new TaskCompletionSource<object>();
-            s_Queue.Enqueue(new WorkItem
+            var queueError = Enqueue(new WorkItem
             {
                 IsBatch = true,
                 BatchItems = items,
                 BatchOptions = options,
                 Tcs = tcs,
             });
-            ForceEditorUpdate();
+            if (queueError != null) return queueError;
             return await tcs.Task;
+        }
+
+        static ErrorResponse Enqueue(WorkItem item)
+        {
+            if (Interlocked.Increment(ref s_PendingRequests) > MAX_PENDING_REQUESTS)
+            {
+                Interlocked.Decrement(ref s_PendingRequests);
+                return new ErrorResponse("HTTP_QUEUE_FULL", $"Too many pending requests; maximum is {MAX_PENDING_REQUESTS}.");
+            }
+
+            s_Queue.Enqueue(item);
+            ForceEditorUpdate();
+            return null;
+        }
+
+        static async Task<(string body, ErrorResponse error)> ReadBody(HttpListenerRequest request, int maximumBytes)
+        {
+            if (request.ContentLength64 > maximumBytes)
+                return (null, new ErrorResponse("HTTP_REQUEST_BODY_TOO_LARGE", $"Request body exceeds {maximumBytes} bytes."));
+
+            var buffer = new byte[8192];
+            var total = 0;
+            using var output = new MemoryStream();
+            while (true)
+            {
+                var read = await request.InputStream.ReadAsync(buffer, 0, buffer.Length);
+                if (read == 0) break;
+                total += read;
+                if (total > maximumBytes)
+                    return (null, new ErrorResponse("HTTP_REQUEST_BODY_TOO_LARGE", $"Request body exceeds {maximumBytes} bytes."));
+                output.Write(buffer, 0, read);
+            }
+            return (Encoding.UTF8.GetString(output.ToArray()), null);
+        }
+
+        static (JObject json, ErrorResponse error) ParseRequestObject(string body)
+        {
+            try
+            {
+                return (JObject.Parse(body), null);
+            }
+            catch (JsonException)
+            {
+                return (null, new ErrorResponse("HTTP_INVALID_JSON", "Request body must be a JSON object."));
+            }
+        }
+
+        static int StatusCodeFor(string code)
+        {
+            switch (code)
+            {
+                case "HTTP_BROWSER_REQUEST_FORBIDDEN": return 403;
+                case "HTTP_NOT_FOUND": return 404;
+                case "HTTP_METHOD_NOT_ALLOWED": return 405;
+                case "HTTP_REQUEST_BODY_TOO_LARGE": return 413;
+                case "HTTP_QUEUE_FULL": return 429;
+                case "HTTP_INTERNAL_ERROR": return 500;
+                case "HTTP_INVALID_JSON":
+                case "HTTP_MISSING_COMMAND":
+                case "HTTP_MISSING_COMMANDS":
+                case "HTTP_BATCH_TOO_LARGE": return 400;
+                default: return 200;
+            }
         }
     }
 }

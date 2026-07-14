@@ -42,7 +42,7 @@ namespace HeraAgent.Tools
             catch { }
         }
 
-        private static CompileResult CompileToBytes(string source, int userLineOffset, string cscOverride, string dotnetOverride)
+        private static CompileResult CompileToBytes(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool useCache = true)
         {
             var utf8 = new UTF8Encoding(false);
             var tmpDir = Path.Combine(Path.GetTempPath(), "hera-agent-unity-exec");
@@ -64,8 +64,6 @@ namespace HeraAgent.Tools
                 // .rsp stays BOM-less (a BOM there would prepend to the first arg
                 // and break flag parsing).
                 File.WriteAllText(srcFile, source, new UTF8Encoding(true));
-
-                var refsRsp = ExecCompileCache.GetRefRspPath();
 
                 var rsp = new StringBuilder();
                 rsp.AppendLine("-target:library");
@@ -89,17 +87,24 @@ namespace HeraAgent.Tools
                 // flag, so this stays version-agnostic and can't regress 6.3/6.4.
                 rsp.AppendLine("-utf8output");
                 rsp.AppendLine($"-langversion:{LangVersion}");
-                rsp.AppendLine($"@\"{refsRsp}\"");
+                if (useCache)
+                    rsp.AppendLine($"@\"{ExecCompileCache.GetRefRspPath()}\"");
+                else
+                    ExecCompileCache.AppendUncachedReferenceArguments(rsp);
                 rsp.AppendLine($"\"{srcFile}\"");
                 File.WriteAllText(rspFile, rsp.ToString(), utf8);
 
                 var rspArg = $"@\"{rspFile}\"";
-                var csc = ExecCompileCache.ResolveCsc(cscOverride);
+                var csc = useCache
+                    ? ExecCompileCache.ResolveCsc(cscOverride)
+                    : ExecCompileCache.ResolveCscUncached(cscOverride);
                 string exe, args;
 
                 if (csc != null && csc.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                 {
-                    var dotnet = ExecCompileCache.ResolveDotnet(dotnetOverride);
+                    var dotnet = useCache
+                        ? ExecCompileCache.ResolveDotnet(dotnetOverride)
+                        : ExecCompileCache.ResolveDotnetUncached(dotnetOverride);
                     if (dotnet == null)
                         return new CompileResult { Error = new ErrorResponse(
                             "EXEC_DOTNET_NOT_FOUND",
@@ -119,7 +124,7 @@ namespace HeraAgent.Tools
                 {
                     // csc.exe is a Windows-PE managed assembly; macOS/Linux cannot
                     // exec it directly and must run it through the bundled Mono host.
-                    var mono = ExecCompileCache.ResolveMono();
+                    var mono = useCache ? ExecCompileCache.ResolveMono() : ExecCompileCache.ResolveMonoUncached();
                     if (mono == null)
                         return new CompileResult { Error = new ErrorResponse(
                             "EXEC_MONO_NOT_FOUND",

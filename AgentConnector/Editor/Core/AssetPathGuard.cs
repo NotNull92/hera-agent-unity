@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using UnityEditor;
 using UnityEngine;
 
 namespace HeraAgent
@@ -14,6 +15,63 @@ namespace HeraAgent
         public static bool TryNormalizeAssetFile(string raw, out string assetPath, out string error)
         {
             return TryNormalize(raw, allowAssetsRoot: false, out assetPath, out error);
+        }
+
+        public static bool TryNormalizeAssetPath(string raw, out string assetPath, out string error)
+        {
+            if (TryNormalizeAssetFile(raw, out assetPath, out error))
+                return true;
+            return TryNormalizeAssetFolder(raw, out assetPath, out error);
+        }
+
+        public static bool TryPrepareNewAssetFile(
+            string raw,
+            string extension,
+            bool appendExtension,
+            out string assetPath,
+            out string errorCode,
+            out string error)
+        {
+            assetPath = null;
+            errorCode = null;
+            error = null;
+
+            if (!TryNormalizeAssetFile(raw, out assetPath, out error))
+            {
+                errorCode = "INVALID_PATH";
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(extension) || extension[0] != '.')
+                throw new ArgumentException("extension must start with '.'", nameof(extension));
+
+            if (!assetPath.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+            {
+                if (!appendExtension)
+                {
+                    errorCode = "INVALID_PATH";
+                    error = $"path must end with '{extension}' (got '{assetPath}').";
+                    return false;
+                }
+                assetPath += extension;
+            }
+
+            if (AssetDatabase.LoadMainAssetAtPath(assetPath) != null || AssetDatabase.IsValidFolder(assetPath))
+            {
+                errorCode = "ASSET_EXISTS";
+                error = $"An asset already exists at '{assetPath}'.";
+                return false;
+            }
+
+            var parent = Path.GetDirectoryName(assetPath)?.Replace('\\', '/');
+            if (string.IsNullOrEmpty(parent) || !AssetDatabase.IsValidFolder(parent))
+            {
+                errorCode = "PARENT_FOLDER_MISSING";
+                error = $"Parent folder '{parent}' does not exist.";
+                return false;
+            }
+
+            return true;
         }
 
         static bool TryNormalize(string raw, bool allowAssetsRoot, out string assetPath, out string error)

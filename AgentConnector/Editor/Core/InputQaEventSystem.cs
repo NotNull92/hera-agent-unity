@@ -9,9 +9,9 @@ namespace HeraAgent
 {
     internal static partial class InputQaEventSystem
     {
-        public static object State()
+        public static object State(InputQaOptions options)
         {
-            return new SuccessResponse("Input state", InputQaResolver.State());
+            return new SuccessResponse("Input state", InputQaResolver.State(options.MaxResults));
         }
 
         public static object Inspect(InputQaOptions options)
@@ -83,6 +83,12 @@ namespace HeraAgent
                     inspection.ClickHandler = click;
                     inspection.TargetTopHit = targetOrChild || handlerIsTarget;
                     if (!inspection.TargetTopHit) inspection.BlockedBy = hitGo;
+                }
+
+                if (inspection.Hits.Count >= inspection.Options.MaxResults)
+                {
+                    inspection.HitsTruncated = true;
+                    continue;
                 }
 
                 inspection.Hits.Add(new InputQaHit

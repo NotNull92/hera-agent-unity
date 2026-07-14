@@ -14,6 +14,11 @@ namespace HeraAgent
     public static class UiToolkitDocument
     {
         public const string DefaultDirectory = "Assets/HeraGenerated/UI";
+        internal const string FailureStageAfterAssets = "after-assets";
+        internal const string FailureStageAfterPanelSettings = "after-panel-settings";
+        internal const string FailureStageAfterDocument = "after-document";
+
+        internal static Func<string, Exception> FailureInjectionForTests;
 
         public class ApplyResult
         {
@@ -30,11 +35,18 @@ namespace HeraAgent
             public string PanelSettingsAsset;
             public int RootId;
             public bool WorldSpace;
+            public bool RollbackAttempted;
+            public readonly List<string> RolledBackArtifacts = new List<string>();
+            public readonly List<string> RollbackErrors = new List<string>();
+            public bool UpsertMayBePartial;
         }
 
         public static ApplyResult Apply(JObject document, Transform parent, bool upsert)
         {
             var result = new ApplyResult();
+            var createdAssets = new List<string>();
+            GameObject createdRoot = null;
+            var mutationsStarted = false;
             UiToolkitFixer.ValidateDocument(document, result.Fixes, result.Diagnostics);
             if (UiToolkitFixer.HasErrors(result.Diagnostics))
             {
@@ -66,51 +78,68 @@ namespace HeraAgent
                 return result;
             }
 
-            var emitter = new Emitter(Path.GetFileName(ussPath), CssStem(stem), result);
-            var uxml = emitter.BuildUxml(root);
-            var uss = emitter.Uss;
-            if (!WriteAssets(uxmlPath, ussPath, uxml, uss, out var writeError))
+            if (!TryPreflight(document, panelPath, out var preflight, out var preflightError))
             {
-                result.Errors.Add(writeError);
+                result.Errors.Add(preflightError);
                 return result;
             }
 
-            AssetDatabase.ImportAsset(ussPath, ImportAssetOptions.ForceUpdate);
-            AssetDatabase.ImportAsset(uxmlPath, ImportAssetOptions.ForceUpdate);
-            var visualTree = AssetDatabase.LoadMainAssetAtPath(uxmlPath);
-            if (visualTree == null)
+            string uxml;
+            string uss;
+            try
             {
-                result.Errors.Add($"Unity could not import generated UXML '{uxmlPath}'.");
+                var emitter = new Emitter(Path.GetFileName(ussPath), CssStem(stem), result);
+                uxml = emitter.BuildUxml(root);
+                uss = emitter.Uss;
+            }
+            catch (Exception ex)
+            {
+                result.Errors.Add($"failed to generate UI Toolkit markup: {ex.Message}");
                 return result;
             }
 
-            var panelSettings = CreateOrUpdatePanelSettings(panelPath, document?["panel"] as JObject, renderMode, out var panelError);
-            if (panelSettings == null)
+            try
             {
-                result.Errors.Add(panelError);
+                mutationsStarted = true;
+                if (!WriteAssets(uxmlPath, ussPath, uxml, uss, !upsert, createdAssets, out var writeError))
+                    return FailAfterMutation(result, writeError, upsert, mutationsStarted, createdAssets, createdRoot);
+
+                ThrowIfFailureInjected(FailureStageAfterAssets);
+                AssetDatabase.ImportAsset(ussPath, ImportAssetOptions.ForceUpdate);
+                AssetDatabase.ImportAsset(uxmlPath, ImportAssetOptions.ForceUpdate);
+                var visualTree = AssetDatabase.LoadMainAssetAtPath(uxmlPath);
+                if (visualTree == null)
+                    return FailAfterMutation(result, $"Unity could not import generated UXML '{uxmlPath}'.", upsert, mutationsStarted, createdAssets, createdRoot);
+
+                var panelSettings = CreateOrUpdatePanelSettings(preflight.PanelType, panelPath, document?["panel"] as JObject, renderMode, out var panelError, out var panelCreated);
+                if (panelCreated) createdAssets.Add(panelPath);
+                if (panelSettings == null)
+                    return FailAfterMutation(result, panelError, upsert, mutationsStarted, createdAssets, createdRoot);
+
+                ThrowIfFailureInjected(FailureStageAfterPanelSettings);
+                var rootName = "HeraUITK_" + stem;
+                var runtimeRoot = CreateOrUpdateDocument(preflight.DocumentType, rootName, parent, upsert, panelSettings, visualTree, out var documentError, out var created, out createdRoot);
+                if (runtimeRoot == null)
+                    return FailAfterMutation(result, documentError, upsert, mutationsStarted, createdAssets, createdRoot);
+
+                ThrowIfFailureInjected(FailureStageAfterDocument);
+                AssetDatabase.SaveAssets();
+                Selection.activeGameObject = runtimeRoot;
+                if (runtimeRoot.scene.IsValid()) EditorSceneManager.MarkSceneDirty(runtimeRoot.scene);
+
+                result.UxmlAsset = uxmlPath;
+                result.UssAsset = ussPath;
+                result.PanelSettingsAsset = panelPath;
+                result.RootId = EntityIdCompat.IdOf(runtimeRoot);
+                result.WorldSpace = renderMode == "WorldSpace";
+                if (created) result.Created++;
+                else result.Updated++;
                 return result;
             }
-
-            var rootName = "HeraUITK_" + stem;
-            var runtimeRoot = CreateOrUpdateDocument(rootName, parent, upsert, panelSettings, visualTree, out var documentError, out var created);
-            if (runtimeRoot == null)
+            catch (Exception ex)
             {
-                result.Errors.Add(documentError);
-                return result;
+                return FailAfterMutation(result, $"failed to emit UI Toolkit document: {ex.Message}", upsert, mutationsStarted, createdAssets, createdRoot);
             }
-
-            AssetDatabase.SaveAssets();
-            Selection.activeGameObject = runtimeRoot;
-            if (runtimeRoot.scene.IsValid()) EditorSceneManager.MarkSceneDirty(runtimeRoot.scene);
-
-            result.UxmlAsset = uxmlPath;
-            result.UssAsset = ussPath;
-            result.PanelSettingsAsset = panelPath;
-            result.RootId = EntityIdCompat.IdOf(runtimeRoot);
-            result.WorldSpace = renderMode == "WorldSpace";
-            if (created) result.Created++;
-            else result.Updated++;
-            return result;
         }
 
         public static bool TryMapManageUiElement(string requested, out string element)
@@ -147,6 +176,146 @@ namespace HeraAgent
         {
             foreach (var diagnostic in diagnostics)
                 if (diagnostic != null && diagnostic.severity == "error") errors.Add(diagnostic.message);
+        }
+
+        private sealed class ApplyPreflight
+        {
+            public Type PanelType;
+            public Type DocumentType;
+        }
+
+        private static bool TryPreflight(JObject document, string panelPath, out ApplyPreflight preflight, out string error)
+        {
+            preflight = null;
+            error = null;
+            if (File.Exists(ToFullPath(DefaultDirectory)))
+            {
+                error = $"generated UI Toolkit path '{DefaultDirectory}' is a file.";
+                return false;
+            }
+
+            var panelType = FindType("UnityEngine.UIElements.PanelSettings");
+            if (panelType == null || !typeof(ScriptableObject).IsAssignableFrom(panelType))
+            {
+                error = "UI Toolkit PanelSettings is unavailable in this Editor.";
+                return false;
+            }
+            if (!CanSetPanelRenderMode(panelType, document?["panel"] as JObject, out error)
+                || !HasValidReferenceResolution(document?["panel"] as JObject, out error))
+                return false;
+
+            var existingPanel = AssetDatabase.LoadMainAssetAtPath(panelPath);
+            if (existingPanel != null && !panelType.IsInstanceOfType(existingPanel))
+            {
+                error = $"'{panelPath}' is not a PanelSettings asset.";
+                return false;
+            }
+
+            var documentType = ComponentTypeResolver.Resolve("UIDocument");
+            if (documentType == null)
+            {
+                error = "UI Toolkit UIDocument is unavailable in this Editor.";
+                return false;
+            }
+            var visualTreeType = FindType("UnityEngine.UIElements.VisualTreeAsset");
+            if (visualTreeType == null
+                || !HasWritableObjectProperty(documentType, "panelSettings", panelType)
+                || !HasWritableObjectProperty(documentType, "visualTreeAsset", visualTreeType))
+            {
+                error = "UI Toolkit UIDocument bindings are unavailable in this Editor.";
+                return false;
+            }
+
+            preflight = new ApplyPreflight { PanelType = panelType, DocumentType = documentType };
+            return true;
+        }
+
+        private static bool CanSetPanelRenderMode(Type panelType, JObject panelConfig, out string error)
+        {
+            error = null;
+            if (!UiToolkitFixer.TryGetPanelRenderMode(panelConfig, out var renderMode, out error)) return false;
+            var property = panelType.GetProperty("renderMode", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            if (property == null && renderMode == "ScreenSpaceOverlay") return true;
+            if (property == null || !property.CanWrite || !property.PropertyType.IsEnum || !Enum.IsDefined(property.PropertyType, renderMode))
+            {
+                error = $"{panelType.Name}.renderMode is unavailable.";
+                return false;
+            }
+            return true;
+        }
+
+        private static bool HasValidReferenceResolution(JObject panelConfig, out string error)
+        {
+            error = null;
+            var resolution = panelConfig?["reference_resolution"] as JArray;
+            if (resolution == null || resolution.Count != 2) return true;
+            if (resolution[0]?.Type == JTokenType.Integer && resolution[1]?.Type == JTokenType.Integer) return true;
+            error = "panel.reference_resolution must be a two-integer array.";
+            return false;
+        }
+
+        private static bool HasWritableObjectProperty(Type targetType, string name, Type valueType)
+        {
+            var property = targetType.GetProperty(name, BindingFlags.Instance | BindingFlags.Public);
+            return property != null && property.CanWrite && property.PropertyType.IsAssignableFrom(valueType);
+        }
+
+        private static void ThrowIfFailureInjected(string stage)
+        {
+            var exception = FailureInjectionForTests?.Invoke(stage);
+            if (exception != null) throw exception;
+        }
+
+        private static ApplyResult FailAfterMutation(ApplyResult result, string error, bool upsert, bool mutationsStarted, IList<string> createdAssets, GameObject createdRoot)
+        {
+            result.Errors.Add(string.IsNullOrEmpty(error) ? "failed to emit UI Toolkit document." : error);
+            if (!mutationsStarted) return result;
+            if (upsert)
+            {
+                result.UpsertMayBePartial = true;
+                return result;
+            }
+
+            result.RollbackAttempted = true;
+            if (createdRoot != null)
+            {
+                try
+                {
+                    var rootName = createdRoot.name;
+                    UnityEngine.Object.DestroyImmediate(createdRoot);
+                    result.RolledBackArtifacts.Add("scene:" + rootName);
+                }
+                catch (Exception ex)
+                {
+                    result.RollbackErrors.Add("failed to remove generated UIDocument GameObject: " + ex.Message);
+                }
+            }
+            for (var i = createdAssets.Count - 1; i >= 0; i--)
+            {
+                var assetPath = createdAssets[i];
+                try
+                {
+                    var fullPath = ToFullPath(assetPath);
+                    var metaPath = fullPath + ".meta";
+                    if (!File.Exists(fullPath) && !File.Exists(metaPath) && AssetDatabase.LoadMainAssetAtPath(assetPath) == null)
+                        continue;
+                    if (AssetDatabase.DeleteAsset(assetPath))
+                    {
+                        result.RolledBackArtifacts.Add(assetPath);
+                        continue;
+                    }
+                    if (File.Exists(fullPath)) File.Delete(fullPath);
+                    if (File.Exists(metaPath)) File.Delete(metaPath);
+                    result.RolledBackArtifacts.Add(assetPath);
+                }
+                catch (Exception ex)
+                {
+                    result.RollbackErrors.Add($"failed to remove generated asset '{assetPath}': {ex.Message}");
+                }
+            }
+            try { AssetDatabase.SaveAssets(); }
+            catch (Exception ex) { result.RollbackErrors.Add("failed to save UI Toolkit rollback: " + ex.Message); }
+            return result;
         }
 
         private static bool TryResolveAssetPaths(string stem, bool upsert, out string uxmlPath, out string ussPath, out string panelPath, out string error)
@@ -187,14 +356,18 @@ namespace HeraAgent
             return Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
         }
 
-        private static bool WriteAssets(string uxmlPath, string ussPath, string uxml, string uss, out string error)
+        private static bool WriteAssets(string uxmlPath, string ussPath, string uxml, string uss, bool trackCreatedAssets, ICollection<string> createdAssets, out string error)
         {
             error = null;
             try
             {
                 var directory = Path.GetDirectoryName(ToFullPath(uxmlPath));
                 if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+                var ussWasPresent = File.Exists(ToFullPath(ussPath));
+                if (trackCreatedAssets && !ussWasPresent) createdAssets.Add(ussPath);
                 File.WriteAllText(ToFullPath(ussPath), uss, new UTF8Encoding(false));
+                var uxmlWasPresent = File.Exists(ToFullPath(uxmlPath));
+                if (trackCreatedAssets && !uxmlWasPresent) createdAssets.Add(uxmlPath);
                 File.WriteAllText(ToFullPath(uxmlPath), uxml, new UTF8Encoding(false));
                 return true;
             }
@@ -205,15 +378,10 @@ namespace HeraAgent
             }
         }
 
-        private static ScriptableObject CreateOrUpdatePanelSettings(string panelPath, JObject panelConfig, string renderMode, out string error)
+        private static ScriptableObject CreateOrUpdatePanelSettings(Type panelType, string panelPath, JObject panelConfig, string renderMode, out string error, out bool created)
         {
             error = null;
-            var panelType = FindType("UnityEngine.UIElements.PanelSettings");
-            if (panelType == null || !typeof(ScriptableObject).IsAssignableFrom(panelType))
-            {
-                error = "UI Toolkit PanelSettings is unavailable in this Editor.";
-                return null;
-            }
+            created = false;
 
             var panel = AssetDatabase.LoadAssetAtPath<ScriptableObject>(panelPath);
             try
@@ -222,6 +390,7 @@ namespace HeraAgent
                 {
                     panel = ScriptableObject.CreateInstance(panelType);
                     AssetDatabase.CreateAsset(panel, panelPath);
+                    created = true;
                 }
                 else if (!panelType.IsInstanceOfType(panel))
                 {
@@ -241,16 +410,11 @@ namespace HeraAgent
             }
         }
 
-        private static GameObject CreateOrUpdateDocument(string rootName, Transform parent, bool upsert, ScriptableObject panelSettings, UnityEngine.Object visualTree, out string error, out bool created)
+        private static GameObject CreateOrUpdateDocument(Type documentType, string rootName, Transform parent, bool upsert, ScriptableObject panelSettings, UnityEngine.Object visualTree, out string error, out bool created, out GameObject createdRoot)
         {
             error = null;
             created = false;
-            var documentType = ComponentTypeResolver.Resolve("UIDocument");
-            if (documentType == null)
-            {
-                error = "UI Toolkit UIDocument is unavailable in this Editor.";
-                return null;
-            }
+            createdRoot = null;
 
             try
             {
@@ -258,6 +422,7 @@ namespace HeraAgent
                 if (root == null)
                 {
                     root = new GameObject(rootName);
+                    createdRoot = root;
                     Undo.RegisterCreatedObjectUndo(root, "Hera UI Toolkit document");
                     created = true;
                 }

@@ -20,6 +20,9 @@ namespace HeraAgent.Tests
             allPassed &= ExpectValidDocument();
             allPassed &= ExpectScreenSpaceDocumentOnLegacyPanelSettings();
             allPassed &= ExpectWorldSpaceDocumentUsesPanelSettingsRenderMode();
+            allPassed &= ExpectInvalidResolutionDoesNotCreateAssets();
+            allPassed &= ExpectCreateRollbackAfterInjectedFailure();
+            allPassed &= ExpectUpsertFailureKeepsExistingArtifacts();
             allPassed &= ExpectRejectedAttribute();
             allPassed &= ExpectRejectedStyleInjection();
 
@@ -158,6 +161,136 @@ namespace HeraAgent.Tests
                 Selection.activeObject = previousSelection;
                 CleanupFixtureAssets(stem, result);
             }
+        }
+
+        private static bool ExpectInvalidResolutionDoesNotCreateAssets()
+        {
+            var stem = CreateFixtureStem("HeraUiToolkitPreflightRegression");
+            var document = CreateDocument(stem);
+            document["panel"] = new JObject { ["reference_resolution"] = new JArray("wide", 1080) };
+            var result = UiToolkitDocument.Apply(document, null, upsert: false);
+            var assetsAbsent = AssetsAbsent(stem);
+            if (result.Errors.Count > 0 && assetsAbsent)
+            {
+                Debug.Log("[PASS] invalid UI Toolkit panel resolution creates no assets");
+                return true;
+            }
+            Debug.LogError("[FAIL] invalid UI Toolkit panel resolution should fail before asset creation");
+            CleanupFixtureAssets(stem, result);
+            return false;
+        }
+
+        private static bool ExpectCreateRollbackAfterInjectedFailure()
+        {
+            var stem = CreateFixtureStem("HeraUiToolkitCreateRollbackRegression");
+            var activeScene = SceneManager.GetActiveScene();
+            var isolatedScene = new Scene();
+            GameObject parent = null;
+            UiToolkitDocument.ApplyResult result = null;
+            try
+            {
+                isolatedScene = OpenIsolatedScene();
+                parent = new GameObject(stem + "Parent");
+                UiToolkitDocument.FailureInjectionForTests = stage =>
+                    stage == UiToolkitDocument.FailureStageAfterAssets
+                        ? new System.InvalidOperationException("injected create failure")
+                        : null;
+                result = UiToolkitDocument.Apply(CreateDocument(stem), parent.transform, upsert: false);
+                var rolledBack = result.Errors.Count > 0
+                    && result.RollbackAttempted
+                    && result.RollbackErrors.Count == 0
+                    && result.RolledBackArtifacts.Count >= 2;
+                if (rolledBack && AssetsAbsent(stem) && FindSceneObject("HeraUITK_" + stem) == null)
+                {
+                    Debug.Log("[PASS] failed create removes only its generated UI Toolkit artifacts");
+                    return true;
+                }
+                Debug.LogError("[FAIL] failed create should roll back its generated assets and UIDocument GameObject");
+                return false;
+            }
+            finally
+            {
+                UiToolkitDocument.FailureInjectionForTests = null;
+                if (parent != null) UnityEngine.Object.DestroyImmediate(parent);
+                CloseIsolatedScene(activeScene, isolatedScene);
+                CleanupFixtureAssets(stem, result);
+            }
+        }
+
+        private static bool ExpectUpsertFailureKeepsExistingArtifacts()
+        {
+            var stem = CreateFixtureStem("HeraUiToolkitUpsertRollbackRegression");
+            var activeScene = SceneManager.GetActiveScene();
+            var isolatedScene = new Scene();
+            GameObject parent = null;
+            UiToolkitDocument.ApplyResult initial = null;
+            UiToolkitDocument.ApplyResult failed = null;
+            try
+            {
+                isolatedScene = OpenIsolatedScene();
+                parent = new GameObject(stem + "Parent");
+                initial = UiToolkitDocument.Apply(CreateDocument(stem), parent.transform, upsert: false);
+                if (initial.Errors.Count > 0) return Fail("could not create upsert fixture");
+
+                UiToolkitDocument.FailureInjectionForTests = stage =>
+                    stage == UiToolkitDocument.FailureStageAfterAssets
+                        ? new System.InvalidOperationException("injected upsert failure")
+                        : null;
+                failed = UiToolkitDocument.Apply(CreateDocument(stem), parent.transform, upsert: true);
+                var retained = AssetDatabase.LoadMainAssetAtPath(initial.UxmlAsset) != null
+                    && AssetDatabase.LoadMainAssetAtPath(initial.UssAsset) != null
+                    && AssetDatabase.LoadMainAssetAtPath(initial.PanelSettingsAsset) != null
+                    && FindSceneObject("HeraUITK_" + stem) != null;
+                if (failed.Errors.Count > 0 && failed.UpsertMayBePartial && !failed.RollbackAttempted && retained)
+                {
+                    Debug.Log("[PASS] failed upsert retains existing artifacts and reports partial-update risk");
+                    return true;
+                }
+                Debug.LogError("[FAIL] failed upsert should retain existing artifacts and report partial-update risk");
+                return false;
+            }
+            finally
+            {
+                UiToolkitDocument.FailureInjectionForTests = null;
+                if (parent != null) UnityEngine.Object.DestroyImmediate(parent);
+                CloseIsolatedScene(activeScene, isolatedScene);
+                CleanupFixtureAssets(stem, initial);
+            }
+        }
+
+        private static JObject CreateDocument(string stem)
+        {
+            return new JObject
+            {
+                ["backend"] = "uitk",
+                ["name"] = stem,
+                ["root"] = new JObject
+                {
+                    ["name"] = "Root",
+                    ["element"] = "Button",
+                    ["attributes"] = new JObject { ["text"] = "Apply" },
+                },
+            };
+        }
+
+        private static bool AssetsAbsent(string stem)
+        {
+            return AssetDatabase.LoadMainAssetAtPath(UiToolkitDocument.DefaultDirectory + "/" + stem + ".uxml") == null
+                && AssetDatabase.LoadMainAssetAtPath(UiToolkitDocument.DefaultDirectory + "/" + stem + ".uss") == null
+                && AssetDatabase.LoadMainAssetAtPath(UiToolkitDocument.DefaultDirectory + "/" + stem + "PanelSettings.asset") == null;
+        }
+
+        private static GameObject FindSceneObject(string name)
+        {
+            foreach (var candidate in Resources.FindObjectsOfTypeAll<GameObject>())
+                if (candidate.scene.IsValid() && candidate.name == name) return candidate;
+            return null;
+        }
+
+        private static bool Fail(string message)
+        {
+            Debug.LogError("[FAIL] " + message);
+            return false;
         }
 
         private static Scene OpenIsolatedScene()

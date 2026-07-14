@@ -1,6 +1,7 @@
 package poll
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -10,12 +11,16 @@ import (
 // true, or an error once timeout expires. The first sleep happens before
 // the first condition check, matching the behaviour of the original status
 // polling loops.
-func ExponentialBackoffLoop(timeout, baseInterval, maxInterval time.Duration, condition func() bool) error {
+func ExponentialBackoffLoop(ctx context.Context, timeout, baseInterval, maxInterval time.Duration, condition func() bool) error {
 	deadline := time.Now().Add(timeout)
 	interval := baseInterval
 
 	for time.Now().Before(deadline) {
-		time.Sleep(interval)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(interval):
+		}
 		if condition() {
 			return nil
 		}

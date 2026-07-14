@@ -19,7 +19,11 @@ func StatusDir() string        { return filepath.Join(baseDir(), "status") }
 func AssetConfigPath() string  { return filepath.Join(baseDir(), "asset-config.json") }
 func VersionCheckPath() string { return filepath.Join(baseDir(), "version-check.json") }
 
-func TestResultPath(port int) string {
+func TestResultPath(port int, runID string) string {
+	return filepath.Join(baseDir(), "status", fmt.Sprintf("test-results-%d-%s.json", port, runID))
+}
+
+func LegacyTestResultPath(port int) string {
 	return filepath.Join(baseDir(), "status", fmt.Sprintf("test-results-%d.json", port))
 }
 

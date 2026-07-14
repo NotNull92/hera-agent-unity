@@ -173,6 +173,10 @@ namespace HeraAgent.Tools
             if (type.IsPrimitive || type == typeof(string) || type == typeof(decimal)) return obj;
             if (type.IsEnum) return obj.ToString();
             if (type.Name.StartsWith("FixedString")) return obj.ToString();
+
+            if (maxDepth <= 2 && obj is UnityEngine.Object unityObject)
+                return SerializeShallowUnityObject(unityObject, type);
+
             if (obj is IDictionary dict)
             {
                 var r = new Dictionary<string, object>();

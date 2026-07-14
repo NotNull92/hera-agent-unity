@@ -1,6 +1,7 @@
 package poll
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,7 +16,7 @@ import (
 // WaitForFile polls a filesystem result file until it appears, Unity stops,
 // or the timeout expires. It uses exponential backoff starting at 100 ms and
 // capping at 1.5 s to avoid burning I/O on long-running operations.
-func WaitForFile(resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {
+func WaitForFile(ctx context.Context, resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {
 	deadline := time.Now().Add(timeout)
 	const pidCheckEvery = 5 * time.Second
 	lastPidCheck := time.Now()
@@ -25,7 +26,11 @@ func WaitForFile(resultPath string, port int, timeout time.Duration, opName stri
 	const maxInterval = 1500 * time.Millisecond
 
 	for time.Now().Before(deadline) {
-		time.Sleep(interval)
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(interval):
+		}
 
 		data, err := os.ReadFile(resultPath)
 		if err == nil {
@@ -38,7 +43,7 @@ func WaitForFile(resultPath string, port int, timeout time.Duration, opName stri
 		}
 
 		// State check (cheap): instance writes "stopped" on graceful quit.
-		inst, statusErr := client.FindByPort(port)
+		inst, statusErr := client.FindByPortFresh(port)
 		if statusErr == nil {
 			if inst.State == unitystate.Stopped {
 				return nil, fmt.Errorf("unity editor has stopped (port %d)", port)
@@ -67,10 +72,10 @@ func WaitForFile(resultPath string, port int, timeout time.Duration, opName stri
 // WaitForAsyncJob wraps WaitForFile with log suppression for the known-harmless
 // "Unsolicited response received on idle HTTP channel" noise that Go's net/http
 // emits when Unity drops the connection during a domain reload.
-func WaitForAsyncJob(resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {
+func WaitForAsyncJob(ctx context.Context, resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {
 	original := log.Writer()
 	log.SetOutput(logutil.NewSuppressWriter(os.Stderr, "Unsolicited response received on idle HTTP channel"))
 	defer log.SetOutput(original)
 
-	return WaitForFile(resultPath, port, timeout, opName)
+	return WaitForFile(ctx, resultPath, port, timeout, opName)
 }

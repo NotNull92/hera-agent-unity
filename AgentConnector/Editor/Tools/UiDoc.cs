@@ -241,7 +241,10 @@ namespace HeraAgent.Tools
             var result = UiToolkitDocument.Apply(doc, parent, upsert);
             if (result.Errors.Count > 0)
             {
-                return new ErrorResponse("UITK_VALIDATION_FAILED", "UI Toolkit document was not emitted.", new
+                var message = result.UpsertMayBePartial
+                    ? "UI Toolkit document apply failed after existing output may have changed."
+                    : "UI Toolkit document was not emitted.";
+                return new ErrorResponse("UITK_VALIDATION_FAILED", message, new
                 {
                     uitk_version = result.FixerProfile.uitk_version,
                     uxml_traits = result.FixerProfile.uxml_traits,
@@ -250,6 +253,10 @@ namespace HeraAgent.Tools
                     fixes = result.Fixes,
                     diagnostics = result.Diagnostics,
                     errors = result.Errors,
+                    rollback_attempted = result.RollbackAttempted,
+                    rolled_back_artifacts = result.RolledBackArtifacts,
+                    rollback_errors = result.RollbackErrors,
+                    upsert_may_be_partial = result.UpsertMayBePartial,
                 });
             }
 

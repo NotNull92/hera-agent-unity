@@ -29,7 +29,7 @@ namespace HeraAgent.Tools
             [ToolParameter("Compile-only dry run. Returns success on a clean compile, EXEC_COMPILE_ERROR otherwise. No Execute() call, no side effects.")]
             public bool CompileOnly { get; set; }
 
-            [ToolParameter("Skip compile/assembly cache. Forces a fresh csc invocation.")]
+            [ToolParameter("Bypass exec cache reads and writes. Forces a fresh compile without persisting a DLL.")]
             public bool NoCache { get; set; }
 
             [ToolParameter("EXEC_RUNTIME_ERROR stack-trace mode: 'none' (exception_type only), 'user' (drop framework frames, default), 'full' (raw inner.StackTrace).")]
@@ -101,15 +101,19 @@ namespace HeraAgent.Tools
         private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth, bool strict)
         {
             var timings = new Dictionary<string, long>();
-            string cacheKey;
-            try
+            string cacheKey = null;
+            if (!noCache)
             {
-                cacheKey = ExecCompileCache.ComputeKey(source, LangVersion);
-            }
-            catch (Exception ex)
-            {
-                return new ErrorResponse("EXEC_INTERNAL_ERROR",
-                    $"Internal error preparing exec cache: {ex.Message}");
+                try
+                {
+                    var compilationIdentity = ExecCompileCache.GetCompilationIdentity(cscOverride, dotnetOverride, LangVersion);
+                    cacheKey = ExecCompileCache.ComputeKey(source, LangVersion, compilationIdentity);
+                }
+                catch (Exception ex)
+                {
+                    return new ErrorResponse("EXEC_INTERNAL_ERROR",
+                        $"Internal error preparing exec cache: {ex.Message}");
+                }
             }
 
             Assembly compiled = null;
@@ -132,8 +136,8 @@ namespace HeraAgent.Tools
                 }
             }
 
-            var dllPath = Path.Combine(ExecCompileCache.BinCacheDir, cacheKey + ".dll");
-            if (compiled == null && !noCache && File.Exists(dllPath))
+            var dllPath = noCache ? null : Path.Combine(ExecCompileCache.BinCacheDir, cacheKey + ".dll");
+            if (compiled == null && dllPath != null && File.Exists(dllPath))
             {
                 if (compileOnly)
                 {
@@ -165,7 +169,7 @@ namespace HeraAgent.Tools
             if (compiled == null)
             {
                 var compileSw = Stopwatch.StartNew();
-                var compileResult = CompileToBytes(source, userLineOffset, cscOverride, dotnetOverride);
+                var compileResult = CompileToBytes(source, userLineOffset, cscOverride, dotnetOverride, !noCache);
                 compileSw.Stop();
                 timings["compile_ms"] = compileSw.ElapsedMilliseconds;
                 if (compileResult.Error != null)
@@ -174,12 +178,15 @@ namespace HeraAgent.Tools
                     return compileResult.Error;
                 }
 
-                try
+                if (!noCache)
                 {
-                    Directory.CreateDirectory(ExecCompileCache.BinCacheDir);
-                    File.WriteAllBytes(dllPath, compileResult.Bytes);
+                    try
+                    {
+                        Directory.CreateDirectory(ExecCompileCache.BinCacheDir);
+                        File.WriteAllBytes(dllPath, compileResult.Bytes);
+                    }
+                    catch { }
                 }
-                catch { }
 
                 if (compileOnly)
                 {
@@ -195,7 +202,7 @@ namespace HeraAgent.Tools
                 LoadedAssembly loaded;
                 try
                 {
-                    loaded = LoadAssembly(compileResult.Bytes, cacheKey);
+                    loaded = LoadAssembly(compileResult.Bytes, cacheKey ?? Guid.NewGuid().ToString("N"));
                 }
                 catch (Exception ex)
                 {

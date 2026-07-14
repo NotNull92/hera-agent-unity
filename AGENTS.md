@@ -107,7 +107,7 @@ new GameObject("X");
 
 > Caveat: `return;` (no value) still does NOT compile because `Execute()` returns `object`. Write `return null;` for early exits, or `throw new Exception("...")` for hard failures (see Rule 8).
 
-> The CLI emits compact JSON automatically for non-human commands (anything outside `install/uninstall/status/update/doctor/help/version`). Pass `--compact-json` or set `HERA_AGENT_COMPACT_JSON=1` to force compact on a TTY too.
+> The CLI emits compact JSON automatically for non-human commands (anything outside `install/uninstall/status/update/doctor`). Pass `--compact-json` or set `HERA_AGENT_COMPACT_JSON=1` to force compact on a TTY too.
 
 **[Rule 2]** Never return a `UnityEngine.Object` directly. `Transform`, `GameObject`, `Component`, `Scene`, `Material`, etc. expand to thousands of bytes of reflected properties.
 
@@ -446,7 +446,7 @@ Tools occasionally emit a one-line `hint:` to stderr when there's a non-obvious 
 
 ### 4.9 `humanCategories` whitelist drives output mode
 
-The CLI classifies commands as human-target (`install` / `uninstall` / `status` / `update` / `doctor` / `help` / `version`) or AI-target (everything else). AI-target commands automatically emit compact JSON and suppress decorative stderr. If you author a new top-level command and add it to `humanCategories`, agents will get indented output for it — usually unintended.
+The CLI classifies commands as human-target (`install` / `uninstall` / `status` / `update` / `doctor`) or AI-target (everything else, including `help` and `version`). AI-target commands automatically emit compact JSON and suppress decorative stderr. If you author a new top-level command and add it to `humanCategories`, agents will get indented output for it — usually unintended.
 
 ### 4.10 `batch` has no conditional or data passing
 

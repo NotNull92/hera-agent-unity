@@ -42,7 +42,7 @@ namespace HeraAgent
                 ["type"] = SchemaUtility.GetJsonTypeName(propertyType)
             };
 
-            if (!string.IsNullOrEmpty(attr.Description))
+            if (attr.Description != null)
             {
                 schema["description"] = attr.Description;
             }
@@ -52,16 +52,16 @@ namespace HeraAgent
                 schema["required"] = true;
             }
 
-            if (!string.IsNullOrEmpty(attr.Default))
+            if (attr.Default != null)
             {
                 schema["default"] = ConvertDefaultValue(attr.Default, propertyType);
             }
-            else if (!string.IsNullOrEmpty(attr.DefaultValue))
+            else if (attr.DefaultValue != null)
             {
                 schema["default"] = attr.DefaultValue;
             }
 
-            if (!string.IsNullOrEmpty(attr.EnumType))
+            if (!string.IsNullOrWhiteSpace(attr.EnumType))
             {
                 var enumValues = GetEnumValues(attr.EnumType);
                 if (enumValues != null && enumValues.Count > 0)
@@ -150,7 +150,7 @@ namespace HeraAgent
 
         private JObject GenerateOutputSchema(List<ToolParameterMetadata> parameters)
         {
-            var hasOutputSchema = parameters.Any(p => !string.IsNullOrEmpty(p.OutputSchema));
+            var hasOutputSchema = parameters.Any(p => !string.IsNullOrWhiteSpace(p.OutputSchema));
             
             if (!hasOutputSchema)
             {
@@ -168,7 +168,7 @@ namespace HeraAgent
             }
 
             // Use custom output schema if provided
-            var customOutputSchema = parameters.FirstOrDefault(p => !string.IsNullOrEmpty(p.OutputSchema));
+            var customOutputSchema = parameters.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.OutputSchema));
             if (customOutputSchema != null)
             {
                 try

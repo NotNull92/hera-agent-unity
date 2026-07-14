@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -10,7 +12,7 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/poll"
 )
 
-func testCmd(args []string, send SendFunc, resolve instanceResolver) (*client.CommandResponse, error) {
+func testCmd(ctx context.Context, args []string, send SendFunc, _ instanceResolver, timeout time.Duration) (*client.CommandResponse, error) {
 	parsedParams, _, err := buildParams(args, nil)
 	if err != nil {
 		return nil, err
@@ -26,7 +28,8 @@ func testCmd(args []string, send SendFunc, resolve instanceResolver) (*client.Co
 	}
 
 	params := map[string]interface{}{
-		"mode": mode,
+		"mode":          mode,
+		"async_results": true,
 	}
 	if filter, ok := parsedParams["filter"].(string); ok {
 		params["filter"] = filter
@@ -44,26 +47,31 @@ func testCmd(args []string, send SendFunc, resolve instanceResolver) (*client.Co
 				"  Window > Package Manager > search 'Test Framework' > Install")
 	}
 
-	// EditMode: results returned directly in response
-	if mode == "EditMode" {
-		return resp, nil
-	}
-
-	// PlayMode: Unity returns "running", poll results file
 	if resp.Message != "running" {
 		return resp, nil
 	}
 
-	inst, err := resolve()
-	if err != nil {
-		return nil, err
+	var meta struct {
+		Port  int    `json:"port"`
+		RunID string `json:"run_id"`
+	}
+	if err := json.Unmarshal(resp.Data, &meta); err != nil || meta.Port <= 0 {
+		return resp, nil
 	}
 
-	fmt.Fprintln(os.Stderr, "PlayMode tests running, waiting for results...")
+	fmt.Fprintf(os.Stderr, "%s tests running, waiting for results...\n", mode)
 
-	return pollTestResults(inst.Port)
+	return pollTestResults(ctx, meta.Port, meta.RunID, timeout)
 }
 
-func pollTestResults(port int) (*client.CommandResponse, error) {
-	return poll.WaitForAsyncJob(paths.TestResultPath(port), port, 10*time.Minute, "test results")
+func pollTestResults(ctx context.Context, port int, runID string, timeout time.Duration) (*client.CommandResponse, error) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	resultPath := paths.LegacyTestResultPath(port)
+	if runID != "" {
+		resultPath = paths.TestResultPath(port, runID)
+	}
+
+	return poll.WaitForAsyncJob(ctx, resultPath, port, timeout, "test results")
 }

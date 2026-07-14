@@ -12,7 +12,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 	"github.com/NotNull92/hera-agent-unity/internal/tui"
@@ -156,13 +155,14 @@ func Execute(ctx context.Context) error {
 		return err
 	}
 
-	resolve := makeResolver(inst, flagProject, flagPort)
-	if _, err := waitForAlive(resolve, flagTimeout, category); err != nil {
+	freshResolve := makeFreshResolver(inst, flagProject, flagPort)
+	inst, err = waitForAlive(ctx, freshResolve, flagTimeout, category)
+	if err != nil {
 		return err
 	}
 
-	send := prepareSend(resolve, category, flagTimeout, flagVerbose)
-	resp, err := runUnityCommand(ctx, category, subArgs, send, resolve)
+	send := prepareSend(ctx, inst, category, flagTimeout, flagVerbose)
+	resp, err := runUnityCommand(ctx, category, subArgs, send, inst, freshResolve)
 	if err != nil {
 		return err
 	}
@@ -194,74 +194,6 @@ func Execute(ctx context.Context) error {
 	return nil
 }
 
-// makeResolver returns an instanceResolver that follows the same project even
-// if Unity rebinds to a new port during reload.
-func makeResolver(inst *client.Instance, project string, port int) instanceResolver {
-	targetProject := project
-	if port == 0 && targetProject == "" {
-		targetProject = inst.ProjectPath
-	}
-	return func() (*client.Instance, error) {
-		if port > 0 {
-			return client.DiscoverInstance("", port)
-		}
-		return client.DiscoverInstance(targetProject, 0)
-	}
-}
-
-// prepareSend builds the SendFunc closure injected into command handlers.
-// It resolves the current instance on every call so that port rebinds during
-// domain reload are followed transparently.
-func prepareSend(resolve instanceResolver, category string, timeoutMs int, verbose bool) SendFunc {
-	return func(command string, params interface{}) (*client.CommandResponse, error) {
-		inst, err := resolve()
-		if err != nil {
-			return nil, err
-		}
-		if command == "exec" && (isHumanCommand(category) || verbose) {
-			fmt.Fprintln(os.Stderr, "[hera-agent-unity] compiling...")
-		}
-		return sendWithProgress(inst, command, params, timeoutMs, verbose)
-	}
-}
-
-// withProgress runs fn while printing a 1-second-cadence progress line to
-// stderr when verbose is true. This keeps harnesses from timing out while
-// Unity is busy compiling or executing a long command.
-func withProgress(command string, verbose bool, fn func()) {
-	if !verbose {
-		fn()
-		return
-	}
-	done := make(chan struct{})
-	start := time.Now()
-	go func() {
-		ticker := time.NewTicker(1 * time.Second)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-done:
-				return
-			case t := <-ticker.C:
-				elapsed := int(t.Sub(start).Seconds())
-				fmt.Fprintf(os.Stderr, "[hera-agent-unity] %s in progress... (%ds)\n", command, elapsed)
-			}
-		}
-	}()
-	fn()
-	close(done)
-}
-
-// sendWithProgress wraps client.Send with progress output.
-func sendWithProgress(inst *client.Instance, command string, params interface{}, timeoutMs int, verbose bool) (*client.CommandResponse, error) {
-	var resp *client.CommandResponse
-	var err error
-	withProgress(command, verbose, func() {
-		resp, err = client.Send(inst, command, params, timeoutMs)
-	})
-	return resp, err
-}
-
 func printTimings(resp *client.CommandResponse) {
 	if resp == nil || len(resp.Timings) == 0 {
 		return
@@ -277,14 +209,6 @@ func printTimings(resp *client.CommandResponse) {
 	}
 	fmt.Fprintf(os.Stderr, "[hera-agent-unity] timings: %s\n", strings.Join(parts, " "))
 }
-
-// SendFunc is the function signature for sending a command to Unity.
-// Injected into each command function so they can be tested without a real Unity connection.
-type SendFunc func(command string, params interface{}) (*client.CommandResponse, error)
-
-// SendBatchFunc is the function signature for sending a batch command to Unity.
-// Injected so batchCmd can be tested without a real Unity connection.
-type SendBatchFunc func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error)
 
 func (rp *ResponsePrinter) Print(resp *client.CommandResponse, category string) {
 	if !resp.Success {

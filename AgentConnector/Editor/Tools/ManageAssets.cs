@@ -161,14 +161,10 @@ namespace HeraAgent.Tools
             var (type, typeErr) = ResolveScriptableObjectType(p.Get("type"));
             if (typeErr != null) return typeErr;
 
-            if (!AssetPathGuard.TryNormalizeAssetFile(p.Get("path"), out var path, out var pathErr))
-                return new ErrorResponse("INVALID_PATH", pathErr);
-            if (!path.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
-                path += ".asset";
-            if (AssetDatabase.LoadMainAssetAtPath(path) != null)
-                return new ErrorResponse("ASSET_EXISTS", $"An asset already exists at '{path}'.");
-            if (!ParentExists(path, out var parent))
-                return new ErrorResponse("PARENT_FOLDER_MISSING", $"Parent folder '{parent}' does not exist. Create it with mkdir first.");
+            if (!AssetPathGuard.TryPrepareNewAssetFile(
+                    p.Get("path"), ".asset", appendExtension: true,
+                    out var path, out var pathCode, out var pathErr))
+                return new ErrorResponse(pathCode, pathErr);
 
             var instance = ScriptableObject.CreateInstance(type);
             if (instance == null)
@@ -178,6 +174,7 @@ namespace HeraAgent.Tools
             // property-set path so create + populate is one call.
             List<string> applied = null;
             List<object> failed = null;
+            var validInitialProperties = true;
             if (p.GetRaw("properties") is JObject props && props.Count > 0)
             {
                 applied = new List<string>();
@@ -195,7 +192,18 @@ namespace HeraAgent.Tools
                     if (ok) applied.Add(kv.Key);
                     else failed.Add(new { property = kv.Key, error = applyErr });
                 }
-                so.ApplyModifiedProperties();
+
+                validInitialProperties = failed.Count == 0;
+                if (validInitialProperties)
+                    so.ApplyModifiedProperties();
+            }
+
+            if (!validInitialProperties)
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+                return new ErrorResponse("INVALID_INITIAL_PROPERTIES",
+                    "One or more initial properties are invalid; no asset was created.",
+                    new { failed });
             }
 
             AssetDatabase.CreateAsset(instance, path);
@@ -205,7 +213,7 @@ namespace HeraAgent.Tools
             var guid = AssetDatabase.AssetPathToGUID(path);
             object data = applied == null
                 ? new { path, type = type.FullName, guid }
-                : new { path, type = type.FullName, guid, applied, failed };
+                : new { path, type = type.FullName, guid, applied };
             return new SuccessResponse("Asset created", data);
         }
 
@@ -278,7 +286,7 @@ namespace HeraAgent.Tools
 
         private static object Delete(string rawPath)
         {
-            if (!TryNormalizeAssetPath(rawPath, out var path, out var error))
+            if (!AssetPathGuard.TryNormalizeAssetPath(rawPath, out var path, out var error))
                 return new ErrorResponse("INVALID_PATH", error);
             if (path == "Assets")
                 return new ErrorResponse("INVALID_PATH", "Refusing to delete the Assets root.");
@@ -322,13 +330,6 @@ namespace HeraAgent.Tools
                 return false;
             }
             return true;
-        }
-
-        private static bool TryNormalizeAssetPath(string raw, out string path, out string error)
-        {
-            if (AssetPathGuard.TryNormalizeAssetFile(raw, out path, out error))
-                return true;
-            return AssetPathGuard.TryNormalizeAssetFolder(raw, out path, out error);
         }
 
         private static bool ParentExists(string assetPath, out string parent)

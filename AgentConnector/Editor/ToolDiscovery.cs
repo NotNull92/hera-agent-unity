@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 
@@ -55,23 +56,24 @@ namespace HeraAgent
             {
                 if (s_Tools != null) return;
 
-                var tools = new Dictionary<string, ToolEntry>();
-                var actions = new Dictionary<string, ActionEntry>();
+                var tools = new Dictionary<string, ToolEntry>(StringComparer.Ordinal);
+                var actions = new Dictionary<string, ActionEntry>(StringComparer.Ordinal);
 
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
+                    .OrderBy(a => a.GetName().Name, StringComparer.Ordinal)
+                    .ThenBy(a => a.FullName, StringComparer.Ordinal))
                 {
-                    Type[] types;
-                    try { types = assembly.GetTypes(); }
-                    catch (ReflectionTypeLoadException) { continue; }
-
-                    foreach (var type in types)
+                    foreach (var type in GetLoadableTypes(assembly)
+                        .OrderBy(t => t.FullName, StringComparer.Ordinal))
                     {
                         if (!type.IsClass) continue;
                         var attr = type.GetCustomAttribute<HeraToolAttribute>();
                         if (attr == null) continue;
                         if (!attr.Enabled) continue;
 
-                        var name = attr.Name ?? StringCaseUtility.ToSnakeCase(type.Name);
+                        var name = string.IsNullOrWhiteSpace(attr.Name)
+                            ? StringCaseUtility.ToSnakeCase(type.Name)
+                            : attr.Name.Trim();
                         if (tools.TryGetValue(name, out var existing))
                         {
                             UnityEngine.Debug.LogError(
@@ -97,19 +99,34 @@ namespace HeraAgent
                             DefaultHandler = defaultHandler,
                         };
 
-                        // Register action-level handlers.
-                        foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Static))
+                        foreach (var method in type.GetMethods(
+                            BindingFlags.Public | BindingFlags.NonPublic |
+                            BindingFlags.Static | BindingFlags.Instance)
+                            .OrderBy(m => m.Name, StringComparer.Ordinal)
+                            .ThenBy(m => m.ToString(), StringComparer.Ordinal))
                         {
                             var actionAttr = method.GetCustomAttribute<HeraActionAttribute>();
+                            if (actionAttr != null && !IsSupportedActionHandler(method, out var diagnostic))
+                            {
+                                UnityEngine.Debug.LogWarning(
+                                    $"[Hera] Ignored [HeraAction] '{type.FullName}.{method.Name}': {diagnostic}");
+                                continue;
+                            }
+
                             bool isLegacyAction = actionAttr == null
+                                && method.IsPublic
+                                && method.IsStatic
                                 && method.Name != "Handle"
                                 && method.Name != "HandleCommand"
-                                && IsActionSignature(method);
+                                && IsSupportedActionHandler(method, out _);
 
                             if (actionAttr == null && !isLegacyAction)
                                 continue;
 
-                            var actionName = (actionAttr?.Name ?? StringCaseUtility.ToSnakeCase(method.Name)).ToLowerInvariant();
+                            var configuredName = actionAttr?.Name;
+                            var actionName = (string.IsNullOrWhiteSpace(configuredName)
+                                ? StringCaseUtility.ToSnakeCase(method.Name)
+                                : configuredName.Trim()).ToLowerInvariant();
                             var key = $"{name}:{actionName}";
                             if (actions.ContainsKey(key))
                             {
@@ -135,10 +152,66 @@ namespace HeraAgent
             }
         }
 
-        private static bool IsActionSignature(MethodInfo method)
+        internal static bool IsSupportedActionHandler(MethodInfo method, out string diagnostic)
         {
+            if (!method.IsPublic || !method.IsStatic)
+            {
+                diagnostic = "actions must be public static methods.";
+                return false;
+            }
+
             var parms = method.GetParameters();
-            return parms.Length == 1 && parms[0].ParameterType == typeof(JObject);
+            if (parms.Length != 1 || parms[0].ParameterType != typeof(JObject))
+            {
+                diagnostic = "actions must accept exactly one Newtonsoft.Json.Linq.JObject parameter.";
+                return false;
+            }
+
+            if (method.ReturnType != typeof(object)
+                && method.ReturnType != typeof(Task<object>)
+                && method.ReturnType != typeof(Task))
+            {
+                diagnostic = "actions must return object, Task<object>, or Task.";
+                return false;
+            }
+
+            diagnostic = null;
+            return true;
+        }
+
+        private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)
+        {
+            try
+            {
+                return assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException exception)
+            {
+                var loadable = RecoverLoadableTypes(exception);
+                var loaderErrors = exception.LoaderExceptions?
+                    .Where(error => error != null)
+                    .Select(error => error.GetType().Name + ": " + error.Message)
+                    .Take(3)
+                    .ToArray() ?? new string[0];
+                var detail = loaderErrors.Length == 0 ? "no loader details" : string.Join(" | ", loaderErrors);
+                UnityEngine.Debug.LogWarning(
+                    $"[Hera] Tool discovery recovered {loadable.Length} loadable type(s) from " +
+                    $"'{assembly.FullName}' after ReflectionTypeLoadException ({detail}).");
+                return loadable;
+            }
+            catch (Exception exception)
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"[Hera] Tool discovery skipped assembly '{assembly.FullName}': " +
+                    $"{exception.GetType().Name}: {exception.Message}");
+                return Array.Empty<Type>();
+            }
+        }
+
+        internal static Type[] RecoverLoadableTypes(ReflectionTypeLoadException exception)
+        {
+            if (exception?.Types == null) return Array.Empty<Type>();
+            return exception.Types.Where(type => type != null).ToArray();
         }
 
         private static Dictionary<string, ToolEntry> GetTools()
@@ -182,7 +255,11 @@ namespace HeraAgent
                 if (d <= maxDistance)
                     candidates.Add((name, d));
             }
-            candidates.Sort((a, b) => a.dist.CompareTo(b.dist));
+            candidates.Sort((a, b) =>
+            {
+                var byDistance = a.dist.CompareTo(b.dist);
+                return byDistance != 0 ? byDistance : string.CompareOrdinal(a.name, b.name);
+            });
 
             var result = new List<string>();
             foreach (var (name, _) in candidates)
@@ -240,6 +317,7 @@ namespace HeraAgent
                     group = attr.Group ?? "",
                     groups = attr.Groups ?? new string[0],
                     examples = BuildExamples(attr),
+                    actions = GetActionDescriptors(name),
                     schema = toolMeta?.ParametersSchema
                         ?? GetLegacyParameterSchema(paramsType),
                     output_schema = toolMeta?.OutputSchema
@@ -303,16 +381,19 @@ namespace HeraAgent
 
         private static Dictionary<string, object> BuildActionSafetyMetadata(Type toolType)
         {
-            var result = new Dictionary<string, object>();
+            var result = new Dictionary<string, object>(StringComparer.Ordinal);
 
-            foreach (var safety in toolType.GetCustomAttributes<HeraActionSafetyAttribute>())
+            foreach (var safety in toolType.GetCustomAttributes<HeraActionSafetyAttribute>()
+                .OrderBy(safety => safety.Action, StringComparer.Ordinal))
             {
                 if (string.IsNullOrWhiteSpace(safety.Action))
                     continue;
                 result[safety.Action.ToLowerInvariant()] = BuildSafetyMetadata(safety);
             }
 
-            foreach (var method in toolType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+            foreach (var method in toolType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .OrderBy(method => method.Name, StringComparer.Ordinal)
+                .ThenBy(method => method.ToString(), StringComparer.Ordinal))
             {
                 foreach (var safety in method.GetCustomAttributes<HeraActionSafetyAttribute>())
                 {
@@ -322,11 +403,13 @@ namespace HeraAgent
                         var actionAttr = method.GetCustomAttribute<HeraActionAttribute>();
                         action = actionAttr?.Name ?? StringCaseUtility.ToSnakeCase(method.Name);
                     }
-                    result[action.ToLowerInvariant()] = BuildSafetyMetadata(safety);
+                    if (!string.IsNullOrWhiteSpace(action))
+                        result[action.Trim().ToLowerInvariant()] = BuildSafetyMetadata(safety);
                 }
             }
 
-            return result;
+            return result.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+                .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
         }
 
         private static object BuildSafetyMetadata(HeraActionSafetyAttribute safety)
@@ -341,8 +424,21 @@ namespace HeraAgent
 
         private static IEnumerable<(string name, Type type, HeraToolAttribute attr)> EnumerateTools()
         {
-            foreach (var entry in GetTools().Values)
+            foreach (var entry in GetTools().Values.OrderBy(entry => entry.Name, StringComparer.Ordinal))
                 yield return (entry.Name, entry.Type, entry.Attr);
+        }
+
+        private static List<object> GetActionDescriptors(string toolName)
+        {
+            return GetActions().Values
+                .Where(entry => entry.ToolName == toolName)
+                .OrderBy(entry => entry.ActionName, StringComparer.Ordinal)
+                .Select(entry => (object)new
+                {
+                    name = entry.ActionName,
+                    description = entry.Attr?.Description ?? "",
+                })
+                .ToList();
         }
 
         private static ToolMetadata GetToolMetadata(Type toolType)
@@ -350,7 +446,9 @@ namespace HeraAgent
             try
             {
                 var attr = toolType.GetCustomAttribute<HeraToolAttribute>();
-                var toolName = attr?.Name ?? StringCaseUtility.ToSnakeCase(toolType.Name);
+                var toolName = string.IsNullOrWhiteSpace(attr?.Name)
+                    ? StringCaseUtility.ToSnakeCase(toolType.Name)
+                    : attr.Name.Trim();
                 var cached = ToolMetadataRegistry.GetTool(toolName);
                 if (cached != null) return cached;
                 ToolMetadataRegistry.Register(toolType);
@@ -407,7 +505,8 @@ namespace HeraAgent
             if (paramsType == null) return false;
 
             return paramsType.GetProperties()
-                .Any(p => p.GetCustomAttribute<ToolParameterAttribute>()?.EnumType != null);
+                .Any(p => !string.IsNullOrWhiteSpace(
+                    p.GetCustomAttribute<ToolParameterAttribute>()?.EnumType));
         }
 
         private static bool HasDefaultSupport(Type paramsType)
@@ -415,7 +514,11 @@ namespace HeraAgent
             if (paramsType == null) return false;
 
             return paramsType.GetProperties()
-                .Any(p => p.GetCustomAttribute<ToolParameterAttribute>()?.Default != null);
+                .Any(p =>
+                {
+                    var attr = p.GetCustomAttribute<ToolParameterAttribute>();
+                    return attr != null && (attr.Default != null || attr.DefaultValue != null);
+                });
         }
 
         private static List<string> GetCustomTypes(Type paramsType)
@@ -423,10 +526,11 @@ namespace HeraAgent
             if (paramsType == null) return new List<string>();
 
             return paramsType.GetProperties()
-                .Where(p => p.GetCustomAttribute<ToolParameterAttribute>()?.EnumType != null)
-                .Select(p => p.GetCustomAttribute<ToolParameterAttribute>().EnumType)
-                .Where(type => !string.IsNullOrEmpty(type))
-                .Distinct()
+                .Select(p => p.GetCustomAttribute<ToolParameterAttribute>()?.EnumType)
+                .Where(type => !string.IsNullOrWhiteSpace(type))
+                .Select(type => type.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(type => type, StringComparer.Ordinal)
                 .ToList();
         }
 
@@ -449,7 +553,8 @@ namespace HeraAgent
             if (paramsType == null) return false;
 
             return paramsType.GetProperties()
-                .Any(p => p.GetCustomAttribute<ToolParameterAttribute>()?.OutputSchema != null);
+                .Any(p => !string.IsNullOrWhiteSpace(
+                    p.GetCustomAttribute<ToolParameterAttribute>()?.OutputSchema));
         }
     }
 }

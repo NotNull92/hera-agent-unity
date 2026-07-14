@@ -45,7 +45,7 @@ cmd/                  # Go CLI — thin passthrough layer
   root.go             # Entry point, flag/arg parsing, humanCategories, response printing
   dispatch.go         # Standalone vs Unity-backed command routing
   editor.go           # editor command (waitForReady polling)
-  test.go             # test command (PlayMode result polling via pollResultFile)
+  test.go             # test command (EditMode/PlayMode result polling via pollResultFile)
   internal/poll/      # (extracted from cmd/) shared pollResultFile file-bus poller
                       # w/ exponential backoff (100ms→1.5s) + state/PID liveness (test + packages)
   status.go           # status + ping + waitForAlive/waitForState/waitForReady

@@ -58,6 +58,8 @@ namespace HeraAgent.Tools
             var path = p.Get("path");
             if (string.IsNullOrWhiteSpace(path))
                 return new ErrorResponse("MISSING_PARAM", "'path' required (the material asset path, e.g. Assets/Mats/X.mat).");
+            if (!AssetPathGuard.TryNormalizeAssetFile(path, out path, out var pathErr))
+                return new ErrorResponse("INVALID_PATH", pathErr);
 
             switch (action.ToLowerInvariant())
             {
@@ -73,6 +75,10 @@ namespace HeraAgent.Tools
 
         private static object Create(string path, string shaderName)
         {
+            if (!AssetPathGuard.TryPrepareNewAssetFile(
+                    path, ".mat", appendExtension: false,
+                    out path, out var pathCode, out var pathErr))
+                return new ErrorResponse(pathCode, pathErr);
             if (string.IsNullOrWhiteSpace(shaderName))
                 return new ErrorResponse("MISSING_PARAM", "'shader' required for create. Run describe_shader --list to find one.");
             var shader = Shader.Find(shaderName);
@@ -80,11 +86,6 @@ namespace HeraAgent.Tools
                 return new ErrorResponse("SHADER_NOT_FOUND",
                     $"No shader named '{shaderName}'.",
                     suggestions: new List<string> { $"describe_shader --list --filter {shaderName}" });
-
-            var dir = System.IO.Path.GetDirectoryName(path)?.Replace('\\', '/');
-            if (!string.IsNullOrEmpty(dir) && !AssetDatabase.IsValidFolder(dir))
-                return new ErrorResponse("PARENT_FOLDER_MISSING",
-                    $"Parent folder '{dir}' does not exist. Create it first (it must be under Assets/).");
 
             var mat = new Material(shader);
             AssetDatabase.CreateAsset(mat, path);

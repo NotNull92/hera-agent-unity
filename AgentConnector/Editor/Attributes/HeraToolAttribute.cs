@@ -67,9 +67,9 @@ namespace HeraAgent
         public string Description { get; set; }
         public bool Required { get; set; } = false;
         public string DefaultValue { get; set; }
-        public string EnumType { get; set; } = "";
-        public string Default { get; set; } = "";
-        public string OutputSchema { get; set; } = "";
+        public string EnumType { get; set; }
+        public string Default { get; set; }
+        public string OutputSchema { get; set; }
 
         public ToolParameterAttribute()
         {

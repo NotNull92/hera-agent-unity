@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -63,7 +65,7 @@ func TestWaitForAlive_FollowsResolverPortChange(t *testing.T) {
 		}, nil
 	}
 
-	inst, err := waitForAlive(resolve, 100, "status")
+	inst, err := waitForAlive(context.Background(), resolve, 100, "status")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -72,6 +74,20 @@ func TestWaitForAlive_FollowsResolverPortChange(t *testing.T) {
 	}
 	if callCount < 2 {
 		t.Fatalf("expected resolver to be called multiple times, got %d", callCount)
+	}
+}
+
+func TestWaitForAlive_WhenRootContextCancelled_ReturnsCancellation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	resolve := func() (*client.Instance, error) {
+		return &client.Instance{Timestamp: time.Now().Add(-time.Second).UnixMilli()}, nil
+	}
+
+	_, err := waitForAlive(ctx, resolve, 60_000, "status")
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("waitForAlive error = %v, want context cancellation", err)
 	}
 }
 

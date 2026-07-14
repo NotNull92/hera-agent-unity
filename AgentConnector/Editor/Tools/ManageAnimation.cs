@@ -130,9 +130,10 @@ namespace HeraAgent.Tools
 
         private static object SetCurve(ToolParams p)
         {
-            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(NormalizeExisting(p.Get("path")));
-            if (clip == null)
-                return new ErrorResponse("ASSET_NOT_FOUND", "No AnimationClip at that path (expects an existing .anim).");
+            var clip = LoadClip(
+                p.Get("path"), "ASSET_NOT_FOUND",
+                "No AnimationClip at that path (expects an existing .anim).", out var clipErr);
+            if (clip == null) return clipErr;
 
             var typeName = p.Get("type");
             var type = ComponentTypeResolver.Resolve(typeName);
@@ -247,20 +248,22 @@ namespace HeraAgent.Tools
             if (Array.Exists(sm.states, s => s.state.name == name))
                 return new ErrorResponse("STATE_EXISTS", $"State '{name}' already exists on the base layer.");
 
-            var state = sm.AddState(name);
-
             var motionPath = p.Get("motion");
             string motionAssigned = null;
+            AnimationClip motion = null;
             if (!string.IsNullOrEmpty(motionPath))
             {
-                var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(NormalizeExisting(motionPath));
-                if (clip == null)
-                    return new ErrorResponse("MOTION_NOT_FOUND", $"No AnimationClip at motion path '{motionPath}'.");
-                state.motion = clip;
-                motionAssigned = AssetDatabase.GetAssetPath(clip);
+                motion = LoadClip(
+                    motionPath, "MOTION_NOT_FOUND",
+                    $"No AnimationClip at motion path '{motionPath}'.", out var motionErr);
+                if (motion == null) return motionErr;
+                motionAssigned = AssetDatabase.GetAssetPath(motion);
             }
 
             var isDefault = p.GetBool("default");
+            var state = sm.AddState(name);
+            if (motion != null)
+                state.motion = motion;
             if (isDefault)
                 sm.defaultState = state;
 
@@ -290,6 +293,9 @@ namespace HeraAgent.Tools
             if (to == null)
                 return new ErrorResponse("STATE_NOT_FOUND", $"Destination state '{p.Get("to")}' not found on the base layer.");
 
+            if (!TryPrepareConditions(ctrl, p.GetRaw("conditions"), out var conditions, out var conditionErr))
+                return conditionErr;
+
             var transition = from.AddTransition(to);
             transition.hasExitTime = p.GetBool("has_exit_time");
             var duration = p.GetFloat("duration");
@@ -297,20 +303,10 @@ namespace HeraAgent.Tools
                 transition.duration = duration.Value;
 
             var added = new List<object>();
-            if (p.GetRaw("conditions") is JArray conditions)
+            foreach (var condition in conditions)
             {
-                foreach (var c in conditions)
-                {
-                    if (!(c is JObject cond) || cond["parameter"] == null)
-                        return new ErrorResponse("INVALID_CONDITION", "Each condition needs a 'parameter' (and optional 'mode' / 'threshold').");
-                    var paramName = cond["parameter"].ToString();
-                    var modeStr = cond["mode"]?.ToString() ?? "If";
-                    if (!Enum.TryParse<AnimatorConditionMode>(modeStr, true, out var mode))
-                        return new ErrorResponse("INVALID_CONDITION", $"Unknown condition mode '{modeStr}'. Valid: If, IfNot, Greater, Less, Equals, NotEqual.");
-                    var threshold = cond["threshold"]?.Value<float>() ?? 0f;
-                    transition.AddCondition(mode, threshold, paramName);
-                    added.Add(new { parameter = paramName, mode = mode.ToString(), threshold });
-                }
+                transition.AddCondition(condition.mode, condition.threshold, condition.parameter);
+                added.Add(new { parameter = condition.parameter, mode = condition.mode.ToString(), threshold = condition.threshold });
             }
 
             EditorUtility.SetDirty(ctrl);
@@ -331,10 +327,29 @@ namespace HeraAgent.Tools
         private static AnimatorController LoadController(string rawPath, out ErrorResponse err)
         {
             err = null;
-            var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(NormalizeExisting(rawPath));
+            if (!AssetPathGuard.TryNormalizeAssetFile(rawPath, out var path, out var pathErr))
+            {
+                err = new ErrorResponse("INVALID_PATH", pathErr);
+                return null;
+            }
+            var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
             if (ctrl == null)
                 err = new ErrorResponse("ASSET_NOT_FOUND", "No AnimatorController at that path (expects an existing .controller).");
             return ctrl;
+        }
+
+        private static AnimationClip LoadClip(string rawPath, string missingCode, string missingMessage, out ErrorResponse err)
+        {
+            err = null;
+            if (!AssetPathGuard.TryNormalizeAssetFile(rawPath, out var path, out var pathErr))
+            {
+                err = new ErrorResponse("INVALID_PATH", pathErr);
+                return null;
+            }
+            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+            if (clip == null)
+                err = new ErrorResponse(missingCode, missingMessage);
+            return clip;
         }
 
         private static AnimatorState FindState(AnimatorStateMachine sm, string name)
@@ -362,35 +377,63 @@ namespace HeraAgent.Tools
             }
         }
 
-        // Normalize + Assets/-contain a path for an asset that must already exist.
-        private static string NormalizeExisting(string raw)
-        {
-            return AssetPathGuard.TryNormalizeAssetFile(raw, out var path, out _) ? path : raw;
-        }
-
         // Validate a destination for a new asset: Assets/-contained, correct
         // extension, non-existing, with an existing parent folder.
         private static bool TryPrepareNewAsset(string rawPath, string extension, out string path, out ErrorResponse err)
         {
             err = null;
-            if (!AssetPathGuard.TryNormalizeAssetFile(rawPath, out path, out var pathErr))
+            if (AssetPathGuard.TryPrepareNewAssetFile(
+                    rawPath, extension, appendExtension: true,
+                    out path, out var errorCode, out var error))
+                return true;
+            err = new ErrorResponse(errorCode, error);
+            return false;
+        }
+
+        private static bool TryPrepareConditions(
+            AnimatorController controller,
+            JToken rawConditions,
+            out List<(string parameter, AnimatorConditionMode mode, float threshold)> conditions,
+            out ErrorResponse err)
+        {
+            conditions = new List<(string parameter, AnimatorConditionMode mode, float threshold)>();
+            err = null;
+            if (rawConditions == null || rawConditions.Type == JTokenType.Null)
+                return true;
+            if (!(rawConditions is JArray tokens))
             {
-                err = new ErrorResponse("INVALID_PATH", pathErr);
+                err = new ErrorResponse("INVALID_CONDITION", "'conditions' must be an array of condition objects.");
                 return false;
             }
-            if (!path.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
-                path += extension;
-            if (AssetDatabase.LoadMainAssetAtPath(path) != null)
+
+            foreach (var token in tokens)
             {
-                err = new ErrorResponse("ASSET_EXISTS", $"An asset already exists at '{path}'.");
-                return false;
-            }
-            var slash = path.LastIndexOf('/');
-            var parent = slash > 0 ? path.Substring(0, slash) : "Assets";
-            if (!AssetDatabase.IsValidFolder(parent))
-            {
-                err = new ErrorResponse("PARENT_FOLDER_MISSING", $"Parent folder '{parent}' does not exist. Create it with manage_assets mkdir first.");
-                return false;
+                if (!(token is JObject condition) || string.IsNullOrWhiteSpace(condition["parameter"]?.ToString()))
+                {
+                    err = new ErrorResponse("INVALID_CONDITION", "Each condition needs a non-empty 'parameter' (and optional 'mode' / 'threshold').");
+                    return false;
+                }
+                var parameter = condition["parameter"].ToString();
+                if (!Array.Exists(controller.parameters, p => p.name == parameter))
+                {
+                    err = new ErrorResponse("PARAMETER_NOT_FOUND", $"AnimatorController has no parameter '{parameter}'.");
+                    return false;
+                }
+                var modeText = condition["mode"]?.ToString() ?? "If";
+                if (!Enum.TryParse<AnimatorConditionMode>(modeText, true, out var mode))
+                {
+                    err = new ErrorResponse("INVALID_CONDITION", $"Unknown condition mode '{modeText}'. Valid: If, IfNot, Greater, Less, Equals, NotEqual.");
+                    return false;
+                }
+
+                float threshold;
+                try { threshold = condition["threshold"]?.Value<float>() ?? 0f; }
+                catch (Exception)
+                {
+                    err = new ErrorResponse("INVALID_CONDITION", $"Condition threshold for '{parameter}' must be numeric.");
+                    return false;
+                }
+                conditions.Add((parameter, mode, threshold));
             }
             return true;
         }

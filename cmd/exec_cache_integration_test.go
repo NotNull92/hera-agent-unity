@@ -3,8 +3,13 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
+	"sort"
 	"testing"
 	"time"
 
@@ -35,13 +40,20 @@ func discover(t *testing.T) *client.Instance {
 }
 
 func sendExec(t *testing.T, code string, noCache bool) *client.CommandResponse {
+	return sendExecWithOptions(t, code, noCache, false)
+}
+
+func sendExecWithOptions(t *testing.T, code string, noCache, compileOnly bool) *client.CommandResponse {
 	t.Helper()
 	inst := discover(t)
 	params := map[string]interface{}{"code": code}
 	if noCache {
 		params["no_cache"] = true
 	}
-	resp, err := client.Send(inst, "exec", params, integrationTimeoutMs)
+	if compileOnly {
+		params["compile_only"] = true
+	}
+	resp, err := client.Send(context.Background(), inst, "exec", params, integrationTimeoutMs)
 	if err != nil {
 		t.Fatalf("send exec: %v", err)
 	}
@@ -89,6 +101,32 @@ func TestExecCacheNoCacheFlag(t *testing.T) {
 	t.Logf("no-cache timings: %+v", nc.Timings)
 	if got := nc.Timings["cache"]; got != 0 {
 		t.Errorf("no-cache cache = %d, want 0 (forced compile)", got)
+	}
+}
+
+func TestExecCacheNoCacheDoesNotPersistDll_when_executing_or_checking(t *testing.T) {
+	// Given
+	seed := time.Now().UnixNano()
+	before := cachedDLLNames(t)
+
+	// When
+	executed := sendExecWithOptions(t, uniqueCode(seed, 0), true, false)
+	afterExecute := cachedDLLNames(t)
+	checked := sendExecWithOptions(t, uniqueCode(seed, 1), true, true)
+	afterCheck := cachedDLLNames(t)
+
+	// Then
+	if got := executed.Timings["cache"]; got != 0 {
+		t.Errorf("no-cache execution cache = %d, want 0", got)
+	}
+	if got := checked.Timings["cache"]; got != 0 {
+		t.Errorf("no-cache compile-only cache = %d, want 0", got)
+	}
+	if !slices.Equal(before, afterExecute) {
+		t.Errorf("no-cache execution changed disk cache: before=%v after=%v", before, afterExecute)
+	}
+	if !slices.Equal(afterExecute, afterCheck) {
+		t.Errorf("no-cache compile-only changed disk cache: before=%v after=%v", afterExecute, afterCheck)
 	}
 }
 
@@ -158,4 +196,26 @@ func readAsmCount(t *testing.T, resp *client.CommandResponse) int {
 		t.Fatalf("decode assembly count: %v (data=%s)", err, string(resp.Data))
 	}
 	return int(n)
+}
+
+func cachedDLLNames(t *testing.T) []string {
+	t.Helper()
+	inst := discover(t)
+	dir := filepath.Join(inst.ProjectPath, "Library", "HeraAgentCache", "bin")
+	entries, err := os.ReadDir(dir)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		t.Fatalf("read exec disk cache: %v", err)
+	}
+
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".dll" {
+			names = append(names, entry.Name())
+		}
+	}
+	sort.Strings(names)
+	return names
 }

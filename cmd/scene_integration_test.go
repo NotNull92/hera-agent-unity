@@ -3,6 +3,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -16,7 +17,7 @@ func sendScene(t *testing.T, args []string, extra map[string]interface{}) *clien
 	for k, v := range extra {
 		params[k] = v
 	}
-	resp, err := client.Send(inst, "scene", params, integrationTimeoutMs)
+	resp, err := client.Send(context.Background(), inst, "scene", params, integrationTimeoutMs)
 	if err != nil {
 		t.Fatalf("send scene %v: %v", args, err)
 	}

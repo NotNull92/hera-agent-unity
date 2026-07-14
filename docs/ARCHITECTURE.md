@@ -27,8 +27,8 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
 
 ### 1. Initial Connection
 
-1. Unity Editor opens → `HttpServer` starts on an available localhost port (8090 default, falls back to 8092+)
-2. `Heartbeat` writes `~/.hera-agent-unity/instances/<md5(projectPath)>.json` every 0.5 seconds
+1. Unity Editor opens → `HttpServer` starts on an available localhost port (8090 default, then 8091–8099)
+2. `Heartbeat` writes `~/.hera-agent-unity/instances/<md5(projectPath)>.json` every 1.0 second
 3. CLI scans the instances directory via `internal/client.ScanInstances()`
 4. CLI discovers the Unity instance and connects
 
@@ -41,13 +41,13 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
      │
      ▷  ② root.go: category="editor", subArgs=["play","--wait"]
      │
-     ▷  ③ client.DiscoverInstance() → reads instance JSON files
+     ▷  ③ client.DiscoverInstance() → cached one-shot read of instance JSON files
      │
-     ▷  ④ waitForAlive() → polls instance files until Unity is alive
+     ▷  ④ waitForAlive() → fresh-polls instance files until Unity is alive
      │
      ▷  ⑤ editorCmd() → build params: {"action":"play"}  // --wait handled Go-side via waitForState
      │
-     ▷  ⑥ client.Send() → HTTP POST /command (JSON body)
+     ▷  ⑥ client.Send(ctx, ...) → HTTP POST /command (JSON body)
      │
      ▷  ⑦ Unity HttpServer.HandleRequest() → enqueue WorkItem to ConcurrentQueue
      │
@@ -85,8 +85,7 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
 [*] → ready          : Unity starts
 ready → compiling     : Script modified/added
 compiling → ready     : Compile success
-compiling → compiling_error : Compile failure
-compiling_error → compiling : Fix and recompile
+compiling → ready     : Compile finishes (inspect `compileErrors` for failure)
 ready → entering_playmode : editor play
 entering_playmode → playing : EnteredPlayMode event
 playing → paused      : editor pause
@@ -95,9 +94,10 @@ playing → ready       : editor stop
 ready → refreshing    : AssetDatabase.Refresh
 refreshing → ready    : Complete
 ready → stopped      : Unity exits
+* → reloading         : beforeAssemblyReload forced heartbeat
 ```
 
-States are written to the instance JSON file by `Heartbeat.cs`. The Go CLI polls this file via `waitForAlive()` and `waitForReady()`.
+States are written to the instance JSON file by `Heartbeat.cs`. The Go CLI fresh-polls this file via `waitForAlive()` and `waitForReady()` during transitions; one-shot command setup keeps the short-lived instance cache.
 
 ---
 
@@ -108,8 +108,8 @@ Unity's script compilation / domain reload resets static variables and instances
 | Component | Survival Mechanism | Notes |
 |:---|:---|:---|
 | `HttpServer` | `[InitializeOnLoad]` + `afterAssemblyReload += Start` | Auto-restarts after domain reload |
-| `Heartbeat` | `[InitializeOnLoad]` + `afterAssemblyReload += Tick` | Continues writing state files |
-| `TestRunnerState` | `[InitializeOnLoad]` + `afterAssemblyReload += OnAfterAssemblyReload` | Preserves PlayMode test results |
+| `Heartbeat` | `[InitializeOnLoad]` re-registers the update callback after reload | Resumes writing state files; writes `reloading` before reload |
+| `TestRunnerState` | `[InitializeOnLoad]` + `afterAssemblyReload += OnAfterAssemblyReload` | Preserves the asynchronous test-result path across reloads |
 | `CommandRouter` | Static class, no state | Re-created each dispatch, uses SemaphoreSlim |
 
 ---
@@ -125,6 +125,15 @@ Unity's script compilation / domain reload resets static variables and instances
   "port": 8090,
   "pid": 12345,
   "unityVersion": "2022.3.45f1",
+  "docsVersion": "2022.3",
+  "compiler": {
+    "cscPath": "/Unity/Editor/Data/DotNetSdkRoslyn/csc.dll",
+    "cscKind": "unity_dotnet_sdk_roslyn",
+    "cscFound": true,
+    "dotnetPath": "/Unity/Editor/Data/NetCoreRuntime/dotnet",
+    "dotnetKind": "unity_netcore_runtime",
+    "dotnetFound": true
+  },
   "timestamp": 1714372800000,
   "compileErrors": false
 }
@@ -132,11 +141,13 @@ Unity's script compilation / domain reload resets static variables and instances
 
 | Field | Source | Notes |
 |:---|:---|:---|
-| `state` | `Heartbeat.GetState()` | ready / compiling / entering_playmode / playing / paused / refreshing / stopped |
+| `state` | `s_ForcedState ?? Heartbeat.GetState()` | ready / compiling / entering_playmode / playing / paused / refreshing / reloading / stopped |
 | `projectPath` | `Application.dataPath.Replace("/Assets","")` | Project root directory |
 | `port` | `HttpServer.Port` | Actual listening port |
 | `pid` | `Process.GetCurrentProcess().Id` | Unity process ID |
 | `unityVersion` | `Application.unityVersion` | Unity version string |
+| `docsVersion` | `UnityVersionCompat.CurrentDocsVersion()` | Connector documentation bucket |
+| `compiler` | `Heartbeat.GetCompilerSummary()` | Resolved csc/dotnet paths, kinds, and availability |
 | `timestamp` | `DateTimeOffset.UtcNow` | Unix epoch milliseconds |
 | `compileErrors` | `EditorUtility.scriptCompilationFailed` | True if last compilation failed |
 
@@ -160,6 +171,27 @@ public static async Task<object> Dispatch(string command, JObject parameters)
 ```
 
 This prevents race conditions when multiple CLI agents or parallel scripts access the same Unity instance.
+
+## HTTP Ingress Contract
+
+The listener remains loopback-only and supports one Editor command stream. It bounds ingress before the main-thread queue: `/command` accepts up to 1 MiB, `/commands` up to 4 MiB and 50 command items, and at most 64 requests may be pending execution. Bodies are read incrementally, so an unknown-length request cannot bypass the byte limit.
+
+Ingress rejections are JSON `ErrorResponse` envelopes with stable `HTTP_*` codes and their matching HTTP status (`400`, `403`, `404`, `405`, `413`, `429`, or `500`). The Go client decodes those non-200 envelopes into its normal response types, preserving `success`, `code`, `message`, and `data`; a malformed non-200 body remains a transport error. Tool-level command failures continue to use their existing response contract. The router's 120-second command-lock acquisition timeout is unchanged.
+
+## Test Result Flow
+
+`test --mode EditMode` and `test --mode PlayMode` both start the Unity Test
+Framework asynchronously. Their final envelope is persisted as
+`~/.hera-agent-unity/status/test-results-<port>-<run_id>.json`; the Go CLI polls that
+file until it is available. This unifies the modes and makes the result
+delivery resilient to a PlayMode domain reload. There is no test-specific
+`--wait` flag; the global `--timeout` bounds the polling interval.
+
+During CLI/connector upgrades, the connector also writes the legacy
+port-scoped result file for PlayMode clients that do not yet understand a
+`run_id`; current clients prefer the run-scoped file.
+Current CLIs opt into asynchronous EditMode results with `async_results=true`;
+without it, the connector preserves the legacy synchronous EditMode contract.
 
 ---
 

@@ -23,6 +23,9 @@ namespace HeraAgent.TestRunner
 
             [ToolParameter("Filter by namespace, class, or full test name")]
             public string Filter { get; set; }
+
+            [ToolParameter("Request run-scoped asynchronous results (new CLI capability)")]
+            public bool AsyncResults { get; set; }
         }
 
         public static Task<object> HandleCommand(JObject @params)
@@ -46,64 +49,127 @@ namespace HeraAgent.TestRunner
                 return Task.FromResult<object>(new ErrorResponse("INVALID_PARAM", $"Unknown mode '{modeStr}'. Use EditMode or PlayMode."));
 
             var filter = p.Get("filter", null);
+            var asyncResults = p.GetBool("async_results");
 
-            if (testMode == TestMode.EditMode)
-                return ExecuteInProcess(testMode, filter);
+            if (testMode == TestMode.EditMode && !asyncResults)
+                return ExecuteLegacyEditMode(filter);
 
-            StartPlayModeRun(filter);
-            return Task.FromResult<object>(new SuccessResponse("running", new { port = HttpServer.Port }));
+            return Task.FromResult<object>(StartTestRun(testMode, filter));
         }
 
-        private static Task<object> ExecuteInProcess(TestMode mode, string filter)
+        private static Task<object> ExecuteLegacyEditMode(string filter)
         {
-            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-            var passed  = new List<string>();
-            var failed  = new List<string>();
+            var port = HttpServer.Port;
+            if (TestRunnerState.HasPending(port))
+            {
+                return Task.FromResult<object>(new ErrorResponse("TEST_RUN_ALREADY_RUNNING",
+                    $"A test run is already active for port {port}."));
+            }
+
+            var passed = new List<string>();
+            var failed = new List<string>();
             var skipped = new List<string>();
+            var completion = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+            TestRunnerApi api = null;
+            TestCallbacks callbacks = null;
+            var completed = false;
+            var cleanedUp = false;
+            Action cleanup = () =>
+            {
+                if (cleanedUp) return;
+                cleanedUp = true;
+                DisposeApi(api, callbacks);
+            };
 
-            var api = ScriptableObject.CreateInstance<TestRunnerApi>();
-            var callbacks = new TestCallbacks(
-                onResult: r => CollectResult(r, passed, failed, skipped),
-                onFinished: _ =>
-                {
-                    if (tcs.Task.IsCompleted) return;
-                    Object.DestroyImmediate(api);
-                    tcs.TrySetResult(BuildResponse(passed, failed, skipped));
-                }
-            );
+            try
+            {
+                api = ScriptableObject.CreateInstance<TestRunnerApi>();
+                callbacks = new TestCallbacks(
+                    onResult: r => CollectResult(r, passed, failed, skipped),
+                    onFinished: _ =>
+                    {
+                        if (completed) return;
+                        completed = true;
+                        var response = BuildResponse(passed, failed, skipped);
+                        cleanup();
+                        completion.TrySetResult(response);
+                    });
 
-            api.RegisterCallbacks(callbacks);
-            api.Execute(new ExecutionSettings(BuildFilter(mode, filter)));
-            return tcs.Task;
+                api.RegisterCallbacks(callbacks);
+                api.Execute(new ExecutionSettings(BuildFilter(TestMode.EditMode, filter)));
+                return completion.Task;
+            }
+            catch (Exception ex)
+            {
+                cleanup();
+                return Task.FromResult<object>(new ErrorResponse("TEST_RUN_START_FAILED",
+                    $"Unable to start EditMode tests: {ex.Message}"));
+            }
         }
 
-        private static void StartPlayModeRun(string filter)
+        private static object StartTestRun(TestMode mode, string filter)
         {
             var port = HttpServer.Port;
 
-            try { var f = ResultsFilePath(port); if (File.Exists(f)) File.Delete(f); } catch { }
-            TestRunnerState.MarkPending(port, filter);
+            if (TestRunnerState.HasPending(port))
+            {
+                return new ErrorResponse("TEST_RUN_ALREADY_RUNNING",
+                    $"A test run is already active for port {port}.");
+            }
+
+            var runId = Guid.NewGuid().ToString("N");
+
+            try
+            {
+                var resultPath = ResultsFilePath(port, runId);
+                if (File.Exists(resultPath)) File.Delete(resultPath);
+                var legacyPath = LegacyResultsFilePath(port);
+                if (File.Exists(legacyPath)) File.Delete(legacyPath);
+            }
+            catch { }
+            TestRunnerState.MarkPending(port, runId, filter, mode);
 
             var passed  = new List<string>();
             var failed  = new List<string>();
             var skipped = new List<string>();
 
-            var api = ScriptableObject.CreateInstance<TestRunnerApi>();
-            var callbacks = new TestCallbacks(
+            TestRunnerApi api = null;
+            TestCallbacks callbacks = null;
+            var completed = false;
+            var cleanedUp = false;
+            Action cleanup = () =>
+            {
+                if (cleanedUp) return;
+                cleanedUp = true;
+                DisposeApi(api, callbacks);
+            };
+
+            try
+            {
+                api = ScriptableObject.CreateInstance<TestRunnerApi>();
+                callbacks = new TestCallbacks(
                 onResult: r => CollectResult(r, passed, failed, skipped),
                 onFinished: _ =>
                 {
-                    Object.DestroyImmediate(api);
-                    TestRunnerState.ClearPending(port);
-                    WriteResultsFile(port, passed, failed, skipped);
+                    if (completed) return;
+                    completed = true;
+                    if (WriteResultsFile(port, runId, passed, failed, skipped))
+                        TestRunnerState.ClearPending(port, runId);
+                    cleanup();
                 }
-            );
+                );
 
-            api.RegisterCallbacks(callbacks);
-            api.Execute(new ExecutionSettings(BuildFilter(TestMode.PlayMode, filter)));
+                api.RegisterCallbacks(callbacks);
+                api.Execute(new ExecutionSettings(BuildFilter(mode, filter)));
+                return new SuccessResponse("running", new { port, run_id = runId });
+            }
+            catch (Exception ex)
+            {
+                cleanup();
+                TestRunnerState.ClearPending(port, runId);
+                return new ErrorResponse("TEST_RUN_START_FAILED", $"Unable to start {mode} tests: {ex.Message}");
+            }
         }
-
-        // --- Shared helpers (used by TestRunnerState after domain reload) ---
 
         internal static void CollectResult(ITestResultAdaptor result,
             List<string> passed, List<string> failed, List<string> skipped)
@@ -118,37 +184,69 @@ namespace HeraAgent.TestRunner
             }
         }
 
-        internal static void WriteResultsFile(int port, List<string> passed, List<string> failed, List<string> skipped)
+        internal static bool WriteResultsFile(int port, string runId, List<string> passed, List<string> failed, List<string> skipped)
         {
-            var data = new
-            {
-                success = failed.Count == 0,
-                message = failed.Count > 0
-                    ? $"{failed.Count} test(s) failed."
-                    : $"All {passed.Count} test(s) passed.",
-                data = new
-                {
-                    total   = passed.Count + failed.Count + skipped.Count,
-                    passed  = passed.Count,
-                    failed  = failed.Count,
-                    skipped = skipped.Count,
-                    failures = failed,
-                    passes   = passed,
-                }
-            };
+            return WriteResponseFile(port, runId, BuildResponse(passed, failed, skipped));
+        }
 
+        internal static bool WriteErrorResultsFile(int port, string runId, string code, string message)
+        {
+            return WriteResponseFile(port, runId, new ErrorResponse(code, message));
+        }
+
+        private static bool WriteResponseFile(int port, string runId, object response)
+        {
             try
             {
-                HeraAgent.AtomicFile.WriteAllText(ResultsFilePath(port), JsonConvert.SerializeObject(data));
+                var json = JsonConvert.SerializeObject(response);
+                HeraAgent.AtomicFile.WriteAllText(ResultsFilePath(port, runId), json);
+                try
+                {
+                    HeraAgent.AtomicFile.WriteAllText(LegacyResultsFilePath(port), json);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[Hera] Failed to write legacy test results: {ex.Message}");
+                }
+                return true;
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[Hera] Failed to write test results: {ex.Message}");
+                return false;
             }
         }
 
-        internal static string ResultsFilePath(int port) =>
+        internal static string ResultsFilePath(int port, string runId) =>
+            Path.Combine(StatusDir, $"test-results-{port}-{runId}.json");
+
+        internal static string LegacyResultsFilePath(int port) =>
             Path.Combine(StatusDir, $"test-results-{port}.json");
+
+        internal static void DisposeApi(TestRunnerApi api, TestCallbacks callbacks)
+        {
+            try
+            {
+                if (api != null && callbacks != null)
+                    api.UnregisterCallbacks(callbacks);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Hera] Failed to unregister test callbacks: {ex.Message}");
+            }
+            finally
+            {
+                try
+                {
+                    if (api != null)
+                        Object.DestroyImmediate(api);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[Hera] Failed to destroy TestRunnerApi: {ex.Message}");
+                }
+            }
+        }
 
         internal static object BuildResponse(List<string> passed, List<string> failed, List<string> skipped)
         {

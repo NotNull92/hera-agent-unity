@@ -3,6 +3,7 @@
 package client_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
@@ -25,7 +26,7 @@ func TestSendExec(t *testing.T) {
 		t.Fatalf("failed to discover Unity instance: %v", err)
 	}
 
-	resp, err := client.Send(inst, "exec", map[string]interface{}{
+	resp, err := client.Send(context.Background(), inst, "exec", map[string]interface{}{
 		"code": "return (1 + 1).ToString();",
 	}, 5000)
 	if err != nil {
@@ -43,7 +44,7 @@ func TestSendConsole(t *testing.T) {
 		t.Fatalf("failed to discover Unity instance: %v", err)
 	}
 
-	resp, err := client.Send(inst, "console", map[string]interface{}{
+	resp, err := client.Send(context.Background(), inst, "console", map[string]interface{}{
 		"count": 5,
 	}, 5000)
 	if err != nil {
@@ -61,7 +62,7 @@ func TestSendUnknownCommand(t *testing.T) {
 		t.Fatalf("failed to discover Unity instance: %v", err)
 	}
 
-	resp, err := client.Send(inst, "nonexistent_command", map[string]interface{}{}, 5000)
+	resp, err := client.Send(context.Background(), inst, "nonexistent_command", map[string]interface{}{}, 5000)
 	if err != nil {
 		t.Fatalf("unexpected connection error: %v", err)
 	}

@@ -91,6 +91,15 @@ insert a VisualElement into an existing document.
   inferred from the docs bucket.
 - `--mode upsert` reuses the deterministic generated assets and `UIDocument` for
   the document name. Default `create` chooses a fresh generated asset stem.
+- `create` validates PanelSettings/UIDocument availability and generated paths
+  before writing. If a later create-stage failure occurs, Hera compensates by
+  deleting only the UXML, USS, PanelSettings asset, and UIDocument GameObject
+  created by that request. Error data reports `rollback_attempted`,
+  `rolled_back_artifacts`, and any `rollback_errors`.
+- This is compensating cleanup, not an AssetDatabase transaction. `upsert`
+  deliberately does not delete or restore pre-existing generated assets or its
+  UIDocument after a mid-write failure; its error data sets
+  `upsert_may_be_partial:true` when existing output may have changed.
 - `ui_doc export` and `ui_doc capture` remain uGUI-only in v1. `manage_ui create`
   maps its `canvas|panel|image|button|text|empty` aliases onto the corresponding
   runtime UI Toolkit element and emits the same scaffold; RectTransform actions

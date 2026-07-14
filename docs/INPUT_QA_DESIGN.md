@@ -262,8 +262,11 @@ Defaults:
 --steps <N>            # drag move steps, default 8
 --button left|right|middle
 --click_count <N>
+--max_results <N>      # diagnostic entries, default 50
 --strict true|false
 ```
+
+The connector validates numeric values before dispatch: `hold_ms` is `0..5000`, `settle_frames` is `0..120`, `steps` is `1..120`, `click_count` is `1..3`, and `max_results` is `1..100`. Invalid values return `INPUT_INVALID_PARAM`; capped state and detailed diagnostics report total and truncation metadata.
 
 Timing behavior:
 

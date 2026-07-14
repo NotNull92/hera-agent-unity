@@ -1,3 +1,4 @@
+using System;
 using Newtonsoft.Json.Linq;
 
 namespace HeraAgent.Tools
@@ -18,7 +19,15 @@ namespace HeraAgent.Tools
         public static object HandleCommand(JObject parameters)
         {
             var projectPath = parameters?["project_path"]?.ToString();
-            var result = AssetDetector.Detect(projectPath);
+            AssetDetector.Result result;
+            try
+            {
+                result = AssetDetector.Detect(projectPath);
+            }
+            catch (Exception ex)
+            {
+                return new ErrorResponse("ASSET_CONFIG_SAVE_FAILED", ex.Message);
+            }
 
             var results = new JObject
             {

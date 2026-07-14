@@ -9,6 +9,12 @@ namespace HeraAgent
 {
     internal static class InputQaResolver
     {
+        internal const int MaxHoldMs = 5000;
+        internal const int MaxSettleFrames = 120;
+        internal const int MaxSteps = 120;
+        internal const int MaxClickCount = 3;
+        internal const int MaxResults = 100;
+
         public static (InputQaOptions options, ErrorResponse err) Parse(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -16,14 +22,26 @@ namespace HeraAgent
             if (string.IsNullOrEmpty(action))
                 return (null, new ErrorResponse("INPUT_MISSING_ACTION", "Input action required: state, inspect, click, submit, scroll, drag, pointer_down, or pointer_up."));
 
+            var (clickCount, clickCountErr) = ParseBoundedInt(p, "click_count", 1, 1, MaxClickCount);
+            if (clickCountErr != null) return (null, clickCountErr);
+            var (holdMs, holdMsErr) = ParseBoundedInt(p, "hold_ms", 50, 0, MaxHoldMs);
+            if (holdMsErr != null) return (null, holdMsErr);
+            var (settleFrames, settleFramesErr) = ParseBoundedInt(p, "settle_frames", 1, 0, MaxSettleFrames);
+            if (settleFramesErr != null) return (null, settleFramesErr);
+            var (steps, stepsErr) = ParseBoundedInt(p, "steps", 8, 1, MaxSteps);
+            if (stepsErr != null) return (null, stepsErr);
+            var (maxResults, maxResultsErr) = ParseBoundedInt(p, "max_results", 50, 1, MaxResults);
+            if (maxResultsErr != null) return (null, maxResultsErr);
+
             var options = new InputQaOptions
             {
                 Action = action.ToLowerInvariant(),
                 Backend = (p.Get("backend", "eventsystem") ?? "eventsystem").ToLowerInvariant(),
-                ClickCount = p.GetInt("click_count", 1) ?? 1,
-                HoldMs = p.GetInt("hold_ms", 50) ?? 50,
-                SettleFrames = p.GetInt("settle_frames", 1) ?? 1,
-                Steps = p.GetInt("steps", 8) ?? 8,
+                ClickCount = clickCount,
+                HoldMs = holdMs,
+                SettleFrames = settleFrames,
+                Steps = steps,
+                MaxResults = maxResults,
                 Strict = p.GetBool("strict", true),
                 Details = p.GetBool("details", false),
                 Button = ParseButton(p.Get("button", "left")),
@@ -121,7 +139,7 @@ namespace HeraAgent
             return result;
         }
 
-        public static object State()
+        public static object State(int maxResults)
         {
             var (eventSystem, _) = ResolveEventSystem();
             var raycasters = new List<object>();
@@ -129,6 +147,7 @@ namespace HeraAgent
             foreach (var raycaster in allRaycasters)
             {
                 if (raycaster == null) continue;
+                if (raycasters.Count >= maxResults) continue;
                 raycasters.Add(new
                 {
                     instance_id = EntityIdCompat.IdOf(raycaster),
@@ -144,6 +163,8 @@ namespace HeraAgent
                 evidence_level = "eventsystem",
                 event_system = EventSystemShape(eventSystem),
                 raycasters,
+                raycasters_total = allRaycasters.Length,
+                raycasters_truncated = allRaycasters.Length > raycasters.Count,
                 inputsystem = new { available = System.Type.GetType("UnityEngine.InputSystem.InputSystem, Unity.InputSystem") != null },
                 native_win32 = new { available = Application.platform == RuntimePlatform.WindowsEditor, implemented = false }
             };
@@ -216,6 +237,18 @@ namespace HeraAgent
                 !float.TryParse(parts[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var y))
                 return (null, new ErrorResponse("INPUT_INVALID_VECTOR", $"Invalid '{name}' vector. Expected 'x,y'."));
             return (new Vector2(x, y), null);
+        }
+
+        private static (int value, ErrorResponse err) ParseBoundedInt(ToolParams parameters, string name, int fallback, int min, int max)
+        {
+            var token = parameters.GetRaw(name);
+            if (token == null || token.Type == JTokenType.Null) return (fallback, null);
+
+            if (!int.TryParse(token.ToString(), System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value) || value < min || value > max)
+                return (0, new ErrorResponse("INPUT_INVALID_PARAM", $"'{name}' must be an integer from {min} to {max}."));
+
+            return (value, null);
         }
 
         private static string Arg(JObject raw, int index)

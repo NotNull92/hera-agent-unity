@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -21,6 +20,8 @@ type AssetEntry struct {
 	Description   string `json:"description"`
 	DocURL        string `json:"doc_url,omitempty"`
 	ReferencePath string `json:"reference_path,omitempty"`
+
+	extra map[string]json.RawMessage
 }
 
 // LoopEngineeringMode controls the Ultra Hera agent verification guidance.
@@ -67,6 +68,8 @@ type AssetConfig struct {
 	// (e.g. toggling an asset or Game Feel UI Mode) doesn't drop a user's compiler paths.
 	DefaultCscPath    string `json:"defaultCscPath,omitempty"`
 	DefaultDotnetPath string `json:"defaultDotnetPath,omitempty"`
+
+	extra map[string]json.RawMessage
 }
 
 var (
@@ -190,7 +193,9 @@ func Load() (*AssetConfig, error) {
 				LoopEngineeringMode: LoopEngineeringLight,
 				UISystem:            UISystemUGUI,
 			}
-			_ = Save(cfg)
+			if err := Save(cfg); err != nil {
+				return nil, err
+			}
 			return cfg, nil
 		}
 		return nil, err
@@ -228,6 +233,7 @@ func Load() (*AssetConfig, error) {
 		if prev, ok := byID[def.ID]; ok {
 			def.Enabled = prev.Enabled
 			def.Installed = prev.Installed
+			def.extra = cloneRawMessages(prev.extra)
 		}
 		merged = append(merged, def)
 	}
@@ -250,8 +256,13 @@ func Load() (*AssetConfig, error) {
 func Save(cfg *AssetConfig) error {
 	cfg.LoopEngineeringMode = NormalizeLoopEngineeringMode(string(cfg.LoopEngineeringMode))
 	cfg.UISystem = NormalizeUISystem(string(cfg.UISystem))
-	dir := filepath.Dir(ConfigFilePath())
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	path := ConfigFilePath()
+	release, err := acquireConfigLock(path)
+	if err != nil {
+		return err
+	}
+	defer release()
+	if err := preserveCurrentExtensions(path, cfg); err != nil {
 		return err
 	}
 
@@ -260,7 +271,7 @@ func Save(cfg *AssetConfig) error {
 		return err
 	}
 
-	return os.WriteFile(ConfigFilePath(), data, 0644)
+	return writeConfigAtomically(path, data)
 }
 
 // LoadLoopEngineeringModeNoCreate reads only Ultra Hera mode for agent-rules

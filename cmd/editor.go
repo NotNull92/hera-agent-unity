@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
@@ -9,7 +10,7 @@ import (
 
 // editorCmd controls Unity play mode and asset database.
 // resolve is needed for waitForReady so compile polling can follow the current project instance.
-func editorCmd(args []string, send SendFunc, resolve instanceResolver, category string) (*client.CommandResponse, error) {
+func editorCmd(ctx context.Context, args []string, send SendFunc, resolve instanceResolver, category string) (*client.CommandResponse, error) {
 	if len(args) == 0 {
 		return nil, fmt.Errorf("usage: hera-agent-unity editor <play|stop|pause|refresh>")
 	}
@@ -34,7 +35,7 @@ func editorCmd(args []string, send SendFunc, resolve instanceResolver, category 
 		// triggers a domain reload that stops the HTTP listener, so any
 		// C#-side `await EnteredPlayMode` would never get to write a response.
 		// `playing` or `paused` both indicate isPlaying == true.
-		if waitErr := waitForState(resolve, 60000, category, unitystate.Playing, unitystate.Paused); waitErr != nil {
+		if waitErr := waitForState(ctx, resolve, 60000, category, unitystate.Playing, unitystate.Paused); waitErr != nil {
 			return nil, waitErr
 		}
 		resp.Message = "Entered play mode (confirmed)."
@@ -64,7 +65,10 @@ func editorCmd(args []string, send SendFunc, resolve instanceResolver, category 
 				return resp, nil
 			}
 			client.ClearInstanceCache()
-			ready, hasErrors := waitForReady(resolve, flagTimeout, category)
+			ready, hasErrors, waitErr := waitForReady(ctx, resolve, flagTimeout, category)
+			if waitErr != nil {
+				return nil, waitErr
+			}
 			if !ready {
 				return nil, fmt.Errorf("compilation still running after %ds — raise --timeout, or poll `status` / `console` for completion", flagTimeout/1000)
 			}

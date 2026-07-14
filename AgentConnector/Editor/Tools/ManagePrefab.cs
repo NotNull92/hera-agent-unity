@@ -55,6 +55,8 @@ namespace HeraAgent.Tools
             var path = p.Get("path");
             if (string.IsNullOrWhiteSpace(path))
                 return new ErrorResponse("MISSING_PARAM", "'path' required (the prefab asset path, e.g. Assets/Prefabs/X.prefab).");
+            if (!AssetPathGuard.TryNormalizeAssetFile(path, out path, out var pathErr))
+                return new ErrorResponse("INVALID_PATH", pathErr);
 
             switch (action.ToLowerInvariant())
             {
@@ -72,11 +74,10 @@ namespace HeraAgent.Tools
         {
             var (go, err) = ResolveSceneGo(p);
             if (err != null) return new ErrorResponse("SOURCE_NOT_FOUND", err);
-
-            var dir = System.IO.Path.GetDirectoryName(path)?.Replace('\\', '/');
-            if (!string.IsNullOrEmpty(dir) && !AssetDatabase.IsValidFolder(dir))
-                return new ErrorResponse("PARENT_FOLDER_MISSING",
-                    $"Parent folder '{dir}' does not exist. Create it first (it must be under Assets/).");
+            if (!AssetPathGuard.TryPrepareNewAssetFile(
+                    path, ".prefab", appendExtension: false,
+                    out path, out var pathCode, out var pathErr))
+                return new ErrorResponse(pathCode, pathErr);
 
             var prefab = PrefabUtility.SaveAsPrefabAsset(go, path, out var success);
             if (!success || prefab == null)
@@ -96,21 +97,21 @@ namespace HeraAgent.Tools
             if (asset == null)
                 return new ErrorResponse("PREFAB_NOT_FOUND", $"No prefab asset at '{path}'.");
 
+            GameObject parent = null;
+            var parentToken = p.GetRaw("parent");
+            if (parentToken != null && parentToken.Type != JTokenType.Null && !string.IsNullOrWhiteSpace(parentToken.ToString()))
+            {
+                var (resolvedParent, perr) = ResolveByPathOrId(parentToken.ToString());
+                if (perr != null)
+                    return new ErrorResponse("PARENT_NOT_FOUND", perr);
+                parent = resolvedParent;
+            }
+
             var inst = PrefabUtility.InstantiatePrefab(asset) as GameObject;
             if (inst == null)
                 return new ErrorResponse("INSTANTIATE_FAILED", $"Unity could not instantiate '{path}'.");
-
-            var parentToken = p.GetRaw("parent");
-            if (parentToken != null && parentToken.Type != JTokenType.Null)
-            {
-                var (parent, perr) = ResolveByPathOrId(parentToken.ToString());
-                if (perr != null)
-                {
-                    UnityEngine.Object.DestroyImmediate(inst);
-                    return new ErrorResponse("PARENT_NOT_FOUND", perr);
-                }
+            if (parent != null)
                 inst.transform.SetParent(parent.transform, worldPositionStays: true);
-            }
 
             EditorUtility.SetDirty(inst);
             return new SuccessResponse($"Instantiated {asset.name}", new

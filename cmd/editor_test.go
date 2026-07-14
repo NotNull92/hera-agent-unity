@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -13,7 +14,7 @@ import (
 func TestEditorCmd_Play(t *testing.T) {
 	send, params := mockSend("manage_editor", t)
 	resolve := func() (*client.Instance, error) { return nil, nil }
-	if _, err := editorCmd([]string{"play"}, send, resolve, "editor"); err != nil {
+	if _, err := editorCmd(context.Background(), []string{"play"}, send, resolve, "editor"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if (*params)["action"] != "play" {
@@ -34,7 +35,7 @@ func TestEditorCmd_PlayWait(t *testing.T) {
 	resolve := func() (*client.Instance, error) {
 		return &client.Instance{State: "playing"}, nil
 	}
-	resp, err := editorCmd([]string{"play", "--wait"}, send, resolve, "editor")
+	resp, err := editorCmd(context.Background(), []string{"play", "--wait"}, send, resolve, "editor")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -49,7 +50,7 @@ func TestEditorCmd_PlayWait(t *testing.T) {
 func TestEditorCmd_Stop(t *testing.T) {
 	send, params := mockSend("manage_editor", t)
 	resolve := func() (*client.Instance, error) { return nil, nil }
-	if _, err := editorCmd([]string{"stop"}, send, resolve, "editor"); err != nil {
+	if _, err := editorCmd(context.Background(), []string{"stop"}, send, resolve, "editor"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if (*params)["action"] != "stop" {
@@ -60,7 +61,7 @@ func TestEditorCmd_Stop(t *testing.T) {
 func TestEditorCmd_Pause(t *testing.T) {
 	send, params := mockSend("manage_editor", t)
 	resolve := func() (*client.Instance, error) { return nil, nil }
-	if _, err := editorCmd([]string{"pause"}, send, resolve, "editor"); err != nil {
+	if _, err := editorCmd(context.Background(), []string{"pause"}, send, resolve, "editor"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if (*params)["action"] != "pause" {
@@ -71,7 +72,7 @@ func TestEditorCmd_Pause(t *testing.T) {
 func TestEditorCmd_Refresh(t *testing.T) {
 	send, _ := mockSend("refresh_unity", t)
 	resolve := func() (*client.Instance, error) { return nil, nil }
-	if _, err := editorCmd([]string{"refresh"}, send, resolve, "editor"); err != nil {
+	if _, err := editorCmd(context.Background(), []string{"refresh"}, send, resolve, "editor"); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
@@ -79,7 +80,7 @@ func TestEditorCmd_Refresh(t *testing.T) {
 func TestEditorCmd_RefreshForce(t *testing.T) {
 	send, params := mockSend("refresh_unity", t)
 	resolve := func() (*client.Instance, error) { return nil, nil }
-	if _, err := editorCmd([]string{"refresh", "--force"}, send, resolve, "editor"); err != nil {
+	if _, err := editorCmd(context.Background(), []string{"refresh", "--force"}, send, resolve, "editor"); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 	if (*params)["force"] != true {
@@ -95,7 +96,7 @@ func TestEditorCmd_RefreshCompileForce(t *testing.T) {
 	resolve := func() (*client.Instance, error) {
 		return &client.Instance{State: "ready"}, nil
 	}
-	if _, err := editorCmd([]string{"refresh", "--compile", "--force"}, send, resolve, "editor"); err != nil {
+	if _, err := editorCmd(context.Background(), []string{"refresh", "--compile", "--force"}, send, resolve, "editor"); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 	if (*params)["compile"] != "request" {
@@ -122,7 +123,7 @@ func TestEditorCmd_RefreshCompileFailureDoesNotWait(t *testing.T) {
 		return &client.Instance{State: "ready"}, nil
 	}
 
-	resp, err := editorCmd([]string{"refresh", "--compile"}, send, resolve, "editor")
+	resp, err := editorCmd(context.Background(), []string{"refresh", "--compile"}, send, resolve, "editor")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -194,7 +195,7 @@ func TestEditorCmd_RefreshCompileWaitsForFreshHeartbeatAfterRequest(t *testing.T
 	}
 
 	// When
-	resp, err := editorCmd([]string{"refresh", "--compile"}, send, resolve, "editor")
+	resp, err := editorCmd(context.Background(), []string{"refresh", "--compile"}, send, resolve, "editor")
 
 	// Then
 	if err != nil {
@@ -208,7 +209,7 @@ func TestEditorCmd_RefreshCompileWaitsForFreshHeartbeatAfterRequest(t *testing.T
 func TestEditorCmd_EmptyArgs(t *testing.T) {
 	send, _ := mockSend("manage_editor", t)
 	resolve := func() (*client.Instance, error) { return nil, nil }
-	_, err := editorCmd(nil, send, resolve, "editor")
+	_, err := editorCmd(context.Background(), nil, send, resolve, "editor")
 	if err == nil {
 		t.Error("expected error for empty args")
 	}
@@ -217,7 +218,7 @@ func TestEditorCmd_EmptyArgs(t *testing.T) {
 func TestEditorCmd_UnknownAction(t *testing.T) {
 	send, _ := mockSend("manage_editor", t)
 	resolve := func() (*client.Instance, error) { return nil, nil }
-	_, err := editorCmd([]string{"fly"}, send, resolve, "editor")
+	_, err := editorCmd(context.Background(), []string{"fly"}, send, resolve, "editor")
 	if err == nil {
 		t.Error("expected error for unknown action")
 	}

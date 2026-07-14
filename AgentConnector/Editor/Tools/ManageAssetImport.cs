@@ -48,6 +48,8 @@ namespace HeraAgent.Tools
             var path = p.Get("path");
             if (string.IsNullOrWhiteSpace(path))
                 return new ErrorResponse("MISSING_PARAM", "'path' required (the asset path, e.g. Assets/Tex/icon.png).");
+            if (!AssetPathGuard.TryNormalizeAssetFile(path, out path, out var pathErr))
+                return new ErrorResponse("INVALID_PATH", pathErr);
 
             var importer = AssetImporter.GetAtPath(path);
             if (importer == null)

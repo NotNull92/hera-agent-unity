@@ -10,7 +10,8 @@ Options:
   --file <path>        Load code from file. Positional/stdin take precedence.
   --csc <path>         Path to csc compiler (csc.dll or csc.exe). Auto-detected if omitted.
   --dotnet <path>      Path to dotnet runtime. Auto-detected if omitted.
-  --no-cache           Skip compile/assembly cache; force a fresh csc invocation.
+  --no-cache           Bypass exec caches: force a fresh compile without reading
+                       or writing cached assemblies or disk DLLs.
   --depth <n>          Max object graph depth in the serialized return value
                        (default 3, max 8). Depths 1–2 collapse Unity Objects to
                        {name, type, instanceID} for the leanest payload.

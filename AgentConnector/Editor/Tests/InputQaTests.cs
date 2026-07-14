@@ -15,13 +15,16 @@ namespace HeraAgent.Tests
         [MenuItem("HeraAgent/Tests/InputQa")]
         public static async void RunTests()
         {
+            var allPassed = RunLimitTests();
             if (!Application.isPlaying)
             {
-                Debug.Log("[InputQaTests] SKIPPED: run in Play Mode so uGUI raycasters process live input.");
+                if (allPassed)
+                    Debug.Log("[InputQaTests] LIMITS PASSED; Play Mode interaction checks skipped.");
+                else
+                    Debug.LogError("[InputQaTests] LIMITS FAILED; Play Mode interaction checks skipped.");
                 return;
             }
 
-            bool allPassed = true;
             var root = new GameObject("HeraInputQaRoot");
             try
             {
@@ -158,6 +161,38 @@ namespace HeraAgent.Tests
 
             Debug.LogError($"[FAIL] {label}: expected '{expected}', got '{actual}'");
             return false;
+        }
+
+        private static bool ExpectError(string label, JObject request, string expectedCode)
+        {
+            var response = InputTool.HandleCommand(request).GetAwaiter().GetResult() as ErrorResponse;
+            return ExpectEqual(label, expectedCode, response?.code);
+        }
+
+        private static bool RunLimitTests()
+        {
+            var allPassed = true;
+            allPassed &= ExpectError(
+                "hold_ms above the cap is rejected before dispatch",
+                new JObject { ["action"] = "state", ["hold_ms"] = 5001 },
+                "INPUT_INVALID_PARAM");
+            allPassed &= ExpectError(
+                "settle_frames above the cap is rejected before dispatch",
+                new JObject { ["action"] = "state", ["settle_frames"] = 121 },
+                "INPUT_INVALID_PARAM");
+            allPassed &= ExpectError(
+                "drag steps above the cap is rejected before dispatch",
+                new JObject { ["action"] = "state", ["steps"] = 121 },
+                "INPUT_INVALID_PARAM");
+            allPassed &= ExpectError(
+                "click_count above the cap is rejected before dispatch",
+                new JObject { ["action"] = "state", ["click_count"] = 4 },
+                "INPUT_INVALID_PARAM");
+            allPassed &= ExpectError(
+                "max_results above the cap is rejected before dispatch",
+                new JObject { ["action"] = "state", ["max_results"] = 101 },
+                "INPUT_INVALID_PARAM");
+            return allPassed;
         }
 
         private static async Task NextEditorUpdates(int count)

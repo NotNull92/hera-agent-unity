@@ -3,7 +3,8 @@ Usage: hera-agent-unity console [options]
 Read Unity console log entries.
 
 Options:
-  --lines <N>          Limit to N entries
+  --lines <N>          Limit to N entries (default: 20; 0 returns all; negatives rejected)
+  --since <N>          Resume at a prior last_cursor (default: 0; negatives rejected)
   --type <types>       Comma-separated log types: error, warning, log (default: error,warning,log)
   --stacktrace <mode>  none: first line only
                         user: with stack trace, internal frames filtered (default)

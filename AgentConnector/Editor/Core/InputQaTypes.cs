@@ -20,6 +20,7 @@ namespace HeraAgent
         public int HoldMs;
         public int SettleFrames;
         public int Steps;
+        public int MaxResults;
         public bool Strict;
         public bool Details;
     }
@@ -52,6 +53,7 @@ namespace HeraAgent
         public bool TargetTopHit;
         public bool Interactable = true;
         public string NotInteractableReason;
+        public bool HitsTruncated;
 
         public object Compact()
         {
@@ -85,7 +87,9 @@ namespace HeraAgent
                     target_hit = TargetHit,
                     target_top_hit = TargetTopHit,
                     blocked_by = BlockedBy == null ? null : InputQaResolver.TargetShape(BlockedBy),
-                    hits = Hits
+                    hits = Hits,
+                    hits_total = Raycasts.Count,
+                    hits_truncated = HitsTruncated
                 },
                 interactable = Interactable,
                 not_interactable_reason = NotInteractableReason,

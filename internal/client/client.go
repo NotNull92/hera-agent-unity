@@ -53,8 +53,21 @@ func ClearInstanceCache() { DefaultClient.ClearInstanceCache() }
 // Results are cached for instanceCacheTTL to keep multi-step workflows
 // (batch, exec → console → exec, etc.) from re-stat'ing the dir on every hop.
 func (c *Client) ScanInstances() ([]Instance, error) {
-	if cached, ok := c.cache.Get(); ok {
-		return cached, nil
+	return c.scanInstances(true)
+}
+
+// ScanInstancesFresh reads instance files directly instead of using the
+// short-lived process cache. Transition polling and reload retry use this
+// path so they can observe a new heartbeat or port binding immediately.
+func (c *Client) ScanInstancesFresh() ([]Instance, error) {
+	return c.scanInstances(false)
+}
+
+func (c *Client) scanInstances(useCache bool) ([]Instance, error) {
+	if useCache {
+		if cached, ok := c.cache.Get(); ok {
+			return cached, nil
+		}
 	}
 
 	dir := paths.InstancesDir()
@@ -84,23 +97,47 @@ func (c *Client) ScanInstances() ([]Instance, error) {
 		instances = append(instances, inst)
 	}
 
-	c.cache.Set(instances)
+	if useCache {
+		c.cache.Set(instances)
+	}
 	return instances, nil
 }
 
 // ScanInstances delegates to DefaultClient.ScanInstances.
 func ScanInstances() ([]Instance, error) { return DefaultClient.ScanInstances() }
 
+// ScanInstancesFresh delegates to DefaultClient.ScanInstancesFresh.
+func ScanInstancesFresh() ([]Instance, error) { return DefaultClient.ScanInstancesFresh() }
+
 // FindByPort scans instance files and returns the instance matching the given port.
 // If multiple instances share the same port, the one with the most recent timestamp wins.
 func (c *Client) FindByPort(port int) (*Instance, error) {
-	instances, err := c.ScanInstances()
+	return c.findByPort(port, false, false)
+}
+
+// FindByPortFresh finds an instance from the current heartbeat files.
+// It is reserved for state-transition polling where a cached heartbeat may
+// hide a new port or state.
+func (c *Client) FindByPortFresh(port int) (*Instance, error) {
+	return c.findByPort(port, false, true)
+}
+
+func (c *Client) findByPort(port int, active, fresh bool) (*Instance, error) {
+	var (
+		instances []Instance
+		err       error
+	)
+	if fresh {
+		instances, err = c.ScanInstancesFresh()
+	} else {
+		instances, err = c.ScanInstances()
+	}
 	if err != nil {
 		return nil, err
 	}
 	var best *Instance
 	for i, inst := range instances {
-		if inst.Port != port {
+		if inst.Port != port || (active && !isActiveInstance(inst)) {
 			continue
 		}
 		if best == nil || inst.Timestamp > best.Timestamp {
@@ -116,6 +153,9 @@ func (c *Client) FindByPort(port int) (*Instance, error) {
 // FindByPort delegates to DefaultClient.FindByPort.
 func FindByPort(port int) (*Instance, error) { return DefaultClient.FindByPort(port) }
 
+// FindByPortFresh delegates to DefaultClient.FindByPortFresh.
+func FindByPortFresh(port int) (*Instance, error) { return DefaultClient.FindByPortFresh(port) }
+
 func isActiveInstance(inst Instance) bool {
 	return inst.State != unitystate.Stopped && inst.Timestamp > 0
 }
@@ -123,38 +163,51 @@ func isActiveInstance(inst Instance) bool {
 // FindActiveByPort is like FindByPort but skips stopped or incomplete instances.
 // Used by polling paths (waitForAlive, waitForReady) that only care about live instances.
 func (c *Client) FindActiveByPort(port int) (*Instance, error) {
-	instances, err := c.ScanInstances()
-	if err != nil {
-		return nil, err
-	}
-	var best *Instance
-	for i, inst := range instances {
-		if inst.Port != port || !isActiveInstance(inst) {
-			continue
-		}
-		if best == nil || inst.Timestamp > best.Timestamp {
-			best = &instances[i]
-		}
-	}
-	if best == nil {
-		return nil, fmt.Errorf("no active instance on port %d", port)
-	}
-	return best, nil
+	return c.findByPort(port, true, false)
 }
 
 // FindActiveByPort delegates to DefaultClient.FindActiveByPort.
 func FindActiveByPort(port int) (*Instance, error) { return DefaultClient.FindActiveByPort(port) }
+
+func (c *Client) FindActiveByPortFresh(port int) (*Instance, error) {
+	return c.findByPort(port, true, true)
+}
+
+func FindActiveByPortFresh(port int) (*Instance, error) {
+	return DefaultClient.FindActiveByPortFresh(port)
+}
 
 // DiscoverInstance finds a running Unity instance from ~/.hera-agent-unity/instances/.
 // If port > 0, matches an active instance by port.
 // If project is set, matches by project path substring.
 // Otherwise returns the most recently active instance.
 func (c *Client) DiscoverInstance(project string, port int) (*Instance, error) {
+	return c.discoverInstance(project, port, false)
+}
+
+// DiscoverInstanceFresh resolves an instance directly from heartbeat files.
+// Normal command setup remains cached; this is for reload retry and polling.
+func (c *Client) DiscoverInstanceFresh(project string, port int) (*Instance, error) {
+	return c.discoverInstance(project, port, true)
+}
+
+func (c *Client) discoverInstance(project string, port int, fresh bool) (*Instance, error) {
 	if port > 0 {
+		if fresh {
+			return c.FindActiveByPortFresh(port)
+		}
 		return c.FindActiveByPort(port)
 	}
 
-	instances, err := c.ScanInstances()
+	var (
+		instances []Instance
+		err       error
+	)
+	if fresh {
+		instances, err = c.ScanInstancesFresh()
+	} else {
+		instances, err = c.ScanInstances()
+	}
 	if err != nil {
 		return nil, fmt.Errorf("no Unity instances found.\nIs Unity running with the Connector package?\nExpected: %s", paths.InstancesDir())
 	}
@@ -205,4 +258,9 @@ func (c *Client) DiscoverInstance(project string, port int) (*Instance, error) {
 // DiscoverInstance delegates to DefaultClient.DiscoverInstance.
 func DiscoverInstance(project string, port int) (*Instance, error) {
 	return DefaultClient.DiscoverInstance(project, port)
+}
+
+// DiscoverInstanceFresh delegates to DefaultClient.DiscoverInstanceFresh.
+func DiscoverInstanceFresh(project string, port int) (*Instance, error) {
+	return DefaultClient.DiscoverInstanceFresh(project, port)
 }

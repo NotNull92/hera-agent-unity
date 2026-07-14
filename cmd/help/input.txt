@@ -29,11 +29,12 @@ Input QA:
   Options:
     --backend eventsystem             Current implementation (default)
     --button left|right|middle        Pointer button (default: left)
-    --click_count <N>                 Click count (default: 1)
+    --click_count <N>                 Click count 1..3 (default: 1)
     --scroll_delta x,y                Scroll delta (default: 0,-1; alias: --delta)
-    --steps <N>                       Drag move steps (default: 8)
-    --hold_ms <N>                     Down/up delay in ms (default: 50)
-    --settle_frames <N>               Editor updates to wait after click (default: 1)
+    --steps <N>                       Drag move steps 1..120 (default: 8)
+    --hold_ms <N>                     Down/up delay in ms 0..5000 (default: 50)
+    --settle_frames <N>               Editor updates to wait after click 0..120 (default: 1)
+    --max_results <N>                 Diagnostic entries 1..100 (default: 50)
     --strict true|false               Fail when blocked/not reached (default: true)
     --details true                    Return full raycast/handler diagnostics
 

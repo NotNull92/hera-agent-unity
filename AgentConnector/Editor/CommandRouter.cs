@@ -44,6 +44,7 @@ namespace HeraAgent
 
         public class BatchCommandResponse
         {
+            public bool success = true;
             public List<object> Results { get; set; }
             public int Completed { get; set; }
             public int Failed { get; set; }

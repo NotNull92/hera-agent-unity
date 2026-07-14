@@ -36,6 +36,7 @@ AgentConnector/
     │   ├── UnityDocsStore.cs            # bundled ScriptReference lookup data
     │   ├── UnityPitfalls.cs             # curated Unity API pitfalls for describe_type
     │   ├── HeraSettings.cs              # asset-config.json reader (juicy mode, csc/dotnet paths)
+    │   ├── AssetConfigFile.cs            # shared locked JSON update helper
     │   ├── PackageJobState.cs           # async package job survival across domain reloads
     │   ├── AssetRefresh.cs              # AssetDatabase.Refresh + script compile request
     │   ├── AssetDetector.cs             # third-party asset detection + config sync
@@ -53,6 +54,7 @@ AgentConnector/
     │   ├── ExecuteCsharp.Compilation.cs     # csc/dotnet invocation + error parsing
     │   ├── ExecuteCsharp.AssemblyLoader.cs  # collectible ALC assembly loading
     │   ├── ExecuteCsharp.Serializer.cs      # return value serialization + runtime error shaping
+    │   ├── ExecuteCsharp.Serializer.UnityObjects.cs # UnityEngine.Object serializer branch
     │   ├── ExecuteMenuItem.cs           # Unity menu execution
     │   ├── ReadConsole.cs               # console log reading/clearing
     │   ├── RefreshUnity.cs              # asset database refresh + compile request
@@ -78,7 +80,7 @@ AgentConnector/
     │   └── LogToConsole.cs              # write to Unity console
     └── TestRunner/
         ├── RunTests.cs                  # Unity Test Framework execution
-        └── TestRunnerState.cs           # PlayMode test result persistence
+        └── TestRunnerState.cs           # test-result persistence across reloads
 ```
 
 ---
@@ -92,6 +94,7 @@ Lightweight HTTP server on localhost. Receives CLI commands as POST `/command`, 
 - Uses `ConcurrentQueue` + `EditorApplication.update` for main-thread marshaling
 - Commands execute even when Unity is unfocused
 - Survives domain reloads via `[InitializeOnLoad]`
+- Reads request bodies incrementally with endpoint byte limits, caps batches at 50 commands, and admits at most 64 pending requests
 
 ### Port Selection
 
@@ -109,7 +112,7 @@ Tries 8090, then 8091, 8092, ... up to 10 attempts. First available port wins.
 ListenLoop (background thread)
     → await GetContextAsync()
     → HandleRequest()
-        → Parse JSON body
+        → Read a bounded JSON body incrementally
         → Extract command + parameters
         → Enqueue WorkItem to ConcurrentQueue
         → ForceEditorUpdate() (triggers EditorApplication.update)
@@ -124,6 +127,8 @@ ListenLoop (background thread)
 |:---|:---|
 | `POST /command` | Single command execution |
 | `POST /commands` | Batch command execution (sequential, `fail_fast`) |
+
+`/command` accepts up to 1 MiB and `/commands` up to 4 MiB. Ingress rejections use a JSON `ErrorResponse` with a stable `HTTP_*` code and a matching 4xx/5xx status. The Go client preserves that envelope's `code` and `data` instead of flattening it into a transport string.
 
 ### Domain Reload Survival
 
@@ -293,7 +298,7 @@ No explicit `Name=` → `StringCaseUtility.ToSnakeCase(ClassName)`.
 
 ### Action-Level Handlers
 
-Action handlers are public static methods on a `[HeraTool]` class that take a single `JObject` parameter and return `object` or `Task<object>`. They are registered under `<tool>:<snake_case_method_name>`.
+Action handlers are public static methods on a `[HeraTool]` class that take exactly one `JObject` parameter and return `object`, `Task<object>`, or `Task`. They are registered under `<tool>:<snake_case_method_name>`. Discovery ignores invalid `[HeraAction]` declarations and emits a diagnostic during the scan; a partially loadable assembly still contributes its non-null `ReflectionTypeLoadException.Types` entries.
 
 Explicit registration (preferred):
 
@@ -310,6 +315,7 @@ The CLI sends `manage_ui get_rect` directly without a monolithic `HandleCommand`
 
 `GetToolSchema()` returns JSON schema for a discovered tool, including:
 - Tool name, description, group(s), examples
+- Deterministically ordered action descriptors (`name`, `description`)
 - Parameter schema (from the nested `Parameters` class + `[ToolParameter]` attributes)
 - Output schema
 - Metadata flags (enum support, default support, custom types)
@@ -324,7 +330,7 @@ The CLI sends `manage_ui get_rect` directly without a monolithic `HandleCommand`
 
 ## ExecuteCsharp
 
-The `exec` tool is implemented as a `partial` static class split across five files under `Tools/`:
+The `exec` tool is implemented as a `partial` static class split across six files under `Tools/`:
 
 | File | Responsibility |
 |---|---|
@@ -332,7 +338,8 @@ The `exec` tool is implemented as a `partial` static class split across five fil
 | `ExecuteCsharp.SourceBuilder.cs` | Default usings, snippet wrapping, leading-`using` hoisting, line-offset math |
 | `ExecuteCsharp.Compilation.cs` | `CompileToBytes`, csc/dotnet/Mono launcher, error parsing/formatting, temp-file cleanup |
 | `ExecuteCsharp.AssemblyLoader.cs` | Collectible `AssemblyLoadContext` load with `Assembly.Load` fallback |
-| `ExecuteCsharp.Serializer.cs` | Return-value serialization, `--stacktrace` modes, `--strict` log capture |
+| `ExecuteCsharp.Serializer.cs` | Return-value serialization, including the depth-1/2 compact Unity-object `{name,type,instanceID}` contract, `--stacktrace` modes, and `--strict` log capture |
+| `ExecuteCsharp.Serializer.UnityObjects.cs` | Dedicated `UnityEngine.Object` shallow/deep serializer branch |
 
 Splitting keeps each file under ~300 lines and makes the compile/load/invoke/serialize pipeline easier to navigate. The public contract (`HandleCommand`, `PreWarmCompiler`) does not change.
 
@@ -341,7 +348,7 @@ Splitting keeps each file under ~300 lines and makes the compile/load/invoke/ser
 ## Heartbeat.cs
 
 ### Role
-Writes the instance state JSON file every 0.5 seconds so the Go CLI can discover and monitor Unity.
+Writes the instance state JSON file every 1.0 second so the Go CLI can discover and monitor Unity.
 
 ### File Location
 
@@ -372,7 +379,7 @@ Certain operations force a temporary state to prevent the CLI from seeing premat
 |:---|:---|:---|
 | `beforeAssemblyReload` | `"reloading"` | Until next tick |
 | `ExitingEditMode` | `"entering_playmode"` | Until next tick |
-| `MarkCompileRequested()` | `"compiling"` | 3-second grace period |
+| `MarkCompileRequested()` | `"compiling"` | Up to 30 seconds while compilation begins; clears once compile activity has completed |
 
 ### Instance File Format
 
@@ -383,6 +390,8 @@ Certain operations force a temporary state to prevent the CLI from seeing premat
   "port": 8090,
   "pid": 12345,
   "unityVersion": "2022.3.45f1",
+  "docsVersion": "2022.3",
+  "compiler": { "cscKind": "unity_dotnet_sdk_roslyn", "dotnetKind": "unity_netcore_runtime" },
   "timestamp": 1714372800000,
   "compileErrors": false
 }
@@ -467,6 +476,15 @@ Wrapper around `AssetDatabase.Refresh` and `CompilationPipeline.RequestScriptCom
 
 Scans the project for known third-party assets (Odin, DOTween, etc.) by directory and loaded-assembly checks, then mirrors the installed flags into `~/.hera-agent-unity/asset-config.json`. Used by `detect_assets`.
 
+### AssetConfigFile.cs
+
+Coordinates the Settings window and asset detector with the Go CLI through a
+sibling `asset-config.json.lock` file. Updates read the latest JSON while
+holding that lock and publish through a flushed temporary-file replacement, so
+readers never observe a partial document. Unknown top-level fields, asset
+fields, and asset entries are retained. Conflicting edits to recognized fields
+are last-writer-wins; the format has no revision-based merge protocol.
+
 ### AssetReserializer.cs
 
 Thin wrapper around `AssetDatabase.ForceReserializeAssets`. Handles the "whole project" vs "specific paths" branching and logging. Used by `reserialize`.
@@ -543,7 +561,18 @@ go run ./tools/build-unity-docs \
 
 ## TestRunner
 
-`RunTests.cs` dispatches to the Unity Test Framework. EditMode tests run synchronously; PlayMode tests run asynchronously and persist results via `TestRunnerState` so the CLI can poll after a domain reload.
+`RunTests.cs` starts both EditMode and PlayMode runs asynchronously through the
+Unity Test Framework. Each mode persists its final result to
+`~/.hera-agent-unity/status/test-results-<port>-<run_id>.json`; `TestRunnerState` keeps
+the result path alive across a domain reload. The CLI polls that file until the
+final result, so `test` has no `--wait` flag.
+
+The connector also best-effort writes `test-results-<port>.json` for an older
+CLI that only understands port-scoped PlayMode results.
+
+A current CLI sends `async_results=true` to opt into run-scoped asynchronous
+EditMode results. Without that capability, EditMode keeps the legacy synchronous
+response contract; PlayMode remains asynchronous.
 
 ---
 

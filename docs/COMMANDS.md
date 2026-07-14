@@ -89,7 +89,8 @@ echo '<code>' | hera-agent-unity exec [flags]
 | `--usings` | Add extra using directives (comma-separated) | `""` |
 | `--csc` | Path to csc compiler | Auto-detected |
 | `--dotnet` | Path to dotnet runtime | Auto-detected |
-| `--no-cache` | Skip compile/assembly cache (debug only) | `false` |
+| `--no-cache` | Bypass exec caches; do not read or write cached assemblies or disk DLLs | `false` |
+| `--depth` | Maximum returned object-graph depth. At depths `1` and `2`, every `UnityEngine.Object` is the compact `{name, type, instanceID}` shape; depth `3` (default) and above reflect its public members. | `3` (max `8`) |
 
 ```bash
 # Basic execution
@@ -109,7 +110,9 @@ hera-agent-unity exec "return World.All.Count;" --usings Unity.Entities
 
 **Note**: Use `return` for output. Use `return null;` for void operations.
 
-**Caching**: Compiled assemblies are cached in `Library/HeraAgentCache/` and held in memory keyed by source hash. The first call per Unity session is the cold path (csc invocation); identical follow-up calls skip both compile and load. Cache invalidates automatically on assembly reload. Use `--no-cache` to bypass.
+**Return-size control**: Prefer `--depth 1` or `--depth 2` when returning a `GameObject`, `Transform`, `Component`, or other `UnityEngine.Object`. Both depths preserve only its name, runtime type, and instance ID; use depth `3` only when the reflected member graph is required.
+
+**Caching**: Compiled assemblies are cached in `Library/HeraAgentCache/` and held in memory. The cache key includes the source, reference-set hash, language version, and a versioned compiler/compilation fingerprint, so incompatible compiler inputs cannot reuse an old DLL. The first call per Unity session is the cold path (csc invocation); identical follow-up calls skip both compile and load. Cache invalidates automatically on assembly reload. `--no-cache` bypasses every exec cache read and write: it compiles against transient reference arguments, does not load or store cached assemblies, and does not persist a DLL — including with `--check`.
 
 ---
 
@@ -123,10 +126,11 @@ hera-agent-unity console [flags]
 
 | Flag | Description | Default |
 |:---|:---|:---|
-| `--lines` | Limit to N entries | All |
+| `--lines` | Limit to N entries; `0` returns all; negative values are rejected | `20` |
 | `--type` | Comma-separated: `error`, `warning`, `log` | `error,warning,log` |
 | `--stacktrace` | `none`, `user`, `full` | `user` |
 | `--clear` | Clear console after reading | `false` |
+| `--since` | Resume from a prior response's `last_cursor`; negative values are rejected | `0` |
 
 ```bash
 hera-agent-unity console
@@ -134,6 +138,12 @@ hera-agent-unity console --lines 20 --type error
 hera-agent-unity console --stacktrace full
 hera-agent-unity console --clear
 ```
+
+Responses include `returned`, `matched`, `last_cursor`, and `truncated` for
+pagination. Reuse `last_cursor` as `--since`: when `truncated` is `true`, it
+resumes immediately after the final returned entry; otherwise it advances to
+the current end of the console. A cursor beyond the current console length
+(for example, after clearing the console) restarts from index `0`.
 
 ---
 
@@ -292,7 +302,7 @@ hera-agent-unity manage_assets <action> [flags]
 | `--type` | `find`: asset type filter (`Texture2D`, `Material`, `Prefab`). `create`: the ScriptableObject subclass to instantiate — short name (`GameConfig`) or fully-qualified (`My.Namespace.GameConfig`). | |
 | `--limit` | Maximum `find` results | `50` (max `500`) |
 | `--include_folders` | Include folders in `find` output | `false` |
-| `--params '{"properties":{...}}'` | `create` only: raw SerializedProperty name → value map applied to the new asset. The response reports `applied` / `failed` per field. | |
+| `--params '{"properties":{...}}'` | `create` only: raw SerializedProperty name → value map applied to the new asset. All fields are validated before creation; an invalid field returns `INVALID_INITIAL_PROPERTIES` and creates no asset. | |
 
 ```bash
 hera-agent-unity manage_assets find --type Texture2D --filter icon --limit 20
@@ -336,7 +346,7 @@ hera-agent-unity manage_animation <action> [flags]
 | `--from` / `--to` | `add_transition` source / destination state names | |
 | `--params` | `set_curve` `keys` `[{time,value[,in_tangent,out_tangent]}]`; `add_parameter` `default`; `add_transition` `conditions` `[{parameter,mode,threshold}]` / `has_exit_time` / `duration` | |
 
-Condition `mode` is one of `If`, `IfNot`, `Greater`, `Less`, `Equals`, `NotEqual`.
+Condition `mode` is one of `If`, `IfNot`, `Greater`, `Less`, `Equals`, `NotEqual`. `add_state` validates an optional motion and `add_transition` validates every condition (including referenced controller parameters) before changing the controller.
 
 ```bash
 hera-agent-unity manage_animation create_clip --path Assets/Anim/Bob.anim --frame_rate 60 --loop true
@@ -841,7 +851,7 @@ hera-agent-unity describe_shader --list --filter URP
 
 ## manage_material
 
-Material asset CRUD. Property names are shader property names (`_BaseColor`, `_Metallic`, `_MainTex`) — run `describe_shader` first to discover them.
+Material asset CRUD. Paths must be under `Assets/`; `create` requires a new `.mat` destination with an existing parent folder. Property names are shader property names (`_BaseColor`, `_Metallic`, `_MainTex`) — run `describe_shader` first to discover them.
 
 ```bash
 hera-agent-unity manage_material <action> --path <Assets/...mat> [flags]
@@ -866,7 +876,7 @@ hera-agent-unity manage_material set --path Assets/Mats/Player.mat --property _M
 
 ## manage_prefab
 
-Prefab asset operations. `add_component` / `remove_component` edit the prefab asset **headlessly** (`PrefabUtility.LoadPrefabContents` → edit → save → unload — no prefab stage, no open-scene side effects) and target the prefab root.
+Prefab asset operations. Paths must be under `Assets/`; `create` requires a new `.prefab` destination with an existing parent folder. `add_component` / `remove_component` edit the prefab asset **headlessly** (`PrefabUtility.LoadPrefabContents` → edit → save → unload — no prefab stage, no open-scene side effects) and target the prefab root.
 
 ```bash
 hera-agent-unity manage_prefab <action> --path <Assets/...prefab> [flags]
@@ -889,7 +899,7 @@ hera-agent-unity manage_prefab instantiate --path Assets/Prefabs/Player.prefab -
 
 ## manage_asset_import
 
-Read or change an asset's import settings through its `AssetImporter` (`TextureImporter`, `ModelImporter`, `AudioImporter`, …). Same SerializedObject pattern as `manage_components`, applied to the importer; property paths are raw SerializedProperty paths.
+Read or change an asset's import settings through its `AssetImporter` (`TextureImporter`, `ModelImporter`, `AudioImporter`, …). The target path must be under `Assets/`. Same SerializedObject pattern as `manage_components`, applied to the importer; property paths are raw SerializedProperty paths.
 
 ```bash
 hera-agent-unity manage_asset_import <action> --path <Assets/...> [flags]
@@ -954,14 +964,14 @@ hera-agent-unity input <action> [flags]
 
 | Action | Flags | Description |
 |:---|:---|:---|
-| `state` | `[--backend eventsystem]` | Report EventSystem, input module, raycaster, InputSystem availability, and native-Windows backend status. |
-| `inspect` | `--path </path>` or `--instance_id <id>` or `--target <path\|id>`; `[--position x,y]`; `[--normalized x,y]`; `[--offset x,y]`; `[--details true]` | Resolve the target point, raycast through the EventSystem, and report top hit, blocker, handlers, and interactability. |
-| `click` | same target/point flags; `[--button left\|right\|middle]`; `[--click_count N]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--strict true\|false]`; `[--details true]` | Drive pointer enter/down/up/click through `ExecuteEvents`. In strict mode, fails if another object blocks the target or the expected click handler is not reached. |
+| `state` | `[--backend eventsystem]`; `[--max_results N]` | Report EventSystem, input module, raycaster, InputSystem availability, and native-Windows backend status. |
+| `inspect` | `--path </path>` or `--instance_id <id>` or `--target <path\|id>`; `[--position x,y]`; `[--normalized x,y]`; `[--offset x,y]`; `[--details true]`; `[--max_results N]` | Resolve the target point, raycast through the EventSystem, and report top hit, blocker, handlers, and interactability. |
+| `click` | same target/point flags; `[--button left\|right\|middle]`; `[--click_count N]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--strict true\|false]`; `[--details true]`; `[--max_results N]` | Drive pointer enter/down/up/click through `ExecuteEvents`. In strict mode, fails if another object blocks the target or the expected click handler is not reached. |
 | `pointer_down` | same target/point flags | Drive pointer enter/down without a matching up. Useful for press-state QA; no cross-command press state is retained. |
 | `pointer_up` | same target/point flags | Drive pointer up at the target point. Useful as a standalone handler check; no cross-command press state is retained. |
-| `submit` | `--path </path>` or `--instance_id <id>` or `--target <path\|id>`; `[--settle_frames N]`; `[--strict true\|false]` | Select the target and execute `ISubmitHandler` through `ExecuteEvents.submitHandler`. |
-| `scroll` | same target/point flags; `[--scroll_delta x,y]` or `[--delta x,y]`; `[--settle_frames N]`; `[--strict true\|false]` | Execute `IScrollHandler` through `ExecuteEvents.ExecuteHierarchy`. Default scroll delta is `0,-1`. |
-| `drag` | same target/point flags; `--to_position x,y` or `--to x,y` or `--to_normalized x,y`; `[--steps N]`; `[--settle_frames N]`; `[--strict true\|false]` | Execute initialize-potential-drag, begin-drag, drag steps, and end-drag handlers. Default steps: 8. |
+| `submit` | `--path </path>` or `--instance_id <id>` or `--target <path\|id>`; `[--settle_frames N]`; `[--strict true\|false]`; `[--max_results N]` | Select the target and execute `ISubmitHandler` through `ExecuteEvents.submitHandler`. |
+| `scroll` | same target/point flags; `[--scroll_delta x,y]` or `[--delta x,y]`; `[--settle_frames N]`; `[--strict true\|false]`; `[--max_results N]` | Execute `IScrollHandler` through `ExecuteEvents.ExecuteHierarchy`. Default scroll delta is `0,-1`. |
+| `drag` | same target/point flags; `--to_position x,y` or `--to x,y` or `--to_normalized x,y`; `[--steps N]`; `[--settle_frames N]`; `[--strict true\|false]`; `[--max_results N]` | Execute initialize-potential-drag, begin-drag, drag steps, and end-drag handlers. Default steps: 8. |
 
 ```bash
 hera-agent-unity input state
@@ -971,6 +981,8 @@ hera-agent-unity input submit --path /Canvas/StartButton
 hera-agent-unity input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
 hera-agent-unity input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
 ```
+
+**Input limits** — numeric values are validated before an EventSystem action is dispatched: `hold_ms` is `0..5000`, `settle_frames` is `0..120`, `steps` is `1..120`, `click_count` is `1..3`, and `max_results` is `1..100` (default `50`). Oversized or malformed values return `INPUT_INVALID_PARAM`. `raycasters_total` / `raycasters_truncated` and detailed `hits_total` / `hits_truncated` make a capped diagnostic explicit.
 
 **Evidence classification** — report this separately from OS-level click QA:
 
@@ -1014,7 +1026,7 @@ hera-agent-unity ui_doc <action> [flags]
 | Action | Flags | Description |
 |:---|:---|:---|
 | `export` | `--path </path>` or `--instance_id <id>`; `[--depth N]` | Serialize the subtree to the `ui_doc/2` IR. Depth defaults to 8. |
-| `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | uGUI: realize the IR under the parent (default: existing/auto Canvas) and run the uGUI fixer. UITK: require `backend:"uitk"`, validate runtime elements/attributes/USS against `UiToolkitStore`, then emit `.uxml` + `.uss` + PanelSettings + UIDocument under `Assets/HeraGenerated/UI`. Screen-space is default; world-space requires runtime Unity 6000.2+. Pass the doc via `--file` so it never rides inline in context. |
+| `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | uGUI: realize the IR under the parent (default: existing/auto Canvas) and run the uGUI fixer. UITK: require `backend:"uitk"`, validate runtime elements/attributes/USS plus PanelSettings/UIDocument availability before writing, then emit `.uxml` + `.uss` + PanelSettings + UIDocument under `Assets/HeraGenerated/UI`. A failed `create` compensates by deleting only artifacts created by that request; `upsert` is non-transactional and reports `upsert_may_be_partial` if existing output may have changed. Screen-space is default; world-space requires runtime Unity 6000.2+. Pass the doc via `--file` so it never rides inline in context. |
 | `import` | `--src <abs path>` **or** `--file <imports.json>`; `[--into Assets/...]`; `[--border l,b,r,t]`; `[--ppu N]`; `[--filter point\|bilinear]`; `[--pivot x,y]` | Copy external sprite file(s) into the project as `Sprite` assets. Single sprite via `--src` + shared flags; many (with per-sprite settings) via `--file` `{into?, items:[{src, name?, border?, ppu?, filter?, pivot?}]}`. Default dest: `Assets/HeraImported/`. A `border` sets `Image.type = Sliced` (FullRect mesh). GIFs are skipped. Returns `{into, imported:[{src,asset,instance_id,sliced}], skipped, errors, count}`. |
 | `gen_sprite` | `--spec '{...}'` or `--kind/--size/--color/...`; `[--out Assets/...]` | Bake + import a sprite. Kinds: `solid`, `rounded_rect`, `gradient`, `nine_slice` (rounded box + 9-slice `border [l,b,r,t]`, default = radius). Default out: `Assets/HeraGenerated/`. |
 | `capture` | `[--out <file.png>]`; `[--width N] [--height N]`; `[--bg #RRGGBBAA]`; `[--canvas </path> or <id>]` | Render the live overlay UI to a PNG. Size defaults to the canvas pixel size (current game view); `bg` defaults to opaque dark (`alpha 0` = transparent); without `--canvas` it captures all root non-world canvases. Default out: a temp file. Returns `{path,width,height,bytes,canvases}`. |
@@ -1177,20 +1189,29 @@ hera-agent-unity test [flags]
 |:---|:---|:---|
 | `--mode` | `EditMode` or `PlayMode` | `EditMode` |
 | `--filter` | Filter by namespace, class, or full test name | `""` |
-| `--wait` | Wait for PlayMode tests to complete | `false` (EditMode: always waits) |
 
 ```bash
-# EditMode tests (synchronous)
+# EditMode tests
 hera-agent-unity test
 
-# PlayMode tests (asynchronous, requires --wait)
-hera-agent-unity test --mode PlayMode --wait
+# PlayMode tests
+hera-agent-unity test --mode PlayMode
 
 # Filtered tests
 hera-agent-unity test --filter MyNamespace.MyClass
 ```
 
-**PlayMode behavior**: Returns `"running"` immediately. Results are written to `~/.hera-agent-unity/status/test-results-<port>.json`. The CLI polls this file when `--wait` is set.
+**Test-run behavior**: Both modes start asynchronously and persist their final
+result to `~/.hera-agent-unity/status/test-results-<port>-<run_id>.json`. The CLI polls
+that file until completion for every `test` invocation; there is no `--wait`
+flag. Use the global `--timeout` to bound the wait.
+
+For CLI/connector version transitions, the connector also writes the legacy
+`test-results-<port>.json` result file. A current CLI falls back to that file
+when an older connector returns `{ port }` without `run_id`. A current CLI
+sends the internal `async_results=true` capability. Without that capability,
+the connector preserves the legacy synchronous EditMode response, while
+PlayMode remains compatible through the legacy result file.
 
 ---
 
@@ -1240,7 +1261,7 @@ up front:
 | `list --names` | flat array of tool names only | cheapest discovery |
 | `list --compact` | same as `list --names` | compact catalogue discovery from agents or scripts (the AGENTS.md bootstrap runs this) |
 | `list` | `{name, description}` per tool, no schema | you want a one-line hint per tool |
-| `list --tool <name>` | full parameter + output schema + metadata for one tool | you're about to call that tool |
+| `list --tool <name>` | full parameter + output schema + metadata + action descriptors for one tool | you're about to call that tool |
 
 ```bash
 hera-agent-unity list --compact
@@ -1251,7 +1272,9 @@ hera-agent-unity list --tool exec
 
 Useful for discovering custom tools added to the project.
 
-`metadata.safety` describes the whole tool. Multi-action tools may also expose
+`actions` is an ordinal-sorted list of discovered action descriptors (`name`,
+`description`). It contains only handlers with the supported `public static
+JObject -> object|Task<object>|Task` contract. `metadata.safety` describes the whole tool. Multi-action tools may also expose
 `metadata.action_safety`, so agents can treat a read-only action such as
 `manage_assets find` differently from destructive actions such as
 `manage_assets move` or `manage_assets delete`. This detail is only returned by
@@ -1338,6 +1361,11 @@ hera-agent-unity asset-config <subcommand>
 | Flag | Description | Default |
 |:---|:---|:---|
 | `--json` | Output enabled assets + `loop_engineering_mode` + `ui_system` + `game_feel_mode` + `game_feel_ui_mode` + `dotween_preferred` as JSON | `false` |
+
+Asset configuration updates are serialized through a local lock and atomically
+replace the JSON file. Unknown fields and asset entries are retained. If two
+clients change the same recognized setting concurrently, the last completed
+write wins.
 
 ---
 
