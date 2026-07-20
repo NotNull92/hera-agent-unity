@@ -647,3 +647,22 @@ agents collaborate to build one polished tool — one catches what the other mis
   table) and this `AGENTS.md`, and respect 🔒 locked design decisions.
 - accuracy over guesses: verify against the live Editor via `hera-agent-unity`, and
   pull per-version facts from binary reflection rather than assuming Unity behavior.
+- **anything adapted from outside ships fully hera-native.** Studying an external
+  tool, paper, or article to design a hera capability is fine and encouraged — but
+  what lands in the repo must read as purpose-built Unity tooling, not as a port:
+  - no origin narration anywhere shipped or committed — not in tool `Description`s,
+    agent-rules strings, code comments, `CLAUDE.md`, `CHANGELOG.md`, or commit
+    messages. Describe *what the capability does*, never where the idea came from.
+  - no foreign frame of reference. Drop "ported/adapted/ported from", and drop
+    comparisons to the source domain ("unlike the web", "the CSS equivalent").
+    State Unity facts directly — if the source domain has to be named to explain
+    the rule, the rule has not been naturalized yet.
+  - re-derive, do not translate. Predicates, thresholds, and vocabulary are
+    re-authored against real Unity APIs (`manage_components` properties, USS
+    vocabulary per version bucket) and verified live, so the result is correct for
+    Unity rather than merely converted.
+  - carry no foreign code or verbatim text. Ideas and methods are free to learn
+    from; source files, data files, and copied prose are not — keep the repo clean
+    of them so no third-party license terms attach to what hera ships.
+  - name things in hera's own vocabulary (`ui_slop`, `game_feel`, `unity_docs`),
+    never after the external tool.

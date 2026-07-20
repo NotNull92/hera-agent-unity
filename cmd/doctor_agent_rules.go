@@ -66,16 +66,15 @@ const gameFeelAgentRules = "## Game Feel Mode (Beta)\n\n" +
 // uiSlopAgentRules is emitted only while Unity De-slop Mode (Beta) is ON in Hera
 // Settings. Independent of Ultra Hera and Game Feel Mode — it guides *static
 // visual discipline* (layout, spacing, typography, color), the complement to
-// Game Feel Mode's motion/feel. Ports the slopslap methodology onto live hera
-// measurement.
+// Game Feel Mode's motion/feel.
 const uiSlopAgentRules = "## Unity De-slop Mode (Beta)\n\n" +
-	"Unity De-slop Mode is ON. When you build or edit uGUI/UI Toolkit screens, do not leave statistical AI-slop (reflexive decoration, undisciplined layout, unscaled spacing, decorative italics, rainbow palettes). Clean it with the bundled `ui_slop` taxonomy (49 tells across 5 areas), ported from the slopslap methodology and grounded in live measurement.\n\n" +
+	"Unity De-slop Mode is ON. When you build or edit uGUI/UI Toolkit screens, do not leave statistical AI-slop (reflexive decoration, undisciplined layout, unscaled spacing, decorative italics, rainbow palettes). Clean it with the bundled `ui_slop` taxonomy (49 tells across 5 areas), every tell measured against the live scene.\n\n" +
 	"Core discipline:\n\n" +
 	"1. Checklist = evaluation function. A finding is not a status string — it is a predicate you re-measure from the live scene every time (e.g. `manage_components get --type TMP_Text` -> `m_fontStyle & Italic == 0`). Never trust a \"done\" note; recompute.\n" +
 	"2. Values are derived, not guessed. No magic px — spacing = base x fixed multiplier; width from a single measure token; palette snaps to the bundled reference. The project's own tokens win; the corpus is the fallback.\n" +
 	"3. Inspect in parallel, execute in fixed order A -> B -> C -> D -> E (upstream commits dissolve downstream conflicts). A = decorative sweep, B = layout/RectTransform/containers, C = spacing, D = typography, E = color.\n" +
 	"4. Meaning is untouchable: copy, information, and order are never edited (removing decoration is not removing content).\n" +
-	"5. Game UI is not a web page: nested surfaces are often functional (inventory slots, HUD panels) — do not flatten repeated interactive cells. Korean typesetting (font fallback, word-wrap) has its own tells.\n\n" +
+	"5. Nested surfaces are usually functional in game UI — inventory slots, hotbars, HUD panels — so never flatten repeated interactive cells; each tell's `exception` field spells out what to leave alone. Korean typesetting (font fallback, word-wrap) has its own tells.\n\n" +
 	"Workflow:\n\n" +
 	"1. Start from the taxonomy index: `hera-agent-unity ui_slop` (areas A-E, ethics-free but decoration-first).\n" +
 	"2. Query a concrete tell before fixing: `hera-agent-unity ui_slop box-in-box`, `ui_slop unscaled-spacing-ladder`, `ui_slop low-contrast-text`, `ui_slop tmp-italic`. Each returns the uGUI *and* UI Toolkit check predicate plus the mechanical fix; use the one matching your `ui_system`.\n" +

@@ -12,13 +12,12 @@ using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 namespace HeraAgent
 {
     /// <summary>
-    /// Loads the connector-bundled Unity UI-slop taxonomy (ported from the
-    /// slopslap methodology, grounded in live hera measurement and per-version
-    /// editor-binary reflection) into a keyed dictionary on first access. Powers
-    /// the unity-deslop pipeline hints (Unity De-slop Mode). Mirrors
-    /// GameFeelStore's load/reload pattern: one immutable bundle file, plain
-    /// full-scan Levenshtein suggest (corpus is ~50 topics — the 3-layer
-    /// prefix-bucket optimization would be premature here).
+    /// Loads the connector-bundled Unity UI-slop taxonomy (authored against live
+    /// hera measurement and per-version editor-binary reflection) into a keyed
+    /// dictionary on first access. Powers the `ui_slop` tool and the Unity
+    /// De-slop Mode (Beta) hints. Mirrors GameFeelStore's load/reload pattern:
+    /// one immutable bundle file, plain full-scan Levenshtein suggest (corpus is
+    /// ~50 tells — the 3-layer prefix-bucket optimization would be premature).
     /// </summary>
     public static class UiSlopStore
     {
