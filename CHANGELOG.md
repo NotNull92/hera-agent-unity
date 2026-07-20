@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI side: `asset-config uislop [on|off]` plus `ui_slop_mode` in
   `asset-config --json` and the `asset-config list` output.
 
+### Fixed (Connector 0.0.64 — `describe_type` reports real writability)
+
+- `can_read` / `can_write` now follow the same visibility the member list was
+  built with. They were read off `PropertyInfo.CanRead` / `CanWrite`, which
+  report true whenever an accessor exists at *any* visibility — so a public
+  property with a private setter came back as `can_write: true` and code
+  written against that answer failed to compile with `CS0200 ... it is read
+  only`. With `include_private` on, non-public accessors count as before.
+
 ### Fixed (CLI — no more "unsolicited response" noise on stderr)
 
 - Commands that end in a domain reload (`editor refresh --compile`,

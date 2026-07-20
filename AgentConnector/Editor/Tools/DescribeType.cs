@@ -66,7 +66,7 @@ namespace HeraAgent.Tools
             if (membersFilter == "all" || membersFilter == "methods")
                 methods = DescribeMethods(resolved.GetMethods(binding), limit);
             if (membersFilter == "all" || membersFilter == "properties")
-                properties = DescribeProperties(resolved.GetProperties(binding), limit);
+                properties = DescribeProperties(resolved.GetProperties(binding), limit, includePrivate);
             if (membersFilter == "all" || membersFilter == "fields")
                 fields = DescribeFields(resolved.GetFields(binding), limit);
             if (membersFilter == "all" || membersFilter == "events")
@@ -166,7 +166,11 @@ namespace HeraAgent.Tools
             };
         }
 
-        private static object DescribeProperties(PropertyInfo[] props, int limit)
+        // can_read/can_write answer "can the caller's exec snippet touch this?",
+        // so they follow the same visibility the member list was built with.
+        // PropertyInfo.CanWrite would say true for a public property with a
+        // private setter, and generated code assigning it fails to compile.
+        private static object DescribeProperties(PropertyInfo[] props, int limit, bool includePrivate)
         {
             var truncated = props.Length > limit;
             return new
@@ -180,8 +184,8 @@ namespace HeraAgent.Tools
                     {
                         name = p.Name,
                         type = FormatTypeName(p.PropertyType),
-                        can_read = p.CanRead,
-                        can_write = p.CanWrite,
+                        can_read = p.GetGetMethod(includePrivate) != null,
+                        can_write = p.GetSetMethod(includePrivate) != null,
                         is_static = (p.GetMethod ?? p.SetMethod)?.IsStatic ?? false,
                     }).ToArray(),
             };
