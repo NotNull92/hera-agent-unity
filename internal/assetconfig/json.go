@@ -74,7 +74,7 @@ func (cfg *AssetConfig) UnmarshalJSON(data []byte) error {
 		UISystem            UISystem            `json:"ui_system"`
 		GameFeelUIMode      bool                `json:"game_feel_ui_mode"`
 		GameFeelMode        bool                `json:"game_feel_mode"`
-		UiSlopMode          bool                `json:"ui_slop_mode"`
+		UISlopMode          bool                `json:"ui_slop_mode"`
 		DefaultCscPath      string              `json:"defaultCscPath"`
 		DefaultDotnetPath   string              `json:"defaultDotnetPath"`
 	}
@@ -95,7 +95,7 @@ func (cfg *AssetConfig) UnmarshalJSON(data []byte) error {
 		UISystem:            fields.UISystem,
 		GameFeelUIMode:      fields.GameFeelUIMode,
 		GameFeelMode:        fields.GameFeelMode,
-		UiSlopMode:          fields.UiSlopMode,
+		UISlopMode:          fields.UISlopMode,
 		DefaultCscPath:      fields.DefaultCscPath,
 		DefaultDotnetPath:   fields.DefaultDotnetPath,
 		extra:               extra,
@@ -123,7 +123,7 @@ func (cfg AssetConfig) MarshalJSON() ([]byte, error) {
 	if err := addRawMessage(root, "game_feel_mode", cfg.GameFeelMode); err != nil {
 		return nil, err
 	}
-	if err := addRawMessage(root, "ui_slop_mode", cfg.UiSlopMode); err != nil {
+	if err := addRawMessage(root, "ui_slop_mode", cfg.UISlopMode); err != nil {
 		return nil, err
 	}
 	if err := addOptionalRawMessage(root, "defaultCscPath", cfg.DefaultCscPath); err != nil {

@@ -54,7 +54,7 @@ func assetConfigCmd(args []string) error {
 	case "gamefeel-ui", "juicy": // "juicy" kept as a backward-compat alias (UI mode)
 		return assetConfigGameFeelUI(subArgs)
 	case "uislop":
-		return assetConfigUiSlop(subArgs)
+		return assetConfigUISlop(subArgs)
 	case "ui-system":
 		return assetConfigUISystem(subArgs)
 	case "get":
@@ -99,7 +99,7 @@ func assetConfigList() error {
 		gameFeelUI = "on"
 	}
 	uiSlop := "off"
-	if cfg.UiSlopMode {
+	if cfg.UISlopMode {
 		uiSlop = "on"
 	}
 	loopMode := string(cfg.LoopEngineeringMode)
@@ -135,7 +135,7 @@ func assetConfigList() error {
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("UI System:"), tui.StatusBadge(uiSystem))
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Game Feel Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.GameFeelMode]))
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Game Feel UI Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.GameFeelUIMode]))
-		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Unity De-slop Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.UiSlopMode]))
+		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Unity De-slop Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.UISlopMode]))
 		fmt.Println()
 		for _, sec := range sections {
 			fmt.Println("  " + tui.HelpSectionStyle.Render(sec.Title))
@@ -247,10 +247,10 @@ func assetConfigGameFeelUI(args []string) error {
 		assetconfig.SetGameFeelUIMode)
 }
 
-func assetConfigUiSlop(args []string) error {
+func assetConfigUISlop(args []string) error {
 	return assetConfigBoolFlag(args, "uislop", "ui_slop_mode",
-		func(cfg *assetconfig.AssetConfig) bool { return cfg.UiSlopMode },
-		assetconfig.SetUiSlopMode)
+		func(cfg *assetconfig.AssetConfig) bool { return cfg.UISlopMode },
+		assetconfig.SetUISlopMode)
 }
 
 func assetConfigUISystem(args []string) error {
@@ -414,7 +414,7 @@ func jsonOutputForAI() ([]byte, error) {
 		"loop_engineering_mode": cfg.LoopEngineeringMode,
 		"game_feel_mode":        cfg.GameFeelMode,
 		"game_feel_ui_mode":     cfg.GameFeelUIMode,
-		"ui_slop_mode":          cfg.UiSlopMode,
+		"ui_slop_mode":          cfg.UISlopMode,
 		"ui_system":             cfg.UISystem,
 		"dotween_preferred":     dotweenPreferred,
 	}, "", "  ")

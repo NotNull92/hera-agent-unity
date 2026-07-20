@@ -203,8 +203,37 @@ namespace HeraAgent.Tools
         private static SuccessResponse WithJuice(string element, SuccessResponse resp)
         {
             if (HeraSettings.GameFeelUiMode)
-                resp.agent_hint = UIJuiceGuide.ForElement(element, HeraSettings.DotweenPreferred);
-            return resp;
+                resp.AppendHint(UIJuiceGuide.ForElement(element, HeraSettings.DotweenPreferred));
+            return WithUiSlopHint(element, resp);
+        }
+
+        // When Unity De-slop Mode (Beta) is on, point the calling agent at the
+        // ui_slop tells that most often bite the element just created — a one-line
+        // pointer, appended so it coexists with the juice recipe above. Game Feel
+        // covers how the element moves; this covers how it sits still.
+        private static SuccessResponse WithUiSlopHint(string element, SuccessResponse resp)
+        {
+            if (!HeraSettings.UiSlopMode) return resp;
+            var tells = UiSlopTellsFor(element);
+            if (tells == null) return resp;
+            return resp.AppendHint(
+                $"[Hera] Unity De-slop Mode (Beta) is on — for this {element}, " +
+                $"run `ui_slop {tells[0]}`" +
+                (tells.Length > 1 ? $" (also: {string.Join(", ", tells, 1, tells.Length - 1)})" : "") +
+                " and measure the check against the live scene before leaving slop behind.");
+        }
+
+        private static string[] UiSlopTellsFor(string element)
+        {
+            switch (element)
+            {
+                case "canvas": return new[] { "missing-canvasscaler", "layout-type-misfit" };
+                case "panel": return new[] { "box-in-box", "container-overuse", "unscaled-spacing-ladder" };
+                case "image": return new[] { "raycast-target-overuse", "image-upscale" };
+                case "button": return new[] { "dead-cta", "colored-left-strip" };
+                case "text": return new[] { "unscaled-type-hierarchy", "low-contrast-text", "tmp-italic" };
+                default: return null;
+            }
         }
 
         private static (GameObject go, ErrorResponse err) CreateCanvas(string name, List<string> created)

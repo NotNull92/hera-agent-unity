@@ -121,12 +121,11 @@ namespace HeraAgent.Tools
             if (!HeraSettings.GameFeelMode) return resp;
             var topics = GameFeelTopicsFor(type.Name);
             if (topics == null) return resp;
-            resp.agent_hint =
+            return resp.AppendHint(
                 $"[Hera] Game Feel Mode (Beta) is on — before wiring feel/feedback for this {type.Name}, " +
                 $"run `game_feel {topics[0]}`" +
                 (topics.Length > 1 ? $" (also: {string.Join(", ", topics, 1, topics.Length - 1)})" : "") +
-                " for concrete parameters. Honest Juice: presentation intensity must match real achievement.";
-            return resp;
+                " for concrete parameters. Honest Juice: presentation intensity must match real achievement.");
         }
 
         private static string[] GameFeelTopicsFor(string typeName)
@@ -150,20 +149,17 @@ namespace HeraAgent.Tools
         // When Unity De-slop Mode (Beta) is on (Hera Settings), point the calling
         // agent at the bundled ui_slop tells relevant to the UI component it just
         // added — a one-line pointer, not the tell body, so the token cost stays
-        // flat. Composes with the Game Feel hint (appends rather than clobbers).
-        // No-op when the toggle is off or the type has no mapped tells.
+        // flat. No-op when the toggle is off or the type has no mapped tells.
         private static SuccessResponse WithUiSlopHint(Type type, SuccessResponse resp)
         {
             if (!HeraSettings.UiSlopMode) return resp;
             var tells = UiSlopTellsFor(type.Name);
             if (tells == null) return resp;
-            var hint =
+            return resp.AppendHint(
                 $"[Hera] Unity De-slop Mode (Beta) is on — for this {type.Name}, " +
                 $"run `ui_slop {tells[0]}`" +
                 (tells.Length > 1 ? $" (also: {string.Join(", ", tells, 1, tells.Length - 1)})" : "") +
-                " and measure the check against the live scene before leaving slop behind.";
-            resp.agent_hint = string.IsNullOrEmpty(resp.agent_hint) ? hint : resp.agent_hint + "  " + hint;
-            return resp;
+                " and measure the check against the live scene before leaving slop behind.");
         }
 
         private static string[] UiSlopTellsFor(string typeName)

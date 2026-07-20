@@ -46,9 +46,6 @@ namespace HeraAgent
         static Dictionary<string, Entry> s_index;
         static string[] s_keys;
         static string s_loadError;
-        static string s_loadedDataPath;
-        static long s_loadedDataLength;
-        static DateTime s_loadedDataLastWriteUtc;
         static readonly object s_lock = new object();
 
         /// <summary>
@@ -161,28 +158,28 @@ namespace HeraAgent
         static void EnsureLoaded()
         {
             // Already resolved (loaded or terminally failed). The bundled file is
-            // immutable UPM content, so skip the per-call path resolution +
-            // FileInfo stat once we have an answer.
+            // immutable UPM content, so once there is an answer we never look
+            // again — which is also why there is no reload path and no mtime
+            // cache to keep: it could never be consulted.
             if (s_index != null || s_loadError != null) return;
-            var path = ResolveDataPath();
-            if (path == null)
-            {
-                if (s_index != null || s_loadError != null) return;
-                s_loadError = $"could not resolve bundled ui-slop file {DataFileName}";
-                return;
-            }
-            if (!File.Exists(path))
-            {
-                if (s_index != null || s_loadError != null) return;
-                s_loadError = $"bundled ui-slop file missing: {path}";
-                return;
-            }
 
             lock (s_lock)
             {
-                var info = new FileInfo(path);
-                if (IsLoadedDataCurrent(path, info))
+                // Re-check inside the lock — two callers can clear the fast path
+                // at the same time, and only one should pay for the load.
+                if (s_index != null || s_loadError != null) return;
+
+                var path = ResolveDataPath();
+                if (path == null)
+                {
+                    s_loadError = $"could not resolve bundled ui-slop file {DataFileName}";
                     return;
+                }
+                if (!File.Exists(path))
+                {
+                    s_loadError = $"bundled ui-slop file missing: {path}";
+                    return;
+                }
 
                 try
                 {
@@ -203,9 +200,6 @@ namespace HeraAgent
                         }
                     }
                     s_index = index;
-                    s_loadedDataPath = path;
-                    s_loadedDataLength = info.Length;
-                    s_loadedDataLastWriteUtc = info.LastWriteTimeUtc;
                     var keys = new string[index.Count];
                     int i = 0;
                     foreach (var k in index.Keys) keys[i++] = k;
@@ -217,20 +211,8 @@ namespace HeraAgent
                     s_loadError = $"failed to load {path}: {ex.Message}";
                     s_index = null;
                     s_keys = null;
-                    s_loadedDataPath = null;
-                    s_loadedDataLength = 0;
-                    s_loadedDataLastWriteUtc = default(DateTime);
                 }
             }
-        }
-
-        static bool IsLoadedDataCurrent(string path, FileInfo info)
-        {
-            return s_index != null
-                && s_loadError == null
-                && string.Equals(s_loadedDataPath, path, StringComparison.OrdinalIgnoreCase)
-                && s_loadedDataLength == info.Length
-                && s_loadedDataLastWriteUtc == info.LastWriteTimeUtc;
         }
 
         static string ResolveDataPath()

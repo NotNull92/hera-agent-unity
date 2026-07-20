@@ -493,15 +493,15 @@ func TestLoadGameFeelModeNoCreate(t *testing.T) {
 	}
 }
 
-func TestSetUiSlopMode(t *testing.T) {
+func TestSetUISlopMode(t *testing.T) {
 	withTempHome(t)
 
-	cfg, err := SetUiSlopMode(true)
+	cfg, err := SetUISlopMode(true)
 	if err != nil {
-		t.Fatalf("SetUiSlopMode error: %v", err)
+		t.Fatalf("SetUISlopMode error: %v", err)
 	}
-	if !cfg.UiSlopMode {
-		t.Error("expected UiSlopMode true after enable")
+	if !cfg.UISlopMode {
+		t.Error("expected UISlopMode true after enable")
 	}
 
 	// Persisted, survives reload, and independent of the game-feel flags.
@@ -509,26 +509,26 @@ func TestSetUiSlopMode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load error: %v", err)
 	}
-	if !loaded.UiSlopMode {
-		t.Error("expected UiSlopMode true after reload")
+	if !loaded.UISlopMode {
+		t.Error("expected UISlopMode true after reload")
 	}
 	if loaded.GameFeelMode || loaded.GameFeelUIMode {
 		t.Error("expected game-feel flags to stay off — flags are independent")
 	}
 
-	if _, err := SetUiSlopMode(false); err != nil {
-		t.Fatalf("SetUiSlopMode error: %v", err)
+	if _, err := SetUISlopMode(false); err != nil {
+		t.Fatalf("SetUISlopMode error: %v", err)
 	}
 	loaded, _ = Load()
-	if loaded.UiSlopMode {
-		t.Error("expected UiSlopMode false after disable")
+	if loaded.UISlopMode {
+		t.Error("expected UISlopMode false after disable")
 	}
 }
 
-func TestLoadUiSlopModeNoCreate(t *testing.T) {
+func TestLoadUISlopModeNoCreate(t *testing.T) {
 	home := withTempHome(t)
 
-	if LoadUiSlopModeNoCreate() {
+	if LoadUISlopModeNoCreate() {
 		t.Error("expected missing config to read as off")
 	}
 	if _, err := os.Stat(filepath.Join(home, ".hera-agent-unity", "asset-config.json")); !os.IsNotExist(err) {
@@ -540,7 +540,7 @@ func TestLoadUiSlopModeNoCreate(t *testing.T) {
 	if err := os.WriteFile(path, []byte(`{"ui_slop_mode":true}`), 0644); err != nil {
 		t.Fatalf("write file: %v", err)
 	}
-	if !LoadUiSlopModeNoCreate() {
+	if !LoadUISlopModeNoCreate() {
 		t.Error("expected ui_slop_mode true to be read")
 	}
 }

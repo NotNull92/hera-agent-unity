@@ -23,12 +23,16 @@ namespace HeraAgent.Tests
                 (UiSlopStore.Lookup("box-in-box")?.exception ?? "").Contains("slot"));
 
             // Every tell id the connector points agents at must resolve — a
-            // taxonomy rename would otherwise ship a dangling agent_hint.
+            // taxonomy rename would otherwise ship a dangling agent_hint. Covers
+            // both hint maps: ManageComponents.UiSlopTellsFor (by component type)
+            // and ManageUI.UiSlopTellsFor (by created element).
             foreach (var id in new[]
             {
                 "shadow-outline-overuse", "raycast-target-overuse", "box-in-box",
                 "colored-left-strip", "tmp-italic", "low-contrast-text",
                 "unscaled-type-hierarchy",
+                "missing-canvasscaler", "layout-type-misfit", "container-overuse",
+                "unscaled-spacing-ladder", "image-upscale", "dead-cta",
             })
             {
                 allPassed &= ExpectTrue("hint target resolves: " + id, UiSlopStore.Lookup(id) != null);

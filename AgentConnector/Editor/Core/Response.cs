@@ -21,6 +21,20 @@ namespace HeraAgent
             this.message = message;
             this.data = data;
         }
+
+        /// <summary>
+        /// Adds a one-line agent hint, keeping any hint already attached. Several
+        /// modes can contribute to the same response (game feel, UI juice, UI
+        /// slop), so hints are appended rather than assigned — otherwise the last
+        /// writer silently wins and the order of the calls becomes load-bearing.
+        /// Null or empty hints are ignored.
+        /// </summary>
+        public SuccessResponse AppendHint(string hint)
+        {
+            if (string.IsNullOrEmpty(hint)) return this;
+            agent_hint = string.IsNullOrEmpty(agent_hint) ? hint : agent_hint + "  " + hint;
+            return this;
+        }
     }
 
     public class ErrorResponse

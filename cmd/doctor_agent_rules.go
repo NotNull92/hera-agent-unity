@@ -31,7 +31,7 @@ func extractAgentRules(format string) string {
 		out.WriteString(gameFeelAgentRules)
 		out.WriteString("\n")
 	}
-	if assetconfig.LoadUiSlopModeNoCreate() {
+	if assetconfig.LoadUISlopModeNoCreate() {
 		out.WriteString(uiSlopAgentRules)
 		out.WriteString("\n")
 	}
