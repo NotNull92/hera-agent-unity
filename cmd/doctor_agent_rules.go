@@ -68,7 +68,7 @@ const gameFeelAgentRules = "## Game Feel Mode (Beta)\n\n" +
 // visual discipline* (layout, spacing, typography, color), the complement to
 // Game Feel Mode's motion/feel.
 const uiSlopAgentRules = "## Unity De-slop Mode (Beta)\n\n" +
-	"Unity De-slop Mode is ON. When you build or edit uGUI/UI Toolkit screens, do not leave statistical AI-slop (reflexive decoration, undisciplined layout, unscaled spacing, decorative italics, rainbow palettes). Clean it with the bundled `ui_slop` taxonomy (49 tells across 5 areas), every tell measured against the live scene.\n\n" +
+	"Unity De-slop Mode is ON. When you build or edit uGUI/UI Toolkit screens, do not leave statistical AI-slop (reflexive decoration, undisciplined layout, unscaled spacing, decorative italics, rainbow palettes). Clean it with the bundled `ui_slop` taxonomy (areas A-E), measuring each tell against the live scene.\n\n" +
 	"Core discipline:\n\n" +
 	"1. Checklist = evaluation function. A finding is not a status string — it is a predicate you re-measure from the live scene every time (e.g. `manage_components get --type TMP_Text` -> `m_fontStyle & Italic == 0`). Never trust a \"done\" note; recompute.\n" +
 	"2. Values are derived, not guessed. No magic px — spacing = base x fixed multiplier; width from a single measure token; palette snaps to the bundled reference. The project's own tokens win; the corpus is the fallback.\n" +
@@ -76,7 +76,7 @@ const uiSlopAgentRules = "## Unity De-slop Mode (Beta)\n\n" +
 	"4. Meaning is untouchable: copy, information, and order are never edited (removing decoration is not removing content).\n" +
 	"5. Nested surfaces are usually functional in game UI — inventory slots, hotbars, HUD panels — so never flatten repeated interactive cells; each tell's `exception` field spells out what to leave alone. Korean typesetting (font fallback, word-wrap) has its own tells.\n\n" +
 	"Workflow:\n\n" +
-	"1. Start from the taxonomy index: `hera-agent-unity ui_slop` (areas A-E, ethics-free but decoration-first).\n" +
+	"1. Start from the taxonomy index: `hera-agent-unity ui_slop` — it reports the areas and the live tell count.\n" +
 	"2. Query a concrete tell before fixing: `hera-agent-unity ui_slop box-in-box`, `ui_slop unscaled-spacing-ladder`, `ui_slop low-contrast-text`, `ui_slop tmp-italic`. Each returns the uGUI *and* UI Toolkit check predicate plus the mechanical fix; use the one matching your `ui_system`.\n" +
 	"3. Measure the check against the live scene, fix only the tells that fail, then re-measure with a fresh pass.\n"
 

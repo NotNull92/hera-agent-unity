@@ -247,6 +247,7 @@ Here are the commands most agents use first.
 | `ui_doc` | Builds uGUI or UI Toolkit scaffolding; captures live uGUI overlays. |
 | `input` | Verifies uGUI interaction through Unity EventSystem raycasts and pointer handlers. |
 | `game_feel` | Looks up game-feel recipes (screen shake, hit stop, honest juice, ...). |
+| `ui_slop` | Looks up UI-slop tells and their fixes (decoration, layout, spacing, typography, color). |
 | `test` | Runs Unity tests. |
 | `screenshot` | Captures Scene/Game view or one isolated GameObject. |
 | `batch` | Runs several commands in one request (optionally atomic). |
@@ -423,6 +424,37 @@ Common recipes:
 | Bar | Instant fill drop, delayed chip bar, low-value pulse, segment ticks. |
 
 Detailed command docs: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
+
+---
+
+## Unity De-slop Mode (Beta)
+
+Game Feel Mode covers how a screen *moves*. De-slop Mode covers how it *sits still* — the statistical tells that make generated UI look generated: reflexive decoration, undisciplined containers, spacing picked by eye, decorative italics, rainbow palettes.
+
+The bundled `ui_slop` taxonomy groups these into five areas, and fixes land in that order so an upstream fix dissolves the conflicts a downstream one would hit:
+
+| Area | Covers |
+|:---|:---|
+| A | Decorative sweep — orbs, glow, glass, sparkles, emoji icons |
+| B | Layout, RectTransform, containers, anchors, raycast targets |
+| C | Spacing — the ladder, density, grouping, dead whitespace |
+| D | Typography — italics, font roles, type scale, Hangul typesetting |
+| E | Color — semantic roles, palette discipline, WCAG contrast |
+
+Every tell carries a uGUI check and a UI Toolkit check, written against the USS vocabulary each Unity version actually ships, plus the mechanical fix and the functional cases that must *not* be treated as slop — nested surfaces are usually legitimate in game UI, so repeated interactive cells like inventory slots are never flattened.
+
+```bash
+hera-agent-unity ui_slop                 # taxonomy index by area
+hera-agent-unity ui_slop box-in-box      # one tell: check, exception, fix
+```
+
+The tool is always available. Turning the mode on additionally makes `doctor --agent-rules` inject the de-slop discipline and `manage_components add` point at the relevant tell:
+
+```text
+HeraAgent -> Hera Settings -> Unity De-slop Mode (Beta)
+```
+
+Or from the CLI: `hera-agent-unity asset-config uislop on`
 
 ---
 

@@ -20,7 +20,19 @@ namespace HeraAgent.Tests
             // like inventory slots are not flattened).
             allPassed &= ExpectTrue(
                 "box-in-box keeps the game-UI exception",
-                (UiSlopStore.Lookup("box-in-box")?.exception ?? "").Contains("슬롯"));
+                (UiSlopStore.Lookup("box-in-box")?.exception ?? "").Contains("slot"));
+
+            // Every tell id the connector points agents at must resolve — a
+            // taxonomy rename would otherwise ship a dangling agent_hint.
+            foreach (var id in new[]
+            {
+                "shadow-outline-overuse", "raycast-target-overuse", "box-in-box",
+                "colored-left-strip", "tmp-italic", "low-contrast-text",
+                "unscaled-type-hierarchy",
+            })
+            {
+                allPassed &= ExpectTrue("hint target resolves: " + id, UiSlopStore.Lookup(id) != null);
+            }
 
             // Replacement tells carry a borrow (quantitative snap target);
             // deletion tells do not.

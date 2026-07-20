@@ -7,14 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added (Connector 0.0.62 — Unity De-slop Mode (Beta))
+### Added (Connector 0.0.62 / CLI — Unity De-slop Mode (Beta))
 
-- **`ui_slop` tool + bundled UI-slop taxonomy** — 49 tells across five areas
+- **`ui_slop` tool + bundled UI-slop taxonomy** — tells across five areas
   (A decorative sweep, B layout/RectTransform/containers, C spacing,
   D typography, E color), shipped as `Data/ui_slop_1.0.jsonl.gz.bytes` and loaded
-  by `Core/UiSlopStore`. Each tell carries a uGUI *and* a UI Toolkit check
-  predicate, the mechanical fix, and a quantitative `borrow` target for
-  replacement tells (Tailwind spacing/type, Radix palette, WCAG 4.5:1). Source of
+  by `Core/UiSlopStore`. Each tell carries a uGUI and a UI Toolkit check, the
+  mechanical fix, and the functional cases that must not be treated as slop.
+  Tells that own a value system also carry a quantitative `borrow` target — a
+  4 px spacing base, a 16 px / 1.2–1.25 type scale, one accent plus a neutral
+  ramp, and the WCAG 2.1 contrast thresholds. A few tells state plainly that they
+  need visual or semantic judgement rather than posing as predicates. Source of
   truth is `tools/build-ui-slop-docs/ui_slop.jsonl`; regenerate with
   `go run ./tools/build-ui-slop-docs`.
 - **Unity De-slop Mode (Beta) toggle** — `asset-config.json` `ui_slop_mode`, set
@@ -24,9 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `manage_components add` attaches a one-line `ui_slop` pointer for Shadow/Outline,
   Image/RawImage, and TMP/Text. Independent of Ultra Hera and Game Feel Mode —
   it covers static visual discipline, the complement to Game Feel's motion/feel.
-- Check predicates are grounded in live measurement and per-version editor-binary
-  reflection: UI Toolkit checks reference only real USS properties, and the blur
-  (`filter`) check is gated to 6000.2+ where that property exists.
+- UI Toolkit checks are written against the USS vocabulary each Unity version
+  actually ships, verified against the bundled `uitk_schema_<bucket>` extracts:
+  sibling spacing is expressed with `margin-*` (USS has no `gap`), equal cells
+  with `flex-grow`, and the blur (`filter`) check applies only to the 6000.3+
+  buckets where that property exists.
+- CLI side: `asset-config uislop [on|off]` plus `ui_slop_mode` in
+  `asset-config --json` and the `asset-config list` output.
 
 ## [0.0.40] - 2026-07-14
 

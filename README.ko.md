@@ -247,6 +247,7 @@ AI가 가장 자주 쓰는 명령어입니다.
 | `ui_doc` | uGUI 또는 UI Toolkit 스캐폴드를 만들고, uGUI overlay를 캡처합니다. |
 | `input` | Unity EventSystem raycast와 pointer handler로 uGUI 상호작용을 검증합니다. |
 | `game_feel` | 게임 필 레시피를 조회합니다 (screen shake, hit stop, honest juice 등). |
+| `ui_slop` | UI 슬롭 항목과 수정법을 조회합니다 (장식, 레이아웃, 간격, 타이포, 색). |
 | `test` | Unity 테스트를 실행합니다. |
 | `screenshot` | Scene/Game 뷰나 단일 GameObject를 캡처합니다. |
 | `batch` | 여러 명령을 한 번에 실행합니다 (atomic 롤백 옵션). |
@@ -424,6 +425,37 @@ CLI에서는: `hera-agent-unity asset-config gamefeel-ui on`
 | Bar | 즉시 줄어드는 fill, 늦게 따라오는 chip bar, 낮은 수치 pulse, segment tick. |
 
 자세한 명령 문서: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
+
+---
+
+## Unity De-slop Mode (Beta)
+
+Game Feel Mode가 화면이 **어떻게 움직이는지**를 다룬다면, De-slop Mode는 화면이 **가만히 있을 때의 모습**을 다룹니다. 생성된 UI를 생성물처럼 보이게 만드는 통계적 신호 — 반사적인 장식, 규율 없는 컨테이너, 눈대중으로 정한 간격, 장식용 이탤릭, 무지개 팔레트 — 를 걷어냅니다.
+
+동봉된 `ui_slop` 택소노미는 이를 5개 영역으로 나누고, 수정은 이 순서로 진행합니다. 상류 수정이 하류에서 생길 충돌을 미리 없애기 때문입니다.
+
+| 영역 | 다루는 것 |
+|:---|:---|
+| A | 장식 스윕 — 오브, 글로우, 글래스, 스파클, 이모지 아이콘 |
+| B | 레이아웃, RectTransform, 컨테이너, 앵커, Raycast Target |
+| C | 간격 — 사다리, 밀도, 그루핑, 죽은 여백 |
+| D | 타이포 — 이탤릭, 폰트 역할, 타입 스케일, 한글 조판 |
+| E | 색 — 시맨틱 역할, 팔레트 규율, WCAG 대비 |
+
+각 항목은 uGUI 검사와 UI Toolkit 검사를 함께 갖습니다. UI Toolkit 쪽은 각 Unity 버전이 실제로 지원하는 USS 어휘에 맞춰 작성됐습니다. 여기에 기계적인 수정법과 **슬롭으로 취급하면 안 되는 기능적 예외**가 함께 붙습니다 — 게임 UI에서 중첩 표면은 대개 정당하므로, 인벤토리 슬롯처럼 반복되는 인터랙티브 셀은 절대 평탄화하지 않습니다.
+
+```bash
+hera-agent-unity ui_slop                 # 영역별 택소노미 인덱스
+hera-agent-unity ui_slop box-in-box      # 항목 하나: 검사, 예외, 수정법
+```
+
+도구 자체는 항상 사용할 수 있습니다. 모드를 켜면 추가로 `doctor --agent-rules`가 de-slop 규율을 주입하고, `manage_components add`가 관련 항목을 가리킵니다.
+
+```text
+HeraAgent -> Hera Settings -> Unity De-slop Mode (Beta)
+```
+
+CLI에서는: `hera-agent-unity asset-config uislop on`
 
 ---
 

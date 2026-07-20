@@ -34,10 +34,18 @@ type Entry struct {
 	DeepTopic string          `json:"deep_topic"`
 }
 
-// Areas mirror the pipeline's fixed execution order A -> B -> C -> D -> E
-// (see .claude/skills/unity-deslop/references/ui-slop-taxonomy.md).
+// Areas double as the fixed execution order: A decorative sweep, B layout /
+// RectTransform / containers, C spacing, D typography, E color. Inspection runs
+// in parallel but fixes land in this order, so an upstream fix dissolves the
+// conflicts a downstream one would otherwise hit.
 var knownAreas = map[string]bool{"A": true, "B": true, "C": true, "D": true, "E": true}
 var knownSeverity = map[string]bool{"strong": true, "weak": true}
+
+// deep_topic is a closed set, and UiSlop surfaces it verbatim to agents — a
+// typo would ship a pointer that resolves to nothing.
+var knownDeepTopics = map[string]bool{
+	"decoration": true, "layout": true, "spacing": true, "typography": true, "color": true,
+}
 
 func main() {
 	in := flag.String("in", "tools/build-ui-slop-docs/ui_slop.jsonl",
@@ -82,8 +90,8 @@ func main() {
 			log.Fatalf("%s:%d (%s): missing check_uitk", *in, lineNo, e.ID)
 		case e.Fix == "":
 			log.Fatalf("%s:%d (%s): missing fix", *in, lineNo, e.ID)
-		case e.DeepTopic == "":
-			log.Fatalf("%s:%d (%s): missing deep_topic", *in, lineNo, e.ID)
+		case !knownDeepTopics[e.DeepTopic]:
+			log.Fatalf("%s:%d (%s): invalid deep_topic %q (use decoration|layout|spacing|typography|color)", *in, lineNo, e.ID, e.DeepTopic)
 		case len(e.Exception) == 0:
 			log.Fatalf("%s:%d (%s): missing exception key (use null when none)", *in, lineNo, e.ID)
 		case len(e.Borrow) == 0:

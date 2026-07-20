@@ -46,7 +46,8 @@ AgentConnector/
     │   └── UiDocFixer.cs                # official uGUI docs fixes/diagnostics
     ├── Data/
     │   ├── unity_docs_*.jsonl.gz.bytes   # bundled Unity ScriptReference indexes
-    │   └── game_feel_1.0.jsonl.gz.bytes  # Game Feel Mode knowledge base
+    │   ├── game_feel_1.0.jsonl.gz.bytes  # Game Feel Mode knowledge base
+    │   └── ui_slop_1.0.jsonl.gz.bytes    # Unity De-slop Mode taxonomy
     ├── Tools/
     │   ├── ManageEditor.cs              # play, stop, pause, tags, layers
     │   ├── ExecuteCsharp.cs             # exec tool entry point (partial class)
@@ -452,6 +453,10 @@ Selects the bundled `unity_docs_<version>.jsonl.gz.bytes` file for the current U
 
 Loads the bundled `game_feel_1.0.jsonl.gz.bytes` knowledge base (Game Feel & Juice Bible + Ethical Engagement Game Feel Framework, 39 topics) into a dictionary keyed by topic. Provides exact lookup, a category-grouped index (ethics first), and full-scan Levenshtein suggestions — the corpus is small enough that UnityDocsStore's prefix-bucket optimization would be premature.
 
+### UiSlopStore.cs
+
+Loads the bundled `ui_slop_1.0.jsonl.gz.bytes` taxonomy of Unity UI-slop tells into a dictionary keyed by tell id. Mirrors `GameFeelStore`'s load/reload pattern and adds an area-grouped index (A→E, the fixed fix order) plus `CheckFor(id, uiSystem)`, which returns the uGUI or UI Toolkit predicate for the active `ui_system`.
+
 ### UnityPitfalls.cs
 
 Curated catalog of Unity API pitfalls attached to `describe_type` responses. Entries can carry a minimum docs bucket so Unity 6-only advice is hidden on 2022.3/2023.2.
@@ -461,6 +466,7 @@ Curated catalog of Unity API pitfalls attached to `describe_type` responses. Ent
 Reads `~/.hera-agent-unity/asset-config.json` by last-write-time cache. Exposes:
 - `GameFeelUiMode` → drives `manage_ui` / `ui_doc` juice hints (legacy `ui_juicy_mode` key read as fallback)
 - `GameFeelMode` → drives `manage_components add` game-feel topic hints
+- `UiSlopMode` → drives `manage_components add` UI-slop tell hints and the `doctor --agent-rules` de-slop section
 - `DotweenPreferred` → tween backend hint
 - `DefaultCscPath` / `DefaultDotnetPath` → compiler defaults for `exec`
 
@@ -539,6 +545,7 @@ issues through diagnostics.
 | `describe_shader` | `DescribeShader.cs` | shader property inspection/search |
 | `unity_docs` | `UnityDocs.cs` | offline ScriptReference lookup |
 | `game_feel` | `GameFeel.cs` | offline game-feel/juice recipe lookup (ethics built in) |
+| `ui_slop` | `UiSlop.cs` | offline UI-slop tell lookup (uGUI + UI Toolkit checks, fixes, exceptions) |
 | `ui_doc` | `UiDoc.cs` | export, apply, import, gen_sprite, capture (sample/catalog are CLI-side) |
 | `log` | `LogToConsole.cs` | write to Unity console |
 
@@ -556,6 +563,8 @@ go run ./tools/build-unity-docs \
 ```
 
 `game_feel_1.0.jsonl.gz.bytes` is the Game Feel Mode knowledge base. Its checked-in source of truth is `tools/build-game-feel-docs/game_feel.jsonl`; regenerate with `go run ./tools/build-game-feel-docs`.
+
+`ui_slop_1.0.jsonl.gz.bytes` is the Unity De-slop Mode taxonomy. Its checked-in source of truth is `tools/build-ui-slop-docs/ui_slop.jsonl`; regenerate with `go run ./tools/build-ui-slop-docs`. The builder validates ids, areas, severities, and `deep_topic` values before writing.
 
 ---
 

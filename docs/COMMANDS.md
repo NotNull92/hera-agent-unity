@@ -498,6 +498,63 @@ Commit both files, cut a new connector release.
 
 ---
 
+## ui_slop
+
+Looks up a Unity UI-slop tell — a statistical flaw that makes generated UI look generated — together with the check that detects it and the fix that removes it.
+
+The data set **ships inside the UPM connector package**, under `AgentConnector/Editor/Data/ui_slop_1.0.jsonl.gz.bytes`, and loads through `Core/UiSlopStore`. The tool is always available; **Unity De-slop Mode (Beta)** (Hera Settings, or `asset-config uislop on`) additionally makes `doctor --agent-rules` inject the de-slop discipline and `manage_components add` point at the relevant tell via `agent_hint` for Shadow/Outline, Image/RawImage, and TMP/Text.
+
+```bash
+hera-agent-unity ui_slop                # taxonomy index, grouped by area, with the live tell count
+hera-agent-unity ui_slop <id>           # one tell
+```
+
+Tells are grouped into five areas. Inspection can run in parallel, but fixes land in area order, so an upstream fix dissolves the conflicts a downstream one would otherwise hit.
+
+| Area | Covers |
+|:---|:---|
+| `A` | Decorative sweep — gradient orbs, glow, glassmorphism, sparkles, emoji icons |
+| `B` | Layout, RectTransform, containers, anchors, Raycast Target, CanvasScaler |
+| `C` | Spacing — the derived ladder, density, grouping, dead whitespace |
+| `D` | Typography — italics, font roles, type scale, Hangul typesetting |
+| `E` | Color — semantic roles, palette discipline, WCAG contrast |
+
+### Response fields
+
+| Field | Meaning |
+|:---|:---|
+| `check` | The predicate for the active `ui_system`, ready to measure against the live scene |
+| `check_ugui` / `check_uitk` | Both variants. The UI Toolkit one is written against the USS vocabulary that version actually ships |
+| `exception` | Functional cases that must **not** be treated as slop (inventory slots, interactive surfaces, dense panels) |
+| `fix` | The mechanical repair |
+| `borrow` | A quantitative target when the tell owns one (spacing base, type scale, palette rule, WCAG thresholds); `null` otherwise |
+
+A few tells state plainly that they need visual or semantic judgement rather than posing as measurable predicates.
+
+| Error code | Meaning |
+|:---|:---|
+| `UI_SLOP_BUNDLE_UNAVAILABLE` | The bundled data file is missing or unreadable on this connector install. Reinstall the UPM package; or in a local checkout, run `go run ./tools/build-ui-slop-docs`. |
+| `TELL_NOT_FOUND` | No tell matches that id. The response carries `did_you_mean` suggestions. |
+
+```bash
+hera-agent-unity ui_slop box-in-box
+hera-agent-unity ui_slop unscaled-spacing-ladder
+hera-agent-unity ui_slop low-contrast-text
+hera-agent-unity ui_slop tmp-italic
+```
+
+### Regenerating the data set
+
+The checked-in source of truth is `tools/build-ui-slop-docs/ui_slop.jsonl`. After editing it:
+
+```bash
+go run ./tools/build-ui-slop-docs
+```
+
+The builder validates ids, areas, severities, `deep_topic` values, and the presence of every required field before writing. Commit both files, cut a new connector release.
+
+---
+
 ## manage_components
 
 Component CRUD on a target GameObject. Property paths are raw `SerializedProperty` paths (`m_Name`, `m_LocalScale.x`, `m_Materials.Array.data[0]`) — no friendly-name mapping. Reference fields accept an InstanceID, an asset path, or a `{instance_id|asset_path}` envelope.
@@ -1353,6 +1410,7 @@ hera-agent-unity asset-config <subcommand>
 | `toggle <id>` | Flip an asset ON/OFF |
 | `gamefeel [on\|off]` | Show or set Game Feel Mode (Beta) (gameplay game-feel guidance via `game_feel` + agent rules) |
 | `gamefeel-ui [on\|off]` | Show or set Game Feel UI Mode (Beta) (drives `manage_ui` juice guidance); `juicy` is a legacy alias |
+| `uislop [on\|off]` | Show or set Unity De-slop Mode (Beta) (static UI-slop cleanup guidance via `ui_slop` + agent rules) |
 | `ui-system [ugui\|uitk]` | Show or set the UI authoring system. `ugui` is the default; `uitk` routes `ui_doc apply` and `manage_ui create` to runtime UXML/USS emission. |
 | `detect` | Auto-detect installed assets (requires Unity) |
 | `get <id>` | Show a single asset's state |
@@ -1360,7 +1418,7 @@ hera-agent-unity asset-config <subcommand>
 
 | Flag | Description | Default |
 |:---|:---|:---|
-| `--json` | Output enabled assets + `loop_engineering_mode` + `ui_system` + `game_feel_mode` + `game_feel_ui_mode` + `dotween_preferred` as JSON | `false` |
+| `--json` | Output enabled assets + `loop_engineering_mode` + `ui_system` + `game_feel_mode` + `game_feel_ui_mode` + `ui_slop_mode` + `dotween_preferred` as JSON | `false` |
 
 Asset configuration updates are serialized through a local lock and atomically
 replace the JSON file. Unknown fields and asset entries are retained. If two

@@ -653,7 +653,7 @@ agents collaborate to build one polished tool — one catches what the other mis
   - no origin narration anywhere shipped or committed — not in tool `Description`s,
     agent-rules strings, code comments, `CLAUDE.md`, `CHANGELOG.md`, or commit
     messages. Describe *what the capability does*, never where the idea came from.
-  - no foreign frame of reference. Drop "ported/adapted/ported from", and drop
+  - no foreign frame of reference. Drop "ported/adapted/derived from", and drop
     comparisons to the source domain ("unlike the web", "the CSS equivalent").
     State Unity facts directly — if the source domain has to be named to explain
     the rule, the rule has not been naturalized yet.
@@ -666,3 +666,18 @@ agents collaborate to build one polished tool — one catches what the other mis
     of them so no third-party license terms attach to what hera ships.
   - name things in hera's own vocabulary (`ui_slop`, `game_feel`, `unity_docs`),
     never after the external tool.
+- **bundled knowledge and every agent-facing string is written in English.** That
+  covers the `tools/build-*-docs/*.jsonl` sources behind `Data/*.jsonl.gz.bytes`,
+  `[HeraTool]` descriptions, `agent_hint` text, `doctor --agent-rules` sections,
+  and response fields. The consumers are multilingual coding agents and the
+  existing bundles are already English, so mixing languages only splits the
+  surface. A tell whose *subject* is Korean typesetting still describes itself in
+  English; Korean prose belongs in this repo's own docs (`CLAUDE.md`), not in
+  shipped data.
+- **verify facts against the binary, and only claim what the check covers.**
+  Bundled per-version schema (`uitk_schema_<bucket>`) tells you whether a USS
+  property *name* exists — it says nothing about that property's accepted
+  *values*. Check the value range separately before asserting one, never write a
+  predicate against a property you have not looked up, and phrase version claims
+  as the buckets actually measured. Do not lock a claim in `CLAUDE.md` that the
+  evidence does not reach.
