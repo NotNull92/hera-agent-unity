@@ -14,8 +14,13 @@ coverage.out
 .omx/
 .claude/
 .agents/skills/hyper-mode/
+.agents/skills/omc-reference/
 .agents/skills/review-hera-agent-unity/
 .agents/skills/sync-claude-md/
+.agents/skills/unity-deslop/
 
 # Internal dev scratch (refactoring session log)
 PROGRESS.json
+
+# Daily work reports (local notes, not shared)
+docs/report/
