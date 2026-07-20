@@ -49,6 +49,12 @@ namespace HeraAgent.Editor
             // knowledge base (Game Feel & Juice Bible + Ethical Engagement
             // Framework). Read at dispatch time by HeraSettings.
             public bool game_feel_mode;
+
+            // Unity De-slop Mode (Beta) — static visual slop cleanup (layout,
+            // spacing, typography, color). When on, `doctor --agent-rules`
+            // injects the unity-deslop discipline and tool responses point agents
+            // at the bundled ui_slop taxonomy. Read at dispatch time by HeraSettings.
+            public bool ui_slop_mode;
         }
 
         private const string LoopEngineeringOff = "off";
@@ -60,7 +66,7 @@ namespace HeraAgent.Editor
         private static readonly string[] ConfigFieldNames =
         {
             "version", "defaultCscPath", "defaultDotnetPath", "loopEngineeringMode",
-            "ui_system", "game_feel_ui_mode", "game_feel_mode"
+            "ui_system", "game_feel_ui_mode", "game_feel_mode", "ui_slop_mode"
         };
 
         private static readonly string[] AssetFieldNames =

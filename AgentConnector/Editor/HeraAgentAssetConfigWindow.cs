@@ -158,6 +158,7 @@ namespace HeraAgent.Editor
             BuildUiSystemSection();
             BuildGameFeelModeSection();
             BuildGameFeelUiModeSection();
+            BuildUiSlopModeSection();
             BuildCompilerPathSection();
             BuildCategoryPills();
             RefreshCategoryPills();

@@ -63,6 +63,12 @@ type AssetConfig struct {
 	// Ethical Engagement Framework).
 	GameFeelMode bool `json:"game_feel_mode"`
 
+	// UiSlopMode mirrors ui_slop_mode — the Unity De-slop Mode (Beta). When on,
+	// `doctor --agent-rules` injects the unity-deslop discipline and connector
+	// tool responses point agents at the bundled ui_slop taxonomy (static visual
+	// slop: layout, spacing, typography, color) via agent_hint.
+	UiSlopMode bool `json:"ui_slop_mode"`
+
 	// DefaultCscPath/DefaultDotnetPath are written by the Hera Settings window.
 	// The CLI doesn't edit them, but it must round-trip them so a CLI-side Save
 	// (e.g. toggling an asset or Game Feel UI Mode) doesn't drop a user's compiler paths.
@@ -389,6 +395,36 @@ func LoadGameFeelModeNoCreate() bool {
 		return false
 	}
 	return cfg.GameFeelMode
+}
+
+// SetUiSlopMode sets the Unity De-slop Mode (Beta) flag and persists it.
+func SetUiSlopMode(enabled bool) (*AssetConfig, error) {
+	cfg, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	cfg.UiSlopMode = enabled
+	if err := Save(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+// LoadUiSlopModeNoCreate reads only the Unity De-slop Mode (Beta) flag for
+// agent-rules generation. Missing or unreadable config reads as off without
+// writing a config file.
+func LoadUiSlopModeNoCreate() bool {
+	data, err := os.ReadFile(ConfigFilePath())
+	if err != nil {
+		return false
+	}
+	var cfg struct {
+		UiSlopMode bool `json:"ui_slop_mode"`
+	}
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return false
+	}
+	return cfg.UiSlopMode
 }
 
 // SetLoopEngineeringMode sets the Ultra Hera verification mode and persists it.

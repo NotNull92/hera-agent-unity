@@ -53,6 +53,8 @@ func assetConfigCmd(args []string) error {
 		return assetConfigGameFeel(subArgs)
 	case "gamefeel-ui", "juicy": // "juicy" kept as a backward-compat alias (UI mode)
 		return assetConfigGameFeelUI(subArgs)
+	case "uislop":
+		return assetConfigUiSlop(subArgs)
 	case "ui-system":
 		return assetConfigUISystem(subArgs)
 	case "get":
@@ -96,6 +98,10 @@ func assetConfigList() error {
 	if cfg.GameFeelUIMode {
 		gameFeelUI = "on"
 	}
+	uiSlop := "off"
+	if cfg.UiSlopMode {
+		uiSlop = "on"
+	}
 	loopMode := string(cfg.LoopEngineeringMode)
 	uiSystem := string(cfg.UISystem)
 
@@ -129,6 +135,7 @@ func assetConfigList() error {
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("UI System:"), tui.StatusBadge(uiSystem))
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Game Feel Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.GameFeelMode]))
 		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Game Feel UI Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.GameFeelUIMode]))
+		fmt.Printf("%s %s\n", tui.LabelStyle.Render("Unity De-slop Mode (Beta):"), tui.StatusBadge(map[bool]string{true: "enabled", false: "disabled"}[cfg.UiSlopMode]))
 		fmt.Println()
 		for _, sec := range sections {
 			fmt.Println("  " + tui.HelpSectionStyle.Render(sec.Title))
@@ -157,7 +164,8 @@ func assetConfigList() error {
 	fmt.Printf("Ultra Hera: %s\n", loopMode)
 	fmt.Printf("UI System: %s\n", uiSystem)
 	fmt.Printf("Game Feel Mode (Beta): %s\n", gameFeel)
-	fmt.Printf("Game Feel UI Mode (Beta): %s\n\n", gameFeelUI)
+	fmt.Printf("Game Feel UI Mode (Beta): %s\n", gameFeelUI)
+	fmt.Printf("Unity De-slop Mode (Beta): %s\n\n", uiSlop)
 	for _, sec := range sections {
 		fmt.Printf("  %s\n", sec.Title)
 		for _, r := range sec.Rows {
@@ -237,6 +245,12 @@ func assetConfigGameFeelUI(args []string) error {
 	return assetConfigBoolFlag(args, "gamefeel-ui", "game_feel_ui_mode",
 		func(cfg *assetconfig.AssetConfig) bool { return cfg.GameFeelUIMode },
 		assetconfig.SetGameFeelUIMode)
+}
+
+func assetConfigUiSlop(args []string) error {
+	return assetConfigBoolFlag(args, "uislop", "ui_slop_mode",
+		func(cfg *assetconfig.AssetConfig) bool { return cfg.UiSlopMode },
+		assetconfig.SetUiSlopMode)
 }
 
 func assetConfigUISystem(args []string) error {
@@ -336,6 +350,7 @@ Subcommands:
   toggle <id>                   Toggle an asset (flip ON/OFF)
   gamefeel [on|off]             Show or set Game Feel Mode (Beta) (gameplay game-feel guidance)
   gamefeel-ui [on|off]          Show or set Game Feel UI Mode (Beta) (manage_ui juice guidance)
+  uislop [on|off]               Show or set Unity De-slop Mode (Beta) (static UI slop cleanup guidance)
   ui-system [ugui|uitk]         Show or set the UI authoring system
   detect                        Auto-detect installed assets (requires Unity)
   get <id>                      Show a single asset's state
@@ -399,6 +414,7 @@ func jsonOutputForAI() ([]byte, error) {
 		"loop_engineering_mode": cfg.LoopEngineeringMode,
 		"game_feel_mode":        cfg.GameFeelMode,
 		"game_feel_ui_mode":     cfg.GameFeelUIMode,
+		"ui_slop_mode":          cfg.UiSlopMode,
 		"ui_system":             cfg.UISystem,
 		"dotween_preferred":     dotweenPreferred,
 	}, "", "  ")

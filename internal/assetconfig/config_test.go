@@ -493,6 +493,58 @@ func TestLoadGameFeelModeNoCreate(t *testing.T) {
 	}
 }
 
+func TestSetUiSlopMode(t *testing.T) {
+	withTempHome(t)
+
+	cfg, err := SetUiSlopMode(true)
+	if err != nil {
+		t.Fatalf("SetUiSlopMode error: %v", err)
+	}
+	if !cfg.UiSlopMode {
+		t.Error("expected UiSlopMode true after enable")
+	}
+
+	// Persisted, survives reload, and independent of the game-feel flags.
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("Load error: %v", err)
+	}
+	if !loaded.UiSlopMode {
+		t.Error("expected UiSlopMode true after reload")
+	}
+	if loaded.GameFeelMode || loaded.GameFeelUIMode {
+		t.Error("expected game-feel flags to stay off — flags are independent")
+	}
+
+	if _, err := SetUiSlopMode(false); err != nil {
+		t.Fatalf("SetUiSlopMode error: %v", err)
+	}
+	loaded, _ = Load()
+	if loaded.UiSlopMode {
+		t.Error("expected UiSlopMode false after disable")
+	}
+}
+
+func TestLoadUiSlopModeNoCreate(t *testing.T) {
+	home := withTempHome(t)
+
+	if LoadUiSlopModeNoCreate() {
+		t.Error("expected missing config to read as off")
+	}
+	if _, err := os.Stat(filepath.Join(home, ".hera-agent-unity", "asset-config.json")); !os.IsNotExist(err) {
+		t.Fatalf("expected no config file to be created, stat err=%v", err)
+	}
+
+	path := paths.AssetConfigPath()
+	_ = os.MkdirAll(filepath.Dir(path), 0755)
+	if err := os.WriteFile(path, []byte(`{"ui_slop_mode":true}`), 0644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	if !LoadUiSlopModeNoCreate() {
+		t.Error("expected ui_slop_mode true to be read")
+	}
+}
+
 // A config written before the rename stores the flag under ui_juicy_mode; Load
 // must migrate it onto GameFeelUIMode, and Save must drop the legacy key.
 func TestLoadConfig_MigratesLegacyJuicyKey(t *testing.T) {

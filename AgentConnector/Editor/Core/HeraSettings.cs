@@ -20,6 +20,7 @@ namespace HeraAgent
         private static long s_stampTicks = long.MinValue;
         private static bool s_gameFeelUiMode;
         private static bool s_gameFeelMode;
+        private static bool s_uiSlopMode;
         private static bool s_dotweenPreferred;
         private static string s_uiSystem = UiSystemUGUI;
         private static string s_defaultCscPath;
@@ -39,6 +40,16 @@ namespace HeraAgent
         public static bool GameFeelMode
         {
             get { Refresh(); return s_gameFeelMode; }
+        }
+
+        /// <summary>
+        /// Unity De-slop Mode (Beta) toggle — static visual slop cleanup guidance
+        /// (layout, spacing, typography, color discipline; complements Game Feel
+        /// Mode's motion/feel). False when unset or unreadable.
+        /// </summary>
+        public static bool UiSlopMode
+        {
+            get { Refresh(); return s_uiSlopMode; }
         }
 
         /// <summary>
@@ -92,6 +103,7 @@ namespace HeraAgent
                         s_stampTicks = long.MinValue;
                         s_gameFeelUiMode = false;
                         s_gameFeelMode = false;
+                        s_uiSlopMode = false;
                         s_dotweenPreferred = false;
                         s_uiSystem = UiSystemUGUI;
                         s_defaultCscPath = null;
@@ -108,6 +120,7 @@ namespace HeraAgent
                     // so a config not yet re-saved after the Game Feel UI Mode rename still honours the toggle.
                     s_gameFeelUiMode = root.Value<bool?>("game_feel_ui_mode") ?? root.Value<bool?>("ui_juicy_mode") ?? false;
                     s_gameFeelMode = root.Value<bool?>("game_feel_mode") ?? false;
+                    s_uiSlopMode = root.Value<bool?>("ui_slop_mode") ?? false;
                     s_uiSystem = NormalizeUiSystem(root.Value<string>("ui_system"));
                     s_defaultCscPath = root.Value<string>("defaultCscPath");
                     s_defaultDotnetPath = root.Value<string>("defaultDotnetPath");
@@ -132,6 +145,7 @@ namespace HeraAgent
                     // A malformed or locked file should never break a tool call.
                     s_gameFeelUiMode = false;
                     s_gameFeelMode = false;
+                    s_uiSlopMode = false;
                     s_dotweenPreferred = false;
                     s_uiSystem = UiSystemUGUI;
                     s_defaultCscPath = null;

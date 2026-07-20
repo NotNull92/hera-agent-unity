@@ -108,7 +108,7 @@ namespace HeraAgent.Tools
                     instance_id = EntityIdCompat.IdOf(go),
                     component = BuildComponentShape(comp, includeProperties: false),
                 });
-            return WithGameFeelHint(type, resp);
+            return WithUiSlopHint(type, WithGameFeelHint(type, resp));
         }
 
         // When Game Feel Mode (Beta) is on (Hera Settings), point the calling
@@ -143,6 +143,40 @@ namespace HeraAgent.Tools
                 case "Light2D": return new[] { "dynamic_lighting" };
                 case "Animator":
                 case "Animation": return new[] { "squash_stretch", "tweening_easing" };
+                default: return null;
+            }
+        }
+
+        // When Unity De-slop Mode (Beta) is on (Hera Settings), point the calling
+        // agent at the bundled ui_slop tells relevant to the UI component it just
+        // added — a one-line pointer, not the tell body, so the token cost stays
+        // flat. Composes with the Game Feel hint (appends rather than clobbers).
+        // No-op when the toggle is off or the type has no mapped tells.
+        private static SuccessResponse WithUiSlopHint(Type type, SuccessResponse resp)
+        {
+            if (!HeraSettings.UiSlopMode) return resp;
+            var tells = UiSlopTellsFor(type.Name);
+            if (tells == null) return resp;
+            var hint =
+                $"[Hera] Unity De-slop Mode (Beta) is on — for this {type.Name}, " +
+                $"run `ui_slop {tells[0]}`" +
+                (tells.Length > 1 ? $" (also: {string.Join(", ", tells, 1, tells.Length - 1)})" : "") +
+                " and measure the check against the live scene before leaving slop behind.";
+            resp.agent_hint = string.IsNullOrEmpty(resp.agent_hint) ? hint : resp.agent_hint + "  " + hint;
+            return resp;
+        }
+
+        private static string[] UiSlopTellsFor(string typeName)
+        {
+            switch (typeName)
+            {
+                case "Shadow":
+                case "Outline": return new[] { "shadow-outline-overuse" };
+                case "Image":
+                case "RawImage": return new[] { "raycast-target-overuse", "box-in-box", "colored-left-strip" };
+                case "TextMeshProUGUI":
+                case "TextMeshPro":
+                case "Text": return new[] { "tmp-italic", "low-contrast-text", "unscaled-type-hierarchy" };
                 default: return null;
             }
         }

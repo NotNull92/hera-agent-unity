@@ -1035,6 +1035,73 @@ namespace HeraAgent.Editor
             UpdateGameFeelDotweenLabel();
         }
 
+        // Unity De-slop Mode (Beta) — static visual slop cleanup toggle. When on,
+        // `doctor --agent-rules` injects the unity-deslop discipline and tool
+        // responses point agents at the bundled ui_slop taxonomy (the complement
+        // to Game Feel Mode's motion/feel).
+        private void BuildUiSlopModeSection()
+        {
+            var section = new VisualElement();
+            section.style.backgroundColor = ColorBgCard;
+            section.style.borderTopWidth = 1;
+            section.style.borderBottomWidth = 1;
+            section.style.borderTopColor = ColorBorder;
+            section.style.borderBottomColor = ColorBorder;
+            section.style.paddingTop = 10;
+            section.style.paddingBottom = 10;
+            section.style.paddingLeft = 12;
+            section.style.paddingRight = 12;
+            section.style.marginBottom = 6;
+            section.style.flexShrink = 0;
+            section.style.flexGrow = 0;
+
+            var header = new VisualElement();
+            header.style.flexDirection = FlexDirection.Row;
+            header.style.alignItems = Align.Center;
+
+            var headerIcon = new Label("✦");
+            headerIcon.style.fontSize = 14;
+            headerIcon.style.marginRight = 4;
+            headerIcon.style.color = ColorGold;
+            header.Add(headerIcon);
+
+            var headerLbl = new Label("Unity De-slop Mode (Beta)");
+            headerLbl.style.fontSize = 13;
+            headerLbl.style.unityFontStyleAndWeight = FontStyle.Bold;
+            headerLbl.style.color = ColorGold;
+            headerLbl.style.flexGrow = 1;
+            header.Add(headerLbl);
+
+            var toggle = new Toggle { value = _config?.ui_slop_mode ?? false };
+            toggle.tooltip = "When on, AI agents clean statistical UI-slop (layout, spacing, typography, color) using the bundled ui_slop taxonomy while building uGUI/UI Toolkit screens.";
+            header.Add(toggle);
+
+            section.Add(header);
+
+            var desc = new Label(
+                "When on, agents working through hera-agent-unity get static visual "
+                + "discipline for the UI itself — decoration cleanup, RectTransform/container "
+                + "layout, spacing ladders, typography roles, color/contrast — measured live "
+                + "against the scene. Complements Game Feel Mode (which handles motion/feel). "
+                + "Query tells with `ui_slop <id>`; meaning and copy are never edited.");
+            desc.style.fontSize = 10;
+            desc.style.color = ColorTextSecondary;
+            desc.style.whiteSpace = WhiteSpace.Normal;
+            desc.style.marginTop = 6;
+            section.Add(desc);
+
+            toggle.RegisterValueChangedCallback(evt =>
+            {
+                if (_config == null) return;
+                _config.ui_slop_mode = evt.newValue;
+                _isDirty = true;
+                SaveConfig();
+                UpdateStatusBar();
+            });
+
+            _root.Add(section);
+        }
+
         private void BuildUltraHeraSection()
         {
             var section = new VisualElement();

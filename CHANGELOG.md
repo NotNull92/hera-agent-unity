@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.62 — Unity De-slop Mode (Beta))
+
+- **`ui_slop` tool + bundled UI-slop taxonomy** — 49 tells across five areas
+  (A decorative sweep, B layout/RectTransform/containers, C spacing,
+  D typography, E color), shipped as `Data/ui_slop_1.0.jsonl.gz.bytes` and loaded
+  by `Core/UiSlopStore`. Each tell carries a uGUI *and* a UI Toolkit check
+  predicate, the mechanical fix, and a quantitative `borrow` target for
+  replacement tells (Tailwind spacing/type, Radix palette, WCAG 4.5:1). Source of
+  truth is `tools/build-ui-slop-docs/ui_slop.jsonl`; regenerate with
+  `go run ./tools/build-ui-slop-docs`.
+- **Unity De-slop Mode (Beta) toggle** — `asset-config.json` `ui_slop_mode`, set
+  via `hera-agent-unity asset-config uislop [on|off]` or the Hera Settings window.
+  When on, `doctor --agent-rules` injects the de-slop discipline (checklist =
+  evaluation function, derived values, fixed A→B→C→D→E execution order) and
+  `manage_components add` attaches a one-line `ui_slop` pointer for Shadow/Outline,
+  Image/RawImage, and TMP/Text. Independent of Ultra Hera and Game Feel Mode —
+  it covers static visual discipline, the complement to Game Feel's motion/feel.
+- Check predicates are grounded in live measurement and per-version editor-binary
+  reflection: UI Toolkit checks reference only real USS properties, and the blur
+  (`filter`) check is gated to 6000.2+ where that property exists.
+
 ## [0.0.40] - 2026-07-14
 
 ### Added (Connector 0.0.61 / CLI 0.0.40 — reliability and authoring hardening)
