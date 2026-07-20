@@ -449,13 +449,17 @@ Edit-distance helper with a bounded early-exit variant used by command/type/docs
 
 Selects the bundled `unity_docs_<version>.jsonl.gz.bytes` file for the current Unity version, falling back to the 6000.0 bundle when an exact bucket is not present. Loads it into a dictionary keyed by class/property/method name. Provides exact lookup and prefix-bucketed Levenshtein suggestions.
 
+### BundleStore.cs
+
+`BundleStore<TEntry>` loads one bundled gzipped-JSONL knowledge file into a dictionary keyed by a caller-supplied selector, once per domain (the bundle is immutable UPM content). Provides `Lookup`, `Count`, `LoadError`, `Values`, and full-scan Levenshtein `SuggestSimilar`. Package-relative path resolution falls back to an `AssetDatabase` search so in-project checkouts still resolve. `UnityDocsStore` is deliberately not a consumer — it resolves a Unity-version bucket and runs a 3-layer prefix/length/bounded suggest, both locked decisions.
+
 ### GameFeelStore.cs
 
-Loads the bundled `game_feel_1.0.jsonl.gz.bytes` knowledge base (Game Feel & Juice Bible + Ethical Engagement Game Feel Framework, 39 topics) into a dictionary keyed by topic. Provides exact lookup, a category-grouped index (ethics first), and full-scan Levenshtein suggestions — the corpus is small enough that UnityDocsStore's prefix-bucket optimization would be premature.
+Owns a `BundleStore<Entry>` over `game_feel_1.0.jsonl.gz.bytes` (Game Feel & Juice Bible + Ethical Engagement Game Feel Framework, 54 topics), keyed by topic. Adds the category-grouped index with ethics first.
 
 ### UiSlopStore.cs
 
-Loads the bundled `ui_slop_1.0.jsonl.gz.bytes` taxonomy of Unity UI-slop tells into a dictionary keyed by tell id. Mirrors `GameFeelStore`'s load/reload pattern and adds an area-grouped index (A→E, the fixed fix order) plus `CheckFor(id, uiSystem)`, which returns the uGUI or UI Toolkit predicate for the active `ui_system`.
+Owns a `BundleStore<Entry>` over `ui_slop_1.0.jsonl.gz.bytes` (49 Unity UI-slop tells), keyed by tell id. Adds the area-grouped index (A→E, the fixed fix order) and `CheckFor(id, uiSystem)`, which returns the uGUI or UI Toolkit predicate for the active `ui_system`.
 
 ### UnityPitfalls.cs
 

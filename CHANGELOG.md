@@ -35,6 +35,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI side: `asset-config uislop [on|off]` plus `ui_slop_mode` in
   `asset-config --json` and the `asset-config list` output.
 
+### Changed (Connector 0.0.63 — shared knowledge-bundle loader)
+
+- **`Core/BundleStore<TEntry>`** now carries the bundle-loading machinery shared
+  by the Game Feel and UI-slop knowledge stores: one gzipped-JSONL file resolved
+  relative to the package (with an `AssetDatabase` fallback for in-project
+  checkouts), decompressed once per domain into a keyed dictionary, plus exact
+  lookup and full-scan Levenshtein suggestions. Each store keeps only what is
+  its own — the entry shape, its grouped index, and `CheckFor` on the UI-slop
+  side. Public API and response shapes are unchanged. `UnityDocsStore` stays on
+  its own loader: it resolves a Unity-version bucket and uses prefix-bucketed
+  suggestions, neither of which the shared loader models.
+
 ## [0.0.40] - 2026-07-14
 
 ### Added (Connector 0.0.61 / CLI 0.0.40 — reliability and authoring hardening)
