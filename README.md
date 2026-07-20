@@ -78,10 +78,26 @@ No Python server. No generated MCP config. No special agent plugin. If an agent 
 
 ## What's New
 
+### Unity De-slop Mode (Beta) — static visual discipline
+
+Game Feel Mode covers how a screen moves. De-slop Mode covers how it sits
+still: the tells that make generated UI look generated. The taxonomy ships
+inside the connector (**0.0.63** and up), so there is nothing to fetch.
+
+| What it does | Why it works that way |
+|:---|:---|
+| 49 tells across five areas, fixed in order A → B → C → D → E | An upstream fix dissolves the conflicts a downstream one would hit |
+| Every tell carries a uGUI *and* a UI Toolkit check | The UI Toolkit side is written against the USS vocabulary each Unity version actually ships |
+| Findings are predicates, re-measured against the live scene | A checklist that stores "done" goes stale; one that measures cannot |
+| Spacing and type scales resolve against a 1280x720 reference | Absolute pixels mean nothing until the reference resolution is stated |
+| Repeated interactive cells are never flattened | Nested surfaces in game UI are usually functional — inventory slots, hotbars, HUD panels |
+
+[Read the mode →](#unity-de-slop-mode-beta) · [Game Feel Mode →](#game-feel-mode-beta)
+
 ### UI Toolkit scaffolding, grounded in the live Editor
 
-The current connector source, **0.0.61**, adds a first-class UI Toolkit path
-without asking an agent to guess version-specific APIs.
+Connector **0.0.61** added a first-class UI Toolkit path without asking an
+agent to guess version-specific APIs.
 
 | Choose | Hera does | Built-in boundary |
 |:---|:---|:---|
@@ -92,18 +108,18 @@ without asking an agent to guess version-specific APIs.
 
 [Choose a UI system →](#ui-systems) · [Read the UI document contract →](docs/UI_DOC_IR.md)
 
-### Latest CLI release — v0.0.40
+### Latest CLI release — v0.0.42
 
-The latest published CLI release is **v0.0.40** (July 14, 2026). Its released
-Unity package is **Connector 0.0.61**. CLI and connector versions are
+The latest published CLI release is **v0.0.42** (July 20, 2026). Its released
+Unity package is **Connector 0.0.64**. CLI and connector versions are
 intentionally separate.
 
 | Current highlight | Simple meaning |
 |:---|:---|
-| **Reliable test results** | EditMode tests use run-scoped asynchronous results, so lifecycle transitions do not strand a final response. |
-| **Safer authoring** | Asset, animation, and UI Toolkit operations validate before mutation and roll back request-created output on failure. |
-| **Bounded commands** | HTTP requests, batches, queues, and Input QA values have explicit safety limits and structured errors. |
-| **Predictable automation** | Tool discovery is deterministic, shallow Unity objects stay compact, and `exec --no-cache` leaves no cache entries. |
+| **Unity De-slop Mode (Beta)** | A bundled taxonomy of UI-slop tells, each with a uGUI and a UI Toolkit check plus the mechanical fix. |
+| **Quiet stderr through domain reloads** | Commands that end in a reload no longer print an `unsolicited response` warning that looked like a failure but never was. |
+| **`editor stop --wait` waits** | The flag was documented but ignored, so a following `status` could still report `playing`. It now confirms the editor is back to ready. |
+| **Honest type metadata** | `describe_type` reports a property as writable only when your code could actually assign it, instead of whenever any setter exists. |
 
 Current verified baseline:
 
