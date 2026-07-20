@@ -35,6 +35,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI side: `asset-config uislop [on|off]` plus `ui_slop_mode` in
   `asset-config --json` and the `asset-config list` output.
 
+### Fixed (CLI — `editor stop --wait` actually waits)
+
+- `--wait` was documented for `editor stop` but parsed and dropped, so the
+  command returned as soon as the connector acknowledged it. Leaving play mode
+  triggers a domain reload, so an immediately following `status` still read
+  `playing` and looked like the stop had failed. It now confirms the editor is
+  back to ready from the heartbeat file, the same way `editor play --wait`
+  confirms entry, and reports `Exited play mode (confirmed).` Without `--wait`
+  the behaviour is unchanged.
+
 ### Fixed (Connector 0.0.64 — `describe_type` reports real writability)
 
 - `can_read` / `can_write` now follow the same visibility the member list was

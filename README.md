@@ -237,7 +237,7 @@ Here are the commands most agents use first.
 | `console --type error` | Reads real Unity errors. |
 | `exec "..."` | Runs C# inside Unity. |
 | `editor play --wait` | Enters Play Mode and waits. |
-| `editor stop` | Stops Play Mode. |
+| `editor stop --wait` | Stops Play Mode and waits. |
 | `scene info` | Shows the active scene. |
 | `find_gameobjects` | Finds objects in the loaded scenes. |
 | `manage_assets` | Finds, makes folders, authors ScriptableObject `.asset` files, copies, moves, or deletes project assets under `Assets/`. |

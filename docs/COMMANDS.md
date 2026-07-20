@@ -46,7 +46,7 @@ Exit play mode.
 | `--wait` | Block until fully exited play mode | `false` |
 
 ```bash
-hera-agent-unity editor stop
+hera-agent-unity editor stop --wait
 ```
 
 ### pause

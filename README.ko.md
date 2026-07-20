@@ -237,7 +237,7 @@ AI가 가장 자주 쓰는 명령어입니다.
 | `console --type error` | Unity의 실제 에러를 읽습니다. |
 | `exec "..."` | Unity 안에서 C#을 실행합니다. |
 | `editor play --wait` | Play Mode에 들어가고 기다립니다. |
-| `editor stop` | Play Mode를 멈춥니다. |
+| `editor stop --wait` | Play Mode를 멈추고 기다립니다. |
 | `scene info` | 현재 씬 정보를 봅니다. |
 | `find_gameobjects` | 열린 씬에서 오브젝트를 찾습니다. |
 | `manage_assets` | `Assets/` 아래 프로젝트 에셋을 찾고, 폴더를 만들고, ScriptableObject `.asset`을 생성하고, 복사·이동·삭제합니다. |

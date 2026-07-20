@@ -42,7 +42,22 @@ func editorCmd(ctx context.Context, args []string, send SendFunc, resolve instan
 		return resp, nil
 
 	case "stop":
-		return send("manage_editor", map[string]interface{}{"action": "stop"})
+		_, wait := parsedParams["wait"]
+		resp, err := send("manage_editor", map[string]interface{}{"action": "stop"})
+		if err != nil {
+			return nil, err
+		}
+		if !resp.Success || !wait {
+			return resp, nil
+		}
+		// Leaving play mode triggers a domain reload too, so the heartbeat
+		// still reads `playing` for a moment after the connector has answered.
+		// Confirm from the file, the same way `play --wait` does.
+		if waitErr := waitForState(ctx, resolve, 60000, category, unitystate.Ready); waitErr != nil {
+			return nil, waitErr
+		}
+		resp.Message = "Exited play mode (confirmed)."
+		return resp, nil
 
 	case "pause":
 		return send("manage_editor", map[string]interface{}{"action": "pause"})
