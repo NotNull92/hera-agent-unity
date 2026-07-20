@@ -26,6 +26,18 @@ func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Insta
 			return nil, err
 		}
 		req.Header.Set("Content-Type", "application/json")
+		// Never leave the socket in the idle pool. Any command can end in a
+		// domain reload — refresh --compile and editor play/stop always do, and
+		// exec/menu can trigger one indirectly — and the reload closes Unity's
+		// HttpListener. Mono answers that close by writing an empty
+		// `200 OK / Content-Length: 0 / Connection: close` onto whatever
+		// connections it still holds. A pooled connection would receive those
+		// bytes with no request outstanding, and net/http logs them as
+		// "Unsolicited response received on idle HTTP channel" — stderr noise
+		// that reads like a failure even though the command succeeded.
+		// Closing costs one localhost handshake per command, and a CLI process
+		// sends exactly one command, so there is no reuse to give up.
+		req.Close = true
 		resp, err := c.httpClient.Do(req)
 		if err == nil {
 			return resp, nil

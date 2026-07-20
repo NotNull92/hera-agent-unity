@@ -15,20 +15,20 @@ import (
 )
 
 // sharedHTTPClient is the package-level singleton used by all Send() calls.
-// Reusing it lets the connection pool keep idle keep-alive sockets open
-// instead of allocating a fresh dialer + TCP handshake on every call.
-// Per-request timeout comes from Request.Context so the singleton's own
-// Timeout stays unset.
+// One transport keeps the dial settings in a single place instead of building
+// a new one per call. Per-request timeout comes from Request.Context so the
+// singleton's own Timeout stays unset.
+//
+// Connections are deliberately not reused: every request sets Request.Close so
+// the socket is gone before Unity's next domain reload can write into it (see
+// doWithReloadRetry). Idle-pool tuning would have nothing to tune.
 var sharedHTTPClient = &http.Client{
 	Transport: &http.Transport{
 		DialContext: (&net.Dialer{
 			Timeout:   2 * time.Second,
 			KeepAlive: 15 * time.Second,
 		}).DialContext,
-		MaxIdleConns:        8,
-		MaxIdleConnsPerHost: 4,
-		IdleConnTimeout:     30 * time.Second,
-		DisableCompression:  true, // localhost, gzip cost > benefit
+		DisableCompression: true, // localhost, gzip cost > benefit
 	},
 }
 

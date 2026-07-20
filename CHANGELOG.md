@@ -35,6 +35,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI side: `asset-config uislop [on|off]` plus `ui_slop_mode` in
   `asset-config --json` and the `asset-config list` output.
 
+### Fixed (CLI — no more "unsolicited response" noise on stderr)
+
+- Commands that end in a domain reload (`editor refresh --compile`,
+  `editor play`, and anything whose C# triggers one) no longer leave a
+  keep-alive socket behind. Unity's `HttpListener` goes down with the reload and
+  Mono writes an empty `200 OK` onto the connections it still holds; a pooled
+  connection received those bytes with no request outstanding, and Go's HTTP
+  client logged `Unsolicited response received on idle HTTP channel ...` to
+  stderr. The command had already succeeded, but the warning read like a
+  failure and broke scripts that treat stderr as fatal. Requests now close their
+  connection, so there is nothing left for the reload to write into. A CLI
+  process sends one command, so no connection reuse is lost.
+
 ### Changed (Connector 0.0.63 — shared knowledge-bundle loader)
 
 - **`Core/BundleStore<TEntry>`** now carries the bundle-loading machinery shared
