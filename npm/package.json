@@ -1,0 +1,40 @@
+{
+  "name": "hera-agent-unity",
+  "version": "0.0.42",
+  "description": "Low-token CLI for AI agents to control a live Unity Editor.",
+  "license": "MIT",
+  "author": "NotNull92",
+  "homepage": "https://github.com/NotNull92/hera-agent-unity#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NotNull92/hera-agent-unity.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NotNull92/hera-agent-unity/issues"
+  },
+  "keywords": [
+    "unity",
+    "unity-editor",
+    "ai-agent",
+    "codex",
+    "cli"
+  ],
+  "bin": {
+    "hera-agent-unity": "bin/hera-agent-unity.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/install.js",
+    "test": "node test/install.test.js"
+  },
+  "files": [
+    "bin/hera-agent-unity.js",
+    "scripts/install.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
