@@ -176,6 +176,12 @@ There are two parts:
 
 ### CLI
 
+**npm (Windows, macOS, Linux)**
+
+```bash
+npm install --global hera-agent-unity
+```
+
 **Windows PowerShell**
 
 ```powershell
@@ -572,6 +578,12 @@ The goal is simple: the agent should not close the task while Unity is still bro
 ## Add Project Rules For Agents
 
 Put Hera rules in your Unity project so agents know how to use it before they start guessing.
+
+Codex users can install the bundled plugin directly:
+
+```bash
+npx codex-marketplace add NotNull92/hera-agent-unity/plugins/hera-unity --plugin
+```
 
 This repository includes ready-to-use rule files for the main coding agents:
 

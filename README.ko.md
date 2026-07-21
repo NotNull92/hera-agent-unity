@@ -177,6 +177,12 @@ hera-agent-unity test --mode PlayMode
 
 ### CLI
 
+**npm (Windows, macOS, Linux)**
+
+```bash
+npm install --global hera-agent-unity
+```
+
 **Windows PowerShell**
 
 ```powershell
@@ -533,6 +539,12 @@ hera-agent-unity ui_doc capture --out ...
 ## AI용 규칙 넣기
 
 프로젝트에 Hera 규칙을 넣으면 AI가 추측하기 전에 Hera부터 사용합니다.
+
+Codex에서는 저장소에 포함된 플러그인을 바로 설치할 수도 있습니다:
+
+```bash
+npx codex-marketplace add NotNull92/hera-agent-unity/plugins/hera-unity --plugin
+```
 
 이 저장소에는 주요 코딩 에이전트용 규칙 파일이 준비되어 있습니다:
 
