@@ -1,0 +1,32 @@
+name: HOL Plugin Scanner
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugins/hera-unity/**"
+      - ".github/workflows/hol-plugin-scanner.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "plugins/hera-unity/**"
+      - ".github/workflows/hol-plugin-scanner.yml"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: HOL Plugin Scanner
+        uses: hashgraph-online/ai-plugin-scanner-action@v1
+        with:
+          plugin_dir: "plugins/hera-unity"
+          mode: scan
+          min_score: 80
+          fail_on_severity: high
+          format: sarif
+          upload_sarif: true
