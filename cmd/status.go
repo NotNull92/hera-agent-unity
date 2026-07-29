@@ -21,14 +21,14 @@ type instanceResolver func() (*client.Instance, error)
 // shorten it to avoid sleeping for hundreds of milliseconds.
 var statusPollBaseInterval = 500 * time.Millisecond
 
-func statusCmd(inst *client.Instance) error {
-	status, err := client.FindByPort(inst.Port)
-	if err != nil {
-		return fmt.Errorf("no status for port %d — Unity may not be running", inst.Port)
-	}
-
+func statusCmd(ctx context.Context, status *client.Instance) error {
 	age := time.Since(time.UnixMilli(status.Timestamp))
 	if age > 3*time.Second {
+		if client.IsPortReachable(ctx, status.Port) {
+			fmt.Fprintf(os.Stderr, "Unity (port %d): reachable (heartbeat stale %s; last state=%s)\n",
+				status.Port, age.Truncate(time.Second), status.State)
+			return nil
+		}
 		fmt.Fprintf(os.Stderr, "Unity (port %d): not responding (last heartbeat %s ago)\n", status.Port, age.Truncate(time.Second))
 		return nil
 	}
@@ -110,9 +110,9 @@ func pingCmd(project string, port int) error {
 
 func discoverStatusInstance(project string, port int) (*client.Instance, error) {
 	if port > 0 {
-		return client.FindByPort(port)
+		return client.FindByPortFresh(port)
 	}
-	return client.DiscoverInstance(project, 0)
+	return client.DiscoverInstanceFresh(project, 0)
 }
 
 // waitForAlive resolves the current target instance, then polls until a newer heartbeat appears.
@@ -122,6 +122,9 @@ func waitForAlive(ctx context.Context, resolve instanceResolver, timeoutMs int, 
 	inst, err := resolve()
 	if err == nil {
 		baseline = inst.Timestamp
+		if slices.Contains([]string{unitystate.Ready, unitystate.Playing, unitystate.Paused}, inst.State) {
+			return inst, nil
+		}
 		// Already fresh — check if timestamp was updated within the last second
 		if time.Now().UnixMilli()-baseline < 1000 {
 			return inst, nil

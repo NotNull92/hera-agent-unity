@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
@@ -91,6 +92,69 @@ func TestWaitForAlive_WhenRootContextCancelled_ReturnsCancellation(t *testing.T)
 	}
 }
 
+func TestWaitForInstance_recovers_when_resolver_is_temporarily_empty(t *testing.T) {
+	// Given
+	originalInterval := statusPollBaseInterval
+	statusPollBaseInterval = time.Millisecond
+	t.Cleanup(func() { statusPollBaseInterval = originalInterval })
+	attempts := 0
+	resolve := func() (*client.Instance, error) {
+		attempts++
+		if attempts == 1 {
+			return nil, errors.New("no Unity instances running")
+		}
+		return &client.Instance{State: unitystate.Ready, Port: 8090}, nil
+	}
+
+	// When
+	instance, err := waitForInstance(context.Background(), resolve, 100)
+
+	// Then
+	if err != nil {
+		t.Fatalf("waitForInstance error = %v, want retry success", err)
+	}
+	if instance.Port != 8090 {
+		t.Fatalf("instance.Port = %d, want 8090", instance.Port)
+	}
+	if attempts != 2 {
+		t.Fatalf("attempts = %d, want 2", attempts)
+	}
+}
+
+func TestInitialDiscoveryTimeout_preserves_unbounded_request_timeout(t *testing.T) {
+	if got := initialDiscoveryTimeoutMs(0); got != instanceDiscoveryTimeoutMs {
+		t.Fatalf("initialDiscoveryTimeoutMs(0) = %d, want %d", got, instanceDiscoveryTimeoutMs)
+	}
+	if got := initialDiscoveryTimeoutMs(120); got != 120 {
+		t.Fatalf("initialDiscoveryTimeoutMs(120) = %d, want 120", got)
+	}
+	if got := initialDiscoveryTimeoutMs(60_000); got != instanceDiscoveryTimeoutMs {
+		t.Fatalf("initialDiscoveryTimeoutMs(60000) = %d, want %d", got, instanceDiscoveryTimeoutMs)
+	}
+}
+
+func TestWaitForAlive_returns_stale_instance_when_state_is_stable(t *testing.T) {
+	// Given
+	resolve := func() (*client.Instance, error) {
+		return &client.Instance{
+			State:     unitystate.Ready,
+			Port:      8090,
+			Timestamp: time.Now().Add(-10 * time.Second).UnixMilli(),
+		}, nil
+	}
+
+	// When
+	instance, err := waitForAlive(context.Background(), resolve, 1, "exec")
+
+	// Then
+	if err != nil {
+		t.Fatalf("waitForAlive error = %v, want stable instance", err)
+	}
+	if instance.Port != 8090 {
+		t.Fatalf("instance.Port = %d, want 8090", instance.Port)
+	}
+}
+
 func TestDiscoverStatusInstance_PortAllowsStoppedInstance(t *testing.T) {
 	want := client.Instance{
 		State:       unitystate.Stopped,
@@ -137,7 +201,7 @@ func TestStatusCmd_PrintsDocsAndCompiler(t *testing.T) {
 		t.Fatal(err)
 	}
 	os.Stdout = w
-	err = statusCmd(&inst)
+	err = statusCmd(context.Background(), &inst)
 	_ = w.Close()
 	os.Stdout = oldStdout
 	if err != nil {
@@ -155,5 +219,52 @@ func TestStatusCmd_PrintsDocsAndCompiler(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Fatalf("status output missing %q in %q", want, got)
 		}
+	}
+}
+
+func TestStatusCmd_reports_reachable_when_heartbeat_is_stale_but_port_accepts_connections(t *testing.T) {
+	// Given
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	t.Cleanup(func() { _ = listener.Close() })
+	port := listener.Addr().(*net.TCPAddr).Port
+	inst := client.Instance{
+		State:        unitystate.Ready,
+		ProjectPath:  "C:/Project",
+		Port:         port,
+		PID:          os.Getpid(),
+		UnityVersion: "6000.0.35f1",
+		Timestamp:    time.Now().Add(-10 * time.Second).UnixMilli(),
+	}
+	writeInstanceFile(t, inst)
+
+	oldStderr := os.Stderr
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("stderr pipe: %v", err)
+	}
+	os.Stderr = w
+
+	// When
+	statusErr := statusCmd(context.Background(), &inst)
+	_ = w.Close()
+	os.Stderr = oldStderr
+
+	// Then
+	if statusErr != nil {
+		t.Fatalf("statusCmd error = %v, want reachable status", statusErr)
+	}
+	var stderr bytes.Buffer
+	if _, err := stderr.ReadFrom(r); err != nil {
+		t.Fatalf("read stderr: %v", err)
+	}
+	got := stderr.String()
+	if !strings.Contains(got, "reachable (heartbeat stale") {
+		t.Fatalf("status output = %q, want reachable stale-heartbeat distinction", got)
+	}
+	if strings.Contains(got, "not responding") {
+		t.Fatalf("status output = %q, must not report reachable port as not responding", got)
 	}
 }

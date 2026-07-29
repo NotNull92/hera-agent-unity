@@ -9,7 +9,7 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
 
-func runStandaloneCommand(category string, subArgs []string) (bool, error) {
+func runStandaloneCommand(ctx context.Context, category string, subArgs []string) (bool, error) {
 	switch category {
 	case "help", "--help", "-h":
 		if len(subArgs) > 0 {
@@ -28,11 +28,14 @@ func runStandaloneCommand(category string, subArgs []string) (bool, error) {
 	case "uninstall":
 		return true, uninstallCmd()
 	case "status":
-		inst, err := discoverStatusInstance(flagProject, flagPort)
+		resolve := func() (*client.Instance, error) {
+			return discoverStatusInstance(flagProject, flagPort)
+		}
+		inst, err := waitForInstance(ctx, resolve, initialDiscoveryTimeoutMs(flagTimeout))
 		if err != nil {
 			return true, err
 		}
-		statusErr := statusCmd(inst)
+		statusErr := statusCmd(ctx, inst)
 		printUpdateNotice(category)
 		return true, statusErr
 	case "ping":

@@ -3,16 +3,17 @@ package client
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"time"
 )
 
-const (
-	reloadRetryDelay            = 500 * time.Millisecond
-	reloadRetryFallbackDeadline = 60 * time.Second
-)
+const reloadRetryFallbackDeadline = 60 * time.Second
+
+var reloadRetryDelay = 500 * time.Millisecond
 
 func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Instance, path string) (*http.Response, error) {
 	port := inst.Port
@@ -40,20 +41,26 @@ func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Insta
 		req.Close = true
 		resp, err := c.httpClient.Do(req)
 		if err == nil {
-			return resp, nil
+			if resp.StatusCode != http.StatusOK || resp.ContentLength != 0 {
+				return resp, nil
+			}
+			_ = resp.Body.Close()
+			err = io.ErrUnexpectedEOF
 		}
 		lastErr = err
-		if !isConnectionRefused(err) {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		if !isReloadTransient(err) {
 			return nil, fmt.Errorf("cannot connect to Unity at port %d: %w", port, err)
 		}
 		if time.Now().After(deadline) {
 			break
 		}
 		next, derr := c.DiscoverInstanceFresh(project, 0)
-		if derr != nil {
-			return nil, fmt.Errorf("cannot reach Unity for project %q (editor no longer running?): %w", project, lastErr)
+		if derr == nil {
+			port = next.Port
 		}
-		port = next.Port
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
@@ -64,12 +71,18 @@ func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Insta
 		project, reloadRetryFallbackDeadline, lastErr)
 }
 
-func isConnectionRefused(err error) bool {
+func isReloadTransient(err error) bool {
 	if err == nil {
 		return false
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
 	}
 	s := err.Error()
 	return strings.Contains(s, "connection refused") ||
 		strings.Contains(s, "actively refused") ||
-		strings.Contains(s, "No connection could be made")
+		strings.Contains(s, "No connection could be made") ||
+		strings.Contains(s, "connection reset by peer") ||
+		strings.Contains(s, "use of closed network connection") ||
+		strings.Contains(s, "server closed idle connection")
 }

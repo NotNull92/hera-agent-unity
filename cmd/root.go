@@ -142,7 +142,7 @@ func Execute(ctx context.Context) error {
 		}
 	}
 
-	handled, err := runStandaloneCommand(category, subArgs)
+	handled, err := runStandaloneCommand(ctx, category, subArgs)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,10 @@ func Execute(ctx context.Context) error {
 		return nil
 	}
 
-	inst, err := client.DiscoverInstance(flagProject, flagPort)
+	initialResolve := func() (*client.Instance, error) {
+		return client.DiscoverInstanceFresh(flagProject, flagPort)
+	}
+	inst, err := waitForInstance(ctx, initialResolve, initialDiscoveryTimeoutMs(flagTimeout))
 	if err != nil {
 		return err
 	}

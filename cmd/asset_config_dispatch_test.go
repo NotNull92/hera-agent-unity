@@ -18,7 +18,7 @@ func withTempAssetConfigHome(t *testing.T) {
 
 func TestAssetConfigDetect_fallsThroughStandaloneRouting(t *testing.T) {
 	// Given
-	handled, err := runStandaloneCommand("asset-config", []string{"detect"})
+	handled, err := runStandaloneCommand(context.Background(), "asset-config", []string{"detect"})
 
 	// Then
 	if err != nil {
