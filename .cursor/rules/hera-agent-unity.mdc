@@ -54,6 +54,7 @@ Use Ultra when the user asks for strict verification, for example `정확히 검
 - **Default to `return null;`** (or no return). The CLI surfaces return values as JSON — a verbose status string just spends your tokens.
 - **Use compact discovery.** Prefer `list --compact`; use `list --tool <name>` only when one full schema is required.
 - **Use IDs for object handoff.** Prefer `find_gameobjects --ids`; add `--fields instance_id,name,path` only when duplicate names need context.
+- **Preserve hierarchy paths in Windows Git Bash.** Prefix commands whose Unity path starts with `/` with `MSYS_NO_PATHCONV=1` so MSYS does not rewrite `/Canvas/...` as a filesystem path.
 - **Separate input evidence.** `input` sends Unity uGUI EventSystem events for UI QA; it is not a physical OS click. If Computer Use cannot capture Unity screenshot state, report physical-click QA as BLOCKED even when `input` passes.
 - **Never return Unity objects directly.** Return primitive fields or IDs instead of `GameObject`, `Transform`, `Component`, `Material`, or `Scene`.
 - **Read before you write.** `describe_type` + `console --type error` are usually cheaper than running `exec` and parsing failure.

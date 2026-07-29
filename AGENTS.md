@@ -281,6 +281,7 @@ Useful when you're not sure a refactor compiles before issuing a destructive cal
 
 **Input QA (`input`)** — use this when you need to verify Unity UI behavior and Computer Use cannot obtain a Unity screenshot state. `input` resolves targets by hierarchy path, instance ID, or normalized screen/canvas position, then dispatches uGUI EventSystem events (`click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, `drag`). Start with `input state` to confirm an EventSystem + raycasters exist, then `input inspect --path /Canvas/Button --details true` before sending events. Evidence should be classified precisely:
 
+- **Windows Git Bash:** MSYS rewrites arguments beginning with `/` as filesystem paths. Prefix hierarchy-path calls with `MSYS_NO_PATHCONV=1`, for example `MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/Button`.
 - **Unity EventSystem input QA:** PASS/FAIL based on `input` results, console logs, state reads, Play Mode tests, or UI callbacks.
 - **Physical OS click QA:** BLOCKED if Computer Use still cannot capture Unity screenshot state and Hera has no native OS/window input backend for that action.
 

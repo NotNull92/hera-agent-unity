@@ -49,6 +49,21 @@ $env:Path = [Environment]::GetEnvironmentVariable('Path','User') + ';' +
             [Environment]::GetEnvironmentVariable('Path','Machine')
 ```
 
+Do not use the Unix `~/.local/bin/hera-agent-unity` path on Windows. Invoke
+`hera-agent-unity` through PATH, or use the path reported by
+`Get-Command hera-agent-unity`.
+
+### Git Bash rewrites Unity hierarchy paths
+
+On Windows, Git Bash/MSYS interprets an argument such as `/Canvas/Button` as
+a filesystem path and may rewrite it to `C:/Program Files/Git/Canvas/Button`.
+Disable that conversion for commands that take an absolute Unity hierarchy
+path:
+
+```bash
+MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/Button
+```
+
 ### PowerShell `where` does not work the way you think
 
 In PowerShell `where` is aliased to `Where-Object`, not the Windows `where.exe`

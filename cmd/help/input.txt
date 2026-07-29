@@ -46,6 +46,12 @@ Input QA:
     input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
     input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
 
+  Windows Git Bash:
+    MSYS rewrites arguments that begin with "/" as filesystem paths. Prefix
+    hierarchy-path commands with MSYS_NO_PATHCONV=1 so /Canvas/... reaches
+    Unity unchanged:
+      MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/StartButton
+
   Evidence:
     This is Unity EventSystem input QA, not physical OS click QA. It verifies
     EventSystem.RaycastAll plus ExecuteEvents pointer handlers. If Computer Use

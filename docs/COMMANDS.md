@@ -12,8 +12,11 @@ These flags work with any command:
 |:---|:---|:---|:---|
 | `--port` | Select Unity instance by active heartbeat port | Auto-discover | `--port 8091` |
 | `--project` | Select Unity instance by project path | Auto-discover | `--project /path/to/project` |
-| `--timeout` | Request timeout in milliseconds | `60000` (1 min) | `--timeout 300000` |
+| `--timeout` | Request timeout in milliseconds | `60000` (1 min) | `--timeout 120000` (2 min) |
 | `--verbose` | Print progress + per-phase timings to stderr | `false` | `--verbose` |
+
+`--timeout` is always milliseconds: `--timeout 120000` means two minutes,
+while `--timeout 120` means 120 milliseconds.
 
 ---
 
@@ -1037,6 +1040,13 @@ hera-agent-unity input click --path /Canvas/StartButton --settle_frames 2
 hera-agent-unity input submit --path /Canvas/StartButton
 hera-agent-unity input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
 hera-agent-unity input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
+```
+
+**Windows Git Bash** — MSYS path conversion treats a Unity hierarchy path that
+starts with `/` as a filesystem path. Preserve it with `MSYS_NO_PATHCONV=1`:
+
+```bash
+MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/StartButton --details true
 ```
 
 **Input limits** — numeric values are validated before an EventSystem action is dispatched: `hold_ms` is `0..5000`, `settle_frames` is `0..120`, `steps` is `1..120`, `click_count` is `1..3`, and `max_results` is `1..100` (default `50`). Oversized or malformed values return `INPUT_INVALID_PARAM`. `raycasters_total` / `raycasters_truncated` and detailed `hits_total` / `hits_truncated` make a capped diagnostic explicit.

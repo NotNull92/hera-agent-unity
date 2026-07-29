@@ -98,3 +98,24 @@ func TestHelpFilesAreReachableTopics(t *testing.T) {
 		}
 	}
 }
+
+func TestInputHelpWarnsAboutGitBashPathConversion(t *testing.T) {
+	data, err := helpFS.ReadFile("help/input.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), "MSYS_NO_PATHCONV=1") {
+		t.Fatal("input help must explain how Git Bash preserves Unity hierarchy paths")
+	}
+}
+
+func TestGeneralHelpMakesTimeoutUnitsUnambiguous(t *testing.T) {
+	data, err := helpFS.ReadFile("help/general.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	help := string(data)
+	if !strings.Contains(help, "--timeout 120000") || !strings.Contains(help, "2 minutes") {
+		t.Fatal("general help must include a concrete millisecond timeout example")
+	}
+}

@@ -232,7 +232,9 @@ Asset Config:
 Global Options:
   --port <N>          Select Unity instance by active heartbeat port
   --project <path>    Select Unity instance by project path
-  --timeout <ms>      Request timeout in ms (default: 60000)
+  --timeout <ms>      Request timeout in milliseconds (default: 60000)
+                      Example: --timeout 120000 waits up to 2 minutes;
+                      --timeout 120 means 120 milliseconds, not 120 seconds
   --verbose           Print progress + per-phase timings to stderr
   --quiet             Suppress decorative progress messages (env: HERA_AGENT_QUIET)
   --debug             Print HTTP request/response bodies + discovery info

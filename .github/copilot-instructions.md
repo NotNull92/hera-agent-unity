@@ -41,6 +41,7 @@ Use Ultra when the user asks for strict verification, for example "play it and c
 - Use `hera-agent-unity list --compact` for repeated discovery.
 - Use `hera-agent-unity list --tool <name>` only when one full schema is needed.
 - Use `hera-agent-unity input state` and `input inspect --path ...` before `input click`/`submit`/`scroll`/`drag` when Computer Use coordinates are unavailable but Unity UI logic still needs QA.
+- In Windows Git Bash, prefix commands whose Unity hierarchy path starts with `/` with `MSYS_NO_PATHCONV=1` so MSYS does not rewrite the path.
 - Use `find_gameobjects --ids` when the next command only needs object IDs.
 - Use `find_gameobjects --fields instance_id,name,path` only when duplicate names require hierarchy context.
 - Avoid broad reads like plain `list`, `find_gameobjects --fields all`, or `console --lines 0` unless the extra data is needed.
