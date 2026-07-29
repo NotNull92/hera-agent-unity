@@ -7,6 +7,11 @@ namespace HeraAgent
     {
         public static void WriteAllText(string path, string contents)
         {
+            WriteAllTextCore(path, contents, (source, destination) => File.Replace(source, destination, null));
+        }
+
+        internal static void WriteAllTextCore(string path, string contents, Action<string, string> replace)
+        {
             var dir = Path.GetDirectoryName(path);
             if (!string.IsNullOrEmpty(dir))
                 Directory.CreateDirectory(dir);
@@ -22,7 +27,16 @@ namespace HeraAgent
                     stream.Flush(true);
                 }
                 if (File.Exists(path))
-                    File.Replace(tmp, path, null);
+                {
+                    try
+                    {
+                        replace(tmp, path);
+                    }
+                    catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+                    {
+                        File.Copy(tmp, path, true);
+                    }
+                }
                 else
                     File.Move(tmp, path);
             }
