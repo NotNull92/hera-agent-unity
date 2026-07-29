@@ -41,6 +41,9 @@ namespace HeraAgent
     {
         public InputQaOptions Options;
         public EventSystem EventSystem;
+        public int TargetId;
+        public string TargetName;
+        public string TargetPath;
         public Vector2 Point;
         public PointerEventData Pointer;
         public List<RaycastResult> Raycasts = new List<RaycastResult>();
@@ -49,6 +52,10 @@ namespace HeraAgent
         public GameObject PressHandler;
         public GameObject ClickHandler;
         public GameObject BlockedBy;
+        public string TopHitPath;
+        public string PressHandlerPath;
+        public string ClickHandlerPath;
+        public string BlockedByPath;
         public bool TargetHit;
         public bool TargetTopHit;
         public bool Interactable = true;
@@ -61,12 +68,13 @@ namespace HeraAgent
             {
                 backend = "eventsystem",
                 evidence_level = "eventsystem",
-                target_id = EntityIdCompat.IdOf(Options.Target),
-                target_path = HierarchyPath.Build(Options.Target.transform),
+                target_id = TargetId,
+                target_path = TargetPath,
+                target_destroyed = Options.Target == null,
                 point = new[] { Point.x, Point.y },
                 target_hit = TargetHit,
                 target_top_hit = TargetTopHit,
-                blocked_by = BlockedBy == null ? null : HierarchyPath.Build(BlockedBy.transform),
+                blocked_by = BlockedByPath,
                 interactable = Interactable,
                 not_interactable_reason = NotInteractableReason
             };
@@ -78,15 +86,17 @@ namespace HeraAgent
             {
                 backend = "eventsystem",
                 evidence_level = "eventsystem",
-                target = InputQaResolver.TargetShape(Options.Target),
+                target = TargetShape(),
                 point = new { screen = new[] { Point.x, Point.y }, source = PointSource() },
                 event_system = InputQaResolver.EventSystemShape(EventSystem),
                 raycast = new
                 {
-                    top_hit_path = TopHit == null ? null : HierarchyPath.Build(TopHit.transform),
+                    top_hit_path = TopHitPath,
                     target_hit = TargetHit,
                     target_top_hit = TargetTopHit,
-                    blocked_by = BlockedBy == null ? null : InputQaResolver.TargetShape(BlockedBy),
+                    blocked_by = BlockedBy == null
+                        ? (BlockedByPath == null ? null : new { path = BlockedByPath, destroyed = true })
+                        : InputQaResolver.TargetShape(BlockedBy),
                     hits = Hits,
                     hits_total = Raycasts.Count,
                     hits_truncated = HitsTruncated
@@ -95,9 +105,22 @@ namespace HeraAgent
                 not_interactable_reason = NotInteractableReason,
                 handlers = new
                 {
-                    press = PressHandler == null ? null : HierarchyPath.Build(PressHandler.transform),
-                    click = ClickHandler == null ? null : HierarchyPath.Build(ClickHandler.transform)
+                    press = PressHandlerPath,
+                    click = ClickHandlerPath
                 }
+            };
+        }
+
+        private object TargetShape()
+        {
+            if (Options.Target != null) return InputQaResolver.TargetShape(Options.Target);
+            return new
+            {
+                instance_id = TargetId,
+                name = TargetName,
+                path = TargetPath,
+                active = false,
+                destroyed = true
             };
         }
 

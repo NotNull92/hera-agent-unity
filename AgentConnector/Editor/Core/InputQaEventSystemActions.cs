@@ -26,7 +26,8 @@ namespace HeraAgent
             ExecutePointerEnterDown(inspection, data, pressTarget, executed);
             await Wait(options.HoldMs > 0 ? 1 : 0, options.HoldMs);
             ExecutePointerUpClick(data, pressTarget, clickTarget, executed);
-            inspection.EventSystem.SetSelectedGameObject(options.Target, data);
+            if (options.Target != null)
+                inspection.EventSystem.SetSelectedGameObject(options.Target, data);
             await Wait(options.SettleFrames, 0);
 
             if (options.Strict && !executed.Contains("click"))
@@ -129,6 +130,7 @@ namespace HeraAgent
             var current = inspection.Point;
             for (int i = 1; i <= steps; i++)
             {
+                if (dragTarget == null) break;
                 var next = Vector2.Lerp(inspection.Point, endPoint, i / (float)steps);
                 data.delta = next - current;
                 data.position = next;
@@ -138,7 +140,7 @@ namespace HeraAgent
                 await Wait(1, 0);
             }
 
-            if (ExecuteEvents.Execute(dragTarget, data, ExecuteEvents.endDragHandler)) executed.Add("end_drag");
+            if (dragTarget != null && ExecuteEvents.Execute(dragTarget, data, ExecuteEvents.endDragHandler)) executed.Add("end_drag");
             await Wait(options.SettleFrames, 0);
             if (options.Strict && !executed.Contains("drag"))
                 return new ErrorResponse("INPUT_HANDLER_NOT_EXECUTED", "Drag handler did not execute.", inspection.Detailed());

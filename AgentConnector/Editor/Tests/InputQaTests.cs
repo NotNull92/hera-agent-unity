@@ -39,6 +39,7 @@ namespace HeraAgent.Tests
                 canvasGo.transform.SetParent(root.transform, false);
                 var canvas = canvasGo.AddComponent<Canvas>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvas.sortingOrder = short.MaxValue;
                 canvasGo.AddComponent<GraphicRaycaster>();
                 var canvasRect = (RectTransform)canvasGo.transform;
                 canvasRect.sizeDelta = new Vector2(800, 600);
@@ -101,6 +102,60 @@ namespace HeraAgent.Tests
                 allPassed &= ExpectEqual("begin drag count", 1, probe.BeginDragCount);
                 allPassed &= ExpectEqual("drag count", 2, probe.DragCount);
                 allPassed &= ExpectEqual("end drag count", 1, probe.EndDragCount);
+
+                var destroyOnClickGo = new GameObject("DestroyOnClick", typeof(RectTransform));
+                destroyOnClickGo.transform.SetParent(canvasGo.transform, false);
+                var destroyOnClickRect = (RectTransform)destroyOnClickGo.transform;
+                destroyOnClickRect.sizeDelta = new Vector2(200, 80);
+                destroyOnClickRect.anchoredPosition = new Vector2(0, 140);
+                destroyOnClickGo.AddComponent<Image>().color = Color.white;
+                destroyOnClickGo.AddComponent<DestroyOnClickProbe>();
+                var destroyOnClickPath = HierarchyPath.Build(destroyOnClickGo.transform);
+
+                Canvas.ForceUpdateCanvases();
+                await NextEditorUpdates(3);
+
+                var destroyingClickResponse = await InputTool.HandleCommand(new JObject
+                {
+                    ["action"] = "click",
+                    ["path"] = destroyOnClickPath,
+                    ["settle_frames"] = 0,
+                    ["strict"] = true
+                }) as SuccessResponse;
+                var destroyingClickData = destroyingClickResponse == null
+                    ? null
+                    : JObject.FromObject(destroyingClickResponse.data);
+                allPassed &= ExpectTrue("destroying click returns success", destroyingClickResponse != null);
+                allPassed &= ExpectEqual("destroying click preserves target path", destroyOnClickPath, destroyingClickData?["target_path"]?.ToString());
+                allPassed &= ExpectEqual("destroying click reports destroyed target", true, destroyingClickData?["target_destroyed"]?.Value<bool>());
+
+                var destroyOnDragEndGo = new GameObject("DestroyOnDragEnd", typeof(RectTransform));
+                destroyOnDragEndGo.transform.SetParent(canvasGo.transform, false);
+                var destroyOnDragEndRect = (RectTransform)destroyOnDragEndGo.transform;
+                destroyOnDragEndRect.sizeDelta = new Vector2(200, 80);
+                destroyOnDragEndRect.anchoredPosition = new Vector2(0, -140);
+                destroyOnDragEndGo.AddComponent<Image>().color = Color.white;
+                destroyOnDragEndGo.AddComponent<DestroyOnDragEndProbe>();
+                var destroyOnDragEndPath = HierarchyPath.Build(destroyOnDragEndGo.transform);
+
+                Canvas.ForceUpdateCanvases();
+                await NextEditorUpdates(3);
+
+                var destroyingDragResponse = await InputTool.HandleCommand(new JObject
+                {
+                    ["action"] = "drag",
+                    ["path"] = destroyOnDragEndPath,
+                    ["to_normalized"] = "0.75,0.5",
+                    ["steps"] = 2,
+                    ["settle_frames"] = 0,
+                    ["strict"] = true
+                }) as SuccessResponse;
+                var destroyingDragData = destroyingDragResponse == null
+                    ? null
+                    : JObject.FromObject(destroyingDragResponse.data);
+                allPassed &= ExpectTrue("destroying drag returns success", destroyingDragResponse != null);
+                allPassed &= ExpectEqual("destroying drag preserves target path", destroyOnDragEndPath, destroyingDragData?["target_path"]?.ToString());
+                allPassed &= ExpectEqual("destroying drag reports destroyed target", true, destroyingDragData?["target_destroyed"]?.Value<bool>());
 
                 var blockerGo = new GameObject("Blocker", typeof(RectTransform));
                 blockerGo.transform.SetParent(canvasGo.transform, false);
@@ -264,6 +319,30 @@ namespace HeraAgent.Tests
         public void OnEndDrag(PointerEventData eventData)
         {
             EndDragCount++;
+        }
+    }
+
+    public sealed class DestroyOnClickProbe : MonoBehaviour, IPointerClickHandler
+    {
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            Object.DestroyImmediate(gameObject);
+        }
+    }
+
+    public sealed class DestroyOnDragEndProbe : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    {
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            Object.DestroyImmediate(gameObject);
         }
     }
 }

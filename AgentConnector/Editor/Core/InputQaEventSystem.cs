@@ -52,12 +52,19 @@ namespace HeraAgent
             {
                 Options = options,
                 EventSystem = eventSystem,
+                TargetId = EntityIdCompat.IdOf(options.Target),
+                TargetName = options.Target.name,
+                TargetPath = HierarchyPath.Build(options.Target.transform),
                 Point = point,
                 Pointer = pointer,
                 Raycasts = raycasts,
                 TopHit = raycasts.Count > 0 ? raycasts[0].gameObject : null
             };
             FillHits(inspection);
+            inspection.TopHitPath = inspection.TopHit == null ? null : HierarchyPath.Build(inspection.TopHit.transform);
+            inspection.PressHandlerPath = inspection.PressHandler == null ? null : HierarchyPath.Build(inspection.PressHandler.transform);
+            inspection.ClickHandlerPath = inspection.ClickHandler == null ? null : HierarchyPath.Build(inspection.ClickHandler.transform);
+            inspection.BlockedByPath = inspection.BlockedBy == null ? null : HierarchyPath.Build(inspection.BlockedBy.transform);
             FillInteractability(inspection);
             return (inspection, null);
         }
@@ -164,13 +171,16 @@ namespace HeraAgent
                 backend = "eventsystem",
                 evidence_level = "eventsystem",
                 action,
-                target_id = EntityIdCompat.IdOf(inspection.Options.Target),
-                target_path = HierarchyPath.Build(inspection.Options.Target.transform),
+                target_id = inspection.TargetId,
+                target_path = inspection.TargetPath,
+                target_destroyed = inspection.Options.Target == null,
                 point = new[] { inspection.Point.x, inspection.Point.y },
                 target_top_hit = inspection.TargetTopHit,
                 executed,
-                blocked_by = inspection.BlockedBy == null ? null : HierarchyPath.Build(inspection.BlockedBy.transform),
-                selected_after = InputQaResolver.TargetShape(inspection.EventSystem.currentSelectedGameObject)
+                blocked_by = inspection.BlockedByPath,
+                selected_after = inspection.EventSystem == null
+                    ? null
+                    : InputQaResolver.TargetShape(inspection.EventSystem.currentSelectedGameObject)
             };
         }
 
