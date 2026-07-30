@@ -12,6 +12,7 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "find_gameobjects",
         Description = "Search loaded-scene GameObjects with filters (name substring, exact tag, layer name or index, component type, hierarchy path glob) and built-in pagination. Returns lean entries {instance_id, name} by default; pass --fields, --ids, or --names to control payload size. Prefer this over `exec` for any 'list/find/count GameObjects with X' question — it scales without serializing the whole hierarchy and respects inactive subtrees by default.",
+        ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {
             "find_gameobjects --name Player",
@@ -34,6 +35,13 @@ namespace HeraAgent.Tools
             "Return only instance IDs for the lowest-token handoff to manage_* tools",
             "Request extra fields only when you need them",
         })]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtMostOne,
+        "ids=true",
+        "names=true",
+        "fields",
+        ConflictErrorCode = "INVALID_PROJECTION",
+        Expected = "at most one of ids, names, fields")]
     public static class FindGameObjects
     {
         public class Parameters
@@ -210,7 +218,15 @@ namespace HeraAgent.Tools
                 return new Projection
                 {
                     IsSuccess = false,
-                    Error = new ErrorResponse("INVALID_PROJECTION", "Use only one of --ids, --names, or --fields.")
+                    Error = new ErrorResponse(
+                        "INVALID_PROJECTION",
+                        "Use only one of --ids, --names, or --fields.",
+                        new
+                        {
+                            path = "/",
+                            expected = "exactly one of ids, names, fields",
+                            actual = new { ids = idsOnly, names = namesOnly, fields = fieldsText },
+                        })
                 };
             }
 

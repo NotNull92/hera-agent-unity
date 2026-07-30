@@ -9,6 +9,7 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "describe_type",
         Description = "Describe a type loaded in the Unity Editor: kind, base, interfaces, public members, and known Unity pitfalls. Use this before writing exec code that touches a specific type to avoid signature/namespace mistakes.",
+        ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {
             "describe_type UnityEditor.EditorApplication",
@@ -30,7 +31,9 @@ namespace HeraAgent.Tools
             [ToolParameter("Type name — either full ('UnityEditor.EditorApplication') or simple ('EditorApplication'). Full names preferred.", Required = true)]
             public string Type { get; set; }
 
-            [ToolParameter("Which members to include: 'methods' (default), 'properties', 'fields', 'events', or 'all'.")]
+            [ToolParameter(
+                "Which members to include: 'methods' (default), 'properties', 'fields', 'events', or 'all'.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"methods\",\"properties\",\"fields\",\"events\",\"all\"]}")]
             public string Members { get; set; }
 
             [ToolParameter("Include private/internal/protected members. Default false.")]

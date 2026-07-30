@@ -6,6 +6,7 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "ui_slop",
         Description = "Look up a Unity UI-slop tell from the connector-bundled taxonomy (areas A-E: decorative sweep, layout/RectTransform/containers, spacing, typography, color). Most tells are predicates you measure from the live scene; a few say plainly that they need visual or semantic judgement instead, and the UI Toolkit variants are written against the USS vocabulary that actually exists per Unity version. Returns { id, area, severity, tell, check_ugui, check_uitk, check, exception, fix, borrow, deep_topic } — `check` is the predicate for the active ui_system (uGUI or UI Toolkit); `fix` is the mechanical repair; `exception` lists the functional cases that must NOT be treated as slop (inventory slots, interactive surfaces); `borrow` carries a quantitative target when the tell owns one, and is null otherwise. No id (or 'list') returns the area-grouped index with the live count. Always available; Unity De-slop Mode (Beta) additionally makes other tools point at these tells via agent_hint.",
+        ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {
             "ui_slop",

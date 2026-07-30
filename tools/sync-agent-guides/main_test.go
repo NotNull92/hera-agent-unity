@@ -42,6 +42,37 @@ func TestGenerateGuides_DerivesMirrorsFromCanonicalSource(t *testing.T) {
 	}
 }
 
+func TestGenerateGuides_RebasesRepositoryLinksForNestedTargets(t *testing.T) {
+	// Given
+	source := []byte("# Guide\n\n[Commands](docs/COMMANDS.md) [README](README.md) [Examples](examples/rules/) " +
+		"[License](LICENSE) [Section](#section) [Web](https://example.com)\n\n" +
+		developmentHeading + "\n\nInternal.\n")
+
+	// When
+	guides, err := generateGuides(source)
+
+	// Then
+	if err != nil {
+		t.Fatalf("generateGuides() error = %v", err)
+	}
+	for path, prefix := range map[string]string{
+		".cursor/rules/hera-agent-unity.mdc":       "../../",
+		".agents/skills/hera-agent-unity/SKILL.md": "../../../",
+	} {
+		for _, target := range []string{"docs/COMMANDS.md", "README.md", "examples/rules/", "LICENSE"} {
+			want := []byte("](" + prefix + target + ")")
+			if !bytes.Contains(guides[path], want) {
+				t.Errorf("%s does not contain rebased link %q", path, want)
+			}
+		}
+		for _, want := range []string{"](#section)", "](https://example.com)"} {
+			if !bytes.Contains(guides[path], []byte(want)) {
+				t.Errorf("%s changed non-repository link %q", path, want)
+			}
+		}
+	}
+}
+
 func TestGenerateGuides_RejectsInvalidUTF8(t *testing.T) {
 	// Given
 	source := []byte{0xff, '\n'}

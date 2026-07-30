@@ -14,6 +14,9 @@ namespace HeraAgent
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string agent_hint;
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public List<ToolContractDiagnostic> diagnostics;
+
         public Dictionary<string, long> timings;
 
         public SuccessResponse(string message, object data = null)
@@ -50,6 +53,9 @@ namespace HeraAgent
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public object data;
+
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public List<ToolContractDiagnostic> diagnostics;
 
         public Dictionary<string, long> timings;
 
@@ -97,6 +103,25 @@ namespace HeraAgent
         {
             if (source == null) return;
             foreach (var kv in source) Set(response, kv.Key, kv.Value);
+        }
+    }
+
+    public static class ResponseDiagnostics
+    {
+        public static void Set(object response, IReadOnlyList<ToolContractDiagnostic> diagnostics)
+        {
+            if (diagnostics == null || diagnostics.Count == 0)
+                return;
+            var copy = new List<ToolContractDiagnostic>(diagnostics);
+            switch (response)
+            {
+                case SuccessResponse success:
+                    success.diagnostics = copy;
+                    break;
+                case ErrorResponse error:
+                    error.diagnostics = copy;
+                    break;
+            }
         }
     }
 }

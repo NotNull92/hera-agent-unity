@@ -26,9 +26,158 @@ namespace HeraAgent.Tools
             "Duplicate 5x (Editor-fidelity: keeps prefab link + overrides)",
             "Reparent an object under /Root (worldPositionStays default true)",
             "Read position/rotation/scale of /Root/Player",
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "destroy")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "duplicate")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "move")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_parent")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_active")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_name")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "get_transform")]
     public static class ManageGameObject
     {
+        private const string Vector3Schema =
+            "{\"oneOf\":["
+            + "{\"type\":\"string\",\"pattern\":\"^\\\\s*[-+]?(?:\\\\d+(?:\\\\.\\\\d*)?|\\\\.\\\\d+)(?:[eE][-+]?\\\\d+)?\\\\s*,\\\\s*[-+]?(?:\\\\d+(?:\\\\.\\\\d*)?|\\\\.\\\\d+)(?:[eE][-+]?\\\\d+)?\\\\s*,\\\\s*[-+]?(?:\\\\d+(?:\\\\.\\\\d*)?|\\\\.\\\\d+)(?:[eE][-+]?\\\\d+)?\\\\s*$\"},"
+            + "{\"type\":\"array\",\"items\":{\"type\":\"number\"},\"minItems\":3,\"maxItems\":3},"
+            + "{\"type\":\"object\",\"properties\":{\"x\":{\"type\":\"number\"},\"y\":{\"type\":\"number\"},\"z\":{\"type\":\"number\"}},\"additionalProperties\":false}"
+            + "]}";
+
+        private const string ParentSchema =
+            "{\"oneOf\":[{\"type\":\"integer\"},{\"type\":\"string\"}]}";
+
+        public class TargetParameters
+        {
+            [ToolParameter("Target by InstanceID.")]
+            public int? InstanceId { get; set; }
+
+            [ToolParameter("Target by hierarchy path.")]
+            public string Path { get; set; }
+
+            [ToolParameter("Target convenience alias: hierarchy path or InstanceID.")]
+            public string Target { get; set; }
+        }
+
+        public sealed class CreateParameters
+        {
+            [ToolParameter("Name for the created GameObject.")]
+            public string Name { get; set; }
+
+            [ToolParameter(
+                "Primitive type. Omit for an empty GameObject.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"cube\",\"sphere\",\"capsule\",\"cylinder\",\"plane\",\"quad\"]}")]
+            public string Primitive { get; set; }
+
+            [ToolParameter("Parent InstanceID or hierarchy path.", SchemaJson = ParentSchema)]
+            public JToken Parent { get; set; }
+
+            [ToolParameter("World position.", SchemaJson = Vector3Schema)]
+            public JToken Position { get; set; }
+        }
+
+        public sealed class DuplicateParameters : TargetParameters
+        {
+            [ToolParameter(
+                "Number of copies.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":100}")]
+            public int? Count { get; set; }
+
+            [ToolParameter("Name override for the copies.")]
+            public string Name { get; set; }
+
+            [ToolParameter("Parent InstanceID or hierarchy path.", SchemaJson = ParentSchema)]
+            public JToken Parent { get; set; }
+        }
+
+        public sealed class DestroyParameters : TargetParameters
+        {
+        }
+
+        public sealed class MoveParameters : TargetParameters
+        {
+            [ToolParameter("Position.", Required = true, SchemaJson = Vector3Schema)]
+            public JToken Position { get; set; }
+
+            [ToolParameter(
+                "Coordinate space.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"world\",\"local\"]}")]
+            public string Space { get; set; }
+        }
+
+        public sealed class SetParentParameters : TargetParameters
+        {
+            [ToolParameter(
+                "Parent InstanceID or hierarchy path. Omit, empty, or use 'none' to unparent.",
+                SchemaJson = ParentSchema,
+                AllowNull = true)]
+            public JToken Parent { get; set; }
+
+            [ToolParameter("Preserve world position.")]
+            public bool? WorldPositionStays { get; set; }
+        }
+
+        public sealed class SetActiveParameters : TargetParameters
+        {
+            [ToolParameter("Active state.", Required = true)]
+            public bool? Active { get; set; }
+        }
+
+        public sealed class SetNameParameters : TargetParameters
+        {
+            [ToolParameter("New GameObject name.", Required = true)]
+            public string Name { get; set; }
+        }
+
+        public sealed class GetTransformParameters : TargetParameters
+        {
+        }
+
+        public sealed class Vector3Result
+        {
+            public float X { get; set; }
+            public float Y { get; set; }
+            public float Z { get; set; }
+        }
+
+        public sealed class TransformResult
+        {
+            public Vector3Result Position { get; set; }
+            public Vector3Result Rotation { get; set; }
+            public Vector3Result Scale { get; set; }
+        }
+
+        public sealed class GameObjectResult
+        {
+            public int InstanceId { get; set; }
+            public string Name { get; set; }
+            public string Path { get; set; }
+            public string Scene { get; set; }
+            public string ScenePath { get; set; }
+            public bool Active { get; set; }
+            public TransformResult Transform { get; set; }
+        }
+
+        public sealed class DuplicateItemResult
+        {
+            public int InstanceId { get; set; }
+            public string Name { get; set; }
+            public string Path { get; set; }
+        }
+
+        public sealed class DuplicateSourceResult
+        {
+            public int InstanceId { get; set; }
+            public string Name { get; set; }
+        }
+
+        public sealed class DuplicateResult
+        {
+            public DuplicateSourceResult Source { get; set; }
+            public int Count { get; set; }
+            public DuplicateItemResult[] Clones { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: create, destroy, duplicate, move, set_parent, set_active, set_name, get_transform", Required = true)]
@@ -67,7 +216,9 @@ namespace HeraAgent.Tools
 
         // ---- sub-actions ----
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(CreateParameters),
+            ResultType = typeof(GameObjectResult))]
         public static object Create(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -115,7 +266,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Created GameObject: {go.name}", BuildShallow(go));
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(DuplicateParameters),
+            ResultType = typeof(DuplicateResult))]
         public static object Duplicate(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -199,7 +352,9 @@ namespace HeraAgent.Tools
             });
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(DestroyParameters),
+            ResultType = typeof(GameObjectResult))]
         public static object Destroy(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -218,7 +373,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse("Destroyed GameObject.", snapshot);
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(MoveParameters),
+            ResultType = typeof(GameObjectResult))]
         public static object Move(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -243,7 +400,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Moved {go.name}.", BuildShallow(go));
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(SetParentParameters),
+            ResultType = typeof(GameObjectResult))]
         public static object SetParent(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -291,7 +450,9 @@ namespace HeraAgent.Tools
                 BuildShallow(go));
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(SetActiveParameters),
+            ResultType = typeof(GameObjectResult))]
         public static object SetActive(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -311,7 +472,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Set {go.name}.active = {active.Value}.", BuildShallow(go));
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(SetNameParameters),
+            ResultType = typeof(GameObjectResult))]
         public static object SetName(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -329,7 +492,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Renamed '{old}' -> '{name}'.", BuildShallow(go));
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(GetTransformParameters),
+            ResultType = typeof(GameObjectResult))]
         public static object GetTransform(JObject raw)
         {
             var p = new ToolParams(raw);

@@ -8,7 +8,10 @@
 
 Tests, TUI, batch engine, and asset-config layer sit on top — but the engine that talks to Unity stays lean.
 
-**No WebSockets. No JSON-RPC. No Python. No persistent server process.**
+The production path currently uses **no WebSockets, JSON-RPC, Python, or
+persistent server process**. An optional Go stdio MCP adapter is planned in
+front of the same execution core but is not available yet; the CLI remains the
+production default until the migration completion and benchmark gates pass.
 
 ```
 ┌─────────────────┐      HTTP POST      ┌─────────────────────┐

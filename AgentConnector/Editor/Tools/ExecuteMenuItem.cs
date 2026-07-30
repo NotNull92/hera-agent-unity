@@ -23,6 +23,15 @@ namespace HeraAgent.Tools
             public int? Limit { get; set; }
         }
 
+        public sealed class ListParameters
+        {
+            [ToolParameter("Case-insensitive substring to match menu paths.")]
+            public string Filter { get; set; }
+
+            [ToolParameter("Maximum menu items to return when filtering.")]
+            public int? Limit { get; set; }
+        }
+
         public static object HandleCommand(JObject @params)
         {
             var p = new ToolParams(@params);
@@ -46,7 +55,7 @@ namespace HeraAgent.Tools
         // than a flat list, so a project with hundreds of items can't flood (or
         // silently truncate into) the agent's context. With a filter it returns a
         // bounded, explicitly-truncatable flat list.
-        [HeraAction]
+        [HeraAction(ParametersType = typeof(ListParameters))]
         public static object List(JObject raw)
         {
             var p = new ToolParams(raw);

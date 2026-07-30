@@ -21,6 +21,13 @@ namespace HeraAgent
         public bool Idempotent { get; set; } = false;
         public bool MayReloadDomain { get; set; } = false;
         public bool RequiresPlayMode { get; set; } = false;
+        public string Title { get; set; }
+        public string[] Profiles { get; set; } = Array.Empty<string>();
+        public HeraRiskClass RiskClass { get; set; } = HeraRiskClass.Unspecified;
+        public bool RequiresConfirmation { get; set; }
+        public bool Reversible { get; set; }
+        public bool SupportsCancellation { get; set; }
+        public ToolContractMode ContractMode { get; set; } = ToolContractMode.Legacy;
 
         /// <summary>
         /// CLI invocation strings demonstrating typical usage. Paired by index
@@ -70,6 +77,11 @@ namespace HeraAgent
         public string EnumType { get; set; }
         public string Default { get; set; }
         public string OutputSchema { get; set; }
+        public string[] Aliases { get; set; } = Array.Empty<string>();
+        public bool Deprecated { get; set; }
+        public string Format { get; set; }
+        public string SchemaJson { get; set; }
+        public bool AllowNull { get; set; }
 
         public ToolParameterAttribute()
         {
@@ -85,5 +97,33 @@ namespace HeraAgent
             Name = name;
             Description = description;
         }
+    }
+
+    public enum ToolArgumentGroupMode
+    {
+        AtMostOne = 0,
+        ExactlyOne = 1,
+        AtLeastOne = 2,
+        RequiredWhen = 3,
+    }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+    public sealed class HeraArgumentGroupAttribute : Attribute
+    {
+        public HeraArgumentGroupAttribute(
+            ToolArgumentGroupMode mode,
+            params string[] terms)
+        {
+            Mode = mode;
+            Terms = terms ?? Array.Empty<string>();
+        }
+
+        public ToolArgumentGroupMode Mode { get; }
+        public string[] Terms { get; }
+        public string Action { get; set; }
+        public string MissingErrorCode { get; set; } = "MISSING_ARGUMENT";
+        public string ConflictErrorCode { get; set; } = "ARGUMENT_CONFLICT";
+        public string Path { get; set; } = "/";
+        public string Expected { get; set; }
     }
 }

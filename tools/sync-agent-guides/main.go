@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"unicode/utf8"
 )
 
 const developmentHeading = "## 7. Developing hera-agent-unity itself (co-development)"
+
+var markdownLinkPattern = regexp.MustCompile(`\]\(([^)\s]+)([^)]*)\)`)
 
 const cursorFrontmatter = `---
 description: Use hera-agent-unity CLI for any Unity Editor task — measure, do not guess, save tokens
@@ -100,16 +103,32 @@ func generateGuides(rawSource []byte) (map[string][]byte, error) {
 		return nil, fmt.Errorf("canonical AGENTS.md is missing %q", developmentHeading)
 	}
 	distributable := strings.TrimRight(source[:index], "\n") + "\n"
+	cursorGuide := rebaseRepositoryLinks(distributable, "../../")
+	skillGuide := rebaseRepositoryLinks(distributable, "../../../")
 
 	return map[string][]byte{
 		"AGENT.md":                                 []byte(distributable),
 		"cmd/AGENT.md":                             []byte(distributable),
-		".cursor/rules/hera-agent-unity.mdc":       []byte(cursorFrontmatter + distributable),
+		".cursor/rules/hera-agent-unity.mdc":       []byte(cursorFrontmatter + cursorGuide),
 		".github/copilot-instructions.md":          []byte(copilotStub),
 		"GEMINI.md":                                []byte(geminiStub),
 		".agents/agents.md":                        []byte(workspaceAgentsStub),
-		".agents/skills/hera-agent-unity/SKILL.md": []byte(skillFrontmatter + distributable),
+		".agents/skills/hera-agent-unity/SKILL.md": []byte(skillFrontmatter + skillGuide),
 	}, nil
+}
+
+func rebaseRepositoryLinks(content, prefix string) string {
+	return markdownLinkPattern.ReplaceAllStringFunc(content, func(link string) string {
+		match := markdownLinkPattern.FindStringSubmatch(link)
+		target := match[1]
+		if strings.HasPrefix(target, "#") ||
+			strings.HasPrefix(target, "/") ||
+			strings.Contains(target, "://") ||
+			strings.HasPrefix(target, "mailto:") {
+			return link
+		}
+		return "](" + prefix + target + match[2] + ")"
+	})
 }
 
 func normalizeLF(content []byte) string {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -163,13 +164,32 @@ namespace HeraAgent
             // Prefer an explicit action when one is supplied; fall back to the
             // tool's default HandleCommand so `manage_ui --element button` still
             // works even though `create` is the usual action.
-            string action = ExtractAction(parameters);
+            var contract = ToolContractRegistry.Get(command);
+            parameters = parameters == null ? new JObject() : (JObject)parameters.DeepClone();
+            string action = NormalizeAction(contract, ExtractAction(parameters));
             bool usedAction = false;
             MethodInfo handler = null;
+            var actionNames = contract?.Actions.Keys
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray()
+                ?? ToolDiscovery.GetActionNames(command).ToArray();
+            bool namedAction = parameters?["action"] != null;
             if (!string.IsNullOrEmpty(action))
             {
                 handler = ToolDiscovery.FindActionHandler(command, action);
                 usedAction = handler != null;
+                if (handler == null
+                    && contract != null
+                    && contract.Actions.ContainsKey(action))
+                {
+                    handler = ToolDiscovery.FindDefaultHandler(command);
+                    usedAction = handler != null;
+                }
+                if (handler == null && ((namedAction && actionNames.Length > 0)
+                    || (ToolDiscovery.FindDefaultHandler(command) == null && actionNames.Length > 0)))
+                {
+                    return UnknownAction(action, actionNames);
+                }
             }
             if (handler == null)
                 handler = ToolDiscovery.FindDefaultHandler(command);
@@ -187,6 +207,16 @@ namespace HeraAgent
                     data: similar.Count > 0 ? new { did_you_mean = similar } : null,
                     suggestions: suggestionList);
             }
+
+            if (usedAction)
+                parameters["action"] = action;
+            var validation = ToolContractValidator.Validate(
+                contract,
+                parameters,
+                usedAction ? action : null);
+            if (!validation.IsValid)
+                return validation.Error;
+            parameters = validation.Normalized;
 
             try
             {
@@ -224,13 +254,19 @@ namespace HeraAgent
                 }
 
                 if (result is Task<object> asyncTask)
-                    return await asyncTask;
-                if (result is Task task)
+                {
+                    result = await asyncTask;
+                }
+                else if (result is Task task)
                 {
                     await task;
-                    return new SuccessResponse($"{command}{(usedAction ? ":" + action : "")} completed");
+                    result = new SuccessResponse(
+                        $"{command}{(usedAction ? ":" + action : "")} completed");
                 }
-                return result ?? new SuccessResponse($"{command}{(usedAction ? ":" + action : "")} completed");
+                result ??= new SuccessResponse(
+                    $"{command}{(usedAction ? ":" + action : "")} completed");
+                ResponseDiagnostics.Set(result, validation.Diagnostics);
+                return result;
             }
             catch (Exception ex)
             {
@@ -240,6 +276,34 @@ namespace HeraAgent
                 string suffix = usedAction ? $":{action}" : "";
                 return new ErrorResponse(code, $"{command}{suffix} failed: {inner.Message}");
             }
+        }
+
+        static string NormalizeAction(ToolContract contract, string action)
+        {
+            if (contract == null || string.IsNullOrWhiteSpace(action))
+                return action;
+            action = action.ToLowerInvariant();
+            if (contract.Actions.ContainsKey(action))
+                return action;
+            foreach (var entry in contract.Actions)
+            {
+                if (entry.Value.Aliases.Contains(action, StringComparer.Ordinal))
+                    return entry.Key;
+            }
+            return action;
+        }
+
+        static ErrorResponse UnknownAction(string action, IReadOnlyList<string> expected)
+        {
+            return new ErrorResponse(
+                "UNKNOWN_ACTION",
+                $"Unknown action: {action}",
+                new
+                {
+                    path = "/action",
+                    expected,
+                    actual = action,
+                });
         }
 
         static object HandleList(JObject parameters)

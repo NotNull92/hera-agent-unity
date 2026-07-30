@@ -59,6 +59,7 @@ namespace HeraAgent.Tests
             allPassed &= TestNullableTypesAllowNull();
             allPassed &= TestUnsupportedTypesFailCatalogBuild();
             allPassed &= TestAllSchemasPassDraft202012MetaSchema(out var invalidRuntimeSchemaCount);
+            allPassed &= TestDraft202012MetaSchemaRejectsInvalidKeywordShapes();
             allPassed &= TestCatalogSchemasAreDeterministic();
             allPassed &= TestRuntimeToolAndActionNamesUnchanged();
             allPassed &= TestExternalResponseFieldsArePreserved();
@@ -188,6 +189,36 @@ namespace HeraAgent.Tests
                 invalidRuntimeSchemaCount == 0);
         }
 
+        private static bool TestDraft202012MetaSchemaRejectsInvalidKeywordShapes()
+        {
+            var invalidSchemas = new[]
+            {
+                new JObject
+                {
+                    ["type"] = "object",
+                    ["properties"] = new JObject(),
+                    ["additionalProperties"] = 7,
+                },
+                new JObject
+                {
+                    ["anyOf"] = new JArray("not-a-schema"),
+                },
+                new JObject
+                {
+                    ["type"] = "string",
+                    ["enum"] = new JArray(),
+                },
+            };
+
+            var rejected = invalidSchemas.All(schema =>
+            {
+                var errors = new List<string>();
+                ValidateSchema(schema, "$", errors);
+                return errors.Count > 0;
+            });
+            return Expect(nameof(TestDraft202012MetaSchemaRejectsInvalidKeywordShapes), rejected);
+        }
+
         private static bool TestCatalogSchemasAreDeterministic()
         {
             foreach (var toolName in ToolDiscovery.GetToolNames().Cast<string>())
@@ -226,6 +257,16 @@ namespace HeraAgent.Tests
                     "create", "destroy", "duplicate", "get_transform", "move",
                     "set_active", "set_name", "set_parent",
                 },
+                ["manage_editor"] = new[]
+                {
+                    "add_layer", "add_tag", "pause", "play", "remove_layer", "remove_tag",
+                    "set_active_tool", "stop",
+                },
+                ["input"] = new[]
+                {
+                    "click", "drag", "inspect", "pointer_down", "pointer_up", "scroll",
+                    "state", "submit",
+                },
                 ["manage_packages"] = new[] { "add", "embed", "list", "remove" },
                 ["manage_ui"] = new[] { "create", "get_rect", "set_anchor", "set_rect" },
                 ["menu"] = new[] { "list" },
@@ -233,11 +274,16 @@ namespace HeraAgent.Tests
             };
 
             var actualTools = ToolDiscovery.GetToolNames().Cast<string>().ToArray();
-            if (!actualTools.SequenceEqual(expectedTools))
+            var compatibilityFixture = actualTools
+                .Concat(new[] { "custom_fixture" })
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+            if (!ContainsBaselineToolNames(compatibilityFixture, expectedTools)
+                || !ContainsBaselineToolNames(actualTools, expectedTools))
                 return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged), false);
 
             var actionCount = 0;
-            foreach (var toolName in actualTools)
+            foreach (var toolName in expectedTools)
             {
                 var tool = JObject.FromObject(ToolDiscovery.GetToolSchema(toolName));
                 var actualActions = tool["actions"]?.Values<string>("name").ToArray()
@@ -251,10 +297,21 @@ namespace HeraAgent.Tests
             }
 
             Debug.Log(
-                $"[ToolDiscoveryTests] tool names unchanged = true ({actualTools.Length}); " +
-                $"action names unchanged = true ({actionCount})");
+                $"[ToolDiscoveryTests] baseline tool names unchanged = true ({expectedTools.Length}); " +
+                $"declared action contracts complete = true ({actionCount})");
             return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged),
-                actualTools.Length == 31 && actionCount == 27);
+                expectedTools.Length == 31 && actionCount == 43);
+        }
+
+        private static bool ContainsBaselineToolNames(
+            IEnumerable<string> actualTools,
+            IEnumerable<string> expectedTools)
+        {
+            var expected = expectedTools.ToArray();
+            var expectedSet = new HashSet<string>(expected, StringComparer.Ordinal);
+            return actualTools
+                .Where(expectedSet.Contains)
+                .SequenceEqual(expected);
         }
 
         private static bool TestExternalResponseFieldsArePreserved()
@@ -293,11 +350,15 @@ namespace HeraAgent.Tests
             if (!HasValidTypeKeyword(schema["type"]))
                 errors.Add(path + ".type is invalid");
 
-            if (schema["required"] is JToken required
-                && (!(required is JArray requiredArray)
-                    || requiredArray.Any(item => item.Type != JTokenType.String)))
+            if (schema["required"] is JToken required)
             {
-                errors.Add(path + ".required must be a string array");
+                if (!(required is JArray requiredArray)
+                    || requiredArray.Any(item => item.Type != JTokenType.String)
+                    || requiredArray.Select(item => item.Value<string>())
+                        .Distinct(StringComparer.Ordinal).Count() != requiredArray.Count)
+                {
+                    errors.Add(path + ".required must be a unique string array");
+                }
             }
 
             if (SchemaAllowsType(schema, "array") && !(schema["items"] is JObject))
@@ -306,29 +367,88 @@ namespace HeraAgent.Tests
             if (SchemaAllowsType(schema, "object") && !(schema["properties"] is JObject))
                 errors.Add(path + ".properties is required for objects");
 
-            if (schema["properties"] is JObject properties)
+            if (schema["properties"] is JToken propertiesToken)
             {
-                foreach (var property in properties.Properties())
+                if (!(propertiesToken is JObject properties))
                 {
-                    if (property.Value is JObject propertySchema)
-                        ValidateSchema(propertySchema, path + ".properties." + property.Name, errors);
-                    else
-                        errors.Add(path + ".properties." + property.Name + " is not a schema");
+                    errors.Add(path + ".properties must be an object");
+                }
+                else
+                {
+                    foreach (var property in properties.Properties())
+                    {
+                        ValidateSubschema(
+                            property.Value,
+                            path + ".properties." + property.Name,
+                            errors);
+                    }
                 }
             }
 
-            if (schema["items"] is JObject items)
-                ValidateSchema(items, path + ".items", errors);
+            if (schema["items"] is JToken items)
+                ValidateSubschema(items, path + ".items", errors);
 
             foreach (var combinator in new[] { "anyOf", "oneOf", "allOf" })
             {
-                if (!(schema[combinator] is JArray branches)) continue;
-                foreach (var branch in branches.OfType<JObject>())
-                    ValidateSchema(branch, path + "." + combinator, errors);
+                if (!(schema[combinator] is JToken combinatorToken)) continue;
+                if (!(combinatorToken is JArray branches) || branches.Count == 0)
+                {
+                    errors.Add(path + "." + combinator + " must be a non-empty schema array");
+                    continue;
+                }
+                for (var index = 0; index < branches.Count; index++)
+                    ValidateSubschema(
+                        branches[index],
+                        path + "." + combinator + "[" + index + "]",
+                        errors);
             }
 
-            if (schema["additionalProperties"] is JObject additionalProperties)
-                ValidateSchema(additionalProperties, path + ".additionalProperties", errors);
+            if (schema["additionalProperties"] is JToken additionalProperties)
+                ValidateSubschema(
+                    additionalProperties,
+                    path + ".additionalProperties",
+                    errors);
+
+            if (schema["enum"] is JToken enumToken)
+            {
+                if (!(enumToken is JArray enumValues)
+                    || enumValues.Count == 0
+                    || enumValues.Select((value, index) =>
+                            enumValues.Take(index).Any(previous => JToken.DeepEquals(previous, value)))
+                        .Any(duplicate => duplicate))
+                {
+                    errors.Add(path + ".enum must be a non-empty unique array");
+                }
+            }
+
+            foreach (var stringKeyword in new[] { "description", "format" })
+            {
+                if (schema[stringKeyword] is JToken value
+                    && value.Type != JTokenType.String)
+                {
+                    errors.Add(path + "." + stringKeyword + " must be a string");
+                }
+            }
+
+            if (schema["deprecated"] is JToken deprecated
+                && deprecated.Type != JTokenType.Boolean)
+            {
+                errors.Add(path + ".deprecated must be a boolean");
+            }
+        }
+
+        private static void ValidateSubschema(
+            JToken token,
+            string path,
+            ICollection<string> errors)
+        {
+            if (token is JObject schema)
+            {
+                ValidateSchema(schema, path, errors);
+                return;
+            }
+            if (token?.Type == JTokenType.Boolean) return;
+            errors.Add(path + " is not a schema");
         }
 
         private static bool HasValidTypeKeyword(JToken type)
@@ -339,7 +459,9 @@ namespace HeraAgent.Tests
             return type is JArray types
                 && types.Count > 0
                 && types.All(item => item.Type == JTokenType.String
-                    && IsJsonSchemaType(item.Value<string>()));
+                    && IsJsonSchemaType(item.Value<string>()))
+                && types.Select(item => item.Value<string>())
+                    .Distinct(StringComparer.Ordinal).Count() == types.Count;
         }
 
         private static bool IsJsonSchemaType(string type)

@@ -22,5 +22,37 @@ namespace HeraAgent
         /// Optional human-readable description for schema/listing purposes.
         /// </summary>
         public string Description { get; set; }
+        public Type ParametersType { get; set; }
+        public Type ResultType { get; set; }
+        public string[] Aliases { get; set; } = Array.Empty<string>();
+        public HeraRiskClass RiskClass { get; set; } = HeraRiskClass.Unspecified;
+        public bool RequiresConfirmation { get; set; }
+        public bool Reversible { get; set; }
+        public bool SupportsCancellation { get; set; }
+    }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+    public sealed class HeraActionContractAttribute : Attribute
+    {
+        public HeraActionContractAttribute(string action, Type parametersType)
+        {
+            Action = action;
+            ParametersType = parametersType;
+        }
+
+        public string Action { get; }
+        public Type ParametersType { get; }
+        public Type ResultType { get; set; }
+        public string Description { get; set; }
+        public string[] Aliases { get; set; } = Array.Empty<string>();
+        public HeraRiskClass RiskClass { get; set; } = HeraRiskClass.Unspecified;
+        public bool ReadOnly { get; set; }
+        public bool Destructive { get; set; }
+        public bool Idempotent { get; set; }
+        public bool MayReloadDomain { get; set; }
+        public bool RequiresPlayMode { get; set; }
+        public bool RequiresConfirmation { get; set; }
+        public bool Reversible { get; set; }
+        public bool SupportsCancellation { get; set; }
     }
 }

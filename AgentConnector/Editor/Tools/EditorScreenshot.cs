@@ -9,7 +9,19 @@ using UnityEngine.Rendering;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Name = "screenshot", Description = "Capture a screenshot of the Unity editor. Views: scene, game, or isolated target.")]
+    [HeraTool(
+        Name = "screenshot",
+        Description = "Capture a screenshot of the Unity editor. Views: scene, game, or isolated target.",
+        ContractMode = ToolContractMode.Strict)]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "target", "path", "instance_id")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.RequiredWhen,
+        "isolated=true",
+        "target",
+        "path",
+        "instance_id",
+        Path = "/isolated",
+        Expected = "target, path, or instance_id when isolated is true")]
     public static partial class EditorScreenshot
     {
         private const int DefaultWidth = 1920;
@@ -17,13 +29,22 @@ namespace HeraAgent.Tools
 
         public class Parameters
         {
-            [ToolParameter("View to capture: scene (default), game", Required = false)]
+            [ToolParameter(
+                "View to capture.",
+                Required = false,
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"scene\",\"game\"]}")]
             public string View { get; set; }
 
-            [ToolParameter("Override width (default 1920)", Required = false)]
+            [ToolParameter(
+                "Override width (default 1920).",
+                Required = false,
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1}")]
             public int Width { get; set; }
 
-            [ToolParameter("Override height (default 1080)", Required = false)]
+            [ToolParameter(
+                "Override height (default 1080).",
+                Required = false,
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1}")]
             public int Height { get; set; }
 
             [ToolParameter("Output file path, absolute or relative to project root (default: Screenshots/screenshot.png)", Required = false)]
@@ -41,13 +62,22 @@ namespace HeraAgent.Tools
             [ToolParameter("InstanceID for isolated capture.", Required = false)]
             public int InstanceId { get; set; }
 
-            [ToolParameter("Isolated capture angles: iso, front, back, left, right, top, bottom; comma-separated.", Required = false)]
+            [ToolParameter(
+                "Isolated capture angles: iso, front, back, left, right, top, bottom; comma-separated.",
+                Required = false,
+                SchemaJson = "{\"type\":\"string\",\"pattern\":\"^\\\\s*(?:iso|front|back|left|right|top|bottom)(?:\\\\s*,\\\\s*(?:iso|front|back|left|right|top|bottom))*\\\\s*$\"}")]
             public string Angles { get; set; }
 
-            [ToolParameter("Isolated background color: #RRGGBB, #RRGGBBAA, or transparent.", Required = false)]
+            [ToolParameter(
+                "Isolated background color: #RRGGBB, #RRGGBBAA, or transparent.",
+                Required = false,
+                SchemaJson = "{\"type\":\"string\",\"pattern\":\"^(?:transparent|#[0-9A-Fa-f]{6}(?:[0-9A-Fa-f]{2})?)$\"}")]
             public string Background { get; set; }
 
-            [ToolParameter("Isolated camera padding fraction (default 0.15).", Required = false)]
+            [ToolParameter(
+                "Isolated camera padding fraction (default 0.15).",
+                Required = false,
+                SchemaJson = "{\"type\":\"number\",\"minimum\":0,\"maximum\":2}")]
             public float Padding { get; set; }
         }
 

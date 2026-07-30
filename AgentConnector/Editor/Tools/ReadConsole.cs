@@ -8,7 +8,10 @@ using UnityEngine;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Name = "console", Description = "Read or clear Unity console logs.")]
+    [HeraTool(
+        Name = "console",
+        Description = "Read or clear Unity console logs.",
+        ContractMode = ToolContractMode.Strict)]
     public static class ReadConsole
     {
         private static MethodInfo _startGettingEntriesMethod, _endGettingEntriesMethod, _clearMethod, _getCountMethod, _getEntryMethod;
@@ -61,13 +64,19 @@ namespace HeraAgent.Tools
 
         public class Parameters
         {
-            [ToolParameter("Comma-separated log types: error, warning, log. Default: error,warning,log")]
+            [ToolParameter(
+                "Comma-separated log types: error, warning, log. Default: error,warning,log",
+                SchemaJson = "{\"type\":\"string\",\"pattern\":\"^([eE][rR][rR][oO][rR]|[wW][aA][rR][nN][iI][nN][gG]|[lL][oO][gG])(\\\\s*,\\\\s*([eE][rR][rR][oO][rR]|[wW][aA][rR][nN][iI][nN][gG]|[lL][oO][gG]))*$\"}")]
             public string Type { get; set; }
 
-            [ToolParameter("Maximum log entries to return. Default: 20; 0 returns all.")]
+            [ToolParameter(
+                "Maximum log entries to return. Default: 20; 0 returns all.",
+                Aliases = new[] { "count" })]
             public int Lines { get; set; }
 
-            [ToolParameter("Stack trace mode: none (first line), user (user code frames only), full (raw). Default: user")]
+            [ToolParameter(
+                "Stack trace mode: none (first line), user (user code frames only), full (raw). Default: user",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"none\",\"user\",\"full\"]}")]
             public string Stacktrace { get; set; }
 
             [ToolParameter("Clear console")]

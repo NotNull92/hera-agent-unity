@@ -8,9 +8,100 @@ using UnityEngine.SceneManagement;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Name = "scene", Description = "Scene operations: info, load, save, list, close.")]
+    [HeraTool(
+        Name = "scene",
+        Description = "Scene operations: info, load, save, list, close.",
+        ContractMode = ToolContractMode.Strict)]
     public static class ManageScene
     {
+        public sealed class InfoParameters
+        {
+        }
+
+        public sealed class ListParameters
+        {
+        }
+
+        public sealed class LoadParameters
+        {
+            [ToolParameter(
+                "Scene path or name.",
+                Required = true,
+                Aliases = new[] { "name", "target" })]
+            public string Path { get; set; }
+
+            [ToolParameter(
+                "Load mode.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"single\",\"additive\",\"additive_without_loading\",\"additivewithoutloading\"]}")]
+            public string Mode { get; set; }
+        }
+
+        public sealed class SaveParameters
+        {
+            [ToolParameter(
+                "Loaded scene path or name. Omit to save the active scene.",
+                Aliases = new[] { "name", "target" })]
+            public string Path { get; set; }
+        }
+
+        public sealed class CloseParameters
+        {
+            [ToolParameter(
+                "Loaded scene path or name.",
+                Required = true,
+                Aliases = new[] { "name", "target" })]
+            public string Path { get; set; }
+        }
+
+        public sealed class InfoResult
+        {
+            public ActiveSceneSummary Active { get; set; }
+            public LoadedSceneSummary[] Loaded { get; set; }
+        }
+
+        public sealed class ActiveSceneSummary
+        {
+            public string Name { get; set; }
+            public string Path { get; set; }
+            public bool IsDirty { get; set; }
+        }
+
+        public sealed class LoadedSceneSummary
+        {
+            public string Name { get; set; }
+            public string Path { get; set; }
+            public bool IsLoaded { get; set; }
+            public bool IsDirty { get; set; }
+            public int RootCount { get; set; }
+        }
+
+        public sealed class SceneListEntry
+        {
+            public int Index { get; set; }
+            public string Path { get; set; }
+            public bool Enabled { get; set; }
+        }
+
+        public sealed class LoadResult
+        {
+            public string Name { get; set; }
+            public string Path { get; set; }
+            public string Mode { get; set; }
+        }
+
+        public sealed class SaveResult
+        {
+            public string Name { get; set; }
+            public string Path { get; set; }
+            public bool Saved { get; set; }
+        }
+
+        public sealed class CloseResult
+        {
+            public string Name { get; set; }
+            public string Path { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: info, load, save, list, close", Required = true)]
@@ -23,7 +114,9 @@ namespace HeraAgent.Tools
             public string Mode { get; set; }
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(InfoParameters),
+            ResultType = typeof(InfoResult))]
         public static object Info(JObject raw)
         {
             var active = SceneManager.GetActiveScene();
@@ -47,7 +140,9 @@ namespace HeraAgent.Tools
             });
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(LoadParameters),
+            ResultType = typeof(LoadResult))]
         public static object Load(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -93,7 +188,9 @@ namespace HeraAgent.Tools
             });
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(SaveParameters),
+            ResultType = typeof(SaveResult))]
         public static object Save(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -133,7 +230,9 @@ namespace HeraAgent.Tools
             });
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(ListParameters),
+            ResultType = typeof(SceneListEntry[]))]
         public static object List(JObject raw)
         {
             var registered = EditorBuildSettings.scenes;
@@ -151,7 +250,9 @@ namespace HeraAgent.Tools
             return new SuccessResponse("OK", list);
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(CloseParameters),
+            ResultType = typeof(CloseResult))]
         public static object Close(JObject raw)
         {
             var p = new ToolParams(raw);

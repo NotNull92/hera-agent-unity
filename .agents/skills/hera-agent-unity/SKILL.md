@@ -35,7 +35,7 @@ description: Control the running Unity Editor via the hera-agent-unity CLI — e
 >
 > **Two ways to populate the target file**:
 >
-> 1. **Static** — copy the matching stub from [`examples/rules/`](examples/rules/) (one file per tool, already formatted).
+> 1. **Static** — copy the matching stub from [`examples/rules/`](../../../examples/rules/) (one file per tool, already formatted).
 > 2. **Dynamic** — let the CLI generate it from this guide:
 >     ```bash
 >     # AGENTS.md / CLAUDE.md / Copilot / Continue.dev — plain markdown
@@ -52,10 +52,10 @@ description: Control the running Unity Editor via the hera-agent-unity CLI — e
 `hera-agent-unity` is a CLI that drives a running Unity Editor over HTTP. Common uses: execute C# inside the Editor, read console logs, query the active scene, run tests, capture screenshots, batch several commands in one round-trip. Each call is a tool round-trip; response bytes become your input tokens, so reads cost as much as your own writes.
 
 Quick links:
-- Full command catalog → [`docs/COMMANDS.md`](docs/COMMANDS.md)
-- Architecture → [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
+- Full command catalog → [`docs/COMMANDS.md`](../../../docs/COMMANDS.md)
+- Architecture → [`docs/ARCHITECTURE.md`](../../../docs/ARCHITECTURE.md)
 - Custom tool authoring → `hera-agent-unity help custom-tools`
-- Setup / install → [README](README.md)
+- Setup / install → [README](../../../README.md)
 
 ---
 

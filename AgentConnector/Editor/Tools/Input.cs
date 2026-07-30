@@ -22,12 +22,132 @@ namespace HeraAgent.Tools
             "Drive pointer enter/down/up/click through Unity's EventSystem",
             "Drive begin/drag/end handlers from the target point to a target-local point",
             "Select the target and execute its submit handler"
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
+    [HeraActionContract("state", typeof(InputTool.StateParameters))]
+    [HeraActionContract("inspect", typeof(InputTool.TargetParameters))]
+    [HeraActionContract("click", typeof(InputTool.TargetParameters))]
+    [HeraActionContract("pointer_down", typeof(InputTool.TargetParameters))]
+    [HeraActionContract("pointer_up", typeof(InputTool.TargetParameters))]
+    [HeraActionContract("submit", typeof(InputTool.TargetParameters))]
+    [HeraActionContract("scroll", typeof(InputTool.ScrollParameters))]
+    [HeraActionContract("drag", typeof(InputTool.DragParameters))]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "inspect")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "click")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "pointer_down")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "pointer_up")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "submit")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "scroll")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "drag")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "position", "normalized", "offset", Action = "inspect")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "position", "normalized", "offset", Action = "click")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "position", "normalized", "offset", Action = "pointer_down")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "position", "normalized", "offset", Action = "pointer_up")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "position", "normalized", "offset", Action = "submit")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "position", "normalized", "offset", Action = "scroll")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "position", "normalized", "offset", Action = "drag")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "to_position", "to_normalized", Action = "drag")]
     public static class InputTool
     {
+        private const string Vector2Schema =
+            "{\"type\":\"string\",\"pattern\":\"^\\\\s*[-+]?(?:\\\\d+(?:\\\\.\\\\d*)?|\\\\.\\\\d+)(?:[eE][-+]?\\\\d+)?\\\\s*,\\\\s*[-+]?(?:\\\\d+(?:\\\\.\\\\d*)?|\\\\.\\\\d+)(?:[eE][-+]?\\\\d+)?\\\\s*$\"}";
+
+        public class CommonParameters
+        {
+            [ToolParameter(
+                "Backend.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"eventsystem\",\"auto\"]}")]
+            public string Backend { get; set; }
+
+            [ToolParameter(
+                "Mouse button.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"left\",\"right\",\"middle\"]}")]
+            public string Button { get; set; }
+
+            [ToolParameter(
+                "Pointer click count.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":3}")]
+            public int? ClickCount { get; set; }
+
+            [ToolParameter(
+                "Delay between pointer down and up in milliseconds.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":0,\"maximum\":5000}")]
+            public int? HoldMs { get; set; }
+
+            [ToolParameter(
+                "Editor updates to wait after the final event.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":0,\"maximum\":120}")]
+            public int? SettleFrames { get; set; }
+
+            [ToolParameter(
+                "Drag interpolation steps.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":120}")]
+            public int? Steps { get; set; }
+
+            [ToolParameter(
+                "Maximum diagnostics results.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":100}")]
+            public int? MaxResults { get; set; }
+
+            [ToolParameter("Fail when the target is blocked or the expected handler is not reached.")]
+            public bool? Strict { get; set; }
+
+            [ToolParameter("Return detailed diagnostics.")]
+            public bool? Details { get; set; }
+        }
+
+        public sealed class StateParameters : CommonParameters
+        {
+        }
+
+        public class TargetParameters : CommonParameters
+        {
+            [ToolParameter("Target by InstanceID.")]
+            public int? InstanceId { get; set; }
+
+            [ToolParameter("Target by hierarchy path.")]
+            public string Path { get; set; }
+
+            [ToolParameter("Target convenience: hierarchy path or InstanceID.")]
+            public string Target { get; set; }
+
+            [ToolParameter("Screen position.", SchemaJson = Vector2Schema)]
+            public string Position { get; set; }
+
+            [ToolParameter("Normalized point inside the target.", SchemaJson = Vector2Schema)]
+            public string Normalized { get; set; }
+
+            [ToolParameter("Local pixel offset from the target center.", SchemaJson = Vector2Schema)]
+            public string Offset { get; set; }
+        }
+
+        public sealed class ScrollParameters : TargetParameters
+        {
+            [ToolParameter(
+                "Scroll delta.",
+                Aliases = new[] { "delta" },
+                SchemaJson = Vector2Schema)]
+            public string ScrollDelta { get; set; }
+        }
+
+        public sealed class DragParameters : TargetParameters
+        {
+            [ToolParameter(
+                "End screen position.",
+                Aliases = new[] { "to" },
+                SchemaJson = Vector2Schema)]
+            public string ToPosition { get; set; }
+
+            [ToolParameter("End normalized point inside the target.", SchemaJson = Vector2Schema)]
+            public string ToNormalized { get; set; }
+        }
+
         public class Parameters
         {
-            [ToolParameter("Action: state, inspect, click, pointer_down, pointer_up, drag, scroll, submit. Can also be passed as first positional arg.", Required = true)]
+            [ToolParameter(
+                "Action: state, inspect, click, pointer_down, pointer_up, drag, scroll, submit.",
+                Required = true,
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"state\",\"inspect\",\"click\",\"pointer_down\",\"pointer_up\",\"drag\",\"scroll\",\"submit\"]}")]
             public string Action { get; set; }
 
             [ToolParameter("Backend: eventsystem or auto. InputSystem/native backends are planned but not phase-1 defaults.")]

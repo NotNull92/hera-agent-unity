@@ -11,6 +11,7 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "describe_shader",
         Description = "Inspect a shader's properties (name, type, display label, range) or search shader names. Use this before manage_material to learn which properties a shader exposes (e.g. _BaseColor, _Metallic) and their types. Pass a shader name to describe it; pass --list to search names instead.",
+        ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {
             "describe_shader \"Universal Render Pipeline/Lit\"",
@@ -25,6 +26,11 @@ namespace HeraAgent.Tools
             "List mode — shader names containing 'URP' (built-in included by default)",
             "List only project (asset) shaders, skipping built-ins",
         })]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.ExactlyOne,
+        "name",
+        "list=true",
+        Expected = "name or list=true")]
     public static class DescribeShader
     {
         public class Parameters
@@ -52,12 +58,27 @@ namespace HeraAgent.Tools
                 ?? (p.GetRaw("args") as JArray)?[0]?.ToString();
             var listMode = p.GetBool("list");
 
+            if (listMode && !string.IsNullOrWhiteSpace(name))
+            {
+                return new ErrorResponse(
+                    "ARGUMENT_CONFLICT",
+                    "Use either 'name' or --list, not both.",
+                    new
+                    {
+                        path = "/",
+                        expected = "name or list=true",
+                        actual = new { name, list = true },
+                    });
+            }
+
             if (listMode)
                 return ListShaders(p.Get("filter"), p.GetInt("limit") ?? 50, p.GetBool("include_builtin", true));
 
             if (string.IsNullOrWhiteSpace(name))
                 return new ErrorResponse(
-                    "'name' required. Pass a shader name to describe, or --list to search names.");
+                    "MISSING_ARGUMENT",
+                    "'name' required. Pass a shader name to describe, or --list to search names.",
+                    new { path = "/name", expected = "name or list=true", actual = (object)null });
 
             return DescribeOne(name, p.GetInt("limit") ?? 60);
         }

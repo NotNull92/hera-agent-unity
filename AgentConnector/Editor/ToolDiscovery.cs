@@ -238,6 +238,20 @@ namespace HeraAgent
             return GetActions().TryGetValue(key, out var entry) ? entry.Method : null;
         }
 
+        internal static Type FindToolType(string command)
+        {
+            return GetTools().TryGetValue(command, out var entry) ? entry.Type : null;
+        }
+
+        internal static IReadOnlyList<string> GetActionNames(string command)
+        {
+            return GetActions().Values
+                .Where(entry => entry.ToolName == command)
+                .Select(entry => entry.ActionName)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray();
+        }
+
         /// <summary>
         /// Returns tool names within Levenshtein distance <paramref name="maxDistance"/>
         /// of the input. Used by the dispatcher to surface "did you mean" hints on
@@ -310,6 +324,8 @@ namespace HeraAgent
                 if (name != toolName) continue;
                 var paramsType = type.GetNestedType("Parameters");
                 var toolMeta = GetToolMetadata(type);
+                var contract = ToolContractRegistry.Get(name);
+                var strictDefault = contract?.Mode == ToolContractMode.Strict;
                 return new
                 {
                     name,
@@ -318,9 +334,13 @@ namespace HeraAgent
                     groups = attr.Groups ?? new string[0],
                     examples = BuildExamples(attr),
                     actions = GetActionDescriptors(name),
-                    schema = toolMeta?.ParametersSchema
+                    schema = strictDefault
+                        ? contract.InputSchema
+                        : toolMeta?.ParametersSchema
                         ?? GetLegacyParameterSchema(paramsType),
-                    output_schema = toolMeta?.OutputSchema
+                    output_schema = strictDefault
+                        ? contract.OutputSchema
+                        : toolMeta?.OutputSchema
                         ?? GetDefaultOutputSchema(),
                     metadata = new
                     {
@@ -430,15 +450,67 @@ namespace HeraAgent
 
         private static List<object> GetActionDescriptors(string toolName)
         {
-            return GetActions().Values
+            var contract = ToolContractRegistry.Get(toolName);
+            var descriptions = GetActions().Values
                 .Where(entry => entry.ToolName == toolName)
-                .OrderBy(entry => entry.ActionName, StringComparer.Ordinal)
-                .Select(entry => (object)new
+                .GroupBy(entry => entry.ActionName, StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First().Attr?.Description ?? "",
+                    StringComparer.Ordinal);
+            return BuildActionDescriptors(contract, descriptions);
+        }
+
+        internal static List<object> BuildActionDescriptors(
+            ToolContract contract,
+            IReadOnlyDictionary<string, string> discoveredDescriptions)
+        {
+            var result = new List<object>();
+            var names = new HashSet<string>(
+                discoveredDescriptions?.Keys ?? Array.Empty<string>(),
+                StringComparer.Ordinal);
+            if (contract != null)
+            {
+                foreach (var name in contract.Actions.Keys)
+                    names.Add(name);
+            }
+
+            foreach (var name in names.OrderBy(value => value, StringComparer.Ordinal))
+            {
+                if (contract != null
+                    && contract.Actions.TryGetValue(name, out var action)
+                    && action.IsStrict)
                 {
-                    name = entry.ActionName,
-                    description = entry.Attr?.Description ?? "",
-                })
-                .ToList();
+                    result.Add(new
+                    {
+                        name,
+                        description = string.IsNullOrWhiteSpace(action.Description)
+                            ? GetDescription(discoveredDescriptions, name)
+                            : action.Description,
+                        aliases = action.Aliases,
+                        input_schema = action.InputSchema,
+                        output_schema = action.OutputSchema,
+                    });
+                }
+                else
+                {
+                    result.Add(new
+                    {
+                        name,
+                        description = GetDescription(discoveredDescriptions, name),
+                    });
+                }
+            }
+            return result;
+        }
+
+        private static string GetDescription(
+            IReadOnlyDictionary<string, string> descriptions,
+            string name)
+        {
+            return descriptions != null && descriptions.TryGetValue(name, out var description)
+                ? description ?? ""
+                : "";
         }
 
         private static ToolMetadata GetToolMetadata(Type toolType)

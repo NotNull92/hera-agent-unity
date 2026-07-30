@@ -32,9 +32,128 @@ namespace HeraAgent.Tools
             "Set a scalar property",
             "Set an ObjectReference using an asset path",
             "Remove by component InstanceID — survives renames and duplicate types",
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", Action = "add")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", Action = "list")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "component_id", "instance_id", "path", Action = "remove")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtLeastOne,
+        "component_id",
+        "type",
+        Action = "remove",
+        Path = "/type",
+        Expected = "component_id or type with a GameObject target")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "component_id", "instance_id", "path", Action = "get")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtLeastOne,
+        "component_id",
+        "type",
+        Action = "get",
+        Path = "/type",
+        Expected = "component_id or type with a GameObject target")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "component_id", "instance_id", "path", Action = "set")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtLeastOne,
+        "component_id",
+        "type",
+        Action = "set",
+        Path = "/type",
+        Expected = "component_id or type with a GameObject target")]
     public static class ManageComponents
     {
+        public class GameObjectTargetParameters
+        {
+            [ToolParameter("Target GameObject by InstanceID.")]
+            public int? InstanceId { get; set; }
+
+            [ToolParameter("Target GameObject by hierarchy path.")]
+            public string Path { get; set; }
+        }
+
+        public class ComponentTargetParameters : GameObjectTargetParameters
+        {
+            [ToolParameter("Component type when component_id is not used.")]
+            public string Type { get; set; }
+
+            [ToolParameter("Component index when the target has duplicate component types.")]
+            public int? Index { get; set; }
+
+            [ToolParameter("Target component by InstanceID.")]
+            public int? ComponentId { get; set; }
+        }
+
+        public sealed class AddParameters : GameObjectTargetParameters
+        {
+            [ToolParameter("Component type.", Required = true)]
+            public string Type { get; set; }
+        }
+
+        public sealed class ListParameters : GameObjectTargetParameters
+        {
+        }
+
+        public sealed class RemoveParameters : ComponentTargetParameters
+        {
+        }
+
+        public sealed class GetParameters : ComponentTargetParameters
+        {
+            [ToolParameter("SerializedProperty path. Omit to return all visible properties.")]
+            public string Property { get; set; }
+        }
+
+        public sealed class SetParameters : ComponentTargetParameters
+        {
+            [ToolParameter("SerializedProperty path.", Required = true)]
+            public string Property { get; set; }
+
+            [ToolParameter(
+                "Serialized value.",
+                Required = true,
+                SchemaJson = "{}",
+                AllowNull = true)]
+            public JToken Value { get; set; }
+        }
+
+        public sealed class ComponentResult
+        {
+            public int ComponentId { get; set; }
+            public string Type { get; set; }
+            public string TypeShort { get; set; }
+            public bool? Enabled { get; set; }
+            public Dictionary<string, object> Properties { get; set; }
+        }
+
+        public sealed class AddResult
+        {
+            public int InstanceId { get; set; }
+            public ComponentResult Component { get; set; }
+        }
+
+        public sealed class RemoveResult
+        {
+            public int InstanceId { get; set; }
+            public ComponentResult Removed { get; set; }
+        }
+
+        public sealed class ListResult
+        {
+            public int InstanceId { get; set; }
+            public ComponentResult[] Components { get; set; }
+        }
+
+        public sealed class GetResult
+        {
+            public int InstanceId { get; set; }
+            public int? ComponentId { get; set; }
+            public string Type { get; set; }
+            public string Property { get; set; }
+            public string PropertyType { get; set; }
+            public object Value { get; set; }
+            public ComponentResult Component { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: add, remove, list, get, set", Required = true)]
@@ -64,7 +183,9 @@ namespace HeraAgent.Tools
 
         // ---- sub-actions ----
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(AddParameters),
+            ResultType = typeof(AddResult))]
         public static object Add(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -177,7 +298,9 @@ namespace HeraAgent.Tools
             }
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(RemoveParameters),
+            ResultType = typeof(RemoveResult))]
         public static object Remove(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -209,7 +332,9 @@ namespace HeraAgent.Tools
                 });
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(ListParameters),
+            ResultType = typeof(ListResult))]
         public static object List(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -232,7 +357,9 @@ namespace HeraAgent.Tools
                 });
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(GetParameters),
+            ResultType = typeof(GetResult))]
         public static object Get(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -274,7 +401,9 @@ namespace HeraAgent.Tools
                 });
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(SetParameters),
+            ResultType = typeof(GetResult))]
         public static object Set(JObject raw)
         {
             var p = new ToolParams(raw);

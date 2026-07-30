@@ -6,15 +6,53 @@ using UnityEditorInternal;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Description = "Controls Unity editor state. Actions: play, stop, pause, set_active_tool, add_tag, remove_tag, add_layer, remove_layer.")]
+    [HeraTool(
+        Description = "Controls Unity editor state. Actions: play, stop, pause, set_active_tool, add_tag, remove_tag, add_layer, remove_layer.",
+        ContractMode = ToolContractMode.Strict)]
+    [HeraActionContract("play", typeof(ManageEditor.EmptyParameters))]
+    [HeraActionContract("stop", typeof(ManageEditor.EmptyParameters))]
+    [HeraActionContract("pause", typeof(ManageEditor.EmptyParameters))]
+    [HeraActionContract("set_active_tool", typeof(ManageEditor.SetActiveToolParameters))]
+    [HeraActionContract("add_tag", typeof(ManageEditor.TagParameters))]
+    [HeraActionContract("remove_tag", typeof(ManageEditor.TagParameters))]
+    [HeraActionContract("add_layer", typeof(ManageEditor.LayerParameters))]
+    [HeraActionContract("remove_layer", typeof(ManageEditor.LayerParameters))]
     public static class ManageEditor
     {
         private const int FirstUserLayerIndex = 8;
         private const int TotalLayerCount = 32;
 
+        public sealed class EmptyParameters
+        {
+        }
+
+        public sealed class SetActiveToolParameters
+        {
+            [ToolParameter(
+                "Unity editor tool.",
+                Required = true,
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"view\",\"move\",\"rotate\",\"scale\",\"rect\",\"transform\",\"custom\"]}")]
+            public string ToolName { get; set; }
+        }
+
+        public sealed class TagParameters
+        {
+            [ToolParameter("Tag name.", Required = true)]
+            public string TagName { get; set; }
+        }
+
+        public sealed class LayerParameters
+        {
+            [ToolParameter("Layer name.", Required = true)]
+            public string LayerName { get; set; }
+        }
+
         public class Parameters
         {
-            [ToolParameter("Action to perform: play, stop, pause, refresh, set_active_tool, add_tag, remove_tag, add_layer, remove_layer", Required = true)]
+            [ToolParameter(
+                "Action to perform.",
+                Required = true,
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"play\",\"stop\",\"pause\",\"set_active_tool\",\"add_tag\",\"remove_tag\",\"add_layer\",\"remove_layer\"]}")]
             public string Action { get; set; }
 
             [ToolParameter("Tool name (required for set_active_tool action)")]

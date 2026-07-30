@@ -8,6 +8,7 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "list_assemblies",
         Description = "List assemblies loaded in the current Unity Editor AppDomain. AI agents call this to find which Unity packages, project assemblies, and third-party libraries are available before writing exec code.",
+        ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {
             "list_assemblies",
