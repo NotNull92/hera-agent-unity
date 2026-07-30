@@ -454,6 +454,10 @@ namespace HeraAgent
                 ToolMetadataRegistry.Register(toolType);
                 return ToolMetadataRegistry.GetTool(toolName);
             }
+            catch (SchemaGenerationException)
+            {
+                throw;
+            }
             catch
             {
                 return null;
@@ -472,32 +476,42 @@ namespace HeraAgent
 
             var requiredParams = new List<string>();
 
-            foreach (var prop in paramsType.GetProperties())
+            foreach (var entry in paramsType.GetProperties()
+                .Select(prop => new
+                {
+                    Property = prop,
+                    Attribute = prop.GetCustomAttribute<ToolParameterAttribute>(),
+                })
+                .Where(entry => entry.Attribute != null)
+                .Select(entry => new
+                {
+                    entry.Property,
+                    entry.Attribute,
+                    Name = string.IsNullOrWhiteSpace(entry.Attribute.Name)
+                        ? StringCaseUtility.ToSnakeCase(entry.Property.Name)
+                        : entry.Attribute.Name,
+                })
+                .OrderBy(entry => entry.Name, StringComparer.Ordinal))
             {
-                var attr = prop.GetCustomAttribute<ToolParameterAttribute>();
-                if (attr == null) continue;
+                var paramSchema = SchemaUtility.GenerateSchema(entry.Property.PropertyType);
+                paramSchema["description"] = entry.Attribute.Description ?? "";
+                paramSchema = SchemaUtility.CanonicalizeSchema(paramSchema);
 
-                var propName = StringCaseUtility.ToSnakeCase(prop.Name);
-                var paramSchema = new JObject
+                if (entry.Attribute.Required)
                 {
-                    ["type"] = SchemaUtility.GetJsonTypeName(prop.PropertyType),
-                    ["description"] = attr.Description ?? ""
-                };
-
-                if (attr.Required)
-                {
-                    requiredParams.Add(propName);
+                    requiredParams.Add(entry.Name);
                 }
 
-                schema["properties"][propName] = paramSchema;
+                schema["properties"][entry.Name] = paramSchema;
             }
 
             if (requiredParams.Count > 0)
             {
-                schema["required"] = new JArray(requiredParams);
+                schema["required"] = new JArray(
+                    requiredParams.OrderBy(name => name, StringComparer.Ordinal));
             }
 
-            return schema;
+            return SchemaUtility.CanonicalizeSchema(schema);
         }
 
         private static bool HasEnumSupport(Type paramsType)
@@ -536,16 +550,21 @@ namespace HeraAgent
 
         private static JObject GetDefaultOutputSchema()
         {
-            return new JObject
+            return SchemaUtility.CanonicalizeSchema(new JObject
             {
                 ["type"] = "object",
                 ["properties"] = new JObject
                 {
                     ["success"] = new JObject { ["type"] = "boolean", ["description"] = "Whether the operation succeeded" },
                     ["message"] = new JObject { ["type"] = "string", ["description"] = "Success or error message" },
-                    ["data"] = new JObject { ["type"] = "object", ["description"] = "Tool-specific output data" }
+                    ["data"] = new JObject
+                    {
+                        ["type"] = "object",
+                        ["description"] = "Tool-specific output data",
+                        ["properties"] = new JObject(),
+                    }
                 }
-            };
+            });
         }
 
         private static bool HasOutputSchemaSupport(Type paramsType)

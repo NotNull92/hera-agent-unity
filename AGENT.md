@@ -4,27 +4,29 @@
 >
 > **Where to put this content.** `AGENTS.md` at the project root is the canonical cross-tool agent rules file, standardized by the Agentic AI Foundation (AAIF) under the Linux Foundation (Dec 2025) and adopted by 60,000+ open-source repositories. OpenAI Codex, Claude Code, Cursor, GitHub Copilot, Gemini CLI, and 30+ tools read this file by default.
 >
-> This file (`AGENT.md`) remains the full reference guide. For the canonical cross-tool rules file, see [`AGENTS.md`](AGENTS.md).
+> For multi-tool projects, the cleanest pattern is **`AGENTS.md` as the single source of truth** plus a one-line stub in tool-specific paths. Tool-specific files only matter when a tool requires a different format (Cursor's `.mdc` YAML frontmatter is the main case).
 >
 > **Recommended layout — multi-tool projects**:
 >
 > 1. Drop the full guide (or its lean subset) into `AGENTS.md` at the project root.
-> 2. For tools that ignore `AGENTS.md` or need their own format, drop a short stub that defers to `AGENTS.md`:
->     - `CLAUDE.md` → `> See AGENTS.md.` (Claude Code reads both)
->     - `.cursor/rules/hera-agent-unity.mdc` → frontmatter + the same body (see Cursor note below)
->     - `.github/copilot-instructions.md` → repository-wide pointer to `AGENTS.md` (Copilot can layer file-pattern-specific rules under `.github/instructions/*.instructions.md` with `applyTo` frontmatter)
+> 2. For tools that need their own format, drop a short stub that defers to `AGENTS.md`:
+>     - `CLAUDE.md` → `> See AGENTS.md.` (Claude Code reads `AGENTS.md` natively since late 2025)
+>     - `.cursor/rules/hera-agent-unity.mdc` → frontmatter + the same body (Cursor also supports plain `AGENTS.md` as a fallback)
+>     - `.github/copilot-instructions.md` → repository-wide pointer to `AGENTS.md` (Copilot uses nearest-file precedence; `.github/skills/` is for Agent Skills)
+>     - `GEMINI.md` + `.agents/agents.md` + `.agents/skills/hera-agent-unity/SKILL.md` → AntiGravity project entry + workspace handoff + on-demand skill
 >     - `.continuerules` → identical body
 >
-> **Per-tool target paths**:
+> **Per-tool target paths (2026-current)**:
 >
 > | Tool | Canonical path | Notes |
 > |---|---|---|
-> | OpenAI Codex / `AGENTS.md`-aware tools | `AGENTS.md` | Becoming the cross-tool standard. Lead with this. |
-> | Claude Code | `CLAUDE.md` (or `AGENTS.md`) | Reads `CLAUDE.md`; expanding to also read `AGENTS.md`. |
-> | Cursor | `.cursor/rules/*.mdc` | Per-rule files with YAML frontmatter required. `.cursorrules` (single-file) is **deprecated** — do not start new projects on it. `.cursorignore` excludes paths from the agent's view. |
-> | GitHub Copilot | `.github/copilot-instructions.md` | Repository-wide. Optional: `.github/instructions/*.instructions.md` with `applyTo: "**/*.cs,…"` frontmatter for file-pattern-specific guidance; `.github/prompts/*.prompt.md` for reusable prompts. |
+> | OpenAI Codex / AGENTS.md-aware tools | `AGENTS.md` | Cross-tool standard. Supports layering: `~/.codex/AGENTS.md` → repo root → subtree → `AGENTS.override.md`. |
+> | Claude Code | `AGENTS.md` (or `CLAUDE.md`) | Reads `AGENTS.md` natively. `CLAUDE.md` still works for path-scoped rules and imports. |
+> | Cursor | `.cursor/rules/*.mdc` | YAML frontmatter required for activation. `.cursorrules` (single-file) is **deprecated** and ignored by Agent mode. |
+> | GitHub Copilot | `.github/copilot-instructions.md` | Nearest-file precedence. Optional: `.github/instructions/*.instructions.md` with `applyTo` frontmatter; `.github/skills/` for Agent Skills. |
+> | Google AntiGravity | `GEMINI.md`, `.agents/agents.md`, `.agents/skills/*/SKILL.md` | `.agents/` is the native workspace extension directory for agents, workflows, and skills. |
 > | Continue.dev | `.continuerules` | Plain markdown. |
-> | Other | whatever your tool calls its project rules file | Most accept plain markdown. |
+> | Other | Tool-specific rules file | Most accept plain markdown. |
 >
 > **Two ways to populate the target file**:
 >
@@ -36,6 +38,10 @@
 >
 >     # Cursor — frontmatter prepended automatically
 >     hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+>
+>     # AntiGravity — project rule + on-demand skill
+>     hera-agent-unity doctor --agent-rules >> GEMINI.md
+>     hera-agent-unity doctor --agent-rules --format antigravity > .agents/skills/hera-agent-unity/SKILL.md
 >     ```
 
 `hera-agent-unity` is a CLI that drives a running Unity Editor over HTTP. Common uses: execute C# inside the Editor, read console logs, query the active scene, run tests, capture screenshots, batch several commands in one round-trip. Each call is a tool round-trip; response bytes become your input tokens, so reads cost as much as your own writes.
@@ -64,7 +70,7 @@ When the user invites you to engage hera-agent-unity — in any language, any ph
 
 1. `hera-agent-unity doctor --json` — verifies the binary is on PATH, no duplicate installs, and the connector can see at least one Unity instance. JSON envelope is parseable.
 2. `hera-agent-unity status` — confirms the active editor's port, project path, Unity version, PID, and current state (`ready`, `compiling`, …).
-3. `hera-agent-unity list --names` — discovers what tools (built-in + custom `[HeraTool]` classes) this project exposes, so subsequent prompts can be answered without re-scanning.
+3. `hera-agent-unity list --compact` — discovers what tools (built-in + custom `[HeraTool]` classes) this project exposes with the smallest practical payload, so subsequent prompts can be answered without re-scanning.
 
 **Report shape** (one line first, then optional details):
 
@@ -101,7 +107,7 @@ new GameObject("X");
 
 > Caveat: `return;` (no value) still does NOT compile because `Execute()` returns `object`. Write `return null;` for early exits, or `throw new Exception("...")` for hard failures (see Rule 8).
 
-> The CLI emits compact JSON automatically for non-human commands (anything outside `install/uninstall/status/update/doctor/help/version`). Pass `--compact-json` or set `HERA_AGENT_COMPACT_JSON=1` to force compact on a TTY too.
+> The CLI emits compact JSON automatically for non-human commands (anything outside `install/uninstall/status/update/doctor`). Pass `--compact-json` or set `HERA_AGENT_COMPACT_JSON=1` to force compact on a TTY too.
 
 **[Rule 2]** Never return a `UnityEngine.Object` directly. `Transform`, `GameObject`, `Component`, `Scene`, `Material`, etc. expand to thousands of bytes of reflected properties.
 
@@ -114,7 +120,7 @@ var go = GameObject.Find("Canvas");
 return new { name = go.name, instanceID = go.GetInstanceID() };
 ```
 
-Default `--depth` is `1`, which gives Unity Objects the shallow form `{name, type, instanceID}`. Set `--depth 3` only when you have a specific reason to inspect the property tree.
+Default `--depth` is `3`, which fully reflects Unity Objects in the response. Pass `--depth 1` (or `2`) when you want the leanest payload — depths 1–2 collapse Unity Objects to the shallow form `{name, type, instanceID}`. Set `--depth 3` only when you have a specific reason to inspect the property tree.
 
 **[Rule 3]** Branch on the `code` field of error responses, not on the message text. Messages get tweaked across versions; `code` is the stable enum-like contract.
 
@@ -148,12 +154,28 @@ Default `--depth` is `1`, which gives Unity Objects the shallow form `{name, typ
 //   → exit 1, code=EXEC_LOGGED_ERROR
 ```
 
-**[Rule 9]** Keep CLI and UPM connector versions separate. `hera-agent-unity
+**[Rule 9]** Do not put your current machine's absolute paths in shared docs,
+rules, examples, generated Markdown, or checked-in scripts. Prefer
+repo-relative paths, documented environment variables, or explicit CLI flags.
+For Unity Hub editor inventory, write paths with `%UNITY_HUB_EDITOR%` and state
+that the default Windows resolver is `%ProgramFiles%\Unity\Hub\Editor`; let
+users override the real root with `-HubRoot` or their own environment.
+
+**[Rule 10]** Keep CLI and UPM connector versions separate. `hera-agent-unity
 version` reports the Go CLI release tag (`vX.Y.Z`). Unity Package Manager reports
 the connector package version from `AgentConnector/package.json` (for example
 `0.0.N`). Do not call the UPM package `vX.Y.Z`, do not assume the two numbers
 match, and do not use a git lock hash as the package version. A lock hash only
 identifies the connector source commit that Unity resolved.
+
+**[Rule 11]** Separate Unity EventSystem input QA from physical OS click QA.
+Use `input state` / `input inspect` / `input click` / `input submit` / `input
+scroll` / `input drag` to verify uGUI behavior when Computer Use cannot obtain a
+Unity screenshot state. These commands synthesize Unity EventSystem events; they
+do **not** prove that a physical OS/window click worked. If Computer Use still
+cannot capture Unity screenshot state and no native OS/window input backend is
+available, record the physical-click criterion as **BLOCKED** even when
+EventSystem input QA passes.
 
 ## 1.5 Ultra Hera
 
@@ -230,25 +252,64 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Clear console | `console --clear` | Idempotent. |
 | Check if Editor is in play mode | `status` | Returns state field (ready/compiling/playing/paused). |
 | Enter / exit play mode | `editor play [--wait]` / `editor stop` | `--wait` blocks until fully entered. |
-| Force recompile | `editor refresh --compile` | Blocks until compilation finishes. |
+| Force recompile | `editor refresh --compile` | Waits until compile finishes or `--timeout` (60s default) elapses — raise `--timeout` for big projects, or use `refresh_unity --compile request` to fire-and-forget. |
 | Trigger a menu item | `menu "Window/General/Console"` | `File/Quit` is blocked for safety. |
-| Capture screenshot | `screenshot [--view game]` | Default scene view, 1920×1080. |
+| Capture screenshot | `screenshot [--view game]` / `screenshot --isolated --target /Player` | Default scene view, 1920×1080; isolated mode renders one GameObject. |
+| Drive Unity UI input for QA | `input state` / `input inspect --path ...` / `input click --path ...` | Sends uGUI EventSystem events inside Unity. This is not a physical OS click; use it when Computer Use coordinates are blocked but UI logic still needs Play Mode QA. |
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
 | Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
-| List all tools | `list` or `list --compact` | 30s in-memory + on-disk cache. `--compact` keeps name + description + parameters (~50% smaller). |
+| List all tools | `list --compact` or `list --names` | 30s in-memory + on-disk cache. Both forms return a flat names array; use `list` only when you need one-line descriptions. |
 | Run multiple commands in one HTTP round-trip | `batch --file <path.json>` or pipe JSON | Sequential. `fail_fast` on first error by default. |
 | Compile-check without executing | `exec --check "<code>"` | Returns success on clean compile, `EXEC_COMPILE_ERROR` otherwise. No side effects. |
-| List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system]` | Use `--filter` to keep the response small. |
+| List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system] [--include_version]` | Returns bare name strings by default; `--filter` to scope, `--include_version` for `{name, version}` objects. |
 | Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
 | Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
-| Anything else (read prop, AssetDatabase, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
+| Find / create / move project assets | `manage_assets find --type Texture2D --filter icon` / `manage_assets create --type GameConfig --path Assets/Config/Game.asset` | Compact `AssetDatabase` operations constrained to `Assets/`; `create` authors a ScriptableObject `.asset` (optional `--params '{"properties":{...}}'`). Use before falling back to `exec` for basic asset work. |
+| Ground an HTML→uGUI design on the real UI | `ui_doc export --path </path>` | Returns the compact uGUI `ui_doc/2` IR (defaults omitted). UI Toolkit v1 emits from an input document instead. |
+| Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...] [--mode upsert]` | `ui_system=ugui` builds the existing GameObject tree; `ui_system=uitk` requires `backend:"uitk"` and emits validated UXML/USS/PanelSettings/UIDocument scaffolding. |
+| Bake a procedural sprite | `ui_doc gen_sprite --spec '{...}' --out Assets/...` | Tier-1: `solid` / `rounded_rect` / `gradient` / `nine_slice` (border for 9-slice). No external dependency. |
+| Measure colors off a reference image | `ui_doc sample --image ref.png --at "x,y" [--region "x,y,w,h"]` | Normalized [0,1] top-left coords (`;`-separate many). Returns measured `hex`/`rgba`. Measure colors — don't eyeball them. CLI-side, no Unity needed. |
+| See what you built (verify) | `ui_doc capture --out /tmp/built.png` | Renders live uGUI overlays to PNG (a normal `screenshot` misses overlay canvases). UITK v1 verifies generated assets/UIDocument through state reads or game screenshots. |
+| Anything else (read prop, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
 
 **Compile-check only** (validate syntax/types without executing):
 ```bash
 hera-agent-unity exec "var x = SomeType.SomeMethod();" --check
 ```
 Useful when you're not sure a refactor compiles before issuing a destructive call.
+
+**Input QA (`input`)** — use this when you need to verify Unity UI behavior and Computer Use cannot obtain a Unity screenshot state. `input` resolves targets by hierarchy path, instance ID, or normalized screen/canvas position, then dispatches uGUI EventSystem events (`click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, `drag`). Start with `input state` to confirm an EventSystem + raycasters exist, then `input inspect --path /Canvas/Button --details true` before sending events. Evidence should be classified precisely:
+
+- **Windows Git Bash:** MSYS rewrites arguments beginning with `/` as filesystem paths. Prefix hierarchy-path calls with `MSYS_NO_PATHCONV=1`, for example `MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/Button`.
+- **Unity EventSystem input QA:** PASS/FAIL based on `input` results, console logs, state reads, Play Mode tests, or UI callbacks.
+- **Physical OS click QA:** BLOCKED if Computer Use still cannot capture Unity screenshot state and Hera has no native OS/window input backend for that action.
+
+**ui_doc IR (`ui_doc/2`)** — `ui_system` chooses one fully separate backend per build. The default `ugui` contract below uses live export plus RectTransform anchors. `uitk` requires `asset-config ui-system uitk` and a `backend:"uitk"` document with exact runtime element names, reflected UXML attributes, and reflected USS properties. Full reference: `docs/UI_DOC_IR.md`:
+
+```jsonc
+{ "schema": "ui_doc/2", "backend": "ugui",
+  "root": { "name": "Panel", "element": "panel",   // canvas|panel|image|button|text|empty
+    "rect": { "anchor": "stretch", "size": [400, 600] },
+    "image": { "color": "#1A1A2EFF", "sprite": { "gen": { "kind": "rounded_rect", "radius": 12 } } },
+    "children": [ { "name": "PlayBtn", "element": "button",
+      "rect": { "anchor": "top-center", "pos": [0, -40], "size": [240, 64] },
+      "text": { "value": "Play", "engine": "auto" } } ] } }
+```
+
+`image.sprite` = `{ "asset": "Assets/..." }` or `{ "gen": {<spec>} }` (baked on apply; `nine_slice` auto-sets Image type Sliced). `text` takes `value` + optional `engine` (auto/tmp/legacy), `color` (#hex), `align` (center/left/right/top-left), `font` (asset path to a TMP/legacy font — also the icon-font-glyph path). With Game Feel UI Mode (Beta) on, `apply` returns per-element-type juice recipes as an `agent_hint`.
+
+**UI Toolkit v1** — `ui_doc apply` emits `.uxml` + shared `.hera-*` `.uss` + a screen-space `PanelSettings` and wired `UIDocument` into `Assets/HeraGenerated/UI`. It rejects unknown runtime elements/UXML attributes, warns and omits unsupported USS properties, and keeps MVVM data binding out of scope. World-space is allowed only when the **live runtime** is Unity `6000.2+`; never infer that from the docs bucket. `manage_ui create` follows the same backend choice; `get_rect`, `set_anchor`, and `set_rect` are uGUI-only.
+
+**Icons** (no SVG gen): reference an existing sprite via `image.sprite.asset`, or use an icon-font glyph — a `text` element whose `value` is the glyph char, then assign the icon TMP font with `manage_components set --property m_fontAsset --value <font.asset>`. See COMMANDS.md → ui_doc → Icons.
+
+**Reproducing a reference image faithfully** — rules that matter for a close match:
+- **Run the verify loop.** `ui_doc sample` the reference for exact colors → author the IR → `apply` → `ui_doc capture` → Read the PNG and compare it to the reference → fix the largest discrepancy → repeat until it stops improving. The tools exist so you measure and correct instead of eyeballing and rationalizing.
+- **Measure, don't guess.** Derive each element's position/size/color from the reference (the canvas is a known px space, e.g. 1080×1920). Use `ui_doc sample` for colors rather than guessing hex. Never eyeball a position and then rationalize it. If you can't place a detail accurately, omit it — a wrong/misplaced element is worse than a missing one.
+- **Progress bars / fills:** anchor the fill to the track's *start edge* (not centered) and size it = `fraction × track length`, kept inside the track. A center-anchored fill overflows the track.
+- **Text inside a container** (button / chip / pill): give the text the *same rect* as the container + `align: center`. A smaller or offset text rect clips (e.g. "x1") or de-centers.
+- **Sub-icon rows** (runes / gems / stars under a slider): place them under their owning element as an evenly-spaced row, and match the count from the reference.
+- **Bespoke art** (coins, weapons, trophies, stat icons) can't be procedurally generated — use real sprite assets or an icon font; only fall back to a clearly-stylized placeholder, and state that it is one. Don't fabricate detail you can't match.
 
 ---
 
@@ -386,7 +447,7 @@ Tools occasionally emit a one-line `hint:` to stderr when there's a non-obvious 
 
 ### 4.9 `humanCategories` whitelist drives output mode
 
-The CLI classifies commands as human-target (`install` / `uninstall` / `status` / `update` / `doctor` / `help` / `version`) or AI-target (everything else). AI-target commands automatically emit compact JSON and suppress decorative stderr. If you author a new top-level command and add it to `humanCategories`, agents will get indented output for it — usually unintended.
+The CLI classifies commands as human-target (`install` / `uninstall` / `status` / `update` / `doctor`) or AI-target (everything else, including `help` and `version`). AI-target commands automatically emit compact JSON and suppress decorative stderr. If you author a new top-level command and add it to `humanCategories`, agents will get indented output for it — usually unintended.
 
 ### 4.10 `batch` has no conditional or data passing
 
@@ -437,6 +498,33 @@ Anti-patterns that fail in PowerShell:
 
 bash equivalent: same idea, replace `@'...'@` with `<<'EOF'` heredoc or single-quoted `'...'` string. Avoid `\"` unless the outer wrapper is `"..."`.
 
+### 4.14 Custom `[HeraTool]` namespace collisions
+
+When you author a new tool under `AgentConnector/Editor/Tools/`, two type-name collisions reliably trigger `CS0104` on Unity's compiler the moment both `using System;` and `using UnityEditor;` are in scope (which most tools need):
+
+- **`Object`** — `System.Object` vs `UnityEngine.Object`. Qualify destroys as `UnityEngine.Object.Destroy(...)` / `UnityEngine.Object.DestroyImmediate(...)`, or alias once: `using Object = UnityEngine.Object;`.
+- **`PackageInfo`** — `UnityEditor.PackageInfo` (legacy AssetStore type) vs `UnityEditor.PackageManager.PackageInfo`. Alias once: `using PackageInfo = UnityEditor.PackageManager.PackageInfo;`.
+
+Other pairs worth aliasing pre-emptively when you reach for them: `Random` (`System.Random` vs `UnityEngine.Random` — different semantics) and `Debug` (`System.Diagnostics.Debug` vs `UnityEngine.Debug`). Grep for bare `Object` / `PackageInfo` / `Random` / `Debug` once before triggering the first compile to skip a hotfix round-trip.
+
+### 4.15 PowerShell `--params` JSON quoting
+
+The same shell-escape failure mode as §4.13 hits `--params '{...}'` payloads on PowerShell. The JSON inside must reach the CLI with **raw double-quotes intact** — PowerShell does not let you bash-style escape them, and the bash-style attempt silently produces `invalid JSON in --params: invalid character '\\' ...`.
+
+```powershell
+# Works — single-quoted outer string keeps " literal
+hera-agent-unity manage_components set --component_id 12345 `
+  --params '{"property":"m_CenterOfMass","value":[0,1,0]}'
+
+# Fails — backslash-escaped " survive into the JSON as literal '\"'
+hera-agent-unity manage_components set --component_id 12345 `
+  --params "{\"property\":\"m_CenterOfMass\",\"value\":[0,1,0]}"
+```
+
+bash equivalent: same pattern — single-quoted outer is the safe form, no `\"` rewriting.
+
+Or sidestep `--params` entirely for simple values by splitting the keys: `--property m_CenterOfMass --value 0,1,0` ships the same Vector3 through the scalar-friendly flag (comma strings are accepted alongside JSON arrays for Vector2/3/4, Quaternion, Color, Vector2Int, Vector3Int). Reserve `--params` for nested envelopes that the scalar flags cannot represent — `{"value": {"asset_path": "..."}}`, `{"value": {"instance_id": -12345}}`, deeply-nested arrays.
+
 ---
 
 ## 5. Reference (skim on demand)
@@ -450,16 +538,18 @@ bash equivalent: same idea, replace `@'...'@` with `<<'EOF'` heredoc or single-q
 | `scene info` / `load` / `save` / `close` / `list` | Scene management | `--mode single\|additive\|additive_without_loading` (load) |
 | `editor play \| stop \| pause \| refresh` | Editor lifecycle | `--wait` (play), `--compile`, `--force` (refresh) |
 | `menu "<path>"` | Execute menu item | (none) |
-| `screenshot` | Capture view | `--view scene\|game`, `--width`, `--height`, `--output_path` |
+| `screenshot` | Capture view or isolated target | `--view scene\|game`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
 | `test` | Run tests | `--mode EditMode\|PlayMode`, `--filter <ns.class>` |
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
 | `reserialize [paths...]` | Force YAML reserialize | (no args = whole project) |
 | `log "<msg>"` | Write to Unity console | `--level log\|warning\|error` |
-| `list` | List registered tools | `--compact`, `--tool <name>` |
+| `list` | List registered tools (names → name+desc → schema) | `--names` / `--compact` (names only), `--tool <name>` (full schema) |
 | `batch` | Run multiple commands in one HTTP request | `--file path.json`, or pipe JSON; `options.fail_fast` |
-| `list_assemblies` | List loaded assemblies | `--filter`, `--include_system` |
+| `list_assemblies` | List loaded assembly names | `--filter`, `--include_system`, `--include_version` |
+| `manage_assets` | AssetDatabase file/folder operations + ScriptableObject authoring | `find`, `mkdir`, `create`, `copy`, `move`, `delete` |
 | `describe_type <name>` | Type info + Unity-pitfalls | `--members fields\|properties\|methods\|all`, `--limit N` |
 | `find_method <pat>` | Search methods across assemblies | `--namespace`, `--limit` (default 50) |
+| `asset-config ui-system [ugui\|uitk]` | Select the top-level UI backend (default `ugui`) | `--json` includes `ui_system` |
 | `asset-config set-csc <path>` / `set-dotnet <path>` | Persist a default csc / dotnet path | (no flags) |
 | `status` / `ping` | Editor state / liveness | (none) |
 | `doctor` | Self-diagnostic | `--json`, `--agent-rules` (this guide's TL;DR subset) |
@@ -486,7 +576,7 @@ Common `code` values you might branch on:
 - `EXEC_LOGGED_ERROR` — `--strict` mode only. `data.logged_errors: [{type, message}, ...]`, `data.returned` is the value the snippet would have returned.
 - `EXEC_CSC_NOT_FOUND` / `EXEC_DOTNET_NOT_FOUND` — `suggestions[]` tells the user how to recover
 - `EXEC_COMPILE_TIMEOUT` — 30s csc timeout
-- `UNKNOWN_COMMAND` — typo'd command name. `data.did_you_mean: [...]` lists up to 3 commands within Levenshtein distance 2; act on the first match before re-running `list --names`.
+- `UNKNOWN_COMMAND` — typo'd command name. `data.did_you_mean: [...]` lists up to 3 commands within Levenshtein distance 2; act on the first match before re-running `list --compact`.
 - `READCONSOLE_INIT_FAILED` — Unity internal API drift; `data.unity_version` for triage
 
 ### 5.3 Environment variables
@@ -521,9 +611,9 @@ Controls how deep `exec`'s return-value serializer walks an object graph.
 
 | `--depth` | Behavior |
 |---|---|
-| `1` (default) | Primitives + one level of fields/properties. Unity Objects → shallow `{name, type, instanceID}`. |
+| `1` | Primitives + one level of fields/properties. Unity Objects → shallow `{name, type, instanceID}`. |
 | `2` | Adds nested fields. Unity Objects still shallow. |
-| `3+` | Full reflection on Unity Objects too. Use sparingly — Transform at depth 3 is ~9KB. |
+| `3` (default) | Full reflection on Unity Objects too. Use sparingly — Transform at depth 3 is ~9KB. |
 | `8` | Hard maximum. |
 
 If you find yourself wanting `--depth 3` for a Transform, ask whether you really need `transform.position` etc. — usually returning the specific fields (`return new { x = t.position.x, ... }`) is both clearer and an order of magnitude cheaper.
@@ -535,3 +625,5 @@ If you find yourself wanting `--depth 3` for a Transform, ask whether you really
 If something here contradicts what `hera-agent-unity <cmd> --help` says, trust `--help`. This guide is a curated subset, not the authoritative reference. The catalog at `docs/COMMANDS.md` is also authoritative for flag tables.
 
 If you find a real bug or want to suggest a pattern, file an issue at `https://github.com/NotNull92/hera-agent-unity/issues`.
+
+---

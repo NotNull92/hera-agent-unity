@@ -16,13 +16,31 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 ## 설계 의도
 
-**CLI(단일 Go 바이너리 + localhost HTTP) 구성은 의도된 선택이다.** MCP / WebSocket relay / 영속 서버 / Python 런타임 같은 대안으로 전환하자는 제안은 하지 말 것.
+**기존 Go CLI와 localhost HTTP Unity Connector가 실행 코어라는 결정은 유지한다** 🔒. `HttpServer`, `CommandRouter`, `ToolDiscovery`, `Heartbeat`, Unity main-thread queue, 파일버스 복구 경로를 교체하거나 Unity Connector 안에 MCP를 직접 구현하지 않는다.
+
+**CLI + MCP adapter migration은 사용자 승인 아래 진행 중이다** 🔒. 기존 바이너리 안에 선택적 Go stdio MCP adapter를 같은 실행 코어 앞에 추가할 수 있다. 이 adapter는 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 최종적으로 하나의 정규화된 tool contract registry를 공유한다. Profile MCP가 계획된 일반 노출이고, Compact MCP는 동적/custom tool fallback이며, Full MCP는 명시적 opt-in이다. 이 기능들은 아직 구현 완료 상태가 아니며, `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`의 M17 완료·benchmark gate가 통과하기 전까지 CLI가 production default다.
 
 이유:
 - 런타임 의존성 0개 — 사용자는 바이너리 하나 + UPM 패키지 하나만 설치
 - Stateless — 모든 요청이 독립적이라 세션·재연결 로직 불필요
 - 도메인 리로드를 파일시스템 버스(`~/.hera-agent-unity/instances/`, `status/`)로 우회
 - 어떤 셸·AI 에이전트·스크립트에서도 호출 가능 (MCP 클라이언트에 묶이지 않음)
+
+### MCP migration lock and ledger
+
+- **Authoritative implementation specification:** `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
+- **Milestone evidence and rollback ledger:** `docs/MCP_MIGRATION_PROGRESS.md`
+- **현재 상태:** M0 rule/baseline과 M1 structural schema validity가 완료됐다. M2 이후 action contract, Typed CLI, MCP runtime command는 구현되기 전까지 사용 가능하다고 문서화하지 않는다.
+- **보존 경계:** 기존 Go CLI, localhost HTTP Connector, single-editor model, main-thread serialization, heartbeat discovery, package/test file bus, CLI/Connector 독립 버전은 계속 잠금 상태다.
+
+### Rule-document hierarchy
+
+- `CLAUDE.md`: 레포 개발 헌법, 설계 잠금, 완료 항목 ledger의 hand-authored canonical source.
+- `AGENTS.md`: cross-tool project rule과 배포용 Hera agent guide의 hand-authored canonical source.
+- `AGENT.md`: `AGENTS.md`의 user-facing 부분에서 생성되는 distributable guide.
+- `cmd/AGENT.md`: `go:embed` 제약 때문에 `cmd/` 안에 두는 `AGENT.md`의 byte-identical generated copy.
+- `.cursor/rules/hera-agent-unity.mdc`, `.github/copilot-instructions.md`, `GEMINI.md`, `.agents/agents.md`, `.agents/skills/hera-agent-unity/SKILL.md`: `AGENTS.md`에서 결정론적으로 생성되는 tool-specific derivative 또는 stub.
+- 생성 파일은 독립적으로 수정하지 않는다. `go run ./tools/sync-agent-guides`로 재생성하고 `--check`로 drift를 검사한다.
 
 **파생 원칙** — decoupled/비대칭이 *의도된* 곳에 결합·통일 제안 금지:
 
@@ -44,7 +62,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
   - **작명은 헤라 어휘로**(`ui_slop`, `game_feel`, `unity_docs`) — 외부 도구 이름을 따지 않는다.
 - **번들 지식과 도구 표면은 영어** 🔒: `Data/*.jsonl.gz.bytes` 의 소스(`tools/build-*-docs/*.jsonl`)와 에이전트가 보는 모든 문자열(`[HeraTool]` Description·`agent_hint`·`doctor --agent-rules` 섹션·응답 필드)은 **영어로 쓴다**. 소비자가 다국어 AI 에이전트이고 `game_feel`·`unity_docs` 번들이 이미 영어라 혼용은 표면만 갈라놓는다. **주제가 한국어인 tell 도 예외가 아니다** — `hangul-font-fallback-jump` 처럼 한글 조판을 다루더라도 설명문은 영어로 쓰고, 한국어는 이 `CLAUDE.md` 같은 레포 자체 문서에만 둔다. (asset-config 한/영 혼용을 영어로 통일한 선례와 같은 결정.)
 
-새 기능을 추가할 때도 이 모델 안에서 풀 것: HTTP 한 번 / 필요하면 파일 폴링.
+Unity 실행 기능을 추가할 때도 기존 코어 모델 안에서 풀 것: HTTP 한 번 / 필요하면 파일 폴링. 선택적 Go adapter는 이 코어 앞에서만 동작한다.
 
 ## Structure
 
@@ -315,6 +333,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | Unity De-slop Mode (Beta) (`ui_slop`, Connector 0.0.62) | ✅ 완료 (2026-07-20) | **정적 시각 슬롭 정리** — Game Feel Mode(움직임·감각)의 상보. 헤라 라이브 실측 + 버전별 에디터 바이너리 리플렉션 위에 설계한 Unity 전용 택소노미 🔒. **지식 번들 🔒**: `Tools/UiSlop`(`ui_slop`) + `Core/UiSlopStore` 가 `Data/ui_slop_1.0.jsonl.gz.bytes`(49 tells, A~E) 를 GameFeelStore 패턴으로 로드(EnsureLoaded early-out·full-scan Levenshtein·area-grouped BuildIndex). source of truth 는 `tools/build-ui-slop-docs/ui_slop.jsonl`(편집 후 `go run ./tools/build-ui-slop-docs`). **check = 평가 함수 🔒**: tell 은 상태 문자열이 아니라 라이브 씬에서 재측정하는 술어(`check_ugui`/`check_uitk` 2벌 + `CheckFor(id, ui_system)` 슬라이스). 단 **전부가 술어인 것은 아니다** — 픽셀·의미 판단이 필요한 소수 tell(`ai-generated-art-assets` 등)은 본문에 그 사실을 명시한다(측정 불가를 술어인 척 포장 금지). 값은 도출(고정 px 금지), **값 체계를 소유한 tell 만** `borrow`(4px 베이스 간격 사다리 · 16px/1.2~1.25 타입 스케일 · accent 1+중립 램프 · WCAG 4.5:1), 나머지는 null 이고 fix 가 소유 tell 을 가리킨다. **절대 px 는 기준 해상도 없이는 무의미** 🔒 — 사다리·스케일은 **1280×720 레퍼런스**(uGUI `CanvasScaler` / UITK `PanelSettings`) 기준이며 해상도에 비례 스케일한다(1920×1080 이면 ×1.5). Unity 는 간격·타입 스케일을 제공하지 않으므로(LayoutGroup 기본 0, Text 14, TMP 36 — 체계가 아님) 이 값들은 **헤라가 선언한 기본값**이지 Unity 에서 도출한 값이 아니다. 프로젝트 자체 디자인 시스템이 있으면 항상 그쪽이 우선. **게임-UI 예외 게이트 🔒**: `box-in-box` 에 "무조건 flatten" 금지 — 반복 시리즈 셀(≥3)·인터랙션 보유·독립 밀도 패널은 **기능 표면**이라 제외(게이트 없이 판정하면 인벤토리 그리드의 셀이 전수 오탐으로 잡힌다 — 라이브 검증). 게임 UI 에서 중첩 표면은 대개 기능이므로, 전수 적용형 규칙에는 기능-표면 예외를 반드시 설계한다. **UITK 버전 게이트 🔒**: `check_uitk` 는 `uitk_schema_<bucket>` 번들을 풀어 **속성 실존을 대조한 뒤** 쓴다. 확인된 부재 — `box-shadow`·`backdrop-filter`·`picking-mode`·`gap`/`row-gap`/`column-gap`·`word-wrap` 은 USS 에 **없다**(요소 그림자는 uGUI 소관, picking 은 C#/UXML 속성, **형제 간격은 `margin-*` 로만** 표현). `1fr` 과 `align-items:baseline` 도 USS 값이 아니다(균등은 `flex-grow:1`+`flex-basis:0`, 마커 정렬은 `flex-start`). 반대로 **`-unity-font-style` 은 italic 을 지원**하므로 판정은 "해석값이 normal/bold 인가"다. `filter`(블러)는 **6000.3+ 버킷**에만 존재(2022.3/2023.2/6000.0 ❌ — 추출이 증명하는 범위가 여기까지다). **속성명 존재만 보고 값 범위를 추측하지 말 것**(실측 없이 쓴 `gap`/italic 주장이 실제로 틀렸던 전례). **조합 주입 🔒**: (a) `doctor --agent-rules` 가 모드 ON 일 때 독립 섹션 주입(Ultra Hera·Game Feel 과 무관), (b) `ui_slop` 조회 도구는 토글 무관 상시, (c) `manage_components add` 가 Shadow/Outline·Image/RawImage·TMP/Text 에 1줄 tell-pointer `agent_hint` 부착(game_feel hint 와 append 로 compose — clobber 금지). 토글은 `asset-config.json` 의 `ui_slop_mode`(CLI `asset-config uislop [on\|off]`, Hera Settings 섹션); **Go json.go 의 커스텀 Marshal/Unmarshal 필드 리스트 4곳 + C# `ConfigFieldNames` 등록 필수**(누락 시 조용히 미저장. Go 쪽은 `config_test.go` round-trip 이 잡지만 **C# `ConfigFieldNames` 누락을 잡는 테스트는 없으니 수동 확인**). 모션·카피는 각각 Game Feel·humanize 소관(중복 주입 금지). 오케스트레이션 파이프라인은 `.claude/skills/unity-deslop/`(로컬 skill, gitignore). **배관** live 검증(6000.3.5f2): 도구·list 등재·토글 round-trip·doctor 주입·agent_hint 전부 통과 — 단 이건 배선이 도는지의 증거이지 **택소노미 내용이 옳다는 증거가 아니다**(내용은 USS 스키마 대조로 별도 검증). 다시 *무조건 flatten*·*기능 표면 일괄 정리*·*USS 미지원 속성 기반 판정* 제안 금지 |
 | `Core/BundleStore<TEntry>` 추출 (Connector 0.0.63) | ✅ 완료 (2026-07-20) | `GameFeelStore`/`UiSlopStore` 의 번들 로딩(`EnsureLoaded`/`ResolveDataPath`/`Lookup`/`Count`/`LoadError`/full-scan `SuggestSimilar`)을 제네릭 인스턴스로 통합. 각 Store 는 `Entry` shape·`BuildIndex`·`CheckFor` 만 소유하고 `static readonly BundleStore<Entry>` 를 들고 static 파사드로 노출 — **공개 API·응답 shape 불변**(호출처 4곳 무수정). 241+242줄 → 86+110+197줄. **`UnityDocsStore` 는 소비자에서 영구 제외** 🔒: 버전 버킷 경로 해석 + 3-layer prefix/length/bounded suggest(2–5ms 잠금)를 제네릭 full-scan 으로 접으면 성능 회귀 — 공식 문서 조회 경로이므로 수정 금지. **3-consumer 임계의 명시적 예외** 🔒: 소비자가 2개뿐이지만 (a) UiSlopStore 가 GameFeelStore 의 복제본으로 태어난 것이 확정된 사실(추측 아님)이고 (b) 세 번째 후보가 영구 제외라 임계가 영원히 안 옴 — "3개 될 때까지 기다린다"를 이 케이스에 다시 적용하지 말 것. 부수 효과: 두 Store 에서 `using UnityEditor;` 제거 → CS0104 노출 소멸, GameFeelStore 의 재로드 불가 mtime 비교(캐시로는 작동하지 않고 double-check 노릇만 하던 `FileInfo` stat) 제거. 검증: 라이브 에디터(6000.3.5f2) 컴파일 에러 0 · `HeraAgent/Tests/{UiSlopStore,GameFeelStore}` ALL PASSED · `ui_slop`/`game_feel` 각각 index·hit·miss+did_you_mean end-to-end |
 | `Unsolicited response received on idle HTTP channel` stderr 노이즈 | ✅ 완료 (2026-07-20) | 도메인 리로드로 끝나는 명령(`refresh --compile`, `editor play/stop`, 간접 유발하는 `exec`/`menu`)이 keep-alive 소켓을 풀에 남기면, 리로드가 Unity `HttpListener` 를 내리면서 Mono 가 그 소켓에 빈 `200 OK / Content-Length: 0 / Connection: close` 를 쓴다 → 요청 없는 idle 연결에 바이트가 도착해 Go `net/http` 가 경고 로그. **명령은 이미 성공한 상태**지만 stderr 를 실패로 읽는 스크립트에 함정. `doWithReloadRetry` 에서 `req.Close = true` 로 소켓을 풀에 남기지 않게 수정. 실증: 설치본 3/3 발생 → 수정본 5/5 미발생(`editor refresh --compile`). **v0.0.13 의 idle pool 튜닝(MaxIdleConns 8/PerHost 4/IdleConnTimeout)은 이 수정으로 무의미해져 제거** — 연결을 재사용하지 않으므로 튜닝할 대상이 없다. 프로덕션 `Send` 호출부는 `cmd/send.go` 하나뿐이고 루프도 없어 프로세스당 HTTP 요청은 1회 → 재사용 이득 0. 다시 *idle pool 재튜닝* 또는 *경고를 커넥터 버그로* 제기 금지 |
+| MCP migration M1 구조적 JSON Schema 유효성 | ✅ 완료 (2026-07-30) | `SchemaUtility`를 재귀 builder로 교체해 nullable·enum·array/list·string-key dictionary·nested DTO를 구조적으로 표현하고, 미지원 타입은 `SchemaGenerationException`으로 실패시킨다. property-level boolean `required`는 제거하고 object-level string array만 유지하며 schema object key/property 순서는 ordinal canonicalization한다. **M1 경계 🔒**: handler 동작·외부 `list --tool` 필드·31 tool/27 action 이름은 불변이고, strict unknown-property rejection/action contract는 M2 이후 소관이다. 로컬 Unity 응답 파일 기반 compile + `HeraAgent/Tests/ToolDiscovery`에서 property-level boolean required 0, invalid runtime schema 0, 전체 PASS. |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 

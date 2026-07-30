@@ -635,6 +635,34 @@ If you find a real bug or want to suggest a pattern, file an issue at `https://g
 > if you copied this `AGENTS.md` into a downstream project to use hera, ignore this
 > section; everything above still applies.
 
+### 7.1 Canonical rule-document hierarchy
+
+The repository has two hand-authored rule sources with separate responsibilities:
+
+| File | Responsibility |
+|---|---|
+| `CLAUDE.md` | Repository-development constitution, locked architecture decisions, and the completed-item ledger. |
+| `AGENTS.md` | Canonical cross-tool project rules and the source for distributable Hera agent guides. |
+
+The following files are generated and must not be edited independently:
+
+| Generated file | Derivation |
+|---|---|
+| `AGENT.md` | Distributable usage guide generated from the user-facing portion of `AGENTS.md`. |
+| `cmd/AGENT.md` | Byte-identical copy of `AGENT.md` kept inside `cmd/` for `go:embed`. |
+| `.cursor/rules/hera-agent-unity.mdc` | Cursor frontmatter plus the distributable guide. |
+| `.github/copilot-instructions.md` | Copilot stub pointing to `AGENTS.md`. |
+| `GEMINI.md` | AntiGravity entry stub pointing to `AGENTS.md` and the generated skill. |
+| `.agents/agents.md` | AntiGravity workspace handoff pointing to the canonical rules. |
+| `.agents/skills/hera-agent-unity/SKILL.md` | AntiGravity skill frontmatter plus the distributable guide. |
+
+Regenerate or verify them from the repository root:
+
+```bash
+go run ./tools/sync-agent-guides
+go run ./tools/sync-agent-guides --check
+```
+
 hera-agent-unity is **co-developed by Claude (Claude Code) and Codex.** The two
 agents collaborate to build one polished tool — one catches what the other misses:
 

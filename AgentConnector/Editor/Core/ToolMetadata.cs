@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 
@@ -37,19 +38,11 @@ namespace HeraAgent
 
         private JObject GenerateSchema(ToolParameterAttribute attr, Type propertyType)
         {
-            var schema = new JObject
-            {
-                ["type"] = SchemaUtility.GetJsonTypeName(propertyType)
-            };
+            var schema = SchemaUtility.GenerateSchema(propertyType);
 
             if (attr.Description != null)
             {
                 schema["description"] = attr.Description;
-            }
-
-            if (attr.Required)
-            {
-                schema["required"] = true;
             }
 
             if (attr.Default != null)
@@ -70,18 +63,22 @@ namespace HeraAgent
                 }
             }
 
-            return schema;
+            return SchemaUtility.CanonicalizeSchema(schema);
         }
 
         private JToken ConvertDefaultValue(string defaultValue, Type type)
         {
             try
             {
-                if (type == typeof(string)) return defaultValue;
-                if (type == typeof(int)) return int.Parse(defaultValue);
-                if (type == typeof(float)) return float.Parse(defaultValue);
-                if (type == typeof(bool)) return bool.Parse(defaultValue);
-                return defaultValue;
+                var targetType = Nullable.GetUnderlyingType(type) ?? type;
+                if (targetType == typeof(string) || targetType == typeof(char))
+                    return defaultValue;
+                if (targetType.IsEnum)
+                    return Enum.Parse(targetType, defaultValue, true).ToString();
+                return JToken.FromObject(Convert.ChangeType(
+                    defaultValue,
+                    targetType,
+                    CultureInfo.InvariantCulture));
             }
             catch
             {
@@ -142,6 +139,7 @@ namespace HeraAgent
                     p.GetCustomAttributes(typeof(ToolParameterAttribute), false).First() as ToolParameterAttribute,
                     p.PropertyType,
                     p.Name))
+                .OrderBy(p => p.Name, StringComparer.Ordinal)
                 .ToList();
 
             ParametersSchema = GenerateParametersSchema(parameters);
@@ -155,16 +153,21 @@ namespace HeraAgent
             if (!hasOutputSchema)
             {
                 // Default output schema
-                return new JObject
+                return SchemaUtility.CanonicalizeSchema(new JObject
                 {
                     ["type"] = "object",
                     ["properties"] = new JObject
                     {
                         ["success"] = new JObject { ["type"] = "boolean", ["description"] = "Whether the operation succeeded" },
                         ["message"] = new JObject { ["type"] = "string", ["description"] = "Success or error message" },
-                        ["data"] = new JObject { ["type"] = "object", ["description"] = "Tool-specific output data" }
+                        ["data"] = new JObject
+                        {
+                            ["type"] = "object",
+                            ["description"] = "Tool-specific output data",
+                            ["properties"] = new JObject(),
+                        }
                     }
-                };
+                });
             }
 
             // Use custom output schema if provided
@@ -173,11 +176,12 @@ namespace HeraAgent
             {
                 try
                 {
-                    return JObject.Parse(customOutputSchema.OutputSchema);
+                    return SchemaUtility.CanonicalizeSchema(
+                        JObject.Parse(customOutputSchema.OutputSchema));
                 }
                 catch
                 {
-                    return new JObject
+                    return SchemaUtility.CanonicalizeSchema(new JObject
                     {
                         ["type"] = "object",
                         ["properties"] = new JObject
@@ -185,11 +189,15 @@ namespace HeraAgent
                             ["success"] = new JObject { ["type"] = "boolean" },
                             ["message"] = new JObject { ["type"] = "string" }
                         }
-                    };
+                    });
                 }
             }
 
-            return new JObject { ["type"] = "object" };
+            return SchemaUtility.CanonicalizeSchema(new JObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JObject(),
+            });
         }
 
         private JObject GenerateParametersSchema(List<ToolParameterMetadata> parameters)
@@ -205,13 +213,17 @@ namespace HeraAgent
                 schema["properties"][param.Name] = param.Schema;
             }
 
-            var requiredParams = parameters.Where(p => p.Required).Select(p => p.Name).ToList();
+            var requiredParams = parameters
+                .Where(p => p.Required)
+                .Select(p => p.Name)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToList();
             if (requiredParams.Count > 0)
             {
                 schema["required"] = new JArray(requiredParams);
             }
 
-            return schema;
+            return SchemaUtility.CanonicalizeSchema(schema);
         }
     }
 

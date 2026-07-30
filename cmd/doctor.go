@@ -15,11 +15,10 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/paths"
 )
 
-// agentGuide is the repo-root AGENT.md, embedded into the binary so
-// `doctor --agent-rules` can extract the Quick Rules + Pitfalls subset
-// without requiring repo access. The canonical file lives at the repo
-// root; a copy at cmd/AGENT.md exists because //go:embed cannot escape
-// the package directory.
+// agentGuide embeds cmd/AGENT.md so `doctor --agent-rules` can extract the
+// Quick Rules + Pitfalls subset without requiring repo access. AGENTS.md is
+// canonical; AGENT.md and cmd/AGENT.md are generated mirrors. The byte-identical
+// cmd copy exists because //go:embed cannot escape the package directory.
 //
 //go:embed AGENT.md
 var agentGuide string
