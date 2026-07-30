@@ -10,15 +10,16 @@ using Object = UnityEngine.Object;
 
 namespace HeraAgent.Tools
 {
-    [HeraActionContract("export", typeof(UiDoc.ExportParameters), ResultType = typeof(object))]
-    [HeraActionContract("apply", typeof(UiDoc.ApplyParameters), ResultType = typeof(object))]
-    [HeraActionContract("import", typeof(UiDoc.ImportParameters), ResultType = typeof(UiDoc.ImportResult))]
+    [HeraActionContract("export", typeof(UiDoc.ExportParameters), ResultType = typeof(object), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("apply", typeof(UiDoc.ApplyParameters), ResultType = typeof(object), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("import", typeof(UiDoc.ImportParameters), ResultType = typeof(UiDoc.ImportResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract(
         "gen_sprite",
         typeof(UiDoc.GenSpriteParameters),
         ResultType = typeof(UiDoc.GenSpriteResult),
-        Aliases = new[] { "gensprite" })]
-    [HeraActionContract("capture", typeof(UiDoc.CaptureParameters), ResultType = typeof(UiDoc.CaptureResult))]
+        Aliases = new[] { "gensprite" },
+        RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("capture", typeof(UiDoc.CaptureParameters), ResultType = typeof(UiDoc.CaptureResult), RiskClass = HeraRiskClass.Write, Reversible = true)]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "path", "instance_id", Action = "export")]
     [HeraArgumentGroup(ToolArgumentGroupMode.AtLeastOne, "doc", "src", Action = "import")]
     [HeraArgumentGroup(
@@ -54,6 +55,8 @@ namespace HeraAgent.Tools
             "Bake + import a rounded-rect sprite under Assets/",
             "Render the live overlay UI to a PNG for visual verification",
         },
+        Profiles = new[] { "ui" },
+        RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
     public static class UiDoc
     {

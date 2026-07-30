@@ -61,6 +61,37 @@ namespace HeraAgent
         public bool Idempotent { get; set; } = false;
         public bool MayReloadDomain { get; set; } = false;
         public bool RequiresPlayMode { get; set; } = false;
+        public HeraRiskClass RiskClass { get; set; } = HeraRiskClass.Unspecified;
+        public bool RequiresConfirmation { get; set; }
+        public bool Reversible { get; set; }
+        public bool SupportsCancellation { get; set; }
+    }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+    public sealed class HeraSafetyRuleAttribute : Attribute
+    {
+        public HeraSafetyRuleAttribute(
+            string operation,
+            string parameter,
+            string value)
+        {
+            Operation = operation;
+            Parameter = parameter;
+            Value = value;
+        }
+
+        public string Operation { get; }
+        public string Parameter { get; }
+        public string Value { get; }
+        public HeraRiskClass RiskClass { get; set; } = HeraRiskClass.Unspecified;
+        public bool ReadOnly { get; set; }
+        public bool Destructive { get; set; }
+        public bool Idempotent { get; set; }
+        public bool MayReloadDomain { get; set; }
+        public bool RequiresPlayMode { get; set; }
+        public bool RequiresConfirmation { get; set; }
+        public bool Reversible { get; set; }
+        public bool SupportsCancellation { get; set; }
     }
 
     /// <summary>

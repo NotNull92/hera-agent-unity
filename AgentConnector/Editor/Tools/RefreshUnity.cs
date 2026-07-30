@@ -4,6 +4,10 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Description = "Refresh Unity assets and optionally request script compilation.",
+        Profiles = new[] { "core", "scene", "assets" },
+        RiskClass = HeraRiskClass.Write,
+        Idempotent = true,
+        MayReloadDomain = true,
         ContractMode = ToolContractMode.Strict)]
     public static class RefreshUnity
     {

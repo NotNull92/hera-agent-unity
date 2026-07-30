@@ -46,6 +46,7 @@ namespace HeraAgent
         public IReadOnlyList<ToolParameterContract> Parameters { get; set; }
         public JObject InputSchema { get; set; }
         public JObject OutputSchema { get; set; }
+        public ToolSafetyContract Safety { get; set; }
         public bool IsStrict { get; set; }
         public IReadOnlyList<ToolArgumentGroupContract> ArgumentGroups { get; set; }
             = Array.Empty<ToolArgumentGroupContract>();
@@ -60,6 +61,11 @@ namespace HeraAgent
         public IReadOnlyDictionary<string, ToolActionContract> Actions { get; set; }
         public JObject InputSchema { get; set; }
         public JObject OutputSchema { get; set; }
+        public ToolSafetyContract Safety { get; set; }
+        public IReadOnlyList<ToolSafetyRule> SafetyRules { get; set; }
+            = Array.Empty<ToolSafetyRule>();
+        public IReadOnlyList<string> Profiles { get; set; }
+            = Array.Empty<string>();
         public IReadOnlyList<ToolArgumentGroupContract> ArgumentGroups { get; set; }
             = Array.Empty<ToolArgumentGroupContract>();
     }

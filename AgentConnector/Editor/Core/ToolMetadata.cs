@@ -31,14 +31,16 @@ namespace HeraAgent
             DefaultValue = attr.DefaultValue;
             EnumType = attr.EnumType;
             Default = attr.Default;
-            Type = SchemaUtility.GetJsonTypeName(propertyType);
             OutputSchema = attr.OutputSchema;
             Schema = GenerateSchema(attr, propertyType);
+            Type = GetPrimaryTypeName(Schema);
         }
 
         private JObject GenerateSchema(ToolParameterAttribute attr, Type propertyType)
         {
-            var schema = SchemaUtility.GenerateSchema(propertyType);
+            var schema = string.IsNullOrWhiteSpace(attr.SchemaJson)
+                ? SchemaUtility.GenerateSchema(propertyType)
+                : JObject.Parse(attr.SchemaJson);
 
             if (attr.Description != null)
             {
@@ -64,6 +66,16 @@ namespace HeraAgent
             }
 
             return SchemaUtility.CanonicalizeSchema(schema);
+        }
+
+        private static string GetPrimaryTypeName(JObject schema)
+        {
+            var type = schema?["type"];
+            if (type?.Type == JTokenType.String)
+                return type.Value<string>();
+            if (type is JArray types)
+                return types.Values<string>().FirstOrDefault(value => value != "null");
+            return "object";
         }
 
         private JToken ConvertDefaultValue(string defaultValue, Type type)

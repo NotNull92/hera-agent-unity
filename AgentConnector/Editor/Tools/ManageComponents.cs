@@ -33,6 +33,8 @@ namespace HeraAgent.Tools
             "Set an ObjectReference using an asset path",
             "Remove by component InstanceID — survives renames and duplicate types",
         },
+        Profiles = new[] { "core", "scene", "ui" },
+        RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", Action = "add")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", Action = "list")]
@@ -185,7 +187,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(AddParameters),
-            ResultType = typeof(AddResult))]
+            ResultType = typeof(AddResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object Add(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -300,7 +303,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(RemoveParameters),
-            ResultType = typeof(RemoveResult))]
+            ResultType = typeof(RemoveResult),
+            RiskClass = HeraRiskClass.Destructive)]
         public static object Remove(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -334,7 +338,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(ListParameters),
-            ResultType = typeof(ListResult))]
+            ResultType = typeof(ListResult),
+            RiskClass = HeraRiskClass.ReadOnly)]
         public static object List(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -359,7 +364,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(GetParameters),
-            ResultType = typeof(GetResult))]
+            ResultType = typeof(GetResult),
+            RiskClass = HeraRiskClass.ReadOnly)]
         public static object Get(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -403,7 +409,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(SetParameters),
-            ResultType = typeof(GetResult))]
+            ResultType = typeof(GetResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object Set(JObject raw)
         {
             var p = new ToolParams(raw);

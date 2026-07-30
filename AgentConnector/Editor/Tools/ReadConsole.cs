@@ -11,7 +11,15 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "console",
         Description = "Read or clear Unity console logs.",
+        Profiles = new[] { "core", "diagnostics", "testing" },
+        RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict)]
+    [HeraSafetyRule(
+        "clear",
+        "clear",
+        "true",
+        RiskClass = HeraRiskClass.Destructive,
+        Idempotent = true)]
     public static class ReadConsole
     {
         private static MethodInfo _startGettingEntriesMethod, _endGettingEntriesMethod, _clearMethod, _getCountMethod, _getEntryMethod;

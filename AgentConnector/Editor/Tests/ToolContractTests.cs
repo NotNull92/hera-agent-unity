@@ -62,6 +62,12 @@ namespace HeraAgent.Tests
             allPassed &= TestM23MutuallyExclusiveTargets();
             allPassed &= TestM23ComplexSchemaValues();
             allPassed &= TestM23OutputSchemas();
+            allPassed &= TestM24StrictToolCoverage();
+            allPassed &= TestEveryM24ActionContract();
+            allPassed &= TestM24ValidationFailures();
+            allPassed &= TestM24AliasesNormalize();
+            allPassed &= TestM24MutuallyExclusiveTargets();
+            allPassed &= TestM24OutputSchemas();
 
             if (allPassed)
                 Debug.Log("[ToolContractTests] ALL PASSED");
@@ -1249,6 +1255,357 @@ namespace HeraAgent.Tests
                 && applyProperties.Count == 0);
         }
 
+        private static bool TestM24StrictToolCoverage()
+        {
+            var tools = new[]
+            {
+                "manage_packages",
+                "run_tests",
+                "profiler",
+                "log",
+                "exec",
+                "menu",
+            };
+            return Expect(nameof(TestM24StrictToolCoverage),
+                tools.All(tool => ToolContractRegistry.Get(tool)?.Mode
+                    == ToolContractMode.Strict)
+                && ToolContractRegistry.Get("manage_packages").Actions.Values
+                    .All(action => action.IsStrict)
+                && ToolContractRegistry.Get("profiler").Actions.Count == 5
+                && ToolContractRegistry.Get("profiler").Actions.Values
+                    .All(action => action.IsStrict));
+        }
+
+        private static bool TestEveryM24ActionContract()
+        {
+            var count = 0;
+            foreach (var entry in StrictM24Actions())
+            {
+                count++;
+                var contract = ToolContractRegistry.Get(entry.tool);
+                if (contract == null
+                    || !contract.Actions.TryGetValue(entry.action, out var action)
+                    || !action.IsStrict
+                    || action.InputSchema["additionalProperties"]?.Value<bool>() != false
+                    || action.InputSchema["properties"]?["action"]?["const"]?.Value<string>()
+                        != entry.action
+                    || !ToolContractValidator.Validate(
+                        contract,
+                        entry.input,
+                        entry.action).IsValid)
+                {
+                    return Expect(nameof(TestEveryM24ActionContract), false);
+                }
+            }
+
+            return Expect(nameof(TestEveryM24ActionContract), count == 9);
+        }
+
+        private static bool TestM24ValidationFailures()
+        {
+            var missingCases = new[]
+            {
+                ("manage_packages", "add", new JObject { ["action"] = "add" }),
+                ("manage_packages", "remove", new JObject { ["action"] = "remove" }),
+                ("manage_packages", "embed", new JObject { ["action"] = "embed" }),
+            };
+            if (missingCases.Any(entry =>
+                ToolContractValidator.Validate(
+                    ToolContractRegistry.Get(entry.Item1),
+                    entry.Item3,
+                    entry.Item2).Error?.code != "MISSING_ARGUMENT"))
+            {
+                return Expect(nameof(TestM24ValidationFailures), false);
+            }
+
+            var defaultMissingCases = new[]
+            {
+                ("run_tests", new JObject()),
+                ("log", new JObject()),
+                ("exec", new JObject()),
+                ("menu", new JObject()),
+            };
+            if (defaultMissingCases.Any(entry =>
+                ToolContractValidator.Validate(
+                    ToolContractRegistry.Get(entry.Item1),
+                    entry.Item2).Error?.code != "MISSING_ARGUMENT"))
+            {
+                return Expect(nameof(TestM24ValidationFailures), false);
+            }
+
+            var wrongTypeCases = new[]
+            {
+                ("manage_packages", "add", new JObject
+                {
+                    ["action"] = "add",
+                    ["identifier"] = new JObject(),
+                }),
+                ("profiler", "hierarchy", new JObject
+                {
+                    ["action"] = "hierarchy",
+                    ["frame"] = new JObject(),
+                }),
+            };
+            if (wrongTypeCases.Any(entry =>
+                ToolContractValidator.Validate(
+                    ToolContractRegistry.Get(entry.Item1),
+                    entry.Item3,
+                    entry.Item2).Error?.code != "ARGUMENT_TYPE_MISMATCH"))
+            {
+                return Expect(nameof(TestM24ValidationFailures), false);
+            }
+
+            var defaultWrongTypeCases = new[]
+            {
+                ("run_tests", new JObject
+                {
+                    ["mode"] = "EditMode",
+                    ["async_results"] = new JObject(),
+                }),
+                ("log", new JObject { ["message"] = new JObject() }),
+                ("exec", new JObject
+                {
+                    ["code"] = "return null;",
+                    ["depth"] = new JObject(),
+                }),
+                ("menu", new JObject { ["menu_path"] = new JObject() }),
+            };
+            if (defaultWrongTypeCases.Any(entry =>
+                ToolContractValidator.Validate(
+                    ToolContractRegistry.Get(entry.Item1),
+                    entry.Item2).Error?.code != "ARGUMENT_TYPE_MISMATCH"))
+            {
+                return Expect(nameof(TestM24ValidationFailures), false);
+            }
+
+            foreach (var entry in StrictM24Actions())
+            {
+                var unknown = (JObject)entry.input.DeepClone();
+                unknown["unknown_m24_property"] = true;
+                if (ToolContractValidator.Validate(
+                        ToolContractRegistry.Get(entry.tool),
+                        unknown,
+                        entry.action).Error?.code != "UNKNOWN_ARGUMENT")
+                {
+                    return Expect(nameof(TestM24ValidationFailures), false);
+                }
+            }
+
+            foreach (var entry in M24DefaultInputs())
+            {
+                var unknown = (JObject)entry.input.DeepClone();
+                unknown["unknown_m24_property"] = true;
+                if (ToolContractValidator.Validate(
+                        ToolContractRegistry.Get(entry.tool),
+                        unknown).Error?.code != "UNKNOWN_ARGUMENT")
+                {
+                    return Expect(nameof(TestM24ValidationFailures), false);
+                }
+            }
+
+            foreach (var tool in new[] { "manage_packages", "profiler", "menu" })
+            {
+                var unknownAction = CommandRouter.Dispatch(
+                        tool,
+                        new JObject { ["action"] = "not_real" })
+                    .GetAwaiter()
+                    .GetResult() as ErrorResponse;
+                if (unknownAction?.code != "UNKNOWN_ACTION")
+                    return Expect(nameof(TestM24ValidationFailures), false);
+            }
+
+            return Expect(nameof(TestM24ValidationFailures), true);
+        }
+
+        private static bool TestM24AliasesNormalize()
+        {
+            var packagePositional = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("manage_packages"),
+                new JObject
+                {
+                    ["action"] = "add",
+                    ["args"] = new JArray("add", "com.example.package"),
+                },
+                "add");
+            var execNoCache = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("exec"),
+                new JObject
+                {
+                    ["code"] = "return null;",
+                    ["nocache"] = true,
+                });
+            var execDashedNoCache = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("exec"),
+                new JObject
+                {
+                    ["code"] = "return null;",
+                    ["no-cache"] = true,
+                });
+            var execCommaUsings = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("exec"),
+                new JObject
+                {
+                    ["code"] = "return null;",
+                    ["usings"] = "UnityEditor,UnityEngine",
+                });
+            var runTestsPositional = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("run_tests"),
+                new JObject { ["args"] = new JArray("editmode", "HeraAgent.Tests") });
+            var menuPositional = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("menu"),
+                new JObject { ["args"] = new JArray("Assets/Refresh") });
+            var logLevelAliases = new[] { "warn", "err", "info" }
+                .All(level => ToolContractValidator.Validate(
+                    ToolContractRegistry.Get("log"),
+                    new JObject
+                    {
+                        ["message"] = "marker",
+                        ["level"] = level,
+                    }).IsValid);
+
+            return Expect(nameof(TestM24AliasesNormalize),
+                packagePositional.IsValid
+                && packagePositional.Normalized.Value<string>("identifier")
+                    == "com.example.package"
+                && execNoCache.IsValid
+                && execNoCache.Normalized.Value<bool>("no_cache")
+                && execDashedNoCache.IsValid
+                && execDashedNoCache.Normalized.Value<bool>("no_cache")
+                && execCommaUsings.IsValid
+                && runTestsPositional.IsValid
+                && runTestsPositional.Normalized.Value<string>("mode") == "EditMode"
+                && runTestsPositional.Normalized.Value<string>("filter")
+                    == "HeraAgent.Tests"
+                && menuPositional.IsValid
+                && menuPositional.Normalized.Value<string>("menu_path") == "Assets/Refresh"
+                && logLevelAliases);
+        }
+
+        private static bool TestM24MutuallyExclusiveTargets()
+        {
+            var cases = new[]
+            {
+                new JObject
+                {
+                    ["action"] = "hierarchy",
+                    ["frame"] = 1,
+                    ["frames"] = 2,
+                },
+                new JObject
+                {
+                    ["action"] = "hierarchy",
+                    ["frame"] = 1,
+                    ["from"] = 0,
+                },
+                new JObject
+                {
+                    ["action"] = "hierarchy",
+                    ["frames"] = 2,
+                    ["to"] = 10,
+                },
+                new JObject
+                {
+                    ["action"] = "hierarchy",
+                    ["root"] = "PlayerLoop",
+                    ["parent"] = 1,
+                },
+            };
+            return Expect(nameof(TestM24MutuallyExclusiveTargets),
+                cases.All(input => ToolContractValidator.Validate(
+                    ToolContractRegistry.Get("profiler"),
+                    input,
+                    "hierarchy").Error?.code == "ARGUMENT_CONFLICT")
+                && ToolContractValidator.Validate(
+                    ToolContractRegistry.Get("profiler"),
+                    new JObject
+                    {
+                        ["frame"] = 1,
+                        ["frames"] = 2,
+                    }).Error?.code == "ARGUMENT_CONFLICT"
+                && ToolContractValidator.Validate(
+                    ToolContractRegistry.Get("profiler"),
+                    new JObject
+                    {
+                        ["action"] = "hierarchy",
+                        ["from"] = 0,
+                        ["to"] = 10,
+                    },
+                    "hierarchy").IsValid);
+        }
+
+        private static bool TestM24OutputSchemas()
+        {
+            foreach (var tool in new[]
+            {
+                "manage_packages",
+                "run_tests",
+                "profiler",
+                "log",
+                "exec",
+                "menu",
+            })
+            {
+                if (!HasOutputEnvelope(ToolContractRegistry.Get(tool).OutputSchema))
+                    return Expect(nameof(TestM24OutputSchemas), false);
+            }
+
+            foreach (var tool in new[] { "manage_packages", "profiler" })
+            {
+                if (ToolContractRegistry.Get(tool).Actions.Values
+                    .Any(action => !HasOutputEnvelope(action.OutputSchema)))
+                {
+                    return Expect(nameof(TestM24OutputSchemas), false);
+                }
+            }
+
+            var packages = ToolContractRegistry.Get("manage_packages");
+            var profiler = ToolContractRegistry.Get("profiler");
+            var runTests = ToolContractRegistry.Get("run_tests");
+            var log = ToolContractRegistry.Get("log");
+            var menu = ToolContractRegistry.Get("menu");
+            var profilerDefaultData = profiler.OutputSchema["properties"]?["data"];
+            var profilerHierarchyData = profiler.Actions["hierarchy"].OutputSchema[
+                "properties"]?["data"];
+            var profilerStatusData = profiler.Actions["status"].OutputSchema[
+                "properties"]?["data"];
+            var statusResponse = HeraAgent.Tools.ManageProfiler.HandleCommand(
+                new JObject { ["action"] = "status" }) as SuccessResponse;
+            var runtimeStatusProperties = statusResponse?.data == null
+                ? Array.Empty<string>()
+                : JObject.FromObject(statusResponse.data).Properties()
+                    .Select(property => property.Name)
+                    .OrderBy(name => name, StringComparer.Ordinal)
+                    .ToArray();
+            var schemaStatusProperties = (profilerStatusData?["properties"] as JObject)?
+                .Properties()
+                .Select(property => property.Name)
+                .OrderBy(name => name, StringComparer.Ordinal)
+                .ToArray() ?? Array.Empty<string>();
+            return Expect(nameof(TestM24OutputSchemas),
+                packages.Actions["list"].OutputSchema["properties"]?["data"]?
+                    ["properties"]?["packages"]?["items"]?["properties"]?["name"] != null
+                && packages.Actions["add"].OutputSchema["properties"]?["data"]?
+                    ["properties"]?["job_id"] != null
+                && profilerDefaultData?["properties"]?["threadIndex"] != null
+                && profilerDefaultData?["properties"]?["thread_index"] == null
+                && profilerHierarchyData?["properties"]?["parentName"] != null
+                && profilerHierarchyData?["properties"]?["parent_name"] == null
+                && profilerHierarchyData?["properties"]?["children"]?
+                    ["type"]?.Value<string>() == "array"
+                && profilerStatusData?["properties"]?["firstFrame"] != null
+                && profilerStatusData?["properties"]?["first_frame"] == null
+                && runtimeStatusProperties.SequenceEqual(schemaStatusProperties)
+                && runTests.OutputSchema["properties"]?["data"]?
+                    ["properties"]?["run_id"] != null
+                && runTests.OutputSchema["properties"]?["data"]?
+                    ["properties"]?["failures"]?["items"]?["type"]?.Value<string>()
+                        == "string"
+                && log.OutputSchema["properties"]?["data"]?
+                    ["properties"]?["level"] != null
+                && menu.Actions["list"].OutputSchema["properties"]?["data"]?
+                    ["properties"]?["groups"]?["type"]?.Value<string>() == "array");
+        }
+
         private static bool HasOutputEnvelope(JObject schema)
         {
             var properties = schema?["properties"] as JObject;
@@ -1571,6 +1928,32 @@ namespace HeraAgent.Tests
                 ["spec"] = new JObject { ["kind"] = "solid" },
             });
             yield return ("ui_doc", "capture", new JObject { ["action"] = "capture" });
+        }
+
+        private static IEnumerable<(string tool, string action, JObject input)> StrictM24Actions()
+        {
+            yield return ("manage_packages", "list", new JObject { ["action"] = "list" });
+            foreach (var action in new[] { "add", "remove", "embed" })
+            {
+                yield return ("manage_packages", action, new JObject
+                {
+                    ["action"] = action,
+                    ["identifier"] = "com.example.package",
+                });
+            }
+
+            yield return ("profiler", "hierarchy", new JObject { ["action"] = "hierarchy" });
+            foreach (var action in new[] { "enable", "disable", "status", "clear" })
+                yield return ("profiler", action, new JObject { ["action"] = action });
+        }
+
+        private static IEnumerable<(string tool, JObject input)> M24DefaultInputs()
+        {
+            yield return ("run_tests", new JObject { ["mode"] = "EditMode" });
+            yield return ("profiler", new JObject());
+            yield return ("log", new JObject { ["message"] = "marker" });
+            yield return ("exec", new JObject { ["code"] = "return null;" });
+            yield return ("menu", new JObject { ["menu_path"] = "Assets/Refresh" });
         }
 
         private static IEnumerable<(string tool, string action)> StrictActions()

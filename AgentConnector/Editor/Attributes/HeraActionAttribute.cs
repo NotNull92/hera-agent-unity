@@ -26,6 +26,11 @@ namespace HeraAgent
         public Type ResultType { get; set; }
         public string[] Aliases { get; set; } = Array.Empty<string>();
         public HeraRiskClass RiskClass { get; set; } = HeraRiskClass.Unspecified;
+        public bool ReadOnly { get; set; }
+        public bool Destructive { get; set; }
+        public bool Idempotent { get; set; }
+        public bool MayReloadDomain { get; set; }
+        public bool RequiresPlayMode { get; set; }
         public bool RequiresConfirmation { get; set; }
         public bool Reversible { get; set; }
         public bool SupportsCancellation { get; set; }

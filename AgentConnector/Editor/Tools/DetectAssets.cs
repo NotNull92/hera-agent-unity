@@ -10,6 +10,9 @@ namespace HeraAgent.Tools
     [HeraTool(
         Description = "Detect installed third-party asset plugins and update asset config",
         Group = "config",
+        Profiles = new[] { "assets" },
+        RiskClass = HeraRiskClass.Write,
+        Idempotent = true,
         ContractMode = ToolContractMode.Strict)]
     public static class DetectAssets
     {

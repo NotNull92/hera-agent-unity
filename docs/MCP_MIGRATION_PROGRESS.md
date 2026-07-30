@@ -11,7 +11,7 @@ benchmark gates pass.
 |---|---|
 | M0 Migration authority, rules, and progress ledger | PASS |
 | M1 Structural JSON Schema validity | PASS |
-| M2 Action contracts and validation taxonomy | IN PROGRESS (M2.1, M2.2, M2.3 PASS) |
+| M2 Action contracts and validation taxonomy | PASS (M2.1-M2.4 PASS) |
 | M3 Safety classification and profiles | PENDING |
 | M4 Canonical catalog, hash, and domain epoch | PENDING |
 | M5 Go registry, cache, and validation | PENDING |
@@ -312,3 +312,107 @@ benchmark gates pass.
 - **Generated agent guides:** Unchanged by M2.3; the deterministic synchronization check remains green.
 - **README / README.ko change:** None; M2.3 adds no CLI or MCP command and does not advertise unavailable Typed CLI or MCP functionality.
 - **Package version:** Connector manifest bumped to unreleased `0.0.68`; no package was installed, published, tagged, or released.
+
+## M2.4 Package, Test, Profiler, and Raw Tool Contracts
+
+- **Status:** PASS
+- **Commit baseline:** `d83849b5b14a0e3e5e25dc2cece387e390773d6e`
+- **Date:** 2026-07-30
+- **Implemented scope:**
+  - Switched `manage_packages`, `run_tests`, `profiler`, `execute_menu_item`, `execute_csharp`, and `log_to_console` to strict contracts without changing their existing handlers or CLI command surface.
+  - Declared four package actions and five profiler actions, bringing the unchanged 31 built-in tool names to 75 canonical action contracts with every built-in tool strict.
+  - Added action-specific required fields, actual aliases, package identifiers, typed test mode/default parameters, profiler argument conflicts, menu paths, log levels, stacktrace choices, and the existing `nocache` / `no-cache` compatibility forms.
+  - Modeled `execute_csharp.usings` as the existing array-or-comma-string complex value while preserving scalar normalization and pre-dispatch strict validation.
+  - Added typed outputs for package list/jobs, test runs, profiler hierarchy/status/control, menu execution, C# execution, and logging wherever the runtime shape is stable.
+  - Updated default-contract result inference and explicit Newtonsoft property-name handling so the advertised default profiler schema matches the runtime camelCase response exactly.
+  - Updated legacy metadata parsing to honor explicit `SchemaJson`, preventing complex strict parameters from failing discovery before the canonical contract is selected.
+  - Preserved explicit invalid-action normalization as `UNKNOWN_ACTION`; no Go CLI command, MCP runtime, Typed CLI, package installation, release behavior, Unity scene, or project asset was added or changed.
+  - Bumped the unreleased Connector package version from `0.0.68` to `0.0.69`.
+- **Tests:**
+  - PASS A RED exact-source run — PASS as a test of the new coverage: all expected M2.4 strict coverage, action, validation, alias, conflict, and output-schema cases failed before implementation.
+  - PASS A final exact-source Connector/TestRunner compile using the active Unity `6000.3.5f2` response files — PASS with no compiler output.
+  - PASS A exact-source `HeraAgent.Tests.ToolContractTests.RunTests` and `HeraAgent.Tests.ToolDiscoveryTests.RunTests` — PASS; 31 tool names, 75 canonical actions, all built-ins strict, property-level boolean `required` count zero, invalid runtime schema count zero, and all M2.1-M2.4 regressions passed.
+  - PASS A Unity console/state verification — PASS; zero console errors and the Editor returned to `ready`.
+  - PASS A `go test -count=1 ./...` — PASS (`cmd` 0.897s, `internal/assetconfig` 0.338s, `internal/client` 0.129s, `internal/poll` 0.937s, `tools/build-unity-docs` 0.035s, `tools/sync-agent-guides` 0.067s; remaining packages reported no test files).
+  - PASS B read-only review found three confirmed gaps before any correction: profiler typed schemas used snake_case while runtime returned camelCase; the valid default profiler route exposed a generic output despite its stable hierarchy result; and tests did not directly compare runtime keys/default profiler schema or the default no-action conflict route.
+  - Confirmed corrections only — honored explicit `JsonProperty` names in schema generation, inferred nested `Result` for default contracts, made the default profiler contract typed, and expanded only the missing runtime-key/default-route regression coverage.
+  - Final exact-source Connector/TestRunner compile — PASS with no compiler output.
+  - Final exact-source `HeraAgent.Tests.ToolContractTests.RunTests` — PASS, including `[PASS] TestM24StrictToolCoverage`, `TestEveryM24ActionContract`, `TestM24ValidationFailures`, `TestM24AliasesNormalize`, `TestM24MutuallyExclusiveTargets`, and `TestM24OutputSchemas`.
+  - Final exact-source `HeraAgent.Tests.ToolDiscoveryTests.RunTests` — PASS; 31 built-in names, 75 canonical action contracts, all strict, Draft 2020-12 schema validity, deterministic output, and external response compatibility passed.
+  - Final profiler runtime/schema smoke — PASS; runtime status keys `enabled`, `firstFrame`, `lastFrame`, `frameCount`, and `isPlaying` exactly match the typed status schema, and the typed default hierarchy schema exposes `children`, `depth`, `frame`, `frameCount`, `items`, `parent`, `parentName`, `root`, and `threadIndex`.
+  - Final Unity console/state verification — PASS; zero matched errors and the Editor was `ready`.
+  - Final `go test -count=1 ./...` — PASS (`cmd` 0.897s, `internal/assetconfig` 0.338s, `internal/client` 0.129s, `internal/poll` 0.937s, `tools/build-unity-docs` 0.035s, `tools/sync-agent-guides` 0.067s; remaining packages reported no test files).
+  - Final `go vet ./...`, `go build ./...`, and `golangci-lint run ./...` — PASS; lint reported `0 issues`.
+  - Final generated-guide check — PASS; `go run ./tools/sync-agent-guides --check` exited 0 and `AGENT.md` / `cmd/AGENT.md` remain byte-identical SHA-256 `b3092befd6fb6ed45deb896369dd020074b14e082863a25dc2d2314f9c5e947e`.
+  - Final locally built `doctor --agent-rules` — PASS; 21,913 bytes, six required sections, no machine-specific absolute path, and no claim that unimplemented `mcp` or `call` commands are available.
+  - Final obsolete-prohibition search — PASS; current rule language authorizes the planned Go adapter and prohibits only implementing MCP inside the Unity Connector or advertising unimplemented commands. README matches truthfully describe the shipped CLI/no-required-MCP setup; remaining implementation-plan/progress matches are normative or historical.
+  - Final `git diff --check` — PASS, exit 0.
+- **Known limitations:**
+  - Safety classification and profile enforcement remain M3, catalog hashing and domain epochs remain M4, and Typed CLI/MCP runtime commands remain unimplemented. The existing CLI remains the production default.
+  - The connected Editor consumes a cached Connector package rather than this repository as a local package. Verification therefore compiled and loaded the exact local sources into temporary in-memory assemblies; no package or project manifest was installed or changed.
+  - Package mutation actions were contract-tested but not executed against the connected project because M2.4 does not authorize changing its package manifest. The profiler runtime smoke was read-only.
+  - C# language-server diagnostics were unavailable; exact Unity compilation, contract/discovery tests, runtime schema probes, and the zero-error console check provided the C# verification surface.
+- **Rollback procedure:**
+  - Revert the M2.4 strict annotations, DTOs, aliases, action contracts, and typed results in `ManagePackages`, `RunTests`, `ManageProfiler`, `ExecuteMenuItem`, `ExecuteCsharp`, and `LogToConsole`.
+  - Revert nested default-result inference in `ToolContractRegistry`, explicit `SchemaJson` parsing in `ToolMetadata`, and explicit Newtonsoft property-name handling in `SchemaUtility`.
+  - Revert the M2.4 additions in `ToolContractTests` and `ToolDiscoveryTests`.
+  - Restore `AgentConnector/package.json` from `0.0.69` to `0.0.68`, then remove this M2.4 ledger entry and the matching `CLAUDE.md` status/ledger changes.
+  - No Go runtime, MCP runtime, scene, asset, project manifest, installed package, or persistent data migration needs rollback.
+- **Next prerequisite:** M3 may start only under a separate instruction after confirming this M2.4 PASS gate. Do not infer authorization to begin it from this entry.
+
+### M2.4 Rule-document impact
+
+- **CLAUDE.md migration state and completed ledger:** Recorded the M2.4 and full M2 PASS gates plus the explicit M3 boundary without weakening any architecture lock.
+- **Generated agent guides:** Unchanged by M2.4; usage truth did not change and the deterministic synchronization check remains green.
+- **README / README.ko change:** None; M2.4 adds no CLI or MCP command and does not advertise unavailable Typed CLI or MCP functionality.
+- **Package version:** Connector manifest bumped to unreleased `0.0.69`; no package was installed, published, tagged, or released.
+
+## M3 Safety Classification and Profiles
+
+- **Status:** PASS
+- **Commit baseline:** `d83849b5b14a0e3e5e25dc2cece387e390773d6e`
+- **Date:** 2026-07-30
+- **Implemented scope:**
+  - Added the normalized safety contract, parameter-dependent safety rules, conservative MCP annotation mapping, and deterministic profile normalization/validation to the shared Connector contract registry.
+  - Classified all 31 built-in tools and all 75 declared actions from their handlers. Read-only, write, destructive, package-change, and arbitrary-code operations now have explicit canonical metadata; destructive, package-change, and arbitrary-code operations require confirmation conservatively.
+  - Added parameter rules for `console clear=true` and `exec compile_only=true`, most-specific rule selection, and ambiguous-rule rejection.
+  - Defined the exact `core`, `scene`, `assets`, `ui`, `diagnostics`, `testing`, `full`, and `advanced` memberships. Normal profiles exclude `exec` and `menu`; strict custom tools without profile metadata default to `custom` plus policy-allowed `full`, while unspecified custom tools remain Compact-only.
+  - Preserved legacy boolean normalization and the existing `list --tool` nested metadata shape. Canonical action risk is authored on `HeraActionContract` / `HeraAction`; pre-existing `HeraActionSafety` remains only as the legacy compatibility source.
+  - Made unspecified built-in safety a contract-build failure and unspecified custom safety conservative, non-idempotent, potentially destructive, confirmation-required, and profile-hidden.
+  - Bumped the unreleased Connector package version from `0.0.69` to `0.0.70`.
+- **Tests:**
+  - Initial exact-source RED compile with the new M3 safety/profile tests — expected failure; the compiler reported missing `HeraSafetyRuleAttribute` / `HeraSafetyRule` before the M3 implementation existed.
+  - PASS A exact-source Connector/TestRunner compile using the active Unity `6000.3.5f2` response files redirected to this repository's sources — PASS with no compiler output.
+  - PASS A exact-source `ToolSafetyTests` and `ToolProfileTests` — PASS; 31 built-in tools, 75 actions, unclassified built-in tools/actions `0`, normal-profile arbitrary-code operations `0`, and profile validation failures `0`.
+  - PASS A exact-source `ToolContractTests` and `ToolDiscoveryTests` — PASS; all M2.1-M2.4 regressions, Draft 2020-12 validation, 31 names, 75 actions, all strict contracts, invalid runtime schema count `0`, and external response compatibility passed.
+  - PASS A `go test -count=1 ./...` — PASS (`cmd` 0.899s, `internal/assetconfig` 0.268s, `internal/client` 0.099s, `internal/poll` 0.929s, `tools/build-unity-docs` 0.029s, `tools/sync-agent-guides` 0.044s; remaining packages reported no test files).
+  - PASS B read-only review found six confirmed M3 gaps before any correction: conservative unknown flags contaminated classified actions; risk-only class safety changed legacy nested metadata; Input/TestRunner/package state flags did not match handlers; strict custom default profiles were missing; safety rules were absent from profile validation; and the audit table did not cover every action or directly test built-in unspecified failure.
+  - Confirmed corrections only — moved risk to canonical action declarations, fixed legacy override normalization, restored legacy nested metadata and Input play-mode behavior, removed unsupported cancellation claims, marked package mutation as domain-reload-capable, completed custom/profile-rule validation, and expanded the audit to all 106 tool/action operations plus direct unspecified failure coverage.
+  - Final exact-source Connector/TestRunner compile — PASS with no compiler output.
+  - Final exact-source `ToolSafetyTests` and `ToolProfileTests` — PASS, including all 106 expected risk entries, legacy normalization, built-in/custom unspecified behavior, parameter rules, ambiguous-rule rejection, conservative annotations, strict custom defaults, rule-aware profile validation, and stateless resolution.
+  - Final exact-source `ToolContractTests` and `ToolDiscoveryTests` — PASS; 31 built-in names, 75 canonical action contracts, all strict, Draft 2020-12 validity, deterministic schemas, legacy nested metadata preservation, property-level boolean `required` count `0`, and invalid runtime schema count `0`.
+  - Final normalized-safety probe — PASS; `manage_components` read/write actions are non-destructive and confirmation-free, while only `remove` is destructive and confirmation-required.
+  - Final Unity console/state verification — PASS; zero new console errors and the Editor returned `ready`.
+  - Final `go test -count=1 ./...` — PASS (`cmd` 0.876s, `internal/assetconfig` 0.265s, `internal/client` 0.080s, `internal/poll` 0.930s, `tools/build-unity-docs` 0.030s, `tools/sync-agent-guides` 0.042s; remaining packages reported no test files).
+  - Final generated-guide check — PASS; `go run ./tools/sync-agent-guides --check` exited `0` and `AGENT.md` / `cmd/AGENT.md` remain byte-identical SHA-256 `b3092befd6fb6ed45deb896369dd020074b14e082863a25dc2d2314f9c5e947e`.
+  - Final locally built `doctor --agent-rules` — PASS; 21,913 bytes, six required sections, no machine-specific absolute path, and no claim that unimplemented `mcp` or `call` commands are available.
+  - Final obsolete-prohibition search — PASS; remaining matches are the locked prohibition against implementing MCP inside the Unity Connector, the truthful prohibition against advertising unimplemented commands, or historical/normative migration records.
+  - Final `git diff --check` — PASS, exit `0`.
+- **Known limitations:**
+  - M3 adds internal normalized safety/profile metadata only. The canonical one-request catalog, catalog hash, project fingerprint, and domain epoch remain M4; Typed CLI and MCP runtime commands remain unimplemented. The existing CLI remains the production default.
+  - The connected Editor consumes a cached Connector package rather than this repository as a local package. Verification therefore compiled and loaded the exact local sources into temporary in-memory assemblies; no package or project manifest was installed or changed.
+  - C# language-server diagnostics were unavailable; exact Unity compilation, exhaustive contract/safety/profile tests, runtime reflection probes, and the zero-error console check provided the C# verification surface.
+- **Rollback procedure:**
+  - Remove the M3 risk/profile/rule annotations from built-in declarations and restore the pre-M3 attribute surfaces.
+  - Revert `ToolContractSafety`, `ToolContractSafetyRules`, `ToolContractProfiles`, the M3 registry/model fields, and only the M3 additions in `ToolDiscoveryTests`.
+  - Remove `ToolSafetyTests`, `ToolSafetyExpectations`, and `ToolProfileTests` with their sibling `.meta` files.
+  - Restore `AgentConnector/package.json` from `0.0.70` to `0.0.69`, then remove this M3 ledger entry and the matching `CLAUDE.md` status/ledger changes.
+  - No Go runtime, MCP runtime, scene, asset, project manifest, installed package, or persistent data migration needs rollback.
+- **Next prerequisite:** M4 may start only under a separate instruction after confirming this M3 PASS gate. Do not infer authorization to begin it from this entry.
+
+### M3 Rule-document impact
+
+- **CLAUDE.md migration state and completed ledger:** Recorded the M3 PASS gate and explicit M4 boundary without weakening any architecture lock.
+- **Generated agent guides:** Unchanged by M3; user-facing CLI truth did not change and deterministic synchronization remains green.
+- **README / README.ko change:** None; M3 adds no CLI or MCP command and does not advertise unavailable Typed CLI or MCP functionality.
+- **Package version:** Connector manifest bumped to unreleased `0.0.70`; no package was installed, published, tagged, or released.

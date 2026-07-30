@@ -6,6 +6,8 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "game_feel",
         Description = "Look up a Game Feel / Juice design topic from the connector-bundled knowledge base (Game Feel & Juice Bible + Ethical Engagement Game Feel Framework + UI Feedback Design Guide + UI/UX Visual Theory & Trends). Returns { key, category, title, body } with concrete, implementation-ready parameters (px, seconds, %, Hz) and the ethical/accessibility constraints built in — presentation intensity must honestly match real achievement (Honest Juice). Includes a `ui` category (per-element feedback specs, ECN-DMN framework, cognitive load, choice symmetry, 2026 trends) — the deep layer behind Game Feel UI Mode's inline hints. No topic (or 'list') returns the bucketed topic index, ethics first. Always available; Game Feel Mode (Beta) additionally makes other tools point at these topics via agent_hint.",
+        Profiles = new[] { "ui" },
+        RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {

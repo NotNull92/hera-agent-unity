@@ -6,10 +6,10 @@ using UnityEngine.Rendering;
 
 namespace HeraAgent.Tools
 {
-    [HeraActionContract("create", typeof(ManageMaterial.ShaderParameters), ResultType = typeof(ManageMaterial.MaterialResult))]
-    [HeraActionContract("get", typeof(ManageMaterial.GetParameters), ResultType = typeof(ManageMaterial.GetResult))]
-    [HeraActionContract("set", typeof(ManageMaterial.SetParameters), ResultType = typeof(ManageMaterial.PropertyResult))]
-    [HeraActionContract("set_shader", typeof(ManageMaterial.ShaderParameters), ResultType = typeof(ManageMaterial.MaterialResult))]
+    [HeraActionContract("create", typeof(ManageMaterial.ShaderParameters), ResultType = typeof(ManageMaterial.MaterialResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("get", typeof(ManageMaterial.GetParameters), ResultType = typeof(ManageMaterial.GetResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("set", typeof(ManageMaterial.SetParameters), ResultType = typeof(ManageMaterial.PropertyResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("set_shader", typeof(ManageMaterial.ShaderParameters), ResultType = typeof(ManageMaterial.MaterialResult), RiskClass = HeraRiskClass.Write)]
     [HeraTool(
         Name = "manage_material",
         Description = "Material asset CRUD: create (with a shader), get (shader + property values), set (one shader property), set_shader (swap the shader). Property names are shader property names (_BaseColor, _Metallic, _MainTex) — run describe_shader first to discover them. Values reuse the manage_components forms: '1,0,0,1' or '#RRGGBB' for colors, a number for floats, 'x,y,z,w' for vectors, and an asset path or InstanceID for textures.",
@@ -29,6 +29,8 @@ namespace HeraAgent.Tools
             "Set a texture property by asset path (or InstanceID)",
             "Swap the material's shader, keeping matching property values",
         },
+        Profiles = new[] { "scene", "assets" },
+        RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
     public static class ManageMaterial
     {

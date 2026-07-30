@@ -9,6 +9,8 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "describe_type",
         Description = "Describe a type loaded in the Unity Editor: kind, base, interfaces, public members, and known Unity pitfalls. Use this before writing exec code that touches a specific type to avoid signature/namespace mistakes.",
+        Profiles = new[] { "diagnostics" },
+        RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {

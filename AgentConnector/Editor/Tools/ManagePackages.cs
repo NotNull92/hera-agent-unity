@@ -26,15 +26,55 @@ namespace HeraAgent.Tools
             "Install a git-URL package (asynchronous)",
             "Remove an installed package by name (asynchronous)",
             "Move a cached package into Packages/ for local edits (asynchronous)",
-        })]
+        },
+        Profiles = new[] { "assets" },
+        RiskClass = HeraRiskClass.PackageChange,
+        MayReloadDomain = true,
+        ContractMode = ToolContractMode.Strict)]
     public static class ManagePackages
     {
+        public sealed class EmptyParameters
+        {
+        }
+
+        public sealed class IdentifierParameters
+        {
+            [ToolParameter("Package identifier.", Required = true)]
+            public string Identifier { get; set; }
+        }
+
         public class Parameters
         {
-            [ToolParameter("Action: list, add, remove, embed", Required = true)]
+            [ToolParameter(
+                "Action: list, add, remove, embed",
+                Required = true,
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"list\",\"add\",\"remove\",\"embed\"]}")]
             public string Action { get; set; }
 
             [ToolParameter("Identifier — add: any Client.Add string (com.x.y[@ver] / git URL / file:..). remove / embed: package name (com.x.y).")]
+            public string Identifier { get; set; }
+        }
+
+        public sealed class PackageResult
+        {
+            public string Name { get; set; }
+            public string Version { get; set; }
+            public string Source { get; set; }
+            public string ResolvedPath { get; set; }
+            public bool IsDirectDependency { get; set; }
+            public string DisplayName { get; set; }
+        }
+
+        public sealed class ListResult
+        {
+            public PackageResult[] Packages { get; set; }
+        }
+
+        public sealed class JobResult
+        {
+            public string JobId { get; set; }
+            public int Port { get; set; }
+            public string Action { get; set; }
             public string Identifier { get; set; }
         }
 
@@ -46,7 +86,11 @@ namespace HeraAgent.Tools
         // PackageCollection in request.Result must be read there. Task.Delay would
         // resume on a thread-pool thread (no SynchronizationContext), touching UPM
         // state off the main thread.
-        [HeraAction(Name = "list")]
+        [HeraAction(
+            Name = "list",
+            ParametersType = typeof(EmptyParameters),
+            ResultType = typeof(ListResult),
+            RiskClass = HeraRiskClass.ReadOnly)]
         public static async Task<object> ListAsync(JObject raw)
         {
             var request = Client.List(offlineMode: false, includeIndirectDependencies: true);
@@ -91,7 +135,11 @@ namespace HeraAgent.Tools
 
         // ---- Async add / remove / embed ----
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(IdentifierParameters),
+            ResultType = typeof(JobResult),
+            RiskClass = HeraRiskClass.PackageChange,
+            MayReloadDomain = true)]
         public static object Add(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -101,7 +149,11 @@ namespace HeraAgent.Tools
             return StartAsyncJob("add", identifier);
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(IdentifierParameters),
+            ResultType = typeof(JobResult),
+            RiskClass = HeraRiskClass.PackageChange,
+            MayReloadDomain = true)]
         public static object Remove(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -111,7 +163,11 @@ namespace HeraAgent.Tools
             return StartAsyncJob("remove", identifier);
         }
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(IdentifierParameters),
+            ResultType = typeof(JobResult),
+            RiskClass = HeraRiskClass.PackageChange,
+            MayReloadDomain = true)]
         public static object Embed(JObject raw)
         {
             var p = new ToolParams(raw);

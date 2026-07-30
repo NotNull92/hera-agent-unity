@@ -10,7 +10,11 @@ using Object = UnityEngine.Object;
 
 namespace HeraAgent.TestRunner
 {
-    [HeraTool(Description = "Run Unity EditMode or PlayMode tests and return results.")]
+    [HeraTool(
+        Description = "Run Unity EditMode or PlayMode tests and return results.",
+        Profiles = new[] { "diagnostics", "testing" },
+        RiskClass = HeraRiskClass.Write,
+        ContractMode = ToolContractMode.Strict)]
     public static class RunTests
     {
         internal static readonly string StatusDir = Path.Combine(
@@ -18,7 +22,10 @@ namespace HeraAgent.TestRunner
 
         public class Parameters
         {
-            [ToolParameter("Test mode: EditMode or PlayMode", Required = true)]
+            [ToolParameter(
+                "Test mode: EditMode or PlayMode",
+                Required = true,
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"EditMode\",\"PlayMode\"]}")]
             public string Mode { get; set; }
 
             [ToolParameter("Filter by namespace, class, or full test name")]
@@ -26,6 +33,18 @@ namespace HeraAgent.TestRunner
 
             [ToolParameter("Request run-scoped asynchronous results (new CLI capability)")]
             public bool AsyncResults { get; set; }
+        }
+
+        public sealed class Result
+        {
+            public int Port { get; set; }
+            public string RunId { get; set; }
+            public int Total { get; set; }
+            public int Passed { get; set; }
+            public int Failed { get; set; }
+            public int Skipped { get; set; }
+            public string[] Failures { get; set; }
+            public string[] Passes { get; set; }
         }
 
         public static Task<object> HandleCommand(JObject @params)

@@ -5,6 +5,10 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "reserialize",
         Description = "Force reserialize Unity assets. No params = entire project.",
+        Profiles = new[] { "assets" },
+        RiskClass = HeraRiskClass.Write,
+        Idempotent = true,
+        MayReloadDomain = true,
         ContractMode = ToolContractMode.Strict)]
     public static class ReserializeAssets
     {

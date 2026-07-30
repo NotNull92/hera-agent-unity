@@ -8,15 +8,17 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Description = "Controls Unity editor state. Actions: play, stop, pause, set_active_tool, add_tag, remove_tag, add_layer, remove_layer.",
+        Profiles = new[] { "core", "testing" },
+        RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
-    [HeraActionContract("play", typeof(ManageEditor.EmptyParameters))]
-    [HeraActionContract("stop", typeof(ManageEditor.EmptyParameters))]
-    [HeraActionContract("pause", typeof(ManageEditor.EmptyParameters))]
-    [HeraActionContract("set_active_tool", typeof(ManageEditor.SetActiveToolParameters))]
-    [HeraActionContract("add_tag", typeof(ManageEditor.TagParameters))]
-    [HeraActionContract("remove_tag", typeof(ManageEditor.TagParameters))]
-    [HeraActionContract("add_layer", typeof(ManageEditor.LayerParameters))]
-    [HeraActionContract("remove_layer", typeof(ManageEditor.LayerParameters))]
+    [HeraActionContract("play", typeof(ManageEditor.EmptyParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("stop", typeof(ManageEditor.EmptyParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("pause", typeof(ManageEditor.EmptyParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("set_active_tool", typeof(ManageEditor.SetActiveToolParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("add_tag", typeof(ManageEditor.TagParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("remove_tag", typeof(ManageEditor.TagParameters), RiskClass = HeraRiskClass.Destructive)]
+    [HeraActionContract("add_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("remove_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Destructive)]
     public static class ManageEditor
     {
         private const int FirstUserLayerIndex = 8;

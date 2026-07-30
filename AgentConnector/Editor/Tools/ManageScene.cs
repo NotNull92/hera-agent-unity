@@ -11,6 +11,8 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "scene",
         Description = "Scene operations: info, load, save, list, close.",
+        Profiles = new[] { "core", "scene" },
+        RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
     public static class ManageScene
     {
@@ -116,7 +118,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(InfoParameters),
-            ResultType = typeof(InfoResult))]
+            ResultType = typeof(InfoResult),
+            RiskClass = HeraRiskClass.ReadOnly)]
         public static object Info(JObject raw)
         {
             var active = SceneManager.GetActiveScene();
@@ -142,7 +145,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(LoadParameters),
-            ResultType = typeof(LoadResult))]
+            ResultType = typeof(LoadResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object Load(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -190,7 +194,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(SaveParameters),
-            ResultType = typeof(SaveResult))]
+            ResultType = typeof(SaveResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object Save(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -232,7 +237,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(ListParameters),
-            ResultType = typeof(SceneListEntry[]))]
+            ResultType = typeof(SceneListEntry[]),
+            RiskClass = HeraRiskClass.ReadOnly)]
         public static object List(JObject raw)
         {
             var registered = EditorBuildSettings.scenes;
@@ -252,7 +258,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(CloseParameters),
-            ResultType = typeof(CloseResult))]
+            ResultType = typeof(CloseResult),
+            RiskClass = HeraRiskClass.Destructive)]
         public static object Close(JObject raw)
         {
             var p = new ToolParams(raw);

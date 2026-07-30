@@ -9,7 +9,18 @@ using UnityEngine;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Name = "exec", Description = "Execute arbitrary C# code at runtime. Full access to Unity and all loaded assemblies.")]
+    [HeraTool(
+        Name = "exec",
+        Description = "Execute arbitrary C# code at runtime. Full access to Unity and all loaded assemblies.",
+        Profiles = new[] { "advanced" },
+        RiskClass = HeraRiskClass.ArbitraryCode,
+        ContractMode = ToolContractMode.Strict)]
+    [HeraSafetyRule(
+        "compile_only",
+        "compile_only",
+        "true",
+        RiskClass = HeraRiskClass.Write,
+        Idempotent = true)]
     public static partial class ExecuteCsharp
     {
         public class Parameters
@@ -17,8 +28,10 @@ namespace HeraAgent.Tools
             [ToolParameter("C# code to execute. Use 'return' for output.", Required = true)]
             public string Code { get; set; }
 
-            [ToolParameter("Additional using directives (comma-separated, e.g. Unity.Entities,Unity.Mathematics)")]
-            public string[] Usings { get; set; }
+            [ToolParameter(
+                "Additional using directives as an array or comma-separated string.",
+                SchemaJson = "{\"oneOf\":[{\"type\":\"array\",\"items\":{\"type\":\"string\"}},{\"type\":\"string\"}]}")]
+            public JToken Usings { get; set; }
 
             [ToolParameter("Path to csc compiler (csc.dll or csc.exe). Auto-detected if omitted.")]
             public string Csc { get; set; }
@@ -29,10 +42,14 @@ namespace HeraAgent.Tools
             [ToolParameter("Compile-only dry run. Returns success on a clean compile, EXEC_COMPILE_ERROR otherwise. No Execute() call, no side effects.")]
             public bool CompileOnly { get; set; }
 
-            [ToolParameter("Bypass exec cache reads and writes. Forces a fresh compile without persisting a DLL.")]
+            [ToolParameter(
+                "Bypass exec cache reads and writes. Forces a fresh compile without persisting a DLL.",
+                Aliases = new[] { "nocache", "no-cache" })]
             public bool NoCache { get; set; }
 
-            [ToolParameter("EXEC_RUNTIME_ERROR stack-trace mode: 'none' (exception_type only), 'user' (drop framework frames, default), 'full' (raw inner.StackTrace).")]
+            [ToolParameter(
+                "EXEC_RUNTIME_ERROR stack-trace mode: 'none' (exception_type only), 'user' (drop framework frames, default), 'full' (raw inner.StackTrace).",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"none\",\"user\",\"full\"]}")]
             public string Stacktrace { get; set; }
 
             [ToolParameter("Capture Debug.LogError/LogException/LogAssert raised during the snippet and surface them as EXEC_LOGGED_ERROR even if Execute() returned normally.")]

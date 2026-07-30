@@ -4,7 +4,12 @@ using UnityEngine;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Name = "log", Description = "Write a message to the Unity console. Faster than exec for simple Debug.Log markers — no csc compile cost.")]
+    [HeraTool(
+        Name = "log",
+        Description = "Write a message to the Unity console. Faster than exec for simple Debug.Log markers — no csc compile cost.",
+        Profiles = new[] { "diagnostics" },
+        RiskClass = HeraRiskClass.Write,
+        ContractMode = ToolContractMode.Strict)]
     public static class LogToConsole
     {
         public class Parameters
@@ -12,7 +17,15 @@ namespace HeraAgent.Tools
             [ToolParameter("Message body to log.", Required = true)]
             public string Message { get; set; }
 
-            [ToolParameter("Log level: log (default), warning, error.")]
+            [ToolParameter(
+                "Log level: log (default), warning, error.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"\",\"log\",\"info\",\"warning\",\"warn\",\"error\",\"err\"]}")]
+            public string Level { get; set; }
+        }
+
+        public sealed class Result
+        {
+            public string Message { get; set; }
             public string Level { get; set; }
         }
 

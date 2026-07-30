@@ -12,6 +12,9 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "screenshot",
         Description = "Capture a screenshot of the Unity editor. Views: scene, game, or isolated target.",
+        Profiles = new[] { "core", "scene", "ui", "diagnostics", "testing" },
+        RiskClass = HeraRiskClass.Write,
+        Reversible = true,
         ContractMode = ToolContractMode.Strict)]
     [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "target", "path", "instance_id")]
     [HeraArgumentGroup(

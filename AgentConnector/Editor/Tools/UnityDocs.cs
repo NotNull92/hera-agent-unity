@@ -6,6 +6,8 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "unity_docs",
         Description = "Look up an offline Unity ScriptReference page by class / property / method name. Returns { title, signature, summary, manual_url, scriptreference_url, unity_version } — typically 250-400 bytes — so an AI agent can verify an API exists at this Unity version before piping it through exec. The data set ships inside the UPM package itself (no docs folder on the user's machine, no network).",
+        Profiles = new[] { "diagnostics" },
+        RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor.Profiling;
 using UnityEditorInternal;
@@ -8,27 +9,92 @@ using UnityEngine;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Name = "profiler", Description = "Control Unity Profiler. Actions: hierarchy, enable, disable, status, clear.")]
+    [HeraTool(
+        Name = "profiler",
+        Description = "Control Unity Profiler. Actions: hierarchy, enable, disable, status, clear.",
+        Profiles = new[] { "diagnostics", "testing" },
+        RiskClass = HeraRiskClass.Destructive,
+        ContractMode = ToolContractMode.Strict)]
+    [HeraActionContract(
+        "hierarchy",
+        typeof(ManageProfiler.HierarchyParameters),
+        ResultType = typeof(ManageProfiler.Result),
+        RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("enable", typeof(ManageProfiler.EmptyParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("disable", typeof(ManageProfiler.EmptyParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract(
+        "status",
+        typeof(ManageProfiler.EmptyParameters),
+        ResultType = typeof(ManageProfiler.StatusResult),
+        RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("clear", typeof(ManageProfiler.EmptyParameters), RiskClass = HeraRiskClass.Destructive)]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtMostOne,
+        "frame",
+        "frames",
+        Action = "hierarchy")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtMostOne,
+        "frame",
+        "from",
+        Action = "hierarchy")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtMostOne,
+        "frame",
+        "to",
+        Action = "hierarchy")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtMostOne,
+        "frames",
+        "from",
+        Action = "hierarchy")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtMostOne,
+        "frames",
+        "to",
+        Action = "hierarchy")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtMostOne,
+        "root",
+        "parent",
+        Action = "hierarchy")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "frame", "frames")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "frame", "from")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "frame", "to")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "frames", "from")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "frames", "to")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "root", "parent")]
     public static class ManageProfiler
     {
-        public class Parameters
+        public sealed class EmptyParameters
         {
-            [ToolParameter("Action: hierarchy, enable, disable, status, or clear", Required = true)]
-            public string Action { get; set; }
+        }
 
-            [ToolParameter("Frame index. -1 or omit = last captured frame.")]
+        public class HierarchyParameters
+        {
+            [ToolParameter(
+                "Frame index. -1 or omit = last captured frame.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":-1}")]
             public int Frame { get; set; }
 
-            [ToolParameter("Start frame index for range average.")]
+            [ToolParameter(
+                "Start frame index for range average.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":-1}")]
             public int From { get; set; }
 
-            [ToolParameter("End frame index for range average.")]
+            [ToolParameter(
+                "End frame index for range average.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":-1}")]
             public int To { get; set; }
 
-            [ToolParameter("Number of recent frames to average (shortcut for range).")]
+            [ToolParameter(
+                "Number of recent frames to average (shortcut for range).",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":0}")]
             public int Frames { get; set; }
 
-            [ToolParameter("Thread index. 0 = main thread.")]
+            [ToolParameter(
+                "Thread index. 0 = main thread.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":0}")]
             public int Thread { get; set; }
 
             [ToolParameter("Parent item ID to drill into. Omit for root level.")]
@@ -37,10 +103,14 @@ namespace HeraAgent.Tools
             [ToolParameter("Find item by name and use as root. Substring match.")]
             public string Root { get; set; }
 
-            [ToolParameter("Minimum total time (ms) filter.")]
+            [ToolParameter(
+                "Minimum total time (ms) filter.",
+                SchemaJson = "{\"type\":\"number\",\"minimum\":0}")]
             public float Min { get; set; }
 
-            [ToolParameter("Sort column: 'total', 'self', or 'calls'. Default 'total'.")]
+            [ToolParameter(
+                "Sort column: 'total', 'self', or 'calls'. Default 'total'.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"total\",\"self\",\"calls\"]}")]
             public string Sort { get; set; }
 
             [ToolParameter("Max children per level. Default 30.")]
@@ -48,6 +118,53 @@ namespace HeraAgent.Tools
 
             [ToolParameter("Recursive depth. 1 = one level (default), 0 = unlimited.")]
             public int Depth { get; set; }
+        }
+
+        public sealed class Parameters : HierarchyParameters
+        {
+            [ToolParameter(
+                "Action: hierarchy, enable, disable, status, or clear.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"hierarchy\",\"enable\",\"disable\",\"status\",\"clear\"]}")]
+            public string Action { get; set; }
+        }
+
+        public sealed class StatusResult
+        {
+            public bool Enabled { get; set; }
+
+            [JsonProperty("firstFrame")]
+            public int FirstFrame { get; set; }
+
+            [JsonProperty("lastFrame")]
+            public int LastFrame { get; set; }
+
+            [JsonProperty("frameCount")]
+            public int FrameCount { get; set; }
+
+            [JsonProperty("isPlaying")]
+            public bool IsPlaying { get; set; }
+        }
+
+        public sealed class Result
+        {
+            public int Frame { get; set; }
+
+            [JsonProperty("threadIndex")]
+            public int ThreadIndex { get; set; }
+
+            public int Parent { get; set; }
+
+            [JsonProperty("parentName")]
+            public string ParentName { get; set; }
+
+            public int Depth { get; set; }
+            public object[] Children { get; set; }
+
+            [JsonProperty("frameCount")]
+            public int FrameCount { get; set; }
+
+            public string Root { get; set; }
+            public object[] Items { get; set; }
         }
 
         public static object HandleCommand(JObject parameters)

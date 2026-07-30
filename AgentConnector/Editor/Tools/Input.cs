@@ -23,15 +23,41 @@ namespace HeraAgent.Tools
             "Drive begin/drag/end handlers from the target point to a target-local point",
             "Select the target and execute its submit handler"
         },
+        Profiles = new[] { "ui", "testing" },
+        RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
-    [HeraActionContract("state", typeof(InputTool.StateParameters))]
-    [HeraActionContract("inspect", typeof(InputTool.TargetParameters))]
-    [HeraActionContract("click", typeof(InputTool.TargetParameters))]
-    [HeraActionContract("pointer_down", typeof(InputTool.TargetParameters))]
-    [HeraActionContract("pointer_up", typeof(InputTool.TargetParameters))]
-    [HeraActionContract("submit", typeof(InputTool.TargetParameters))]
-    [HeraActionContract("scroll", typeof(InputTool.ScrollParameters))]
-    [HeraActionContract("drag", typeof(InputTool.DragParameters))]
+    [HeraActionContract(
+        "state",
+        typeof(InputTool.StateParameters),
+        RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract(
+        "inspect",
+        typeof(InputTool.TargetParameters),
+        RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract(
+        "click",
+        typeof(InputTool.TargetParameters),
+        RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract(
+        "pointer_down",
+        typeof(InputTool.TargetParameters),
+        RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract(
+        "pointer_up",
+        typeof(InputTool.TargetParameters),
+        RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract(
+        "submit",
+        typeof(InputTool.TargetParameters),
+        RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract(
+        "scroll",
+        typeof(InputTool.ScrollParameters),
+        RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract(
+        "drag",
+        typeof(InputTool.DragParameters),
+        RiskClass = HeraRiskClass.Write)]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "inspect")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "click")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "pointer_down")]

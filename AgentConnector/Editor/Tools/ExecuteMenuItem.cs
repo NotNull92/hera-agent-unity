@@ -6,21 +6,20 @@ using UnityEditor;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Name = "menu", Description = "Execute a Unity menu item by path, or discover items: 'menu list' returns top-level groups, 'menu list --filter Assets' lists items under a group.")]
+    [HeraTool(
+        Name = "menu",
+        Description = "Execute a Unity menu item by path, or discover items: 'menu list' returns top-level groups, 'menu list --filter Assets' lists items under a group.",
+        Profiles = new[] { "advanced" },
+        RiskClass = HeraRiskClass.ArbitraryCode,
+        ContractMode = ToolContractMode.Strict)]
     public static class ExecuteMenuItem
     {
         private static readonly HashSet<string> Blacklist = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "File/Quit" };
 
         public class Parameters
         {
-            [ToolParameter("Unity menu item path to execute (e.g. File/Save Project). Omit when action is 'list'.", Required = true)]
+            [ToolParameter("Unity menu item path to execute (e.g. File/Save Project).", Required = true)]
             public string MenuPath { get; set; }
-
-            [ToolParameter("list: case-insensitive substring to match menu paths. Omit to get top-level groups instead of a flat list.")]
-            public string Filter { get; set; }
-
-            [ToolParameter("list: max items to return when filtering (default 300).")]
-            public int? Limit { get; set; }
         }
 
         public sealed class ListParameters
@@ -30,6 +29,22 @@ namespace HeraAgent.Tools
 
             [ToolParameter("Maximum menu items to return when filtering.")]
             public int? Limit { get; set; }
+        }
+
+        public sealed class MenuGroupResult
+        {
+            public string Name { get; set; }
+            public int Count { get; set; }
+        }
+
+        public sealed class ListResult
+        {
+            public string Filter { get; set; }
+            public int Total { get; set; }
+            public int Returned { get; set; }
+            public bool Truncated { get; set; }
+            public string[] Items { get; set; }
+            public MenuGroupResult[] Groups { get; set; }
         }
 
         public static object HandleCommand(JObject @params)
@@ -55,7 +70,10 @@ namespace HeraAgent.Tools
         // than a flat list, so a project with hundreds of items can't flood (or
         // silently truncate into) the agent's context. With a filter it returns a
         // bounded, explicitly-truncatable flat list.
-        [HeraAction(ParametersType = typeof(ListParameters))]
+        [HeraAction(
+            ParametersType = typeof(ListParameters),
+            ResultType = typeof(ListResult),
+            RiskClass = HeraRiskClass.ReadOnly)]
         public static object List(JObject raw)
         {
             var p = new ToolParams(raw);

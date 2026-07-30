@@ -13,12 +13,12 @@ namespace HeraAgent.Tools
     [HeraActionSafety("copy", MayReloadDomain = true)]
     [HeraActionSafety("move", Destructive = true, MayReloadDomain = true)]
     [HeraActionSafety("delete", Destructive = true, MayReloadDomain = true)]
-    [HeraActionContract("find", typeof(ManageAssets.FindParameters), ResultType = typeof(ManageAssets.FindResult))]
-    [HeraActionContract("mkdir", typeof(ManageAssets.PathParameters), ResultType = typeof(ManageAssets.MkdirResult))]
-    [HeraActionContract("create", typeof(ManageAssets.CreateParameters), ResultType = typeof(ManageAssets.CreateResult))]
-    [HeraActionContract("copy", typeof(ManageAssets.TransferParameters), ResultType = typeof(ManageAssets.TransferResult))]
-    [HeraActionContract("move", typeof(ManageAssets.TransferParameters), ResultType = typeof(ManageAssets.TransferResult))]
-    [HeraActionContract("delete", typeof(ManageAssets.PathParameters), ResultType = typeof(ManageAssets.PathResult))]
+    [HeraActionContract("find", typeof(ManageAssets.FindParameters), ResultType = typeof(ManageAssets.FindResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("mkdir", typeof(ManageAssets.PathParameters), ResultType = typeof(ManageAssets.MkdirResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("create", typeof(ManageAssets.CreateParameters), ResultType = typeof(ManageAssets.CreateResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("copy", typeof(ManageAssets.TransferParameters), ResultType = typeof(ManageAssets.TransferResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("move", typeof(ManageAssets.TransferParameters), ResultType = typeof(ManageAssets.TransferResult), RiskClass = HeraRiskClass.Destructive)]
+    [HeraActionContract("delete", typeof(ManageAssets.PathParameters), ResultType = typeof(ManageAssets.PathResult), RiskClass = HeraRiskClass.Destructive)]
     [HeraArgumentGroup(
         ToolArgumentGroupMode.AtLeastOne,
         "filter",
@@ -49,6 +49,8 @@ namespace HeraAgent.Tools
             "Move or rename one asset file",
             "Delete one asset file or folder under Assets/",
         },
+        Profiles = new[] { "assets" },
+        RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
     public static class ManageAssets
     {

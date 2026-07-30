@@ -37,21 +37,31 @@ namespace HeraAgent
                 : attribute.Name.Trim();
             var parameters = ToolContractSchemaBuilder.BuildParameters(
                 toolType.GetNestedType("Parameters"));
+            var resultType = toolType.GetNestedType("Result");
             var argumentGroups = BuildArgumentGroups(toolType, parameters, null);
             var actions = BuildActions(toolType);
+            var safety = ToolContractSafety.From(attribute, toolType);
+            var mode = attribute?.ContractMode ?? ToolContractMode.Legacy;
 
             return new ToolContract
             {
                 Name = name,
                 ToolType = toolType,
-                Mode = attribute?.ContractMode ?? ToolContractMode.Legacy,
+                Mode = mode,
                 Parameters = parameters,
                 Actions = actions,
+                Safety = safety,
+                SafetyRules = ToolContractSafety.BuildRules(toolType, safety),
+                Profiles = ToolContractProfiles.Normalize(
+                    attribute?.Profiles,
+                    ToolContractSafety.IsBuiltIn(toolType),
+                    mode,
+                    safety.RiskClass),
                 ArgumentGroups = argumentGroups,
                 InputSchema = ToolContractSchemaBuilder.BuildInputSchema(
                     parameters,
                     argumentGroups: argumentGroups),
-                OutputSchema = ToolContractSchemaBuilder.BuildOutputSchema(null),
+                OutputSchema = ToolContractSchemaBuilder.BuildOutputSchema(resultType),
             };
         }
 
@@ -74,7 +84,8 @@ namespace HeraAgent
                     attribute.ParametersType,
                     attribute.ResultType,
                     true,
-                    toolType);
+                    toolType,
+                    ToolContractSafety.From(attribute, null));
             }
 
             foreach (var method in toolType.GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -95,7 +106,9 @@ namespace HeraAgent
                     attribute.ParametersType,
                     attribute.ResultType,
                     strict,
-                    toolType);
+                    toolType,
+                    ToolContractSafety.From(attribute, null),
+                    method);
             }
 
             return actions;
@@ -109,7 +122,9 @@ namespace HeraAgent
             Type parametersType,
             Type resultType,
             bool strict,
-            Type toolType)
+            Type toolType,
+            ToolSafetyContract safety,
+            MethodInfo method = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new SchemaGenerationException(
@@ -118,6 +133,19 @@ namespace HeraAgent
             name = name.Trim().ToLowerInvariant();
             var parameters = ToolContractSchemaBuilder.BuildParameters(parametersType);
             var argumentGroups = BuildArgumentGroups(toolType, parameters, name);
+            var overrides = toolType
+                .GetCustomAttributes<HeraActionSafetyAttribute>()
+                .Concat(method == null
+                    ? Array.Empty<HeraActionSafetyAttribute>()
+                    : method.GetCustomAttributes<HeraActionSafetyAttribute>())
+                .Where(attribute => string.IsNullOrWhiteSpace(attribute.Action)
+                    || string.Equals(
+                        attribute.Action.Trim(),
+                        name,
+                        StringComparison.OrdinalIgnoreCase));
+            foreach (var safetyOverride in overrides)
+                safety = ToolContractSafety.Apply(safety, safetyOverride, null);
+            safety = ToolContractSafety.EnsureClassified(safety, toolType);
             actions[name] = new ToolActionContract
             {
                 Name = name,
@@ -132,6 +160,7 @@ namespace HeraAgent
                     name,
                     argumentGroups),
                 OutputSchema = ToolContractSchemaBuilder.BuildOutputSchema(resultType),
+                Safety = safety,
                 IsStrict = strict,
             };
         }

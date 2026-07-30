@@ -27,6 +27,8 @@ namespace HeraAgent.Tools
             "Reparent an object under /Root (worldPositionStays default true)",
             "Read position/rotation/scale of /Root/Player",
         },
+        Profiles = new[] { "core", "scene", "ui" },
+        RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "destroy")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "duplicate")]
@@ -218,7 +220,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(CreateParameters),
-            ResultType = typeof(GameObjectResult))]
+            ResultType = typeof(GameObjectResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object Create(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -268,7 +271,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(DuplicateParameters),
-            ResultType = typeof(DuplicateResult))]
+            ResultType = typeof(DuplicateResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object Duplicate(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -354,7 +358,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(DestroyParameters),
-            ResultType = typeof(GameObjectResult))]
+            ResultType = typeof(GameObjectResult),
+            RiskClass = HeraRiskClass.Destructive)]
         public static object Destroy(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -375,7 +380,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(MoveParameters),
-            ResultType = typeof(GameObjectResult))]
+            ResultType = typeof(GameObjectResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object Move(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -402,7 +408,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(SetParentParameters),
-            ResultType = typeof(GameObjectResult))]
+            ResultType = typeof(GameObjectResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object SetParent(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -452,7 +459,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(SetActiveParameters),
-            ResultType = typeof(GameObjectResult))]
+            ResultType = typeof(GameObjectResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object SetActive(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -474,7 +482,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(SetNameParameters),
-            ResultType = typeof(GameObjectResult))]
+            ResultType = typeof(GameObjectResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object SetName(JObject raw)
         {
             var p = new ToolParams(raw);
@@ -494,7 +503,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(GetTransformParameters),
-            ResultType = typeof(GameObjectResult))]
+            ResultType = typeof(GameObjectResult),
+            RiskClass = HeraRiskClass.ReadOnly)]
         public static object GetTransform(JObject raw)
         {
             var p = new ToolParams(raw);

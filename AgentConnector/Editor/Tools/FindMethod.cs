@@ -9,6 +9,8 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "find_method",
         Description = "Search method names across loaded assemblies by substring. Returns declaring type and signature (the signature includes the static modifier and return type). Useful when you remember 'something with Refresh' but not the exact class.",
+        Profiles = new[] { "diagnostics" },
+        RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {

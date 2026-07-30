@@ -5,10 +5,10 @@ using UnityEngine;
 
 namespace HeraAgent.Tools
 {
-    [HeraActionContract("create", typeof(ManagePrefab.CreateParameters), ResultType = typeof(ManagePrefab.PrefabResult))]
-    [HeraActionContract("instantiate", typeof(ManagePrefab.InstantiateParameters), ResultType = typeof(ManagePrefab.InstanceResult))]
-    [HeraActionContract("add_component", typeof(ManagePrefab.ComponentParameters), ResultType = typeof(ManagePrefab.PrefabResult))]
-    [HeraActionContract("remove_component", typeof(ManagePrefab.ComponentParameters), ResultType = typeof(ManagePrefab.PrefabResult))]
+    [HeraActionContract("create", typeof(ManagePrefab.CreateParameters), ResultType = typeof(ManagePrefab.PrefabResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("instantiate", typeof(ManagePrefab.InstantiateParameters), ResultType = typeof(ManagePrefab.InstanceResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("add_component", typeof(ManagePrefab.ComponentParameters), ResultType = typeof(ManagePrefab.PrefabResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("remove_component", typeof(ManagePrefab.ComponentParameters), ResultType = typeof(ManagePrefab.PrefabResult), RiskClass = HeraRiskClass.Destructive)]
     [HeraArgumentGroup(
         ToolArgumentGroupMode.ExactlyOne,
         "source",
@@ -33,6 +33,8 @@ namespace HeraAgent.Tools
             "Add a component to the prefab root (headless edit, persisted to the asset)",
             "Remove a component from the prefab root",
         },
+        Profiles = new[] { "scene", "assets" },
+        RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
     public static class ManagePrefab
     {

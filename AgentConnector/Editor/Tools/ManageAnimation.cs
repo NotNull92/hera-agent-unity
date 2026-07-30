@@ -13,12 +13,12 @@ namespace HeraAgent.Tools
     [HeraActionSafety("add_parameter", MayReloadDomain = true)]
     [HeraActionSafety("add_state", MayReloadDomain = true)]
     [HeraActionSafety("add_transition", MayReloadDomain = true)]
-    [HeraActionContract("create_clip", typeof(ManageAnimation.CreateClipParameters), ResultType = typeof(ManageAnimation.ClipResult))]
-    [HeraActionContract("set_curve", typeof(ManageAnimation.SetCurveParameters), ResultType = typeof(ManageAnimation.CurveResult))]
-    [HeraActionContract("create_controller", typeof(ManageAnimation.PathParameters), ResultType = typeof(ManageAnimation.ControllerResult))]
-    [HeraActionContract("add_parameter", typeof(ManageAnimation.AddParameterParameters), ResultType = typeof(ManageAnimation.ParameterResult))]
-    [HeraActionContract("add_state", typeof(ManageAnimation.AddStateParameters), ResultType = typeof(ManageAnimation.StateResult))]
-    [HeraActionContract("add_transition", typeof(ManageAnimation.AddTransitionParameters), ResultType = typeof(ManageAnimation.TransitionResult))]
+    [HeraActionContract("create_clip", typeof(ManageAnimation.CreateClipParameters), ResultType = typeof(ManageAnimation.ClipResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("set_curve", typeof(ManageAnimation.SetCurveParameters), ResultType = typeof(ManageAnimation.CurveResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("create_controller", typeof(ManageAnimation.PathParameters), ResultType = typeof(ManageAnimation.ControllerResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("add_parameter", typeof(ManageAnimation.AddParameterParameters), ResultType = typeof(ManageAnimation.ParameterResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("add_state", typeof(ManageAnimation.AddStateParameters), ResultType = typeof(ManageAnimation.StateResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("add_transition", typeof(ManageAnimation.AddTransitionParameters), ResultType = typeof(ManageAnimation.TransitionResult), RiskClass = HeraRiskClass.Write)]
     [HeraTool(
         Name = "manage_animation",
         Description = "Author animation assets without exec boilerplate: create_clip / set_curve build an AnimationClip (.anim) and its float curves; create_controller / add_parameter / add_state / add_transition build an AnimatorController (.controller) state machine on its base layer. Paths are constrained to Assets/.",
@@ -42,6 +42,8 @@ namespace HeraAgent.Tools
             "Add a state with a motion clip and make it the layer default",
             "Add a transition between states with a condition",
         },
+        Profiles = new[] { "scene" },
+        RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
     public static class ManageAnimation
     {

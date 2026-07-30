@@ -11,6 +11,8 @@ namespace HeraAgent.Tools
     [HeraTool(
         Name = "describe_shader",
         Description = "Inspect a shader's properties (name, type, display label, range) or search shader names. Use this before manage_material to learn which properties a shader exposes (e.g. _BaseColor, _Metallic) and their types. Pass a shader name to describe it; pass --list to search names instead.",
+        Profiles = new[] { "assets", "diagnostics" },
+        RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict,
         Examples = new[]
         {

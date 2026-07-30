@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace HeraAgent
@@ -169,7 +170,7 @@ namespace HeraAgent
                     .Select(property => new
                     {
                         Property = property,
-                        Name = StringCaseUtility.ToSnakeCase(property.Name),
+                        Name = GetSerializedPropertyName(property),
                     })
                     .OrderBy(property => property.Name, StringComparer.Ordinal))
                 {
@@ -207,6 +208,14 @@ namespace HeraAgent
                 || type == typeof(uint)
                 || type == typeof(long)
                 || type == typeof(ulong);
+        }
+
+        private static string GetSerializedPropertyName(PropertyInfo property)
+        {
+            var explicitName = property.GetCustomAttribute<JsonPropertyAttribute>()?.PropertyName;
+            return string.IsNullOrWhiteSpace(explicitName)
+                ? StringCaseUtility.ToSnakeCase(property.Name)
+                : explicitName;
         }
 
         private static bool IsFloatingPoint(Type type)

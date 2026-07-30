@@ -63,6 +63,8 @@ namespace HeraAgent.Tests
             allPassed &= TestCatalogSchemasAreDeterministic();
             allPassed &= TestRuntimeToolAndActionNamesUnchanged();
             allPassed &= TestExternalResponseFieldsArePreserved();
+            allPassed &= ToolSafetyTests.RunAll();
+            allPassed &= ToolProfileTests.RunAll();
 
             Debug.Log(
                 $"[ToolDiscoveryTests] property-level required boolean count = {propertyRequiredCount}; " +
@@ -279,6 +281,7 @@ namespace HeraAgent.Tests
                 ["manage_prefab"] = new[] { "add_component", "create", "instantiate", "remove_component" },
                 ["manage_ui"] = new[] { "create", "get_rect", "set_anchor", "set_rect" },
                 ["menu"] = new[] { "list" },
+                ["profiler"] = new[] { "clear", "disable", "enable", "hierarchy", "status" },
                 ["scene"] = new[] { "close", "info", "list", "load", "save" },
                 ["ui_doc"] = new[] { "apply", "capture", "export", "gen_sprite", "import" },
             };
@@ -293,6 +296,7 @@ namespace HeraAgent.Tests
                 return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged), false);
 
             var actionCount = 0;
+            var allBuiltInsStrict = true;
             foreach (var toolName in expectedTools)
             {
                 var tool = JObject.FromObject(ToolDiscovery.GetToolSchema(toolName));
@@ -304,13 +308,16 @@ namespace HeraAgent.Tests
                 if (!actualActions.SequenceEqual(expected))
                     return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged), false);
                 actionCount += actualActions.Length;
+                allBuiltInsStrict &= ToolContractRegistry.Get(toolName)?.Mode
+                    == ToolContractMode.Strict;
             }
 
             Debug.Log(
                 $"[ToolDiscoveryTests] baseline tool names unchanged = true ({expectedTools.Length}); " +
-                $"declared action contracts complete = true ({actionCount})");
+                $"declared action contracts complete = true ({actionCount}); " +
+                $"built-in strict contracts complete = {allBuiltInsStrict.ToString().ToLowerInvariant()}");
             return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged),
-                expectedTools.Length == 31 && actionCount == 70);
+                expectedTools.Length == 31 && actionCount == 75 && allBuiltInsStrict);
         }
 
         private static bool ContainsBaselineToolNames(
@@ -332,8 +339,18 @@ namespace HeraAgent.Tests
                 "name", "description", "group", "groups", "examples", "actions",
                 "schema", "output_schema", "metadata",
             };
+            var components = JObject.FromObject(
+                ToolDiscovery.GetToolSchema("manage_components"));
+            var input = JObject.FromObject(ToolDiscovery.GetToolSchema("input"));
+            var componentActionSafety =
+                components["metadata"]?["action_safety"] as JObject;
+            var inputActionSafety = input["metadata"]?["action_safety"] as JObject;
             return Expect(nameof(TestExternalResponseFieldsArePreserved),
-                tool.Properties().Select(property => property.Name).SequenceEqual(expected));
+                tool.Properties().Select(property => property.Name).SequenceEqual(expected)
+                && componentActionSafety?.Count == 0
+                && inputActionSafety?.Count == 0
+                && input["metadata"]?["safety"]?["requires_play_mode"]?.Value<bool>()
+                    == false);
         }
 
         private static IEnumerable<JObject> RuntimeSchemaTokens()

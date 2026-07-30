@@ -48,6 +48,8 @@ namespace HeraAgent.Tools
             "Stretch-fill the parent and snap offsets/pivot (Alt+Shift behaviour)",
             "Set anchoredPosition + sizeDelta directly",
         },
+        Profiles = new[] { "ui" },
+        RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
     public static class ManageUI
     {
@@ -212,7 +214,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(CreateParameters),
-            ResultType = typeof(object))]
+            ResultType = typeof(object),
+            RiskClass = HeraRiskClass.Write)]
         public static object Create(JObject raw)
         {
             if (HeraSettings.UsesUiToolkit)
@@ -532,7 +535,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(TargetParameters),
-            ResultType = typeof(RectResult))]
+            ResultType = typeof(RectResult),
+            RiskClass = HeraRiskClass.ReadOnly)]
         public static object GetRect(JObject raw)
         {
             if (HeraSettings.UsesUiToolkit)
@@ -548,7 +552,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(SetAnchorParameters),
-            ResultType = typeof(RectResult))]
+            ResultType = typeof(RectResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object SetAnchor(JObject raw)
         {
             if (HeraSettings.UsesUiToolkit)
@@ -625,7 +630,8 @@ namespace HeraAgent.Tools
 
         [HeraAction(
             ParametersType = typeof(SetRectParameters),
-            ResultType = typeof(RectResult))]
+            ResultType = typeof(RectResult),
+            RiskClass = HeraRiskClass.Write)]
         public static object SetRect(JObject raw)
         {
             if (HeraSettings.UsesUiToolkit)

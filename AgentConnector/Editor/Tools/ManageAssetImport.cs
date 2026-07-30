@@ -4,8 +4,8 @@ using UnityEditor;
 
 namespace HeraAgent.Tools
 {
-    [HeraActionContract("get", typeof(ManageAssetImport.GetParameters), ResultType = typeof(ManageAssetImport.GetResult))]
-    [HeraActionContract("set", typeof(ManageAssetImport.SetParameters), ResultType = typeof(ManageAssetImport.PropertyResult))]
+    [HeraActionContract("get", typeof(ManageAssetImport.GetParameters), ResultType = typeof(ManageAssetImport.GetResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("set", typeof(ManageAssetImport.SetParameters), ResultType = typeof(ManageAssetImport.PropertyResult), RiskClass = HeraRiskClass.Write, MayReloadDomain = true)]
     [HeraTool(
         Name = "manage_asset_import",
         Description = "Read or change an asset's import settings via its AssetImporter (TextureImporter, ModelImporter, AudioImporter, …). get dumps the importer's serialized properties (or one); set writes one and reimports. Property paths are raw SerializedProperty paths (m_TextureType, m_sRGBTexture, m_MipMapMode) — same convention as manage_components. get with no --property first to discover them.",
@@ -23,6 +23,8 @@ namespace HeraAgent.Tools
             "Set an int/enum import setting, then reimport the asset",
             "Set a bool import setting (accepts true/false/1/0)",
         },
+        Profiles = new[] { "assets" },
+        RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
     public static class ManageAssetImport
     {
