@@ -4,6 +4,8 @@ using UnityEditor;
 
 namespace HeraAgent.Tools
 {
+    [HeraActionContract("get", typeof(ManageAssetImport.GetParameters), ResultType = typeof(ManageAssetImport.GetResult))]
+    [HeraActionContract("set", typeof(ManageAssetImport.SetParameters), ResultType = typeof(ManageAssetImport.PropertyResult))]
     [HeraTool(
         Name = "manage_asset_import",
         Description = "Read or change an asset's import settings via its AssetImporter (TextureImporter, ModelImporter, AudioImporter, …). get dumps the importer's serialized properties (or one); set writes one and reimports. Property paths are raw SerializedProperty paths (m_TextureType, m_sRGBTexture, m_MipMapMode) — same convention as manage_components. get with no --property first to discover them.",
@@ -20,9 +22,48 @@ namespace HeraAgent.Tools
             "Read one import setting",
             "Set an int/enum import setting, then reimport the asset",
             "Set a bool import setting (accepts true/false/1/0)",
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
     public static class ManageAssetImport
     {
+        public class GetParameters
+        {
+            [ToolParameter("Asset path under Assets/.", Required = true)]
+            public string Path { get; set; }
+
+            [ToolParameter("SerializedProperty path. Omit to return all properties.")]
+            public string Property { get; set; }
+        }
+
+        public sealed class SetParameters
+        {
+            [ToolParameter("Asset path under Assets/.", Required = true)]
+            public string Path { get; set; }
+
+            [ToolParameter("SerializedProperty path.", Required = true)]
+            public string Property { get; set; }
+
+            [ToolParameter(
+                "Serialized property value.",
+                Required = true,
+                SchemaJson = "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"boolean\"},{\"type\":\"array\",\"items\":{}},{\"type\":\"object\",\"additionalProperties\":true}]}")]
+            public JToken Value { get; set; }
+        }
+
+        public class PropertyResult
+        {
+            public string Path { get; set; }
+            public string ImporterType { get; set; }
+            public string Property { get; set; }
+            public string PropertyType { get; set; }
+            public object Value { get; set; }
+        }
+
+        public sealed class GetResult : PropertyResult
+        {
+            public Dictionary<string, object> Properties { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: get, set.", Required = true)]

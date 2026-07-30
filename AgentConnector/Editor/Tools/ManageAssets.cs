@@ -13,6 +13,19 @@ namespace HeraAgent.Tools
     [HeraActionSafety("copy", MayReloadDomain = true)]
     [HeraActionSafety("move", Destructive = true, MayReloadDomain = true)]
     [HeraActionSafety("delete", Destructive = true, MayReloadDomain = true)]
+    [HeraActionContract("find", typeof(ManageAssets.FindParameters), ResultType = typeof(ManageAssets.FindResult))]
+    [HeraActionContract("mkdir", typeof(ManageAssets.PathParameters), ResultType = typeof(ManageAssets.MkdirResult))]
+    [HeraActionContract("create", typeof(ManageAssets.CreateParameters), ResultType = typeof(ManageAssets.CreateResult))]
+    [HeraActionContract("copy", typeof(ManageAssets.TransferParameters), ResultType = typeof(ManageAssets.TransferResult))]
+    [HeraActionContract("move", typeof(ManageAssets.TransferParameters), ResultType = typeof(ManageAssets.TransferResult))]
+    [HeraActionContract("delete", typeof(ManageAssets.PathParameters), ResultType = typeof(ManageAssets.PathResult))]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtLeastOne,
+        "filter",
+        "type",
+        Action = "find",
+        Path = "/filter",
+        Expected = "filter or type")]
     [HeraTool(
         Name = "manage_assets",
         Description = "Compact AssetDatabase operations: find, mkdir, create, copy, move, delete. create instantiates a ScriptableObject subclass as an Assets/ .asset (optional initial field values via --params '{\"properties\":{...}}'). Paths are constrained to Assets/.",
@@ -35,9 +48,89 @@ namespace HeraAgent.Tools
             "Copy one asset file to another Assets/ path",
             "Move or rename one asset file",
             "Delete one asset file or folder under Assets/",
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
     public static class ManageAssets
     {
+        public sealed class FindParameters
+        {
+            [ToolParameter("AssetDatabase.FindAssets filter text.")]
+            public string Filter { get; set; }
+
+            [ToolParameter("Asset type filter (Texture2D, Material, Prefab).")]
+            public string Type { get; set; }
+
+            [ToolParameter(
+                "Maximum results (default 50, max 500).",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":500}")]
+            public int? Limit { get; set; }
+
+            [ToolParameter("Whether folders are included (default false).")]
+            public bool? IncludeFolders { get; set; }
+        }
+
+        public class PathParameters
+        {
+            [ToolParameter("Asset path under Assets/.", Required = true)]
+            public string Path { get; set; }
+        }
+
+        public sealed class CreateParameters : PathParameters
+        {
+            [ToolParameter("ScriptableObject subclass name.", Required = true)]
+            public string Type { get; set; }
+
+            [ToolParameter(
+                "Raw SerializedProperty name to value map.",
+                SchemaJson = "{\"type\":\"object\",\"additionalProperties\":true}")]
+            public JObject Properties { get; set; }
+        }
+
+        public sealed class TransferParameters : PathParameters
+        {
+            [ToolParameter("Destination asset path under Assets/.", Required = true)]
+            public string NewPath { get; set; }
+        }
+
+        public sealed class AssetSummary
+        {
+            public string Path { get; set; }
+            public string Guid { get; set; }
+            public string Name { get; set; }
+            public string Type { get; set; }
+        }
+
+        public sealed class FindResult
+        {
+            public string Query { get; set; }
+            public int Total { get; set; }
+            public int Returned { get; set; }
+            public bool Truncated { get; set; }
+            public AssetSummary[] Assets { get; set; }
+        }
+
+        public class PathResult
+        {
+            public string Path { get; set; }
+        }
+
+        public sealed class MkdirResult : PathResult
+        {
+            public bool Created { get; set; }
+        }
+
+        public sealed class CreateResult : PathResult
+        {
+            public string Type { get; set; }
+            public string Guid { get; set; }
+            public string[] Applied { get; set; }
+        }
+
+        public sealed class TransferResult : PathResult
+        {
+            public string NewPath { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: find, mkdir, create, copy, move, delete.", Required = true)]

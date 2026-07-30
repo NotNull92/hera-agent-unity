@@ -76,7 +76,10 @@ namespace HeraAgent
                             new[] { parameter.Name, alias });
                     }
 
-                    normalized[parameter.Name] = aliasValue;
+                    normalized[parameter.Name] = parameter.ValueType.IsArray
+                        && aliasValue.Type != JTokenType.Array
+                            ? new JArray(aliasValue.DeepClone())
+                            : aliasValue;
                     normalized.Remove(alias);
                     if (parameter.Deprecated)
                     {
@@ -314,6 +317,13 @@ namespace HeraAgent
                         "/args/" + index,
                         name + " once",
                         args[index].ToString());
+                }
+                if (parameterIndex == parameters.Count - 1
+                    && parameters[parameterIndex].ValueType.IsArray)
+                {
+                    normalized[name] = new JArray(
+                        args.Skip(index).Select(item => item.DeepClone()));
+                    break;
                 }
                 normalized[name] = args[index];
             }

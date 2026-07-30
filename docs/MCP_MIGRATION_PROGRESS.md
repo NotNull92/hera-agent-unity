@@ -11,7 +11,7 @@ benchmark gates pass.
 |---|---|
 | M0 Migration authority, rules, and progress ledger | PASS |
 | M1 Structural JSON Schema validity | PASS |
-| M2 Action contracts and validation taxonomy | IN PROGRESS (M2.1, M2.2 PASS) |
+| M2 Action contracts and validation taxonomy | IN PROGRESS (M2.1, M2.2, M2.3 PASS) |
 | M3 Safety classification and profiles | PENDING |
 | M4 Canonical catalog, hash, and domain epoch | PENDING |
 | M5 Go registry, cache, and validation | PENDING |
@@ -257,3 +257,58 @@ benchmark gates pass.
 - **Generated agent guides:** Unchanged by M2.2; the deterministic synchronization check remains green.
 - **README / README.ko change:** None; M2.2 adds no CLI or MCP command and does not advertise unavailable Typed CLI or MCP functionality.
 - **Package version:** Connector manifest bumped to unreleased `0.0.67`; no package was installed, published, tagged, or released.
+
+## M2.3 Asset and UI Tool Contracts
+
+- **Status:** PASS
+- **Commit baseline:** `529166e49159209bd028f2e46a9e49292a8948ef`
+- **Date:** 2026-07-30
+- **Implemented scope:**
+  - Switched `manage_assets`, `manage_asset_import`, `manage_material`, `manage_prefab`, `manage_animation`, `manage_ui`, `ui_doc`, `reserialize`, `refresh_unity`, and `detect_assets` to strict contracts.
+  - Added 31 strict M2.3 action contracts across the seven action tools, bringing the unchanged 31 built-in tool names to 70 declared canonical action contracts.
+  - Declared action-specific required fields, actual `ui_doc gensprite` and `reserialize path` aliases, mutually exclusive prefab/UI/export targets, conditional anchor requirements, and at-least-one payload requirements.
+  - Modeled asset property values, animation keyframes and conditions, UI vectors, import manifests, and procedural sprite specifications with recursive JSON Schema fragments.
+  - Added typed output schemas where one runtime shape is stable. Kept the dual-backend `manage_ui create` and `ui_doc apply` outputs plus dynamic `ui_doc export` generic because uGUI and UI Toolkit intentionally return different data shapes.
+  - Preserved the variadic positional `reserialize` form and normalized its singular `path` alias to the canonical `paths` array before strict validation.
+  - Preserved explicit invalid-action normalization as `UNKNOWN_ACTION`; no CLI command, Unity handler, MCP runtime, Typed CLI, package install, or release behavior was added.
+  - Bumped the unreleased Connector package version from `0.0.67` to `0.0.68`.
+- **Tests:**
+  - Initial exact-source Connector compile with the seven new M2.3 contract tests and before M2.3 annotations — PASS; executing the RED assembly failed all seven expected M2.3 cases.
+  - Final merged Connector/TestRunner compile using the active Unity `6000.3.5f2` response file redirected to this repository's exact sources — PASS, exit 0 with no compiler output.
+  - `HeraAgent.Tests.ToolContractTests.RunTests` — PASS, including all M2.1/M2.2 regressions plus M2.3 strict coverage, all 31 M2.3 actions, missing required values, wrong types, unknown properties/actions, aliases and positional compatibility, mutually exclusive targets, complex values, and output schemas.
+  - `HeraAgent.Tests.ToolDiscoveryTests.RunTests` — PASS; Draft 2020-12 schema validation, malformed-keyword rejection, canonical determinism, external response compatibility, 31 built-in tool names, and 70 declared canonical action contracts passed.
+  - The in-memory Unity reflection requests exceeded the installed CLI's HTTP deadline while the Editor continued running. The final Editor log recorded `[ToolContractTests] ALL PASSED`, `[ToolDiscoveryTests] ALL PASSED`, and `M23_FINAL3_DONE` for the exact-source assembly; the Editor then reported `ready`.
+  - Exact-source Unity smoke on Inventoria (`6000.3.5f2`) — `manage_assets find` returned a successful compact one-result envelope. The connected project is configured for UI Toolkit, so `manage_ui get_rect` returned the expected `UITK_ACTION_UNSUPPORTED` compatibility response rather than mutating the project.
+  - `go test -count=1 ./...` — PASS; all packages passed or reported no test files (`cmd` 1.001s, `internal/assetconfig` 0.680s, `internal/client` 0.249s, `internal/poll` 1.050s, `tools/build-unity-docs` 0.132s, `tools/sync-agent-guides` 0.193s).
+  - `go run ./tools/sync-agent-guides --check` — PASS, exit 0 with no generated-rule drift.
+  - `git diff --check` — PASS, exit 0.
+  - Post-review RED exact-source run — PASS as a regression test: `TestM23ComplexSchemaValues` and `TestM23OutputSchemas` failed against the reviewed implementation before corrections.
+  - Post-review corrections — fixed `ManageAssets.CreateResult.Applied` to match the runtime string array; represented `ui_doc import` arrays with typed item DTOs; kept dual-backend `ui_doc apply` generic; widened `manage_ui` vector validation to the handler-compatible signed/scientific form; removed unused default-tool result DTOs; and added direct coverage for every M2.3 unknown action, the actual `ui_doc gensprite` dispatch alias, vector compatibility, and corrected output shapes.
+  - Post-review exact-source `HeraAgent.Tests.ToolContractTests.RunTests` — PASS; all M2.1/M2.2 regressions and all M2.3 contract tests passed.
+  - Post-review exact-source `HeraAgent.Tests.ToolDiscoveryTests.RunTests` — PASS; 31 tool names, 70 canonical action contracts, Draft 2020-12 validation, determinism, and external response compatibility passed.
+  - Post-review exact-source Unity smoke — PASS; `manage_assets find` with `type=Texture2D` and `limit=1` returned `success=true`, one asset, and the expected compact envelope. Unity `6000.3.5f2` returned to `ready`.
+  - Post-review narrow Go tests — PASS (`cmd` 0.923s, `internal/assetconfig` 0.321s, `internal/client` 0.127s, `internal/poll` 0.935s, `tools/build-unity-docs` 0.035s, `tools/sync-agent-guides` 0.053s).
+  - Post-review `go test -count=1 ./...` — PASS; all packages passed or reported no test files (`cmd` 0.881s, `internal/assetconfig` 0.301s, `internal/client` 0.113s, `internal/poll` 0.931s, `tools/build-unity-docs` 0.028s, `tools/sync-agent-guides` 0.046s).
+  - Post-review `go vet ./...`, `go build ./...`, and `golangci-lint run` — PASS; lint reported `0 issues`.
+  - Post-review locally built `doctor --agent-rules` — PASS; 21,912 captured bytes (the shell removed the final newline), required Bootstrap/Quick Rules/Pitfalls sections present, and no machine-specific absolute path.
+  - Post-review generated-guide check — PASS; `go run ./tools/sync-agent-guides --check` exited 0 and `AGENT.md` / `cmd/AGENT.md` remain byte-identical SHA-256 `b3092befd6fb6ed45deb896369dd020074b14e082863a25dc2d2314f9c5e947e`.
+  - Post-review obsolete-prohibition search — PASS; current rule matches are the locked prohibition against implementing MCP inside the Unity Connector and the truthful prohibition against advertising unimplemented commands. Other matches are historical migration records or normative implementation-plan constraints.
+  - Post-review scope/diff check — PASS; all 16 modified files are within the M2.3 implementation, test, package-version, locked-status, or progress-ledger scope, with no unrelated user change identified. `git diff --check` exited 0.
+- **Known limitations:**
+  - M2 overall remains in progress. M2.4 package/test/profiler/raw tools remain legacy and were not modified by M2.3.
+  - The connected Editor consumes a cached Connector package rather than this repository as a local package. Verification therefore compiled and loaded the exact local sources into temporary in-memory assemblies; no package or project manifest was installed or changed.
+  - The available Editor project uses UI Toolkit, so the uGUI RectTransform smoke branch was not available without changing project configuration. Contract and schema coverage for `manage_ui` and `ui_doc` passed in the exact-source Unity assembly.
+  - Safety/profile enforcement remains M3, catalog hashing/domain epochs remain M4, and Typed CLI/MCP runtime commands remain unimplemented. The existing CLI remains the production default.
+- **Rollback procedure:**
+  - Revert the M2.3 action DTOs, action annotations, argument groups, and strict modes in the ten M2.3 tool files.
+  - Revert the array alias/variadic positional normalization in `ToolContractValidator` and the M2.3 additions in `ToolContractTests` and `ToolDiscoveryTests`.
+  - Restore `AgentConnector/package.json` from `0.0.68` to `0.0.67`, then remove this M2.3 ledger entry and the matching `CLAUDE.md` status/ledger changes.
+  - No Go runtime, MCP runtime, scene, asset, project manifest, installed package, or persistent data migration needs rollback.
+- **Next prerequisite:** M2.4 may start only under a separate instruction after confirming this M2.3 PASS gate. Do not infer authorization to begin it from this entry.
+
+### M2.3 Rule-document impact
+
+- **CLAUDE.md migration state and completed ledger:** Recorded M2.3 PASS and the explicit M2.4 boundary without weakening any architecture lock.
+- **Generated agent guides:** Unchanged by M2.3; the deterministic synchronization check remains green.
+- **README / README.ko change:** None; M2.3 adds no CLI or MCP command and does not advertise unavailable Typed CLI or MCP functionality.
+- **Package version:** Connector manifest bumped to unreleased `0.0.68`; no package was installed, published, tagged, or released.

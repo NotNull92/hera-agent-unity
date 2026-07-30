@@ -11,6 +11,22 @@ using Object = UnityEngine.Object;
 
 namespace HeraAgent.Tools
 {
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", Action = "get_rect")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", Action = "set_anchor")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", Action = "set_rect")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtLeastOne, "preset", "anchor_min", Action = "set_anchor")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "preset", "anchor_min", Action = "set_anchor")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "preset", "anchor_max", Action = "set_anchor")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.RequiredWhen, "anchor_min", "anchor_max", Action = "set_anchor")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.RequiredWhen, "anchor_max", "anchor_min", Action = "set_anchor")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtLeastOne,
+        "anchored_position",
+        "size_delta",
+        "pivot",
+        "offset_min",
+        "offset_max",
+        Action = "set_rect")]
     [HeraTool(
         Name = "manage_ui",
         Description = "UI authoring selected by ui_system. uGUI: create with Canvas/EventSystem scaffolding plus get_rect, set_anchor, and set_rect. UI Toolkit: create emits validated runtime UXML + USS + PanelSettings + UIDocument scaffolding; RectTransform actions are unavailable because UITK uses Flexbox. Element property edits stay in manage_components.",
@@ -31,9 +47,113 @@ namespace HeraAgent.Tools
             "Re-anchor to the top-center preset, preserving the element's visual position",
             "Stretch-fill the parent and snap offsets/pivot (Alt+Shift behaviour)",
             "Set anchoredPosition + sizeDelta directly",
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
     public static class ManageUI
     {
+        private const string Vector2Schema =
+            @"{""oneOf"":[{""type"":""string"",""pattern"":""^\\s*[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?\\s*,\\s*[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?\\s*$""},{""type"":""array"",""minItems"":2,""maxItems"":2,""items"":{""type"":""number""}},{""type"":""object"",""required"":[""x"",""y""],""properties"":{""x"":{""type"":""number""},""y"":{""type"":""number""}},""additionalProperties"":false}]}";
+
+        public sealed class CreateParameters
+        {
+            [ToolParameter("Element kind or supported UI Toolkit runtime element.", Required = true)]
+            public string Element { get; set; }
+
+            [ToolParameter("Name for the new element.")]
+            public string Name { get; set; }
+
+            [ToolParameter("Text or label content.")]
+            public string Content { get; set; }
+
+            [ToolParameter(
+                "Text engine override.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"tmp\",\"textmeshpro\",\"textmeshprougui\",\"legacy\",\"text\"]}")]
+            public string Text { get; set; }
+
+            [ToolParameter(
+                "Optional parent hierarchy path or InstanceID.",
+                SchemaJson = "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"integer\"}]}")]
+            public JToken Parent { get; set; }
+        }
+
+        public class TargetParameters
+        {
+            [ToolParameter("Target GameObject InstanceID.")]
+            public int? InstanceId { get; set; }
+
+            [ToolParameter("Target hierarchy path.")]
+            public string Path { get; set; }
+        }
+
+        public sealed class SetAnchorParameters : TargetParameters
+        {
+            [ToolParameter("Named anchor preset.")]
+            public string Preset { get; set; }
+
+            [ToolParameter("Raw anchor minimum.", SchemaJson = Vector2Schema)]
+            public JToken AnchorMin { get; set; }
+
+            [ToolParameter("Raw anchor maximum.", SchemaJson = Vector2Schema)]
+            public JToken AnchorMax { get; set; }
+
+            [ToolParameter("Optional pivot override.", SchemaJson = Vector2Schema)]
+            public JToken Pivot { get; set; }
+
+            [ToolParameter("Snap offsets and pivot to the selected preset.")]
+            public bool? Snap { get; set; }
+        }
+
+        public sealed class SetRectParameters : TargetParameters
+        {
+            [ToolParameter("Anchored position.", SchemaJson = Vector2Schema)]
+            public JToken AnchoredPosition { get; set; }
+
+            [ToolParameter("Size delta.", SchemaJson = Vector2Schema)]
+            public JToken SizeDelta { get; set; }
+
+            [ToolParameter("Pivot.", SchemaJson = Vector2Schema)]
+            public JToken Pivot { get; set; }
+
+            [ToolParameter("Minimum offsets.", SchemaJson = Vector2Schema)]
+            public JToken OffsetMin { get; set; }
+
+            [ToolParameter("Maximum offsets.", SchemaJson = Vector2Schema)]
+            public JToken OffsetMax { get; set; }
+        }
+
+        public sealed class Vector2Result
+        {
+            public float X { get; set; }
+            public float Y { get; set; }
+        }
+
+        public sealed class SizeResult
+        {
+            public float Width { get; set; }
+            public float Height { get; set; }
+        }
+
+        public sealed class RectValuesResult
+        {
+            public Vector2Result AnchorMin { get; set; }
+            public Vector2Result AnchorMax { get; set; }
+            public Vector2Result AnchoredPosition { get; set; }
+            public Vector2Result SizeDelta { get; set; }
+            public Vector2Result Pivot { get; set; }
+            public Vector2Result OffsetMin { get; set; }
+            public Vector2Result OffsetMax { get; set; }
+            public SizeResult Size { get; set; }
+        }
+
+        public class RectResult
+        {
+            public int InstanceId { get; set; }
+            public string Name { get; set; }
+            public string Path { get; set; }
+            public RectValuesResult Rect { get; set; }
+            public string Preset { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: create, get_rect, set_anchor, set_rect", Required = true)]
@@ -90,7 +210,9 @@ namespace HeraAgent.Tools
 
         // ---- create ----
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(CreateParameters),
+            ResultType = typeof(object))]
         public static object Create(JObject raw)
         {
             if (HeraSettings.UsesUiToolkit)
@@ -408,7 +530,9 @@ namespace HeraAgent.Tools
 
         // ---- get_rect ----
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(TargetParameters),
+            ResultType = typeof(RectResult))]
         public static object GetRect(JObject raw)
         {
             if (HeraSettings.UsesUiToolkit)
@@ -422,7 +546,9 @@ namespace HeraAgent.Tools
 
         // ---- set_anchor ----
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(SetAnchorParameters),
+            ResultType = typeof(RectResult))]
         public static object SetAnchor(JObject raw)
         {
             if (HeraSettings.UsesUiToolkit)
@@ -497,7 +623,9 @@ namespace HeraAgent.Tools
 
         // ---- set_rect ----
 
-        [HeraAction]
+        [HeraAction(
+            ParametersType = typeof(SetRectParameters),
+            ResultType = typeof(RectResult))]
         public static object SetRect(JObject raw)
         {
             if (HeraSettings.UsesUiToolkit)

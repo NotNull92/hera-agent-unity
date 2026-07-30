@@ -2,12 +2,16 @@ using Newtonsoft.Json.Linq;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Description = "Refresh Unity assets and optionally request script compilation.")]
+    [HeraTool(
+        Description = "Refresh Unity assets and optionally request script compilation.",
+        ContractMode = ToolContractMode.Strict)]
     public static class RefreshUnity
     {
         public class Parameters
         {
-            [ToolParameter("Refresh mode: if_dirty (default) or force")]
+            [ToolParameter(
+                "Refresh mode: if_dirty (default) or force",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"if_dirty\",\"force\"]}")]
             public string Mode { get; set; }
 
             [ToolParameter("Allow refresh while the editor is in or entering play mode.")]
@@ -16,7 +20,9 @@ namespace HeraAgent.Tools
             [ToolParameter("Scope: all (default) or specific path")]
             public string Scope { get; set; }
 
-            [ToolParameter("Compile mode: none (default) or request")]
+            [ToolParameter(
+                "Compile mode: none (default) or request",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"none\",\"request\"]}")]
             public string Compile { get; set; }
         }
 

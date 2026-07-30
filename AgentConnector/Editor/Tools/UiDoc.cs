@@ -10,6 +10,29 @@ using Object = UnityEngine.Object;
 
 namespace HeraAgent.Tools
 {
+    [HeraActionContract("export", typeof(UiDoc.ExportParameters), ResultType = typeof(object))]
+    [HeraActionContract("apply", typeof(UiDoc.ApplyParameters), ResultType = typeof(object))]
+    [HeraActionContract("import", typeof(UiDoc.ImportParameters), ResultType = typeof(UiDoc.ImportResult))]
+    [HeraActionContract(
+        "gen_sprite",
+        typeof(UiDoc.GenSpriteParameters),
+        ResultType = typeof(UiDoc.GenSpriteResult),
+        Aliases = new[] { "gensprite" })]
+    [HeraActionContract("capture", typeof(UiDoc.CaptureParameters), ResultType = typeof(UiDoc.CaptureResult))]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "path", "instance_id", Action = "export")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtLeastOne, "doc", "src", Action = "import")]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.AtLeastOne,
+        "spec",
+        "kind",
+        "size",
+        "color",
+        "radius",
+        "border",
+        "from",
+        "to",
+        "direction",
+        Action = "gen_sprite")]
     [HeraTool(
         Name = "ui_doc",
         Description = "Unity UI pipeline. With ui_system=ugui, export/apply build the existing compact ui_doc/2 GameObject + RectTransform IR. With ui_system=uitk, apply accepts backend=uitk and emits validated runtime UXML + shared USS + PanelSettings + UIDocument scaffolding under Assets/HeraGenerated/UI; every runtime element, UXML attribute, and USS property is checked against the connected Editor's bundled reflection schema. import/gen_sprite remain asset helpers; capture/export are uGUI-only. Element property edits stay in manage_components; juice recipes ride apply's agent_hint when Game Feel UI Mode (Beta) is on.",
@@ -30,9 +53,181 @@ namespace HeraAgent.Tools
             "Build a UI doc under an explicit parent (reference the imported sprites by Assets/ path)",
             "Bake + import a rounded-rect sprite under Assets/",
             "Render the live overlay UI to a PNG for visual verification",
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
     public static class UiDoc
     {
+        private const string ObjectOrJsonSchema =
+            "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":true},{\"type\":\"string\"}]}";
+        private const string ParentSchema =
+            "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"integer\"}]}";
+        private const string Vector2LikeSchema =
+            "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":2,\"maxItems\":2,\"items\":{\"type\":\"number\"}}]}";
+        private const string Vector4LikeSchema =
+            "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":4,\"maxItems\":4,\"items\":{\"type\":\"number\"}}]}";
+        private const string ColorSchema =
+            "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":3,\"maxItems\":4,\"items\":{\"type\":\"number\"}}]}";
+        private const string ImportDocSchema =
+            "{\"type\":\"object\",\"properties\":{\"into\":{\"type\":\"string\"},\"items\":{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"src\"],\"properties\":{\"src\":{\"type\":\"string\"},\"name\":{\"type\":\"string\"},\"border\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":4,\"maxItems\":4,\"items\":{\"type\":\"number\"}}]},\"ppu\":{\"type\":\"number\",\"minimum\":0.0001},\"filter\":{\"type\":\"string\",\"enum\":[\"point\",\"bilinear\"]},\"pivot\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":2,\"maxItems\":2,\"items\":{\"type\":\"number\"}}]}},\"additionalProperties\":false}}},\"required\":[\"items\"],\"additionalProperties\":false}";
+        private const string SpriteSpecSchema =
+            "{\"type\":\"object\",\"properties\":{\"kind\":{\"type\":\"string\",\"enum\":[\"solid\",\"rounded_rect\",\"gradient\",\"nine_slice\"]},\"size\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":2,\"maxItems\":2,\"items\":{\"type\":\"number\"}}]},\"color\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":3,\"maxItems\":4,\"items\":{\"type\":\"number\"}}]},\"radius\":{\"type\":\"number\",\"minimum\":0},\"border\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":4,\"maxItems\":4,\"items\":{\"type\":\"number\"}}]},\"from\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":3,\"maxItems\":4,\"items\":{\"type\":\"number\"}}]},\"to\":{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"array\",\"minItems\":3,\"maxItems\":4,\"items\":{\"type\":\"number\"}}]},\"direction\":{\"type\":\"string\",\"enum\":[\"vertical\",\"horizontal\"]}},\"additionalProperties\":false}";
+        private const string ImportDocOrJsonSchema =
+            "{\"oneOf\":[" + ImportDocSchema + ",{\"type\":\"string\"}]}";
+        private const string SpriteSpecOrJsonSchema =
+            "{\"oneOf\":[" + SpriteSpecSchema + ",{\"type\":\"string\"}]}";
+
+        public sealed class ExportParameters
+        {
+            [ToolParameter("Target subtree hierarchy path.")]
+            public string Path { get; set; }
+
+            [ToolParameter("Target subtree GameObject InstanceID.")]
+            public int? InstanceId { get; set; }
+
+            [ToolParameter(
+                "Maximum child depth (default 8).",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":0}")]
+            public int? Depth { get; set; }
+        }
+
+        public sealed class ApplyParameters
+        {
+            [ToolParameter("ui_doc document or JSON string.", Required = true, SchemaJson = ObjectOrJsonSchema)]
+            public JToken Doc { get; set; }
+
+            [ToolParameter("Optional parent hierarchy path or InstanceID.", SchemaJson = ParentSchema)]
+            public JToken Parent { get; set; }
+
+            [ToolParameter(
+                "Apply mode.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"create\",\"upsert\"]}")]
+            public string Mode { get; set; }
+        }
+
+        public sealed class ImportParameters
+        {
+            [ToolParameter("Source image absolute path.")]
+            public string Src { get; set; }
+
+            [ToolParameter("Rich import document or JSON string.", SchemaJson = ImportDocOrJsonSchema)]
+            public JToken Doc { get; set; }
+
+            [ToolParameter("Destination folder under Assets/.")]
+            public string Into { get; set; }
+
+            [ToolParameter("Destination sprite name.")]
+            public string Name { get; set; }
+
+            [ToolParameter("Nine-slice border.", SchemaJson = Vector4LikeSchema)]
+            public JToken Border { get; set; }
+
+            [ToolParameter(
+                "Pixels per unit.",
+                SchemaJson = "{\"type\":\"number\",\"minimum\":0.0001}")]
+            public float? Ppu { get; set; }
+
+            [ToolParameter(
+                "Texture filter mode.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"point\",\"bilinear\"]}")]
+            public string Filter { get; set; }
+
+            [ToolParameter("Custom sprite pivot.", SchemaJson = Vector2LikeSchema)]
+            public JToken Pivot { get; set; }
+        }
+
+        public sealed class GenSpriteParameters
+        {
+            [ToolParameter("Procedural sprite specification or JSON string.", SchemaJson = SpriteSpecOrJsonSchema)]
+            public JToken Spec { get; set; }
+
+            [ToolParameter(
+                "Sprite kind.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"solid\",\"rounded_rect\",\"gradient\",\"nine_slice\"]}")]
+            public string Kind { get; set; }
+
+            [ToolParameter("Sprite size.", SchemaJson = Vector2LikeSchema)]
+            public JToken Size { get; set; }
+
+            [ToolParameter("Solid color.", SchemaJson = ColorSchema)]
+            public JToken Color { get; set; }
+
+            [ToolParameter("Rounded corner radius.", SchemaJson = "{\"type\":\"number\",\"minimum\":0}")]
+            public float? Radius { get; set; }
+
+            [ToolParameter("Nine-slice border.", SchemaJson = Vector4LikeSchema)]
+            public JToken Border { get; set; }
+
+            [ToolParameter("Gradient start color.", SchemaJson = ColorSchema)]
+            public JToken From { get; set; }
+
+            [ToolParameter("Gradient end color.", SchemaJson = ColorSchema)]
+            public JToken To { get; set; }
+
+            [ToolParameter(
+                "Gradient direction.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"vertical\",\"horizontal\"]}")]
+            public string Direction { get; set; }
+
+            [ToolParameter("Output asset path under Assets/.")]
+            public string Out { get; set; }
+        }
+
+        public sealed class CaptureParameters
+        {
+            [ToolParameter("Canvas hierarchy path.")]
+            public string Canvas { get; set; }
+
+            [ToolParameter("Render width.", SchemaJson = "{\"type\":\"integer\",\"minimum\":1}")]
+            public int? Width { get; set; }
+
+            [ToolParameter("Render height.", SchemaJson = "{\"type\":\"integer\",\"minimum\":1}")]
+            public int? Height { get; set; }
+
+            [ToolParameter("Background color.")]
+            public string Bg { get; set; }
+
+            [ToolParameter("Output PNG path.")]
+            public string Out { get; set; }
+        }
+
+        public sealed class ImportedSpriteResult
+        {
+            public string Src { get; set; }
+            public string Asset { get; set; }
+            public int InstanceId { get; set; }
+            public bool Sliced { get; set; }
+        }
+
+        public sealed class SkippedSpriteResult
+        {
+            public string Src { get; set; }
+            public string Reason { get; set; }
+        }
+
+        public sealed class ImportResult
+        {
+            public string Into { get; set; }
+            public ImportedSpriteResult[] Imported { get; set; }
+            public SkippedSpriteResult[] Skipped { get; set; }
+            public string[] Errors { get; set; }
+            public int Count { get; set; }
+        }
+
+        public sealed class GenSpriteResult
+        {
+            public string Asset { get; set; }
+            public int InstanceId { get; set; }
+        }
+
+        public sealed class CaptureResult
+        {
+            public string Path { get; set; }
+            public int Width { get; set; }
+            public int Height { get; set; }
+            public int Bytes { get; set; }
+            public int Canvases { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: export, apply, import, gen_sprite, capture. (sample and catalog are CLI-side.) UI Toolkit supports apply; export/capture remain uGUI-only.", Required = true)]

@@ -5,6 +5,17 @@ using UnityEngine;
 
 namespace HeraAgent.Tools
 {
+    [HeraActionContract("create", typeof(ManagePrefab.CreateParameters), ResultType = typeof(ManagePrefab.PrefabResult))]
+    [HeraActionContract("instantiate", typeof(ManagePrefab.InstantiateParameters), ResultType = typeof(ManagePrefab.InstanceResult))]
+    [HeraActionContract("add_component", typeof(ManagePrefab.ComponentParameters), ResultType = typeof(ManagePrefab.PrefabResult))]
+    [HeraActionContract("remove_component", typeof(ManagePrefab.ComponentParameters), ResultType = typeof(ManagePrefab.PrefabResult))]
+    [HeraArgumentGroup(
+        ToolArgumentGroupMode.ExactlyOne,
+        "source",
+        "instance_id",
+        Action = "create",
+        Path = "/source",
+        Expected = "source or instance_id")]
     [HeraTool(
         Name = "manage_prefab",
         Description = "Prefab asset operations: create (save a scene GameObject as a prefab), instantiate (drop a prefab into the active scene), add_component / remove_component (edit the prefab asset headlessly via PrefabUtility.LoadPrefabContents — no prefab stage, no scene side effects). Component edits target the prefab root.",
@@ -21,9 +32,54 @@ namespace HeraAgent.Tools
             "Instantiate a prefab into the active scene, optionally under a parent",
             "Add a component to the prefab root (headless edit, persisted to the asset)",
             "Remove a component from the prefab root",
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
     public static class ManagePrefab
     {
+        public class PathParameters
+        {
+            [ToolParameter("Prefab asset path under Assets/.", Required = true)]
+            public string Path { get; set; }
+        }
+
+        public sealed class CreateParameters : PathParameters
+        {
+            [ToolParameter("Source scene GameObject hierarchy path.")]
+            public string Source { get; set; }
+
+            [ToolParameter("Source scene GameObject InstanceID.")]
+            public int? InstanceId { get; set; }
+        }
+
+        public sealed class InstantiateParameters : PathParameters
+        {
+            [ToolParameter(
+                "Optional parent hierarchy path or InstanceID.",
+                SchemaJson = "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"integer\"}]}")]
+            public JToken Parent { get; set; }
+        }
+
+        public sealed class ComponentParameters : PathParameters
+        {
+            [ToolParameter("Component type name.", Required = true)]
+            public string Component { get; set; }
+        }
+
+        public class PrefabResult
+        {
+            public string Path { get; set; }
+            public string Root { get; set; }
+            public string Component { get; set; }
+            public string[] Components { get; set; }
+        }
+
+        public sealed class InstanceResult
+        {
+            public int InstanceId { get; set; }
+            public string Name { get; set; }
+            public string Path { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: create, instantiate, add_component, remove_component.", Required = true)]

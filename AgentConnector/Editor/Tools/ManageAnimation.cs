@@ -13,6 +13,12 @@ namespace HeraAgent.Tools
     [HeraActionSafety("add_parameter", MayReloadDomain = true)]
     [HeraActionSafety("add_state", MayReloadDomain = true)]
     [HeraActionSafety("add_transition", MayReloadDomain = true)]
+    [HeraActionContract("create_clip", typeof(ManageAnimation.CreateClipParameters), ResultType = typeof(ManageAnimation.ClipResult))]
+    [HeraActionContract("set_curve", typeof(ManageAnimation.SetCurveParameters), ResultType = typeof(ManageAnimation.CurveResult))]
+    [HeraActionContract("create_controller", typeof(ManageAnimation.PathParameters), ResultType = typeof(ManageAnimation.ControllerResult))]
+    [HeraActionContract("add_parameter", typeof(ManageAnimation.AddParameterParameters), ResultType = typeof(ManageAnimation.ParameterResult))]
+    [HeraActionContract("add_state", typeof(ManageAnimation.AddStateParameters), ResultType = typeof(ManageAnimation.StateResult))]
+    [HeraActionContract("add_transition", typeof(ManageAnimation.AddTransitionParameters), ResultType = typeof(ManageAnimation.TransitionResult))]
     [HeraTool(
         Name = "manage_animation",
         Description = "Author animation assets without exec boilerplate: create_clip / set_curve build an AnimationClip (.anim) and its float curves; create_controller / add_parameter / add_state / add_transition build an AnimatorController (.controller) state machine on its base layer. Paths are constrained to Assets/.",
@@ -35,9 +41,153 @@ namespace HeraAgent.Tools
             "Add a typed parameter (float/int/bool/trigger)",
             "Add a state with a motion clip and make it the layer default",
             "Add a transition between states with a condition",
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
     public static class ManageAnimation
     {
+        private const string ScalarSchema =
+            "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"boolean\"}]}";
+        private const string KeysSchema =
+            "{\"type\":\"array\",\"minItems\":1,\"items\":{\"type\":\"object\",\"required\":[\"time\",\"value\"],\"properties\":{\"time\":{\"type\":\"number\"},\"value\":{\"type\":\"number\"},\"in_tangent\":{\"type\":\"number\"},\"out_tangent\":{\"type\":\"number\"}},\"additionalProperties\":false}}";
+        private const string ConditionsSchema =
+            "{\"type\":\"array\",\"items\":{\"type\":\"object\",\"required\":[\"parameter\"],\"properties\":{\"parameter\":{\"type\":\"string\"},\"mode\":{\"type\":\"string\",\"pattern\":\"^(?i:If|IfNot|Greater|Less|Equals|NotEqual)$\"},\"threshold\":{\"type\":\"number\"}},\"additionalProperties\":false}}";
+
+        public class PathParameters
+        {
+            [ToolParameter("Animation asset path under Assets/.", Required = true)]
+            public string Path { get; set; }
+        }
+
+        public sealed class CreateClipParameters : PathParameters
+        {
+            [ToolParameter(
+                "Sampling rate in frames per second (default 60).",
+                SchemaJson = "{\"type\":\"number\",\"minimum\":0.0001}")]
+            public float? FrameRate { get; set; }
+
+            [ToolParameter("Whether the clip loops.")]
+            public bool? Loop { get; set; }
+        }
+
+        public sealed class SetCurveParameters : PathParameters
+        {
+            [ToolParameter("Animated component type.", Required = true)]
+            public string Type { get; set; }
+
+            [ToolParameter("Animated property path.", Required = true)]
+            public string Property { get; set; }
+
+            [ToolParameter("GameObject path relative to the Animator root.")]
+            public string RelativePath { get; set; }
+
+            [ToolParameter("Animation keyframes.", Required = true, SchemaJson = KeysSchema)]
+            public JArray Keys { get; set; }
+        }
+
+        public sealed class AddParameterParameters : PathParameters
+        {
+            [ToolParameter("Animator parameter name.", Required = true)]
+            public string Name { get; set; }
+
+            [ToolParameter(
+                "Animator parameter type.",
+                Required = true,
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"float\",\"int\",\"bool\",\"trigger\"]}")]
+            public string Type { get; set; }
+
+            [ToolParameter("Optional default value.", SchemaJson = ScalarSchema)]
+            public JToken Default { get; set; }
+        }
+
+        public sealed class AddStateParameters : PathParameters
+        {
+            [ToolParameter("State name.", Required = true)]
+            public string Name { get; set; }
+
+            [ToolParameter("Optional AnimationClip asset path.")]
+            public string Motion { get; set; }
+
+            [ToolParameter("Make the state the base-layer default.")]
+            public bool? Default { get; set; }
+        }
+
+        public sealed class AddTransitionParameters : PathParameters
+        {
+            [ToolParameter("Source state name.", Required = true)]
+            public string From { get; set; }
+
+            [ToolParameter("Destination state name.", Required = true)]
+            public string To { get; set; }
+
+            [ToolParameter("Transition conditions.", SchemaJson = ConditionsSchema)]
+            public JArray Conditions { get; set; }
+
+            [ToolParameter("Whether the transition has exit time.")]
+            public bool? HasExitTime { get; set; }
+
+            [ToolParameter(
+                "Transition duration.",
+                SchemaJson = "{\"type\":\"number\",\"minimum\":0}")]
+            public float? Duration { get; set; }
+        }
+
+        public class AssetResult
+        {
+            public string Path { get; set; }
+        }
+
+        public sealed class ClipResult : AssetResult
+        {
+            public string Guid { get; set; }
+            public float FrameRate { get; set; }
+            public bool Loop { get; set; }
+        }
+
+        public sealed class CurveResult : AssetResult
+        {
+            public string RelativePath { get; set; }
+            public string Type { get; set; }
+            public string Property { get; set; }
+            public int Keys { get; set; }
+            public int TotalBindings { get; set; }
+        }
+
+        public sealed class ControllerResult : AssetResult
+        {
+            public string Guid { get; set; }
+            public int Layers { get; set; }
+        }
+
+        public sealed class ParameterResult : AssetResult
+        {
+            public string Name { get; set; }
+            public string Type { get; set; }
+            public int Parameters { get; set; }
+        }
+
+        public sealed class StateResult : AssetResult
+        {
+            public string Name { get; set; }
+            public string Motion { get; set; }
+            public bool IsDefault { get; set; }
+            public int States { get; set; }
+        }
+
+        public sealed class TransitionConditionResult
+        {
+            public string Parameter { get; set; }
+            public string Mode { get; set; }
+            public float Threshold { get; set; }
+        }
+
+        public sealed class TransitionResult : AssetResult
+        {
+            public string From { get; set; }
+            public string To { get; set; }
+            public bool HasExitTime { get; set; }
+            public TransitionConditionResult[] Conditions { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: create_clip, set_curve, create_controller, add_parameter, add_state, add_transition.", Required = true)]

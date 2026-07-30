@@ -267,10 +267,20 @@ namespace HeraAgent.Tests
                     "click", "drag", "inspect", "pointer_down", "pointer_up", "scroll",
                     "state", "submit",
                 },
+                ["manage_animation"] = new[]
+                {
+                    "add_parameter", "add_state", "add_transition", "create_clip",
+                    "create_controller", "set_curve",
+                },
+                ["manage_asset_import"] = new[] { "get", "set" },
+                ["manage_assets"] = new[] { "copy", "create", "delete", "find", "mkdir", "move" },
+                ["manage_material"] = new[] { "create", "get", "set", "set_shader" },
                 ["manage_packages"] = new[] { "add", "embed", "list", "remove" },
+                ["manage_prefab"] = new[] { "add_component", "create", "instantiate", "remove_component" },
                 ["manage_ui"] = new[] { "create", "get_rect", "set_anchor", "set_rect" },
                 ["menu"] = new[] { "list" },
                 ["scene"] = new[] { "close", "info", "list", "load", "save" },
+                ["ui_doc"] = new[] { "apply", "capture", "export", "gen_sprite", "import" },
             };
 
             var actualTools = ToolDiscovery.GetToolNames().Cast<string>().ToArray();
@@ -300,7 +310,7 @@ namespace HeraAgent.Tests
                 $"[ToolDiscoveryTests] baseline tool names unchanged = true ({expectedTools.Length}); " +
                 $"declared action contracts complete = true ({actionCount})");
             return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged),
-                expectedTools.Length == 31 && actionCount == 43);
+                expectedTools.Length == 31 && actionCount == 70);
         }
 
         private static bool ContainsBaselineToolNames(

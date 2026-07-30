@@ -6,6 +6,10 @@ using UnityEngine.Rendering;
 
 namespace HeraAgent.Tools
 {
+    [HeraActionContract("create", typeof(ManageMaterial.ShaderParameters), ResultType = typeof(ManageMaterial.MaterialResult))]
+    [HeraActionContract("get", typeof(ManageMaterial.GetParameters), ResultType = typeof(ManageMaterial.GetResult))]
+    [HeraActionContract("set", typeof(ManageMaterial.SetParameters), ResultType = typeof(ManageMaterial.PropertyResult))]
+    [HeraActionContract("set_shader", typeof(ManageMaterial.ShaderParameters), ResultType = typeof(ManageMaterial.MaterialResult))]
     [HeraTool(
         Name = "manage_material",
         Description = "Material asset CRUD: create (with a shader), get (shader + property values), set (one shader property), set_shader (swap the shader). Property names are shader property names (_BaseColor, _Metallic, _MainTex) — run describe_shader first to discover them. Values reuse the manage_components forms: '1,0,0,1' or '#RRGGBB' for colors, a number for floats, 'x,y,z,w' for vectors, and an asset path or InstanceID for textures.",
@@ -24,9 +28,73 @@ namespace HeraAgent.Tools
             "Set a color property (also accepts #hex or [r,g,b,a])",
             "Set a texture property by asset path (or InstanceID)",
             "Swap the material's shader, keeping matching property values",
-        })]
+        },
+        ContractMode = ToolContractMode.Strict)]
     public static class ManageMaterial
     {
+        public class PathParameters
+        {
+            [ToolParameter("Material asset path under Assets/.", Required = true)]
+            public string Path { get; set; }
+        }
+
+        public sealed class ShaderParameters : PathParameters
+        {
+            [ToolParameter("Shader name.", Required = true)]
+            public string Shader { get; set; }
+        }
+
+        public sealed class GetParameters : PathParameters
+        {
+            [ToolParameter("Shader property name. Omit to return all properties.")]
+            public string Property { get; set; }
+
+            [ToolParameter(
+                "Maximum properties returned (default 60).",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1}")]
+            public int? Limit { get; set; }
+        }
+
+        public sealed class SetParameters : PathParameters
+        {
+            [ToolParameter("Shader property name.", Required = true)]
+            public string Property { get; set; }
+
+            [ToolParameter(
+                "Shader property value.",
+                Required = true,
+                SchemaJson = "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"boolean\"},{\"type\":\"array\",\"items\":{}},{\"type\":\"object\",\"additionalProperties\":true}]}")]
+            public JToken Value { get; set; }
+        }
+
+        public class MaterialResult
+        {
+            public string Path { get; set; }
+            public string Shader { get; set; }
+            public int PropertyCount { get; set; }
+        }
+
+        public class MaterialProperty
+        {
+            public string Name { get; set; }
+            public string Type { get; set; }
+            public object Value { get; set; }
+        }
+
+        public sealed class GetResult : MaterialResult
+        {
+            public string Name { get; set; }
+            public string Type { get; set; }
+            public object Value { get; set; }
+            public bool Truncated { get; set; }
+            public MaterialProperty[] Properties { get; set; }
+        }
+
+        public sealed class PropertyResult : MaterialProperty
+        {
+            public string Path { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter("Action: create, get, set, set_shader.", Required = true)]

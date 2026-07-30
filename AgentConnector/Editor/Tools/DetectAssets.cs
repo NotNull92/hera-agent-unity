@@ -7,7 +7,10 @@ namespace HeraAgent.Tools
     /// Detects installed third-party asset plugins in the Unity project.
     /// Updates asset-config.json with installed status.
     /// </summary>
-    [HeraTool(Description = "Detect installed third-party asset plugins and update asset config", Group = "config")]
+    [HeraTool(
+        Description = "Detect installed third-party asset plugins and update asset config",
+        Group = "config",
+        ContractMode = ToolContractMode.Strict)]
     public static class DetectAssets
     {
         public class Parameters

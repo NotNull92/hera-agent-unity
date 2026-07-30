@@ -55,6 +55,13 @@ namespace HeraAgent.Tests
             allPassed &= TestM22ComplexSchemaValues();
             allPassed &= TestM22ScalarCompatibility();
             allPassed &= TestM22OutputSchemas();
+            allPassed &= TestM23StrictToolCoverage();
+            allPassed &= TestEveryM23ActionContract();
+            allPassed &= TestM23ValidationFailures();
+            allPassed &= TestM23AliasesNormalize();
+            allPassed &= TestM23MutuallyExclusiveTargets();
+            allPassed &= TestM23ComplexSchemaValues();
+            allPassed &= TestM23OutputSchemas();
 
             if (allPassed)
                 Debug.Log("[ToolContractTests] ALL PASSED");
@@ -829,6 +836,419 @@ namespace HeraAgent.Tests
                 && components.Actions["list"].OutputSchema["properties"]?["data"]?["properties"]?["components"] != null);
         }
 
+        private static bool TestM23StrictToolCoverage()
+        {
+            var actionTools = new[]
+            {
+                "manage_assets",
+                "manage_asset_import",
+                "manage_material",
+                "manage_prefab",
+                "manage_animation",
+                "manage_ui",
+                "ui_doc",
+            };
+            var defaultTools = new[] { "reserialize", "refresh_unity", "detect_assets" };
+            return Expect(nameof(TestM23StrictToolCoverage),
+                actionTools.All(tool =>
+                {
+                    var contract = ToolContractRegistry.Get(tool);
+                    return contract?.Mode == ToolContractMode.Strict
+                        && contract.Actions.Count > 0;
+                })
+                && defaultTools.All(tool =>
+                {
+                    var contract = ToolContractRegistry.Get(tool);
+                    return contract?.Mode == ToolContractMode.Strict
+                        && contract.InputSchema["additionalProperties"]?.Value<bool>() == false
+                        && ToolContractValidator.Validate(contract, new JObject()).IsValid;
+                }));
+        }
+
+        private static bool TestEveryM23ActionContract()
+        {
+            var count = 0;
+            foreach (var entry in StrictM23Actions())
+            {
+                count++;
+                var contract = ToolContractRegistry.Get(entry.tool);
+                if (contract == null
+                    || !contract.Actions.TryGetValue(entry.action, out var action)
+                    || !action.IsStrict
+                    || action.InputSchema["additionalProperties"]?.Value<bool>() != false
+                    || action.InputSchema["properties"]?["action"]?["const"]?.Value<string>()
+                        != entry.action
+                    || !ToolContractValidator.Validate(contract, entry.input, entry.action).IsValid)
+                {
+                    return Expect(nameof(TestEveryM23ActionContract), false);
+                }
+            }
+
+            return Expect(nameof(TestEveryM23ActionContract), count == 31);
+        }
+
+        private static bool TestM23ValidationFailures()
+        {
+            var missingCases = new[]
+            {
+                ("manage_assets", "mkdir", new JObject { ["action"] = "mkdir" }),
+                ("manage_asset_import", "set", new JObject
+                {
+                    ["action"] = "set",
+                    ["path"] = "Assets/Test.png",
+                    ["property"] = "m_Test",
+                }),
+                ("manage_material", "create", new JObject
+                {
+                    ["action"] = "create",
+                    ["path"] = "Assets/Test.mat",
+                }),
+                ("manage_prefab", "instantiate", new JObject { ["action"] = "instantiate" }),
+                ("manage_animation", "set_curve", new JObject
+                {
+                    ["action"] = "set_curve",
+                    ["path"] = "Assets/Test.anim",
+                }),
+                ("manage_ui", "create", new JObject { ["action"] = "create" }),
+                ("ui_doc", "apply", new JObject { ["action"] = "apply" }),
+            };
+            if (missingCases.Any(entry =>
+                ToolContractValidator.Validate(
+                    ToolContractRegistry.Get(entry.Item1),
+                    entry.Item3,
+                    entry.Item2).Error?.code != "MISSING_ARGUMENT"))
+            {
+                return Expect(nameof(TestM23ValidationFailures), false);
+            }
+
+            var wrongTypeCases = new[]
+            {
+                ("manage_assets", "find", new JObject
+                {
+                    ["action"] = "find",
+                    ["limit"] = new JObject(),
+                }),
+                ("manage_asset_import", "get", new JObject
+                {
+                    ["action"] = "get",
+                    ["path"] = new JObject(),
+                }),
+                ("manage_material", "get", new JObject
+                {
+                    ["action"] = "get",
+                    ["path"] = new JObject(),
+                }),
+                ("manage_prefab", "instantiate", new JObject
+                {
+                    ["action"] = "instantiate",
+                    ["path"] = new JObject(),
+                }),
+                ("manage_animation", "create_clip", new JObject
+                {
+                    ["action"] = "create_clip",
+                    ["path"] = "Assets/Test.anim",
+                    ["frame_rate"] = new JObject(),
+                }),
+                ("manage_ui", "create", new JObject
+                {
+                    ["action"] = "create",
+                    ["element"] = new JObject(),
+                }),
+                ("ui_doc", "capture", new JObject
+                {
+                    ["action"] = "capture",
+                    ["width"] = new JObject(),
+                }),
+            };
+            if (wrongTypeCases.Any(entry =>
+                ToolContractValidator.Validate(
+                    ToolContractRegistry.Get(entry.Item1),
+                    entry.Item3,
+                    entry.Item2).Error?.code != "ARGUMENT_TYPE_MISMATCH"))
+            {
+                return Expect(nameof(TestM23ValidationFailures), false);
+            }
+
+            foreach (var entry in StrictM23Actions())
+            {
+                var unknown = (JObject)entry.input.DeepClone();
+                unknown["unknown_m23_property"] = true;
+                if (ToolContractValidator.Validate(
+                        ToolContractRegistry.Get(entry.tool),
+                        unknown,
+                        entry.action).Error?.code != "UNKNOWN_ARGUMENT")
+                {
+                    return Expect(nameof(TestM23ValidationFailures), false);
+                }
+            }
+
+            foreach (var tool in new[] { "reserialize", "refresh_unity", "detect_assets" })
+            {
+                var contract = ToolContractRegistry.Get(tool);
+                if (ToolContractValidator.Validate(
+                        contract,
+                        new JObject { ["unknown_m23_property"] = true }).Error?.code
+                    != "UNKNOWN_ARGUMENT")
+                {
+                    return Expect(nameof(TestM23ValidationFailures), false);
+                }
+            }
+
+            foreach (var tool in new[]
+            {
+                "manage_assets",
+                "manage_asset_import",
+                "manage_material",
+                "manage_prefab",
+                "manage_animation",
+                "manage_ui",
+                "ui_doc",
+            })
+            {
+                var unknownAction = CommandRouter.Dispatch(
+                        tool,
+                        new JObject { ["action"] = "not_real" })
+                    .GetAwaiter()
+                    .GetResult() as ErrorResponse;
+                if (unknownAction?.code != "UNKNOWN_ACTION")
+                    return Expect(nameof(TestM23ValidationFailures), false);
+            }
+
+            return Expect(nameof(TestM23ValidationFailures), true);
+        }
+
+        private static bool TestM23AliasesNormalize()
+        {
+            var action = ToolContractRegistry.Get("ui_doc").Actions["gen_sprite"];
+            var validation = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("ui_doc"),
+                new JObject
+                {
+                    ["action"] = "gen_sprite",
+                    ["spec"] = new JObject { ["kind"] = "solid" },
+                },
+                "gen_sprite");
+            var jsonSpec = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("ui_doc"),
+                new JObject
+                {
+                    ["action"] = "gen_sprite",
+                    ["spec"] = "{\"kind\":\"solid\"}",
+                },
+                "gen_sprite");
+            var importPositional = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("ui_doc"),
+                new JObject
+                {
+                    ["action"] = "import",
+                    ["args"] = new JArray("import", "reference.png"),
+                },
+                "import");
+            var reserializePositionals = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("reserialize"),
+                new JObject
+                {
+                    ["args"] = new JArray(
+                        "Assets/One.asset",
+                        "Assets/Two.asset",
+                        "Assets/Three.asset"),
+                });
+            var reserializePathAlias = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("reserialize"),
+                new JObject { ["path"] = "Assets/One.asset" });
+            var dispatchedActionAlias = CommandRouter.Dispatch(
+                    "ui_doc",
+                    new JObject { ["action"] = "gensprite" })
+                .GetAwaiter()
+                .GetResult() as ErrorResponse;
+            return Expect(nameof(TestM23AliasesNormalize),
+                action.Aliases.Contains("gensprite")
+                && validation.IsValid
+                && jsonSpec.IsValid
+                && importPositional.IsValid
+                && importPositional.Normalized.Value<string>("src") == "reference.png"
+                && reserializePositionals.IsValid
+                && reserializePositionals.Normalized["paths"] is JArray paths
+                && paths.Count == 3
+                && reserializePathAlias.IsValid
+                && reserializePathAlias.Normalized["paths"] is JArray aliasPaths
+                && aliasPaths.Count == 1
+                && dispatchedActionAlias?.code == "MISSING_ARGUMENT");
+        }
+
+        private static bool TestM23MutuallyExclusiveTargets()
+        {
+            var cases = new[]
+            {
+                ("manage_prefab", "create", new JObject
+                {
+                    ["action"] = "create",
+                    ["path"] = "Assets/Test.prefab",
+                    ["source"] = "/Root",
+                    ["instance_id"] = 1,
+                }),
+                ("manage_ui", "get_rect", new JObject
+                {
+                    ["action"] = "get_rect",
+                    ["path"] = "/Canvas",
+                    ["instance_id"] = 1,
+                }),
+                ("ui_doc", "export", new JObject
+                {
+                    ["action"] = "export",
+                    ["path"] = "/Canvas",
+                    ["instance_id"] = 1,
+                }),
+            };
+            if (cases.Any(entry =>
+                ToolContractValidator.Validate(
+                    ToolContractRegistry.Get(entry.Item1),
+                    entry.Item3,
+                    entry.Item2).Error?.code != "ARGUMENT_CONFLICT"))
+            {
+                return Expect(nameof(TestM23MutuallyExclusiveTargets), false);
+            }
+
+            var reserialize = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("reserialize"),
+                new JObject
+                {
+                    ["path"] = "Assets",
+                    ["paths"] = new JArray("Assets"),
+                });
+            return Expect(nameof(TestM23MutuallyExclusiveTargets),
+                reserialize.Error?.code == "ARGUMENT_CONFLICT");
+        }
+
+        private static bool TestM23ComplexSchemaValues()
+        {
+            var assetProperties = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("manage_assets"),
+                new JObject
+                {
+                    ["action"] = "create",
+                    ["path"] = "Assets/Test.asset",
+                    ["type"] = "TestAsset",
+                    ["properties"] = new JObject { ["enabled"] = true },
+                },
+                "create");
+            var animationKeys = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("manage_animation"),
+                new JObject
+                {
+                    ["action"] = "set_curve",
+                    ["path"] = "Assets/Test.anim",
+                    ["type"] = "UnityEngine.Transform",
+                    ["property"] = "m_LocalPosition.x",
+                    ["keys"] = new JArray(new JObject
+                    {
+                        ["time"] = 0,
+                        ["value"] = 1,
+                    }),
+                },
+                "set_curve");
+            var invalidKeys = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("manage_animation"),
+                new JObject
+                {
+                    ["action"] = "set_curve",
+                    ["path"] = "Assets/Test.anim",
+                    ["type"] = "UnityEngine.Transform",
+                    ["property"] = "m_LocalPosition.x",
+                    ["keys"] = new JArray(true),
+                },
+                "set_curve");
+            var uiVector = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("manage_ui"),
+                new JObject
+                {
+                    ["action"] = "set_rect",
+                    ["path"] = "/Canvas/Panel",
+                    ["size_delta"] = new JArray(100, 50),
+                },
+                "set_rect");
+            var uiScientificVector = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("manage_ui"),
+                new JObject
+                {
+                    ["action"] = "set_rect",
+                    ["path"] = "/Canvas/Panel",
+                    ["size_delta"] = "1e-3,+2",
+                },
+                "set_rect");
+            var invalidUiVector = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("manage_ui"),
+                new JObject
+                {
+                    ["action"] = "set_rect",
+                    ["path"] = "/Canvas/Panel",
+                    ["size_delta"] = "not-a-vector",
+                },
+                "set_rect");
+            var importDoc = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("ui_doc"),
+                new JObject
+                {
+                    ["action"] = "import",
+                    ["doc"] = new JObject
+                    {
+                        ["items"] = new JArray(new JObject
+                        {
+                            ["src"] = "reference.png",
+                            ["name"] = "reference",
+                        }),
+                    },
+                },
+                "import");
+            return Expect(nameof(TestM23ComplexSchemaValues),
+                assetProperties.IsValid
+                && animationKeys.IsValid
+                && invalidKeys.Error?.code == "ARGUMENT_TYPE_MISMATCH"
+                && uiVector.IsValid
+                && uiScientificVector.IsValid
+                && !invalidUiVector.IsValid
+                && importDoc.IsValid);
+        }
+
+        private static bool TestM23OutputSchemas()
+        {
+            foreach (var toolName in new[]
+            {
+                "manage_assets",
+                "manage_asset_import",
+                "manage_material",
+                "manage_prefab",
+                "manage_animation",
+                "manage_ui",
+                "ui_doc",
+            })
+            {
+                var contract = ToolContractRegistry.Get(toolName);
+                if (contract.Actions.Values.Any(action => !HasOutputEnvelope(action.OutputSchema)))
+                    return Expect(nameof(TestM23OutputSchemas), false);
+            }
+
+            var defaultTools = new[] { "reserialize", "refresh_unity", "detect_assets" };
+            var assets = ToolContractRegistry.Get("manage_assets");
+            var animation = ToolContractRegistry.Get("manage_animation");
+            var ui = ToolContractRegistry.Get("manage_ui");
+            var uiDoc = ToolContractRegistry.Get("ui_doc");
+            var createAssetData = assets.Actions["create"].OutputSchema["properties"]?["data"];
+            var importData = uiDoc.Actions["import"].OutputSchema["properties"]?["data"];
+            var applyData = uiDoc.Actions["apply"].OutputSchema["properties"]?["data"];
+            return Expect(nameof(TestM23OutputSchemas),
+                defaultTools.All(tool => HasOutputEnvelope(ToolContractRegistry.Get(tool).OutputSchema))
+                && assets.Actions["find"].OutputSchema["properties"]?["data"]?["properties"]?["assets"] != null
+                && createAssetData?["properties"]?["applied"]?["type"]?.Value<string>() == "array"
+                && createAssetData?["properties"]?["applied"]?["items"]?["type"]?.Value<string>() == "string"
+                && animation.Actions["set_curve"].OutputSchema["properties"]?["data"]?["properties"]?["keys"] != null
+                && ui.Actions["get_rect"].OutputSchema["properties"]?["data"]?["properties"]?["rect"]?["properties"]?["anchor_min"] != null
+                && importData?["properties"]?["imported"]?["type"]?.Value<string>() == "array"
+                && importData?["properties"]?["skipped"]?["type"]?.Value<string>() == "array"
+                && applyData?["properties"] is JObject applyProperties
+                && applyProperties.Count == 0);
+        }
+
         private static bool HasOutputEnvelope(JObject schema)
         {
             var properties = schema?["properties"] as JObject;
@@ -969,6 +1389,188 @@ namespace HeraAgent.Tests
                     ["path"] = "/Canvas/Target",
                 });
             }
+        }
+
+        private static IEnumerable<(string tool, string action, JObject input)> StrictM23Actions()
+        {
+            yield return ("manage_assets", "find", new JObject
+            {
+                ["action"] = "find",
+                ["filter"] = "Test",
+            });
+            foreach (var action in new[] { "mkdir", "delete" })
+            {
+                yield return ("manage_assets", action, new JObject
+                {
+                    ["action"] = action,
+                    ["path"] = "Assets/Test",
+                });
+            }
+            yield return ("manage_assets", "create", new JObject
+            {
+                ["action"] = "create",
+                ["path"] = "Assets/Test.asset",
+                ["type"] = "TestAsset",
+            });
+            foreach (var action in new[] { "copy", "move" })
+            {
+                yield return ("manage_assets", action, new JObject
+                {
+                    ["action"] = action,
+                    ["path"] = "Assets/Source.asset",
+                    ["new_path"] = "Assets/Destination.asset",
+                });
+            }
+
+            yield return ("manage_asset_import", "get", new JObject
+            {
+                ["action"] = "get",
+                ["path"] = "Assets/Test.png",
+            });
+            yield return ("manage_asset_import", "set", new JObject
+            {
+                ["action"] = "set",
+                ["path"] = "Assets/Test.png",
+                ["property"] = "m_Test",
+                ["value"] = true,
+            });
+
+            yield return ("manage_material", "create", new JObject
+            {
+                ["action"] = "create",
+                ["path"] = "Assets/Test.mat",
+                ["shader"] = "Standard",
+            });
+            yield return ("manage_material", "get", new JObject
+            {
+                ["action"] = "get",
+                ["path"] = "Assets/Test.mat",
+            });
+            yield return ("manage_material", "set", new JObject
+            {
+                ["action"] = "set",
+                ["path"] = "Assets/Test.mat",
+                ["property"] = "_Color",
+                ["value"] = "#FFFFFFFF",
+            });
+            yield return ("manage_material", "set_shader", new JObject
+            {
+                ["action"] = "set_shader",
+                ["path"] = "Assets/Test.mat",
+                ["shader"] = "Standard",
+            });
+
+            yield return ("manage_prefab", "create", new JObject
+            {
+                ["action"] = "create",
+                ["path"] = "Assets/Test.prefab",
+                ["source"] = "/Root",
+            });
+            yield return ("manage_prefab", "instantiate", new JObject
+            {
+                ["action"] = "instantiate",
+                ["path"] = "Assets/Test.prefab",
+            });
+            foreach (var action in new[] { "add_component", "remove_component" })
+            {
+                yield return ("manage_prefab", action, new JObject
+                {
+                    ["action"] = action,
+                    ["path"] = "Assets/Test.prefab",
+                    ["component"] = "Rigidbody",
+                });
+            }
+
+            yield return ("manage_animation", "create_clip", new JObject
+            {
+                ["action"] = "create_clip",
+                ["path"] = "Assets/Test.anim",
+            });
+            yield return ("manage_animation", "set_curve", new JObject
+            {
+                ["action"] = "set_curve",
+                ["path"] = "Assets/Test.anim",
+                ["type"] = "UnityEngine.Transform",
+                ["property"] = "m_LocalPosition.x",
+                ["keys"] = new JArray(new JObject { ["time"] = 0, ["value"] = 0 }),
+            });
+            yield return ("manage_animation", "create_controller", new JObject
+            {
+                ["action"] = "create_controller",
+                ["path"] = "Assets/Test.controller",
+            });
+            yield return ("manage_animation", "add_parameter", new JObject
+            {
+                ["action"] = "add_parameter",
+                ["path"] = "Assets/Test.controller",
+                ["name"] = "Speed",
+                ["type"] = "float",
+            });
+            yield return ("manage_animation", "add_state", new JObject
+            {
+                ["action"] = "add_state",
+                ["path"] = "Assets/Test.controller",
+                ["name"] = "Idle",
+            });
+            yield return ("manage_animation", "add_transition", new JObject
+            {
+                ["action"] = "add_transition",
+                ["path"] = "Assets/Test.controller",
+                ["from"] = "Idle",
+                ["to"] = "Run",
+            });
+
+            yield return ("manage_ui", "create", new JObject
+            {
+                ["action"] = "create",
+                ["element"] = "panel",
+            });
+            yield return ("manage_ui", "get_rect", new JObject
+            {
+                ["action"] = "get_rect",
+                ["path"] = "/Canvas",
+            });
+            yield return ("manage_ui", "set_anchor", new JObject
+            {
+                ["action"] = "set_anchor",
+                ["path"] = "/Canvas/Panel",
+                ["preset"] = "stretch",
+            });
+            yield return ("manage_ui", "set_rect", new JObject
+            {
+                ["action"] = "set_rect",
+                ["path"] = "/Canvas/Panel",
+                ["size_delta"] = "100,50",
+            });
+
+            yield return ("ui_doc", "export", new JObject
+            {
+                ["action"] = "export",
+                ["path"] = "/Canvas",
+            });
+            yield return ("ui_doc", "apply", new JObject
+            {
+                ["action"] = "apply",
+                ["doc"] = new JObject
+                {
+                    ["root"] = new JObject
+                    {
+                        ["name"] = "Root",
+                        ["element"] = "empty",
+                    },
+                },
+            });
+            yield return ("ui_doc", "import", new JObject
+            {
+                ["action"] = "import",
+                ["src"] = "reference.png",
+            });
+            yield return ("ui_doc", "gen_sprite", new JObject
+            {
+                ["action"] = "gen_sprite",
+                ["spec"] = new JObject { ["kind"] = "solid" },
+            });
+            yield return ("ui_doc", "capture", new JObject { ["action"] = "capture" });
         }
 
         private static IEnumerable<(string tool, string action)> StrictActions()

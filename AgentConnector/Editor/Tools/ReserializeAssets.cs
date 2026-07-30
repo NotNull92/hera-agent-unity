@@ -2,15 +2,17 @@ using Newtonsoft.Json.Linq;
 
 namespace HeraAgent.Tools
 {
-    [HeraTool(Name = "reserialize", Description = "Force reserialize Unity assets. No params = entire project.")]
+    [HeraTool(
+        Name = "reserialize",
+        Description = "Force reserialize Unity assets. No params = entire project.",
+        ContractMode = ToolContractMode.Strict)]
     public static class ReserializeAssets
     {
         public class Parameters
         {
-            [ToolParameter("Single asset path to reserialize")]
-            public string Path { get; set; }
-
-            [ToolParameter("Multiple asset paths to reserialize")]
+            [ToolParameter(
+                "Asset paths to reserialize. The singular path form is retained as an alias.",
+                Aliases = new[] { "path" })]
             public string[] Paths { get; set; }
         }
 
