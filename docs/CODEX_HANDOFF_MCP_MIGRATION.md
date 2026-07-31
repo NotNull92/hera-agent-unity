@@ -11,7 +11,7 @@ milestone or review prompt.
 
 ### Done and verified
 
-- M0 through M3 are recorded as `PASS` in
+- M0 through M4 are recorded as `PASS` in
   `docs/MCP_MIGRATION_PROGRESS.md`.
 - M4 implementation and confirmed review fixes are committed together with this
   handoff on `main` as `feat(connector): expose normalized tool catalog`.
@@ -30,18 +30,19 @@ milestone or review prompt.
   generated-guide drift checking, and `git diff --check` also passed.
 - The M4 goal, code-quality, context, and security review lanes have no current
   blockers.
+- Final unique-identity exact-source and post-reload Unity suites passed with
+  zero compiler output and zero console errors. A real domain reload changed
+  the epoch while preserving the catalog hash for the same assembly identity,
+  and retained both heartbeat capabilities.
+- The one-request catalog probe returned 31 built-ins, 75 actions, all strict;
+  missing and unsupported schema versions returned `SCHEMA_INVALID`.
+- The final Go/build/lint/guide/meta/diff gates and read-only QA review passed.
 - The unreleased Connector manifest is `0.0.71`.
 
-### In progress
+### Final QA state
 
-- M4 is **not yet PASS**. The final unique-output exact-source Unity QA must be
-  rerun after the final heartbeat refactor.
-- The previous Editor entered a native open-scene external-change decision
-  dialog during the real domain-reload check, so the connector heartbeat stopped
-  before the final QA rerun. Do not infer a source failure from that UI blocker.
-- After live QA passes, update the M4 entry in
-  `docs/MCP_MIGRATION_PROGRESS.md` and the matching `CLAUDE.md` ledger row from
-  `IN PROGRESS` to `PASS`.
+- M4 final QA and PASS recording are complete.
+- No M5 implementation is authorized by this handoff.
 
 ### Not implemented
 
@@ -74,37 +75,13 @@ milestone or review prompt.
 
 ## Next steps
 
-1. Pull `main` and confirm the latest commit subject is
-   `feat(connector): expose normalized tool catalog`.
-2. Read `AGENTS.md`, `CLAUDE.md`, both migration documents, and
-   `docs/MCP_MIGRATION_PROGRESS.md` completely.
-3. Confirm M3 is `PASS`, M4 is `IN PROGRESS`, the Connector manifest is
-   `0.0.71`, and the worktree is clean.
-4. Connect to a suitable Unity Editor and compile the repository's exact
-   Connector and TestRunner sources into a **new unique assembly identity**.
-   Reusing an already-loaded assembly name can select stale bytes and create a
-   false test failure.
-5. Run the exact-source `ToolDiscoveryTests` / `ToolCatalogTests` with strict
-   log handling. Verify zero console errors and one-request catalog output with
-   schema `hera.tool-catalog/1`, exactly 31 built-ins, 75 actions, all strict,
-   lowercase SHA-256 catalog/project identifiers, and a non-empty domain epoch.
-6. Verify unsupported or missing catalog schema versions return
-   `SCHEMA_INVALID`, and verify legacy default/names/compact/per-tool list data
-   remains byte-shape compatible.
-7. Perform a real script-domain reload only when the Editor has no unresolved
-   scene-change dialog. Record that the domain epoch changes while the catalog
-   hash stays stable, and confirm heartbeat features contain
-   `domain_epoch_v1` and `tool_catalog_v1`.
-8. Rerun the Go/build/lint/guide/diff gates. On macOS, use a canonical
-   `/private/...` temporary root so the pre-existing `/var` symlink assertion
-   does not produce an environmental false failure.
-9. Rerun the QA review lane. Only after it passes, mark M4 `PASS` in the
-   progress ledger and `CLAUDE.md`, commit that final ledger update, and stop.
-10. Do not begin M5, Typed CLI, or MCP runtime work.
+1. Stop after the M4 PASS ledger commit.
+2. Do not begin M5, Typed CLI, or MCP runtime work without a separate user
+   instruction.
 
 ## References
 
-- M4 WIP implementation commit: the commit containing this handoff,
+- M4 implementation commit: the commit containing this handoff,
   `feat(connector): expose normalized tool catalog`
 - `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - `docs/CODEX_MCP_MIGRATION_IMPLEMENT_REVIEW_PROMPTS.md`

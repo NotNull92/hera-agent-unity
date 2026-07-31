@@ -13,7 +13,7 @@ benchmark gates pass.
 | M1 Structural JSON Schema validity | PASS |
 | M2 Action contracts and validation taxonomy | PASS (M2.1-M2.4 PASS) |
 | M3 Safety classification and profiles | PASS |
-| M4 Canonical catalog, hash, and domain epoch | IN PROGRESS |
+| M4 Canonical catalog, hash, and domain epoch | PASS |
 | M5 Go registry, cache, and validation | PENDING |
 | M6 Typed CLI | PENDING |
 | M7 Connector operation ledger and safe retry | PENDING |
@@ -419,7 +419,7 @@ benchmark gates pass.
 
 ## M4 Canonical Catalog, Hash, and Domain Epoch
 
-- **Status:** IN PROGRESS
+- **Status:** PASS
 - **Commit baseline:** `0d36c1e788f2df1c15cd942a3677f683239b5d03`
 - **Date:** 2026-07-31
 - **Implemented scope:**
@@ -458,22 +458,45 @@ benchmark gates pass.
     `go vet ./...`, `go build ./...`, `golangci-lint run ./...`,
     `go run ./tools/sync-agent-guides --check`, meta GUID uniqueness, and
     `git diff --check` passed.
-- **Remaining completion gate:**
-  - Rebuild the final sources under a new unique exact-source assembly identity,
-    rerun `ToolDiscoveryTests` / `ToolCatalogTests`, and confirm zero Unity
-    console errors.
-  - Complete a real script-domain reload check: epoch changes, catalog hash stays
-    stable, and heartbeat capabilities remain present.
-  - Rerun the QA review lane. Only then change this status and the matching
-    `CLAUDE.md` row to `PASS`.
-- **Known blocker at handoff:**
-  - The previous live Editor stopped servicing the connector while Unity waited
-    in a native open-scene external-change decision dialog during the domain
-    reload attempt. This is a UI-state blocker, not evidence of a source or
-    compile failure.
+- **Final completion evidence:**
+  - A new unique-identity exact-source Editor/TestRunner build compiled with
+    Unity's active Bee response files and zero compiler output. The strict
+    `ToolDiscoveryTests` run, including `ToolCatalogTests`, reported all tests
+    passed with zero Unity console errors.
+  - A single catalog request returned schema `hera.tool-catalog/1`, exactly 31
+    built-in tools and 75 actions, all strict contracts, lowercase 64-hex
+    `sha256:` catalog/project identifiers, and a non-empty domain epoch.
+  - Missing and unsupported catalog schema versions both returned
+    `SCHEMA_INVALID`; the legacy default, names, compact, and per-tool list
+    shapes remained compatible.
+  - A real script-domain reload changed the domain epoch while the same
+    exact-source assembly identity retained catalog hash
+    `sha256:879b6ed90ce05cf0492f607a1d6ba745eee103528426aa104fb6ba437ee6d99c`.
+    The post-reload heartbeat retained `domain_epoch_v1` and
+    `tool_catalog_v1`.
+  - A separate post-reload unique-identity exact-source build and strict suite
+    also passed with zero compiler output and zero Unity console errors.
+  - `go test -count=1 ./...`, `go vet ./...`, `go build ./...`,
+    `golangci-lint run ./...`, `gofmt -l .`,
+    `go run ./tools/sync-agent-guides --check`, meta GUID uniqueness,
+    `git diff --check`, and the final read-only QA review all passed.
+- **Known limitations:**
+  - M5 Go registry/cache/validation, Typed CLI, and MCP runtime commands remain
+    unimplemented. The existing CLI remains the production default.
+  - Exact-source QA loaded temporary validation assemblies without changing the
+    installed Unity package. Because source assembly identity is normalized
+    catalog data, reload hash comparisons must reuse the same compiled assembly
+    identity and bytes.
+- **Rollback procedure:**
+  - Revert the M4 implementation commit and this PASS-ledger commit together,
+    restoring the Connector manifest to unreleased `0.0.70`.
+  - No installed package, published artifact, tag, or runtime data migration
+    requires rollback.
 - **Boundary:**
   - M5 Go registry/cache/validation, Typed CLI, and MCP runtime commands remain
     unimplemented and unauthorized by this work unit. The existing CLI remains
     the production default.
 - **Package version:** Connector manifest is unreleased `0.0.71`; no package was
   installed, published, tagged, or released.
+- **Next prerequisite:** M5 may start only under a separate instruction after
+  re-reading this ledger and confirming the M4 PASS gate.
