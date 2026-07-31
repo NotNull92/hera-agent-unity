@@ -65,6 +65,7 @@ namespace HeraAgent.Tests
             allPassed &= TestExternalResponseFieldsArePreserved();
             allPassed &= ToolSafetyTests.RunAll();
             allPassed &= ToolProfileTests.RunAll();
+            allPassed &= ToolCatalogTests.RunAll();
 
             Debug.Log(
                 $"[ToolDiscoveryTests] property-level required boolean count = {propertyRequiredCount}; " +

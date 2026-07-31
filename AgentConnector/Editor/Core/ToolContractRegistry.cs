@@ -39,9 +39,9 @@ namespace HeraAgent
                 toolType.GetNestedType("Parameters"));
             var resultType = toolType.GetNestedType("Result");
             var argumentGroups = BuildArgumentGroups(toolType, parameters, null);
-            var actions = BuildActions(toolType);
             var safety = ToolContractSafety.From(attribute, toolType);
             var mode = attribute?.ContractMode ?? ToolContractMode.Legacy;
+            var actions = ToolActionContractBuilder.Build(toolType, mode);
 
             return new ToolContract
             {
@@ -70,102 +70,7 @@ namespace HeraAgent
             Contracts.Clear();
         }
 
-        private static IReadOnlyDictionary<string, ToolActionContract> BuildActions(Type toolType)
-        {
-            var actions = new Dictionary<string, ToolActionContract>(StringComparer.Ordinal);
-
-            foreach (var attribute in toolType.GetCustomAttributes<HeraActionContractAttribute>())
-            {
-                AddAction(
-                    actions,
-                    attribute.Action,
-                    attribute.Description,
-                    attribute.Aliases,
-                    attribute.ParametersType,
-                    attribute.ResultType,
-                    true,
-                    toolType,
-                    ToolContractSafety.From(attribute, null));
-            }
-
-            foreach (var method in toolType.GetMethods(BindingFlags.Public | BindingFlags.Static)
-                .OrderBy(method => method.MetadataToken))
-            {
-                var attribute = method.GetCustomAttribute<HeraActionAttribute>();
-                if (attribute == null)
-                    continue;
-                var name = string.IsNullOrWhiteSpace(attribute.Name)
-                    ? StringCaseUtility.ToSnakeCase(method.Name)
-                    : attribute.Name.Trim().ToLowerInvariant();
-                var strict = attribute.ParametersType != null;
-                AddAction(
-                    actions,
-                    name,
-                    attribute.Description,
-                    attribute.Aliases,
-                    attribute.ParametersType,
-                    attribute.ResultType,
-                    strict,
-                    toolType,
-                    ToolContractSafety.From(attribute, null),
-                    method);
-            }
-
-            return actions;
-        }
-
-        private static void AddAction(
-            IDictionary<string, ToolActionContract> actions,
-            string name,
-            string description,
-            string[] aliases,
-            Type parametersType,
-            Type resultType,
-            bool strict,
-            Type toolType,
-            ToolSafetyContract safety,
-            MethodInfo method = null)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-                throw new SchemaGenerationException(
-                    parametersType,
-                    "Action contract has an empty action name.");
-            name = name.Trim().ToLowerInvariant();
-            var parameters = ToolContractSchemaBuilder.BuildParameters(parametersType);
-            var argumentGroups = BuildArgumentGroups(toolType, parameters, name);
-            var overrides = toolType
-                .GetCustomAttributes<HeraActionSafetyAttribute>()
-                .Concat(method == null
-                    ? Array.Empty<HeraActionSafetyAttribute>()
-                    : method.GetCustomAttributes<HeraActionSafetyAttribute>())
-                .Where(attribute => string.IsNullOrWhiteSpace(attribute.Action)
-                    || string.Equals(
-                        attribute.Action.Trim(),
-                        name,
-                        StringComparison.OrdinalIgnoreCase));
-            foreach (var safetyOverride in overrides)
-                safety = ToolContractSafety.Apply(safety, safetyOverride, null);
-            safety = ToolContractSafety.EnsureClassified(safety, toolType);
-            actions[name] = new ToolActionContract
-            {
-                Name = name,
-                Description = description ?? "",
-                Aliases = ToolContractSchemaBuilder.NormalizeNames(aliases),
-                ParametersType = parametersType,
-                ResultType = resultType,
-                Parameters = parameters,
-                ArgumentGroups = argumentGroups,
-                InputSchema = ToolContractSchemaBuilder.BuildInputSchema(
-                    parameters,
-                    name,
-                    argumentGroups),
-                OutputSchema = ToolContractSchemaBuilder.BuildOutputSchema(resultType),
-                Safety = safety,
-                IsStrict = strict,
-            };
-        }
-
-        private static IReadOnlyList<ToolArgumentGroupContract> BuildArgumentGroups(
+        internal static IReadOnlyList<ToolArgumentGroupContract> BuildArgumentGroups(
             Type toolType,
             IReadOnlyList<ToolParameterContract> parameters,
             string action)

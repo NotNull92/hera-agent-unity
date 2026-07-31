@@ -13,23 +13,38 @@ milestone or review prompt.
 
 - M0 through M3 are recorded as `PASS` in
   `docs/MCP_MIGRATION_PROGRESS.md`.
-- M2.4 and M3 implementation and review fixes are committed on `main` as
-  `c736b8a2f9c4f2d1642a471d149944346698430f`
-  (`feat(contracts): complete schemas and safety profiles`).
+- M4 implementation and confirmed review fixes are committed together with this
+  handoff on `main` as `feat(connector): expose normalized tool catalog`.
 - The M3 final gate passed with 31 built-in tools, 75 actions, zero
   unclassified operations, zero invalid schemas, and zero arbitrary-execution
   exposure in normal profiles.
-- Exact-source Unity compilation passed for the Editor and TestRunner
-  assemblies. The Unity `ToolSafety`, `ToolProfiles`, `ToolContract`, and
-  `ToolDiscovery` suites passed in Unity 6000.3.5f2.
-- `go test -count=1 ./...`, agent-guide synchronization, local-source
-  `doctor --agent-rules`, generated-guide hash equality, machine-path scanning,
-  and `git diff --check` passed.
-- The unreleased Connector manifest is `0.0.70`.
+- M4 adds the one-request `list` catalog envelope, deterministic catalog hash,
+  project fingerprint, domain epoch/capabilities in heartbeat, Go heartbeat
+  decoding, legacy custom-action normalization, and catalog regression tests.
+- Exact-source M4 compilation passed. A unique-output exact-source Unity run
+  passed the full `ToolDiscovery` suite with zero console errors and returned
+  31 built-in tools, 75 actions, and all strict contracts.
+- After the final heartbeat payload refactor, exact-source compilation passed.
+  `go test -count=1 ./...` passed with a canonical macOS temporary root;
+  `go vet ./...`, `go build ./...`, `golangci-lint run ./...`,
+  generated-guide drift checking, and `git diff --check` also passed.
+- The M4 goal, code-quality, context, and security review lanes have no current
+  blockers.
+- The unreleased Connector manifest is `0.0.71`.
+
+### In progress
+
+- M4 is **not yet PASS**. The final unique-output exact-source Unity QA must be
+  rerun after the final heartbeat refactor.
+- The previous Editor entered a native open-scene external-change decision
+  dialog during the real domain-reload check, so the connector heartbeat stopped
+  before the final QA rerun. Do not infer a source failure from that UI blocker.
+- After live QA passes, update the M4 entry in
+  `docs/MCP_MIGRATION_PROGRESS.md` and the matching `CLAUDE.md` ledger row from
+  `IN PROGRESS` to `PASS`.
 
 ### Not implemented
 
-- M4 canonical catalog/hash/project fingerprint/domain epoch.
 - Typed CLI commands.
 - MCP runtime commands or transport.
 - Any package installation, publishing, tagging, or release.
@@ -52,35 +67,54 @@ milestone or review prompt.
 
 ## Open questions / pending decisions
 
-- The user must select and authorize the next milestone or review prompt.
-- If M4 is selected, its exact scope and stop gate come from
-  `docs/CODEX_MCP_MIGRATION_IMPLEMENT_REVIEW_PROMPTS.md` and
-  `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`; do not infer later runtime work.
+- M4 continuation is authorized only to finish its final QA, PASS ledger, and
+  stop gate. This does not authorize M5.
+- Do not change the project fingerprint design, catalog schema, or exposure
+  rules unless new evidence reveals a concrete M4 defect.
 
 ## Next steps
 
-1. Pull `main` and confirm HEAD includes
-   `c736b8a2f9c4f2d1642a471d149944346698430f`.
+1. Pull `main` and confirm the latest commit subject is
+   `feat(connector): expose normalized tool catalog`.
 2. Read `AGENTS.md`, `CLAUDE.md`, both migration documents, and
    `docs/MCP_MIGRATION_PROGRESS.md` completely.
-3. Confirm the M3 completion gate is recorded as `PASS` and the worktree is
-   clean before editing.
-4. Execute only the work unit explicitly requested by the user, preserving the
-   prompt's pass ordering, review-only phase, confirmed-fixes-only rule, final
-   rerun, progress update, and stop condition.
-5. Do not begin Typed CLI or MCP runtime work unless the selected milestone
-   explicitly authorizes it.
+3. Confirm M3 is `PASS`, M4 is `IN PROGRESS`, the Connector manifest is
+   `0.0.71`, and the worktree is clean.
+4. Connect to a suitable Unity Editor and compile the repository's exact
+   Connector and TestRunner sources into a **new unique assembly identity**.
+   Reusing an already-loaded assembly name can select stale bytes and create a
+   false test failure.
+5. Run the exact-source `ToolDiscoveryTests` / `ToolCatalogTests` with strict
+   log handling. Verify zero console errors and one-request catalog output with
+   schema `hera.tool-catalog/1`, exactly 31 built-ins, 75 actions, all strict,
+   lowercase SHA-256 catalog/project identifiers, and a non-empty domain epoch.
+6. Verify unsupported or missing catalog schema versions return
+   `SCHEMA_INVALID`, and verify legacy default/names/compact/per-tool list data
+   remains byte-shape compatible.
+7. Perform a real script-domain reload only when the Editor has no unresolved
+   scene-change dialog. Record that the domain epoch changes while the catalog
+   hash stays stable, and confirm heartbeat features contain
+   `domain_epoch_v1` and `tool_catalog_v1`.
+8. Rerun the Go/build/lint/guide/diff gates. On macOS, use a canonical
+   `/private/...` temporary root so the pre-existing `/var` symlink assertion
+   does not produce an environmental false failure.
+9. Rerun the QA review lane. Only after it passes, mark M4 `PASS` in the
+   progress ledger and `CLAUDE.md`, commit that final ledger update, and stop.
+10. Do not begin M5, Typed CLI, or MCP runtime work.
 
 ## References
 
-- Implementation commit:
-  `c736b8a2f9c4f2d1642a471d149944346698430f`
+- M4 WIP implementation commit: the commit containing this handoff,
+  `feat(connector): expose normalized tool catalog`
 - `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - `docs/CODEX_MCP_MIGRATION_IMPLEMENT_REVIEW_PROMPTS.md`
 - `docs/MCP_MIGRATION_PROGRESS.md`
 - `CLAUDE.md`
 - `AGENTS.md`
 - `AgentConnector/Editor/Core/ToolContractRegistry.cs`
+- `AgentConnector/Editor/Core/ToolCatalogBuilder.cs`
+- `AgentConnector/Editor/Core/ToolContractCanonicalJson.cs`
+- `AgentConnector/Editor/Tests/ToolCatalogTests.cs`
 - `AgentConnector/Editor/Core/ToolContractSafety.cs`
 - `AgentConnector/Editor/Core/ToolContractSafetyRules.cs`
 - `AgentConnector/Editor/Core/ToolContractProfiles.cs`
@@ -96,6 +130,12 @@ milestone or review prompt.
   validating local CLI behavior.
 - Exact-source Connector validation must compile the repository source or use an
   appropriate Unity project without installing or overwriting a package.
+- Give each rebuilt exact-source assembly a unique output/assembly name.
+  Reusing an identity already loaded into the Editor can execute stale code.
+- A native scene external-change dialog blocks Editor updates and therefore the
+  connector heartbeat. Resolve it before interpreting `status` timeouts.
+- On macOS, `/var` resolves to `/private/var`; run the full Go gate with a
+  canonical `/private/...` temporary root when validating symlink behavior.
 - Remaining MCP-prohibition search hits may be valid architecture locks,
   historical records, or truthful statements that runtime commands are not yet
   implemented. Classify them instead of deleting them blindly.

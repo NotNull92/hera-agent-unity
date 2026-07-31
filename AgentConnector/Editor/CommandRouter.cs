@@ -308,6 +308,29 @@ namespace HeraAgent
 
         static object HandleList(JObject parameters)
         {
+            var catalog = parameters?["catalog"]?.Type == JTokenType.Boolean
+                && parameters["catalog"].Value<bool>();
+            if (catalog)
+            {
+                var schemaVersion = parameters?["schema_version"]?.ToString();
+                if (!string.Equals(
+                    schemaVersion,
+                    ToolCatalogBuilder.SchemaVersion,
+                    StringComparison.Ordinal))
+                {
+                    return new ErrorResponse(
+                        "SCHEMA_INVALID",
+                        $"Unsupported tool catalog schema: {schemaVersion ?? "(missing)"}",
+                        new
+                        {
+                            path = "/schema_version",
+                            expected = ToolCatalogBuilder.SchemaVersion,
+                            actual = schemaVersion,
+                        });
+                }
+                return new SuccessResponse("Tool catalog", ToolCatalogBuilder.Build());
+            }
+
             var tool = parameters?["tool"]?.ToString();
             if (!string.IsNullOrEmpty(tool))
             {

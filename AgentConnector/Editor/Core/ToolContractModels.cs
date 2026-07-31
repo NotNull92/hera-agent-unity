@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace HeraAgent
@@ -102,5 +103,90 @@ namespace HeraAgent
         public ErrorResponse Error { get; set; }
         public IReadOnlyList<ToolContractDiagnostic> Diagnostics { get; set; }
             = Array.Empty<ToolContractDiagnostic>();
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    internal sealed class ToolCatalogEnvelope
+    {
+        [JsonProperty("schema_version")]
+        public string SchemaVersion { get; set; }
+
+        [JsonProperty("catalog_hash")]
+        public string CatalogHash { get; set; }
+
+        [JsonProperty("domain_epoch")]
+        public string DomainEpoch { get; set; }
+
+        [JsonProperty("project_id")]
+        public string ProjectId { get; set; }
+
+        [JsonProperty("tools")]
+        public IReadOnlyList<ToolCatalogEntry> Tools { get; set; }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    internal sealed class ToolCatalogEntry
+    {
+        [JsonProperty("name")] public string Name { get; set; }
+        [JsonProperty("title")] public string Title { get; set; }
+        [JsonProperty("description")] public string Description { get; set; }
+        [JsonProperty("source")] public ToolCatalogSource Source { get; set; }
+        [JsonProperty("contract_mode")] public string ContractMode { get; set; }
+        [JsonProperty("profiles")] public IReadOnlyList<string> Profiles { get; set; }
+        [JsonProperty("aliases")] public IReadOnlyList<string> Aliases { get; set; }
+        [JsonProperty("examples")] public IReadOnlyList<ToolCatalogExample> Examples { get; set; }
+        [JsonProperty("input_schema")] public JObject InputSchema { get; set; }
+        [JsonProperty("output_schema")] public JObject OutputSchema { get; set; }
+        [JsonProperty("actions")] public IReadOnlyList<ToolCatalogAction> Actions { get; set; }
+        [JsonProperty("safety")] public ToolCatalogSafety Safety { get; set; }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    internal sealed class ToolCatalogSource
+    {
+        [JsonProperty("kind")] public string Kind { get; set; }
+        [JsonProperty("assembly")] public string Assembly { get; set; }
+        [JsonProperty("type")] public string Type { get; set; }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    internal sealed class ToolCatalogExample
+    {
+        [JsonProperty("call")] public string Call { get; set; }
+        [JsonProperty("description")] public string Description { get; set; }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    internal sealed class ToolCatalogAction
+    {
+        [JsonProperty("name")] public string Name { get; set; }
+        [JsonProperty("description")] public string Description { get; set; }
+        [JsonProperty("aliases")] public IReadOnlyList<string> Aliases { get; set; }
+        [JsonProperty("input_schema")] public JObject InputSchema { get; set; }
+        [JsonProperty("output_schema")] public JObject OutputSchema { get; set; }
+        [JsonProperty("safety")] public ToolCatalogSafety Safety { get; set; }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    internal class ToolCatalogSafety
+    {
+        [JsonProperty("risk_class")] public string RiskClass { get; set; }
+        [JsonProperty("read_only")] public bool ReadOnly { get; set; }
+        [JsonProperty("destructive")] public bool Destructive { get; set; }
+        [JsonProperty("idempotent")] public bool Idempotent { get; set; }
+        [JsonProperty("may_reload_domain")] public bool MayReloadDomain { get; set; }
+        [JsonProperty("requires_play_mode")] public bool RequiresPlayMode { get; set; }
+        [JsonProperty("requires_confirmation")] public bool RequiresConfirmation { get; set; }
+        [JsonProperty("reversible")] public bool Reversible { get; set; }
+        [JsonProperty("supports_cancellation")] public bool SupportsCancellation { get; set; }
+        [JsonProperty("side_effect_scope")] public string SideEffectScope { get; set; }
+        [JsonProperty("rules")] public IReadOnlyList<ToolCatalogSafetyRule> Rules { get; set; }
+    }
+
+    [JsonObject(MemberSerialization.OptIn)]
+    internal sealed class ToolCatalogSafetyRule : ToolCatalogSafety
+    {
+        [JsonProperty("operation")] public string Operation { get; set; }
+        [JsonProperty("when")] public JObject When { get; set; }
     }
 }

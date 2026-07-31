@@ -12,8 +12,8 @@ benchmark gates pass.
 | M0 Migration authority, rules, and progress ledger | PASS |
 | M1 Structural JSON Schema validity | PASS |
 | M2 Action contracts and validation taxonomy | PASS (M2.1-M2.4 PASS) |
-| M3 Safety classification and profiles | PENDING |
-| M4 Canonical catalog, hash, and domain epoch | PENDING |
+| M3 Safety classification and profiles | PASS |
+| M4 Canonical catalog, hash, and domain epoch | IN PROGRESS |
 | M5 Go registry, cache, and validation | PENDING |
 | M6 Typed CLI | PENDING |
 | M7 Connector operation ledger and safe retry | PENDING |
@@ -416,3 +416,64 @@ benchmark gates pass.
 - **Generated agent guides:** Unchanged by M3; user-facing CLI truth did not change and deterministic synchronization remains green.
 - **README / README.ko change:** None; M3 adds no CLI or MCP command and does not advertise unavailable Typed CLI or MCP functionality.
 - **Package version:** Connector manifest bumped to unreleased `0.0.70`; no package was installed, published, tagged, or released.
+
+## M4 Canonical Catalog, Hash, and Domain Epoch
+
+- **Status:** IN PROGRESS
+- **Commit baseline:** `0d36c1e788f2df1c15cd942a3677f683239b5d03`
+- **Date:** 2026-07-31
+- **Implemented scope:**
+  - Added the existing `list` command's internal catalog mode with required
+    schema-version negotiation and a normalized one-response envelope containing
+    `schema_version`, `catalog_hash`, `domain_epoch`, `project_id`, and `tools`.
+  - Added ordinal tool/action ordering, canonical schema ordering, deterministic
+    SHA-256 hashing over only schema version and normalized tools, and a hashed
+    normalized project fingerprint without emitting the absolute project path.
+  - Added domain-lifetime epoch and `domain_epoch_v1` / `tool_catalog_v1`
+    heartbeat capabilities plus Go client decoding.
+  - Preserved legacy default, names, compact, and per-tool list data shapes.
+  - Normalized implicit public-static legacy custom actions into the shared
+    registry with conservative unknown-custom safety so the full catalog does
+    not omit callable legacy actions.
+  - Added the six required M4 tests plus exhaustive 31-tool/75-action snapshot,
+    legacy dispatch byte-shape, heartbeat payload, and legacy custom-action
+    coverage.
+  - Bumped the unreleased Connector package version from `0.0.70` to `0.0.71`.
+- **Evidence completed:**
+  - Initial RED Go client test failed because heartbeat domain/features fields
+    did not exist; initial exact-source C# compile failed only on the missing M4
+    catalog/runtime symbols.
+  - Exact-source Editor/TestRunner and merged assemblies compiled successfully.
+  - A fresh unique-identity exact-source Unity run passed the full
+    `ToolDiscoveryTests` suite with zero console errors; the catalog reported 31
+    built-in tools, 75 actions, all strict contracts, and a stable lowercase
+    SHA-256 hash.
+  - The initial read-only review found an omitted legacy-custom-action path and
+    incomplete snapshot/byte-shape/volatile/heartbeat evidence. Confirmed fixes
+    were applied and the goal, code-quality, context, and security lanes have no
+    current blockers.
+  - After the final heartbeat `BuildStatus` refactor, exact-source compilation
+    passed.
+  - `go test -count=1 ./...` passed with a canonical macOS temporary root;
+    `go vet ./...`, `go build ./...`, `golangci-lint run ./...`,
+    `go run ./tools/sync-agent-guides --check`, meta GUID uniqueness, and
+    `git diff --check` passed.
+- **Remaining completion gate:**
+  - Rebuild the final sources under a new unique exact-source assembly identity,
+    rerun `ToolDiscoveryTests` / `ToolCatalogTests`, and confirm zero Unity
+    console errors.
+  - Complete a real script-domain reload check: epoch changes, catalog hash stays
+    stable, and heartbeat capabilities remain present.
+  - Rerun the QA review lane. Only then change this status and the matching
+    `CLAUDE.md` row to `PASS`.
+- **Known blocker at handoff:**
+  - The previous live Editor stopped servicing the connector while Unity waited
+    in a native open-scene external-change decision dialog during the domain
+    reload attempt. This is a UI-state blocker, not evidence of a source or
+    compile failure.
+- **Boundary:**
+  - M5 Go registry/cache/validation, Typed CLI, and MCP runtime commands remain
+    unimplemented and unauthorized by this work unit. The existing CLI remains
+    the production default.
+- **Package version:** Connector manifest is unreleased `0.0.71`; no package was
+  installed, published, tagged, or released.

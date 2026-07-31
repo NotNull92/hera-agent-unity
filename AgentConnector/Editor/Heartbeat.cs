@@ -130,19 +130,7 @@ namespace HeraAgent
 
         static void Write()
         {
-            EnsureInvariants();
-            var status = new
-            {
-                state = s_ForcedState ?? GetState(),
-                projectPath = s_ProjectPath,
-                port = HttpServer.Port,
-                pid = s_Pid,
-                unityVersion = s_UnityVersion,
-                docsVersion = s_DocsVersion,
-                compiler = s_Compiler,
-                timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                compileErrors = EditorUtility.scriptCompilationFailed,
-            };
+            var status = BuildStatus();
 
             try
             {
@@ -152,6 +140,25 @@ namespace HeraAgent
             {
                 UnityEngine.Debug.LogError($"[Hera] Heartbeat write failed: {ex.Message}");
             }
+        }
+
+        internal static object BuildStatus()
+        {
+            EnsureInvariants();
+            return new
+            {
+                state = s_ForcedState ?? GetState(),
+                projectPath = s_ProjectPath,
+                port = HttpServer.Port,
+                pid = s_Pid,
+                unityVersion = s_UnityVersion,
+                docsVersion = s_DocsVersion,
+                compiler = s_Compiler,
+                domainEpoch = ToolCatalogRuntime.DomainEpoch,
+                features = ToolCatalogRuntime.Features,
+                timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                compileErrors = EditorUtility.scriptCompilationFailed,
+            };
         }
 
         static CompilerSummary GetCompilerSummary()

@@ -30,6 +30,8 @@ type Instance struct {
 	UnityVersion  string        `json:"unityVersion,omitempty"`
 	DocsVersion   string        `json:"docsVersion,omitempty"`
 	Compiler      *CompilerInfo `json:"compiler,omitempty"`
+	DomainEpoch   string        `json:"domainEpoch,omitempty"`
+	Features      []string      `json:"features,omitempty"`
 	Timestamp     int64         `json:"timestamp,omitempty"`
 	CompileErrors bool          `json:"compileErrors,omitempty"`
 }
