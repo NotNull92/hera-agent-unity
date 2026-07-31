@@ -1,0 +1,18 @@
+hera-agent-unity mcp — run the experimental native-profile MCP server
+
+Usage:
+  HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
+
+Options:
+  --transport stdio   Use newline-delimited MCP over stdin/stdout. No other
+                      transport is accepted.
+  --profile <name>    Select one fixed seed profile for this server process:
+                      core, scene, assets, ui, diagnostics, or testing.
+
+The server loads Unity's strict catalog before starting and registers exactly
+the selected profile's native tools. Approval-required operations remain
+blocked until the later approval milestone.
+
+The command is disabled by default. stdout is reserved exclusively for MCP
+protocol frames; diagnostics are written to stderr. The existing CLI remains
+the production default.

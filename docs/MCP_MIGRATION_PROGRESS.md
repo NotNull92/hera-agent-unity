@@ -17,8 +17,8 @@ benchmark gates pass.
 | M5 Go registry, cache, and validation | PASS |
 | M6 Typed CLI | PASS |
 | M7 Connector operation ledger and safe retry | PASS |
-| M8 stdio MCP skeleton | PENDING |
-| M9 Native Profile tool bridge | PENDING |
+| M8 stdio MCP skeleton | PASS |
+| M9 Native Profile tool bridge | PASS |
 | M10 Compact and Full exposure | PENDING |
 | M11 Approval and MRTR | PENDING |
 | M12 Tasks bridge | PENDING |
@@ -718,4 +718,157 @@ benchmark gates pass.
     not an MCP command surface.
 - **Next prerequisite:** M8 may start only under a separate instruction after
   re-reading this ledger and confirming the M7 PASS gate. Do not infer
+  authorization to begin it from this entry.
+
+## M8 stdio MCP skeleton
+
+- **Status:** PASS
+- **Commit baseline:** `d74bf5c`
+- **Date:** 2026-07-31
+- **Implemented scope:**
+  - Pinned the official Go MCP SDK at stable `v1.7.0` and added an isolated
+    `internal/mcpserver` lifecycle boundary.
+  - Added `hera-agent-unity mcp --transport stdio --profile core` as a
+    default-off experimental entry point gated by `HERA_MCP_ENABLED=1`.
+  - Implemented protocol `2026-07-28` discovery and stable server identity.
+    No Unity tools, resources, prompts, catalog bridge, or Connector calls are
+    registered in M8.
+  - Restricted transport to stdio. Protocol frames use stdout exclusively;
+    SDK and CLI diagnostics use stderr.
+  - Kept standalone MCP routing ahead of Unity discovery and update notices,
+    so the existing CLI remains the production default and MCP discovery does
+    not require a running Editor.
+- **Review corrections:**
+  - Upgraded cancellation coverage from a pre-cancelled context to an active,
+    initialized MCP session cancelled while running.
+  - Added real subprocess EOF coverage after manual QA found that SDK `v1.7.0`
+    reports terminal stdio EOF as JSON-RPC server-closing code `-32004` without
+    wrapping `io.EOF`; normalized only that coded terminal-EOF case.
+  - Updated `CLAUDE.md` so current-state and structure documentation no longer
+    claim that no MCP runtime entry point exists.
+- **Evidence completed:**
+  - Required lifecycle, feature-flag, unsupported-transport, discovery,
+    protocol-only stdout, stderr diagnostic, and subprocess EOF tests pass.
+  - `go test -count=1 ./...`, `go vet ./...`, `go build ./...`,
+    `golangci-lint run ./...`, `golangci-lint fmt --diff`, `go mod verify`,
+    guide drift, formatting, and `git diff --check` pass.
+  - The release matrix builds for Windows amd64, Linux amd64/arm64, and macOS
+    amd64/arm64 with `CGO_ENABLED=0`. A first Linux cross-build without the
+    release setting correctly failed because the Windows C compiler lacks
+    Linux system headers; no source correction was required.
+  - A freshly built temporary real CLI binary was driven by the official SDK
+    client.
+    Discovery negotiated protocol `2026-07-28`, returned the expected server
+    identity with no tools capability, emitted only JSON-RPC frames on stdout,
+    and exited cleanly.
+  - Direct race-mode execution was attempted for `cmd` and
+    `internal/mcpserver`, but the Windows host denied access to Go's temporary
+    test executables before either suite could run. This is the same host
+    execution restriction recorded for M7, not a test assertion failure.
+  - Dependency review confirmed the official stable SDK tag, Go 1.25
+    compatibility with this module, Apache/MIT licensing, and verified module
+    checksums. No package installer or system-wide dependency mutation was
+    used.
+- **Known limitations:**
+  - M8 is discovery-only. Native Profile tool registration belongs to M9 and
+    was not implemented or implied.
+  - Only stdio and the fixed `core` placeholder profile are accepted. The MCP
+    entry point remains disabled unless explicitly enabled by environment.
+  - No C# or Connector behavior changed, so Unity compile/runtime validation
+    was not applicable. Connector manifest remains unreleased `0.0.72`.
+  - No installed CLI, project manifest, tag, release, published artifact,
+    commit, or push was changed.
+- **Rollback procedure:**
+  - Remove `cmd/mcp.go`, MCP help/routing/tests, and `internal/mcpserver`; remove
+    the MCP SDK module requirement and sums; then restore this ledger and
+    `CLAUDE.md` M7-only state together.
+- **Rule-document impact:**
+  - `CLAUDE.md` records the experimental discovery-only command and isolated
+    server package. Public README and generated agent guides remain unchanged;
+    public release documentation is M16 scope.
+- **Next prerequisite:** M9 may start only under a separate instruction after
+  re-reading this ledger and confirming the M8 PASS gate. Do not infer
+  authorization to begin it from this entry.
+
+## M9 Native Profile Tool Bridge
+
+- **Status:** PASS
+- **Commit baseline:** `d74bf5c` plus the uncommitted M8 working tree
+- **Date:** 2026-07-31
+- **Implemented scope:**
+  - MCP startup now discovers Unity, loads the native catalog and compiled
+    schema snapshot, selects one fixed seed profile, and registers its strict
+    tools in ordinal order through the official Go MCP SDK.
+  - Supported seed profiles are `core`, `scene`, `assets`, `ui`,
+    `diagnostics`, and `testing`. Tool membership remains owned by Connector
+    catalog metadata; Go contains no duplicate tool-membership lists.
+  - Each native call parses a JSON object and validates the live strict schema
+    before policy evaluation or Unity dispatch. Parameter-dependent safety is
+    shared with Typed CLI policy resolution.
+  - Approval-required operations return `APPROVAL_REQUIRED` before Unity until
+    M11. Profiles containing any mutation require the Connector's
+    `operation_ledger_v1` capability.
+  - Every dispatched call gets a fresh operation ID plus `client_kind=mcp`,
+    the live catalog hash, and resolved idempotence through the shared client.
+  - Hera success and failure envelopes remain structured MCP content. Stable
+    error codes, messages, data, suggestions, agent hints, and timings are
+    preserved; expected Hera failures are MCP tool errors rather than protocol
+    failures.
+  - Conservative MCP annotations aggregate tool, action, and nested safety
+    rules. `readOnlyHint` and `idempotentHint` are true only when every exposed
+    operation qualifies; destructive/open-world hints turn true if any
+    operation requires them.
+- **Review corrections:**
+  - Moved safety-rule resolution from `cmd` into `internal/policy` so Typed CLI
+    and MCP cannot drift.
+  - Added Go catalog rejection for legacy or arbitrary-code tools placed in a
+    normal profile, including nested action safety rules.
+  - Required the ledger feature before registering any mutating profile.
+  - Expanded annotation aggregation to nested action safety rules after the
+    read-only PASS B review found that omission.
+  - Reworked the profile test fixture so all six seed profiles assert distinct,
+    exact catalog-derived tool sets rather than exercising only `core`.
+- **Evidence completed:**
+  - Required tests `TestProfileRegistersExpectedTools`,
+    `TestProfileOrderingStable`, `TestNativeToolValidatesBeforeUnity`,
+    `TestNativeToolPreservesHeraErrorCode`,
+    `TestNativeMutationUsesOperationID`, and
+    `TestExecAbsentFromNormalProfiles` pass.
+  - Approval-before-Unity, mutation-ledger gating, nested annotation,
+    arbitrary-code catalog rejection, stdout purity, graceful EOF, and real
+    MCP subprocess native-call regressions pass.
+  - `go test -count=1 ./...`, `go vet ./...`, `go build ./...`, guide drift,
+    formatting, and `git diff --check` pass. Direct race execution retains the
+    previously recorded Windows temporary-executable access restriction.
+  - For live QA, Inventoria temporarily resolved this repository's local
+    Connector `0.0.72`. Its heartbeat advertised `domain_epoch_v1`,
+    `operation_ledger_v1`, and `tool_catalog_v1`, compilation completed, and
+    the Unity console reported zero errors.
+  - A freshly built MCP server was driven by the official SDK client against
+    Unity `6000.3.5f2`. All six seed profiles exactly matched their expected
+    strict tool sets, with no `exec` or `menu`, and native `scene info`
+    returned the live `GameScene` structured envelope successfully.
+  - Inventoria's manifest and lock were restored byte-for-byte to their
+    pre-QA SHA-256 hashes and the Editor returned to ready with zero console
+    errors.
+- **Known limitations:**
+  - MCP remains default-off and stdio-only; the existing CLI remains the
+    production default.
+  - Compact/Full/custom/advanced exposure belongs to M10. `exec` and raw menu
+    execution are not exposed by M9.
+  - Approval/MRTR belongs to M11. M9 rejects approval-required calls instead
+    of bypassing policy or inventing a temporary approval mechanism.
+  - Catalog invalidation notifications, Tasks, resources, telemetry, and
+    release documentation remain M13/M12/M14/M15/M16 work respectively.
+- **Rollback procedure:**
+  - Remove `internal/mcpserver/native_tools.go`, `results.go`, and
+    `middleware.go`; restore the M8 discovery-only server/config/routing/help;
+    restore CLI-local safety resolution and the pre-M9 profile validation;
+    then restore this ledger and `CLAUDE.md` M8-only state together.
+- **Rule-document impact:**
+  - `CLAUDE.md` records native fixed-profile behavior and the M10/M11 locks.
+    Public README and generated agent guides remain unchanged; release-facing
+    documentation is still M16 scope.
+- **Next prerequisite:** M10 may start only under a separate instruction after
+  re-reading this ledger and confirming the M9 PASS gate. Do not infer
   authorization to begin it from this entry.

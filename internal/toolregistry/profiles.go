@@ -5,6 +5,19 @@ import (
 	"slices"
 )
 
+func IsSeedProfile(profile string) bool {
+	switch profile {
+	case "assets", "core", "diagnostics", "scene", "testing", "ui":
+		return true
+	default:
+		return false
+	}
+}
+
+func IsNormalProfile(profile string) bool {
+	return IsSeedProfile(profile) || profile == "full"
+}
+
 func (catalog *Catalog) ToolsForProfile(profile string) ([]Tool, error) {
 	if profile == "" {
 		return nil, fmt.Errorf("%w: empty profile", ErrUnsupportedProfile)

@@ -102,6 +102,16 @@ func validateTool(tool *Tool) error {
 	if !slices.IsSorted(tool.Profiles) || hasDuplicate(tool.Profiles) {
 		return fmt.Errorf("tool %q profiles are not unique and ordinal sorted", tool.Name)
 	}
+	visibleInNormalProfile := false
+	for _, profile := range tool.Profiles {
+		visibleInNormalProfile = visibleInNormalProfile || IsNormalProfile(profile)
+	}
+	if visibleInNormalProfile && tool.ContractMode != ContractStrict {
+		return fmt.Errorf("legacy tool %q is visible in a normal profile", tool.Name)
+	}
+	if visibleInNormalProfile && toolHasArbitraryCode(tool) {
+		return fmt.Errorf("arbitrary-code tool %q is visible in a normal profile", tool.Name)
+	}
 	if !jsonObject(tool.InputSchema) || !jsonObject(tool.OutputSchema) {
 		return fmt.Errorf("tool %q has invalid schemas", tool.Name)
 	}
@@ -120,6 +130,30 @@ func validateTool(tool *Tool) error {
 		}
 	}
 	return nil
+}
+
+func toolHasArbitraryCode(tool *Tool) bool {
+	if safetyHasRisk(tool.Safety, "arbitrary_code") {
+		return true
+	}
+	for _, action := range tool.Actions {
+		if safetyHasRisk(action.Safety, "arbitrary_code") {
+			return true
+		}
+	}
+	return false
+}
+
+func safetyHasRisk(safety Safety, risk string) bool {
+	if safety.RiskClass == risk {
+		return true
+	}
+	for _, rule := range safety.Rules {
+		if safetyHasRisk(rule.Safety, risk) {
+			return true
+		}
+	}
+	return false
 }
 
 func jsonObject(data json.RawMessage) bool {

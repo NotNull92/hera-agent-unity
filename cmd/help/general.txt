@@ -8,6 +8,10 @@ Typed Call:
   call <tool> --validate-only      Validate without invoking the tool
   call <tool> --explain            Show resolved action/profile/safety without invoking
 
+Experimental MCP:
+  HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
+                                      Start the native core-profile stdio server.
+
 Editor Control:
   editor play [--wait]          Enter play mode (--wait blocks until fully entered)
   editor stop                   Exit play mode

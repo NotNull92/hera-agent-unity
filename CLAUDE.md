@@ -18,7 +18,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 **기존 Go CLI와 localhost HTTP Unity Connector가 실행 코어라는 결정은 유지한다** 🔒. `HttpServer`, `CommandRouter`, `ToolDiscovery`, `Heartbeat`, Unity main-thread queue, 파일버스 복구 경로를 교체하거나 Unity Connector 안에 MCP를 직접 구현하지 않는다.
 
-**CLI + MCP adapter migration은 사용자 승인 아래 진행 중이다** 🔒. 기존 바이너리 안에 선택적 Go stdio MCP adapter를 같은 실행 코어 앞에 추가할 수 있다. 이 adapter는 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 최종적으로 하나의 정규화된 tool contract registry를 공유한다. Profile MCP가 계획된 일반 노출이고, Compact MCP는 동적/custom tool fallback이며, Full MCP는 명시적 opt-in이다. 이 기능들은 아직 구현 완료 상태가 아니며, `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`의 M17 완료·benchmark gate가 통과하기 전까지 CLI가 production default다.
+**CLI + MCP adapter migration은 사용자 승인 아래 진행 중이다** 🔒. 기존 바이너리 안에 선택적 Go stdio MCP adapter를 같은 실행 코어 앞에 추가할 수 있다. 이 adapter는 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 최종적으로 하나의 정규화된 tool contract registry를 공유한다. M8에서 default-off stdio skeleton을, M9에서 strict native Profile tool bridge를 구현했다. Compact MCP는 동적/custom tool fallback이며, Full MCP는 명시적 opt-in이다. 전체 기능은 아직 구현 완료 상태가 아니며, `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`의 M17 완료·benchmark gate가 통과하기 전까지 CLI가 production default다.
 
 이유:
 - 런타임 의존성 0개 — 사용자는 바이너리 하나 + UPM 패키지 하나만 설치
@@ -30,7 +30,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 - **Authoritative implementation specification:** `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - **Milestone evidence and rollback ledger:** `docs/MCP_MIGRATION_PROGRESS.md`
-- **현재 상태:** M0 rule/baseline, M1 structural schema validity, M2 전체 strict tool contract, M3 safety/profile enforcement, M4 canonical catalog/hash/domain epoch, M5 Go registry/cache/validation, M6 Typed CLI, M7 operation ledger/safe retry gate가 PASS다. `call`은 사용 가능하지만 MCP runtime command는 아직 미구현이며 사용 가능하다고 문서화하지 않는다.
+- **현재 상태:** M0 rule/baseline부터 M9 native Profile tool bridge까지 PASS다. `call`은 사용 가능하다. `mcp`는 `HERA_MCP_ENABLED=1`일 때만 stdio로 시작하며, startup catalog에서 선택한 `core`/`scene`/`assets`/`ui`/`diagnostics`/`testing` 고정 profile의 strict native 도구만 노출한다. 승인 필요 작업은 M11 전까지 실행 전에 차단한다. CLI가 계속 production default이며 M10 Compact/Full exposure는 미구현이다.
 - **보존 경계:** 기존 Go CLI, localhost HTTP Connector, single-editor model, main-thread serialization, heartbeat discovery, package/test file bus, CLI/Connector 독립 버전은 계속 잠금 상태다.
 
 ### Rule-document hierarchy
@@ -70,6 +70,7 @@ Unity 실행 기능을 추가할 때도 기존 코어 모델 안에서 풀 것: 
 cmd/                  # Go CLI — thin passthrough layer
   root.go             # Entry point, flag/arg parsing, humanCategories, response printing
   dispatch.go         # Standalone vs Unity-backed command routing
+  mcp.go              # Env-gated stdio MCP entry point and Profile selection
   call.go             # Strict typed-tool validation/explain/dispatch
   call_input.go       # JSON/file/stdin source parsing and conflict checks
   config.go           # Immutable per-execution global CLI configuration
@@ -102,6 +103,7 @@ internal/client/      # Unity HTTP client, instance discovery, SendBatch
 internal/schema/      # Bounded Draft 2020-12 compiled-schema cache + validation
 internal/toolregistry/ # Native/legacy catalog providers, profiles, memory/disk cache
 internal/policy/      # Typed policy projection skeleton (M6: descriptive only)
+internal/mcpserver/   # Official Go SDK server identity/discovery + stdio lifecycle
 internal/assetconfig/ # Asset plugin configuration persistence
                       # (assets + ui_system + game_feel_mode + game_feel_ui_mode + loopEngineeringMode)
 internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
@@ -350,6 +352,8 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | MCP migration M5 Go registry/cache/validation | ✅ 완료 (2026-07-31) | Go 내부 canonical registry에 catalog-v1 native provider와 compact-only conservative legacy provider, deterministic profile selection, project/feature/domain/hash identity를 구현했다. 메모리 LRU와 private atomic disk cache는 동시성·프로세스 간 재사용을 지원하면서 stale/corrupt/schema-invalid/filename-hash mismatch를 거부한다. `jsonschema/v6 v6.0.2`를 고정해 bounded Draft 2020-12 compiled-schema cache와 JSON pointer diagnostics를 제공하고, stdin/파일 catalog validator를 추가했다. 전체 Go test/vet/build/lint/format, Windows race binaries, cross-process·corruption·fixture 검증, live legacy/native Unity integration, 의존성 license/OSV 검토가 통과했다. 리뷰에서 compiler cache 상한·cache schema compile·content-address 검증·native 31-tool default·빈 feature 거부를 보강했다. `cmd` import는 없고 Connector `0.0.71` 및 기존 CLI default는 불변이다. Typed CLI와 MCP runtime은 미구현이다. |
 | MCP migration M6 Typed CLI | ✅ 완료 (2026-07-31) | `call <tool>`이 JSON/파일/stdin 입력을 하나만 받아 M5 live strict schema로 실행 전에 검증하고 canonical tool request를 보낸다. `--profile`, `--validate-only`, `--explain`을 지원하며 explain은 action과 M3 parameter-dependent safety를 해석하지만 M6 policy skeleton은 `enforced=false`로 정직하게 표시한다. 전역 flag 변수를 immutable `GlobalConfig` 전달로 교체하면서 기존 scene routing과 `--params` precedence를 보존했다. 전체 Go test/vet/build/lint/format, repository-local Windows race binaries, catalog/guide/diff gate와 live Unity 8093의 validate/explain/stdin 실제 실행이 통과했다. Connector `0.0.71`은 불변이고 operation ledger/approval/MCP runtime은 M7 이후 소관이다. |
 | MCP migration M7 operation ledger/safe retry | ✅ 완료 (2026-07-31) | Go 요청에 안정적인 operation ID와 canonical argument hash를 추가하고 Connector가 실행 전 `received/running`, HTTP write 전 response 포함 `committed/failed`를 atomic ledger에 저장한다. 동일 ID replay, changed-argument conflict, prior-domain unknown, non-idempotent no-reinvoke, legacy capability gate, retention/byte cap을 구현했고 heartbeat에 `operation_ledger_v1`을 노출했다. Unity 6000.3.5f2 exact-source compile 및 7개 ledger 테스트가 통과했으며 실제 50ms response-loss 후 동일 ID 재전송에서 mutation counter가 정확히 1임을 확인했다. Connector manifest는 unreleased `0.0.72`이며 approval은 M11, MCP runtime은 M8 이후 소관이다. |
+| MCP migration M8 stdio MCP skeleton | ✅ 완료 (2026-07-31) | 공식 Go MCP SDK `v1.7.0`을 고정하고 `hera-agent-unity mcp --transport stdio --profile core`의 default-off discovery-only server를 추가했다. `server/discover`는 서버 identity와 protocol version negotiation만 제공하며 Unity tool/resource/prompt는 등록하지 않는다. stdout은 protocol frame 전용, diagnostics는 stderr 전용이고 unsupported transport와 feature-off는 실행 전에 거부한다. 기존 CLI routing/Unity discovery/update notice는 건드리지 않으며 CLI가 production default다. M9 native Profile tool bridge는 미구현이다. |
+| MCP migration M9 native Profile tool bridge | ✅ 완료 (2026-07-31) | MCP startup이 live native catalog와 compiled schema를 로드하고 Connector metadata에서 선택한 `core`/`scene`/`assets`/`ui`/`diagnostics`/`testing` 고정 profile을 ordinal native tool로 등록한다. 호출은 raw JSON object parse와 strict schema 검증, parameter-dependent safety 해석, M11 이전 approval-required 차단을 Unity 전송 전에 수행하고, mutation profile은 `operation_ledger_v1`을 요구한다. 모든 호출에 새 operation ID, `client_kind=mcp`, catalog hash, resolved idempotence를 붙여 shared client로 보내며 Hera envelope/error code/suggestion/hint/timing과 보수적 MCP annotation을 보존한다. 실제 Unity 6000.3.5f2에서 여섯 profile exact 목록과 native `scene info` structured result를 공식 SDK client로 확인했고 Connector `0.0.72`, CLI production default, M10/M11 경계는 불변이다. |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 
