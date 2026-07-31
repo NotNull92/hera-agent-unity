@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 )
@@ -33,44 +32,11 @@ func TestBatchCmd_Success(t *testing.T) {
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	defer func() { batchStdin = oldStdin }()
 
-	err := batchCmd(context.Background(), []string{}, mockSend, mockInst, 60000)
+	err := batchCmd(context.Background(), []string{}, testBatchRuntime(mockSend, mockInst, 60000))
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
 }
-
-// mockFile implements the minimal io.Reader / os.File interface for testing.
-type mockFile struct {
-	data   []byte
-	closed bool
-}
-
-func (m *mockFile) Read(p []byte) (n int, err error) {
-	if len(m.data) == 0 {
-		return 0, io.EOF
-	}
-	n = copy(p, m.data)
-	m.data = m.data[n:]
-	return n, nil
-}
-
-func (m *mockFile) Close() error {
-	m.closed = true
-	return nil
-}
-
-func (m *mockFile) Stat() (os.FileInfo, error) {
-	return &mockFileInfo{}, nil
-}
-
-type mockFileInfo struct{}
-
-func (m *mockFileInfo) Name() string       { return "mock" }
-func (m *mockFileInfo) Size() int64        { return 0 }
-func (m *mockFileInfo) Mode() os.FileMode  { return 0 } // not ModeCharDevice
-func (m *mockFileInfo) ModTime() time.Time { return time.Time{} }
-func (m *mockFileInfo) IsDir() bool        { return false }
-func (m *mockFileInfo) Sys() interface{}   { return nil }
 
 func TestBatchCmd_FailFast(t *testing.T) {
 	mockInst := &client.Instance{Port: 8090}
@@ -91,7 +57,7 @@ func TestBatchCmd_FailFast(t *testing.T) {
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	defer func() { batchStdin = oldStdin }()
 
-	err := batchCmd(context.Background(), []string{}, mockSend, mockInst, 60000)
+	err := batchCmd(context.Background(), []string{}, testBatchRuntime(mockSend, mockInst, 60000))
 	if err == nil {
 		t.Fatal("expected error for failed batch, got nil")
 	}
@@ -120,7 +86,11 @@ func TestBatchCmd_File(t *testing.T) {
 		}, nil
 	}
 
-	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, mockInst, 60000)
+	err := batchCmd(
+		context.Background(),
+		[]string{"--file", jsonPath},
+		testBatchRuntime(mockSend, mockInst, 60000),
+	)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -143,7 +113,11 @@ func TestBatchCmd_InvalidJSON(t *testing.T) {
 		return nil, errors.New("should not reach send")
 	}
 
-	err := batchCmd(context.Background(), []string{"--file", jsonPath}, mockSend, &client.Instance{Port: 8090}, 60000)
+	err := batchCmd(
+		context.Background(),
+		[]string{"--file", jsonPath},
+		testBatchRuntime(mockSend, &client.Instance{Port: 8090}, 60000),
+	)
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")
 	}
@@ -165,7 +139,7 @@ func TestBatchCmd_UsesInitialInstance(t *testing.T) {
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	defer func() { batchStdin = oldStdin }()
 
-	err := batchCmd(context.Background(), []string{}, mockSend, initial, 60000)
+	err := batchCmd(context.Background(), []string{}, testBatchRuntime(mockSend, initial, 60000))
 	if err != nil {
 		t.Fatalf("batch command: %v", err)
 	}
@@ -186,7 +160,11 @@ func TestBatchCmd_WhenServerRejectsEnvelope_ReturnsSentinel(t *testing.T) {
 	defer func() { batchStdin = oldStdin }()
 
 	_, _, err := captureBatchOutput(t, func() error {
-		return batchCmd(context.Background(), []string{}, mockSend, initial, 60_000)
+		return batchCmd(
+			context.Background(),
+			[]string{},
+			testBatchRuntime(mockSend, initial, 60_000),
+		)
 	})
 	if !errors.Is(err, ErrCommandFailed) {
 		t.Fatalf("batchCmd error = %v, want ErrCommandFailed", err)
@@ -209,15 +187,13 @@ func TestBatchCmd_WritesStructuredRejectionToStderrAndReturnsSentinel(t *testing
 	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
 	t.Cleanup(func() { batchStdin = oldStdin })
 
-	oldCompactJSON, oldQuiet, oldVerbose := flagCompactJSON, flagQuiet, flagVerbose
-	flagCompactJSON, flagQuiet, flagVerbose = false, false, false
-	t.Cleanup(func() {
-		flagCompactJSON, flagQuiet, flagVerbose = oldCompactJSON, oldQuiet, oldVerbose
-	})
-
 	// When
 	stdout, stderr, err := captureBatchOutput(t, func() error {
-		return batchCmd(context.Background(), []string{}, mockSend, initial, 60_000)
+		return batchCmd(
+			context.Background(),
+			[]string{},
+			testBatchRuntime(mockSend, initial, 60_000),
+		)
 	})
 
 	// Then

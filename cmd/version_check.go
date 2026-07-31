@@ -95,8 +95,8 @@ func parseReleaseTag(tag string) ([3]int, bool) {
 
 // printUpdateNotice checks for a newer version and prints a notice if available.
 // Silently does nothing on any error (no network, bad cache, etc.).
-func printUpdateNotice(category string) {
-	if Version == "dev" || flagQuiet || !isHumanCommand(category) {
+func printUpdateNoticeWithConfig(category string, quiet bool) {
+	if Version == "dev" || quiet || !isHumanCommand(category) {
 		return
 	}
 
@@ -152,6 +152,10 @@ func printUpdateNotice(category string) {
 	if latestNotice != "" {
 		printNotice(Version, latestNotice)
 	}
+}
+
+func printUpdateNotice(category string) {
+	printUpdateNoticeWithConfig(category, false)
 }
 
 func printNotice(current, latest string) {

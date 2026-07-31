@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -23,17 +22,6 @@ var Version = "dev"
 // compact JSON error envelope has already been printed to stderr, so main()
 // exits non-zero on this sentinel without printing a duplicate error line.
 var ErrCommandFailed = errors.New("command failed")
-
-var (
-	flagPort        int
-	flagProject     string
-	flagTimeout     int
-	flagVerbose     bool
-	flagQuiet       bool
-	flagDebug       bool
-	flagCompactJSON bool
-	flagNarrate     bool
-)
 
 func envInt(key string, fallback int) int {
 	if v := os.Getenv(key); v != "" {
@@ -106,30 +94,17 @@ func isUserCodeDiagnostic(code string) bool {
 }
 
 func Execute(ctx context.Context) error {
-	flag.IntVar(&flagPort, "port", envInt("HERA_AGENT_PORT", 0), "Select Unity instance by active heartbeat port")
-	flag.StringVar(&flagProject, "project", envString("HERA_AGENT_PROJECT", ""), "Select Unity instance by project path")
-	flag.IntVar(&flagTimeout, "timeout", envInt("HERA_AGENT_TIMEOUT_MS", 60000), "Request timeout in milliseconds")
-	flag.BoolVar(&flagVerbose, "verbose", envBool("HERA_AGENT_VERBOSE", false), "Print progress + per-phase timings to stderr")
-	flag.BoolVar(&flagQuiet, "quiet", envBool("HERA_AGENT_QUIET", false), "Suppress decorative progress messages (errors still printed plain)")
-	flag.BoolVar(&flagDebug, "debug", envBool("HERA_AGENT_DEBUG", false), "Print HTTP request/response bodies and discovery info to stderr")
-	flag.BoolVar(&flagCompactJSON, "compact-json", envBool("HERA_AGENT_COMPACT_JSON", false), "Output JSON without indentation (smaller responses for AI agents)")
-	flag.BoolVar(&flagNarrate, "narrate", envBool("HERA_AGENT_NARRATE", false), "Print waitForAlive/waitForReady progress messages even on tool commands (default: human-only)")
-
-	flag.Usage = func() { printHelp() }
-
-	args := os.Args[1:]
-	flagArgs, cmdArgs := splitArgs(args)
-	if err := flag.CommandLine.Parse(flagArgs); err != nil {
-		return fmt.Errorf("flag parse error: %w", err)
+	config, cmdArgs, err := parseGlobalConfig(os.Args[1:])
+	if err != nil {
+		return err
 	}
-
 	if len(cmdArgs) == 0 {
 		printHelp()
 		return nil
 	}
 
 	checkBinaryPath()
-	client.DefaultClient.Debug = flagDebug
+	client.DefaultClient.Debug = config.Debug
 
 	category := cmdArgs[0]
 	subArgs := cmdArgs[1:]
@@ -142,7 +117,7 @@ func Execute(ctx context.Context) error {
 		}
 	}
 
-	handled, err := runStandaloneCommand(ctx, category, subArgs)
+	handled, err := (standaloneRunner{config: config}).Run(ctx, category, subArgs)
 	if err != nil {
 		return err
 	}
@@ -151,36 +126,45 @@ func Execute(ctx context.Context) error {
 	}
 
 	initialResolve := func() (*client.Instance, error) {
-		return client.DiscoverInstanceFresh(flagProject, flagPort)
+		return client.DiscoverInstanceFresh(config.Project, config.Port)
 	}
-	inst, err := waitForInstance(ctx, initialResolve, initialDiscoveryTimeoutMs(flagTimeout))
+	inst, err := waitForInstance(
+		ctx,
+		initialResolve,
+		initialDiscoveryTimeoutMs(config.TimeoutMillis()),
+	)
 	if err != nil {
 		return err
 	}
 
-	freshResolve := makeFreshResolver(inst, flagProject, flagPort)
-	inst, err = waitForAlive(ctx, freshResolve, flagTimeout, category)
+	freshResolve := makeFreshResolver(inst, config.Project, config.Port)
+	inst, err = config.Wait(category).WaitForAlive(ctx, freshResolve)
 	if err != nil {
 		return err
 	}
 
-	send := prepareSend(ctx, inst, category, flagTimeout, flagVerbose)
-	resp, err := runUnityCommand(ctx, category, subArgs, send, inst, freshResolve)
+	send := prepareSend(ctx, inst, category, config.TimeoutMillis(), config.Verbose)
+	resp, err := (unityCommandRunner{
+		config:   config,
+		send:     send,
+		instance: inst,
+		resolve:  freshResolve,
+	}).Run(ctx, category, subArgs)
 	if err != nil {
 		return err
 	}
 
 	printer := &ResponsePrinter{
-		Quiet:       flagQuiet,
-		CompactJSON: flagCompactJSON,
+		Quiet:       config.Quiet,
+		CompactJSON: config.CompactJSON,
 	}
 	printer.Print(resp, category)
 
-	if flagVerbose {
+	if config.Verbose {
 		printTimings(resp)
 	}
 
-	printUpdateNotice(category)
+	printUpdateNoticeWithConfig(category, config.Quiet)
 
 	if !resp.Success {
 		// For AI-target (tool) commands the printer already wrote the compact
@@ -417,9 +401,8 @@ func readStdinIfPiped(args []string) []string {
 	return append([]string{code}, args...)
 }
 
-// splitArgs separates global flags (--port, --project, --timeout, --verbose)
-// from subcommand args. Global flags must be parsed by flag.CommandLine before
-// the subcommand runs.
+// splitArgs separates global flags from subcommand arguments so each Execute
+// invocation can parse them with its own isolated FlagSet.
 func splitArgs(args []string) (flags, commands []string) {
 	for i := 0; i < len(args); i++ {
 		switch args[i] {

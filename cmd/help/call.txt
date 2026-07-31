@@ -1,0 +1,27 @@
+hera-agent-unity call — invoke a strict tool with schema-validated JSON
+
+Usage:
+  hera-agent-unity call <tool> --json '<object>'
+  hera-agent-unity call <tool> --file request.json
+  echo '<object>' | hera-agent-unity call <tool>
+  hera-agent-unity call <tool> --validate-only [input]
+  hera-agent-unity call <tool> --explain [input]
+
+Input:
+  Use exactly one of --json, stdin, or --file. If none is supplied, the input
+  is an empty object. Combining sources is an error.
+
+Options:
+  --profile <name>   Require the tool to belong to the named runtime profile.
+  --validate-only    Validate against the live strict schema without executing.
+  --explain          Return the resolved tool, action, profile, and safety.
+
+Quoting-free stdin is recommended for nested JSON:
+  @'
+  {"action":"info"}
+  '@ | hera-agent-unity call scene
+
+  echo '{"action":"info"}' | hera-agent-unity call scene
+
+The existing command syntax remains supported:
+  hera-agent-unity scene info

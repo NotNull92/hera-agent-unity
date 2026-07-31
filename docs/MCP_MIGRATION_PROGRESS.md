@@ -15,7 +15,7 @@ benchmark gates pass.
 | M3 Safety classification and profiles | PASS |
 | M4 Canonical catalog, hash, and domain epoch | PASS |
 | M5 Go registry, cache, and validation | PASS |
-| M6 Typed CLI | PENDING |
+| M6 Typed CLI | PASS |
 | M7 Connector operation ledger and safe retry | PENDING |
 | M8 stdio MCP skeleton | PENDING |
 | M9 Native Profile tool bridge | PENDING |
@@ -575,4 +575,69 @@ benchmark gates pass.
     adds no user-facing production command.
 - **Next prerequisite:** M6 Typed CLI may start only under a separate instruction
   after re-reading this ledger and confirming the M5 PASS gate. Do not infer
+  authorization to begin it from this entry.
+
+## M6 Typed CLI
+
+- **Status:** PASS
+- **Commit baseline:** `3302e75`
+- **Date:** 2026-07-31
+- **Implemented scope:**
+  - Added `hera-agent-unity call <tool>` with mutually exclusive `--json`,
+    `--file`, and stdin request-object sources; no source defaults to `{}`.
+  - Loads the M5 canonical live registry, requires a strict contract, resolves
+    aliases and optional profile membership, validates before tool execution,
+    and sends the canonical tool name with normalized request shape.
+  - Added `--validate-only` and `--explain`. Both skip target tool execution;
+    explain reports canonical action, contract mode, resolved M3 safety
+    metadata, and the non-enforcing M6 policy projection.
+  - Replaced package-level global CLI flag state with an immutable
+    `GlobalConfig` passed through standalone, Unity, batch, editor, package,
+    status, and update-notice paths while preserving legacy command behavior.
+  - Added the `internal/policy` type skeleton without enabling approval
+    enforcement, operation IDs, retries, or MCP runtime behavior.
+- **Compatibility coverage:**
+  - JSON, stdin, file, conflicting-source, unknown-property-before-execution,
+    validate-only, explain, profile, and parameter-dependent safety behavior.
+  - Legacy `scene` routing and explicit-flag-over-`--params` precedence remain
+    unchanged.
+  - Typed and legacy console inputs produce the same canonical wire request.
+- **Review corrections:**
+  - Applied catalog `when.const` safety rules by most-specific match so
+    `console clear=true` and `exec compile_only=true` explanations cannot
+    under-report risk.
+  - Strengthened typed/legacy equivalence coverage to use the real JSON decoder.
+  - Isolated config tests from ambient `HERA_AGENT_*` variables and corrected
+    the general stdin help example.
+- **Evidence completed:**
+  - Required named M6 tests, `go test -count=1 ./...`, shuffled focused tests,
+    `go vet ./...`, `go build ./...`, `golangci-lint run ./...`,
+    `golangci-lint fmt --diff`, `gofmt -l .`, catalog fixture validation,
+    guide drift, and `git diff --check` passed.
+  - Race-enabled `cmd`, `internal/policy`, and `internal/toolregistry` binaries
+    passed when compiled and run from repository-local paths; Windows denied
+    direct execution from Go's temporary build directory.
+  - A repository-local CLI executable connected to live Unity `6000.3.5f2` on
+    port 8093. `call scene` passed through `--validate-only`, `--explain`, and
+    stdin execution; the real invocation returned the active `GameScene`.
+- **Known limitations:**
+  - M6 policy output is descriptive only (`enforced=false`). Approval,
+    operation-ledger, and retry semantics belong to M7/M11.
+  - No stdio MCP server or MCP exposure mode exists yet; the CLI remains the
+    production default through the M17 decision gate.
+  - No installed CLI, Unity package, project manifest, tag, release, or
+    published artifact was changed. Connector package version remains the
+    unreleased `0.0.71`.
+- **Rollback procedure:**
+  - Remove `cmd/call*.go`, the call help/tests, `cmd/config.go`, and
+    `internal/policy`; restore the legacy package-level flag plumbing and
+    dispatch signatures; then revert this ledger, README, command reference,
+    canonical agent guide, generated guides, and `CLAUDE.md` updates together.
+- **Rule-document impact:**
+  - `AGENTS.md` documents typed strict-tool invocation and is regenerated into
+    the distributable and tool-specific guides.
+  - README files and `docs/COMMANDS.md` now advertise only the implemented M6
+    CLI surface. MCP commands remain undocumented because they do not exist.
+- **Next prerequisite:** M7 may start only under a separate instruction after
+  re-reading this ledger and confirming the M6 PASS gate. Do not infer
   authorization to begin it from this entry.

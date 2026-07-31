@@ -257,6 +257,7 @@ AI가 가장 자주 쓰는 명령어입니다.
 | `status` | 어떤 Unity Editor에 연결됐는지 보여 줍니다. |
 | `doctor --json` | 설치, PATH, Unity 연결을 검사합니다. |
 | `list --compact` | 작은 응답으로 도구 목록을 봅니다. |
+| `call <tool> --json '{...}'` | live strict tool contract로 검증한 뒤 호출합니다. |
 | `console --type error` | Unity의 실제 에러를 읽습니다. |
 | `exec "..."` | Unity 안에서 C#을 실행합니다. |
 | `editor play --wait` | Play Mode에 들어가고 기다립니다. |

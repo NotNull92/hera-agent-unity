@@ -1,5 +1,13 @@
 Usage: hera-agent-unity <command> [subcommand] [options]
 
+Typed Call:
+  call <tool> --json '<object>'    Validate against the live strict schema, then invoke
+  call <tool> --file request.json  Read the request object from a file
+  echo '<object>' | hera-agent-unity call <tool>
+                                      Quoting-free JSON input from stdin
+  call <tool> --validate-only      Validate without invoking the tool
+  call <tool> --explain            Show resolved action/profile/safety without invoking
+
 Editor Control:
   editor play [--wait]          Enter play mode (--wait blocks until fully entered)
   editor stop                   Exit play mode

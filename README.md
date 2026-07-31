@@ -256,6 +256,7 @@ Here are the commands most agents use first.
 | `status` | Shows which Unity Editor is connected. |
 | `doctor --json` | Checks install, PATH, and Unity connection. |
 | `list --compact` | Lists tools with a small response. |
+| `call <tool> --json '{...}'` | Validates a strict live tool contract, then invokes it. |
 | `console --type error` | Reads real Unity errors. |
 | `exec "..."` | Runs C# inside Unity. |
 | `editor play --wait` | Enters Play Mode and waits. |

@@ -3,13 +3,22 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"time"
+	"os"
 
 	"github.com/NotNull92/hera-agent-unity/internal/assetconfig"
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
 
-func runStandaloneCommand(ctx context.Context, category string, subArgs []string) (bool, error) {
+type standaloneRunner struct {
+	config GlobalConfig
+}
+
+func (runner standaloneRunner) Run(
+	ctx context.Context,
+	category string,
+	subArgs []string,
+) (bool, error) {
 	switch category {
 	case "help", "--help", "-h":
 		if len(subArgs) > 0 {
@@ -29,17 +38,21 @@ func runStandaloneCommand(ctx context.Context, category string, subArgs []string
 		return true, uninstallCmd()
 	case "status":
 		resolve := func() (*client.Instance, error) {
-			return discoverStatusInstance(flagProject, flagPort)
+			return discoverStatusInstance(runner.config.Project, runner.config.Port)
 		}
-		inst, err := waitForInstance(ctx, resolve, initialDiscoveryTimeoutMs(flagTimeout))
+		inst, err := waitForInstance(
+			ctx,
+			resolve,
+			initialDiscoveryTimeoutMs(runner.config.TimeoutMillis()),
+		)
 		if err != nil {
 			return true, err
 		}
 		statusErr := statusCmd(ctx, inst)
-		printUpdateNotice(category)
+		printUpdateNoticeWithConfig(category, runner.config.Quiet)
 		return true, statusErr
 	case "ping":
-		return true, pingCmd(flagProject, flagPort)
+		return true, pingCmd(runner.config.Project, runner.config.Port)
 	case "asset-config":
 		if len(subArgs) > 0 && subArgs[0] == "detect" {
 			return false, nil
@@ -53,27 +66,64 @@ func runStandaloneCommand(ctx context.Context, category string, subArgs []string
 	return false, nil
 }
 
-func runUnityCommand(ctx context.Context, category string, subArgs []string, send SendFunc, inst *client.Instance, freshResolve instanceResolver) (*client.CommandResponse, error) {
+type unityCommandRunner struct {
+	config   GlobalConfig
+	send     SendFunc
+	instance *client.Instance
+	resolve  instanceResolver
+}
+
+func (runner unityCommandRunner) Run(
+	ctx context.Context,
+	category string,
+	subArgs []string,
+) (*client.CommandResponse, error) {
 	var resp *client.CommandResponse
 	var err error
 
 	switch category {
 	case "batch":
-		err := batchCmd(ctx, subArgs, client.SendBatch, inst, flagTimeout)
+		err := batchCmd(ctx, subArgs, batchRuntime{
+			Config:    runner.config,
+			Instance:  runner.instance,
+			SendBatch: client.SendBatch,
+		})
 		if err != nil {
 			return nil, err
 		}
 		return &client.CommandResponse{Success: true}, nil
+	case "call":
+		registry := toolregistry.NewRegistry(toolregistry.RegistryOptions{})
+		command := &callCommand{
+			load:  registry.Load,
+			send:  runner.send,
+			input: detectCallInput(os.Stdin),
+		}
+		resp, err = command.Run(ctx, runner.instance, subArgs)
 	case "editor":
-		resp, err = editorCmd(ctx, subArgs, send, freshResolve, category)
+		resp, err = runEditorCmd(ctx, subArgs, editorRuntime{
+			Config:  runner.config,
+			Send:    runner.send,
+			Resolve: runner.resolve,
+		})
 	case "test":
-		resp, err = testCmd(ctx, subArgs, send, freshResolve, time.Duration(flagTimeout)*time.Millisecond)
+		resp, err = testCmd(
+			ctx,
+			subArgs,
+			runner.send,
+			runner.resolve,
+			runner.config.Timeout,
+		)
 	case "manage_packages":
-		resp, err = managePackagesCmd(ctx, subArgs, send, freshResolve)
+		resp, err = managePackagesCmd(ctx, subArgs, packageRuntime{
+			Config:  runner.config,
+			Send:    runner.send,
+			Resolve: runner.resolve,
+		})
 	case "unity_docs":
-		resp, err = unityDocsCmd(subArgs, send)
+		resp, err = unityDocsCmd(subArgs, runner.send)
 	case "ui_doc":
-		resp, err = uiDocCmd(subArgs, send)
+		resp, err = uiDocCmd(subArgs, runner.send)
 	case "asset-config":
 		if len(subArgs) == 0 || subArgs[0] != "detect" {
 			return nil, fmt.Errorf("unsupported Unity-backed asset-config command")
@@ -84,7 +134,7 @@ func runUnityCommand(ctx context.Context, category string, subArgs []string, sen
 		var params map[string]interface{}
 		params, _, err = buildParams(subArgs[1:], nil)
 		if err == nil {
-			resp, err = send("detect_assets", params)
+			resp, err = runner.send("detect_assets", params)
 		}
 	case "exec":
 		subArgs, err = readExecFileIfPresent(subArgs)
@@ -99,13 +149,15 @@ func runUnityCommand(ctx context.Context, category string, subArgs []string, sen
 				params["compile_only"] = true
 				delete(params, "check")
 			}
-			resp, err = send("exec", params)
+			request := newToolRequest("exec", params)
+			resp, err = runner.send(request.Command, request.Params)
 		}
 	default:
 		var params map[string]interface{}
 		params, _, err = buildParams(subArgs, nil)
 		if err == nil {
-			resp, err = send(category, params)
+			request := newToolRequest(category, params)
+			resp, err = runner.send(request.Command, request.Params)
 		}
 	}
 

@@ -265,6 +265,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
 | Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
 | List all tools | `list --compact` or `list --names` | 30s in-memory + on-disk cache. Both forms return a flat names array; use `list` only when you need one-line descriptions. |
+| Invoke a strict tool with typed JSON | `call <tool> --json '{...}'` or pipe JSON | Validates against the live strict schema before execution. Use `--validate-only` or `--explain` for no-execution checks. |
 | Run multiple commands in one HTTP round-trip | `batch --file <path.json>` or pipe JSON | Sequential. `fail_fast` on first error by default. |
 | Compile-check without executing | `exec --check "<code>"` | Returns success on clean compile, `EXEC_COMPILE_ERROR` otherwise. No side effects. |
 | List loaded assemblies | `list_assemblies [--filter <substr>] [--include_system] [--include_version]` | Returns bare name strings by default; `--filter` to scope, `--include_version` for `{name, version}` objects. |
@@ -538,6 +539,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 
 | Command | Purpose | Key flags |
 |---|---|---|
+| `call <tool>` | Validate and invoke a live strict tool contract | `--json`, `--file`, stdin, `--profile`, `--validate-only`, `--explain` |
 | `exec <code>` | Run C# in Editor | `--usings`, `--check`, `--depth N`, `--stacktrace {none\|user\|full}`, `--strict`, `--no-cache` |
 | `console` | Read/clear log entries | `--type error,warning,log`, `--lines N`, `--stacktrace`, `--clear`, `--since N` |
 | `scene info` / `load` / `save` / `close` / `list` | Scene management | `--mode single\|additive\|additive_without_loading` (load) |

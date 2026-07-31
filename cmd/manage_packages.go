@@ -17,13 +17,23 @@ import (
 // budget). add / remove / embed return immediately with a job_id; we then
 // poll ~/.hera-agent-unity/status/package-result-PORT-JOBID.json the same
 // way cmd/test.go waits on PlayMode results.
-func managePackagesCmd(ctx context.Context, args []string, send SendFunc, resolve instanceResolver) (*client.CommandResponse, error) {
+type packageRuntime struct {
+	Config  GlobalConfig
+	Send    SendFunc
+	Resolve instanceResolver
+}
+
+func managePackagesCmd(
+	ctx context.Context,
+	args []string,
+	runtime packageRuntime,
+) (*client.CommandResponse, error) {
 	params, _, err := buildParams(args, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := send("manage_packages", params)
+	resp, err := runtime.Send("manage_packages", params)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +53,7 @@ func managePackagesCmd(ctx context.Context, args []string, send SendFunc, resolv
 		return resp, nil
 	}
 
-	if isHumanCommand("manage_packages") || flagVerbose {
+	if isHumanCommand("manage_packages") || runtime.Config.Verbose {
 		fmt.Fprintf(os.Stderr,
 			"Package job %s (%s %s) running, waiting for completion...\n",
 			meta.JobID, meta.Action, meta.Identifier)
@@ -51,7 +61,7 @@ func managePackagesCmd(ctx context.Context, args []string, send SendFunc, resolv
 
 	port := meta.Port
 	if port == 0 {
-		inst, err := resolve()
+		inst, err := runtime.Resolve()
 		if err != nil {
 			return nil, err
 		}

@@ -30,7 +30,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 - **Authoritative implementation specification:** `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - **Milestone evidence and rollback ledger:** `docs/MCP_MIGRATION_PROGRESS.md`
-- **현재 상태:** M0 rule/baseline, M1 structural schema validity, M2 전체 strict tool contract, M3 safety/profile enforcement, M4 canonical catalog/hash/domain epoch, M5 Go registry/cache/validation gate가 PASS다. Typed CLI와 MCP runtime command는 아직 미구현이며 사용 가능하다고 문서화하지 않는다.
+- **현재 상태:** M0 rule/baseline, M1 structural schema validity, M2 전체 strict tool contract, M3 safety/profile enforcement, M4 canonical catalog/hash/domain epoch, M5 Go registry/cache/validation, M6 Typed CLI gate가 PASS다. `call`은 사용 가능하지만 MCP runtime command는 아직 미구현이며 사용 가능하다고 문서화하지 않는다.
 - **보존 경계:** 기존 Go CLI, localhost HTTP Connector, single-editor model, main-thread serialization, heartbeat discovery, package/test file bus, CLI/Connector 독립 버전은 계속 잠금 상태다.
 
 ### Rule-document hierarchy
@@ -49,7 +49,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
 - **단일 에디터 모델 (멀티 에디터 미지원)** 🔒: 한 머신에 Unity 에디터 하나를 전제. 포트 바인딩 구조상 같은 머신에서 멀티 에디터는 실사용 불가 — instance discovery 는 "한" 인스턴스를 해석하고, 재시도·재해석(`doWithReloadRetry` 의 `DiscoverInstance` 포트 추종 등)이 *다른* 에디터를 집을 위험은 **모델 밖**. "여러 에디터 구분/디스앰비규에이션 추가하자", "재해석이 substring 매치로 잘못된 에디터를 고를 수 있다", "PID 로 정확 매칭하자" 같은 지적·제안은 모델 밖 — 멀티 인스턴스 충돌은 발생하지 않는 전제이므로 새 문제로 제기 금지.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
-  - **표준 envelope tool 명령** (`exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, `ui_doc`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
+  - **표준 envelope tool 명령** (`call`, `exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, `ui_doc`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
   - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
   - **자체 출력 경로 명령** (`asset-config`, `ping`): `printResponse` 를 거치지 않고 직접 출력. `asset-config` 는 기본 styled + `--json` 로 AI 모드. `ping` 은 단일 라인 `port=N alive=N state=... age_ms=N`. `doctor` 도 human 카테고리지만 `--json` / `--agent-rules` 분기 별도.
   - "tool 에러도 인간이 읽는다"는 가정은 audience reality와 어긋남 (실제로 tool 호출 = AI). 새 명령 추가 시 `humanCategories` 등재 여부가 출력 모드를 결정한다.
@@ -70,6 +70,9 @@ Unity 실행 기능을 추가할 때도 기존 코어 모델 안에서 풀 것: 
 cmd/                  # Go CLI — thin passthrough layer
   root.go             # Entry point, flag/arg parsing, humanCategories, response printing
   dispatch.go         # Standalone vs Unity-backed command routing
+  call.go             # Strict typed-tool validation/explain/dispatch
+  call_input.go       # JSON/file/stdin source parsing and conflict checks
+  config.go           # Immutable per-execution global CLI configuration
   editor.go           # editor command (waitForReady polling)
   test.go             # test command (EditMode/PlayMode result polling via pollResultFile)
   internal/poll/      # (extracted from cmd/) shared pollResultFile file-bus poller
@@ -98,6 +101,7 @@ internal/client/      # Unity HTTP client, instance discovery, SendBatch
                       # + process_{unix,windows}.go (PID liveness check)
 internal/schema/      # Bounded Draft 2020-12 compiled-schema cache + validation
 internal/toolregistry/ # Native/legacy catalog providers, profiles, memory/disk cache
+internal/policy/      # Typed policy projection skeleton (M6: descriptive only)
 internal/assetconfig/ # Asset plugin configuration persistence
                       # (assets + ui_system + game_feel_mode + game_feel_ui_mode + loopEngineeringMode)
 internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
@@ -344,6 +348,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | MCP migration M3 safety classification/profile enforcement | ✅ 완료 (2026-07-30) | shared Connector contract registry가 legacy boolean을 정규화하고 31개 built-in tool/75개 action의 handler-derived risk, confirmation, domain/play state, reversibility, parameter-dependent rule을 canonical metadata로 소유한다. `console clear=true`와 `exec compile_only=true` rule, ambiguous-rule 거부, conservative MCP annotation mapping, `core`/`scene`/`assets`/`ui`/`diagnostics`/`testing`/`full`/`advanced` profile을 추가했다. unspecified built-in은 contract build failure, unspecified custom은 confirmation-required·non-idempotent·potentially-destructive Compact-only다. strict custom no-profile은 `custom`+정책 허용 `full`로 정규화한다. legacy `list --tool` nested metadata와 Input의 기존 play-mode 계약은 보존했고 unreleased Connector manifest는 `0.0.70`이다. **M3 완료 경계 🔒**: canonical catalog/hash/project fingerprint/domain epoch는 M4, Typed CLI/MCP runtime은 이후 milestone이며 아직 미구현이다. exact-source Unity compile + `ToolSafety`/`ToolProfiles`/`ToolContract`/`ToolDiscovery` 전체 PASS, 31 tool/75 action/unclassified 0/normal-profile arbitrary 0/profile validation failure 0을 확인했다. |
 | MCP migration M4 canonical catalog/hash/domain epoch | ✅ 완료 (2026-07-31) | 기존 `list`의 internal catalog mode가 `hera.tool-catalog/1` envelope, deterministic SHA-256 catalog hash, path-free project fingerprint, domain epoch, heartbeat capability를 한 응답에 제공한다. tool/action ordinal ordering, 31 built-in/75 action/all strict snapshot, legacy list byte-shape, volatile hash exclusion, conservative legacy custom-action cataloging, Go heartbeat decode를 구현했고 unreleased Connector manifest는 `0.0.71`이다. final unique-identity exact-source Unity suite와 별도 post-reload suite가 compiler output 0·console error 0으로 통과했고, 한 요청 catalog의 31/75/all-strict 및 schema 오류 taxonomy를 실측했다. 실제 domain reload에서 같은 exact-source assembly identity의 hash는 유지되고 epoch는 변경됐으며 heartbeat capability도 유지됐다. Go test/vet/build/lint, guide drift, meta GUID, diff gate와 최종 QA review가 모두 통과했다. M5·Typed CLI·MCP runtime은 미구현이다. |
 | MCP migration M5 Go registry/cache/validation | ✅ 완료 (2026-07-31) | Go 내부 canonical registry에 catalog-v1 native provider와 compact-only conservative legacy provider, deterministic profile selection, project/feature/domain/hash identity를 구현했다. 메모리 LRU와 private atomic disk cache는 동시성·프로세스 간 재사용을 지원하면서 stale/corrupt/schema-invalid/filename-hash mismatch를 거부한다. `jsonschema/v6 v6.0.2`를 고정해 bounded Draft 2020-12 compiled-schema cache와 JSON pointer diagnostics를 제공하고, stdin/파일 catalog validator를 추가했다. 전체 Go test/vet/build/lint/format, Windows race binaries, cross-process·corruption·fixture 검증, live legacy/native Unity integration, 의존성 license/OSV 검토가 통과했다. 리뷰에서 compiler cache 상한·cache schema compile·content-address 검증·native 31-tool default·빈 feature 거부를 보강했다. `cmd` import는 없고 Connector `0.0.71` 및 기존 CLI default는 불변이다. Typed CLI와 MCP runtime은 미구현이다. |
+| MCP migration M6 Typed CLI | ✅ 완료 (2026-07-31) | `call <tool>`이 JSON/파일/stdin 입력을 하나만 받아 M5 live strict schema로 실행 전에 검증하고 canonical tool request를 보낸다. `--profile`, `--validate-only`, `--explain`을 지원하며 explain은 action과 M3 parameter-dependent safety를 해석하지만 M6 policy skeleton은 `enforced=false`로 정직하게 표시한다. 전역 flag 변수를 immutable `GlobalConfig` 전달로 교체하면서 기존 scene routing과 `--params` precedence를 보존했다. 전체 Go test/vet/build/lint/format, repository-local Windows race binaries, catalog/guide/diff gate와 live Unity 8093의 validate/explain/stdin 실제 실행이 통과했다. Connector `0.0.71`은 불변이고 operation ledger/approval/MCP runtime은 M7 이후 소관이다. |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 

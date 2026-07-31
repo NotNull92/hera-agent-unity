@@ -20,6 +20,34 @@ while `--timeout 120` means 120 milliseconds.
 
 ---
 
+## call
+
+Validate a JSON request object against the selected tool's live strict contract,
+then invoke the canonical tool name.
+
+```bash
+hera-agent-unity call <tool> --json '{"action":"info"}'
+hera-agent-unity call <tool> --file request.json
+echo '{"action":"info"}' | hera-agent-unity call scene
+```
+
+Use exactly one input source. If none is supplied, the request is `{}`;
+combining `--json`, `--file`, and stdin is an error.
+
+| Flag | Description | Default |
+|:---|:---|:---|
+| `--json` | Inline JSON request object | none |
+| `--file` | Read the JSON request object from a file | none |
+| `--profile` | Require membership in the named live profile | none |
+| `--validate-only` | Validate without invoking the target tool | `false` |
+| `--explain` | Report canonical action, profile, contract mode, and resolved safety without invoking | `false` |
+
+`--explain` reports the current safety and policy projection. In M6 the policy
+field is descriptive (`enforced=false`); approval and retry enforcement are not
+enabled by this command.
+
+---
+
 ## editor
 
 Control Unity Editor play mode and asset database.

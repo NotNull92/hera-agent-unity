@@ -9,6 +9,7 @@ import (
 func TestHelpTopicsExistForRoutedCommands(t *testing.T) {
 	topics := []string{
 		"batch",
+		"call",
 		"console",
 		"doctor",
 		"editor",
@@ -53,6 +54,7 @@ func TestHelpTopicsExistForRoutedCommands(t *testing.T) {
 func TestHelpFilesAreReachableTopics(t *testing.T) {
 	routed := map[string]bool{
 		"batch":             true,
+		"call":              true,
 		"console":           true,
 		"custom-tools":      true,
 		"doctor":            true,

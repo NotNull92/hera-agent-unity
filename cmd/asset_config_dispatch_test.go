@@ -18,7 +18,11 @@ func withTempAssetConfigHome(t *testing.T) {
 
 func TestAssetConfigDetect_fallsThroughStandaloneRouting(t *testing.T) {
 	// Given
-	handled, err := runStandaloneCommand(context.Background(), "asset-config", []string{"detect"})
+	handled, err := (standaloneRunner{}).Run(
+		context.Background(),
+		"asset-config",
+		[]string{"detect"},
+	)
 
 	// Then
 	if err != nil {
@@ -41,7 +45,11 @@ func TestAssetConfigDetect_dispatchesDetectAssetsAfterCreatingConfig(t *testing.
 	}
 
 	// When
-	_, err := runUnityCommand(context.Background(), "asset-config", []string{"detect", "--project_path", "C:/Project"}, send, nil, nil)
+	_, err := (unityCommandRunner{send: send}).Run(
+		context.Background(),
+		"asset-config",
+		[]string{"detect", "--project_path", "C:/Project"},
+	)
 
 	// Then
 	if err != nil {

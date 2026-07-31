@@ -20,7 +20,13 @@ type batchStdinReader interface {
 
 var batchStdin batchStdinReader = os.Stdin
 
-func batchCmd(ctx context.Context, args []string, sendBatch SendBatchFunc, inst *client.Instance, timeoutMs int) error {
+type batchRuntime struct {
+	Config    GlobalConfig
+	Instance  *client.Instance
+	SendBatch SendBatchFunc
+}
+
+func batchCmd(ctx context.Context, args []string, runtime batchRuntime) error {
 	params, _, err := buildParams(args, nil)
 	if err != nil {
 		return err
@@ -71,15 +77,20 @@ func batchCmd(ctx context.Context, args []string, sendBatch SendBatchFunc, inst 
 	}
 
 	var resp *client.BatchCommandResponse
-	withProgress(ctx, "batch", flagVerbose, func() {
-		resp, err = sendBatch(ctx, inst, req, timeoutMs)
+	withProgress(ctx, "batch", runtime.Config.Verbose, func() {
+		resp, err = runtime.SendBatch(
+			ctx,
+			runtime.Instance,
+			req,
+			runtime.Config.TimeoutMillis(),
+		)
 	})
 	if err != nil {
 		return err
 	}
 
-	compact := flagCompactJSON || !isHumanCommand("batch")
-	quiet := flagQuiet
+	compact := runtime.Config.CompactJSON || !isHumanCommand("batch")
+	quiet := runtime.Config.Quiet
 	if resp.Code != "" {
 		encoded, marshalErr := json.Marshal(resp)
 		if marshalErr != nil {
