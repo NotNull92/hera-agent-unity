@@ -7,6 +7,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/mattn/go-isatty v0.0.20
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	golang.org/x/net v0.55.0
 )
 

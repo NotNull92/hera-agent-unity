@@ -14,7 +14,7 @@ benchmark gates pass.
 | M2 Action contracts and validation taxonomy | PASS (M2.1-M2.4 PASS) |
 | M3 Safety classification and profiles | PASS |
 | M4 Canonical catalog, hash, and domain epoch | PASS |
-| M5 Go registry, cache, and validation | PENDING |
+| M5 Go registry, cache, and validation | PASS |
 | M6 Typed CLI | PENDING |
 | M7 Connector operation ledger and safe retry | PENDING |
 | M8 stdio MCP skeleton | PENDING |
@@ -500,3 +500,79 @@ benchmark gates pass.
   installed, published, tagged, or released.
 - **Next prerequisite:** M5 may start only under a separate instruction after
   re-reading this ledger and confirming the M4 PASS gate.
+
+## M5 Go Registry, Cache, and Validation
+
+- **Status:** PASS
+- **Commit baseline:** `b1a74833181b881d181c5d54bf67d0ea73a5281d`
+- **Date:** 2026-07-31
+- **Implemented scope:**
+  - Added an internal canonical Go tool registry with native catalog-v1 and
+    conservative legacy providers, deterministic profile selection, project and
+    feature identity, and strict decoding of the M4 catalog envelope.
+  - Added bounded concurrent memory and cross-process disk caches keyed by
+    project, connector features, domain epoch, and catalog hash. Disk writes are
+    atomic, use private permissions, and reject stale, corrupt, misnamed, or
+    schema-invalid entries.
+  - Added a bounded compiled JSON Schema cache using pinned
+    `github.com/santhosh-tekuri/jsonschema/v6 v6.0.2`, Draft 2020-12 validation,
+    and JSON-pointer diagnostics.
+  - Added `tools/validate-tool-catalog`, accepting stdin or `--file`, for compact
+    catalog and strict-schema validation summaries.
+  - Added unit, fixture, concurrency, cross-process, corruption, schema, profile,
+    provider, and live native/legacy integration coverage without importing the
+    registry into `cmd`.
+  - Recorded the dependency license, maintenance, transitive graph, and
+    point-in-time OSV review in `docs/dependency-reviews/jsonschema-v6.md`.
+- **Review corrections:**
+  - Bounded the compiled-schema cache with LRU eviction.
+  - Required schema compilation before cache store and disk-cache acceptance.
+  - Required content-addressed disk filenames to match their decoded hash.
+  - Restored 31 as the native live-test default; the body-only exact-source QA
+    harness must opt in explicitly to its 30-tool expectation.
+  - Rejected empty connector feature names at the registry boundary.
+- **Evidence completed:**
+  - `go test -count=1 ./...`, shuffled targeted tests, `go vet ./...`,
+    `go build ./...`, `golangci-lint run ./...`, `golangci-lint fmt --diff`,
+    `gofmt -l .`, `go run ./tools/sync-agent-guides --check`, and
+    `git diff --check` passed.
+  - Windows race-enabled schema, registry, and validator test binaries passed.
+    The binaries were compiled and run from a repository-local temporary
+    directory because the host denied execution from the default Windows
+    temporary directory.
+  - Fixture validation passed, including all strict schemas. Cross-process cache
+    reuse passed, and corrupt, stale, schema-invalid, and filename/hash-mismatched
+    cache entries were rejected.
+  - A live legacy Connector integration passed through the compact-only
+    conservative provider.
+  - A live exact-source native catalog-v1 integration passed against Unity
+    `6000.3.5f2`, and the validator reported schema `hera.tool-catalog/1`, hash
+    `sha256:859b347534f43268ca860b1c8d647939b87e97877d688c8efbf61b693cef4f7a`,
+    30 tools, 75 actions, and 30 strict schemas.
+  - The native default remains the production M4 expectation of 31 tools. The
+    exact-source body-only validation assembly intentionally omitted the separate
+    TestRunner assembly, so only that harness used the explicit 30-tool override.
+  - Exact `jsonschema/v6 v6.0.2` and its new `regexp2 v1.11.0` transitive
+    dependency returned no vulnerabilities from the OSV query at review time;
+    the local dependency license is Apache-2.0.
+- **Known limitations:**
+  - M5 supplies the internal registry, cache, and validation foundation only.
+    Typed CLI and MCP runtime commands remain unimplemented, and the existing CLI
+    remains the production default.
+  - No installed CLI, Unity package, project manifest, scene, asset, published
+    artifact, tag, or release was changed. Connector package version remains the
+    unreleased `0.0.71`.
+- **Rollback procedure:**
+  - Remove `internal/schema`, `internal/toolregistry`, and
+    `tools/validate-tool-catalog`; remove the pinned schema dependency and its
+    dependency review; then revert this M5 ledger entry and the matching
+    `CLAUDE.md` status/structure changes.
+  - Cached catalog files under the Hera user cache may be deleted safely, but no
+    persistent-data migration is required.
+- **Rule-document impact:**
+  - `CLAUDE.md` records the M5 PASS state and the new internal package/tool
+    structure. Generated agent guides and README files are unchanged because M5
+    adds no user-facing production command.
+- **Next prerequisite:** M6 Typed CLI may start only under a separate instruction
+  after re-reading this ledger and confirming the M5 PASS gate. Do not infer
+  authorization to begin it from this entry.

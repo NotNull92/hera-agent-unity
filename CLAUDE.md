@@ -30,7 +30,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 - **Authoritative implementation specification:** `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - **Milestone evidence and rollback ledger:** `docs/MCP_MIGRATION_PROGRESS.md`
-- **현재 상태:** M0 rule/baseline, M1 structural schema validity, M2 전체 strict tool contract, M3 safety/profile enforcement, M4 canonical catalog/hash/domain epoch gate가 PASS다. Typed CLI와 MCP runtime command는 아직 미구현이며 사용 가능하다고 문서화하지 않는다.
+- **현재 상태:** M0 rule/baseline, M1 structural schema validity, M2 전체 strict tool contract, M3 safety/profile enforcement, M4 canonical catalog/hash/domain epoch, M5 Go registry/cache/validation gate가 PASS다. Typed CLI와 MCP runtime command는 아직 미구현이며 사용 가능하다고 문서화하지 않는다.
 - **보존 경계:** 기존 Go CLI, localhost HTTP Connector, single-editor model, main-thread serialization, heartbeat discovery, package/test file bus, CLI/Connector 독립 버전은 계속 잠금 상태다.
 
 ### Rule-document hierarchy
@@ -96,6 +96,8 @@ cmd/                  # Go CLI — thin passthrough layer
   AGENT.md            # embedded copy for `doctor --agent-rules` (go:embed)
 internal/client/      # Unity HTTP client, instance discovery, SendBatch
                       # + process_{unix,windows}.go (PID liveness check)
+internal/schema/      # Bounded Draft 2020-12 compiled-schema cache + validation
+internal/toolregistry/ # Native/legacy catalog providers, profiles, memory/disk cache
 internal/assetconfig/ # Asset plugin configuration persistence
                       # (assets + ui_system + game_feel_mode + game_feel_ui_mode + loopEngineeringMode)
 internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
@@ -109,6 +111,7 @@ tools/build-game-feel-docs/ # game_feel.jsonl (checked-in source of truth, curat
 tools/build-ui-slop-docs/ # ui_slop.jsonl (checked-in source of truth: Unity UI-slop
                           # taxonomy, 49 tells across areas A–E)
                           # → validate + gzip → Data/ui_slop_1.0.jsonl.gz.bytes.
+tools/validate-tool-catalog/ # Maintainer validator for catalog files/stdin and strict schemas
 AgentConnector/       # C# Unity Editor package (UPM) — package.json holds version
   Editor/
     HttpServer.cs     # [InitializeOnLoad] HttpListener + queue + main-thread pump
@@ -340,6 +343,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | MCP migration M2.4 package/test/profiler/raw tool contract | ✅ 완료 (2026-07-30) | `manage_packages`, `run_tests`, `profiler`, `execute_menu_item`, `execute_csharp`, `log_to_console`을 strict contract로 전환했다. package 4개·profiler 5개 action, typed test mode/default, raw exec 복합 `usings`, 실제 alias/required/conflict, 안정적인 typed output을 선언해 31개 built-in tool 이름은 유지하면서 canonical action contract를 75개로 완성했다. `SchemaUtility`는 Newtonsoft `JsonProperty` 이름을 존중해 profiler runtime의 camelCase 응답과 schema를 일치시키고, default tool contract는 nested `Result` DTO를 추론하며 legacy metadata는 명시적 `SchemaJson`을 해석한다. unreleased Connector manifest는 `0.0.69`다. **M2 완료 경계 🔒**: safety/profile enforcement는 M3, canonical catalog/hash/domain epoch는 M4, Typed CLI와 MCP runtime은 이후 milestone 소관이며 아직 미구현이다. exact-source Unity compile + `HeraAgent/Tests/ToolContract`, `ToolDiscovery` 전체 PASS, 31 tool/75 action/all strict/invalid schema 0을 확인했다. |
 | MCP migration M3 safety classification/profile enforcement | ✅ 완료 (2026-07-30) | shared Connector contract registry가 legacy boolean을 정규화하고 31개 built-in tool/75개 action의 handler-derived risk, confirmation, domain/play state, reversibility, parameter-dependent rule을 canonical metadata로 소유한다. `console clear=true`와 `exec compile_only=true` rule, ambiguous-rule 거부, conservative MCP annotation mapping, `core`/`scene`/`assets`/`ui`/`diagnostics`/`testing`/`full`/`advanced` profile을 추가했다. unspecified built-in은 contract build failure, unspecified custom은 confirmation-required·non-idempotent·potentially-destructive Compact-only다. strict custom no-profile은 `custom`+정책 허용 `full`로 정규화한다. legacy `list --tool` nested metadata와 Input의 기존 play-mode 계약은 보존했고 unreleased Connector manifest는 `0.0.70`이다. **M3 완료 경계 🔒**: canonical catalog/hash/project fingerprint/domain epoch는 M4, Typed CLI/MCP runtime은 이후 milestone이며 아직 미구현이다. exact-source Unity compile + `ToolSafety`/`ToolProfiles`/`ToolContract`/`ToolDiscovery` 전체 PASS, 31 tool/75 action/unclassified 0/normal-profile arbitrary 0/profile validation failure 0을 확인했다. |
 | MCP migration M4 canonical catalog/hash/domain epoch | ✅ 완료 (2026-07-31) | 기존 `list`의 internal catalog mode가 `hera.tool-catalog/1` envelope, deterministic SHA-256 catalog hash, path-free project fingerprint, domain epoch, heartbeat capability를 한 응답에 제공한다. tool/action ordinal ordering, 31 built-in/75 action/all strict snapshot, legacy list byte-shape, volatile hash exclusion, conservative legacy custom-action cataloging, Go heartbeat decode를 구현했고 unreleased Connector manifest는 `0.0.71`이다. final unique-identity exact-source Unity suite와 별도 post-reload suite가 compiler output 0·console error 0으로 통과했고, 한 요청 catalog의 31/75/all-strict 및 schema 오류 taxonomy를 실측했다. 실제 domain reload에서 같은 exact-source assembly identity의 hash는 유지되고 epoch는 변경됐으며 heartbeat capability도 유지됐다. Go test/vet/build/lint, guide drift, meta GUID, diff gate와 최종 QA review가 모두 통과했다. M5·Typed CLI·MCP runtime은 미구현이다. |
+| MCP migration M5 Go registry/cache/validation | ✅ 완료 (2026-07-31) | Go 내부 canonical registry에 catalog-v1 native provider와 compact-only conservative legacy provider, deterministic profile selection, project/feature/domain/hash identity를 구현했다. 메모리 LRU와 private atomic disk cache는 동시성·프로세스 간 재사용을 지원하면서 stale/corrupt/schema-invalid/filename-hash mismatch를 거부한다. `jsonschema/v6 v6.0.2`를 고정해 bounded Draft 2020-12 compiled-schema cache와 JSON pointer diagnostics를 제공하고, stdin/파일 catalog validator를 추가했다. 전체 Go test/vet/build/lint/format, Windows race binaries, cross-process·corruption·fixture 검증, live legacy/native Unity integration, 의존성 license/OSV 검토가 통과했다. 리뷰에서 compiler cache 상한·cache schema compile·content-address 검증·native 31-tool default·빈 feature 거부를 보강했다. `cmd` import는 없고 Connector `0.0.71` 및 기존 CLI default는 불변이다. Typed CLI와 MCP runtime은 미구현이다. |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 
