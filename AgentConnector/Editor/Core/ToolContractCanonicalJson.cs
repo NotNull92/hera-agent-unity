@@ -39,6 +39,16 @@ namespace HeraAgent
             return Hash(normalized);
         }
 
+        internal static string ComputeArgumentsHash(JObject arguments)
+        {
+            return Hash(Canonicalize(arguments ?? new JObject()).ToString(Formatting.None));
+        }
+
+        internal static string ComputeTokenHash(JToken value)
+        {
+            return Hash(value.ToString(Formatting.None));
+        }
+
         static string Hash(string value)
         {
             using var sha256 = SHA256.Create();
@@ -54,6 +64,7 @@ namespace HeraAgent
         internal static readonly string[] Features =
         {
             "domain_epoch_v1",
+            "operation_ledger_v1",
             "tool_catalog_v1",
         };
 

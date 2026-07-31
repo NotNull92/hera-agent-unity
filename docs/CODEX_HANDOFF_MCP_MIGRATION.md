@@ -11,43 +11,35 @@ milestone or review prompt.
 
 ### Done and verified
 
-- M0 through M4 are recorded as `PASS` in
+- M0 through M7 are recorded as `PASS` in
   `docs/MCP_MIGRATION_PROGRESS.md`.
-- M4 implementation and confirmed review fixes are committed together with this
-  handoff on `main` as `feat(connector): expose normalized tool catalog`.
-- The M3 final gate passed with 31 built-in tools, 75 actions, zero
-  unclassified operations, zero invalid schemas, and zero arbitrary-execution
-  exposure in normal profiles.
-- M4 adds the one-request `list` catalog envelope, deterministic catalog hash,
-  project fingerprint, domain epoch/capabilities in heartbeat, Go heartbeat
-  decoding, legacy custom-action normalization, and catalog regression tests.
-- Exact-source M4 compilation passed. A unique-output exact-source Unity run
-  passed the full `ToolDiscovery` suite with zero console errors and returned
-  31 built-in tools, 75 actions, and all strict contracts.
-- After the final heartbeat payload refactor, exact-source compilation passed.
-  `go test -count=1 ./...` passed with a canonical macOS temporary root;
-  `go vet ./...`, `go build ./...`, `golangci-lint run ./...`,
-  generated-guide drift checking, and `git diff --check` also passed.
-- The M4 goal, code-quality, context, and security review lanes have no current
-  blockers.
-- Final unique-identity exact-source and post-reload Unity suites passed with
-  zero compiler output and zero console errors. A real domain reload changed
-  the epoch while preserving the catalog hash for the same assembly identity,
-  and retained both heartbeat capabilities.
-- The one-request catalog probe returned 31 built-ins, 75 actions, all strict;
-  missing and unsupported schema versions returned `SCHEMA_INVALID`.
-- The final Go/build/lint/guide/meta/diff gates and read-only QA review passed.
-- The unreleased Connector manifest is `0.0.71`.
+- M6 is committed and pushed to `origin/main` as
+  `fda9921 feat(cli): add schema-validated typed calls`.
+- M7 adds stable operation IDs, request metadata, canonical argument hashes,
+  typed Connector context, atomic pre-execution/pre-response persistence,
+  stored-response replay, conflict and unknown-outcome handling, retention, and
+  capability-gated retry.
+- `operation_ledger_v1` is emitted in heartbeat features. Connector manifest is
+  unreleased `0.0.72`.
+- Required Go retry tests and the full Go suite pass. Exact repository Connector
+  sources compile in Unity `6000.3.5f2` with zero console errors, and all seven
+  operation-ledger menu tests pass.
+- A real response-loss fixture closed the first request after 50 ms, retried the
+  same body and operation ID, replayed `{count:1}`, and independently observed
+  the mutation counter at exactly one.
+- The Inventoria manifest and package lock used for exact-source QA were restored
+  byte-for-byte and are clean.
 
 ### Final QA state
 
-- M4 final QA and PASS recording are complete.
-- No M5 implementation is authorized by this handoff.
+- M7 implementation, review corrections, final QA, and PASS recording are
+  complete.
+- M8 is not authorized implicitly by this handoff.
 
 ### Not implemented
 
-- Typed CLI commands.
 - MCP runtime commands or transport.
+- Approval enforcement and MRTR.
 - Any package installation, publishing, tagging, or release.
 
 ## Decisions made
@@ -68,21 +60,26 @@ milestone or review prompt.
 
 ## Open questions / pending decisions
 
-- M4 continuation is authorized only to finish its final QA, PASS ledger, and
-  stop gate. This does not authorize M5.
-- Do not change the project fingerprint design, catalog schema, or exposure
-  rules unless new evidence reveals a concrete M4 defect.
+- M8 may begin only after a separate user instruction and confirmation that M7
+  remains PASS.
+- Batch commands intentionally stop with unknown outcome on a transient
+  connection because M7 does not add per-item batch operation records.
 
 ## Next steps
 
-1. Stop after the M4 PASS ledger commit.
-2. Do not begin M5, Typed CLI, or MCP runtime work without a separate user
-   instruction.
+1. Start the next session by confirming a clean worktree and reading the commit
+   containing this handoff, whose subject is
+   `feat(reliability): add operation ledger and replay-safe retries`.
+2. Re-read `AGENTS.md`, `CLAUDE.md`, the M8 section of the implementation plan,
+   the exact M8 implement/review prompt, and the progress ledger before changing
+   source.
+3. On separate authorization, begin only the M8 stdio MCP skeleton and keep the
+   CLI as the production default. Do not start M9 approval enforcement as part
+   of M8.
 
 ## References
 
-- M4 implementation commit: the commit containing this handoff,
-  `feat(connector): expose normalized tool catalog`
+- M6 implementation commit: `fda9921`
 - `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - `docs/CODEX_MCP_MIGRATION_IMPLEMENT_REVIEW_PROMPTS.md`
 - `docs/MCP_MIGRATION_PROGRESS.md`
@@ -95,6 +92,11 @@ milestone or review prompt.
 - `AgentConnector/Editor/Core/ToolContractSafety.cs`
 - `AgentConnector/Editor/Core/ToolContractSafetyRules.cs`
 - `AgentConnector/Editor/Core/ToolContractProfiles.cs`
+- `AgentConnector/Editor/Core/CommandRequestContext.cs`
+- `AgentConnector/Editor/Core/OperationLedger.cs`
+- `internal/client/operation.go`
+- `internal/client/reload_retry.go`
+- `AgentConnector/Editor/Tests/OperationLedgerTests.cs`
 - `AgentConnector/Editor/Tests/ToolSafetyTests.cs`
 - `AgentConnector/Editor/Tests/ToolProfileTests.cs`
 
@@ -113,6 +115,11 @@ milestone or review prompt.
   connector heartbeat. Resolve it before interpreting `status` timeouts.
 - On macOS, `/var` resolves to `/private/var`; run the full Go gate with a
   canonical `/private/...` temporary root when validating symlink behavior.
+- Two Windows `go test -race ./internal/client` attempts were blocked before
+  test execution because the generated `client.test.exe` returned
+  `Access is denied`, including with an isolated `GOTMPDIR`. Ordinary targeted
+  and full Go tests passed; treat race coverage as an environment limitation,
+  not as a passing result.
 - Remaining MCP-prohibition search hits may be valid architecture locks,
   historical records, or truthful statements that runtime commands are not yet
   implemented. Classify them instead of deleting them blindly.

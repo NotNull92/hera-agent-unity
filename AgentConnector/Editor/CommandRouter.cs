@@ -53,6 +53,14 @@ namespace HeraAgent
 
         public static async Task<object> Dispatch(string command, JObject parameters)
         {
+            return await Dispatch(command, parameters, null);
+        }
+
+        public static async Task<object> Dispatch(
+            string command,
+            JObject parameters,
+            CommandRequestContext requestContext)
+        {
             if (!await s_Lock.WaitAsync(s_LockTimeout))
             {
                 return new ErrorResponse("COMMAND_LOCK_TIMEOUT",
@@ -61,7 +69,7 @@ namespace HeraAgent
             var sw = Stopwatch.StartNew();
             try
             {
-                var result = await DispatchInternal(command, parameters);
+                var result = await DispatchInternal(command, parameters, requestContext);
                 sw.Stop();
                 ResponseTimings.Set(result, "total_ms", sw.ElapsedMilliseconds);
                 return result;
@@ -156,7 +164,10 @@ namespace HeraAgent
             return null;
         }
 
-        static async Task<object> DispatchInternal(string command, JObject parameters)
+        static async Task<object> DispatchInternal(
+            string command,
+            JObject parameters,
+            CommandRequestContext requestContext = null)
         {
             if (command == "list")
                 return HandleList(parameters);
@@ -218,6 +229,29 @@ namespace HeraAgent
                 return validation.Error;
             parameters = validation.Normalized;
 
+            if (requestContext != null)
+            {
+                var fallbackSafety = contract.Safety;
+                if (usedAction && contract.Actions.TryGetValue(action, out var actionContract))
+                    fallbackSafety = actionContract.Safety;
+                var safety = ToolContractSafety.Resolve(
+                    fallbackSafety,
+                    contract.SafetyRules,
+                    parameters);
+                var decision = OperationLedger.Default.Begin(
+                    requestContext,
+                    command,
+                    usedAction ? action : null,
+                    safety);
+                if (!decision.Execute)
+                    return decision.Response;
+            }
+
+            object Commit(object response) =>
+                requestContext == null
+                    ? response
+                    : OperationLedger.Default.Commit(requestContext, response);
+
             try
             {
                 object result;
@@ -229,7 +263,7 @@ namespace HeraAgent
                 {
                     var toolType = handler.DeclaringType;
                     if (toolType == null)
-                        return new ErrorResponse("TOOL_TYPE_NOT_FOUND", $"Tool type not found: {command}");
+                        return Commit(new ErrorResponse("TOOL_TYPE_NOT_FOUND", $"Tool type not found: {command}"));
 
                     object instance;
                     try
@@ -238,17 +272,17 @@ namespace HeraAgent
                     }
                     catch (MissingMethodException)
                     {
-                        return new ErrorResponse("TOOL_MISSING_CONSTRUCTOR",
-                            $"Tool '{command}' requires a parameterless constructor");
+                        return Commit(new ErrorResponse("TOOL_MISSING_CONSTRUCTOR",
+                            $"Tool '{command}' requires a parameterless constructor"));
                     }
                     catch (MemberAccessException)
                     {
-                        return new ErrorResponse("TOOL_CONSTRUCTOR_INACCESSIBLE",
-                            $"Tool '{command}' constructor is not accessible (must be public)");
+                        return Commit(new ErrorResponse("TOOL_CONSTRUCTOR_INACCESSIBLE",
+                            $"Tool '{command}' constructor is not accessible (must be public)"));
                     }
                     if (instance == null)
-                        return new ErrorResponse("TOOL_INSTANCE_CREATE_FAILED",
-                            $"Failed to create tool instance: {command}");
+                        return Commit(new ErrorResponse("TOOL_INSTANCE_CREATE_FAILED",
+                            $"Failed to create tool instance: {command}"));
 
                     result = handler.Invoke(instance, new object[] { parameters ?? new JObject() });
                 }
@@ -266,7 +300,7 @@ namespace HeraAgent
                 result ??= new SuccessResponse(
                     $"{command}{(usedAction ? ":" + action : "")} completed");
                 ResponseDiagnostics.Set(result, validation.Diagnostics);
-                return result;
+                return Commit(result);
             }
             catch (Exception ex)
             {
@@ -274,7 +308,7 @@ namespace HeraAgent
                 UnityEngine.Debug.LogException(inner);
                 string code = usedAction ? "TOOL_ACTION_FAILED" : "TOOL_FAILED";
                 string suffix = usedAction ? $":{action}" : "";
-                return new ErrorResponse(code, $"{command}{suffix} failed: {inner.Message}");
+                return Commit(new ErrorResponse(code, $"{command}{suffix} failed: {inner.Message}"));
             }
         }
 

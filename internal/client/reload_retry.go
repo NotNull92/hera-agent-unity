@@ -15,7 +15,18 @@ const reloadRetryFallbackDeadline = 60 * time.Second
 
 var reloadRetryDelay = 500 * time.Millisecond
 
-func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Instance, path string) (*http.Response, error) {
+type retryPolicy struct {
+	allowRetry bool
+	unknown    *OperationOutcomeUnknownError
+}
+
+func (c *Client) doWithReloadRetry(
+	ctx context.Context,
+	body []byte,
+	inst *Instance,
+	path string,
+	policy retryPolicy,
+) (*http.Response, error) {
 	port := inst.Port
 	project := inst.ProjectPath
 	deadline := time.Now().Add(reloadRetryFallbackDeadline)
@@ -53,6 +64,13 @@ func (c *Client) doWithReloadRetry(ctx context.Context, body []byte, inst *Insta
 		}
 		if !isReloadTransient(err) {
 			return nil, fmt.Errorf("cannot connect to Unity at port %d: %w", port, err)
+		}
+		if !policy.allowRetry {
+			if policy.unknown != nil {
+				policy.unknown.Cause = err
+				return nil, policy.unknown
+			}
+			return nil, err
 		}
 		if time.Now().After(deadline) {
 			break

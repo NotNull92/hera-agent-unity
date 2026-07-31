@@ -47,8 +47,9 @@ type CompilerInfo struct {
 }
 
 type CommandRequest struct {
-	Command string `json:"command"`
-	Params  any    `json:"params"`
+	Command string      `json:"command"`
+	Params  any         `json:"params"`
+	Meta    RequestMeta `json:"meta"`
 }
 
 type BatchCommandItem struct {

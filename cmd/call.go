@@ -12,11 +12,13 @@ import (
 )
 
 type callLoadFunc func(context.Context, *client.Instance) (*toolregistry.Snapshot, error)
+type callSendFunc func(string, map[string]any, client.SendOptions) (*client.CommandResponse, error)
 
 type callCommand struct {
-	load  callLoadFunc
-	send  SendFunc
-	input callInput
+	load          callLoadFunc
+	send          SendFunc
+	sendOperation callSendFunc
+	input         callInput
 }
 
 type toolRequest struct {
@@ -99,6 +101,13 @@ func (command *callCommand) Run(
 		})
 	}
 	request := newToolRequest(tool.Name, params)
+	if command.sendOperation != nil {
+		return command.sendOperation(request.Command, request.Params, client.SendOptions{
+			OperationID: client.OperationID(options.OperationID),
+			Idempotent:  safety.Idempotent,
+			CatalogHash: snapshot.Catalog.CatalogHash,
+		})
+	}
 	return command.send(request.Command, request.Params)
 }
 

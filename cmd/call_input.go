@@ -24,6 +24,7 @@ type callOptions struct {
 	JSON         optionalString
 	File         optionalString
 	Profile      string
+	OperationID  string
 	ValidateOnly bool
 	Explain      bool
 }
@@ -64,6 +65,7 @@ func parseCallOptions(args []string) (callOptions, error) {
 	flags.Var(&options.JSON, "json", "JSON request object")
 	flags.Var(&options.File, "file", "path to a JSON request object")
 	flags.StringVar(&options.Profile, "profile", "", "require tool membership in profile")
+	flags.StringVar(&options.OperationID, "operation-id", "", "reuse an existing operation ID")
 	flags.BoolVar(&options.ValidateOnly, "validate-only", false, "validate without executing")
 	flags.BoolVar(&options.Explain, "explain", false, "explain validation and safety without executing")
 	if err := flags.Parse(args[1:]); err != nil {

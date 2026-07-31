@@ -95,8 +95,22 @@ func (runner unityCommandRunner) Run(
 	case "call":
 		registry := toolregistry.NewRegistry(toolregistry.RegistryOptions{})
 		command := &callCommand{
-			load:  registry.Load,
-			send:  runner.send,
+			load: registry.Load,
+			send: runner.send,
+			sendOperation: func(
+				command string,
+				params map[string]any,
+				options client.SendOptions,
+			) (*client.CommandResponse, error) {
+				return client.DefaultClient.SendWithOptions(
+					ctx,
+					runner.instance,
+					command,
+					params,
+					runner.config.TimeoutMillis(),
+					options,
+				)
+			},
 			input: detectCallInput(os.Stdin),
 		}
 		resp, err = command.Run(ctx, runner.instance, subArgs)

@@ -77,11 +77,13 @@ namespace HeraAgent
 
         static readonly ConcurrentQueue<WorkItem> s_Queue = new();
         static int s_PendingRequests;
+        static long s_LastLedgerCleanupMs;
 
         struct WorkItem
         {
             public string Command;
             public JObject Parameters;
+            public CommandRequestContext Context;
             public TaskCompletionSource<object> Tcs;
             // Batch-specific fields (set when POST /commands is received).
             public bool IsBatch;
@@ -207,7 +209,7 @@ namespace HeraAgent
                 }
                 else
                 {
-                    r = await CommandRouter.Dispatch(item.Command, item.Parameters);
+                    r = await CommandRouter.Dispatch(item.Command, item.Parameters, item.Context);
                 }
                 item.Tcs.TrySetResult(r);
             }
@@ -303,6 +305,13 @@ namespace HeraAgent
                 DebugLogging.LogError("unknown", ex);
             }
 
+            string operationId = null;
+            if (result is CommandHttpResult commandResult)
+            {
+                operationId = commandResult.OperationId;
+                result = commandResult.Payload;
+            }
+
             if (result is ErrorResponse error)
                 response.StatusCode = StatusCodeFor(error.code);
 
@@ -312,6 +321,8 @@ namespace HeraAgent
                 var buffer = Encoding.UTF8.GetBytes(responseJson);
                 response.ContentLength64 = buffer.Length;
                 await response.OutputStream.WriteAsync(buffer, 0, buffer.Length);
+                if (!string.IsNullOrEmpty(operationId))
+                    OperationLedger.Default.MarkResponded(operationId);
             }
             catch (Exception ex)
             {
@@ -325,7 +336,14 @@ namespace HeraAgent
             finally
             {
                 try { response.Close(); } catch { }
+                MaybeCleanupLedger();
             }
+        }
+
+        sealed class CommandHttpResult
+        {
+            internal string OperationId;
+            internal object Payload;
         }
 
         // Best-effort 500 when the normal response could not be serialized or
@@ -362,18 +380,44 @@ namespace HeraAgent
                 DebugLogging.LogError("unknown", new Exception("Missing 'command' field"));
                 return new ErrorResponse("HTTP_MISSING_COMMAND", "Missing 'command' field");
             }
+            if (!CommandRequestContext.TryCreate(
+                json["meta"] as JObject,
+                parameters,
+                out var requestContext,
+                out var contextError))
+            {
+                return contextError;
+            }
 
             var tcs = new TaskCompletionSource<object>();
             var queueError = Enqueue(new WorkItem
             {
                 Command = command,
                 Parameters = parameters,
+                Context = requestContext,
                 Tcs = tcs,
             });
             if (queueError != null) return queueError;
             var result = await tcs.Task;
             DebugLogging.LogResponse(command, result);
-            return result;
+            return new CommandHttpResult
+            {
+                OperationId = requestContext.OperationId,
+                Payload = result,
+            };
+        }
+
+        static void MaybeCleanupLedger()
+        {
+            var now = DateTimeOffset.UtcNow;
+            var nowMs = now.ToUnixTimeMilliseconds();
+            var previous = Interlocked.Read(ref s_LastLedgerCleanupMs);
+            if (nowMs - previous < TimeSpan.FromMinutes(5).TotalMilliseconds)
+                return;
+            if (Interlocked.CompareExchange(ref s_LastLedgerCleanupMs, nowMs, previous) != previous)
+                return;
+            try { OperationLedger.Default.Cleanup(now); }
+            catch (Exception ex) { DebugLogging.LogError("operation-ledger-cleanup", ex); }
         }
 
         static async Task<object> HandleBatchCommand(HttpListenerRequest request)

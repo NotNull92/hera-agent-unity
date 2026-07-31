@@ -16,7 +16,7 @@ benchmark gates pass.
 | M4 Canonical catalog, hash, and domain epoch | PASS |
 | M5 Go registry, cache, and validation | PASS |
 | M6 Typed CLI | PASS |
-| M7 Connector operation ledger and safe retry | PENDING |
+| M7 Connector operation ledger and safe retry | PASS |
 | M8 stdio MCP skeleton | PENDING |
 | M9 Native Profile tool bridge | PENDING |
 | M10 Compact and Full exposure | PENDING |
@@ -640,4 +640,82 @@ benchmark gates pass.
     CLI surface. MCP commands remain undocumented because they do not exist.
 - **Next prerequisite:** M7 may start only under a separate instruction after
   re-reading this ledger and confirming the M6 PASS gate. Do not infer
+  authorization to begin it from this entry.
+
+## M7 Connector Operation Ledger and Safe Retry
+
+- **Status:** PASS
+- **Commit baseline:** `fda9921`
+- **Date:** 2026-07-31
+- **Implemented scope:**
+  - Added Go-generated operation IDs and canonical argument hashes to typed
+    request metadata, while preserving one immutable request body and operation
+    ID across retries.
+  - Added typed Connector request context and a per-project atomic operation
+    ledger under the Hera status directory. Records persist `received` and
+    `running` before handler invocation, then persist the complete response as
+    `committed` or `failed` before the HTTP response is written.
+  - Added stored-response replay, changed-argument conflict rejection,
+    current-domain in-progress responses, prior-domain unknown outcomes, and a
+    no-reinvoke rule for non-idempotent unknown operations.
+  - Added successful-write acknowledgement, 24-hour terminal retention,
+    seven-day unknown retention, response compaction under a configurable
+    per-project byte ceiling, and Windows-safe project ledger paths.
+  - Added `operation_ledger_v1` heartbeat capability. New clients retry
+    idempotent requests or ledger-capable single commands with the same
+    operation ID; mutation retries against legacy Connectors stop with the
+    typed `OPERATION_OUTCOME_UNKNOWN` error.
+  - Wired `call` safety and catalog identity into transport options and exposed
+    optional `--operation-id` reuse for explicit replay/query workflows.
+- **Review corrections:**
+  - Disabled HTML escaping in the Go canonical hash material so Go and
+    Newtonsoft hash the same JSON string values.
+  - Replaced the `sha256:` project fingerprint separator in the Windows
+    directory name while retaining the canonical fingerprint in records and
+    heartbeat data.
+  - Compacted stored terminal responses into safe tombstones instead of
+    deleting recent operation identity when the byte ceiling is exceeded.
+- **Evidence completed:**
+  - Required Connector tests
+    `TestOperationReplayReturnsStoredResponse`,
+    `TestOperationConflictRejectsDifferentArguments`,
+    `TestCommittedResponseSurvivesResponseLoss`,
+    `TestPriorDomainRunningBecomesUnknown`,
+    `TestNonIdempotentUnknownDoesNotInvokeHandler`, and
+    `TestLedgerAtomicWriteFallback` passed in Unity `6000.3.5f2`; the additional
+    `TestLedgerRetentionCleanup` expiry test also passed.
+  - Required Go tests `TestIdempotentRetryUsesSameOperationID` and
+    `TestLegacyConnectorDisablesMutationRetry` passed, together with the
+    cross-runtime canonical JSON hash regression.
+  - `go test -count=1 ./...` passed for every package. Two isolated
+    `go test -race ./internal/client` attempts were blocked before execution by
+    the host denying access to the generated Windows `client.test.exe`; this was
+    an environment execution restriction, not a test failure.
+  - Exact repository Connector sources compiled in the live Unity project with
+    zero console errors after temporary local-package resolution.
+  - A real HTTP response-loss fixture closed the first client after 50 ms,
+    retried the identical body and operation ID, replayed the committed response
+    `{count:1}`, and independently read the mutation counter as exactly `1`.
+  - The temporary Unity package manifest and lockfile were restored byte-for-byte
+    and the external project package files were clean afterward.
+- **Known limitations:**
+  - Batch requests do not yet carry per-item operation metadata; transient batch
+    outcomes therefore stop as unknown instead of being retried.
+  - Approval enforcement remains M11 scope. No stdio MCP server exists yet, and
+    the CLI remains the production default through the M17 decision gate.
+  - No installed CLI, project manifest, tag, release, or published artifact was
+    changed. Connector manifest is unreleased `0.0.72`.
+- **Rollback procedure:**
+  - Remove request metadata and retry policy changes from `internal/client`,
+    remove Connector request context and operation ledger files, restore the
+    prior router/server signatures and heartbeat feature list, remove the M7
+    tests, and restore Connector manifest `0.0.71`.
+  - Existing operation files are runtime cache/state and may be retained or
+    removed after rollback; they are not project assets.
+- **Rule-document impact:**
+  - `CLAUDE.md` records the M7 PASS state and new Connector/client structure.
+    User-facing guides remain unchanged because M7 adds reliability semantics,
+    not an MCP command surface.
+- **Next prerequisite:** M8 may start only under a separate instruction after
+  re-reading this ledger and confirming the M7 PASS gate. Do not infer
   authorization to begin it from this entry.

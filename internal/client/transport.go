@@ -41,11 +41,49 @@ func (c *Client) processHTTPResponse(resp *http.Response, label string, start ti
 }
 
 func (c *Client) Send(ctx context.Context, inst *Instance, command string, params any, timeoutMs int) (*CommandResponse, error) {
+	return c.SendWithOptions(ctx, inst, command, params, timeoutMs, SendOptions{
+		Idempotent: command == "list",
+	})
+}
+
+func (c *Client) SendWithOptions(
+	ctx context.Context,
+	inst *Instance,
+	command string,
+	params any,
+	timeoutMs int,
+	options SendOptions,
+) (*CommandResponse, error) {
 	if params == nil {
 		params = map[string]any{}
 	}
 
-	body, err := json.Marshal(CommandRequest{Command: command, Params: params})
+	operationID := options.OperationID
+	if operationID == "" {
+		var err error
+		operationID, err = NewOperationID()
+		if err != nil {
+			return nil, err
+		}
+	}
+	hash, err := argumentsHash(params)
+	if err != nil {
+		return nil, err
+	}
+	clientKind := options.ClientKind
+	if clientKind == "" {
+		clientKind = "cli"
+	}
+	body, err := json.Marshal(CommandRequest{
+		Command: command,
+		Params:  params,
+		Meta: RequestMeta{
+			OperationID:   operationID,
+			ArgumentsHash: hash,
+			ClientKind:    clientKind,
+			CatalogHash:   options.CatalogHash,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +98,14 @@ func (c *Client) Send(ctx context.Context, inst *Instance, command string, param
 
 	c.debugPost(url, body)
 	start := time.Now()
-	resp, err := c.doWithReloadRetry(ctx, body, inst, "/command")
+	resp, err := c.doWithReloadRetry(ctx, body, inst, "/command", retryPolicy{
+		allowRetry: options.Idempotent || hasFeature(inst, FeatureOperationLedgerV1),
+		unknown: &OperationOutcomeUnknownError{
+			Code:        "OPERATION_OUTCOME_UNKNOWN",
+			OperationID: operationID,
+			Command:     command,
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +166,13 @@ func (c *Client) SendBatch(ctx context.Context, inst *Instance, req BatchCommand
 	c.debugPost(fmt.Sprintf("http://127.0.0.1:%d/commands", inst.Port), body)
 
 	start := time.Now()
-	resp, err := c.doWithReloadRetry(ctx, body, inst, "/commands")
+	resp, err := c.doWithReloadRetry(ctx, body, inst, "/commands", retryPolicy{
+		allowRetry: false,
+		unknown: &OperationOutcomeUnknownError{
+			Code:    "OPERATION_OUTCOME_UNKNOWN",
+			Command: "batch",
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
