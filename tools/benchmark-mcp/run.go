@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -87,15 +88,16 @@ func executeVariant(ctx context.Context, binary, project string, current variant
 		return executionMeasurement{}, err
 	}
 	var measurement executionMeasurement
-	if current.ID == "A" {
+	switch current.ID {
+	case "A":
 		measurement, err = runCLI(ctx, binary, "--project", project, current.Tool, current.Action)
-	} else if current.ID == "B" {
-		input, err := json.Marshal(map[string]string{"action": current.Action})
-		if err != nil {
-			return executionMeasurement{}, err
+	case "B":
+		input, marshalErr := json.Marshal(map[string]string{"action": current.Action})
+		if marshalErr != nil {
+			return executionMeasurement{}, marshalErr
 		}
 		measurement, err = runCLI(ctx, binary, "--project", project, "call", current.Tool, "--json", string(input))
-	} else {
+	default:
 		measurement, err = runMCP(ctx, binary, project, current)
 	}
 	measurement.HostToolCallID = hostID
@@ -125,13 +127,13 @@ func runCLI(ctx context.Context, binary string, arguments ...string) (executionM
 	return measurement, nil
 }
 
-func runMCP(ctx context.Context, binary, project string, current variant) (executionMeasurement, error) {
+func runMCP(ctx context.Context, binary, project string, current variant) (measurement executionMeasurement, err error) {
 	args := []string{"--project", project, "mcp", "--transport", "stdio", "--exposure", current.Exposure, "--profile", "core"}
 	command := exec.CommandContext(ctx, binary, args...)
 	command.Env = append(os.Environ(), "HERA_AGENT_DEBUG=1", "HERA_MCP_ENABLED=1")
 	var diagnostics lockedBuffer
 	command.Stderr = &diagnostics
-	measurement := executionMeasurement{ProcessLaunches: 1}
+	measurement = executionMeasurement{ProcessLaunches: 1}
 	observer := &requestObserver{}
 	client := mcp.NewClient(&mcp.Implementation{Name: "hera-benchmark", Version: "1"}, nil)
 	transport := observingTransport{inner: &mcp.CommandTransport{Command: command}, observer: observer}
@@ -141,7 +143,9 @@ func runMCP(ctx context.Context, binary, project string, current variant) (execu
 		measurement.UnityHTTPRequests = countUnityRequests(diagnostics.String())
 		return measurement, fmt.Errorf("%w: %s", err, diagnostics.String())
 	}
-	defer session.Close()
+	defer func() {
+		err = errors.Join(err, session.Close())
+	}()
 	name := current.Tool
 	arguments := map[string]any{"action": current.Action}
 	if current.Exposure == "compact" {

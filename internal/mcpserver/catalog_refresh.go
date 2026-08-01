@@ -15,7 +15,7 @@ import (
 
 const catalogRefreshInterval = time.Second
 
-var errCatalogStale = errors.New("Unity tool catalog is being refreshed")
+var errCatalogStale = errors.New("unity tool catalog is being refreshed")
 
 type catalogLoader interface {
 	Load(context.Context, *client.Instance) (*toolregistry.Snapshot, error)

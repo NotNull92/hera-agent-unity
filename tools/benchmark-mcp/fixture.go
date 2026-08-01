@@ -76,7 +76,7 @@ func createProjectArguments(destination string) []string {
 
 func finalizeFixture(abs, connector, unity string) error {
 	if _, err := os.Stat(filepath.Join(abs, "ProjectSettings", "ProjectSettings.asset")); err != nil {
-		return fmt.Errorf("Unity did not create a complete project: %w", err)
+		return fmt.Errorf("unity did not create a complete project: %w", err)
 	}
 	connectorAbs, err := filepath.Abs(connector)
 	if err != nil {
