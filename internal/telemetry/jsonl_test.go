@@ -3,6 +3,7 @@ package telemetry
 import (
 	"bytes"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -26,6 +27,17 @@ func TestJSONLRoundTripAndRejectsTrailingData(t *testing.T) {
 	bad := bytes.NewBufferString("{\"schema_version\":\"hera.telemetry/1\"} trailing\n")
 	if _, err := DecodeJSONL(bad); err == nil {
 		t.Fatal("DecodeJSONL accepted trailing data")
+	}
+}
+
+func TestDecodeJSONLAcceptsLegacyV1WithoutAccountingDeclarations(t *testing.T) {
+	legacy := strings.ReplaceAll(`{"schema_version":"hera.telemetry/1","timestamp":"1970-01-01T00:00:01Z","variant":"A","benchmark_run_id":"run","conversation_id":"conversation","model_call_id":"model","host_tool_call_id":"host","process_launch_id":"process","mcp_request_id":"mcp","operation_id":"operation","unity_request_id":"unity","task_id":"task","first_attempt_success":true,"final_task_success":true}`, `\"`, `"`) + "\n"
+	events, err := DecodeJSONL(strings.NewReader(legacy))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 1 || events[0].SchemaVersion != LegacySchemaVersion {
+		t.Fatalf("events = %#v", events)
 	}
 }
 

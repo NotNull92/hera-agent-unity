@@ -24,7 +24,7 @@ benchmark gates pass.
 | M12 Tasks bridge | PASS |
 | M13 Catalog invalidation and list-changed | PASS |
 | M14 Large result resources | PASS |
-| M15 Telemetry and benchmark harness | PENDING |
+| M15 Telemetry and benchmark harness | PASS |
 | M16 Documentation, compatibility, and release hardening | PENDING |
 | M17 Cross-verification and default decision | PENDING |
 
@@ -1233,4 +1233,90 @@ benchmark gates pass.
     unchanged.
 - **Next prerequisite:** M15 may start only under a separate instruction after
   re-reading this ledger and confirming the M14 PASS gate. Do not infer
+  authorization to begin it from this entry.
+
+## M15 Telemetry and benchmark harness
+
+- **Status:** PASS
+- **Commit baseline:** `9922d68`
+- **Date:** 2026-08-01
+- **Implemented scope:**
+  - Added versioned task-economics telemetry with the required run,
+    conversation, model, host, process, MCP, operation, Unity, and task
+    correlation fields; successful-task, repair, token, timing, safety,
+    reload, and intervention metrics; strict JSONL recording/reading; and
+    aggregate p50/p95 summaries.
+  - Added a reproducible A-to-E harness for legacy CLI, Typed CLI, MCP Profile,
+    MCP Compact, and MCP Full. Every surface executes the same read-only
+    `scene info` task, warms before recording, uses a fresh measured process,
+    and refuses an existing output file.
+  - Added marked disposable fixture preparation that invokes Unity with
+    `-noUpm`, refuses non-empty destinations, leaves package manifests
+    unchanged, copies repository-local Connector Editor sources without their
+    tests, and supplies only the Newtonsoft and uGUI dependencies bundled with
+    the selected Unity Editor.
+  - Captured host IDs at the host boundary, real OS process IDs, MCP
+    `tools/call` JSON-RPC IDs, and Connector operation IDs. The Connector does
+    not expose a separate Unity HTTP request ID, so schema v2 records
+    `not_available` with explicit ID provenance instead of inventing one.
+  - Published the version-specific factual report at
+    `docs/benchmarks/mcp/6000.3.5f2.md`, including reproduction commands,
+    accounting methods, results, and limitations.
+- **Review corrections:**
+  - PASS B found that the first reproduction recipe launched Unity in the
+    foreground, reused a non-empty fixture path, and lacked exact process
+    cleanup. The final recipe uses a unique GUID path, asynchronous hidden
+    launch, a readiness wait, same-run console evidence, and exact-PID cleanup.
+  - Versioned the new accounting declaration as `hera.telemetry/2` while
+    retaining read compatibility for pre-M15 `hera.telemetry/1` JSONL records;
+    added positive v2 requirement and legacy decoding regressions.
+  - Replaced synthetic process, MCP request, and operation labels with values
+    observed at their execution boundaries, documented genuinely unavailable
+    IDs, and added protocol/Connector observer tests.
+  - Replaced the untyped single-use JSON helper with typed fixture-marker
+    serialization and split observation code so every changed Go file remains
+    below 250 pure LOC.
+- **Evidence completed:**
+  - Corrected disposable Unity runs `m15_20260801_ae_6` and
+    `m15_20260801_ae_7` each completed all five variants with 5/5 first-attempt
+    and final success, five host calls, five process launches, five logical
+    Unity HTTP requests, 409 estimated tool-result tokens, and zero wrong-tool,
+    invalid-argument, repair, duplicate-side-effect, unsafe-mutation,
+    reload-recovery, and human-intervention counts.
+  - The two corrected runs reproduced every non-time metric exactly. ae_6
+    recorded p50 314 ms and p95 781 ms; ae_7 recorded p50 296 ms and p95
+    759 ms. Immediately after ae_6 the same fixture was `ready` and returned
+    zero matching console errors.
+  - Fixture safety checks refused an unmarked project and an existing output.
+    The live fixture used Unity `6000.3.5f2`, compiled the copied Connector, and
+    did not open or mutate the production project.
+  - `go test -count=1 ./...`, targeted `go vet`, guide drift,
+    `git diff --check`, and race-instrumented telemetry and benchmark binaries
+    executed from the repository evidence directory all pass.
+  - Independent PASS B initially reported three HIGH, two MEDIUM, and one LOW
+    issue. All were corrected; final read-only re-review returned
+    `APPROVE / CLEAR`.
+- **Known limitations:**
+  - This scripted smoke benchmark makes no model call. Raw, cached, and billed
+    model-token counts are therefore zero, and tool-result tokens are the
+    declared deterministic estimate `ceil(serialized UTF-8 bytes / 4)`, not a
+    provider tokenizer or billing measurement.
+  - MCP result accounting excludes initial tool definitions, outer host
+    framing, and model context policy. One task per variant is not statistical
+    accuracy evidence and does not satisfy the later M17 default-decision gate.
+  - The read-only task cannot empirically exercise mutation approval,
+    duplicate-side-effect, unsafe-mutation, or reload-recovery failure paths.
+    MCP remains experimental and default-off; CLI remains the production
+    default.
+- **Rollback procedure:**
+  - Remove `internal/telemetry`, `tools/benchmark-mcp`, and the version-specific
+    benchmark report; restore this ledger to M14; then run
+    `go test -count=1 ./...` and the guide drift check. Disposable fixtures and
+    repository-local evidence are not production project state.
+- **Rule-document impact:**
+  - This ledger and the version-specific benchmark report describe M15.
+    Connector code/version, generated agent guides, public README files,
+    release metadata, package manifests, and install behavior are unchanged.
+- **Next prerequisite:** M16 may start only under a separate instruction after
+  re-reading this ledger and confirming the M15 PASS gate. Do not infer
   authorization to begin it from this entry.

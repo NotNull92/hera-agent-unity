@@ -6,7 +6,10 @@ import (
 	"time"
 )
 
-const SchemaVersion = "hera.telemetry/1"
+const (
+	SchemaVersion       = "hera.telemetry/2"
+	LegacySchemaVersion = "hera.telemetry/1"
+)
 
 type Event struct {
 	SchemaVersion string    `json:"schema_version"`
@@ -22,6 +25,8 @@ type Event struct {
 	OperationID     string `json:"operation_id"`
 	UnityRequestID  string `json:"unity_request_id"`
 	TaskID          string `json:"task_id"`
+	IDAccounting    string `json:"id_accounting"`
+	TokenAccounting string `json:"token_accounting"`
 
 	FirstAttemptSuccess  bool  `json:"first_attempt_success"`
 	FinalTaskSuccess     bool  `json:"final_task_success"`
@@ -44,8 +49,8 @@ type Event struct {
 }
 
 func (event Event) Validate() error {
-	if event.SchemaVersion != SchemaVersion {
-		return fmt.Errorf("schema_version must be %q", SchemaVersion)
+	if event.SchemaVersion != SchemaVersion && event.SchemaVersion != LegacySchemaVersion {
+		return fmt.Errorf("unsupported schema_version %q", event.SchemaVersion)
 	}
 	if event.Timestamp.IsZero() {
 		return fmt.Errorf("timestamp is required")
@@ -56,6 +61,10 @@ func (event Event) Validate() error {
 		"host_tool_call_id": event.HostToolCallID, "process_launch_id": event.ProcessLaunchID,
 		"mcp_request_id": event.MCPRequestID, "operation_id": event.OperationID,
 		"unity_request_id": event.UnityRequestID, "task_id": event.TaskID,
+	}
+	if event.SchemaVersion == SchemaVersion {
+		required["id_accounting"] = event.IDAccounting
+		required["token_accounting"] = event.TokenAccounting
 	}
 	for name, value := range required {
 		if value == "" {
