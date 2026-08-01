@@ -15,6 +15,7 @@ import (
 const (
 	FeatureApprovalV1        = "approval_v1"
 	FeatureOperationLedgerV1 = "operation_ledger_v1"
+	FeatureTaskBridgeV1      = "task_bridge_v1"
 )
 
 var ErrInvalidOperationID = errors.New("invalid operation id")

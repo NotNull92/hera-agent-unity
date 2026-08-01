@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -212,6 +214,24 @@ func TestWaitForAsyncJob_Delegates(t *testing.T) {
 	}
 	if got == nil || !got.Success {
 		t.Fatalf("unexpected response: %+v", got)
+	}
+}
+
+func TestWaitForAsyncJob_DoesNotMutateGlobalLogger(t *testing.T) {
+	original := log.Writer()
+	t.Cleanup(func() { log.SetOutput(original) })
+	log.SetOutput(io.Discard)
+	want := log.Writer()
+
+	dir := t.TempDir()
+	resultPath := filepath.Join(dir, "async.json")
+	data, _ := json.Marshal(client.CommandResponse{Success: true, Message: "done"})
+	_ = os.WriteFile(resultPath, data, 0o600)
+	if _, err := WaitForAsyncJob(context.Background(), resultPath, 0, time.Second, "async-op"); err != nil {
+		t.Fatal(err)
+	}
+	if log.Writer() != want {
+		t.Fatal("WaitForAsyncJob changed the process-global logger")
 	}
 }
 

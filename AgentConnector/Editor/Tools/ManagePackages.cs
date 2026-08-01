@@ -182,7 +182,7 @@ namespace HeraAgent.Tools
             if (string.IsNullOrEmpty(identifier))
                 return new ErrorResponse("MISSING_PARAM", $"'identifier' required for {action}.");
 
-            var jobId = $"pkg-{Guid.NewGuid().ToString("N").Substring(0, 8)}";
+            var jobId = CreateJobId();
             var port = HttpServer.Port;
 
             PackageJobState.MarkPending(port, jobId, action, identifier);
@@ -216,5 +216,7 @@ namespace HeraAgent.Tools
                 identifier,
             });
         }
+
+        internal static string CreateJobId() => $"pkg-{Guid.NewGuid().ToString("N")}";
     }
 }

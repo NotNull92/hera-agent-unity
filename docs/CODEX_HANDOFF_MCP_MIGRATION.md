@@ -11,24 +11,29 @@ milestone or review prompt.
 
 ### Done and verified
 
-- M0 through M11 are recorded as `PASS` in
+- M0 through M12 are recorded as `PASS` in
   `docs/MCP_MIGRATION_PROGRESS.md`.
 - M9 is committed and pushed to `origin/main` as
   `3fb1dd9 feat(mcp): add native profile tool bridge`.
 - M10 is committed and pushed to `origin/main` as
   `dab1e16 feat(mcp): add compact and full exposure modes`.
+- M11 is committed and pushed to `origin/main` as
+  `f45bf8e feat(safety): enforce approval for risky operations`.
+- M12 adds durable package/test task handles, negotiated Tasks extension
+  methods, blocking fallback, truthful unsupported cancellation, restart
+  recovery, and concurrency-safe async polling. Its working tree is verified
+  but intentionally uncommitted by the M12 prompt.
 - M11 adds process-local HMAC approval, CLI TTY/non-interactive flows, MCP
   elicitation/fallback, Connector revalidation, and batch fail-closed behavior.
-  Its working tree is verified but intentionally uncommitted by the M11 prompt.
 - M7 adds stable operation IDs, request metadata, canonical argument hashes,
   typed Connector context, atomic pre-execution/pre-response persistence,
   stored-response replay, conflict and unknown-outcome handling, retention, and
   capability-gated retry.
-- `approval_v1` and `operation_ledger_v1` are emitted in heartbeat features.
-  Connector manifest is unreleased `0.0.73`.
-- Required Go retry tests and the full Go suite pass. Exact repository Connector
-  sources compile in Unity `6000.3.5f2` with zero console errors, and all seven
-  operation-ledger menu tests pass.
+- `approval_v1`, `operation_ledger_v1`, and `task_bridge_v1` are emitted in
+  heartbeat features. Connector manifest is unreleased `0.0.74`.
+- Required Go retry tests and the full Go suite pass. M11 exact repository
+  Connector sources compiled in Unity `6000.3.5f2` with zero console errors,
+  and all seven operation-ledger menu tests passed.
 - A real response-loss fixture closed the first request after 50 ms, retried the
   same body and operation ID, replayed `{count:1}`, and independently observed
   the mutation counter at exactly one.
@@ -37,13 +42,14 @@ milestone or review prompt.
 
 ### Final QA state
 
-- M11 implementation, review corrections, final QA, and PASS recording are
+- M12 implementation, review corrections, final QA, and PASS recording are
   complete.
-- M12 is not authorized implicitly by this handoff.
+- M13 is not authorized implicitly by this handoff.
 
 ### Not implemented
 
-- Tasks, resources, telemetry, release documentation, and benchmark rollout.
+- Catalog invalidation, resources, telemetry, release documentation, and
+  benchmark rollout.
 - Any package installation, publishing, tagging, or release.
 
 ## Decisions made
@@ -64,18 +70,18 @@ milestone or review prompt.
 
 ## Open questions / pending decisions
 
-- M12 may begin only after a separate user instruction and confirmation that M11
+- M13 may begin only after a separate user instruction and confirmation that M12
   remains PASS.
 - Batch commands intentionally stop with unknown outcome on a transient
   connection because M7 does not add per-item batch operation records.
 
 ## Next steps
 
-1. Confirm the M11 working tree and its full gate before any Git operation.
-2. Re-read `AGENTS.md`, `CLAUDE.md`, the M12 implementation section and exact
+1. Confirm the M12 working tree and its full gate before any Git operation.
+2. Re-read `AGENTS.md`, `CLAUDE.md`, the M13 implementation section and exact
    implement/review prompt, and the progress ledger before changing source.
-3. On separate authorization, begin only M12 Tasks bridge. Keep the CLI as the
-   production default and do not begin catalog invalidation.
+3. On separate authorization, begin only M13 catalog invalidation. Keep the CLI
+   as the production default and do not begin large-result resources.
 
 ## References
 
@@ -110,7 +116,7 @@ milestone or review prompt.
 - Exact-source Connector validation must compile the repository source or use an
   appropriate Unity project without installing or overwriting a package.
 - The active Inventoria manifest points to the restored Git package, not the
-  unreleased M11 working tree. M11 Connector QA used a unique exact-source
+  unreleased M12 working tree. M12 Connector QA used unique exact-source
   assembly loaded in memory; do not claim installed-package E2E from it.
 - Give each rebuilt exact-source assembly a unique output/assembly name.
   Reusing an identity already loaded into the Editor can execute stale code.

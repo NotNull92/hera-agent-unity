@@ -28,6 +28,7 @@ namespace HeraAgent.Tests
             allPassed &= TestCatalogHashChangesForContractChange();
             allPassed &= TestCatalogExcludesVolatileFieldsFromHash();
             allPassed &= TestHeartbeatDomainEpochChangesAfterReload();
+            allPassed &= TestPackageJobIdsRetainGuidEntropy();
             allPassed &= TestLegacyListShapesRemainCompatible();
             allPassed &= TestCatalogSnapshotIsComplete();
             allPassed &= TestLegacyCustomActionsAreCataloged();
@@ -102,6 +103,7 @@ namespace HeraAgent.Tests
                     "approval_v1",
                     "domain_epoch_v1",
                     "operation_ledger_v1",
+                    "task_bridge_v1",
                     "tool_catalog_v1",
                 }));
         }
@@ -140,6 +142,18 @@ namespace HeraAgent.Tests
                     == names.ToString(Formatting.None)
                 && ToolCatalogTestSupport.SerializeData(sceneResponse)
                     == scene.ToString(Formatting.None));
+        }
+
+        static bool TestPackageJobIdsRetainGuidEntropy()
+        {
+            var first = Tools.ManagePackages.CreateJobId();
+            var second = Tools.ManagePackages.CreateJobId();
+            return Expect(
+                nameof(TestPackageJobIdsRetainGuidEntropy),
+                first.StartsWith("pkg-", StringComparison.Ordinal)
+                && first.Length == 36
+                && first.Substring(4).All(Uri.IsHexDigit)
+                && first != second);
         }
 
         static bool TestCatalogSnapshotIsComplete()

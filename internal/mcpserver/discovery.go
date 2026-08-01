@@ -9,8 +9,16 @@ import (
 const serverName = "hera-agent-unity"
 
 func newServer(config Config) *mcp.Server {
+	return newServerWithTasks(config, false)
+}
+
+func newServerWithTasks(config Config, tasks bool) *mcp.Server {
+	capabilities := &mcp.ServerCapabilities{}
+	if tasks {
+		capabilities.AddExtension(taskExtension, map[string]any{})
+	}
 	options := &mcp.ServerOptions{
-		Capabilities: &mcp.ServerCapabilities{},
+		Capabilities: capabilities,
 	}
 	if config.Diagnostics != nil {
 		options.Logger = slog.New(slog.NewTextHandler(config.Diagnostics, &slog.HandlerOptions{

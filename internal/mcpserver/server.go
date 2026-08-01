@@ -30,9 +30,12 @@ func runPrepared(ctx context.Context, config Config, transport mcp.Transport, ru
 	if transport == nil {
 		return fmt.Errorf("MCP transport is required")
 	}
-	server := newServer(config)
+	server := newServerWithTasks(config, runtime.tasks != nil && runtime.taskMode)
 	if err := registerTools(server, config, runtime); err != nil {
 		return fmt.Errorf("register MCP exposure %q profile %q: %w", config.exposure(), config.effectiveProfile(), err)
+	}
+	if err := registerTaskBridge(server, runtime); err != nil {
+		return fmt.Errorf("register MCP task bridge: %w", err)
 	}
 	return runServer(ctx, server, transport)
 }

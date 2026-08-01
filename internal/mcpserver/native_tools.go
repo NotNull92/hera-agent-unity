@@ -7,9 +7,13 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
 	"github.com/NotNull92/hera-agent-unity/internal/policy"
+	"github.com/NotNull92/hera-agent-unity/internal/poll"
+	"github.com/NotNull92/hera-agent-unity/internal/taskbridge"
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -29,6 +33,8 @@ type nativeRuntime struct {
 	approver approvalSender
 	timeout  int
 	mrtr     bool
+	tasks    *taskbridge.Store
+	taskMode bool
 }
 
 type toolInvocation struct {
@@ -62,6 +68,8 @@ func prepareNativeRuntime(ctx context.Context, config Config) (nativeRuntime, er
 		approver: client.DefaultClient,
 		timeout:  config.TimeoutMS,
 		mrtr:     config.MRTR,
+		tasks:    taskbridge.New(paths.StatusDir()),
+		taskMode: instanceHasFeature(instance, client.FeatureTaskBridgeV1),
 	}, nil
 }
 
@@ -187,7 +195,74 @@ func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvoc
 	if response == nil {
 		return nil, fmt.Errorf("invoke Unity tool %q: empty response", tool.Name)
 	}
+	start, taskable, err := taskStart(tool.Name, params, response, string(invocation.operationID))
+	if err != nil {
+		return nil, err
+	}
+	if taskable {
+		if runtime.tasks == nil {
+			return nil, fmt.Errorf("MCP task bridge is unavailable")
+		}
+		task, createErr := runtime.tasks.Create(start)
+		if createErr != nil {
+			return nil, fmt.Errorf("create durable MCP task: %w", createErr)
+		}
+		if runtime.taskMode && supportsTasks(invocation.request) {
+			result := commandResult(response)
+			result.Meta = mcp.Meta{taskMarkerMeta: task.ID}
+			return result, nil
+		}
+		resultPath, pathErr := runtime.tasks.ResultPath(task.ID)
+		if pathErr != nil {
+			return nil, pathErr
+		}
+		waitTimeout := time.Duration(runtime.timeout) * time.Millisecond
+		if start.Kind == taskbridge.KindPackage {
+			waitTimeout = 10 * time.Minute
+		}
+		response, err = poll.WaitForAsyncJob(ctx, resultPath, start.Port, waitTimeout, string(start.Kind)+" task")
+		if err != nil {
+			return nil, err
+		}
+	}
 	return commandResult(response), nil
+}
+
+func taskStart(toolName string, params map[string]any, response *client.CommandResponse, operationID string) (taskbridge.Start, bool, error) {
+	if response == nil || !response.Success || response.Message != "running" {
+		return taskbridge.Start{}, false, nil
+	}
+	kind := taskbridge.KindTest
+	action := ""
+	switch toolName {
+	case "run_tests":
+	case "manage_packages":
+		action, _ = params["action"].(string)
+		if action != "add" && action != "remove" && action != "embed" {
+			return taskbridge.Start{}, false, nil
+		}
+		kind = taskbridge.KindPackage
+	default:
+		return taskbridge.Start{}, false, nil
+	}
+	var data struct {
+		Port  int    `json:"port"`
+		RunID string `json:"run_id"`
+		JobID string `json:"job_id"`
+	}
+	if err := json.Unmarshal(response.Data, &data); err != nil {
+		return taskbridge.Start{}, false, fmt.Errorf("decode asynchronous %s response: %w", toolName, err)
+	}
+	if kind == taskbridge.KindTest {
+		if data.Port == 0 || data.RunID == "" {
+			return taskbridge.Start{}, false, fmt.Errorf("run_tests returned running without durable run metadata")
+		}
+		return taskbridge.Start{Kind: taskbridge.KindTest, Port: data.Port, UnderlyingID: data.RunID, OperationID: operationID}, true, nil
+	}
+	if data.Port == 0 || data.JobID == "" {
+		return taskbridge.Start{}, false, fmt.Errorf("manage_packages returned running without durable job metadata")
+	}
+	return taskbridge.Start{Kind: taskbridge.KindPackage, Port: data.Port, UnderlyingID: data.JobID, OperationID: operationID, Action: action}, true, nil
 }
 
 func decodeToolArguments(request *mcp.CallToolRequest) (map[string]any, *nativeToolError) {

@@ -21,7 +21,7 @@ benchmark gates pass.
 | M9 Native Profile tool bridge | PASS |
 | M10 Compact and Full exposure | PASS |
 | M11 Approval and MRTR | PASS |
-| M12 Tasks bridge | PENDING |
+| M12 Tasks bridge | PASS |
 | M13 Catalog invalidation and list-changed | PENDING |
 | M14 Large result resources | PENDING |
 | M15 Telemetry and benchmark harness | PENDING |
@@ -996,3 +996,80 @@ benchmark gates pass.
     README files remain unchanged.
 - **Next prerequisite:** M12 may start only under a separate instruction after
   re-reading this ledger and confirming the M11 PASS gate.
+
+## M12 Tasks bridge
+
+- **Status:** PASS
+- **Commit baseline:** `f45bf8e`
+- **Date:** 2026-08-01
+- **Implemented scope:**
+  - Added a generic Go task model and stateless file-bus adapters for Unity test
+    `run_id` and Package Manager add/remove/embed `job_id` operations.
+  - Added negotiated `io.modelcontextprotocol/tasks` capability advertisement,
+    durable task creation responses, and `tasks/get`, `tasks/update`, and
+    `tasks/cancel` extension methods. Task handles reconstruct state after an
+    adapter restart from the existing pending and result files.
+  - Preserved blocking result polling when Tasks is not negotiated or the
+    Connector lacks `task_bridge_v1`; Typed CLI behavior and result-file cleanup
+    remain unchanged.
+  - Kept cancellation truthful: neither current Test Framework runs nor Package
+    Manager jobs are marked cancelled, and the cancellation response explicitly
+    reports unsupported execution cancellation.
+  - Removed process-global standard logger mutation from concurrent async waits,
+    raised package job IDs to full GUID entropy, advertised `task_bridge_v1`, and
+    advanced the unreleased Connector manifest to `0.0.74`.
+- **Review corrections:**
+  - Restricted asynchronous metadata decoding to test and package adapters so
+    unrelated tools returning a `running` message remain ordinary tool results.
+  - Added bounded task-ID decoding and stable invalid-params/not-found JSON-RPC
+    errors for task methods.
+  - Preserved explicit `supported:false` and `cancelled:false` fields on the wire
+    and locked full package-job GUID entropy with a Connector regression helper.
+  - Added older-Connector negotiation fallback, package fallback, test terminal
+    recovery, tool-error-as-completed, cancellation, and oversized-ID coverage;
+    updated the public package job example.
+- **Evidence completed:**
+  - Taskbridge and MCP tests cover package and test restart recovery, negotiated
+    extension results, custom task methods, blocking fallback, cancellation,
+    malformed and oversized IDs, policy/schema/catalog regressions, and
+    process-global logger invariance.
+  - `gofmt -l .`, `go test -count=1 ./...`, `go vet ./...`, `go build ./...`,
+    `golangci-lint run ./...`, `go run ./tools/sync-agent-guides --check`, and
+    `git diff --check` pass; lint reports `0 issues`.
+  - Windows race-mode tests were attempted for `internal/taskbridge` and
+    `internal/mcpserver`, but the host denied access to both generated test
+    executables before either suite started. Ordinary targeted and full suites
+    passed.
+  - Repository-exact feature and package source probes compiled against
+    Inventoria's Unity `6000.3.5f2` reference set. In-memory Editor checks saw
+    `task_bridge_v1`; compiled package IL called `Guid.NewGuid().ToString("N")`
+    without `Substring`, and the final helper produced distinct 36-character
+    `pkg-` IDs with hexadecimal suffixes.
+  - A disposable live EditMode run exercised the existing run-scoped file-bus
+    lifecycle and returned a zero-test terminal result with no pending/result
+    residue. An exact-source package pending record preserved the full job ID,
+    port, action, identifier, and start timestamp, then was removed. Unity
+    remained `ready` with zero console errors.
+  - Inventoria's package manifest and lock were not changed. No package was
+    installed, published, tagged, released, committed, or pushed for M12.
+- **Known limitations:**
+  - The active installed Git Connector predates unreleased M12, so negotiated
+    task E2E used the official Go SDK's in-memory transport while Connector
+    changes were verified through exact-source compilation and in-memory Editor
+    execution. Installed-package task E2E is not claimed.
+  - A whole-Editor external Roslyn probe was abandoned after sustained
+    single-core execution produced no assembly; focused repository-exact probes
+    for every changed Connector behavior passed instead.
+  - Catalog invalidation, large-result resources, telemetry, release
+    documentation, and benchmark rollout remain later milestones. CLI remains
+    the production default.
+- **Rollback procedure:**
+  - Remove `internal/taskbridge`, MCP task registration/adapters/tests, restore
+    blocking-only native invocation and the async wait wrapper, restore package
+    job IDs and Connector version `0.0.73`, remove `task_bridge_v1`, then restore
+    this ledger, the handoff, `docs/COMMANDS.md`, and `CLAUDE.md` together.
+- **Rule-document impact:**
+  - `CLAUDE.md`, this ledger, the handoff, and the package command example now
+    describe M12. Generated agent guides remain unchanged and pass drift checks.
+- **Next prerequisite:** M13 may start only under a separate instruction after
+  re-reading this ledger and confirming the M12 PASS gate.

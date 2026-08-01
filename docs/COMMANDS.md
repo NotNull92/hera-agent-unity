@@ -273,7 +273,7 @@ for up to 10 minutes and deletes it once consumed.
 **add / remove / embed (start)**:
 
 ```json
-{ "job_id": "pkg-9c4f12a8", "port": 8090, "action": "add", "identifier": "com.unity.ai.navigation" }
+{ "job_id": "pkg-9c4f12a8b7e64d2a91c63c35cfab47d0", "port": 8090, "action": "add", "identifier": "com.unity.ai.navigation" }
 ```
 
 **add / remove / embed (completion, written to package-result file)**:

@@ -66,6 +66,7 @@ namespace HeraAgent
             "approval_v1",
             "domain_epoch_v1",
             "operation_ledger_v1",
+            "task_bridge_v1",
             "tool_catalog_v1",
         };
 
