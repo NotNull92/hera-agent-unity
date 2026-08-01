@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -123,6 +124,93 @@ func TestMCPStderrMayContainDiagnostics(t *testing.T) {
 	}
 	if !strings.Contains(stderr.String(), "unsupported MCP transport") {
 		t.Fatalf("stderr = %q, want transport diagnostic", stderr.String())
+	}
+}
+
+func TestMCPOptionsParseCompactAndArbitraryCodePermission(t *testing.T) {
+	// Given
+	args := []string{"--exposure", "compact", "--profile", "advanced", "--allow-arbitrary-code"}
+
+	// When
+	options, err := parseMCPOptions(args)
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	if options.Exposure != "compact" || options.Profile != "advanced" || !options.AllowArbitraryCode {
+		t.Fatalf("options=%#v", options)
+	}
+}
+
+func TestMCPProcessCompactDiscoversAndCallsDynamicCustomTool(t *testing.T) {
+	// Given
+	port, home := startMCPUnityFixture(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	command := mcpHelperCommand(ctx, fmt.Sprintf("--port %d mcp --transport stdio --exposure compact", port))
+	command.Env = append(command.Env, "HOME="+home, "USERPROFILE="+home)
+	stdout, err := command.StdoutPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	stdin, err := command.StdinPipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stderr bytes.Buffer
+	command.Stderr = &stderr
+	if err := command.Start(); err != nil {
+		t.Fatal(err)
+	}
+	transport := &mcp.IOTransport{Reader: testReadCloser{Reader: stdout, Closer: stdout}, Writer: stdin}
+	client := mcp.NewClient(&mcp.Implementation{Name: "compact-e2e", Version: "test"}, nil)
+	session, err := client.Connect(ctx, transport, nil)
+	if err != nil {
+		t.Fatalf("Connect() error=%v stderr=%s", err, stderr.String())
+	}
+
+	// When
+	tools, err := session.ListTools(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	search, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "tool_search", Arguments: map[string]any{"query": "dynamic probe"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	call, err := session.CallTool(ctx, &mcp.CallToolParams{Name: "tool_call", Arguments: map[string]any{
+		"name": "dynamic_probe", "arguments": map[string]any{"action": "inspect"},
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Then
+	want := []string{"tool_call", "tool_describe", "tool_search"}
+	got := make([]string, len(tools.Tools))
+	for index, tool := range tools.Tools {
+		got[index] = tool.Name
+	}
+	if !slices.Equal(got, want) {
+		t.Fatalf("tools=%v, want %v", got, want)
+	}
+	if search.IsError || call.IsError {
+		t.Fatalf("search=%#v call=%#v", search, call)
+	}
+	envelope, ok := search.StructuredContent.(map[string]any)
+	if !ok {
+		t.Fatalf("search content=%#v", search.StructuredContent)
+	}
+	results, ok := envelope["data"].([]any)
+	if !ok || len(results) == 0 || results[0].(map[string]any)["name"] != "dynamic_probe" {
+		t.Fatalf("search data=%#v", envelope["data"])
+	}
+	if err := session.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := command.Wait(); err != nil {
+		t.Fatalf("process error=%v stderr=%s", err, stderr.String())
 	}
 }
 

@@ -2,6 +2,7 @@ package mcpserver
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -25,6 +26,16 @@ func errorResult(code, message string, data any) *mcp.CallToolResult {
 		response.Data, _ = json.Marshal(data)
 	}
 	return commandResult(response)
+}
+
+func dataResult(data any) (*mcp.CallToolResult, error) {
+	response := &client.CommandResponse{Success: true, Message: "OK"}
+	encoded, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("encode MCP result data: %w", err)
+	}
+	response.Data = encoded
+	return commandResult(response), nil
 }
 
 func responseEnvelope(response *client.CommandResponse) map[string]any {

@@ -14,14 +14,16 @@ var (
 )
 
 type Config struct {
-	Enabled     bool
-	Transport   string
-	Profile     string
-	Version     string
-	Project     string
-	Port        int
-	TimeoutMS   int
-	Diagnostics io.Writer
+	Enabled            bool
+	Transport          string
+	Profile            string
+	Exposure           string
+	AllowArbitraryCode bool
+	Version            string
+	Project            string
+	Port               int
+	TimeoutMS          int
+	Diagnostics        io.Writer
 }
 
 func (config Config) Validate() error {
@@ -34,8 +36,8 @@ func (config Config) Validate() error {
 	if config.Version == "" {
 		return fmt.Errorf("MCP server version is required")
 	}
-	if !isSeedProfile(config.Profile) {
-		return fmt.Errorf("unsupported MCP profile %q", config.Profile)
+	if err := config.validateExposure(); err != nil {
+		return err
 	}
 	if config.TimeoutMS <= 0 {
 		return fmt.Errorf("MCP timeout must be greater than zero")

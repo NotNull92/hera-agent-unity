@@ -109,7 +109,7 @@ func validateTool(tool *Tool) error {
 	if visibleInNormalProfile && tool.ContractMode != ContractStrict {
 		return fmt.Errorf("legacy tool %q is visible in a normal profile", tool.Name)
 	}
-	if visibleInNormalProfile && toolHasArbitraryCode(tool) {
+	if visibleInNormalProfile && ToolHasArbitraryCode(*tool) {
 		return fmt.Errorf("arbitrary-code tool %q is visible in a normal profile", tool.Name)
 	}
 	if !jsonObject(tool.InputSchema) || !jsonObject(tool.OutputSchema) {
@@ -132,7 +132,7 @@ func validateTool(tool *Tool) error {
 	return nil
 }
 
-func toolHasArbitraryCode(tool *Tool) bool {
+func ToolHasArbitraryCode(tool Tool) bool {
 	if safetyHasRisk(tool.Safety, "arbitrary_code") {
 		return true
 	}

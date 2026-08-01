@@ -11,6 +11,8 @@ Typed Call:
 Experimental MCP:
   HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
                                       Start the native core-profile stdio server.
+  HERA_MCP_ENABLED=1 hera-agent-unity mcp --exposure compact
+                                      Start compact search/describe/call exposure.
 
 Editor Control:
   editor play [--wait]          Enter play mode (--wait blocks until fully entered)

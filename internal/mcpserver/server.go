@@ -31,8 +31,8 @@ func runPrepared(ctx context.Context, config Config, transport mcp.Transport, ru
 		return fmt.Errorf("MCP transport is required")
 	}
 	server := newServer(config)
-	if err := registerNativeTools(server, config, runtime); err != nil {
-		return fmt.Errorf("register MCP profile %q: %w", config.Profile, err)
+	if err := registerTools(server, config, runtime); err != nil {
+		return fmt.Errorf("register MCP exposure %q profile %q: %w", config.exposure(), config.effectiveProfile(), err)
 	}
 	return runServer(ctx, server, transport)
 }

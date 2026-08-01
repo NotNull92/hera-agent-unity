@@ -11,8 +11,10 @@ import (
 )
 
 type mcpOptions struct {
-	Transport string
-	Profile   string
+	Transport          string
+	Profile            string
+	Exposure           string
+	AllowArbitraryCode bool
 }
 
 func parseMCPOptions(args []string) (mcpOptions, error) {
@@ -21,6 +23,8 @@ func parseMCPOptions(args []string) (mcpOptions, error) {
 	flags.SetOutput(io.Discard)
 	flags.StringVar(&options.Transport, "transport", mcpserver.TransportStdio, "MCP transport")
 	flags.StringVar(&options.Profile, "profile", envString("HERA_MCP_PROFILE", "core"), "fixed tool profile")
+	flags.StringVar(&options.Exposure, "exposure", envString("HERA_MCP_EXPOSURE", mcpserver.ExposureProfile), "MCP tool exposure")
+	flags.BoolVar(&options.AllowArbitraryCode, "allow-arbitrary-code", false, "allow advanced arbitrary-code tools at startup")
 	if err := flags.Parse(args); err != nil {
 		return mcpOptions{}, fmt.Errorf("parse MCP flags: %w", err)
 	}
@@ -36,13 +40,15 @@ func mcpCmd(ctx context.Context, config GlobalConfig, args []string) error {
 		return err
 	}
 	return mcpserver.RunStdio(ctx, mcpserver.Config{
-		Enabled:     envBool("HERA_MCP_ENABLED", false),
-		Transport:   options.Transport,
-		Profile:     options.Profile,
-		Version:     Version,
-		Project:     config.Project,
-		Port:        config.Port,
-		TimeoutMS:   config.TimeoutMillis(),
-		Diagnostics: os.Stderr,
+		Enabled:            envBool("HERA_MCP_ENABLED", false),
+		Transport:          options.Transport,
+		Profile:            options.Profile,
+		Exposure:           options.Exposure,
+		AllowArbitraryCode: options.AllowArbitraryCode,
+		Version:            Version,
+		Project:            config.Project,
+		Port:               config.Port,
+		TimeoutMS:          config.TimeoutMillis(),
+		Diagnostics:        os.Stderr,
 	})
 }

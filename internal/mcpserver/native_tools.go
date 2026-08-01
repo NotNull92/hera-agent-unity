@@ -25,6 +25,12 @@ type nativeRuntime struct {
 	timeout  int
 }
 
+type toolInvocation struct {
+	tool        toolregistry.Tool
+	params      map[string]any
+	operationID client.OperationID
+}
+
 func isSeedProfile(profile string) bool {
 	return toolregistry.IsSeedProfile(profile)
 }
@@ -39,7 +45,7 @@ func prepareNativeRuntime(ctx context.Context, config Config) (nativeRuntime, er
 	if err != nil {
 		return nativeRuntime{}, fmt.Errorf("load native tool catalog for MCP startup: %w", err)
 	}
-	if snapshot.Exposure != toolregistry.ExposureProfile || snapshot.Schemas == nil {
+	if config.exposure() != ExposureCompact && (snapshot.Exposure != toolregistry.ExposureProfile || snapshot.Schemas == nil) {
 		return nativeRuntime{}, fmt.Errorf("native strict tool catalog is required for MCP profile exposure")
 	}
 	return nativeRuntime{
@@ -50,16 +56,24 @@ func prepareNativeRuntime(ctx context.Context, config Config) (nativeRuntime, er
 	}, nil
 }
 
+func registerTools(server *mcp.Server, config Config, runtime nativeRuntime) error {
+	if config.exposure() == ExposureCompact {
+		return registerCompactTools(server, config, runtime)
+	}
+	return registerNativeTools(server, config, runtime)
+}
+
 func registerNativeTools(server *mcp.Server, config Config, runtime nativeRuntime) error {
 	if runtime.instance == nil || runtime.snapshot == nil || runtime.snapshot.Catalog == nil || runtime.snapshot.Schemas == nil || runtime.sender == nil {
 		return fmt.Errorf("native MCP runtime is incomplete")
 	}
-	tools, err := runtime.snapshot.Catalog.ToolsForProfile(config.Profile)
+	profile := config.effectiveProfile()
+	tools, err := runtime.snapshot.Catalog.ToolsForProfile(profile)
 	if err != nil {
 		return err
 	}
 	if profileMayMutate(tools) && !instanceHasFeature(runtime.instance, client.FeatureOperationLedgerV1) {
-		return fmt.Errorf("profile %q contains mutations but Unity does not advertise %s", config.Profile, client.FeatureOperationLedgerV1)
+		return fmt.Errorf("profile %q contains mutations but Unity does not advertise %s", profile, client.FeatureOperationLedgerV1)
 	}
 	for index := range tools {
 		tool := tools[index]
@@ -103,41 +117,57 @@ func nativeToolHandler(runtime nativeRuntime, tool toolregistry.Tool) mcp.ToolHa
 		if inputErr != nil {
 			return errorResult("INVALID_ARGUMENT", inputErr.message, inputErr.data), nil
 		}
+		return invokeTool(ctx, runtime, toolInvocation{tool: tool, params: params})
+	}
+}
+
+func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvocation) (*mcp.CallToolResult, error) {
+	tool := invocation.tool
+	params := invocation.params
+	if tool.ContractMode == toolregistry.ContractStrict {
+		if runtime.snapshot.Schemas == nil {
+			return nil, fmt.Errorf("strict schema cache is unavailable for %q", tool.Name)
+		}
 		if err := runtime.snapshot.Schemas.Validate(tool.Name+"/input", params); err != nil {
 			return errorResult("INVALID_ARGUMENT", fmt.Sprintf("validate %s input: %v", tool.Name, err), nil), nil
 		}
-		_, safety, err := policy.Resolve(tool, params)
-		if err != nil {
-			return errorResult("POLICY_RESOLUTION_FAILED", err.Error(), nil), nil
-		}
-		if policyErr := enforceNativePolicy(safety); policyErr != nil {
-			return errorResult(policyErr.code, policyErr.message, policyErr.data), nil
-		}
-		operationID, err := client.NewOperationID()
+	}
+	_, safety, err := policy.Resolve(tool, params)
+	if err != nil {
+		return errorResult("POLICY_RESOLUTION_FAILED", err.Error(), nil), nil
+	}
+	if policyErr := enforceNativePolicy(safety); policyErr != nil {
+		return errorResult(policyErr.code, policyErr.message, policyErr.data), nil
+	}
+	if !safety.ReadOnly && !instanceHasFeature(runtime.instance, client.FeatureOperationLedgerV1) {
+		return errorResult("OPERATION_LEDGER_REQUIRED", "mutation requires Unity operation ledger support", nil), nil
+	}
+	if invocation.operationID == "" {
+		invocation.operationID, err = client.NewOperationID()
 		if err != nil {
 			return nil, fmt.Errorf("generate MCP operation id: %w", err)
 		}
-		response, err := runtime.sender.SendWithOptions(
-			ctx,
-			runtime.instance,
-			tool.Name,
-			params,
-			runtime.timeout,
-			client.SendOptions{
-				OperationID: operationID,
-				Idempotent:  safety.Idempotent,
-				ClientKind:  "mcp",
-				CatalogHash: runtime.snapshot.Catalog.CatalogHash,
-			},
-		)
-		if err != nil {
-			return nil, fmt.Errorf("invoke Unity tool %q: %w", tool.Name, err)
-		}
-		if response == nil {
-			return nil, fmt.Errorf("invoke Unity tool %q: empty response", tool.Name)
-		}
-		return commandResult(response), nil
 	}
+	response, err := runtime.sender.SendWithOptions(
+		ctx,
+		runtime.instance,
+		tool.Name,
+		params,
+		runtime.timeout,
+		client.SendOptions{
+			OperationID: invocation.operationID,
+			Idempotent:  safety.Idempotent,
+			ClientKind:  "mcp",
+			CatalogHash: runtime.snapshot.Catalog.CatalogHash,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("invoke Unity tool %q: %w", tool.Name, err)
+	}
+	if response == nil {
+		return nil, fmt.Errorf("invoke Unity tool %q: empty response", tool.Name)
+	}
+	return commandResult(response), nil
 }
 
 func decodeToolArguments(request *mcp.CallToolRequest) (map[string]any, *nativeToolError) {

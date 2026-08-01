@@ -11,10 +11,12 @@ milestone or review prompt.
 
 ### Done and verified
 
-- M0 through M7 are recorded as `PASS` in
+- M0 through M10 are recorded as `PASS` in
   `docs/MCP_MIGRATION_PROGRESS.md`.
-- M6 is committed and pushed to `origin/main` as
-  `fda9921 feat(cli): add schema-validated typed calls`.
+- M9 is committed and pushed to `origin/main` as
+  `3fb1dd9 feat(mcp): add native profile tool bridge`.
+- M10 adds Compact search/describe/call, Full-safe exposure, and explicit
+  Advanced startup permission. Its working tree is verified but uncommitted.
 - M7 adds stable operation IDs, request metadata, canonical argument hashes,
   typed Connector context, atomic pre-execution/pre-response persistence,
   stored-response replay, conflict and unknown-outcome handling, retention, and
@@ -32,14 +34,14 @@ milestone or review prompt.
 
 ### Final QA state
 
-- M7 implementation, review corrections, final QA, and PASS recording are
+- M10 implementation, review corrections, final QA, and PASS recording are
   complete.
-- M8 is not authorized implicitly by this handoff.
+- M11 is not authorized implicitly by this handoff.
 
 ### Not implemented
 
-- MCP runtime commands or transport.
 - Approval enforcement and MRTR.
+- Tasks, resources, telemetry, release documentation, and benchmark rollout.
 - Any package installation, publishing, tagging, or release.
 
 ## Decisions made
@@ -60,22 +62,18 @@ milestone or review prompt.
 
 ## Open questions / pending decisions
 
-- M8 may begin only after a separate user instruction and confirmation that M7
+- M11 may begin only after a separate user instruction and confirmation that M10
   remains PASS.
 - Batch commands intentionally stop with unknown outcome on a transient
   connection because M7 does not add per-item batch operation records.
 
 ## Next steps
 
-1. Start the next session by confirming a clean worktree and reading the commit
-   containing this handoff, whose subject is
-   `feat(reliability): add operation ledger and replay-safe retries`.
-2. Re-read `AGENTS.md`, `CLAUDE.md`, the M8 section of the implementation plan,
-   the exact M8 implement/review prompt, and the progress ledger before changing
-   source.
-3. On separate authorization, begin only the M8 stdio MCP skeleton and keep the
-   CLI as the production default. Do not start M9 approval enforcement as part
-   of M8.
+1. Confirm the M10 working tree and its full gate before any Git operation.
+2. Re-read `AGENTS.md`, `CLAUDE.md`, the M11 implementation section and exact
+   implement/review prompt, and the progress ledger before changing source.
+3. On separate authorization, begin only M11 approval and MRTR. Keep the CLI as
+   the production default and do not begin Tasks or catalog invalidation.
 
 ## References
 

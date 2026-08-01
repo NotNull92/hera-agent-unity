@@ -19,7 +19,7 @@ benchmark gates pass.
 | M7 Connector operation ledger and safe retry | PASS |
 | M8 stdio MCP skeleton | PASS |
 | M9 Native Profile tool bridge | PASS |
-| M10 Compact and Full exposure | PENDING |
+| M10 Compact and Full exposure | PASS |
 | M11 Approval and MRTR | PENDING |
 | M12 Tasks bridge | PENDING |
 | M13 Catalog invalidation and list-changed | PENDING |
@@ -872,3 +872,63 @@ benchmark gates pass.
 - **Next prerequisite:** M10 may start only under a separate instruction after
   re-reading this ledger and confirming the M9 PASS gate. Do not infer
   authorization to begin it from this entry.
+
+## M10 Compact and Full Exposure
+
+- **Status:** PASS
+- **Commit baseline:** `3fb1dd9`
+- **Date:** 2026-08-01
+- **Implemented scope:**
+  - Added Compact `tool_search`, `tool_describe`, and `tool_call` as the only
+    registered tools for compact exposure.
+  - Added deterministic lexical ranking with ordinal name tie-breaking,
+    optional profile filtering, bounded results, and optional compact schema.
+  - Compact accepts native strict and conservative legacy catalogs. Strict
+    calls use the compiled live schema; all calls use shared policy, ledger,
+    catalog hash, `client_kind=mcp`, and generated or client operation IDs.
+  - Added profile, compact, and full exposure selection. Full selects the
+    catalog-owned strict `full` profile and excludes arbitrary code.
+  - Added `custom`, `full`, and `advanced` profiles. Advanced cannot start
+    without `--allow-arbitrary-code`; Compact also hides and rejects arbitrary
+    tools unless that process permission was explicit.
+- **Review corrections:**
+  - Closed an arbitrary-code permission bypass in Compact search, describe,
+    and call discovered during the read-only PASS B review.
+  - Made Compact call output data schema unconstrained so valid array or scalar
+    Hera results are not falsely rejected.
+  - Strengthened the subprocess E2E to prove the dynamic custom result is
+    actually discovered, not merely that search returned success.
+  - Propagated result-data JSON encoding failures instead of returning a
+    misleading empty-data success.
+- **Evidence completed:**
+  - Unit/integration tests cover Compact-only registration, deterministic
+    ranking, describe identity, dynamic strict custom dispatch, legacy
+    conservative policy, client operation IDs, Full-safe visibility, and
+    Advanced permission gating.
+  - A real subprocess E2E driven by the official Go MCP SDK discovered and
+    called a dynamic custom tool through Compact.
+  - `go test -count=1 ./...`, `go vet ./...`, `go build ./...`,
+    `golangci-lint run ./...`, formatter diff, catalog validation, MCP help,
+    guide drift, and `git diff --check` pass.
+  - Direct race-mode tests were attempted, but Windows denied access to the
+    generated test executables before the suites could start, matching the
+    previously recorded host restriction.
+  - A current-source MCP binary was driven against Inventoria on Unity
+    `6000.3.5f2`. Compact exposed exactly three tools and passed live scene
+    search, describe, and call. Full exposed 29 strict tools without `exec` or
+    `menu`. Advanced failed without permission and exposed `exec`/`menu` only
+    with explicit permission. Unity remained ready with zero console errors.
+- **Known limitations:**
+  - Approval/MRTR remains M11 scope. Confirmation-required native or legacy
+    calls return `APPROVAL_REQUIRED` even when startup exposure permits them.
+  - Catalog invalidation, tasks, resources, telemetry, release docs, and
+    benchmarks remain later milestones. CLI remains the production default.
+- **Rollback procedure:**
+  - Remove Compact tool/search files and tests; restore M9 seed-only config,
+    profile validation, help, and native registration; then restore this ledger,
+    `docs/MCP.md`, the handoff, and `CLAUDE.md` M9-only state together.
+- **Rule-document impact:**
+  - `CLAUDE.md`, `docs/MCP.md`, MCP help, and the handoff now describe the
+    implemented experimental M10 surface. Public README remains M16 scope.
+- **Next prerequisite:** M11 may start only under a separate instruction after
+  re-reading this ledger and confirming the M10 PASS gate.

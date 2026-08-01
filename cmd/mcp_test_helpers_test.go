@@ -82,6 +82,8 @@ func startMCPUnityFixture(t *testing.T) (int, string) {
 				Message: "Scene inspected",
 				Data:    json.RawMessage(`{"name":"M9Fixture"}`),
 			})
+		case "dynamic_probe":
+			_ = json.NewEncoder(writer).Encode(&client.CommandResponse{Success: true, Message: "Dynamic probe inspected", Data: json.RawMessage(`{"dynamic":true}`)})
 		default:
 			http.Error(writer, "unexpected command", http.StatusBadRequest)
 		}
@@ -138,7 +140,26 @@ func mcpCatalogFixture(t *testing.T, projectID string) json.RawMessage {
 			"side_effect_scope": "none", "rules": []any{},
 		},
 	}
-	material := map[string]any{"schema_version": toolregistry.CatalogSchemaV1, "tools": []any{tool}}
+	dynamicTool := map[string]any{
+		"name": "dynamic_probe", "title": "Dynamic Probe", "description": "Inspect a dynamic custom probe",
+		"source":        map[string]any{"kind": "custom", "assembly": "M10.Fixture", "type": "DynamicProbe"},
+		"contract_mode": "strict", "profiles": []string{"custom", "full"},
+		"aliases": []any{}, "examples": []any{}, "actions": []any{},
+		"input_schema": map[string]any{
+			"type": "object", "additionalProperties": false,
+			"properties": map[string]any{"action": map[string]any{"type": "string", "const": "inspect"}},
+			"required":   []string{"action"},
+		},
+		"output_schema": map[string]any{"type": "object", "additionalProperties": true},
+		"safety": map[string]any{
+			"risk_class": "read_only", "read_only": true, "destructive": false,
+			"idempotent": true, "may_reload_domain": false, "requires_play_mode": false,
+			"requires_confirmation": false, "reversible": true, "supports_cancellation": false,
+			"side_effect_scope": "none", "rules": []any{},
+		},
+	}
+	tools := []any{dynamicTool, tool}
+	material := map[string]any{"schema_version": toolregistry.CatalogSchemaV1, "tools": tools}
 	canonical, err := json.Marshal(material)
 	if err != nil {
 		t.Fatal(err)
@@ -149,7 +170,7 @@ func mcpCatalogFixture(t *testing.T, projectID string) json.RawMessage {
 		"catalog_hash":   fmt.Sprintf("sha256:%x", hash),
 		"domain_epoch":   "m9-test-epoch",
 		"project_id":     projectID,
-		"tools":          []any{tool},
+		"tools":          tools,
 	}
 	encoded, err := json.Marshal(document)
 	if err != nil {

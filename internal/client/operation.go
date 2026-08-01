@@ -6,10 +6,15 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"unicode"
+	"unicode/utf16"
 )
 
 const FeatureOperationLedgerV1 = "operation_ledger_v1"
+
+var ErrInvalidOperationID = errors.New("invalid operation id")
 
 type OperationID string
 
@@ -19,6 +24,20 @@ func NewOperationID() (OperationID, error) {
 		return "", fmt.Errorf("generate operation id: %w", err)
 	}
 	return OperationID("op_" + hex.EncodeToString(value[:])), nil
+}
+
+func ParseOperationID(value string) (OperationID, error) {
+	runes := []rune(value)
+	length := len(utf16.Encode(runes))
+	if length < 8 || length > 128 {
+		return "", fmt.Errorf("%w: must be 8-128 characters", ErrInvalidOperationID)
+	}
+	for _, character := range runes {
+		if !unicode.IsLetter(character) && !unicode.IsDigit(character) && character != '_' && character != '-' {
+			return "", fmt.Errorf("%w: contains unsupported character", ErrInvalidOperationID)
+		}
+	}
+	return OperationID(value), nil
 }
 
 type RequestMeta struct {

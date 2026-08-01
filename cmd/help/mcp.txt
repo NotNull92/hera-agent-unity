@@ -1,17 +1,27 @@
-hera-agent-unity mcp — run the experimental native-profile MCP server
+hera-agent-unity mcp — run the experimental stdio MCP server
 
 Usage:
   HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
+  HERA_MCP_ENABLED=1 hera-agent-unity mcp --exposure compact
+  HERA_MCP_ENABLED=1 hera-agent-unity mcp --exposure full
+  HERA_MCP_ENABLED=1 hera-agent-unity mcp --profile advanced --allow-arbitrary-code
 
 Options:
   --transport stdio   Use newline-delimited MCP over stdin/stdout. No other
                       transport is accepted.
-  --profile <name>    Select one fixed seed profile for this server process:
-                      core, scene, assets, ui, diagnostics, or testing.
+  --exposure <mode>   Select profile (default), compact, or full exposure.
+  --profile <name>    Select core, scene, assets, ui, diagnostics, testing,
+                      custom, full, or advanced.
+  --allow-arbitrary-code
+                      Required to start the advanced profile. Each arbitrary
+                      operation still requires policy approval.
 
-The server loads Unity's strict catalog before starting and registers exactly
-the selected profile's native tools. Approval-required operations remain
-blocked until the later approval milestone.
+Profile exposure registers strict native tools from the selected catalog
+profile. Compact exposure registers only tool_search, tool_describe, and
+tool_call and supports dynamic strict or legacy custom discovery. Full exposure
+registers every strict tool allowed by normal policy and excludes arbitrary
+code. Approval-required operations remain blocked until the later approval
+milestone.
 
 The command is disabled by default. stdout is reserved exclusively for MCP
 protocol frames; diagnostics are written to stderr. The existing CLI remains
