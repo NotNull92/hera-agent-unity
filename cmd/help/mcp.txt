@@ -19,6 +19,10 @@ Options:
                       client advertises Form elicitation support. Also available
                       as HERA_MCP_MRTR=1. Disabled by default.
 
+HERA_MCP_MAX_INLINE_BYTES sets the positive model-facing result limit (default
+131072). Larger results are returned as integrity-checked MCP resource handles;
+credential-like and arbitrary-code results are withheld instead of stored.
+
 Profile exposure registers strict native tools from the selected catalog
 profile. Compact exposure registers only tool_search, tool_describe, and
 tool_call and supports dynamic strict or legacy custom discovery. Full exposure

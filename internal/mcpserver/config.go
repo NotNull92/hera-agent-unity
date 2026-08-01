@@ -8,6 +8,11 @@ import (
 
 const TransportStdio = "stdio"
 
+const (
+	DefaultMaxInlineBytes   = 131072
+	defaultResultCacheBytes = 64 * 1024 * 1024
+)
+
 var (
 	ErrDisabled             = errors.New("MCP server is disabled")
 	ErrUnsupportedTransport = errors.New("unsupported MCP transport")
@@ -24,6 +29,7 @@ type Config struct {
 	Project            string
 	Port               int
 	TimeoutMS          int
+	MaxInlineBytes     int
 	Diagnostics        io.Writer
 }
 
@@ -43,5 +49,15 @@ func (config Config) Validate() error {
 	if config.TimeoutMS <= 0 {
 		return fmt.Errorf("MCP timeout must be greater than zero")
 	}
+	if config.MaxInlineBytes < 0 {
+		return fmt.Errorf("MCP maximum inline bytes must be positive when configured")
+	}
 	return nil
+}
+
+func (config Config) maxInlineBytes() int {
+	if config.MaxInlineBytes == 0 {
+		return DefaultMaxInlineBytes
+	}
+	return config.MaxInlineBytes
 }

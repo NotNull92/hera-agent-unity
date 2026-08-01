@@ -23,7 +23,7 @@ benchmark gates pass.
 | M11 Approval and MRTR | PASS |
 | M12 Tasks bridge | PASS |
 | M13 Catalog invalidation and list-changed | PASS |
-| M14 Large result resources | PENDING |
+| M14 Large result resources | PASS |
 | M15 Telemetry and benchmark harness | PENDING |
 | M16 Documentation, compatibility, and release hardening | PENDING |
 | M17 Cross-verification and default decision | PENDING |
@@ -1155,4 +1155,82 @@ benchmark gates pass.
     unchanged.
 - **Next prerequisite:** M14 may start only under a separate instruction after
   re-reading this ledger and confirming the M13 PASS gate. Do not infer
+  authorization to begin it from this entry.
+
+## M14 Large result resources
+
+- **Status:** PASS
+- **Commit baseline:** `5c5723c`
+- **Date:** 2026-08-01
+- **Implemented scope:**
+  - Added the positive `HERA_MCP_MAX_INLINE_BYTES` model-facing limit with the
+    specified 131072-byte default. The limit measures the complete inline MCP
+    tool result, including structured content and its compact text fallback,
+    rather than reusing the unrelated 50 MiB Unity HTTP transport ceiling.
+  - Results over the limit are atomically written under the per-project and
+    per-operation result cache with a content SHA-256, byte size, truncation
+    marker, `RESULT_SPOOLED` outcome, opaque `hera-result` URI, and MCP resource
+    link. The complete JSON envelope remains retrievable through the registered
+    resource template and is absent from inline tool content.
+  - Added integrity-checked handle parsing, traversal rejection, restrictive
+    cache permissions, pre-publication timestamping, 24-hour access retention,
+    a 64 MiB cache cap, deterministic oldest-first pruning, and protection for
+    the just-published result during cleanup.
+  - Applied the same bounded mapping to blocking calls and negotiated task
+    completions. Existing projection parameters continue unchanged to Unity,
+    and oversized summaries direct clients toward supported limit, cursor,
+    field, ID/name, stacktrace, and depth controls before reading full results.
+  - Credential-shaped results and operation-resolved arbitrary-code output are
+    withheld from both disk and inline content with the stable
+    `RESULT_RESOURCE_UNAVAILABLE` outcome.
+- **Review corrections:**
+  - PASS B required retention enforcement on idle reads, broader session-token
+    detection, timestamping before atomic publication, documented result codes,
+    explicit-zero environment rejection, and observable projection/task tests.
+    All were corrected and re-reviewed.
+  - Changed the threshold calculation from only the structured envelope to the
+    complete `CallToolResult`, preserving the original Unity error code as
+    `unity_code` when that error result is resource-backed.
+  - Replaced tool-wide arbitrary-code blocking with operation-resolved safety,
+    then added a rule-specific regression proving a safe menu-list result can be
+    stored while the same tool's arbitrary-code operation is withheld.
+- **Evidence completed:**
+  - Result-store tests cover atomic publication, timestamp failure, path and
+    handle validation, hash tampering, idle expiry, retention pruning, byte-cap
+    eviction, and temporary-file cleanup.
+  - MCP tests cover below-cap projection passthrough, complete-result byte
+    accounting, oversized inline exclusion and retrieval, stable result codes,
+    credential and arbitrary-code guards, operation-specific safety, and
+    oversized negotiated-task completion.
+  - A subprocess MCP smoke test negotiated the official SDK, listed the result
+    resource template, called a Unity fixture through stdio, confirmed the
+    oversized payload was absent inline, and read the complete payload by URI.
+  - `gofmt -l .`, `go test -count=1 ./...`, `go vet ./...`, `go build ./...`,
+    schema/catalog validator tests, guide drift, and `git diff --check` pass.
+  - Race-enabled result-store, MCP-server, and command test binaries were built
+    into the repository evidence directory and executed from their package
+    working directories with shuffle enabled; all three passed.
+  - Independent PASS B first reported six concrete retention, guard, atomicity,
+    taxonomy, configuration, and test-coverage violations. The complete fixes
+    passed the full gate, and final re-review returned `APPROVE` with no open
+    M14 finding.
+- **Known limitations:**
+  - Expired results are denied and removed on their next read; otherwise idle
+    expired files are cleaned on the next spool. Explicit MCP resource reads may
+    return the full stored result because retrieval is client-requested.
+  - MCP remains experimental, default-off, stdio-only, and single-Editor. The
+    existing CLI remains the production default. Telemetry, benchmark rollout,
+    and release documentation remain M15/M16 work.
+- **Rollback procedure:**
+  - Remove `internal/resultstore`, the MCP result mapper/resource registration,
+    result runtime/config fields, task-result adaptation, result tests and MCP
+    help addition; restore direct `commandResult` mapping and the prior path
+    helper; then restore this ledger to M13 and run `go test -count=1 ./...`.
+- **Rule-document impact:**
+  - MCP command help now documents the inline limit and resource behavior. This
+    ledger records the completed M14 contract. Connector code/version, generated
+    agent guides, public README files, release metadata, and install behavior are
+    unchanged.
+- **Next prerequisite:** M15 may start only under a separate instruction after
+  re-reading this ledger and confirming the M14 PASS gate. Do not infer
   authorization to begin it from this entry.

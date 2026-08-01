@@ -180,7 +180,7 @@ func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvoc
 			return nil, fmt.Errorf("create durable MCP task: %w", createErr)
 		}
 		if runtime.taskMode && supportsTasks(invocation.request) {
-			result := commandResult(response)
+			result := boundedCommandResult(runtime, invocation, response)
 			result.Meta = mcp.Meta{taskMarkerMeta: task.ID}
 			return result, nil
 		}
@@ -197,7 +197,7 @@ func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvoc
 			return nil, err
 		}
 	}
-	return commandResult(response), nil
+	return boundedCommandResult(runtime, invocation, response), nil
 }
 
 func decodeToolArguments(request *mcp.CallToolRequest) (map[string]any, *nativeToolError) {

@@ -63,7 +63,7 @@ func registerTaskBridge(server *mcp.Server, runtime nativeRuntime) error {
 		if err != nil {
 			return nil, taskMethodError(err)
 		}
-		return detailedTaskResult(task)
+		return detailedTaskResult(runtime, task)
 	}); err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func createTaskResult(task *taskbridge.Task) *taskResult {
 	}
 }
 
-func detailedTaskResult(task *taskbridge.Task) (*taskResult, error) {
+func detailedTaskResult(runtime nativeRuntime, task *taskbridge.Task) (*taskResult, error) {
 	result := createTaskResult(task)
 	result.ResultType = "complete"
 	result.Error = task.Error
@@ -180,7 +180,9 @@ func detailedTaskResult(task *taskbridge.Task) (*taskResult, error) {
 		if err := json.Unmarshal(task.Result, &response); err != nil {
 			return nil, fmt.Errorf("decode task result: %w", err)
 		}
-		encoded, err := json.Marshal(commandResult(&response))
+		encoded, err := json.Marshal(boundedCommandResult(runtime, toolInvocation{
+			operationID: client.OperationID(task.OperationID),
+		}, &response))
 		if err != nil {
 			return nil, err
 		}

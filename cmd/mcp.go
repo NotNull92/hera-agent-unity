@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/NotNull92/hera-agent-unity/internal/mcpserver"
 )
@@ -41,6 +43,10 @@ func mcpCmd(ctx context.Context, config GlobalConfig, args []string) error {
 	if err != nil {
 		return err
 	}
+	maxInlineBytes, err := mcpMaxInlineBytes()
+	if err != nil {
+		return err
+	}
 	return mcpserver.RunStdio(ctx, mcpserver.Config{
 		Enabled:            envBool("HERA_MCP_ENABLED", false),
 		Transport:          options.Transport,
@@ -52,6 +58,19 @@ func mcpCmd(ctx context.Context, config GlobalConfig, args []string) error {
 		Project:            config.Project,
 		Port:               config.Port,
 		TimeoutMS:          config.TimeoutMillis(),
+		MaxInlineBytes:     maxInlineBytes,
 		Diagnostics:        os.Stderr,
 	})
+}
+
+func mcpMaxInlineBytes() (int, error) {
+	raw, configured := os.LookupEnv("HERA_MCP_MAX_INLINE_BYTES")
+	if !configured {
+		return mcpserver.DefaultMaxInlineBytes, nil
+	}
+	value, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || value <= 0 {
+		return 0, fmt.Errorf("HERA_MCP_MAX_INLINE_BYTES must be a positive integer")
+	}
+	return value, nil
 }

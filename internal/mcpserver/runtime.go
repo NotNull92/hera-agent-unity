@@ -3,9 +3,11 @@ package mcpserver
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 	"github.com/NotNull92/hera-agent-unity/internal/paths"
+	"github.com/NotNull92/hera-agent-unity/internal/resultstore"
 	"github.com/NotNull92/hera-agent-unity/internal/taskbridge"
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
@@ -19,17 +21,19 @@ type approvalSender interface {
 }
 
 type nativeRuntime struct {
-	instance *client.Instance
-	snapshot *toolregistry.Snapshot
-	catalogs *catalogState
-	loader   catalogLoader
-	discover instanceDiscoverer
-	sender   toolSender
-	approver approvalSender
-	timeout  int
-	mrtr     bool
-	tasks    *taskbridge.Store
-	taskMode bool
+	instance       *client.Instance
+	snapshot       *toolregistry.Snapshot
+	catalogs       *catalogState
+	loader         catalogLoader
+	discover       instanceDiscoverer
+	sender         toolSender
+	approver       approvalSender
+	timeout        int
+	mrtr           bool
+	tasks          *taskbridge.Store
+	taskMode       bool
+	results        *resultstore.Store
+	maxInlineBytes int
 }
 
 func prepareNativeRuntime(ctx context.Context, config Config) (nativeRuntime, error) {
@@ -42,17 +46,25 @@ func prepareNativeRuntime(ctx context.Context, config Config) (nativeRuntime, er
 	if err != nil {
 		return nativeRuntime{}, fmt.Errorf("load native tool catalog for MCP startup: %w", err)
 	}
+	results, err := resultstore.New(snapshot.Catalog.ProjectID, resultstore.Options{
+		Root: paths.ResultsDir(), MaxBytes: defaultResultCacheBytes, Retention: 24 * time.Hour,
+	})
+	if err != nil {
+		return nativeRuntime{}, fmt.Errorf("prepare MCP result cache: %w", err)
+	}
 	runtime := nativeRuntime{
-		instance: instance,
-		snapshot: snapshot,
-		loader:   registry,
-		discover: client.DiscoverInstanceFresh,
-		sender:   client.DefaultClient,
-		approver: client.DefaultClient,
-		timeout:  config.TimeoutMS,
-		mrtr:     config.MRTR,
-		tasks:    taskbridge.New(paths.StatusDir()),
-		taskMode: instanceHasFeature(instance, client.FeatureTaskBridgeV1),
+		instance:       instance,
+		snapshot:       snapshot,
+		loader:         registry,
+		discover:       client.DiscoverInstanceFresh,
+		sender:         client.DefaultClient,
+		approver:       client.DefaultClient,
+		timeout:        config.TimeoutMS,
+		mrtr:           config.MRTR,
+		tasks:          taskbridge.New(paths.StatusDir()),
+		taskMode:       instanceHasFeature(instance, client.FeatureTaskBridgeV1),
+		results:        results,
+		maxInlineBytes: config.maxInlineBytes(),
 	}
 	if err := validateRuntime(config, runtime); err != nil {
 		return nativeRuntime{}, err

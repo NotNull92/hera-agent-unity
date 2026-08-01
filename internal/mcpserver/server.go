@@ -41,6 +41,7 @@ func runPrepared(ctx context.Context, config Config, transport mcp.Transport, ru
 	if err := registerTaskBridge(server, runtime); err != nil {
 		return fmt.Errorf("register MCP task bridge: %w", err)
 	}
+	registerResultResources(server, runtime.results)
 	if runtime.loader != nil && runtime.discover != nil {
 		observerContext, cancelObserver := context.WithCancel(ctx)
 		observerDone := make(chan struct{})
