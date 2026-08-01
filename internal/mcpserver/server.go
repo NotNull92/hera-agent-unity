@@ -30,12 +30,33 @@ func runPrepared(ctx context.Context, config Config, transport mcp.Transport, ru
 	if transport == nil {
 		return fmt.Errorf("MCP transport is required")
 	}
+	if runtime.catalogs == nil {
+		runtime.catalogs = newCatalogState(runtime)
+	}
 	server := newServerWithTasks(config, runtime.tasks != nil && runtime.taskMode)
+	server.AddReceivingMiddleware(catalogConsistencyMiddleware(runtime.catalogs))
 	if err := registerTools(server, config, runtime); err != nil {
 		return fmt.Errorf("register MCP exposure %q profile %q: %w", config.exposure(), config.effectiveProfile(), err)
 	}
 	if err := registerTaskBridge(server, runtime); err != nil {
 		return fmt.Errorf("register MCP task bridge: %w", err)
+	}
+	if runtime.loader != nil && runtime.discover != nil {
+		observerContext, cancelObserver := context.WithCancel(ctx)
+		observerDone := make(chan struct{})
+		refresher := &catalogRefresher{server: server, config: config, state: runtime.catalogs, loader: runtime.loader, discover: runtime.discover}
+		go func() {
+			defer close(observerDone)
+			refresher.observe(observerContext, func(format string, args ...any) {
+				if config.Diagnostics != nil {
+					_, _ = fmt.Fprintf(config.Diagnostics, format, args...)
+				}
+			})
+		}()
+		defer func() {
+			cancelObserver()
+			<-observerDone
+		}()
 	}
 	return runServer(ctx, server, transport)
 }

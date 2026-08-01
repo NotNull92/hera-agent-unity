@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -31,13 +32,45 @@ type compactCallInput struct {
 }
 
 func registerCompactTools(server *mcp.Server, config Config, runtime nativeRuntime) error {
-	if runtime.instance == nil || runtime.snapshot == nil || runtime.snapshot.Catalog == nil || runtime.sender == nil {
-		return fmt.Errorf("compact MCP runtime is incomplete")
+	current, err := runtime.acquire()
+	if err != nil {
+		return err
 	}
-	server.AddTool(compactSearchTool(), compactSearchHandler(runtime.snapshot.Catalog, config.AllowArbitraryCode))
-	server.AddTool(compactDescribeTool(), compactDescribeHandler(runtime.snapshot.Catalog, config.AllowArbitraryCode))
+	if err := validateRuntime(config, current); err != nil {
+		return err
+	}
+	server.AddTool(compactSearchTool(), compactSearchRuntimeHandler(runtime, config.AllowArbitraryCode))
+	server.AddTool(compactDescribeTool(), compactDescribeRuntimeHandler(runtime, config.AllowArbitraryCode))
 	server.AddTool(compactCallTool(), compactCallHandler(runtime, config.AllowArbitraryCode))
 	return nil
+}
+
+func compactSearchRuntimeHandler(runtime nativeRuntime, allowArbitraryCode bool) mcp.ToolHandler {
+	return func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		current, result, err := acquireCatalogRuntime(runtime)
+		if result != nil || err != nil {
+			return result, err
+		}
+		return compactSearchHandler(current.snapshot.Catalog, allowArbitraryCode)(ctx, request)
+	}
+}
+
+func compactDescribeRuntimeHandler(runtime nativeRuntime, allowArbitraryCode bool) mcp.ToolHandler {
+	return func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		current, result, err := acquireCatalogRuntime(runtime)
+		if result != nil || err != nil {
+			return result, err
+		}
+		return compactDescribeHandler(current.snapshot.Catalog, allowArbitraryCode)(ctx, request)
+	}
+}
+
+func acquireCatalogRuntime(runtime nativeRuntime) (nativeRuntime, *mcp.CallToolResult, error) {
+	current, err := runtime.acquire()
+	if errors.Is(err, errCatalogStale) {
+		return nativeRuntime{}, errorResult("CATALOG_STALE", err.Error(), nil), nil
+	}
+	return current, nil, err
 }
 
 func compactSearchTool() *mcp.Tool {
@@ -112,11 +145,15 @@ func compactDescribeHandler(catalog *toolregistry.Catalog, allowArbitraryCode bo
 
 func compactCallHandler(runtime nativeRuntime, allowArbitraryCode bool) mcp.ToolHandler {
 	return func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		current, result, err := acquireCatalogRuntime(runtime)
+		if result != nil || err != nil {
+			return result, err
+		}
 		input, inputErr := decodeCompactInput[compactCallInput](request)
 		if inputErr != nil {
 			return errorResult(inputErr.code, inputErr.message, inputErr.data), nil
 		}
-		tool, ok := findCatalogTool(runtime.snapshot.Catalog, input.Name)
+		tool, ok := findCatalogTool(current.snapshot.Catalog, input.Name)
 		if !ok {
 			return errorResult("TOOL_NOT_FOUND", fmt.Sprintf("tool %q was not found", input.Name), nil), nil
 		}
@@ -135,7 +172,7 @@ func compactCallHandler(runtime nativeRuntime, allowArbitraryCode bool) mcp.Tool
 				return errorResult("INVALID_OPERATION_ID", err.Error(), nil), nil
 			}
 		}
-		return invokeTool(ctx, runtime, toolInvocation{tool: tool, params: params, operationID: operationID, request: request})
+		return invokeTool(ctx, current, toolInvocation{tool: tool, params: params, operationID: operationID, request: request})
 	}
 }
 

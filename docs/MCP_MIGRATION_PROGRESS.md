@@ -1073,3 +1073,86 @@ benchmark gates pass.
     describe M12. Generated agent guides remain unchanged and pass drift checks.
 - **Next prerequisite:** M13 may start only under a separate instruction after
   re-reading this ledger and confirming the M12 PASS gate.
+
+## M13 Catalog invalidation and list-changed
+
+- **Status:** PASS
+- **Commit baseline:** `7b93e49`
+- **Date:** 2026-08-01
+- **Implemented scope:**
+  - Added a context-owned fresh-heartbeat observer that detects Unity domain
+    epoch changes, refetches through `toolregistry.Registry.Load`, and publishes
+    the matched Instance, catalog, and compiled schemas as one immutable runtime
+    snapshot.
+  - New calls return `CATALOG_STALE` while discovery or validation is pending;
+    removed native tools return `TOOL_NOT_FOUND`. Calls already in flight retain
+    their originally acquired instance, tool contract, schema cache, and catalog
+    hash through completion.
+  - Profile and Full exposure reconcile only added, removed, or semantically
+    changed public MCP definitions. Same-hash, out-of-profile, and Compact
+    catalog changes avoid spurious `tools/list_changed`; Compact keeps its fixed
+    three-tool surface while search, describe, and call acquire the current
+    snapshot.
+  - Serialized `tools/list` across SDK registry reconciliation with a read/write
+    publication gate, so clients observe a complete old or complete new tool
+    registry rather than an intermediate delta.
+  - Split task adaptation, runtime preparation, and MCP contract projection out
+    of `native_tools.go`; every changed Go file remains below 250 pure LOC.
+- **Review corrections:**
+  - PASS B found that SDK `AddTool`/`RemoveTools` mutations could notify before
+    runtime/schema publication or expose a partial list. Added a catalog-ready
+    gate, then closed its initial TOCTOU gap by holding a registry read lock
+    through the actual list handler while refresh holds the write lock across
+    SDK reconciliation and runtime replacement.
+  - Marked the catalog stale when fresh discovery temporarily loses the active
+    Editor during reload, and clear that state only after same-epoch recovery or
+    a validated new snapshot.
+  - Added failed-load retry, list/refresh interleaving, removed-tool zero-send,
+    Compact refresh, and old-then-new catalog-hash assertions to the required
+    invalidation regressions.
+- **Evidence completed:**
+  - Required tests `TestDomainEpochInvalidatesCatalog`,
+    `TestSameCatalogHashAvoidsSpuriousChange`,
+    `TestListChangedOnCustomToolAdd`,
+    `TestRemovedToolReturnsCatalogStaleOrUnknownTool`, and
+    `TestInFlightCallUsesOriginalSnapshot` pass. The complete focused group,
+    including Compact refresh, passed 50 consecutive runs.
+  - `go test -count=1 ./...`, `go vet ./...`, targeted MCP tests, formatting,
+    and `git diff --check` pass.
+  - Race-enabled MCP, tool-registry, and schema test binaries were built into
+    the repository evidence directory and executed from their package working
+    directories with shuffle enabled; all three passed. This avoids the host's
+    temporary-directory executable access restriction without weakening race
+    instrumentation.
+  - A freshly built MCP process remained connected to Inventoria while a
+    disposable strict `m13_live_probe` custom Editor tool was added and removed.
+    The same client received both list-changed notifications, listed the probe
+    only after addition, invoked it successfully with structured data, and
+    omitted it after removal.
+  - Inventoria temporarily resolved the repository-local Connector for that
+    live scenario, then restored its Git package manifest and lock byte-clean.
+    The disposable asset and metadata were removed, the Editor returned to
+    `ready`, the Unity console contained zero errors, and the Inventoria
+    worktree was clean.
+  - Independent PASS B re-review approved the final registry read/write gate,
+    lock ordering, stale recheck, interleaving test, and complete Go gate.
+- **Known limitations:**
+  - Catalog observation uses a one-second heartbeat interval; during reload the
+    server may emit transient discovery diagnostics while calls remain stale.
+  - MCP remains experimental, default-off, stdio-only, and single-Editor. The
+    existing CLI remains the production default.
+  - Large-result resources, telemetry, release documentation, and benchmark
+    rollout remain M14/M15/M16 work.
+- **Rollback procedure:**
+  - Remove `catalog_refresh.go`, `runtime.go`, the M13 tests, and the extracted
+    contract helper; restore startup-captured native and Compact handlers,
+    startup-only runtime preparation, the pre-M13 server lifecycle, and the
+    original task helper location; then restore this ledger to M12 and run
+    `go test -count=1 ./...`.
+- **Rule-document impact:**
+  - This ledger records the completed M13 behavior. Connector contracts,
+    versions, generated agent guides, public README, and release docs are
+    unchanged.
+- **Next prerequisite:** M14 may start only under a separate instruction after
+  re-reading this ledger and confirming the M13 PASS gate. Do not infer
+  authorization to begin it from this entry.

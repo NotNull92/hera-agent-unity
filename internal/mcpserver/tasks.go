@@ -102,6 +102,43 @@ func supportsTasks(request *mcp.CallToolRequest) bool {
 	return ok
 }
 
+func taskStart(toolName string, params map[string]any, response *client.CommandResponse, operationID string) (taskbridge.Start, bool, error) {
+	if response == nil || !response.Success || response.Message != "running" {
+		return taskbridge.Start{}, false, nil
+	}
+	kind := taskbridge.KindTest
+	action := ""
+	switch toolName {
+	case "run_tests":
+	case "manage_packages":
+		action, _ = params["action"].(string)
+		if action != "add" && action != "remove" && action != "embed" {
+			return taskbridge.Start{}, false, nil
+		}
+		kind = taskbridge.KindPackage
+	default:
+		return taskbridge.Start{}, false, nil
+	}
+	var data struct {
+		Port  int    `json:"port"`
+		RunID string `json:"run_id"`
+		JobID string `json:"job_id"`
+	}
+	if err := json.Unmarshal(response.Data, &data); err != nil {
+		return taskbridge.Start{}, false, fmt.Errorf("decode asynchronous %s response: %w", toolName, err)
+	}
+	if kind == taskbridge.KindTest {
+		if data.Port == 0 || data.RunID == "" {
+			return taskbridge.Start{}, false, fmt.Errorf("run_tests returned running without durable run metadata")
+		}
+		return taskbridge.Start{Kind: taskbridge.KindTest, Port: data.Port, UnderlyingID: data.RunID, OperationID: operationID}, true, nil
+	}
+	if data.Port == 0 || data.JobID == "" {
+		return taskbridge.Start{}, false, fmt.Errorf("manage_packages returned running without durable job metadata")
+	}
+	return taskbridge.Start{Kind: taskbridge.KindPackage, Port: data.Port, UnderlyingID: data.JobID, OperationID: operationID, Action: action}, true, nil
+}
+
 func taskResultMiddleware(store *taskbridge.Store) mcp.Middleware {
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, request mcp.Request) (mcp.Result, error) {

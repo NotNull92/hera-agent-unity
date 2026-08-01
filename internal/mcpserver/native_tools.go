@@ -4,38 +4,18 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
-	"github.com/NotNull92/hera-agent-unity/internal/paths"
 	"github.com/NotNull92/hera-agent-unity/internal/policy"
 	"github.com/NotNull92/hera-agent-unity/internal/poll"
 	"github.com/NotNull92/hera-agent-unity/internal/taskbridge"
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
-
-type toolSender interface {
-	SendWithOptions(context.Context, *client.Instance, string, any, int, client.SendOptions) (*client.CommandResponse, error)
-}
-
-type approvalSender interface {
-	PreflightApproval(context.Context, *client.Instance, client.ApprovalPreflightRequest) (*client.ApprovalPreflight, error)
-}
-
-type nativeRuntime struct {
-	instance *client.Instance
-	snapshot *toolregistry.Snapshot
-	sender   toolSender
-	approver approvalSender
-	timeout  int
-	mrtr     bool
-	tasks    *taskbridge.Store
-	taskMode bool
-}
 
 type toolInvocation struct {
 	tool        toolregistry.Tool
@@ -48,31 +28,6 @@ func isSeedProfile(profile string) bool {
 	return toolregistry.IsSeedProfile(profile)
 }
 
-func prepareNativeRuntime(ctx context.Context, config Config) (nativeRuntime, error) {
-	instance, err := client.DiscoverInstanceFresh(config.Project, config.Port)
-	if err != nil {
-		return nativeRuntime{}, fmt.Errorf("discover Unity for MCP startup: %w", err)
-	}
-	registry := toolregistry.NewRegistry(toolregistry.RegistryOptions{})
-	snapshot, err := registry.Load(ctx, instance)
-	if err != nil {
-		return nativeRuntime{}, fmt.Errorf("load native tool catalog for MCP startup: %w", err)
-	}
-	if config.exposure() != ExposureCompact && (snapshot.Exposure != toolregistry.ExposureProfile || snapshot.Schemas == nil) {
-		return nativeRuntime{}, fmt.Errorf("native strict tool catalog is required for MCP profile exposure")
-	}
-	return nativeRuntime{
-		instance: instance,
-		snapshot: snapshot,
-		sender:   client.DefaultClient,
-		approver: client.DefaultClient,
-		timeout:  config.TimeoutMS,
-		mrtr:     config.MRTR,
-		tasks:    taskbridge.New(paths.StatusDir()),
-		taskMode: instanceHasFeature(instance, client.FeatureTaskBridgeV1),
-	}, nil
-}
-
 func registerTools(server *mcp.Server, config Config, runtime nativeRuntime) error {
 	if config.exposure() == ExposureCompact {
 		return registerCompactTools(server, config, runtime)
@@ -81,20 +36,24 @@ func registerTools(server *mcp.Server, config Config, runtime nativeRuntime) err
 }
 
 func registerNativeTools(server *mcp.Server, config Config, runtime nativeRuntime) error {
-	if runtime.instance == nil || runtime.snapshot == nil || runtime.snapshot.Catalog == nil || runtime.snapshot.Schemas == nil || runtime.sender == nil {
-		return fmt.Errorf("native MCP runtime is incomplete")
-	}
-	profile := config.effectiveProfile()
-	tools, err := runtime.snapshot.Catalog.ToolsForProfile(profile)
+	current, err := runtime.acquire()
 	if err != nil {
 		return err
 	}
-	if profileMayMutate(tools) && !instanceHasFeature(runtime.instance, client.FeatureOperationLedgerV1) {
+	if err := validateRuntime(config, current); err != nil {
+		return err
+	}
+	profile := config.effectiveProfile()
+	tools, err := current.snapshot.Catalog.ToolsForProfile(profile)
+	if err != nil {
+		return err
+	}
+	if profileMayMutate(tools) && !instanceHasFeature(current.instance, client.FeatureOperationLedgerV1) {
 		return fmt.Errorf("profile %q contains mutations but Unity does not advertise %s", profile, client.FeatureOperationLedgerV1)
 	}
 	for index := range tools {
 		tool := tools[index]
-		server.AddTool(nativeMCPTool(tool), nativeToolHandler(runtime, tool))
+		server.AddTool(nativeMCPTool(tool), nativeToolHandler(runtime, tool.Name, profile))
 	}
 	return nil
 }
@@ -117,25 +76,38 @@ func instanceHasFeature(instance *client.Instance, feature string) bool {
 	return false
 }
 
-func nativeMCPTool(tool toolregistry.Tool) *mcp.Tool {
-	return &mcp.Tool{
-		Name:         tool.Name,
-		Title:        tool.Title,
-		Description:  tool.Description,
-		InputSchema:  json.RawMessage(tool.InputSchema),
-		OutputSchema: envelopeSchema(tool.OutputSchema),
-		Annotations:  nativeAnnotations(tool),
-	}
-}
-
-func nativeToolHandler(runtime nativeRuntime, tool toolregistry.Tool) mcp.ToolHandler {
+func nativeToolHandler(runtime nativeRuntime, toolName, profile string) mcp.ToolHandler {
 	return func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		current, err := runtime.acquire()
+		if errors.Is(err, errCatalogStale) {
+			return errorResult("CATALOG_STALE", err.Error(), nil), nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		currentTool, ok := findProfileTool(current.snapshot.Catalog, toolName, profile)
+		if !ok {
+			return errorResult("TOOL_NOT_FOUND", fmt.Sprintf("tool %q was not found", toolName), nil), nil
+		}
 		params, inputErr := decodeToolArguments(request)
 		if inputErr != nil {
 			return errorResult("INVALID_ARGUMENT", inputErr.message, inputErr.data), nil
 		}
-		return invokeTool(ctx, runtime, toolInvocation{tool: tool, params: params, request: request})
+		return invokeTool(ctx, current, toolInvocation{tool: currentTool, params: params, request: request})
 	}
+}
+
+func findProfileTool(catalog *toolregistry.Catalog, name, profile string) (toolregistry.Tool, bool) {
+	tools, err := catalog.ToolsForProfile(profile)
+	if err != nil {
+		return toolregistry.Tool{}, false
+	}
+	for _, tool := range tools {
+		if tool.Name == name {
+			return tool, true
+		}
+	}
+	return toolregistry.Tool{}, false
 }
 
 func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvocation) (*mcp.CallToolResult, error) {
@@ -228,43 +200,6 @@ func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvoc
 	return commandResult(response), nil
 }
 
-func taskStart(toolName string, params map[string]any, response *client.CommandResponse, operationID string) (taskbridge.Start, bool, error) {
-	if response == nil || !response.Success || response.Message != "running" {
-		return taskbridge.Start{}, false, nil
-	}
-	kind := taskbridge.KindTest
-	action := ""
-	switch toolName {
-	case "run_tests":
-	case "manage_packages":
-		action, _ = params["action"].(string)
-		if action != "add" && action != "remove" && action != "embed" {
-			return taskbridge.Start{}, false, nil
-		}
-		kind = taskbridge.KindPackage
-	default:
-		return taskbridge.Start{}, false, nil
-	}
-	var data struct {
-		Port  int    `json:"port"`
-		RunID string `json:"run_id"`
-		JobID string `json:"job_id"`
-	}
-	if err := json.Unmarshal(response.Data, &data); err != nil {
-		return taskbridge.Start{}, false, fmt.Errorf("decode asynchronous %s response: %w", toolName, err)
-	}
-	if kind == taskbridge.KindTest {
-		if data.Port == 0 || data.RunID == "" {
-			return taskbridge.Start{}, false, fmt.Errorf("run_tests returned running without durable run metadata")
-		}
-		return taskbridge.Start{Kind: taskbridge.KindTest, Port: data.Port, UnderlyingID: data.RunID, OperationID: operationID}, true, nil
-	}
-	if data.Port == 0 || data.JobID == "" {
-		return taskbridge.Start{}, false, fmt.Errorf("manage_packages returned running without durable job metadata")
-	}
-	return taskbridge.Start{Kind: taskbridge.KindPackage, Port: data.Port, UnderlyingID: data.JobID, OperationID: operationID, Action: action}, true, nil
-}
-
 func decodeToolArguments(request *mcp.CallToolRequest) (map[string]any, *nativeToolError) {
 	if request == nil || request.Params == nil {
 		return nil, &nativeToolError{code: "INVALID_ARGUMENT", message: "tool arguments are required"}
@@ -283,58 +218,4 @@ func decodeToolArguments(request *mcp.CallToolRequest) (map[string]any, *nativeT
 		return nil, &nativeToolError{code: "INVALID_ARGUMENT", message: "tool arguments contain trailing JSON"}
 	}
 	return params, nil
-}
-
-func nativeAnnotations(tool toolregistry.Tool) *mcp.ToolAnnotations {
-	safeties := flattenSafety(tool.Safety)
-	for _, action := range tool.Actions {
-		safeties = append(safeties, flattenSafety(action.Safety)...)
-	}
-	readOnly, idempotent := true, true
-	destructive, openWorld := false, false
-	for _, safety := range safeties {
-		readOnly = readOnly && safety.ReadOnly
-		idempotent = idempotent && safety.Idempotent
-		destructive = destructive || safety.Destructive
-		risk := strings.ToLower(safety.RiskClass)
-		openWorld = openWorld || strings.Contains(risk, "package") || strings.Contains(risk, "external") || strings.Contains(risk, "network") || strings.Contains(risk, "arbitrary")
-	}
-	return &mcp.ToolAnnotations{
-		Title:           tool.Title,
-		ReadOnlyHint:    readOnly,
-		DestructiveHint: boolPointer(destructive),
-		IdempotentHint:  idempotent,
-		OpenWorldHint:   boolPointer(openWorld),
-	}
-}
-
-func flattenSafety(safety toolregistry.Safety) []toolregistry.Safety {
-	flattened := []toolregistry.Safety{safety}
-	for _, rule := range safety.Rules {
-		flattened = append(flattened, flattenSafety(rule.Safety)...)
-	}
-	return flattened
-}
-
-func boolPointer(value bool) *bool { return &value }
-
-func envelopeSchema(dataSchema json.RawMessage) map[string]any {
-	var data any
-	if json.Unmarshal(dataSchema, &data) != nil {
-		data = map[string]any{}
-	}
-	return map[string]any{
-		"type":                 "object",
-		"additionalProperties": false,
-		"required":             []string{"success", "message"},
-		"properties": map[string]any{
-			"success":     map[string]any{"type": "boolean"},
-			"message":     map[string]any{"type": "string"},
-			"code":        map[string]any{"type": "string"},
-			"suggestions": map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
-			"agent_hint":  map[string]any{"type": "string"},
-			"data":        data,
-			"timings":     map[string]any{"type": "object", "additionalProperties": map[string]any{"type": "integer"}},
-		},
-	}
 }
