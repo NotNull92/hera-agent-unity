@@ -22,7 +22,7 @@ benchmark gates pass.
 | M10 Compact and Full exposure | PASS |
 | M11 Approval and MRTR | PASS |
 | M12 Tasks bridge | PASS |
-| M13 Catalog invalidation and list-changed | PENDING |
+| M13 Catalog invalidation and list-changed | PASS |
 | M14 Large result resources | PENDING |
 | M15 Telemetry and benchmark harness | PENDING |
 | M16 Documentation, compatibility, and release hardening | PENDING |
