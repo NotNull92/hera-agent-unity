@@ -18,7 +18,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 **기존 Go CLI와 localhost HTTP Unity Connector가 실행 코어라는 결정은 유지한다** 🔒. `HttpServer`, `CommandRouter`, `ToolDiscovery`, `Heartbeat`, Unity main-thread queue, 파일버스 복구 경로를 교체하거나 Unity Connector 안에 MCP를 직접 구현하지 않는다.
 
-**CLI + MCP adapter migration은 사용자 승인 아래 진행 중이다** 🔒. 기존 바이너리 안에 선택적 Go stdio MCP adapter를 같은 실행 코어 앞에 추가할 수 있다. 이 adapter는 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 최종적으로 하나의 정규화된 tool contract registry를 공유한다. M8에서 default-off stdio skeleton을, M9에서 strict native Profile tool bridge를, M10에서 Compact discovery/call과 opt-in Full-safe/Advanced exposure를, M11에서 Connector 재검증을 포함한 승인/MRTR를 구현했다. 전체 기능은 아직 구현 완료 상태가 아니며, `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`의 M17 완료·benchmark gate가 통과하기 전까지 CLI가 production default다.
+**CLI + MCP adapter migration은 사용자 승인 아래 진행 중이다** 🔒. 기존 바이너리 안의 선택적 Go stdio MCP adapter는 같은 실행 코어 앞에 있으며 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 하나의 정규화된 tool contract registry를 공유한다. M0부터 M16까지 catalog, schema, typed CLI, Profile/Compact/Full, approval, operation ledger, Tasks, invalidation, large-result resources, telemetry, benchmark, 공개 문서와 compatibility hardening이 PASS다. `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`의 M17 완료·benchmark gate가 통과하기 전까지 CLI가 production default다.
 
 이유:
 - 런타임 의존성 0개 — 사용자는 바이너리 하나 + UPM 패키지 하나만 설치
@@ -30,7 +30,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 - **Authoritative implementation specification:** `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - **Milestone evidence and rollback ledger:** `docs/MCP_MIGRATION_PROGRESS.md`
-- **현재 상태:** M0 rule/baseline부터 M11 Approval/MRTR까지 PASS다. `call`은 TTY 승인과 비대화형 `--approve` 재호출을 지원한다. `mcp`는 `HERA_MCP_ENABLED=1`일 때만 stdio로 시작하며 Profile, Compact 3-tool fallback, Full-safe, 명시적 arbitrary-code permission이 필요한 Advanced, opt-in MRTR 및 metadata fallback을 지원한다. 승인 필요 작업은 Connector가 mutation과 ledger `running` 전에 재검증한다. CLI가 계속 production default다.
+- **현재 상태:** M0부터 M16까지 PASS다. current `main` source의 unreleased `mcp`는 `HERA_MCP_ENABLED=1`일 때만 stdio로 시작하며 Profile, Compact 3-tool fallback, Full-safe, 명시적 arbitrary-code permission이 필요한 Advanced, 승인/MRTR, operation ledger, Tasks와 blocking fallback, large-result resource를 지원한다. 오래된 Connector는 Compact-only로 보수적으로 저하되고 안전 feature 누락은 fail-closed다. CLI가 계속 production default다.
 - **보존 경계:** 기존 Go CLI, localhost HTTP Connector, single-editor model, main-thread serialization, heartbeat discovery, package/test file bus, CLI/Connector 독립 버전은 계속 잠금 상태다.
 
 ### Rule-document hierarchy

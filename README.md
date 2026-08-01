@@ -13,7 +13,7 @@
 
 **Low-token Unity Editor control for AI coding agents.**
 
-<sub>Let Codex, Claude, Cursor, Copilot, and AntiGravity inspect and change your live Unity project — no MCP setup, no Python server.</sub>
+<sub>Let Codex, Claude, Cursor, Copilot, and AntiGravity inspect and change your live Unity project — no MCP setup for the default CLI path, no Python server.</sub>
 
 <br>
 
@@ -72,7 +72,10 @@ hera-agent-unity exec "return Application.unityVersion;"
 hera-agent-unity editor play --wait
 ```
 
-No Python server. No generated MCP config. No special agent plugin. If an agent can run a shell command, it can use Hera.
+No Python server. The production-default CLI path needs no MCP config or special
+agent plugin. Current `main` source also contains an experimental, default-off
+stdio MCP adapter for MCP clients; it is not in the latest published CLI
+release. See [docs/MCP.md](docs/MCP.md) for the source-build preview.
 
 ---
 
@@ -649,7 +652,11 @@ Architecture details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ### Is this MCP?
 
-No. It is a normal CLI. That is why it works with Codex, Claude Code, Cursor, and any agent that can run shell commands.
+The production default is a normal CLI, so any agent that can run shell commands
+can use Hera. Current `main` source also contains an experimental, default-off,
+stdio-only MCP adapter. It reuses the CLI and localhost Connector execution core,
+is not in the latest published CLI release, and is not the default. See the
+[source-build MCP preview](docs/MCP.md).
 
 ### Does it need Python?
 
@@ -657,8 +664,10 @@ No.
 
 ### Which Unity Editor does it talk to?
 
-Hera supports one active Unity Editor per machine. Use `--project` or `--port`
-only when you need to make that Editor's recorded heartbeat explicit.
+Each CLI invocation or MCP process targets one Unity Editor. If several Editor
+heartbeats are present, use `--project` or `--port` to select one explicitly;
+without a selector Hera prefers a project matching the current working
+directory, then the most recent live heartbeat.
 
 ### What should I do when it cannot connect?
 
@@ -673,6 +682,7 @@ Also check that the Unity package is installed and Unity has finished compiling.
 ### Where are the detailed docs?
 
 - [docs/COMMANDS.md](docs/COMMANDS.md)
+- [docs/MCP.md](docs/MCP.md)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/CSHARP_CONNECTOR.md](docs/CSHARP_CONNECTOR.md)
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)

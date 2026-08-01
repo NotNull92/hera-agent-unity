@@ -1329,3 +1329,77 @@ benchmark gates pass.
 - **Next prerequisite:** M16 may start only under a separate instruction after
   re-reading this ledger and confirming the M15 PASS gate. Do not infer
   authorization to begin it from this entry.
+
+## M16 Documentation, compatibility, and release hardening
+
+- **Status:** PASS
+- **Commit baseline:** `ff5717b`
+- **Date:** 2026-08-01
+- **Implemented scope:**
+  - Updated the English and Korean READMEs, documentation index, architecture,
+    Go CLI and Connector internals, command reference, MCP guide,
+    troubleshooting, changelog, canonical agent rules, generated guides,
+    canonical development rules, and AntiGravity example to describe the
+    implemented experimental MCP adapter consistently.
+  - Documented current-source installation and client child-process
+    configuration, stdio startup, Profile/Compact/Full/Advanced exposure,
+    approval and MRTR, operation IDs, negotiated Tasks and blocking fallback,
+    old-Connector degraded behavior, feature flags, stdout isolation, separate
+    CLI/Connector/Git-lock terminology, result resources, and security
+    boundaries.
+  - Kept the release boundary explicit: published CLI `v0.0.42` does not contain
+    MCP; the current `main` source preview is unreleased, default-off, and
+    stdio-only. The normal CLI remains the production default and M17 owns any
+    later default decision.
+  - Documented one selected Editor per invocation/process while preserving the
+    actual selector order: port, project, current-working-directory match, then
+    the most recent live heartbeat.
+  - Closed pre-existing release-gate lint failures in the M15 benchmark and MCP
+    catalog code. The fixes preserve session-close errors, prevent Variant B
+    execution errors from being shadowed, use a clear variant switch, and
+    normalize internal error strings.
+- **Review corrections:**
+  - PASS B rejected the initial docs because normal installation still fetched
+    a release without MCP, a shipped AntiGravity example still called MCP
+    unavailable, canonical status stopped at M15, and result-cache persistence
+    was underspecified. All four were corrected.
+  - Added the source-build preview boundary, corrected the stale example and
+    M16 state, and documented restricted storage under
+    `~/.hera-agent-unity/results/`, 24-hour retention, 64 MiB cap, and the full
+    payload returned by an explicit resource read.
+  - Final re-review required accurate multi-Editor selector wording in both
+    READMEs and the MCP guide. The corrected wording matches the live discovery
+    implementation, and the independent reviewer returned `APPROVE / CLEAR`.
+- **Evidence completed:**
+  - A temporary source-built binary passed `mcp --help`; the documented client
+    JSON shape parsed successfully; default-off rejection and targeted MCP,
+    Profile/Compact/Full, Tasks, legacy catalog, benchmark, command, schema, and
+    catalog-validator tests pass.
+  - `gofumpt -l .`, `go vet ./...`, `go build ./...`, `golangci-lint run ./...`,
+    `go test -count=1 ./...`, `go run ./tools/sync-agent-guides --check`,
+    schema/catalog tests, stale-claim searches, and `git diff --check` pass.
+  - No current document claims MCP is the default, no machine-specific path or
+    package-version change was introduced, and all new executable examples pass
+    their smoke checks.
+  - Independent PASS B completed three read-only review rounds and ended with
+    `APPROVE / CLEAR` with no open M16 finding.
+- **Known limitations:**
+  - MCP remains an unreleased current-source preview, default-off, stdio-only,
+    and one selected Editor per process. Users of published CLI `v0.0.42` must
+    build current source to exercise it.
+  - Explicit result-resource reads return complete cached project data. The
+    local cache is permission-restricted and bounded, but clients must still
+    treat those contents as sensitive.
+  - M16 records no default-decision evidence. M17 alone may evaluate whether
+    MCP remains optional or becomes primary.
+- **Rollback procedure:**
+  - Revert the M16 public docs, canonical rule additions and regenerated guides,
+    AntiGravity example, changelog, three isolated lint-hardening edits, and this
+    ledger entry; then run guide sync, lint, and `go test -count=1 ./...`.
+- **Rule-document impact:**
+  - `AGENTS.md` now carries the experimental/unreleased MCP rule and environment
+    settings; generated guides are synchronized from it. `CLAUDE.md` records
+    M0-M16 PASS while preserving the CLI-default and M17 decision locks.
+- **Next prerequisite:** M17 may start only under a separate instruction after
+  re-reading this ledger and confirming the M16 PASS gate. Do not infer
+  authorization to begin it from this entry.

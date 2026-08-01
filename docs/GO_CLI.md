@@ -54,6 +54,14 @@ internal/
 
 ## Execution Flow (root.go + dispatch.go)
 
+The experimental `mcp` command is a separate stdio host path. It discovers the
+same heartbeat, loads the Connector-owned normalized catalog, and invokes the
+same `internal/client` HTTP execution core; it does not pass through terminal
+response formatting. `internal/mcpserver` owns protocol stdout, profiles,
+Compact search/describe/call, approval, Tasks negotiation, and large-result
+resources. The command is disabled unless `HERA_MCP_ENABLED=1`; see
+[`MCP.md`](MCP.md).
+
 ```go
 // main.go → cmd.Execute()
 func Execute(ctx context.Context) error {

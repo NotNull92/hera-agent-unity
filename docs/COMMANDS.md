@@ -20,6 +20,25 @@ while `--timeout 120` means 120 milliseconds.
 
 ---
 
+## mcp (experimental)
+
+Current `main` source, but not published CLI `v0.0.42`, contains the default-off
+stdio MCP adapter. After building the source as described in [`MCP.md`](MCP.md),
+start it with:
+
+```bash
+HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
+HERA_MCP_ENABLED=1 hera-agent-unity mcp --exposure compact
+```
+
+Profile is the normal MCP exposure, Compact registers only
+`tool_search`/`tool_describe`/`tool_call`, and Full is explicit opt-in. The
+`advanced` profile additionally requires `--allow-arbitrary-code`; every risky
+operation still needs approval. See [`MCP.md`](MCP.md) for client configuration,
+flags, Tasks fallback, compatibility, result resources, and security boundaries.
+
+---
+
 ## call
 
 Validate a JSON request object against the selected tool's live strict contract,
@@ -42,9 +61,9 @@ combining `--json`, `--file`, and stdin is an error.
 | `--validate-only` | Validate without invoking the target tool | `false` |
 | `--explain` | Report canonical action, profile, contract mode, and resolved safety without invoking | `false` |
 
-`--explain` reports the current safety and policy projection. In M6 the policy
-field is descriptive (`enforced=false`); approval and retry enforcement are not
-enabled by this command.
+`--explain` reports the current safety and policy projection without dispatching
+the command. Normal `call` execution enforces approval and operation-ledger
+requirements before risky work reaches the Connector.
 
 ---
 

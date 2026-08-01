@@ -162,3 +162,17 @@ heartbeat is older than 3 seconds. Causes:
 
 The CLI tolerates short stalls (`waitForAlive` polls until a new heartbeat
 appears). If the staleness persists, restart Unity.
+
+---
+
+## MCP client reports invalid JSON or protocol noise
+
+The experimental MCP adapter reserves stdout exclusively for MCP protocol
+frames. Configure the client to launch `hera-agent-unity` directly, remove shell
+startup banners or wrappers that print status, and never merge stderr with
+stdout using `2>&1`. Hera diagnostics are intentionally written to stderr.
+
+If startup says MCP is disabled, put `HERA_MCP_ENABLED=1` in the client child
+process environment. If Profile or Full requires a strict catalog, update the
+Connector or use `--exposure compact` for conservative legacy discovery. The
+full compatibility and approval matrix is in [`MCP.md`](MCP.md).

@@ -183,6 +183,14 @@ cannot capture Unity screenshot state and no native OS/window input backend is
 available, record the physical-click criterion as **BLOCKED** even when
 EventSystem input QA passes.
 
+**[Rule 12]** Current `main` source contains an unreleased MCP adapter that is
+experimental, default-off, and stdio-only. The normal CLI remains the production
+default. Use `HERA_MCP_ENABLED=1 hera-agent-unity mcp` only with a source-built
+binary and intentionally configured MCP client, keep stdout free of shell
+banners and diagnostics, and use Compact exposure for older Connectors. Missing
+approval or operation-ledger features must fail closed. Full setup and
+compatibility rules are in `docs/MCP.md`.
+
 ## 1.5 Ultra Hera
 
 Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.
@@ -561,6 +569,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `asset-config set-csc <path>` / `set-dotnet <path>` | Persist a default csc / dotnet path | (no flags) |
 | `status` / `ping` | Editor state / liveness | (none) |
 | `doctor` | Self-diagnostic | `--json`, `--agent-rules` (this guide's TL;DR subset) |
+| `mcp` | Unreleased experimental default-off stdio adapter | `--profile`, `--exposure`, `--mrtr`, `--allow-arbitrary-code` |
 
 ### 5.2 Response envelope
 
@@ -600,6 +609,11 @@ Most have a `--flag` equivalent (column 2).
 | `HERA_AGENT_DEBUG=1` | `--debug` |
 | `HERA_AGENT_COMPACT_JSON=1` | `--compact-json` |
 | `HERA_AGENT_VERBOSE=1` | `--verbose` |
+| `HERA_MCP_ENABLED=1` | Enable the experimental stdio MCP adapter. |
+| `HERA_MCP_PROFILE=core` | Select the MCP Profile exposure profile. |
+| `HERA_MCP_EXPOSURE=profile` | Select `profile`, `compact`, or `full`. |
+| `HERA_MCP_MRTR=1` | Enable negotiated Form elicitation approval. |
+| `HERA_MCP_MAX_INLINE_BYTES=N` | Positive complete inline MCP result limit (default 131072). |
 | `HERA_AGENT_NARRATE=1` | `--narrate` |
 | `HERA_AGENT_NO_PATH_CHECK=1` | Silence per-command PATH-mismatch warning (useful from wrapper binaries). |
 | `GITHUB_TOKEN` | Auth token for `update` from a private release repo. |

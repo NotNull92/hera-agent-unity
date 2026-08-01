@@ -400,6 +400,14 @@ Certain operations force a temporary state to prevent the CLI from seeing premat
 
 `compileErrors` is read from `EditorUtility.scriptCompilationFailed` and lets `waitForReady()` report compilation errors without an extra console read.
 
+Current heartbeats also advertise capability strings including
+`tool_catalog_v1`, `domain_epoch_v1`, `approval_v1`, `operation_ledger_v1`, and
+`task_bridge_v1`. The Go MCP adapter uses these capabilities independently: an
+older Connector falls back to Compact legacy discovery, while missing approval
+or ledger support rejects risky work instead of weakening policy. MCP is not
+implemented in this assembly and opens no additional Unity listener. See
+[`MCP.md`](MCP.md).
+
 ---
 
 ## Core Utilities

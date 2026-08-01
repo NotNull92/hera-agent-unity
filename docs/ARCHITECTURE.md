@@ -197,6 +197,13 @@ without it, the connector preserves the legacy synchronous EditMode contract.
 
 ## Security Considerations
 
+The optional MCP surface lives in the Go process, never in Unity. It is
+default-off and stdio-only: the MCP SDK maps Profile, Compact, or Full tool
+exposure onto the same normalized catalog, policy, HTTP client, and Connector
+operation ledger used by Typed CLI calls. stdout is reserved for protocol
+frames. Older Connectors are Compact-only and every missing safety feature
+fails closed. See [`MCP.md`](MCP.md) for the compatibility matrix.
+
 | Layer | Protection |
 |:---|:---|
 | **Network** | Only binds to `127.0.0.1` (localhost). No remote access. |

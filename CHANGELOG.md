@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI — experimental MCP adapter documentation)
+
+- Documented the existing default-off, stdio-only MCP adapter, client process
+  configuration, Profile/Compact/Full exposure, approval and operation IDs,
+  negotiated Tasks with blocking fallback, large-result resources, feature
+  flags, old-Connector degraded behavior, version terminology, stdout
+  troubleshooting, and security boundaries. The normal CLI remains the
+  production default; no package version or release default changes here.
+
 ### Added (Connector 0.0.62 / CLI — Unity De-slop Mode (Beta))
 
 - **`ui_slop` tool + bundled UI-slop taxonomy** — tells across five areas

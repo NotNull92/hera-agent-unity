@@ -8,10 +8,11 @@
 
 Tests, TUI, batch engine, and asset-config layer sit on top — but the engine that talks to Unity stays lean.
 
-The production path currently uses **no WebSockets, JSON-RPC, Python, or
-persistent server process**. An optional Go stdio MCP adapter is planned in
-front of the same execution core but is not available yet; the CLI remains the
-production default until the migration completion and benchmark gates pass.
+The production-default CLI path uses **no WebSockets, JSON-RPC, Python, or
+persistent server process**. Current `main` source includes an unreleased,
+experimental, default-off stdio MCP adapter in front of the shared execution
+core. The CLI remains the production default until the M17 evidence and decision
+gate passes.
 
 ```
 ┌─────────────────┐      HTTP POST      ┌─────────────────────┐
@@ -40,6 +41,7 @@ production default until the migration completion and benchmark gates pass.
 | File | Purpose | Read This When |
 |:---|:---|:---|
 | [`INDEX.md`](INDEX.md) | This file — project overview | Starting here |
+| [`MCP.md`](MCP.md) | Experimental MCP setup, compatibility, safety, and troubleshooting | Configuring an MCP client |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System architecture, data flow, state machine | You need the big picture |
 | [`GO_CLI.md`](GO_CLI.md) | Go CLI code structure, entry point, command dispatch | Modifying Go code |
 | [`CSHARP_CONNECTOR.md`](CSHARP_CONNECTOR.md) | C# Unity side — HttpServer, CommandRouter, ToolDiscovery | Modifying C# code |

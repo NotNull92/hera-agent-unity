@@ -13,7 +13,7 @@
 
 **AI 코딩 에이전트를 위한 토큰 절약형 Unity Editor 조작 CLI입니다.**
 
-<sub>Codex, Claude, Cursor, Copilot, AntiGravity가 열린 Unity 프로젝트를 직접 확인하고 수정하게 합니다 — MCP 설정 없음, Python 서버 없음.</sub>
+<sub>Codex, Claude, Cursor, Copilot, AntiGravity가 열린 Unity 프로젝트를 직접 확인하고 수정하게 합니다 — 기본 CLI 경로는 MCP 설정 없음, Python 서버 없음.</sub>
 
 <br>
 
@@ -72,7 +72,11 @@ hera-agent-unity exec "return Application.unityVersion;"
 hera-agent-unity editor play --wait
 ```
 
-Python 서버도 필요 없습니다. MCP 설정 파일도 필요 없습니다. 특별한 에이전트 플러그인도 필요 없습니다. 셸 명령을 실행할 수 있는 AI라면 Hera를 쓸 수 있습니다.
+Python 서버는 필요 없습니다. production 기본값인 CLI 경로에는 MCP 설정
+파일이나 특별한 에이전트 플러그인이 필요 없습니다. 현재 `main` 소스에는 MCP
+클라이언트를 위한 실험적·default-off stdio adapter도 있지만 최신 공개 CLI
+릴리스에는 아직 포함되지 않았습니다. source-build preview는
+[docs/MCP.md](docs/MCP.md)에 있습니다.
 
 ---
 
@@ -610,7 +614,11 @@ Unity 패키지가 작은 로컬 HTTP 서버를 엽니다. CLI가 그 서버에 
 
 ### MCP인가요?
 
-아니요. 일반 CLI입니다. 그래서 Codex, Claude Code, Cursor처럼 셸 명령을 실행할 수 있는 도구라면 사용할 수 있습니다.
+production 기본값은 일반 CLI이므로 셸 명령을 실행할 수 있는 모든 에이전트가
+사용할 수 있습니다. 현재 `main` 소스에는 실험적·default-off·stdio-only MCP
+adapter도 있지만 최신 공개 CLI 릴리스에는 아직 없고 기본값도 아닙니다. CLI와
+localhost Connector 실행 코어를 그대로 사용합니다.
+[source-build MCP preview](docs/MCP.md)를 참고하세요.
 
 ### Python이 필요한가요?
 
@@ -618,8 +626,10 @@ Unity 패키지가 작은 로컬 HTTP 서버를 엽니다. CLI가 그 서버에 
 
 ### 어떤 Unity Editor에 연결되나요?
 
-Hera는 한 머신에서 활성 Unity Editor 하나를 지원합니다. 그 Editor의
-기록된 heartbeat를 명시해야 할 때만 `--project` 또는 `--port`를 사용하세요.
+각 CLI 호출이나 MCP 프로세스는 Unity Editor 하나를 대상으로 합니다. 여러
+Editor heartbeat가 있으면 `--project` 또는 `--port`로 하나를 명시적으로
+선택하세요. 선택자가 없으면 현재 작업 디렉터리와 일치하는 프로젝트를 먼저,
+그다음 가장 최근의 살아 있는 heartbeat를 선택합니다.
 
 ### 연결이 안 되면 어떻게 하나요?
 
@@ -632,6 +642,8 @@ hera-agent-unity doctor --json
 그리고 Unity 패키지가 설치되어 있는지, Unity 컴파일이 끝났는지 확인하세요.
 
 ### 자세한 문서는 어디에 있나요?
+
+- [docs/MCP.md](docs/MCP.md)
 
 - [docs/COMMANDS.md](docs/COMMANDS.md)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
