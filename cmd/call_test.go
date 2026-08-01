@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/policy"
 	"github.com/NotNull92/hera-agent-unity/internal/schema"
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
@@ -163,6 +165,130 @@ func TestCallExplainReportsResolvedSafety(t *testing.T) {
 	}
 }
 
+func TestDestructiveOperationCannotRunWithoutApproval(t *testing.T) {
+	// Given
+	command, sent := newTestCallCommand(t, callInput{})
+	snapshot := testSnapshot(t)
+	for index := range snapshot.Catalog.Tools {
+		if snapshot.Catalog.Tools[index].Name == "scene" {
+			risky := toolregistry.Safety{
+				RiskClass: "destructive", Destructive: true, RequiresConfirmation: true,
+			}
+			snapshot.Catalog.Tools[index].Safety = risky
+			for actionIndex := range snapshot.Catalog.Tools[index].Actions {
+				if snapshot.Catalog.Tools[index].Actions[actionIndex].Name == "info" {
+					snapshot.Catalog.Tools[index].Actions[actionIndex].Safety = risky
+				}
+			}
+		}
+	}
+	command.load = func(context.Context, *client.Instance) (*toolregistry.Snapshot, error) {
+		return snapshot, nil
+	}
+	command.preflight = func(client.ApprovalPreflightRequest) (*client.ApprovalPreflight, error) {
+		return testApprovalPreflight(), nil
+	}
+
+	// When
+	response, err := command.Run(context.Background(), approvalTestInstance(), []string{
+		"scene", "--json", `{"action":"info"}`,
+	})
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.Code != "APPROVAL_REQUIRED" || sent.calls != 0 {
+		t.Fatalf("response=%#v HTTP tool calls=%d", response, sent.calls)
+	}
+}
+
+func TestDeniedApprovalCausesZeroMutation(t *testing.T) {
+	// Given
+	command, sent := newTestCallCommand(t, callInput{})
+	snapshot := testSnapshot(t)
+	for index := range snapshot.Catalog.Tools {
+		if snapshot.Catalog.Tools[index].Name == "scene" {
+			risky := toolregistry.Safety{
+				RiskClass: "destructive", Destructive: true, RequiresConfirmation: true,
+			}
+			snapshot.Catalog.Tools[index].Safety = risky
+			for actionIndex := range snapshot.Catalog.Tools[index].Actions {
+				if snapshot.Catalog.Tools[index].Actions[actionIndex].Name == "info" {
+					snapshot.Catalog.Tools[index].Actions[actionIndex].Safety = risky
+				}
+			}
+		}
+	}
+	command.load = func(context.Context, *client.Instance) (*toolregistry.Snapshot, error) { return snapshot, nil }
+	command.preflight = func(client.ApprovalPreflightRequest) (*client.ApprovalPreflight, error) {
+		return testApprovalPreflight(), nil
+	}
+	command.interactive = true
+	command.confirm = func(client.ApprovalSummary) (bool, error) { return false, nil }
+
+	// When
+	response, err := command.Run(context.Background(), approvalTestInstance(), []string{
+		"scene", "--json", `{"action":"info"}`,
+	})
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.Code != "APPROVAL_DENIED" || sent.calls != 0 {
+		t.Fatalf("response=%#v HTTP tool calls=%d", response, sent.calls)
+	}
+}
+
+func TestApprovedTokenDispatches(t *testing.T) {
+	// Given
+	command, sent := newTestCallCommand(t, callInput{})
+	snapshot := testSnapshot(t)
+	requireSceneApproval(snapshot)
+	command.load = func(context.Context, *client.Instance) (*toolregistry.Snapshot, error) {
+		return snapshot, nil
+	}
+	command.sendOperation = func(
+		command string,
+		params map[string]any,
+		options client.SendOptions,
+	) (*client.CommandResponse, error) {
+		sent.command = command
+		sent.params = params
+		sent.options = options
+		sent.calls++
+		return &client.CommandResponse{Success: true, Message: "OK"}, nil
+	}
+	params := map[string]any{"action": "info"}
+	argumentsHash, err := client.ArgumentsHash(params)
+	if err != nil {
+		t.Fatal(err)
+	}
+	claims, err := json.Marshal(policy.ApprovalClaims{
+		Version: 1, OperationID: "op_approved_call", Tool: "scene", Action: "info",
+		ArgumentsHash: argumentsHash, RiskClass: "destructive", ProjectID: snapshot.Catalog.ProjectID,
+		ExpiresAtMS: 4_102_444_800_000, SingleUse: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := base64.RawURLEncoding.EncodeToString(claims) + ".signature"
+
+	// When
+	response, err := command.Run(context.Background(), approvalTestInstance(), []string{
+		"scene", "--json", `{"action":"info"}`, "--approve", token,
+	})
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !response.Success || sent.calls != 1 || sent.options.ApprovalToken != token || sent.options.OperationID != "op_approved_call" {
+		t.Fatalf("response=%#v sent=%#v", response, sent)
+	}
+}
+
 func TestTypedAndLegacyProduceEquivalentRequest(t *testing.T) {
 	// Given
 	typed, err := decodeCallObject([]byte(`{"type":"error","lines":5}`))
@@ -196,6 +322,24 @@ type sentCall struct {
 	command string
 	params  map[string]any
 	calls   int
+	options client.SendOptions
+}
+
+func requireSceneApproval(snapshot *toolregistry.Snapshot) {
+	for index := range snapshot.Catalog.Tools {
+		if snapshot.Catalog.Tools[index].Name != "scene" {
+			continue
+		}
+		risky := toolregistry.Safety{
+			RiskClass: "destructive", Destructive: true, RequiresConfirmation: true,
+		}
+		snapshot.Catalog.Tools[index].Safety = risky
+		for actionIndex := range snapshot.Catalog.Tools[index].Actions {
+			if snapshot.Catalog.Tools[index].Actions[actionIndex].Name == "info" {
+				snapshot.Catalog.Tools[index].Actions[actionIndex].Safety = risky
+			}
+		}
+	}
 }
 
 func newTestCallCommand(t *testing.T, input callInput) (*callCommand, *sentCall) {
@@ -247,5 +391,22 @@ func testInstance() *client.Instance {
 		ProjectPath: "C:/project",
 		DomainEpoch: "epoch",
 		Features:    []string{toolregistry.FeatureDomainEpochV1, toolregistry.FeatureToolCatalogV1},
+	}
+}
+
+func approvalTestInstance() *client.Instance {
+	instance := testInstance()
+	instance.Features = append(instance.Features, client.FeatureApprovalV1)
+	return instance
+}
+
+func testApprovalPreflight() *client.ApprovalPreflight {
+	return &client.ApprovalPreflight{
+		Token:       "approval-token",
+		OperationID: "op_approval_fixture",
+		ExpiresAtMS: 4_102_444_800_000,
+		Summary: client.ApprovalSummary{
+			Tool: "scene", Action: "info", SideEffect: "scene", OperationID: "op_approval_fixture",
+		},
 	}
 }

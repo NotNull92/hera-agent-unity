@@ -20,7 +20,7 @@ benchmark gates pass.
 | M8 stdio MCP skeleton | PASS |
 | M9 Native Profile tool bridge | PASS |
 | M10 Compact and Full exposure | PASS |
-| M11 Approval and MRTR | PENDING |
+| M11 Approval and MRTR | PASS |
 | M12 Tasks bridge | PENDING |
 | M13 Catalog invalidation and list-changed | PENDING |
 | M14 Large result resources | PENDING |
@@ -932,3 +932,67 @@ benchmark gates pass.
     implemented experimental M10 surface. Public README remains M16 scope.
 - **Next prerequisite:** M11 may start only under a separate instruction after
   re-reading this ledger and confirming the M10 PASS gate.
+
+## M11 Approval and MRTR
+
+- **Status:** PASS
+- **Commit baseline:** `dab1e16`
+- **Date:** 2026-08-01
+- **Implemented scope:**
+  - Added Connector-issued, process-local HMAC-SHA256 approval tokens bound to
+    operation ID, tool, normalized action, canonical arguments hash, risk
+    class, project ID, expiry, and single-use semantics.
+  - Added Connector-authoritative preflight summaries and revalidation before
+    any mutation or new operation-ledger `received`/`running` record.
+  - Added Typed CLI human-TTY confirmation, non-interactive
+    `APPROVAL_REQUIRED` preflight output, and `--approve` second-call support.
+  - Added opt-in MCP Form elicitation through `--mrtr` /
+    `HERA_MCP_MRTR=1`, plus an approval-token metadata fallback for clients
+    without elicitation support. Unsupported Connectors fail closed with
+    `APPROVAL_UNSUPPORTED`.
+  - Batch requests reject confirmation-required items before the command lock
+    or Undo group, and debug HTTP logging redacts approval-token fields.
+- **Review corrections:**
+  - Moved target and side-effect summary derivation fully into the Connector so
+    misleading client fields cannot alter what the user approves.
+  - Reordered exact operation-ledger replay ahead of new token consumption so
+    response-loss retries return the committed result without reusing a token.
+  - Reused the catalog's canonical risk spelling for `arbitrary_code` and
+    `package_change`, preventing valid approved calls from mismatching.
+  - Redacted both request and response token keys from debug HTTP output.
+- **Evidence completed:**
+  - Required CLI, client, policy, and MCP tests cover no-approval rejection,
+    denied zero-mutation behavior, approved dispatch, arguments binding,
+    expiry, single use, unsupported fallback, MRTR approval, and denied MRTR.
+  - `go test -count=1 ./...`, `go vet ./...`, `go build ./...`,
+    `golangci-lint run ./...`, and `go run ./tools/sync-agent-guides --check`
+    pass; lint reports `0 issues`.
+  - The repository's exact Connector sources compile against Inventoria's
+    Unity `6000.3.5f2` response file with the Unity-bundled Roslyn compiler.
+    The only compiler diagnostic is the pre-existing
+    `EntityIdCompat.cs` CS0618 warning.
+  - The exact-source assembly was loaded in memory into active Inventoria.
+    All seven `ApprovalPolicyTests` passed and the console error delta was zero.
+    The destructive no-token fixture created no ledger directory, and the
+    denied batch mutation counter remained zero.
+  - Inventoria's package manifest and lock remained on the restored Git package
+    reference; no package was installed, published, tagged, or released.
+- **Known limitations:**
+  - The active installed Git Connector did not contain the unreleased M11
+    source, so combined local-CLI/live-HTTP approval E2E was not claimed.
+    Connector behavior was verified through exact-source compilation and
+    in-memory execution in the active Editor.
+  - Tasks, catalog invalidation, resources, telemetry, release documentation,
+    and benchmark rollout remain later milestones. CLI remains the production
+    default.
+- **Rollback procedure:**
+  - Remove the approval authority/policy, preflight endpoint, ledger and router
+    approval gates, CLI/MCP approval adapters and tests; restore M10 policy/help
+    text and Connector version `0.0.72`; then revert this ledger, `docs/MCP.md`,
+    the handoff, and `CLAUDE.md` M11 state together.
+- **Rule-document impact:**
+  - `CLAUDE.md`, `docs/MCP.md`, CLI/MCP help, and the handoff describe the
+    implemented experimental M11 surface. Generated agent guides and public
+    README files remain unchanged.
+- **Next prerequisite:** M12 may start only under a separate instruction after
+  re-reading this ledger and confirming the M11 PASS gate.

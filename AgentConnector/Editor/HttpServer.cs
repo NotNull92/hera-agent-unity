@@ -89,6 +89,7 @@ namespace HeraAgent
             public bool IsBatch;
             public List<CommandRouter.BatchCommandItem> BatchItems;
             public CommandRouter.BatchOptions BatchOptions;
+            public JObject ApprovalRequest;
         }
 
         static HttpServer()
@@ -203,7 +204,11 @@ namespace HeraAgent
             try
             {
                 object r;
-                if (item.IsBatch)
+                if (item.ApprovalRequest != null)
+                {
+                    r = ApprovalPolicy.Preflight(item.ApprovalRequest);
+                }
+                else if (item.IsBatch)
                 {
                     r = await CommandRouter.DispatchBatch(item.BatchItems, item.BatchOptions);
                 }
@@ -292,8 +297,11 @@ namespace HeraAgent
                         case "/commands":
                             result = await HandleBatchCommand(request);
                             break;
+                        case "/approval/preflight":
+                            result = await HandleApprovalPreflight(request);
+                            break;
                         default:
-                            result = new ErrorResponse("HTTP_NOT_FOUND", $"Expected POST /command or POST /commands, got {request.HttpMethod} {request.Url.AbsolutePath}");
+                            result = new ErrorResponse("HTTP_NOT_FOUND", $"Expected POST /command, POST /commands, or POST /approval/preflight, got {request.HttpMethod} {request.Url.AbsolutePath}");
                             break;
                     }
                 }
@@ -405,6 +413,22 @@ namespace HeraAgent
                 OperationId = requestContext.OperationId,
                 Payload = result,
             };
+        }
+
+        static async Task<object> HandleApprovalPreflight(HttpListenerRequest request)
+        {
+            var (body, bodyError) = await ReadBody(request, MAX_COMMAND_BODY_BYTES);
+            if (bodyError != null) return bodyError;
+            var (json, jsonError) = ParseRequestObject(body);
+            if (jsonError != null) return jsonError;
+            var tcs = new TaskCompletionSource<object>();
+            var queueError = Enqueue(new WorkItem
+            {
+                ApprovalRequest = json,
+                Tcs = tcs,
+            });
+            if (queueError != null) return queueError;
+            return await tcs.Task;
         }
 
         static void MaybeCleanupLedger()

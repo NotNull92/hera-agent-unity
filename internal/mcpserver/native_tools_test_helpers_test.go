@@ -13,11 +13,22 @@ import (
 )
 
 type recordingToolSender struct {
-	response *client.CommandResponse
-	calls    int
-	command  string
-	params   any
-	options  client.SendOptions
+	response       *client.CommandResponse
+	calls          int
+	command        string
+	params         any
+	options        client.SendOptions
+	preflight      *client.ApprovalPreflight
+	preflightCalls int
+}
+
+func (sender *recordingToolSender) PreflightApproval(
+	_ context.Context,
+	_ *client.Instance,
+	_ client.ApprovalPreflightRequest,
+) (*client.ApprovalPreflight, error) {
+	sender.preflightCalls++
+	return sender.preflight, nil
 }
 
 func (sender *recordingToolSender) SendWithOptions(
@@ -50,9 +61,10 @@ func startNativeTestSessionWithSnapshot(t *testing.T, profile string, sender too
 	config := enabledTestConfig()
 	config.Profile = profile
 	runtime := nativeRuntime{
-		instance: &client.Instance{Port: 1234, Features: []string{client.FeatureOperationLedgerV1}},
+		instance: &client.Instance{Port: 1234, Features: []string{client.FeatureApprovalV1, client.FeatureOperationLedgerV1}},
 		snapshot: snapshot,
 		sender:   sender,
+		approver: sender.(approvalSender),
 		timeout:  1_000,
 	}
 	go func() {

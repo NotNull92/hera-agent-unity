@@ -39,8 +39,8 @@ tool_search tool_describe tool_call
   optional client operation ID, and invokes the shared Unity execution path.
 
 Compact exposure can discover legacy custom tools from older Connectors.
-Unclassified legacy tools remain confirmation-required and therefore return
-`APPROVAL_REQUIRED` until the approval milestone is implemented.
+Unclassified legacy tools remain confirmation-required. Connectors without
+`approval_v1` return `APPROVAL_UNSUPPORTED` without dispatching the operation.
 
 `--exposure full` registers every strict tool in the normal-policy `full`
 profile. Arbitrary-code tools are excluded.
@@ -54,9 +54,23 @@ start without explicit process permission:
 HERA_MCP_ENABLED=1 hera-agent-unity mcp --profile advanced --allow-arbitrary-code
 ```
 
-Startup permission does not approve individual operations. An operation that
-requires confirmation still returns `APPROVAL_REQUIRED` until approval support
-is available.
+Startup permission does not approve individual operations. Each destructive,
+package, external-process, or arbitrary-code call still requires a
+Connector-signed approval token bound to the exact operation.
+
+## Approval and MRTR
+
+`HERA_MCP_MRTR=1` or `--mrtr` enables negotiated multi-round-trip approval.
+When the client advertises Form elicitation, Hera shows the authoritative tool,
+action, target, side-effect scope, reversibility, reload possibility,
+external/package impact, and operation ID, then resumes only after acceptance.
+
+Without Form elicitation support, the tool returns `APPROVAL_REQUIRED` with a
+short-lived, single-use preflight token. Repeat the identical tool call with
+that token in MCP request metadata key `hera/approval_token`. Changing the
+tool, action, arguments, risk class, project, or operation ID invalidates it.
+Approval is revalidated by the Connector immediately before any mutation or
+`running` ledger state. `HERA_MCP_MRTR` defaults to `0`.
 
 ## Safety and reliability
 

@@ -63,6 +63,7 @@ namespace HeraAgent
         internal static readonly string DomainEpoch = CreateDomainEpoch();
         internal static readonly string[] Features =
         {
+            "approval_v1",
             "domain_epoch_v1",
             "operation_ledger_v1",
             "tool_catalog_v1",

@@ -89,6 +89,17 @@ namespace HeraAgent
         /// </summary>
         public static async Task<object> DispatchBatch(List<BatchCommandItem> commands, BatchOptions options)
         {
+            foreach (var item in commands)
+            {
+                var safety = ResolveRequestSafety(item.Command, item.Params);
+                if (safety?.RequiresConfirmation == true)
+                {
+                    return new ErrorResponse(
+                        "APPROVAL_REQUIRED",
+                        $"Batch item '{item.Command}' requires individual approval.");
+                }
+            }
+
             if (!await s_Lock.WaitAsync(s_LockTimeout))
             {
                 return new ErrorResponse("COMMAND_LOCK_TIMEOUT",
@@ -229,15 +240,15 @@ namespace HeraAgent
                 return validation.Error;
             parameters = validation.Normalized;
 
+            var safety = ResolveSafety(contract, usedAction ? action : null, parameters);
+            if (safety.RequiresConfirmation && requestContext == null)
+            {
+                return new ErrorResponse(
+                    "APPROVAL_REQUIRED",
+                    $"{command}{(usedAction ? ":" + action : "")} requires individual approval.");
+            }
             if (requestContext != null)
             {
-                var fallbackSafety = contract.Safety;
-                if (usedAction && contract.Actions.TryGetValue(action, out var actionContract))
-                    fallbackSafety = actionContract.Safety;
-                var safety = ToolContractSafety.Resolve(
-                    fallbackSafety,
-                    contract.SafetyRules,
-                    parameters);
                 var decision = OperationLedger.Default.Begin(
                     requestContext,
                     command,
@@ -310,6 +321,36 @@ namespace HeraAgent
                 string suffix = usedAction ? $":{action}" : "";
                 return Commit(new ErrorResponse(code, $"{command}{suffix} failed: {inner.Message}"));
             }
+        }
+
+        static ToolSafetyContract ResolveRequestSafety(string command, JObject parameters)
+        {
+            var contract = ToolContractRegistry.Get(command);
+            if (contract == null)
+                return null;
+            parameters = parameters == null ? new JObject() : (JObject)parameters.DeepClone();
+            var action = NormalizeAction(contract, ExtractAction(parameters));
+            var usedAction = !string.IsNullOrEmpty(action) && contract.Actions.ContainsKey(action);
+            if (usedAction)
+                parameters["action"] = action;
+            var validation = ToolContractValidator.Validate(
+                contract,
+                parameters,
+                usedAction ? action : null);
+            return validation.IsValid
+                ? ResolveSafety(contract, usedAction ? action : null, validation.Normalized)
+                : null;
+        }
+
+        static ToolSafetyContract ResolveSafety(
+            ToolContract contract,
+            string action,
+            JObject parameters)
+        {
+            var fallback = contract.Safety;
+            if (action != null && contract.Actions.TryGetValue(action, out var actionContract))
+                fallback = actionContract.Safety;
+            return ToolContractSafety.Resolve(fallback, contract.SafetyRules, parameters);
         }
 
         static string NormalizeAction(ToolContract contract, string action)

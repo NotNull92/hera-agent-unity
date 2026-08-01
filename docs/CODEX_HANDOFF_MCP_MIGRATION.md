@@ -11,18 +11,21 @@ milestone or review prompt.
 
 ### Done and verified
 
-- M0 through M10 are recorded as `PASS` in
+- M0 through M11 are recorded as `PASS` in
   `docs/MCP_MIGRATION_PROGRESS.md`.
 - M9 is committed and pushed to `origin/main` as
   `3fb1dd9 feat(mcp): add native profile tool bridge`.
-- M10 adds Compact search/describe/call, Full-safe exposure, and explicit
-  Advanced startup permission. Its working tree is verified but uncommitted.
+- M10 is committed and pushed to `origin/main` as
+  `dab1e16 feat(mcp): add compact and full exposure modes`.
+- M11 adds process-local HMAC approval, CLI TTY/non-interactive flows, MCP
+  elicitation/fallback, Connector revalidation, and batch fail-closed behavior.
+  Its working tree is verified but intentionally uncommitted by the M11 prompt.
 - M7 adds stable operation IDs, request metadata, canonical argument hashes,
   typed Connector context, atomic pre-execution/pre-response persistence,
   stored-response replay, conflict and unknown-outcome handling, retention, and
   capability-gated retry.
-- `operation_ledger_v1` is emitted in heartbeat features. Connector manifest is
-  unreleased `0.0.72`.
+- `approval_v1` and `operation_ledger_v1` are emitted in heartbeat features.
+  Connector manifest is unreleased `0.0.73`.
 - Required Go retry tests and the full Go suite pass. Exact repository Connector
   sources compile in Unity `6000.3.5f2` with zero console errors, and all seven
   operation-ledger menu tests pass.
@@ -34,13 +37,12 @@ milestone or review prompt.
 
 ### Final QA state
 
-- M10 implementation, review corrections, final QA, and PASS recording are
+- M11 implementation, review corrections, final QA, and PASS recording are
   complete.
-- M11 is not authorized implicitly by this handoff.
+- M12 is not authorized implicitly by this handoff.
 
 ### Not implemented
 
-- Approval enforcement and MRTR.
 - Tasks, resources, telemetry, release documentation, and benchmark rollout.
 - Any package installation, publishing, tagging, or release.
 
@@ -62,18 +64,18 @@ milestone or review prompt.
 
 ## Open questions / pending decisions
 
-- M11 may begin only after a separate user instruction and confirmation that M10
+- M12 may begin only after a separate user instruction and confirmation that M11
   remains PASS.
 - Batch commands intentionally stop with unknown outcome on a transient
   connection because M7 does not add per-item batch operation records.
 
 ## Next steps
 
-1. Confirm the M10 working tree and its full gate before any Git operation.
-2. Re-read `AGENTS.md`, `CLAUDE.md`, the M11 implementation section and exact
+1. Confirm the M11 working tree and its full gate before any Git operation.
+2. Re-read `AGENTS.md`, `CLAUDE.md`, the M12 implementation section and exact
    implement/review prompt, and the progress ledger before changing source.
-3. On separate authorization, begin only M11 approval and MRTR. Keep the CLI as
-   the production default and do not begin Tasks or catalog invalidation.
+3. On separate authorization, begin only M12 Tasks bridge. Keep the CLI as the
+   production default and do not begin catalog invalidation.
 
 ## References
 
@@ -107,6 +109,9 @@ milestone or review prompt.
   validating local CLI behavior.
 - Exact-source Connector validation must compile the repository source or use an
   appropriate Unity project without installing or overwriting a package.
+- The active Inventoria manifest points to the restored Git package, not the
+  unreleased M11 working tree. M11 Connector QA used a unique exact-source
+  assembly loaded in memory; do not claim installed-package E2E from it.
 - Give each rebuilt exact-source assembly a unique output/assembly name.
   Reusing an identity already loaded into the Editor can execute stale code.
 - A native scene external-change dialog blocks Editor updates and therefore the

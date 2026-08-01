@@ -73,7 +73,7 @@ namespace HeraAgent
             return true;
         }
 
-        static bool IsSafeOperationId(string value)
+        internal static bool IsSafeOperationId(string value)
         {
             if (value.Length < 8 || value.Length > 128)
                 return false;

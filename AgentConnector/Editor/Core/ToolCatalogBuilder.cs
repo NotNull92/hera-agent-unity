@@ -148,7 +148,7 @@ namespace HeraAgent
                 .Select(part => char.ToUpperInvariant(part[0]) + part.Substring(1)));
         }
 
-        static string RiskName(HeraRiskClass risk)
+        internal static string RiskName(HeraRiskClass risk)
         {
             return risk switch
             {

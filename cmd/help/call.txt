@@ -6,6 +6,7 @@ Usage:
   echo '<object>' | hera-agent-unity call <tool>
   hera-agent-unity call <tool> --validate-only [input]
   hera-agent-unity call <tool> --explain [input]
+  hera-agent-unity call <tool> --approve <token> [input]
 
 Input:
   Use exactly one of --json, stdin, or --file. If none is supplied, the input
@@ -13,8 +14,17 @@ Input:
 
 Options:
   --profile <name>   Require the tool to belong to the named runtime profile.
+  --operation-id <id>
+                     Reuse the operation ID bound to an approval or retry.
+  --approve <token>  Continue a non-interactive approval preflight.
   --validate-only    Validate against the live strict schema without executing.
   --explain          Return the resolved tool, action, profile, and safety.
+
+Destructive, package, external-process, and arbitrary-code operations require
+Connector approval. At a human TTY, Hera prints the exact operation summary and
+asks before dispatch. Non-interactive calls return APPROVAL_REQUIRED with a
+short-lived, single-use token; repeat the same call with --approve <token>.
+Changing the tool, action, arguments, project, or operation ID invalidates it.
 
 Quoting-free stdin is recommended for nested JSON:
   @'

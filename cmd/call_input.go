@@ -20,13 +20,14 @@ type callStdin interface {
 }
 
 type callOptions struct {
-	Tool         string
-	JSON         optionalString
-	File         optionalString
-	Profile      string
-	OperationID  string
-	ValidateOnly bool
-	Explain      bool
+	Tool          string
+	JSON          optionalString
+	File          optionalString
+	Profile       string
+	OperationID   string
+	ApprovalToken string
+	ValidateOnly  bool
+	Explain       bool
 }
 
 type optionalString struct {
@@ -66,6 +67,7 @@ func parseCallOptions(args []string) (callOptions, error) {
 	flags.Var(&options.File, "file", "path to a JSON request object")
 	flags.StringVar(&options.Profile, "profile", "", "require tool membership in profile")
 	flags.StringVar(&options.OperationID, "operation-id", "", "reuse an existing operation ID")
+	flags.StringVar(&options.ApprovalToken, "approve", "", "approve a preflight token")
 	flags.BoolVar(&options.ValidateOnly, "validate-only", false, "validate without executing")
 	flags.BoolVar(&options.Explain, "explain", false, "explain validation and safety without executing")
 	if err := flags.Parse(args[1:]); err != nil {

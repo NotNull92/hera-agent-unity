@@ -15,13 +15,19 @@ Options:
   --allow-arbitrary-code
                       Required to start the advanced profile. Each arbitrary
                       operation still requires policy approval.
+  --mrtr              Enable negotiated MCP multi-round-trip approval when the
+                      client advertises Form elicitation support. Also available
+                      as HERA_MCP_MRTR=1. Disabled by default.
 
 Profile exposure registers strict native tools from the selected catalog
 profile. Compact exposure registers only tool_search, tool_describe, and
 tool_call and supports dynamic strict or legacy custom discovery. Full exposure
 registers every strict tool allowed by normal policy and excludes arbitrary
-code. Approval-required operations remain blocked until the later approval
-milestone.
+code. Approval-required operations use Connector-signed, short-lived,
+single-use tokens. With --mrtr and client Form elicitation support, the MCP
+session asks and resumes automatically. Otherwise the tool returns
+APPROVAL_REQUIRED metadata; repeat the same call with the token in MCP request
+metadata key hera/approval_token. Approval never silently downgrades.
 
 The command is disabled by default. stdout is reserved exclusively for MCP
 protocol frames; diagnostics are written to stderr. The existing CLI remains

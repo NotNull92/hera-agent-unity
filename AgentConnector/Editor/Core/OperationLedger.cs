@@ -16,20 +16,25 @@ namespace HeraAgent
                 "status",
                 "operations",
                 SafeProjectDirectory(ToolCatalogRuntime.ProjectId)),
-            ToolCatalogRuntime.DomainEpoch);
+            ToolCatalogRuntime.DomainEpoch,
+            ApprovalPolicy.Authority);
 
         readonly string _root;
         readonly string _domainEpoch;
         readonly long _maxBytes;
+        readonly ApprovalAuthority _approvals;
 
-        internal OperationLedger(
-            string root,
-            string domainEpoch,
-            long maxBytes = 64 * 1024 * 1024)
+        internal OperationLedger(string root, string domainEpoch)
+            : this(root, domainEpoch, ApprovalPolicy.Authority)
+        {
+        }
+
+        internal OperationLedger(string root, string domainEpoch, ApprovalAuthority approvals)
         {
             _root = root;
             _domainEpoch = domainEpoch;
-            _maxBytes = maxBytes;
+            _maxBytes = 64 * 1024 * 1024;
+            _approvals = approvals ?? throw new ArgumentNullException(nameof(approvals));
         }
 
         static string SafeProjectDirectory(string projectId) =>
@@ -44,14 +49,16 @@ namespace HeraAgent
             var existing = Read(context.OperationId);
             if (existing != null)
             {
-                if (!string.Equals(
+                if (!string.Equals(existing.Tool, tool, StringComparison.Ordinal)
+                    || !string.Equals(existing.Action, action, StringComparison.Ordinal)
+                    || !string.Equals(
                     existing.ArgumentsHash,
                     context.ArgumentsHash,
                     StringComparison.Ordinal))
                 {
                     return OperationLedgerDecision.Replay(new ErrorResponse(
                         "OPERATION_CONFLICT",
-                        $"Operation '{context.OperationId}' was already used with different arguments."));
+                        $"Operation '{context.OperationId}' was already used for a different request."));
                 }
                 if (existing.State == "committed"
                     || existing.State == "responded"
@@ -79,13 +86,28 @@ namespace HeraAgent
                     return Unknown(context.OperationId);
             }
 
+            if (safety.RequiresConfirmation)
+            {
+                if (string.IsNullOrWhiteSpace(context.ApprovalToken))
+                {
+                    return OperationLedgerDecision.Replay(new ErrorResponse(
+                        "APPROVAL_REQUIRED",
+                        "This operation requires an approval token."));
+                }
+                var approvalError = _approvals.VerifyAndConsume(
+                    context.ApprovalToken,
+                    ApprovalPolicy.Binding(context, tool, action, safety));
+                if (approvalError != null)
+                    return OperationLedgerDecision.Replay(approvalError);
+            }
+
             var record = existing ?? new OperationLedgerRecord
             {
                 OperationId = context.OperationId,
                 Tool = tool,
                 Action = action,
                 ArgumentsHash = context.ArgumentsHash,
-                RiskClass = safety.RiskClass.ToString().ToLowerInvariant(),
+                RiskClass = ToolCatalogBuilder.RiskName(safety.RiskClass),
                 Idempotent = safety.Idempotent,
                 StartedAtMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             };

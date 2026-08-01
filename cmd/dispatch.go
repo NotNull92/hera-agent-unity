@@ -113,7 +113,15 @@ func (runner unityCommandRunner) Run(
 					options,
 				)
 			},
-			input: detectCallInput(os.Stdin),
+			preflight: func(request client.ApprovalPreflightRequest) (*client.ApprovalPreflight, error) {
+				request.TimeoutMS = runner.config.TimeoutMillis()
+				return client.DefaultClient.PreflightApproval(ctx, runner.instance, request)
+			},
+			input:       detectCallInput(os.Stdin),
+			interactive: approvalTTY(os.Stdin, os.Stderr),
+			confirm: func(summary client.ApprovalSummary) (bool, error) {
+				return promptCallApproval(os.Stdin, os.Stderr, summary)
+			},
 		}
 		resp, err = command.Run(ctx, runner.instance, subArgs)
 	case "editor":

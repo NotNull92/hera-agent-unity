@@ -12,7 +12,10 @@ import (
 	"unicode/utf16"
 )
 
-const FeatureOperationLedgerV1 = "operation_ledger_v1"
+const (
+	FeatureApprovalV1        = "approval_v1"
+	FeatureOperationLedgerV1 = "operation_ledger_v1"
+)
 
 var ErrInvalidOperationID = errors.New("invalid operation id")
 
@@ -49,10 +52,11 @@ type RequestMeta struct {
 }
 
 type SendOptions struct {
-	OperationID OperationID
-	Idempotent  bool
-	ClientKind  string
-	CatalogHash string
+	OperationID   OperationID
+	ApprovalToken string
+	Idempotent    bool
+	ClientKind    string
+	CatalogHash   string
 }
 
 type OperationOutcomeUnknownError struct {
@@ -85,6 +89,8 @@ func argumentsHash(params any) (string, error) {
 	digest := sha256.Sum256(bytes.TrimSpace(encoded.Bytes()))
 	return "sha256:" + hex.EncodeToString(digest[:]), nil
 }
+
+func ArgumentsHash(params any) (string, error) { return argumentsHash(params) }
 
 func hasFeature(instance *Instance, feature string) bool {
 	for _, candidate := range instance.Features {

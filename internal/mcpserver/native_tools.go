@@ -18,17 +18,24 @@ type toolSender interface {
 	SendWithOptions(context.Context, *client.Instance, string, any, int, client.SendOptions) (*client.CommandResponse, error)
 }
 
+type approvalSender interface {
+	PreflightApproval(context.Context, *client.Instance, client.ApprovalPreflightRequest) (*client.ApprovalPreflight, error)
+}
+
 type nativeRuntime struct {
 	instance *client.Instance
 	snapshot *toolregistry.Snapshot
 	sender   toolSender
+	approver approvalSender
 	timeout  int
+	mrtr     bool
 }
 
 type toolInvocation struct {
 	tool        toolregistry.Tool
 	params      map[string]any
 	operationID client.OperationID
+	request     *mcp.CallToolRequest
 }
 
 func isSeedProfile(profile string) bool {
@@ -52,7 +59,9 @@ func prepareNativeRuntime(ctx context.Context, config Config) (nativeRuntime, er
 		instance: instance,
 		snapshot: snapshot,
 		sender:   client.DefaultClient,
+		approver: client.DefaultClient,
 		timeout:  config.TimeoutMS,
+		mrtr:     config.MRTR,
 	}, nil
 }
 
@@ -117,7 +126,7 @@ func nativeToolHandler(runtime nativeRuntime, tool toolregistry.Tool) mcp.ToolHa
 		if inputErr != nil {
 			return errorResult("INVALID_ARGUMENT", inputErr.message, inputErr.data), nil
 		}
-		return invokeTool(ctx, runtime, toolInvocation{tool: tool, params: params})
+		return invokeTool(ctx, runtime, toolInvocation{tool: tool, params: params, request: request})
 	}
 }
 
@@ -132,21 +141,31 @@ func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvoc
 			return errorResult("INVALID_ARGUMENT", fmt.Sprintf("validate %s input: %v", tool.Name, err), nil), nil
 		}
 	}
-	_, safety, err := policy.Resolve(tool, params)
+	action, safety, err := policy.Resolve(tool, params)
 	if err != nil {
 		return errorResult("POLICY_RESOLUTION_FAILED", err.Error(), nil), nil
-	}
-	if policyErr := enforceNativePolicy(safety); policyErr != nil {
-		return errorResult(policyErr.code, policyErr.message, policyErr.data), nil
-	}
-	if !safety.ReadOnly && !instanceHasFeature(runtime.instance, client.FeatureOperationLedgerV1) {
-		return errorResult("OPERATION_LEDGER_REQUIRED", "mutation requires Unity operation ledger support", nil), nil
 	}
 	if invocation.operationID == "" {
 		invocation.operationID, err = client.NewOperationID()
 		if err != nil {
 			return nil, fmt.Errorf("generate MCP operation id: %w", err)
 		}
+	}
+	authorization, err := authorizeInvocation(ctx, runtime, invocation, action, safety)
+	if err != nil {
+		return nil, err
+	}
+	if authorization.result != nil {
+		return authorization.result, nil
+	}
+	if authorization.operationID != "" {
+		invocation.operationID = authorization.operationID
+	}
+	if policyErr := enforceNativePolicy(safety, authorization.token != ""); policyErr != nil {
+		return errorResult(policyErr.code, policyErr.message, policyErr.data), nil
+	}
+	if !safety.ReadOnly && !instanceHasFeature(runtime.instance, client.FeatureOperationLedgerV1) {
+		return errorResult("OPERATION_LEDGER_REQUIRED", "mutation requires Unity operation ledger support", nil), nil
 	}
 	response, err := runtime.sender.SendWithOptions(
 		ctx,
@@ -155,10 +174,11 @@ func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvoc
 		params,
 		runtime.timeout,
 		client.SendOptions{
-			OperationID: invocation.operationID,
-			Idempotent:  safety.Idempotent,
-			ClientKind:  "mcp",
-			CatalogHash: runtime.snapshot.Catalog.CatalogHash,
+			OperationID:   invocation.operationID,
+			ApprovalToken: authorization.token,
+			Idempotent:    safety.Idempotent,
+			ClientKind:    "mcp",
+			CatalogHash:   runtime.snapshot.Catalog.CatalogHash,
 		},
 	)
 	if err != nil {

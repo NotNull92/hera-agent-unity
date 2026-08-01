@@ -21,20 +21,30 @@ type testServerSetup struct {
 }
 
 func startConfiguredTestSession(t *testing.T, setup testServerSetup) (*mcp.ClientSession, func()) {
+	return startConfiguredTestSessionWithClient(t, setup, nil)
+}
+
+func startConfiguredTestSessionWithClient(
+	t *testing.T,
+	setup testServerSetup,
+	options *mcp.ClientOptions,
+) (*mcp.ClientSession, func()) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	serverTransport, clientTransport := mcp.NewInMemoryTransports()
 	done := make(chan error, 1)
 	runtime := nativeRuntime{
-		instance: &client.Instance{Port: 1234, Features: []string{client.FeatureOperationLedgerV1}},
+		instance: &client.Instance{Port: 1234, Features: []string{client.FeatureApprovalV1, client.FeatureOperationLedgerV1}},
 		snapshot: setup.snapshot,
 		sender:   setup.sender,
+		approver: setup.sender.(approvalSender),
 		timeout:  1_000,
+		mrtr:     setup.config.MRTR,
 	}
 	go func() {
 		done <- runPrepared(ctx, setup.config, serverTransport, runtime)
 	}()
-	clientSession := mcp.NewClient(&mcp.Implementation{Name: "m10-test", Version: "test"}, nil)
+	clientSession := mcp.NewClient(&mcp.Implementation{Name: "m10-test", Version: "test"}, options)
 	session, err := clientSession.Connect(ctx, clientTransport, nil)
 	if err != nil {
 		cancel()

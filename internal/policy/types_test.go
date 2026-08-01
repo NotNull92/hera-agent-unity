@@ -6,7 +6,7 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
 
-func TestAssessReportsCatalogSafetyWithoutEnforcement(t *testing.T) {
+func TestAssessReportsCatalogSafetyWithEnforcement(t *testing.T) {
 	// Given
 	safety := toolregistry.Safety{
 		RiskClass:            "destructive",
@@ -22,7 +22,7 @@ func TestAssessReportsCatalogSafetyWithoutEnforcement(t *testing.T) {
 	if assessment.RiskClass != "destructive" ||
 		!assessment.Destructive ||
 		!assessment.RequiresApproval ||
-		assessment.Enforced {
+		!assessment.Enforced {
 		t.Fatalf("assessment=%#v", assessment)
 	}
 }

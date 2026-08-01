@@ -18,6 +18,6 @@ func Assess(safety toolregistry.Safety) Assessment {
 		ReadOnly:         safety.ReadOnly,
 		Destructive:      safety.Destructive,
 		RequiresApproval: safety.RequiresConfirmation,
-		Enforced:         false,
+		Enforced:         safety.RequiresConfirmation,
 	}
 }

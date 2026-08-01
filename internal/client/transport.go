@@ -14,7 +14,37 @@ const maxResponseSize = 50 * 1024 * 1024
 
 func (c *Client) debugPost(url string, body []byte) {
 	if c.Debug {
-		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, string(body))
+		fmt.Fprintf(os.Stderr, "[DBG] POST %s body=%s\n", url, debugBody(body))
+	}
+}
+
+func debugBody(body []byte) string {
+	var value any
+	if json.Unmarshal(body, &value) != nil {
+		return string(body)
+	}
+	redactTokenFields(value)
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return string(body)
+	}
+	return string(encoded)
+}
+
+func redactTokenFields(value any) {
+	switch typed := value.(type) {
+	case map[string]any:
+		for key, child := range typed {
+			if key == "approval_token" || key == "token" {
+				typed[key] = "[redacted]"
+				continue
+			}
+			redactTokenFields(child)
+		}
+	case []any:
+		for _, child := range typed {
+			redactTokenFields(child)
+		}
 	}
 }
 
@@ -24,7 +54,7 @@ func (c *Client) processHTTPResponse(resp *http.Response, label string, start ti
 	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseSize+1))
 	if c.Debug {
 		fmt.Fprintf(os.Stderr, "[DBG] resp %d in %s body=%s\n",
-			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), string(respBody))
+			resp.StatusCode, time.Since(start).Truncate(time.Millisecond), debugBody(respBody))
 	}
 	if err != nil {
 		return nil, 0, fmt.Errorf("read response for %s: %w", label, err)
@@ -81,6 +111,7 @@ func (c *Client) SendWithOptions(
 			OperationID:   operationID,
 			ArgumentsHash: hash,
 			ClientKind:    clientKind,
+			ApprovalToken: optionalToken(options.ApprovalToken),
 			CatalogHash:   options.CatalogHash,
 		},
 	})
@@ -136,6 +167,13 @@ func (c *Client) SendWithOptions(
 	}
 
 	return &result, nil
+}
+
+func optionalToken(token string) *string {
+	if token == "" {
+		return nil
+	}
+	return &token
 }
 
 func Send(ctx context.Context, inst *Instance, command string, params any, timeoutMs int) (*CommandResponse, error) {

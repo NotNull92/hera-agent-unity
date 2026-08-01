@@ -7,11 +7,13 @@ Typed Call:
                                       Quoting-free JSON input from stdin
   call <tool> --validate-only      Validate without invoking the tool
   call <tool> --explain            Show resolved action/profile/safety without invoking
+  call <tool> --approve <token>    Continue an approval-required preflight
 
 Experimental MCP:
   HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
                                       Start the native core-profile stdio server.
   HERA_MCP_ENABLED=1 hera-agent-unity mcp --exposure compact
+  HERA_MCP_ENABLED=1 HERA_MCP_MRTR=1 hera-agent-unity mcp --exposure compact
                                       Start compact search/describe/call exposure.
 
 Editor Control:

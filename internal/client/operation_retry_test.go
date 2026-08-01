@@ -8,6 +8,10 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -20,6 +24,89 @@ func TestArgumentsHashUsesCrossRuntimeCanonicalJSON(t *testing.T) {
 	want := "sha256:" + hex.EncodeToString(digest[:])
 	if hash != want {
 		t.Fatalf("argumentsHash = %q, want %q", hash, want)
+	}
+}
+
+func TestDebugBodyRedactsApprovalTokens(t *testing.T) {
+	got := debugBody([]byte(`{"meta":{"approval_token":"command-secret"},"data":{"token":"preflight-secret"}}`))
+	if strings.Contains(got, "command-secret") || strings.Contains(got, "preflight-secret") ||
+		strings.Count(got, "[redacted]") != 2 {
+		t.Fatalf("debug body=%s", got)
+	}
+}
+
+func TestSendWithOptionsCarriesApprovalToken(t *testing.T) {
+	// Given
+	token := "approval-token"
+	var got CommandRequest
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		defer request.Body.Close()
+		if err := json.NewDecoder(request.Body).Decode(&got); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(writer).Encode(CommandResponse{Success: true, Message: "OK"})
+	}))
+	defer server.Close()
+	parsedURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	port, err := strconv.Atoi(parsedURL.Port())
+	if err != nil || !strings.HasPrefix(parsedURL.Host, "127.0.0.1:") {
+		t.Fatalf("fixture URL=%q port error=%v", server.URL, err)
+	}
+
+	// When
+	_, err = DefaultClient.SendWithOptions(context.Background(), &Instance{Port: port}, "scene", map[string]any{"action": "close"}, 1000, SendOptions{ApprovalToken: token})
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Meta.ApprovalToken == nil || *got.Meta.ApprovalToken != token {
+		t.Fatalf("approval_token=%v", got.Meta.ApprovalToken)
+	}
+}
+
+func TestPreflightSendsArgumentsForConnectorAuthority(t *testing.T) {
+	// Given
+	var got approvalPreflightWireRequest
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		defer request.Body.Close()
+		if request.URL.Path != "/approval/preflight" {
+			t.Fatalf("path=%q", request.URL.Path)
+		}
+		if err := json.NewDecoder(request.Body).Decode(&got); err != nil {
+			t.Fatal(err)
+		}
+		_ = json.NewEncoder(writer).Encode(CommandResponse{
+			Success: true,
+			Message: "Approval preflight",
+			Data:    json.RawMessage(`{"token":"signed-token","operation_id":"op_preflight_test","expires_at_ms":4102444800000,"summary":{"tool":"exec","target":"parameters: code","side_effect":"unity_editor_and_project","reversible":false,"may_reload_domain":false,"external_impact":false,"operation_id":"op_preflight_test"}}`),
+		})
+	}))
+	defer server.Close()
+	parsedURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	port, err := strconv.Atoi(parsedURL.Port())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// When
+	_, err = DefaultClient.PreflightApproval(context.Background(), &Instance{Port: port}, ApprovalPreflightRequest{
+		Command: "exec", Params: map[string]any{"code": "return null;"}, OperationID: "op_preflight_test",
+	})
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	arguments, ok := got.Arguments.(map[string]any)
+	if !ok || arguments["code"] != "return null;" || got.Tool != "exec" {
+		t.Fatalf("request=%#v", got)
 	}
 }
 

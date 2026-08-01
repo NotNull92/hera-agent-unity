@@ -13,12 +13,26 @@ import (
 
 type callLoadFunc func(context.Context, *client.Instance) (*toolregistry.Snapshot, error)
 type callSendFunc func(string, map[string]any, client.SendOptions) (*client.CommandResponse, error)
+type callPreflightFunc func(client.ApprovalPreflightRequest) (*client.ApprovalPreflight, error)
 
 type callCommand struct {
 	load          callLoadFunc
 	send          SendFunc
 	sendOperation callSendFunc
+	preflight     callPreflightFunc
+	confirm       func(client.ApprovalSummary) (bool, error)
+	interactive   bool
 	input         callInput
+}
+
+type callApprovalRequest struct {
+	instance *client.Instance
+	options  callOptions
+	catalog  *toolregistry.Catalog
+	tool     toolregistry.Tool
+	action   string
+	safety   toolregistry.Safety
+	params   map[string]any
 }
 
 type toolRequest struct {
@@ -100,12 +114,28 @@ func (command *callCommand) Run(
 			Action: action,
 		})
 	}
+	approvalToken, operationID, approvalResponse, err := command.resolveApproval(callApprovalRequest{
+		instance: instance,
+		options:  options,
+		catalog:  snapshot.Catalog,
+		tool:     tool,
+		action:   action,
+		safety:   safety,
+		params:   params,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if approvalResponse != nil {
+		return approvalResponse, nil
+	}
 	request := newToolRequest(tool.Name, params)
 	if command.sendOperation != nil {
 		return command.sendOperation(request.Command, request.Params, client.SendOptions{
-			OperationID: client.OperationID(options.OperationID),
-			Idempotent:  safety.Idempotent,
-			CatalogHash: snapshot.Catalog.CatalogHash,
+			OperationID:   operationID,
+			ApprovalToken: approvalToken,
+			Idempotent:    safety.Idempotent,
+			CatalogHash:   snapshot.Catalog.CatalogHash,
 		})
 	}
 	return command.send(request.Command, request.Params)

@@ -19,6 +19,7 @@ type Config struct {
 	Profile            string
 	Exposure           string
 	AllowArbitraryCode bool
+	MRTR               bool
 	Version            string
 	Project            string
 	Port               int

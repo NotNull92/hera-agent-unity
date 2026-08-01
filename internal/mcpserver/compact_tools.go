@@ -135,7 +135,7 @@ func compactCallHandler(runtime nativeRuntime, allowArbitraryCode bool) mcp.Tool
 				return errorResult("INVALID_OPERATION_ID", err.Error(), nil), nil
 			}
 		}
-		return invokeTool(ctx, runtime, toolInvocation{tool: tool, params: params, operationID: operationID})
+		return invokeTool(ctx, runtime, toolInvocation{tool: tool, params: params, operationID: operationID, request: request})
 	}
 }
 
