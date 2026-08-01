@@ -1290,6 +1290,15 @@ benchmark gates pass.
   - Fixture safety checks refused an unmarked project and an existing output.
     The live fixture used Unity `6000.3.5f2`, compiled the copied Connector, and
     did not open or mutate the production project.
+  - A follow-up verification temporarily resolved the repository-local
+    Connector `0.0.74` in the active Inventoria Editor. Legacy CLI, Typed CLI,
+    MCP Profile, MCP Compact, and MCP Full all returned the same read-only
+    `GameScene` state successfully. The Editor was `ready`, the scene remained
+    clean, and zero console errors matched after the run.
+  - Inventoria then restored its original Git Connector `0.0.64`, manifest,
+    lock file, and lock hash byte-for-byte; Unity recompiled against the Git
+    package cache and remained `ready`. The Inventoria worktree was clean and
+    no project asset or recovery file was created.
   - `go test -count=1 ./...`, targeted `go vet`, guide drift,
     `git diff --check`, and race-instrumented telemetry and benchmark binaries
     executed from the repository evidence directory all pass.
