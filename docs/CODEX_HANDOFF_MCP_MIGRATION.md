@@ -47,12 +47,12 @@ complete measured evidence plus an explicit user decision.
 ## Operational follow-up
 
 Inventoria's `Packages/manifest.json` and `Packages/packages-lock.json` are
-restored byte-for-byte and its worktree is clean. The temporary local-package
-switch removed Unity's resolved Git-package cache, and the cold UPM resolver now
-fails before loading packages. Three non-destructive cache/reference recovery
-approaches did not resolve it. Do not try another cache mutation silently; ask
-for explicit approval before moving Inventoria's disposable `Library` directory
-to the Recycle Bin and allowing Unity to regenerate it.
+restored byte-for-byte and its worktree is clean. A later live check corrected
+the earlier cold-start diagnosis: Unity Package Manager is healthy, Git package
+`com.notnull92.hera-agent-unity` `0.0.64` is registered from the restored
+package cache, the Editor returns `ready` after a requested compile, and the
+console has zero matching errors. Do not regenerate or otherwise mutate
+Inventoria's `Library` for M17 recovery.
 
 The marked M17 fixture and temporary Connector copies were moved to the Recycle
 Bin. They are recoverable and are not repository or Inventoria project state.

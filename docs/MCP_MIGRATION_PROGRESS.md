@@ -1481,11 +1481,11 @@ benchmark gates pass.
     estimate tokens as UTF-8 bytes divided by four; they are not provider
     tokenizer or billing measurements.
   - Inventoria's manifest and package lock were restored byte-for-byte and its
-    worktree is clean. Removing Unity's resolved Git-package cache during the
-    temporary switch exposed a cold UPM resolver failure on reopening; three
-    non-destructive cache/reference recovery approaches did not repair it. A
-    full disposable `Library` regeneration remains an external Editor recovery
-    follow-up requiring explicit user approval, not M17 repository state.
+    worktree is clean. A later live recheck corrected an earlier cold-start
+    diagnosis: Unity Package Manager is healthy, Git package
+    `com.notnull92.hera-agent-unity` `0.0.64` is registered from the restored
+    package cache, the Editor is `ready` after a requested compile, and the
+    console has zero matching errors. No `Library` regeneration is needed.
 - **Rollback procedure:**
   - Revert only this ledger entry, the M17 decision wording in `CLAUDE.md` and
     the handoff/benchmark addenda. M17 changes no runtime, package, feature-flag,
@@ -1497,8 +1497,7 @@ benchmark gates pass.
 - **Final decision:** M17 is BLOCKED, not PASS. The incomplete evidence and
   unmet measured benefit gates cannot justify MCP primary status, so Typed CLI
   and the existing CLI remain primary and MCP remains experimental/default-off.
-- **Next prerequisite:** With separate user approval, regenerate Inventoria's
-  disposable `Library`, rerun every missing fixture-matrix case, and retain
+- **Next prerequisite:** Rerun every missing fixture-matrix case and retain
   bounded transcripts for all ten evidence categories before another
   independent PASS B review. No later migration milestone, default change,
   package publication, or release is implicitly authorized.
