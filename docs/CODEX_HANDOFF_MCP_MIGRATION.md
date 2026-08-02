@@ -2,144 +2,88 @@
 
 ## Goal
 
-Continue the authorized CLI + MCP adapter migration without changing the locked
-architecture or advertising unimplemented commands. The next work unit is not
-authorized implicitly; execute it only after the user names the applicable
-milestone or review prompt.
+Preserve the completed M0-M16 migration and the truthful M17 BLOCKED record.
+Future work must keep the locked architecture and must not promote MCP without
+complete measured evidence plus an explicit user decision.
 
 ## Current state
 
-### Done and verified
-
-- M0 through M12 are recorded as `PASS` in
+- M0 through M16 are recorded as `PASS`; M17 is `BLOCKED` in
   `docs/MCP_MIGRATION_PROGRESS.md`.
-- M9 is committed and pushed to `origin/main` as
-  `3fb1dd9 feat(mcp): add native profile tool bridge`.
-- M10 is committed and pushed to `origin/main` as
-  `dab1e16 feat(mcp): add compact and full exposure modes`.
-- M11 is committed and pushed to `origin/main` as
-  `f45bf8e feat(safety): enforce approval for risky operations`.
-- M12 adds durable package/test task handles, negotiated Tasks extension
-  methods, blocking fallback, truthful unsupported cancellation, restart
-  recovery, and concurrency-safe async polling. Its working tree is verified
-  but intentionally uncommitted by the M12 prompt.
-- M11 adds process-local HMAC approval, CLI TTY/non-interactive flows, MCP
-  elicitation/fallback, Connector revalidation, and batch fail-closed behavior.
-- M7 adds stable operation IDs, request metadata, canonical argument hashes,
-  typed Connector context, atomic pre-execution/pre-response persistence,
-  stored-response replay, conflict and unknown-outcome handling, retention, and
-  capability-gated retry.
-- `approval_v1`, `operation_ledger_v1`, and `task_bridge_v1` are emitted in
-  heartbeat features. Connector manifest is unreleased `0.0.74`.
-- Required Go retry tests and the full Go suite pass. M11 exact repository
-  Connector sources compiled in Unity `6000.3.5f2` with zero console errors,
-  and all seven operation-ledger menu tests passed.
-- A real response-loss fixture closed the first request after 50 ms, retried the
-  same body and operation ID, replayed `{count:1}`, and independently observed
-  the mutation counter at exactly one.
-- The Inventoria manifest and package lock used for exact-source QA were restored
-  byte-for-byte and are clean.
+- `origin/main` baseline before M17 documentation is `9080f94`.
+- The Go CLI and localhost HTTP Unity Connector remain the execution core.
+- Current-source MCP is an unreleased, stdio-only, environment-gated adapter.
+  It supports native Profile, Compact, Full-safe, explicitly permitted
+  Advanced, approval/MRTR, operation-ledger replay, negotiated Tasks with
+  blocking fallback, catalog invalidation, and bounded large-result resources.
+- M17 partially exercised its evidence categories. The Profile-versus-Full
+  definition-size subgate measured a 72.5% estimated token reduction, but the
+  Typed benefit and MCP-primary gates were not met by the zero-model-call
+  ceiling-effect smoke run. Required fixture cases and durable transcripts for
+  several safety/integration categories remain missing.
+- Typed CLI and the existing CLI therefore remain the production default. MCP
+  remains experimental and default-off. No runtime default or Connector
+  architecture changed.
 
-### Final QA state
+## M17 partial verification summary
 
-- M12 implementation, review corrections, final QA, and PASS recording are
-  complete.
-- M13 is not authorized implicitly by this handoff.
+- Full Go format, vet, build, test, lint, and guide-sync gates pass.
+- Repository Connector `0.0.74` compiled in Inventoria on Unity `6000.3.5f2`.
+  The 31-tool/75-action strict catalog and operation-ledger, approval, catalog,
+  contract, discovery, profile, and safety Editor suites passed.
+- Disposable-fixture observations covered scene, object, component, asset,
+  uGUI, Play Mode, reload, catalog invalidation, and custom-tool lifecycle with
+  zero console errors. Fixture tests, package job, invalid-argument repair,
+  missing target, destructive approve/deny, and batch were not completed.
+- Response-loss replay produced exactly one mutation. An unapproved destructive
+  operation produced zero mutations.
+- A-to-E run `m17_20260802_ae_1` recorded 5/5 first and final success, zero
+  wrong-tool, invalid-argument, duplicate, unsafe, reload-recovery, and human
+  intervention events. It makes no model calls and is not statistical accuracy
+  or billing evidence. The raw benchmark records and definition-size output are
+  retained next to the versioned report; other observed categories lack durable
+  transcripts, so M17 cannot be marked PASS.
 
-### Not implemented
+## Operational follow-up
 
-- Catalog invalidation, resources, telemetry, release documentation, and
-  benchmark rollout.
-- Any package installation, publishing, tagging, or release.
+Inventoria's `Packages/manifest.json` and `Packages/packages-lock.json` are
+restored byte-for-byte and its worktree is clean. The temporary local-package
+switch removed Unity's resolved Git-package cache, and the cold UPM resolver now
+fails before loading packages. Three non-destructive cache/reference recovery
+approaches did not resolve it. Do not try another cache mutation silently; ask
+for explicit approval before moving Inventoria's disposable `Library` directory
+to the Recycle Bin and allowing Unity to regenerate it.
 
-## Decisions made
+The marked M17 fixture and temporary Connector copies were moved to the Recycle
+Bin. They are recoverable and are not repository or Inventoria project state.
 
-- Keep the Go CLI and localhost HTTP Unity Connector; MCP remains an optional Go
-  adapter in front of the shared execution core.
+## Locked decisions
+
 - Do not implement MCP inside the Unity Connector.
-- CLI remains the production default until the migration and benchmark gates
-  pass.
-- Tool and action safety classification is canonical registry metadata. Built-in
-  operations must be explicitly classified.
-- Unknown custom tools are conservative Compact-only; strict custom tools with
-  no explicit profile normalize to `custom` and policy-allowed `full`.
-- Preserve legacy discovery metadata, including nested `action_safety`, while
-  exposing normalized contracts separately.
-- `AGENTS.md` is the canonical cross-tool rules source. Generated rule files are
-  never independent editing targets.
-
-## Open questions / pending decisions
-
-- M13 may begin only after a separate user instruction and confirmation that M12
-  remains PASS.
-- Batch commands intentionally stop with unknown outcome on a transient
-  connection because M7 does not add per-item batch operation records.
-
-## Next steps
-
-1. Confirm the M12 working tree and its full gate before any Git operation.
-2. Re-read `AGENTS.md`, `CLAUDE.md`, the M13 implementation section and exact
-   implement/review prompt, and the progress ledger before changing source.
-3. On separate authorization, begin only M13 catalog invalidation. Keep the CLI
-   as the production default and do not begin large-result resources.
+- Do not split CLI and MCP tool contracts.
+- Keep localhost HTTP, main-thread serialization, heartbeat discovery,
+  file-bus recovery, and the single-selected-Editor model.
+- Keep CLI and Connector versions separate.
+- Keep MCP unreleased and default-off unless a future benchmark satisfies the
+  decision gates and the user explicitly selects a new default.
+- `AGENTS.md` is the canonical generated-guide source. Do not edit generated
+  guides independently.
 
 ## References
 
-- M6 implementation commit: `fda9921`
 - `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - `docs/CODEX_MCP_MIGRATION_IMPLEMENT_REVIEW_PROMPTS.md`
 - `docs/MCP_MIGRATION_PROGRESS.md`
+- `docs/benchmarks/mcp/6000.3.5f2.md`
 - `CLAUDE.md`
 - `AGENTS.md`
-- `AgentConnector/Editor/Core/ToolContractRegistry.cs`
-- `AgentConnector/Editor/Core/ToolCatalogBuilder.cs`
-- `AgentConnector/Editor/Core/ToolContractCanonicalJson.cs`
-- `AgentConnector/Editor/Tests/ToolCatalogTests.cs`
-- `AgentConnector/Editor/Core/ToolContractSafety.cs`
-- `AgentConnector/Editor/Core/ToolContractSafetyRules.cs`
-- `AgentConnector/Editor/Core/ToolContractProfiles.cs`
-- `AgentConnector/Editor/Core/CommandRequestContext.cs`
-- `AgentConnector/Editor/Core/OperationLedger.cs`
-- `internal/client/operation.go`
-- `internal/client/reload_retry.go`
-- `AgentConnector/Editor/Tests/OperationLedgerTests.cs`
-- `AgentConnector/Editor/Tests/ToolSafetyTests.cs`
-- `AgentConnector/Editor/Tests/ToolProfileTests.cs`
 
-## Environment notes / gotchas
+## Environment notes
 
-- Do not rely on migration-document line numbers; inspect current symbols.
-- For Windows shell work, use the Git Bash MCP rather than a bare `bash`.
-- New Connector `.cs` files require matching `.meta` files.
-- The installed CLI may not represent modified source; use `go run .` when
-  validating local CLI behavior.
-- Exact-source Connector validation must compile the repository source or use an
-  appropriate Unity project without installing or overwriting a package.
-- The active Inventoria manifest points to the restored Git package, not the
-  unreleased M12 working tree. M12 Connector QA used unique exact-source
-  assembly loaded in memory; do not claim installed-package E2E from it.
-- Give each rebuilt exact-source assembly a unique output/assembly name.
-  Reusing an identity already loaded into the Editor can execute stale code.
-- A native scene external-change dialog blocks Editor updates and therefore the
-  connector heartbeat. Resolve it before interpreting `status` timeouts.
-- On macOS, `/var` resolves to `/private/var`; run the full Go gate with a
-  canonical `/private/...` temporary root when validating symlink behavior.
-- Two Windows `go test -race ./internal/client` attempts were blocked before
-  test execution because the generated `client.test.exe` returned
-  `Access is denied`, including with an isolated `GOTMPDIR`. Ordinary targeted
-  and full Go tests passed; treat race coverage as an environment limitation,
-  not as a passing result.
-- Remaining MCP-prohibition search hits may be valid architecture locks,
-  historical records, or truthful statements that runtime commands are not yet
-  implemented. Classify them instead of deleting them blindly.
-
-## Suggested skills
-
-- `hyper-mode`: use for the next repository implementation/review milestone.
-- `omo:programming`: use for Go or C# source changes and diagnostics.
-- `hera-agent-unity`: use when live Unity compilation, tests, or state
-  verification is required.
-- `review-hera-agent-unity`: use for the milestone's read-only review pass when
-  its instructions permit that workflow.
-- `omo:git-master`: use only when the user asks to commit, inspect history, or
-  push the completed next unit.
+- Use a source-built binary when validating unreleased MCP behavior.
+- Exact-source Connector QA must compile repository sources, not infer behavior
+  from an installed older package.
+- Use unique temporary assembly names to avoid stale in-memory Unity assemblies.
+- Never use a production project as a destructive benchmark fixture.
+- Classify historical MCP prohibition text before changing it; many hits are
+  intentional architecture locks or milestone records.

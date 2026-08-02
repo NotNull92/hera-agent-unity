@@ -1403,3 +1403,102 @@ benchmark gates pass.
 - **Next prerequisite:** M17 may start only under a separate instruction after
   re-reading this ledger and confirming the M16 PASS gate. Do not infer
   authorization to begin it from this entry.
+
+## M17 Cross-verification and default decision
+
+- **Status:** BLOCKED — partial cross-verification only; **do not promote MCP**
+- **Commit baseline:** `9080f94`
+- **Date:** 2026-08-02
+- **Implemented scope:** Attempted the ten M17 evidence categories, measured
+  the A-to-E smoke run and Profile/Full definition size, exercised several
+  Connector safety and reload paths, and recorded the incomplete result. PASS B
+  found that required fixture cases and durable reviewer-auditable artifacts
+  were incomplete. No runtime implementation changed.
+- **Measured decision:**
+  - Typed contract A-versus-B recorded zero invalid arguments, 100% first and
+    final success, and zero unsafe mutations on both surfaces. The relative
+    invalid-argument reduction is not measurable from a zero baseline, the
+    first-success gain is 0 percentage points rather than the required 5, and
+    final success is non-inferior by 0 points. The Typed benefit gate is not
+    met by this ceiling-effect smoke task.
+  - MCP C/D/E versus Typed B recorded zero dependent model calls on every
+    surface, 100% first and final success, and zero unsafe mutations. Model-call
+    improvement is 0 rather than 1, first-success improvement is 0 points
+    rather than 3, and billed cost per success is zero on both sides and cannot
+    demonstrate a 10% reduction. The MCP-primary gate is not met.
+  - Profile C and Full E both recorded 100% final success and zero wrong-tool
+    selections. Actual serialized MCP tool definitions measured 3,950
+    estimated tokens for the eight-tool core Profile and 14,362 for the
+    29-tool Full-safe surface, a 72.5% reduction. The Profile-versus-Full
+    subgate passes its 30% reduction, non-inferiority, and wrong-tool criteria.
+  - These partial results do not authorize a final primary-surface decision.
+    They do rule out automatic promotion: Typed CLI and the existing CLI remain
+    the production default while MCP remains unreleased, experimental,
+    stdio-only, and default-off. No Connector rewrite, feature-flag default,
+    package version, install path, tag, publication, or release changed.
+- **Partial evidence observed:**
+  - Full Go verification passed: `gofmt -l .`, `go vet ./...`,
+    `go build ./...`, `go test -count=1 ./...`, `golangci-lint run ./...`, and
+    `go run ./tools/sync-agent-guides --check`.
+  - The repository Connector `0.0.74` compiled in Inventoria on Unity
+    `6000.3.5f2`. Its live native catalog contained 31 strict tools and 75
+    actions with a valid deterministic hash. The Connector's Editor-only
+    menu-driven EditMode suites for operation-ledger, approval, catalog,
+    contract, discovery, profile, and safety all passed after scheduling them
+    outside the request lock, including
+    committed-response replay, binding and single-use approval checks,
+    destructive denial, and batch fail-closed behavior. The standard Unity Test
+    Runner command truthfully discovered zero NUnit cases because this package
+    suite is not authored as NUnit tests.
+  - A marked disposable fixture passed scene read, GameObject creation,
+    component reread, asset and uGUI mutation, Play Mode enter/stop, domain
+    reload, catalog invalidation, custom strict tool add/call/remove, and zero
+    console-error checks. The fixture intentionally omitted Unity Test
+    Framework while the Connector Editor suites ran in Inventoria. It did not
+    cover the full required matrix: fixture tests, package job,
+    invalid-argument repair, missing target, destructive approve/deny, and
+    batch remain unverified as fixture scenarios.
+  - A raw client disconnected 50 ms into a delayed write. Retrying the same
+    operation ID returned the committed response and an independent read saw
+    the mutation count at exactly one. A separate unapproved destructive call
+    returned `APPROVAL_REQUIRED` and left its mutation count at zero.
+  - A-to-E run `m17_20260802_ae_1` recorded 5/5 first-attempt and final
+    successes, zero wrong-tool, invalid-argument, repair, duplicate,
+    unsafe-mutation, reload-recovery, and human-intervention events. Per-variant
+    elapsed times were A 699 ms, B 659 ms, C 153 ms, D 280 ms, and E 192 ms;
+    aggregate p50 was 280 ms and p95 was 699 ms.
+- **Known limitations:**
+  - PASS B found no retained transcript/report for Connector compilation and
+    Editor suites, full fixture integration and cleanup, MCP conformance,
+    approval execution, response-loss replay, or custom-tool catalog reload.
+    The observations above are therefore not independently auditable enough to
+    satisfy the ten-category M17 PASS gate.
+  - A-to-E is one deterministic read-only task per surface with no model calls.
+    Model tokens and billed cost are zero, so it is transport smoke evidence,
+    not statistical model-quality or economic evidence. Tool-result token
+    estimates do not include initial definitions, host framing, or model context.
+  - Profile-versus-Full token counts serialize the actual live definitions and
+    estimate tokens as UTF-8 bytes divided by four; they are not provider
+    tokenizer or billing measurements.
+  - Inventoria's manifest and package lock were restored byte-for-byte and its
+    worktree is clean. Removing Unity's resolved Git-package cache during the
+    temporary switch exposed a cold UPM resolver failure on reopening; three
+    non-destructive cache/reference recovery approaches did not repair it. A
+    full disposable `Library` regeneration remains an external Editor recovery
+    follow-up requiring explicit user approval, not M17 repository state.
+- **Rollback procedure:**
+  - Revert only this ledger entry, the M17 decision wording in `CLAUDE.md` and
+    the handoff/benchmark addenda. M17 changes no runtime, package, feature-flag,
+    or production-default code. Then run guide sync and `git diff --check`.
+- **Rule-document impact:**
+  - `CLAUDE.md` records the completed M17 decision lock. Generated agent guides
+    remain unchanged because the canonical `AGENTS.md` runtime instructions did
+    not change.
+- **Final decision:** M17 is BLOCKED, not PASS. The incomplete evidence and
+  unmet measured benefit gates cannot justify MCP primary status, so Typed CLI
+  and the existing CLI remain primary and MCP remains experimental/default-off.
+- **Next prerequisite:** With separate user approval, regenerate Inventoria's
+  disposable `Library`, rerun every missing fixture-matrix case, and retain
+  bounded transcripts for all ten evidence categories before another
+  independent PASS B review. No later migration milestone, default change,
+  package publication, or release is implicitly authorized.
