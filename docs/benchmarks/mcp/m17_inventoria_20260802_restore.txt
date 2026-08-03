@@ -1,0 +1,8 @@
+M17 Inventoria restoration transcript
+
+manifest baseline_sha256=fb834dba745c143fa1d00959d921774440ce81830cb778ebb2e6c5ee124478f6 restored_sha256=fb834dba745c143fa1d00959d921774440ce81830cb778ebb2e6c5ee124478f6 byte_compare_exit=0
+packages-lock baseline_sha256=44b6a9e7bf395e5b32e8e932101ca1a0a389640cbd22567b96f6fcec2affd32d restored_sha256=44b6a9e7bf395e5b32e8e932101ca1a0a389640cbd22567b96f6fcec2affd32d byte_compare_exit=0
+inventoria_git_dirty_entries=0
+package={"name":"com.notnull92.hera-agent-unity","version":"0.0.64","source":"Git","is_direct_dependency":true,"display_name":"Hera Agent Unity"}
+scene={"active":{"name":"GameScene","path":"Assets/Scenes/GameScene.unity","isDirty":false},"loaded":[{"name":"GameScene","path":"Assets/Scenes/GameScene.unity","isLoaded":true,"isDirty":false,"rootCount":6}]}
+console={"matched":0,"returned":0,"total_in_console":1}

@@ -16,11 +16,11 @@ complete measured evidence plus an explicit user decision.
   It supports native Profile, Compact, Full-safe, explicitly permitted
   Advanced, approval/MRTR, operation-ledger replay, negotiated Tasks with
   blocking fallback, catalog invalidation, and bounded large-result resources.
-- M17 partially exercised its evidence categories. The Profile-versus-Full
-  definition-size subgate measured a 72.5% estimated token reduction, but the
-  Typed benefit and MCP-primary gates were not met by the zero-model-call
-  ceiling-effect smoke run. Required fixture cases and durable transcripts for
-  several safety/integration categories remain missing.
+- M17 now has bounded Inventoria evidence for nine of its ten required
+  categories. The Profile-versus-Full definition-size subgate measured a 72.5%
+  estimated token reduction, but the Typed benefit and MCP-primary gates were
+  not met by the zero-model-call ceiling-effect smoke run. The complete section
+  28.3 matrix still has not run in one marked disposable fixture.
 - Typed CLI and the existing CLI therefore remain the production default. MCP
   remains experimental and default-off. No runtime default or Connector
   architecture changed.
@@ -29,20 +29,25 @@ complete measured evidence plus an explicit user decision.
 
 - Full Go format, vet, build, test, lint, and guide-sync gates pass.
 - Repository Connector `0.0.74` compiled in Inventoria on Unity `6000.3.5f2`.
-  The 31-tool/75-action strict catalog and operation-ledger, approval, catalog,
-  contract, discovery, profile, and safety Editor suites passed.
+  The 31-tool/75-action strict catalog and eight Editor suites recorded 137
+  PASS lines, eight `ALL PASSED` summaries, and zero failures.
 - Disposable-fixture observations covered scene, object, component, asset,
   uGUI, Play Mode, reload, catalog invalidation, and custom-tool lifecycle with
   zero console errors. Fixture tests, package job, invalid-argument repair,
   missing target, destructive approve/deny, and batch were not completed.
-- Response-loss replay produced exactly one mutation. An unapproved destructive
-  operation produced zero mutations.
+- Live official-SDK MCP conformance exposed eight core Profile tools and
+  returned clean `GameScene` state. Response-loss replay produced exactly one
+  mutation. An unapproved destructive batch completed zero items; a separately
+  approved cleanup removed only its temporary target.
+- A live temporary strict tool changed catalog hash, domain epoch, and count
+  31→32, returned `Value=17`, and was removed. The original hash and count
+  returned under a new epoch.
 - A-to-E run `m17_20260802_ae_1` recorded 5/5 first and final success, zero
   wrong-tool, invalid-argument, duplicate, unsafe, reload-recovery, and human
   intervention events. It makes no model calls and is not statistical accuracy
-  or billing evidence. The raw benchmark records and definition-size output are
-  retained next to the versioned report; other observed categories lack durable
-  transcripts, so M17 cannot be marked PASS.
+  or billing evidence. The raw benchmark records, definition-size output, and
+  bounded Inventoria report are retained. M17 cannot be marked PASS until the
+  complete integration matrix runs in one disposable fixture.
 
 ## Operational follow-up
 
@@ -75,6 +80,7 @@ Bin. They are recoverable and are not repository or Inventoria project state.
 - `docs/CODEX_MCP_MIGRATION_IMPLEMENT_REVIEW_PROMPTS.md`
 - `docs/MCP_MIGRATION_PROGRESS.md`
 - `docs/benchmarks/mcp/6000.3.5f2.md`
+- `docs/benchmarks/mcp/m17_inventoria_20260802.md`
 - `CLAUDE.md`
 - `AGENTS.md`
 

@@ -1,0 +1,20 @@
+{"evidence":"connector_compile","unity":"6000.3.5f2","connector":"0.0.74","source":"Local","state":"ready","console_errors":0,"result":"PASS"}
+{"evidence":"editor_suites","suites":["OperationLedger","ApprovalPolicy","AssetMutationPreflight","ToolCatalog","ToolContract","ToolDiscovery","ToolProfiles","ToolSafety"],"pass_lines":137,"all_passed_summaries":8,"fail_lines":0,"result":"PASS"}
+{"evidence":"unity_test_runner","mode":"EditMode","filter":"HeraAgent","total":0,"passed":0,"failed":0,"skipped":0,"note":"Connector suites are Editor menu tests, not NUnit cases"}
+{"evidence":"query","scene":"GameScene","path":"Assets/Scenes/GameScene.unity","dirty":false,"root_count":6,"result":"PASS"}
+{"evidence":"invalid_argument_repair","tool":"manage_gameobject","invalid":{"position":[17,0,0],"rejected_before_unity":true},"repaired":{"position":"17,0,0","created":"/__HeraM17Transient"},"result":"PASS"}
+{"evidence":"component_mutation","target":"/__HeraM17Transient","component":"BoxCollider","property":"m_IsTrigger","value":true,"reread":true,"result":"PASS"}
+{"evidence":"missing_target","target":"/__HeraM17DefinitelyMissing","code":"TARGET_NOT_FOUND","result":"PASS"}
+{"evidence":"play_mode","entered":"playing","exited":true,"result":"PASS"}
+{"evidence":"batch_read","commands":["scene info","find_gameobjects"],"completed":2,"result":"PASS"}
+{"evidence":"batch_destructive_denial","code":"APPROVAL_REQUIRED","completed":0,"target_remained":true,"result":"PASS"}
+{"evidence":"destructive_approval","target":"/__HeraM17Transient","approved":true,"post_cleanup_code":"TARGET_NOT_FOUND","result":"PASS"}
+{"evidence":"catalog_baseline","catalog_hash":"sha256:2b358fd7ecb5dc0a936fd0c61ee6922d0032a5aac99b5c7db191bd5398d2d2d5","domain_epoch":"06d6468321c546b3877aa3f1131b1d22","tools":31,"actions":75}
+{"evidence":"catalog_probe_added","catalog_hash":"sha256:7463561c3fed8d981d22ce9b482dc9c80a1fa6043cea5cbeb14bb5e05b8862f3","domain_epoch":"18a5d27d21e34ce59713b935fa0a3e4e","tools":32,"actions":75,"probe_result":{"Value":17},"result":"PASS"}
+{"evidence":"catalog_probe_removed","catalog_hash":"sha256:2b358fd7ecb5dc0a936fd0c61ee6922d0032a5aac99b5c7db191bd5398d2d2d5","domain_epoch":"fd85b4b6e74647379394e0b82ae0b894","tools":31,"actions":75,"probe_present":false,"result":"PASS"}
+{"evidence":"live_mcp_official_sdk","server":"hera-agent-unity","profile":"core","tools":8,"scene":{"name":"GameScene","path":"Assets/Scenes/GameScene.unity","dirty":false,"root_count":6},"result":"PASS"}
+{"evidence":"response_loss_exactly_once","client_terminated_before_response":true,"operation_id_reused":true,"replay_count":1,"independent_read_count":1,"result":"PASS"}
+{"evidence":"package_job_local","action":"add","connector":"0.0.74","source":"Local","result":"PASS"}
+{"evidence":"package_job_restore","action":"add","connector":"0.0.64","source":"Git","result":"PASS"}
+{"evidence":"final_scene","scene":"GameScene","path":"Assets/Scenes/GameScene.unity","dirty":false,"root_count":6,"console_errors":0,"result":"PASS"}
+{"evidence":"disposable_fixture_complete_matrix","result":"BLOCKED","reason":"The complete section 28.3 matrix was not run in one marked disposable fixture"}
