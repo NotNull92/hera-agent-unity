@@ -42,7 +42,7 @@ the measured benefit gates did not justify MCP promotion.
 |:---|:---|:---|
 | [`INDEX.md`](INDEX.md) | This file — project overview | Starting here |
 | [`MCP.md`](MCP.md) | Experimental MCP setup, compatibility, safety, and troubleshooting | Configuring an MCP client |
-| [`DISTRIBUTION_CHANNELS.md`](DISTRIBUTION_CHANNELS.md) | CLI, UPM, npm, Codex marketplace, mirror, and candidate distribution status | Preparing or auditing a release channel |
+| [`DISTRIBUTION_CHANNELS.md`](DISTRIBUTION_CHANNELS.md) | CLI, UPM/OpenUPM, npm, Codex, MCP registry, mirror, and candidate distribution status | Preparing, expanding, or auditing a release channel |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System architecture, data flow, state machine | You need the big picture |
 | [`GO_CLI.md`](GO_CLI.md) | Go CLI code structure, entry point, command dispatch | Modifying Go code |
 | [`CSHARP_CONNECTOR.md`](CSHARP_CONNECTOR.md) | C# Unity side — HttpServer, CommandRouter, ToolDiscovery | Modifying C# code |

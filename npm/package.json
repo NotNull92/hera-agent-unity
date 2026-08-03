@@ -1,6 +1,7 @@
 {
   "name": "hera-agent-unity",
-  "version": "0.1.1",
+  "version": "0.1.2",
+  "mcpName": "io.github.notnull92/hera-agent-unity",
   "description": "Low-token CLI for AI agents to control a live Unity Editor.",
   "license": "Apache-2.0",
   "author": "NotNull92",
@@ -17,6 +18,7 @@
     "unity-editor",
     "ai-agent",
     "codex",
+    "mcp",
     "cli"
   ],
   "bin": {

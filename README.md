@@ -81,6 +81,18 @@ adapter for intentionally configured MCP clients. See
 
 ## What's New
 
+### v0.1.2 - package-backed MCP discovery
+
+This patch publishes the existing default-off stdio MCP adapter through the
+official MCP Registry without changing the Unity Connector or normal CLI path.
+
+| Release change | What it means |
+|:---|:---|
+| Official MCP identity | `io.github.notnull92/hera-agent-unity` links the registry entry to the public npm package. |
+| Reproducible local launch | Registry clients receive the fixed `mcp --transport stdio --profile core` arguments and `HERA_MCP_ENABLED=1` opt-in. |
+| Ordered trusted publication | GitHub Actions publishes npm first, then uses GitHub OIDC and a checksum-pinned publisher for the MCP Registry. |
+| Connector unchanged | The released Unity package remains Connector 0.0.80; CLI and Connector versions stay independent. |
+
 ### v0.1.1 - hardened contracts, recovery, and release evidence
 
 This release tightens the completed CLI + optional MCP architecture without
@@ -216,9 +228,9 @@ agent to guess version-specific APIs.
 
 [Choose a UI system →](#ui-systems) · [Read the UI document contract →](docs/UI_DOC_IR.md)
 
-### Latest CLI release - v0.1.1
+### Latest CLI release - v0.1.2
 
-The latest published CLI release is **v0.1.1** (August 4, 2026). Its released
+The latest published CLI release is **v0.1.2** (August 4, 2026). Its released
 Unity package is **Connector 0.0.80**. CLI and connector versions are
 intentionally separate.
 
@@ -228,6 +240,7 @@ intentionally separate.
 | **Smaller Compact discovery** | Action-specific describe avoids returning unrelated action contracts while preserving the existing full-tool form. |
 | **Recovery hardening** | Ledger, settings, config-lock, timeout, and MCP lifecycle states now have explicit fail-closed behavior. |
 | **Repeatable release evidence** | Five Unity compile buckets and the isolated Connector NUnit gate are automated and leave fixture manifests unchanged. |
+| **MCP Registry discovery** | The npm package carries verified MCP ownership metadata and a reproducible local stdio launch contract. |
 
 Release compatibility matrix:
 

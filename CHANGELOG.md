@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added (distribution preparation)
+## [0.1.2] - 2026-08-04
 
-- Prepared npm wrapper `0.1.1` with a release-asset verification gate and an OIDC trusted-publishing workflow; the npm registry is not changed by this commit.
+### Added (distribution)
+
+- Added official MCP Registry identity `io.github.notnull92/hera-agent-unity`,
+  npm ownership metadata, a schema-backed local stdio launch manifest, and an
+  OIDC publication workflow that runs only after npm publication succeeds.
+- Updated the npm wrapper to `0.1.2` while keeping Connector `0.0.80`
+  independent and unchanged.
+- Added a release-asset verification gate and npm OIDC trusted-publishing
+  workflow, then published the previously prepared npm `0.1.1` package.
 - Added a publisher-owned Codex marketplace at `.agents/plugins/marketplace.json`, updated the Hera Unity plugin to `1.0.1`, replaced the obsolete marketplace command with the current Codex flow, and documented the repository-backed standalone `npx skills` channel.
 - Documented every active, pending, mirrored, and candidate distribution channel in `docs/DISTRIBUTION_CHANNELS.md`.
 

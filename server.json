@@ -1,0 +1,32 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.notnull92/hera-agent-unity",
+  "title": "Hera Agent Unity",
+  "description": "Control and verify a live Unity Editor through a local, low-token MCP server.",
+  "version": "0.1.2",
+  "websiteUrl": "https://github.com/NotNull92/hera-agent-unity",
+  "repository": {
+    "url": "https://github.com/NotNull92/hera-agent-unity",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "hera-agent-unity",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        { "type": "positional", "value": "mcp" },
+        { "type": "positional", "value": "--transport" },
+        { "type": "positional", "value": "stdio" },
+        { "type": "positional", "value": "--profile" },
+        { "type": "positional", "value": "core" }
+      ],
+      "environmentVariables": [
+        { "name": "HERA_MCP_ENABLED", "value": "1" }
+      ]
+    }
+  ]
+}

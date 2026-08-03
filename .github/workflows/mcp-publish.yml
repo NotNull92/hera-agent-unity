@@ -1,0 +1,85 @@
+name: Publish MCP Registry
+
+on:
+  workflow_run:
+    workflows: ["Publish npm Package"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing stable GitHub release tag matching server.json
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      MCP_PUBLISHER_VERSION: "1.7.9"
+      MCP_PUBLISHER_SHA256: "ab128162b0616090b47cf245afe0a23f3ef08936fdce19074f5ba0a4469281ac"
+    steps:
+      - name: Resolve release ref
+        id: release
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_TAG: ${{ inputs.release_tag }}
+          COMPLETED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ ! "$MANUAL_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "release_tag must be a stable vX.Y.Z tag" >&2
+              exit 1
+            fi
+            ref="$MANUAL_TAG"
+          else
+            ref="$COMPLETED_SHA"
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.release.outputs.ref }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Verify registry metadata and npm publication
+        shell: bash
+        run: |
+          npm --prefix npm ci --ignore-scripts
+          npm --prefix npm test
+          version="$(node -p "require('./server.json').version")"
+          published="$(npm view "hera-agent-unity@${version}" version)"
+          if [[ "$published" != "$version" ]]; then
+            echo "hera-agent-unity@${version} is not available from npm" >&2
+            exit 1
+          fi
+
+      - name: Install pinned mcp-publisher
+        shell: bash
+        run: |
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          curl -fsSLo "$archive" \
+            "https://github.com/modelcontextprotocol/registry/releases/download/v${MCP_PUBLISHER_VERSION}/${archive}"
+          echo "${MCP_PUBLISHER_SHA256}  ${archive}" | sha256sum --check --strict
+          tar -xzf "$archive" mcp-publisher
+          ./mcp-publisher --version
+
+      - name: Validate server metadata
+        run: ./mcp-publisher validate
+
+      - name: Authenticate to MCP Registry
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server metadata
+        run: ./mcp-publisher publish
