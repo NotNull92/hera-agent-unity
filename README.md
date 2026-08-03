@@ -88,6 +88,55 @@ normal CLI. MCP is shipped as an experimental, stdio-only, environment-gated
 option; the typed CLI and localhost Unity Connector remain the production
 default.
 
+#### Why make this migration?
+
+More AI applications now speak MCP as a common way to discover and call tools.
+Hera already had a small, efficient CLI and a proven Unity execution path, so
+rebuilding the product around MCP would have duplicated that work and changed a
+workflow that existing users rely on. Instead, v0.1.0 adds a thin translator at
+the edge: an MCP-capable AI can speak its familiar protocol while Hera keeps
+executing the same validated CLI and Connector operations underneath.
+
+Think of the CLI as Hera's compact dedicated remote control. The MCP adapter is
+a small plug converter that lets a different device use that remote; it does
+not replace the remote with a larger control panel.
+
+#### How does it work?
+
+The path is `AI client → optional MCP adapter → existing Hera execution core →
+localhost Connector → the selected Unity Editor`. The adapter searches and
+describes tools, validates the requested operation, applies the same safety
+policy, and then hands the call to Hera's existing execution path. It does not
+open Unity to the network, replace the Connector, or silently relax approvals.
+Unsupported approval or operation-ledger features fail closed instead of
+guessing that an operation is safe.
+
+#### Does it use more tokens?
+
+The normal CLI path has no new token cost because it has not changed. MCP adds
+some unavoidable protocol metadata, so token use is **not guaranteed to be
+identical** and depends on the AI client and the task. Hera limits that overhead
+in two ways: Profile exposes a small, stable native surface, while Compact MCP
+registers only three gateway tools — search, describe, and call — and fetches a
+tool's details only when they are needed. The large Full surface remains an
+explicit diagnostic option rather than the default.
+
+There is not yet a repository benchmark that proves exact CLI/MCP token parity.
+The design goal is therefore honest and narrower: preserve the CLI's current
+cost, and make MCP compatibility pay as little up-front context cost as
+possible.
+
+#### Why borrow Compact MCP if Hera is CLI-first?
+
+Hera's principle is low-token, verifiable Unity control — not loyalty to one
+protocol. Refusing MCP completely would isolate Hera from compatible AI hosts;
+adopting a conventional “register every tool” MCP design would send a large
+catalog of names, descriptions, and schemas into context before most of it was
+needed. v0.1.0 deliberately uses MCP only as the outside language and keeps the
+CLI as the production core. Compact exposure preserves the original philosophy
+by making compatibility on-demand instead of turning compatibility into a
+permanent token tax.
+
 | Release change | What it means |
 |:---|:---|
 | Project-aware Editor selection | Full normalized project paths identify Editors; ports are treated as temporary endpoints and ambiguous matches fail. |
