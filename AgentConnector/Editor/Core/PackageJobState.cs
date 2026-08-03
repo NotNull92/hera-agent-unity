@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
+using UnityEngine;
 // `using UnityEditor;` also pulls in the legacy AssetStore PackageInfo type;
 // alias the PackageManager one so bare `PackageInfo` is unambiguous.
 using PackageInfo = UnityEditor.PackageManager.PackageInfo;
@@ -34,7 +35,7 @@ namespace HeraAgent
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
 
-        public static void MarkPending(int port, string jobId, string action, string identifier)
+        public static bool TryMarkPending(int port, string jobId, string action, string identifier, out string error)
         {
             try
             {
@@ -45,11 +46,20 @@ namespace HeraAgent
                     port,
                     action,
                     identifier,
+                    project_id = ProjectIdentity.CurrentId,
+                    owner_pid = ProjectIdentity.CurrentProcessId,
                     started_unix_ms = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 };
                 AtomicFile.WriteAllText(PendingPath(port, jobId), JsonConvert.SerializeObject(pending));
+                error = null;
+                return true;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                Debug.LogError($"[Hera] Failed to persist package job '{jobId}': {ex.Message}");
+                return false;
+            }
         }
 
         public static void ClearPending(int port, string jobId)
@@ -59,7 +69,10 @@ namespace HeraAgent
                 var p = PendingPath(port, jobId);
                 if (File.Exists(p)) File.Delete(p);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Hera] Failed to clear package job '{jobId}': {ex.Message}");
+            }
         }
 
         public static void AttachWatcher(int port, string jobId, string action, string identifier, Request request)
@@ -69,8 +82,8 @@ namespace HeraAgent
             {
                 if (!request.IsCompleted) return;
                 EditorApplication.update -= watcher;
-                WriteResult(port, jobId, action, identifier, request);
-                ClearPending(port, jobId);
+                if (WriteResult(port, jobId, action, identifier, request))
+                    ClearPending(port, jobId);
             };
             EditorApplication.update += watcher;
         }
@@ -89,7 +102,10 @@ namespace HeraAgent
 
                     JObject pending;
                     try { pending = JObject.Parse(json); }
-                    catch { TryDelete(file); continue; }
+                    catch { continue; }
+
+                    if (!ProjectIdentity.OwnsState(pending, ProjectIdentity.CurrentProcessId))
+                        continue;
 
                     int port = pending["port"]?.Value<int>() ?? 0;
                     string jobId = pending["job_id"]?.Value<string>();
@@ -106,8 +122,8 @@ namespace HeraAgent
                     var ageMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - startedMs;
                     if (ageMs > StaleJobMs)
                     {
-                        WriteTimeoutResult(port, jobId, action, identifier);
-                        ClearPending(port, jobId);
+                        if (WriteTimeoutResult(port, jobId, action, identifier))
+                            ClearPending(port, jobId);
                         continue;
                     }
 
@@ -128,13 +144,13 @@ namespace HeraAgent
             {
                 if (!listRequest.IsCompleted) return;
                 EditorApplication.update -= watcher;
-                WriteResumedResult(port, jobId, action, identifier, listRequest);
-                ClearPending(port, jobId);
+                if (WriteResumedResult(port, jobId, action, identifier, listRequest))
+                    ClearPending(port, jobId);
             };
             EditorApplication.update += watcher;
         }
 
-        static void WriteResult(int port, string jobId, string action, string identifier, Request request)
+        static bool WriteResult(int port, string jobId, string action, string identifier, Request request)
         {
             object payload;
             if (request.Status >= StatusCode.Failure)
@@ -166,21 +182,20 @@ namespace HeraAgent
                     },
                 };
             }
-            TryWriteJson(ResultPath(port, jobId), payload);
+            return TryWriteJson(ResultPath(port, jobId), payload);
         }
 
-        static void WriteResumedResult(int port, string jobId, string action, string identifier, ListRequest listRequest)
+        static bool WriteResumedResult(int port, string jobId, string action, string identifier, ListRequest listRequest)
         {
             if (listRequest.Status >= StatusCode.Failure)
             {
-                TryWriteJson(ResultPath(port, jobId), new
+                return TryWriteJson(ResultPath(port, jobId), new
                 {
                     success = false,
                     message = $"{action} '{identifier}': could not verify post-reload state — Client.List failed: {listRequest.Error?.message}",
                     code = "PACKAGE_RESUME_LIST_FAILED",
                     data = new { action, identifier },
                 });
-                return;
             }
 
             PackageInfo found = null;
@@ -196,7 +211,7 @@ namespace HeraAgent
 
             bool succeeded = action == "remove" ? (found == null) : (found != null);
 
-            TryWriteJson(ResultPath(port, jobId), new
+            return TryWriteJson(ResultPath(port, jobId), new
             {
                 success = succeeded,
                 message = succeeded
@@ -212,9 +227,9 @@ namespace HeraAgent
             });
         }
 
-        static void WriteTimeoutResult(int port, string jobId, string action, string identifier)
+        static bool WriteTimeoutResult(int port, string jobId, string action, string identifier)
         {
-            TryWriteJson(ResultPath(port, jobId), new
+            return TryWriteJson(ResultPath(port, jobId), new
             {
                 success = false,
                 message = $"{action} '{identifier}' timed out (no result for >10m).",
@@ -242,13 +257,18 @@ namespace HeraAgent
         internal static string ResultPath(int port, string jobId) =>
             Path.Combine(StatusDir, $"package-result-{port}-{jobId}.json");
 
-        static void TryWriteJson(string path, object payload)
+        static bool TryWriteJson(string path, object payload)
         {
             try
             {
                 AtomicFile.WriteAllText(path, JsonConvert.SerializeObject(payload));
+                return true;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[Hera] Failed to write package result '{path}': {ex.Message}");
+                return false;
+            }
         }
 
         static void TryDelete(string path)

@@ -126,7 +126,7 @@ func TestNegotiatedTaskReturnsDurableHandle(t *testing.T) {
 	if !ok || taskID == "" {
 		t.Fatalf("result meta=%#v", result.Meta)
 	}
-	if task, err := taskbridge.New(statusDir).Get(taskID); err != nil || task.State != taskbridge.StateWorking {
+	if task, err := taskbridge.New(statusDir, mcpTestProjectID).Get(taskID); err != nil || task.State != taskbridge.StateWorking {
 		t.Fatalf("task=%#v error=%v", task, err)
 	}
 }
@@ -135,7 +135,7 @@ func TestTaskMiddlewareReturnsExtensionShape(t *testing.T) {
 	statusDir := t.TempDir()
 	runID := "0123456789abcdef0123456789abcdef"
 	writeMCPTaskFile(t, filepath.Join(statusDir, "test-pending-8093-"+runID+".json"), `{"run_id":"`+runID+`","port":8093}`)
-	store := taskbridge.New(statusDir)
+	store := taskbridge.New(statusDir, mcpTestProjectID)
 	task, err := store.Create(taskbridge.Start{Kind: taskbridge.KindTest, Port: 8093, UnderlyingID: runID, OperationID: "op_0123456789abcdef0123456789abcdef"})
 	if err != nil {
 		t.Fatal(err)
@@ -159,7 +159,7 @@ func TestTaskExtensionAdvertisesAndServesDurableState(t *testing.T) {
 	statusDir := t.TempDir()
 	runID := "0123456789abcdef0123456789abcdef"
 	writeMCPTaskFile(t, filepath.Join(statusDir, "test-pending-8093-"+runID+".json"), `{"run_id":"`+runID+`","port":8093}`)
-	store := taskbridge.New(statusDir)
+	store := taskbridge.New(statusDir, mcpTestProjectID)
 	task, err := store.Create(taskbridge.Start{Kind: taskbridge.KindTest, Port: 8093, UnderlyingID: runID, OperationID: "op_0123456789abcdef0123456789abcdef"})
 	if err != nil {
 		t.Fatal(err)
@@ -220,8 +220,8 @@ func taskTestRuntime(statusDir string, sender toolSender, taskMode bool) nativeR
 	tool := taskTestTool()
 	return nativeRuntime{
 		instance: &client.Instance{Port: 8093, Features: []string{client.FeatureOperationLedgerV1, client.FeatureTaskBridgeV1}},
-		snapshot: &toolregistry.Snapshot{Catalog: &toolregistry.Catalog{CatalogHash: nativeTestCatalogHash, Tools: []toolregistry.Tool{tool}}},
-		sender:   sender, timeout: 2_000, tasks: taskbridge.New(statusDir), taskMode: taskMode,
+		snapshot: &toolregistry.Snapshot{Catalog: &toolregistry.Catalog{ProjectID: mcpTestProjectID, CatalogHash: nativeTestCatalogHash, Tools: []toolregistry.Tool{tool}}},
+		sender:   sender, timeout: 2_000, tasks: taskbridge.New(statusDir, mcpTestProjectID), taskMode: taskMode,
 	}
 }
 

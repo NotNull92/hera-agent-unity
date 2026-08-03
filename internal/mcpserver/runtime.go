@@ -61,7 +61,7 @@ func prepareNativeRuntime(ctx context.Context, config Config) (nativeRuntime, er
 		approver:       client.DefaultClient,
 		timeout:        config.TimeoutMS,
 		mrtr:           config.MRTR,
-		tasks:          taskbridge.New(paths.StatusDir()),
+		tasks:          taskbridge.New(paths.StatusDir(), snapshot.Catalog.ProjectID),
 		taskMode:       instanceHasFeature(instance, client.FeatureTaskBridgeV1),
 		results:        results,
 		maxInlineBytes: config.maxInlineBytes(),

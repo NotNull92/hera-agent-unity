@@ -108,7 +108,7 @@ namespace HeraAgent
         static string GetFilePath()
         {
             if (s_FilePath != null) return s_FilePath;
-            var projectPath = Application.dataPath.Replace("/Assets", "");
+            var projectPath = ProjectIdentity.CurrentRoot;
             using var md5 = MD5.Create();
             var hash = BitConverter.ToString(md5.ComputeHash(Encoding.UTF8.GetBytes(projectPath)))
                 .Replace("-", "").Substring(0, 16).ToLower();
@@ -121,7 +121,7 @@ namespace HeraAgent
             if (s_InvariantsReady) return;
             using (var proc = System.Diagnostics.Process.GetCurrentProcess())
                 s_Pid = proc.Id;
-            s_ProjectPath = Application.dataPath.Replace("/Assets", "");
+            s_ProjectPath = ProjectIdentity.CurrentRoot;
             s_UnityVersion = Application.unityVersion;
             s_DocsVersion = UnityVersionCompat.CurrentDocsVersion();
             s_Compiler = GetCompilerSummary();

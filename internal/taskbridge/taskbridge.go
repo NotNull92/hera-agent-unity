@@ -68,6 +68,7 @@ type CancelResult struct {
 
 type Store struct {
 	statusDir string
+	projectID string
 	now       func() time.Time
 }
 
@@ -79,6 +80,7 @@ var (
 
 type taskKey struct {
 	Version      int    `json:"v"`
+	ProjectID    string `json:"project_id"`
 	Kind         Kind   `json:"k"`
 	Port         int    `json:"p"`
 	UnderlyingID string `json:"u"`
@@ -87,8 +89,8 @@ type taskKey struct {
 	CreatedMS    int64  `json:"c"`
 }
 
-func New(statusDir string) *Store {
-	return &Store{statusDir: statusDir, now: time.Now}
+func New(statusDir, projectID string) *Store {
+	return &Store{statusDir: statusDir, projectID: projectID, now: time.Now}
 }
 
 func (store *Store) Create(start Start) (*Task, error) {
@@ -97,7 +99,7 @@ func (store *Store) Create(start Start) (*Task, error) {
 	}
 	created := store.now().UTC()
 	key := taskKey{
-		Version: 1, Kind: start.Kind, Port: start.Port, UnderlyingID: start.UnderlyingID,
+		Version: 2, ProjectID: store.projectID, Kind: start.Kind, Port: start.Port, UnderlyingID: start.UnderlyingID,
 		OperationID: start.OperationID, Action: start.Action, CreatedMS: created.UnixMilli(),
 	}
 	id, err := encodeKey(key)
@@ -111,6 +113,9 @@ func (store *Store) Get(taskID string) (*Task, error) {
 	key, err := decodeKey(taskID)
 	if err != nil {
 		return nil, err
+	}
+	if key.ProjectID != store.projectID {
+		return nil, ErrTaskNotFound
 	}
 	created := time.UnixMilli(key.CreatedMS).UTC()
 	task := &Task{
@@ -168,6 +173,9 @@ func (store *Store) ResultPath(taskID string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if key.ProjectID != store.projectID {
+		return "", ErrTaskNotFound
+	}
 	return store.resultPath(key), nil
 }
 
@@ -210,7 +218,10 @@ func decodeKey(taskID string) (taskKey, error) {
 		return key, ErrInvalidTaskID
 	}
 	data, err := base64.RawURLEncoding.DecodeString(taskID[len(prefix):])
-	if err != nil || json.Unmarshal(data, &key) != nil || key.Version != 1 {
+	if err != nil || json.Unmarshal(data, &key) != nil || key.Version != 2 {
+		return taskKey{}, ErrInvalidTaskID
+	}
+	if key.ProjectID == "" {
 		return taskKey{}, ErrInvalidTaskID
 	}
 	if err := validateStart(Start{Kind: key.Kind, Port: key.Port, UnderlyingID: key.UnderlyingID, OperationID: key.OperationID}); err != nil {

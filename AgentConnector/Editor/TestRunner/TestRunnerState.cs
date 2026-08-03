@@ -29,7 +29,8 @@ namespace HeraAgent.TestRunner
                 run_id = runId,
                 filter = filter ?? "",
                 mode = mode == TestMode.EditMode ? "EditMode" : "PlayMode",
-                owner_pid = System.Diagnostics.Process.GetCurrentProcess().Id
+                owner_pid = HeraAgent.ProjectIdentity.CurrentProcessId,
+                project_id = HeraAgent.ProjectIdentity.CurrentId
             };
             try
             {
@@ -58,9 +59,11 @@ namespace HeraAgent.TestRunner
                 {
                     if (!TryReadPending(file, out var pending))
                     {
-                        TryDelete(file);
                         continue;
                     }
+
+                    if (!OwnsCurrentProject(pending))
+                        continue;
 
                     if (File.Exists(RunTests.ResultsFilePath(pending.Port, pending.RunId)))
                     {
@@ -91,9 +94,11 @@ namespace HeraAgent.TestRunner
                 {
                     if (!TryReadPending(file, out var pending))
                     {
-                        TryDelete(file);
                         continue;
                     }
+
+                    if (!OwnsCurrentProject(pending))
+                        continue;
 
                     if (File.Exists(RunTests.ResultsFilePath(pending.Port, pending.RunId)))
                     {
@@ -160,7 +165,10 @@ namespace HeraAgent.TestRunner
             }
         }
 
-        static int CurrentProcessId => System.Diagnostics.Process.GetCurrentProcess().Id;
+        static int CurrentProcessId => HeraAgent.ProjectIdentity.CurrentProcessId;
+
+        static bool OwnsCurrentProject(PendingRun pending) =>
+            HeraAgent.ProjectIdentity.OwnsState(pending.State, CurrentProcessId);
 
         static bool TryReadPending(string path, out PendingRun pending)
         {
@@ -180,7 +188,8 @@ namespace HeraAgent.TestRunner
                     RunId = runId,
                     Filter = data["filter"]?.Value<string>(),
                     Mode = data["mode"]?.Value<string>(),
-                    OwnerPid = ownerPid
+                    OwnerPid = ownerPid,
+                    State = data
                 };
                 return true;
             }
@@ -219,6 +228,7 @@ namespace HeraAgent.TestRunner
             public string Filter { get; set; }
             public string Mode { get; set; }
             public int OwnerPid { get; set; }
+            public JObject State { get; set; }
         }
     }
 }

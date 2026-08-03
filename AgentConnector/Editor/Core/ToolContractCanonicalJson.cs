@@ -71,9 +71,7 @@ namespace HeraAgent
         };
 
         internal static string ProjectId =>
-            ToolContractCanonicalJson.ComputeProjectId(
-                Directory.GetParent(Application.dataPath)?.FullName
-                ?? Application.dataPath);
+            ProjectIdentity.CurrentId;
 
         internal static string CreateDomainEpoch()
         {

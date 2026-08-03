@@ -185,7 +185,11 @@ namespace HeraAgent.Tools
             var jobId = CreateJobId();
             var port = HttpServer.Port;
 
-            PackageJobState.MarkPending(port, jobId, action, identifier);
+            if (!PackageJobState.TryMarkPending(port, jobId, action, identifier, out var persistenceError))
+            {
+                return new ErrorResponse("PACKAGE_JOB_STATE_WRITE_FAILED",
+                    $"Cannot start {action} '{identifier}' because its recovery state could not be persisted: {persistenceError}");
+            }
 
             Request request;
             try
