@@ -3,31 +3,35 @@
 package assetconfig
 
 import (
+	"errors"
 	"os"
-	"os/exec"
+	"syscall"
 	"testing"
-	"time"
 )
 
-func TestCheckConfigProcessDeadUnix(t *testing.T) {
+func TestCheckConfigProcessDeadUnixCurrentProcessIsAlive(t *testing.T) {
 	if checkConfigProcessDead(os.Getpid()) {
 		t.Fatal("current process was classified as dead")
 	}
+}
 
-	command := exec.Command("sh", "-c", "exit 0")
-	if err := command.Start(); err != nil {
-		t.Fatalf("start helper process: %v", err)
+func TestConfigProcessSignalConfirmsDeadUnix(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		dead bool
+	}{
+		{name: "process exists", err: nil, dead: false},
+		{name: "permission denied means alive", err: syscall.EPERM, dead: false},
+		{name: "process missing", err: syscall.ESRCH, dead: true},
+		{name: "Go process already finished", err: os.ErrProcessDone, dead: true},
+		{name: "indeterminate error means alive", err: errors.New("indeterminate"), dead: false},
 	}
-	pid := command.Process.Pid
-	if err := command.Wait(); err != nil {
-		t.Fatalf("wait for helper process: %v", err)
-	}
-
-	deadline := time.Now().Add(time.Second)
-	for !checkConfigProcessDead(pid) && time.Now().Before(deadline) {
-		time.Sleep(10 * time.Millisecond)
-	}
-	if !checkConfigProcessDead(pid) {
-		t.Fatalf("exited helper process %d was not classified as dead", pid)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := configProcessSignalConfirmsDead(test.err); got != test.dead {
+				t.Fatalf("dead=%v, want %v for %v", got, test.dead, test.err)
+			}
+		})
 	}
 }

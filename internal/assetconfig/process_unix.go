@@ -15,12 +15,12 @@ func checkConfigProcessDead(pid int) bool {
 	if err != nil {
 		return true
 	}
-	err = process.Signal(syscall.Signal(0))
+	return configProcessSignalConfirmsDead(process.Signal(syscall.Signal(0)))
+}
+
+func configProcessSignalConfirmsDead(err error) bool {
 	if err == nil || errors.Is(err, syscall.EPERM) {
 		return false
 	}
-	if errors.Is(err, syscall.ESRCH) {
-		return true
-	}
-	return false
+	return errors.Is(err, syscall.ESRCH) || errors.Is(err, os.ErrProcessDone)
 }
