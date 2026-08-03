@@ -5,13 +5,13 @@
 External state was last checked on 2026-08-04.
 
 ```text
-CLI release target:   v0.1.2
-npm package target:   0.1.2
+CLI release target:   v0.1.3
+npm package target:   0.1.3
 UPM Connector:        0.0.80
 Codex plugin bundle:  1.0.1
 Distribution commit:  5cf8b239d5b999bdc890cc6cfc122c4ef0d1438f
 Connector tag:        connector-0.0.80
-CLI tag target:       v0.1.2
+CLI tag target:       v0.1.3
 ```
 
 CLI, Connector, npm, and plugin versions are intentionally independent.
@@ -20,17 +20,17 @@ CLI, Connector, npm, and plugin versions are intentionally independent.
 
 | Channel | External state | Repository state | Next action |
 |---|---|---|---|
-| GitHub Release binaries | `v0.1.1` published with five native assets | `v0.1.2` release prepared | Push `v0.1.2` tag |
-| PowerShell / shell installers | Resolve GitHub `releases/latest` | Automatically follows stable releases | Verify after `v0.1.2` publishes |
-| Go install | Resolves the latest module tag | `v0.1.2` source prepared | Verify after tag publication |
+| GitHub Release binaries | `v0.1.2` published with five native assets | `v0.1.3` follow-up prepared | Push `v0.1.3` tag |
+| PowerShell / shell installers | Resolve GitHub `releases/latest` | Automatically follows stable releases | Verify after `v0.1.3` publishes |
+| Go install | Resolves the latest module tag | `v0.1.3` source prepared | Verify after tag publication |
 | Unity UPM Git package | `connector-0.0.80` tag published | Complete | None |
 | OpenUPM | Registry `latest` is `0.0.80` | Complete | Keep Connector package metadata compatible with OpenUPM |
-| npm | Registry `latest` is `0.1.1` | Package `0.1.2` and trusted-publishing workflow prepared | Publish from the `v0.1.2` GitHub Release |
+| npm | Registry `latest` is `0.1.2` | Package `0.1.3` and workflow-run publication prepared | Publish after the `v0.1.3` GitHub Release succeeds |
 | HOL awesome-codex-plugins | Hera Agent Unity is listed; source scanner passed for `5cf8b23` | Plugin `1.0.1` is scanner-gated | Upstream mirror refresh remains upstream-owned |
 | HOL awesome-ai-plugins | Hera Agent Unity is listed | Uses the same upstream bundle | No separate package publication |
 | Publisher-owned Codex marketplace | `main` exposes `.agents/plugins/marketplace.json` | Complete | Keep the catalog entry and plugin bundle in sync |
 | Skills CLI / skills.sh | Repository-backed skill is installable | `.agents/skills/hera-agent-unity/SKILL.md` is the canonical source | Directory visibility remains telemetry-driven |
-| Official MCP Registry | No Hera entry found | `mcpName`, `server.json`, contract tests, and ordered OIDC publication prepared | Publish automatically after npm `0.1.2` succeeds |
+| Official MCP Registry | First `0.1.2` attempt failed because GitHub OIDC namespace casing is exact | Correct `io.github.NotNull92/hera-agent-unity` identity prepared | Publish automatically after npm `0.1.3` succeeds |
 | GitHub MCP Registry | Hera is not listed | Candidate after official MCP Registry publication | Request curated inclusion after the official entry is live |
 | Glama | No Hera-specific entry verified | Can ingest the official MCP Registry or a GitHub submission | Prefer official Registry ingestion; do not market Hera as a remote hosted server |
 | Smithery | No Hera entry verified | Local stdio publication requires an MCPB bundle | Add an MCPB release artifact only if this extra packaging surface is worth maintaining |
@@ -105,7 +105,7 @@ CLI-first workflow.
 
 ### What the migration unlocked
 
-CLI `v0.1.2` contains a real local MCP server. It uses stdio and can be launched
+CLI `v0.1.3` contains a real local MCP server. It uses stdio and can be launched
 from the published npm package with this process contract:
 
 ```text
@@ -121,9 +121,9 @@ UPM Connector installed. The adapter remains experimental and default-off.
 
 ### Publication flow
 
-1. **GitHub Release first.** The stable `v0.1.2` tag produces the five native
+1. **GitHub Release first.** The stable `v0.1.3` tag produces the five native
    CLI assets used by every installer and by the npm wrapper.
-2. **npm second.** Trusted publishing releases `hera-agent-unity@0.1.2` with
+2. **npm second.** Trusted publishing releases `hera-agent-unity@0.1.3` with
    immutable `mcpName` ownership metadata.
 3. **Official MCP Registry third.** The successful npm workflow triggers the
    separate MCP workflow, which publishes the matching `server.json` through

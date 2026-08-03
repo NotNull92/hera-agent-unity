@@ -81,14 +81,14 @@ Python 서버는 필요 없습니다. production 기본값인 CLI 경로에는 M
 
 ## 새로운 점
 
-### v0.1.2 - 패키지 기반 MCP 탐색
+### v0.1.3 - 패키지 기반 MCP 탐색
 
-이 패치는 기존의 default-off stdio MCP adapter를 공식 MCP Registry에 배포합니다.
-Unity Connector와 일반 CLI 기본 경로는 변경하지 않습니다.
+이 후속 패치는 기존의 default-off stdio MCP adapter를 공식 MCP Registry에
+배포합니다. Unity Connector와 일반 CLI 기본 경로는 변경하지 않습니다.
 
 | 릴리스 변경 | 쉬운 뜻 |
 |:---|:---|
-| 공식 MCP 식별자 | `io.github.notnull92/hera-agent-unity`가 Registry 항목과 공개 npm 패키지를 연결합니다. |
+| 공식 MCP 식별자 | `io.github.NotNull92/hera-agent-unity`가 대소문자를 구분하는 GitHub OIDC namespace와 정확히 일치하며 Registry 항목과 npm을 연결합니다. |
 | 재현 가능한 로컬 실행 | Registry client가 고정된 `mcp --transport stdio --profile core` 인자와 `HERA_MCP_ENABLED=1` opt-in을 받습니다. |
 | 순서가 보장된 trusted 배포 | GitHub Actions가 npm을 먼저 배포한 뒤 GitHub OIDC와 checksum으로 고정한 publisher로 MCP Registry를 배포합니다. |
 | Connector 변경 없음 | Unity 패키지는 Connector 0.0.80을 유지하며 CLI와 Connector 버전은 계속 독립적입니다. |
@@ -224,9 +224,9 @@ UI Toolkit 경로를 추가했습니다.
 
 [UI 시스템 선택하기 →](#ui-시스템) · [UI 문서 계약 보기 →](docs/UI_DOC_IR.md)
 
-### 최신 CLI 릴리스 - v0.1.2
+### 최신 CLI 릴리스 - v0.1.3
 
-공개된 최신 CLI 릴리스는 **v0.1.2**입니다(2026년 8월 4일). 이 릴리스의
+공개된 최신 CLI 릴리스는 **v0.1.3**입니다(2026년 8월 4일). 이 릴리스의
 Unity 패키지는 **Connector 0.0.80**입니다. CLI와 Connector 버전은 의도적으로
 분리되어 있습니다.
 

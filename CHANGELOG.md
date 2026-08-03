@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-08-04
+
+### Fixed (distribution)
+
+- Matched the official MCP Registry name to the case-sensitive GitHub OIDC
+  namespace `io.github.NotNull92/*`, replacing the unpublishable lowercase
+  identity released in npm `0.1.2`.
+- Trigger npm publication from the successful `Release` workflow completion so
+  GitHub's `GITHUB_TOKEN` recursion protection cannot suppress the release
+  chain. Manual stable-tag dispatch remains available for recovery.
+
 ## [0.1.2] - 2026-08-04
 
 ### Added (distribution)
