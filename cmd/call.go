@@ -88,13 +88,24 @@ func (command *callCommand) Run(
 	if snapshot.Schemas == nil || tool.ContractMode != toolregistry.ContractStrict {
 		return nil, fmt.Errorf("tool %q does not provide a strict contract", tool.Name)
 	}
-	if err := snapshot.Schemas.Validate(tool.Name+"/input", params); err != nil {
-		return nil, fmt.Errorf("validate call %q: %w", tool.Name, err)
-	}
-
 	action, safety, err := resolveCallSafety(tool, params)
 	if err != nil {
 		return nil, fmt.Errorf("resolve call safety %q: %w", tool.Name, err)
+	}
+	if action != "" {
+		params["action"] = action
+	}
+	schemaKey := tool.Name + "/input"
+	validationParams := params
+	for _, candidate := range tool.Actions {
+		if candidate.Name == action {
+			schemaKey = tool.Name + "/" + action + "/input"
+			validationParams = actionValidationParams(params, candidate.InputSchema)
+			break
+		}
+	}
+	if err := snapshot.Schemas.Validate(schemaKey, validationParams); err != nil {
+		return nil, fmt.Errorf("validate call %q: %w", tool.Name, err)
 	}
 	if options.Explain {
 		return callDataResponse("Call explanation", callExplanation{
@@ -139,6 +150,24 @@ func (command *callCommand) Run(
 		})
 	}
 	return command.send(request.Command, request.Params)
+}
+
+func actionValidationParams(params map[string]any, inputSchema json.RawMessage) map[string]any {
+	var shape struct {
+		Properties map[string]json.RawMessage `json:"properties"`
+	}
+	if json.Unmarshal(inputSchema, &shape) == nil {
+		if _, declaresAction := shape.Properties["action"]; declaresAction {
+			return params
+		}
+	}
+	withoutAction := make(map[string]any, len(params)-1)
+	for key, value := range params {
+		if key != "action" {
+			withoutAction[key] = value
+		}
+	}
+	return withoutAction
 }
 
 func resolveCallTool(

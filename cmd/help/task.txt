@@ -1,0 +1,22 @@
+Usage: hera-agent-unity task <action>
+
+Inspect durable Unity test and Package Manager work without sending an HTTP
+request to the Editor or waiting for a fresh heartbeat.
+
+Actions:
+  list                       List active tasks for the selected project and port
+  status <task_id>           Read one task's current durable state and result
+
+`task list` discovers project-owned pending records and returns reusable opaque
+task_id values. Keep a task_id if you need the completed result: after Unity
+clears the pending record, completed work is no longer discoverable by list,
+but `task status <task_id>` still resolves its result file. A task_id returned
+by negotiated MCP Tasks is accepted by the same status command.
+
+Use --project with the full project path when multiple Editors are open. These
+commands read local durable state only; they do not start, repeat, cancel, or
+otherwise mutate Unity work.
+
+Examples:
+  hera-agent-unity --project <full-path> task list
+  hera-agent-unity --project <full-path> task status <task_id>

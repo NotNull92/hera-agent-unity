@@ -359,14 +359,18 @@ namespace HeraAgent.Tools
             return new SuccessResponse($"Exported {target.name}", doc);
         }
 
-        static object Apply(JObject raw)
+        static object Apply(JObject raw) => ApplyForUiSystem(raw, HeraSettings.UiSystem);
+
+        internal static object ApplyForUiSystem(JObject raw, string uiSystem)
         {
             var p = new ToolParams(raw);
             var doc = AsObject(p.GetRaw("doc"));
             if (doc == null)
                 return new ErrorResponse("MISSING_PARAM", "apply needs 'doc' (the ui_doc IR; pass --file design.json).");
 
-            if (HeraSettings.UsesUiToolkit)
+            var backendError = UiBackendSelection.ValidateDocument(uiSystem, doc);
+            if (backendError != null) return backendError;
+            if (uiSystem == HeraSettings.UiSystemUITK)
                 return ApplyUiToolkitDocument(doc, raw);
 
             var rootNode = doc["root"] as JObject ?? doc; // allow a bare node too
@@ -403,6 +407,11 @@ namespace HeraAgent.Tools
 
             if (root != null)
             {
+                if (root.GetComponent<Canvas>() != null)
+                {
+                    var eventSystem = UiEventSystem.Ensure();
+                    if (!eventSystem.Success) stats.Errors.Add(eventSystem.ErrorMessage);
+                }
                 Selection.activeGameObject = root;
                 if (root.scene.IsValid()) EditorSceneManager.MarkSceneDirty(root.scene);
             }
@@ -709,7 +718,11 @@ namespace HeraAgent.Tools
 #else
             var existing = Object.FindObjectOfType<Canvas>();
 #endif
-            if (existing != null) return existing.gameObject;
+            if (existing != null)
+            {
+                UiEventSystem.Ensure();
+                return existing.gameObject;
+            }
 
             var go = new GameObject("Canvas");
             var canvas = go.AddComponent<Canvas>();
@@ -719,34 +732,11 @@ namespace HeraAgent.Tools
             var ray = ComponentTypeResolver.Resolve("GraphicRaycaster");
             if (ray != null) go.AddComponent(ray);
 
-            var esType = ComponentTypeResolver.Resolve("EventSystem");
-            if (esType != null && FindAnyObjectByType(esType) == null)
-            {
-                var esgo = new GameObject("EventSystem");
-                esgo.AddComponent(esType);
-                // Match the project's active input handling (see ManageUI rationale).
-#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-                var mod = ComponentTypeResolver.Resolve("InputSystemUIInputModule") ?? ComponentTypeResolver.Resolve("StandaloneInputModule");
-#else
-                var mod = ComponentTypeResolver.Resolve("StandaloneInputModule") ?? ComponentTypeResolver.Resolve("InputSystemUIInputModule");
-#endif
-                if (mod != null) esgo.AddComponent(mod);
-                Undo.RegisterCreatedObjectUndo(esgo, "Hera ui_doc EventSystem");
-            }
+            UiEventSystem.Ensure();
 
             Undo.RegisterCreatedObjectUndo(go, "Hera ui_doc Canvas");
             return go;
         }
 
-        static Object FindAnyObjectByType(System.Type type)
-        {
-#if UNITY_6000_5_OR_NEWER
-            return Object.FindAnyObjectByType(type);
-#elif UNITY_2023_1_OR_NEWER
-            return Object.FindFirstObjectByType(type);
-#else
-            return Object.FindObjectOfType(type);
-#endif
-        }
     }
 }

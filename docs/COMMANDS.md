@@ -29,9 +29,8 @@ check before any retry.
 
 ## mcp (experimental)
 
-Current `main` source, but not published CLI `v0.0.42`, contains the default-off
-stdio MCP adapter. After building the source as described in [`MCP.md`](MCP.md),
-start it with:
+Published CLI `v0.1.0` includes the default-off stdio MCP adapter. Configure it
+as described in [`MCP.md`](MCP.md), then start it with:
 
 ```bash
 HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
@@ -65,12 +64,21 @@ combining `--json`, `--file`, and stdin is an error.
 | `--json` | Inline JSON request object | none |
 | `--file` | Read the JSON request object from a file | none |
 | `--profile` | Require membership in the named live profile | none |
+| `--operation-id` | Reuse the operation ID bound to an approval or safe retry | generated |
+| `--approve` | Continue the identical request with a short-lived preflight token | none |
 | `--validate-only` | Validate without invoking the target tool | `false` |
 | `--explain` | Report canonical action, profile, contract mode, and resolved safety without invoking | `false` |
 
 `--explain` reports the current safety and policy projection without dispatching
 the command. Normal `call` execution enforces approval and operation-ledger
 requirements before risky work reaches the Connector.
+
+Validation uses the resolved action schema, so an action-specific object such as
+`{"action":"apply","doc":{...}}` is checked against `ui_doc/apply`, not only the
+tool's top-level dispatcher shape. In a non-interactive shell, an approval-gated
+request returns `APPROVAL_REQUIRED`; repeat the exact same typed or established
+command with `--approve <token>`. Changing its project, tool, action, arguments,
+or operation ID invalidates the single-use token.
 
 ---
 
@@ -1040,6 +1048,10 @@ the value-add over `manage_components`'s raw `m_` paths is **RectTransform
 anchor/pivot math**. In `uitk` mode, `create` emits a reflection-validated
 runtime UXML/USS/PanelSettings/UIDocument scaffold; UI Toolkit uses Flexbox, so
 the RectTransform-only actions return an explicit unsupported-action error.
+This setting is the single project-level backend selector: Hera does not infer
+or switch UI systems from scene contents or a submitted document. An explicit
+`ui_doc.backend` must match `ui_system`, otherwise `apply` fails with
+`UI_SYSTEM_MISMATCH` before creating or writing anything.
 
 ```bash
 hera-agent-unity manage_ui <action> [flags]
@@ -1047,7 +1059,7 @@ hera-agent-unity manage_ui <action> [flags]
 
 | Action | Flags | Description |
 |:---|:---|:---|
-| `create` | `--element <kind>` `[--name <n>]` `[--content <text>]` `[--text tmp\|legacy]` `[--parent </path> or <id>]` | uGUI: create an element from `canvas`, `panel`, `image`, `button`, `text`, `empty`, auto-creating Canvas + EventSystem. UITK: map those aliases (or use an exact reflected runtime UITK element) and emit the generated UXML/USS scaffold. |
+| `create` | `--element <kind>` `[--name <n>]` `[--content <text>]` `[--text tmp\|legacy]` `[--parent </path> or <id>]` | uGUI: create an element from `canvas`, `panel`, `image`, `button`, `text`, `empty`, auto-creating Canvas + EventSystem. The shared EventSystem policy adds the input module selected by Unity's active input-handling defines and, in an exclusive mode, disables an incompatible built-in module already present. UITK: map those aliases (or use an exact reflected runtime UITK element) and emit the generated UXML/USS scaffold. |
 | `get_rect` | `--instance_id <id>` or `--path </path>` | Read the full RectTransform in uGUI mode; unavailable in UITK mode. |
 | `set_anchor` | `--preset <name>` or `--anchor_min x,y --anchor_max x,y`; `[--snap true]` `[--pivot x,y]` | Re-anchor in uGUI mode; unavailable in UITK mode. |
 | `set_rect` | `[--anchored_position x,y]` `[--size_delta x,y]` `[--pivot x,y]` `[--offset_min x,y]` `[--offset_max x,y]` | Set RectTransform fields in uGUI mode; unavailable in UITK mode. |
@@ -1148,7 +1160,7 @@ hera-agent-unity ui_doc <action> [flags]
 | Action | Flags | Description |
 |:---|:---|:---|
 | `export` | `--path </path>` or `--instance_id <id>`; `[--depth N]` | Serialize the subtree to the `ui_doc/2` IR. Depth defaults to 8. |
-| `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | uGUI: realize the IR under the parent (default: existing/auto Canvas) and run the uGUI fixer. UITK: require `backend:"uitk"`, validate runtime elements/attributes/USS plus PanelSettings/UIDocument availability before writing, then emit `.uxml` + `.uss` + PanelSettings + UIDocument under `Assets/HeraGenerated/UI`. A failed `create` compensates by deleting only artifacts created by that request; `upsert` is non-transactional and reports `upsert_may_be_partial` if existing output may have changed. Screen-space is default; world-space requires runtime Unity 6000.2+. Pass the doc via `--file` so it never rides inline in context. |
+| `apply` | `--file <doc.json>`; `[--parent </path> or <id>]`; `[--mode create\|upsert]` | uGUI: realize the IR under the parent (default: existing/auto Canvas) and run the uGUI fixer. A root Canvas also ensures one EventSystem with the input module selected by Unity's active input-handling defines; in an exclusive input mode it disables the incompatible built-in module if present. Root-level `upsert` reuses a same-named scene root. UITK: require `backend:"uitk"`, validate runtime elements/attributes/USS plus PanelSettings/UIDocument availability before writing, then emit `.uxml` + `.uss` + PanelSettings + UIDocument under `Assets/HeraGenerated/UI`. A failed `create` compensates by deleting only artifacts created by that request; `upsert` is non-transactional and reports `upsert_may_be_partial` if existing output may have changed. Screen-space is default; world-space requires runtime Unity 6000.2+. Pass the doc via `--file` so it never rides inline in context. |
 | `import` | `--src <abs path>` **or** `--file <imports.json>`; `[--into Assets/...]`; `[--border l,b,r,t]`; `[--ppu N]`; `[--filter point\|bilinear]`; `[--pivot x,y]` | Copy external sprite file(s) into the project as `Sprite` assets. Single sprite via `--src` + shared flags; many (with per-sprite settings) via `--file` `{into?, items:[{src, name?, border?, ppu?, filter?, pivot?}]}`. Default dest: `Assets/HeraImported/`. A `border` sets `Image.type = Sliced` (FullRect mesh). GIFs are skipped. Returns `{into, imported:[{src,asset,instance_id,sliced}], skipped, errors, count}`. |
 | `gen_sprite` | `--spec '{...}'` or `--kind/--size/--color/...`; `[--out Assets/...]` | Bake + import a sprite. Kinds: `solid`, `rounded_rect`, `gradient`, `nine_slice` (rounded box + 9-slice `border [l,b,r,t]`, default = radius). Default out: `Assets/HeraGenerated/`. |
 | `capture` | `[--out <file.png>]`; `[--overwrite]`; `[--width N] [--height N]`; `[--bg #RRGGBBAA]`; `[--canvas </path> or <id>]` | Render the live overlay UI to a PNG. Existing files require approval-gated `--overwrite`, which is accepted only under the project or system temp directory; existing external files are never overwritten. Size defaults to the canvas pixel size (current game view); `bg` defaults to opaque dark (`alpha 0` = transparent); without `--canvas` it captures all root non-world canvases. Default out: a unique temp file. Returns `{path,width,height,bytes,canvases}`. |
@@ -1170,7 +1182,7 @@ hera-agent-unity ui_doc <action> [flags]
     ] } }
 ```
 
-`image.sprite` is either `{ "asset": "Assets/..." }` (existing) or `{ "gen": {<spec>} }` (baked on apply; a `nine_slice` border auto-sets `Image.type = Sliced`). `text.engine` is `auto` / `tmp` / `legacy`; `text.color` is `#hex` or `r,g,b[,a]`; `text.align` is `center` / `left` / `right` / `top-left` / `top-center`; `text.font` is an asset path to a TMP_FontAsset (or legacy Font) — also how you set an icon-font glyph.
+`image.sprite` is either `{ "asset": "Assets/..." }` (existing) or `{ "gen": {<spec>} }` (baked on apply; a `nine_slice` border auto-sets `Image.type = Sliced`). `text.engine` is `auto` / `tmp` / `legacy`; `auto` uses TMP only when it has a usable default or requested font, otherwise it falls back to legacy Text with `LegacyRuntime.ttf` so generated text is visible. `text.color` is `#hex` or `r,g,b[,a]`; `text.align` is `center` / `left` / `right` / `top-left` / `top-center`; `text.font` is an asset path to a TMP_FontAsset (or legacy Font) — also how you set an icon-font glyph.
 
 ```bash
 # Ground on the current UI, hand the IR to the agent
@@ -1311,6 +1323,7 @@ hera-agent-unity test [flags]
 |:---|:---|:---|
 | `--mode` | `EditMode` or `PlayMode` | `EditMode` |
 | `--filter` | Filter by namespace, class, or full test name | `""` |
+| `--resume` | Continue waiting for an existing `run_id` without starting tests again | `""` |
 
 ```bash
 # EditMode tests
@@ -1321,12 +1334,21 @@ hera-agent-unity test --mode PlayMode
 
 # Filtered tests
 hera-agent-unity test --filter MyNamespace.MyClass
+
+# Resume a slow existing run; no second run_tests request is sent
+hera-agent-unity --port 8094 test --resume <run_id> --timeout 300000
 ```
 
 **Test-run behavior**: Both modes start asynchronously and persist their final
 result to `~/.hera-agent-unity/status/test-results-<port>-<run_id>.json`. The CLI polls
 that file until completion for every `test` invocation; there is no `--wait`
-flag. Use the global `--timeout` to bound the wait.
+flag. Use the global `--timeout` to bound the wait. If that deadline arrives
+while the Connector's `test-pending-<port>-<run_id>.json` record still exists,
+the CLI returns the stable error code `TEST_RUN_PENDING` with the exact `port`
+and `run_id`. This is a resumable "result not written yet" state, not evidence
+that the Editor is unresponsive. Run `test --resume <run_id>` against that
+same project or port with a longer timeout. Resume only polls the existing
+result and never starts a duplicate test run.
 
 For CLI/connector version transitions, the connector also writes the legacy
 `test-results-<port>.json` result file. A current CLI falls back to that file
@@ -1334,6 +1356,29 @@ when an older connector returns `{ port }` without `run_id`. A current CLI
 sends the internal `async_results=true` capability. Without that capability,
 the connector preserves the legacy synchronous EditMode response, while
 PlayMode remains compatible through the legacy result file.
+
+---
+
+## task
+
+Inspect the same durable test and Package Manager state used by MCP Tasks,
+without sending an HTTP request to Unity or waiting for a fresh heartbeat.
+
+```bash
+hera-agent-unity --project <full-path> task list
+hera-agent-unity --project <full-path> task status <task_id>
+```
+
+| Action | Description |
+|:---|:---|
+| `list` | List active pending tasks owned by the selected project and current port. Returns reusable opaque `task_id` values. |
+| `status <task_id>` | Return `working` or `completed` and include the durable result when available. Accepts IDs returned by either CLI `task list` or negotiated MCP Tasks. |
+
+`task list` is intentionally an active-work discovery command. Unity removes a
+pending record after writing its result, so completed work may disappear from
+subsequent lists. Keep the returned `task_id`; `task status` can still resolve
+the matching result after the pending record is gone. Both actions are local,
+read-only, and project-scoped. They do not start, repeat, or cancel Unity work.
 
 ---
 

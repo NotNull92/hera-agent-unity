@@ -191,7 +191,7 @@ uGUI has **two anchor modes**, and the meaning of the size fields differs:
 ```jsonc
 "text": {
   "value": "Play",
-  "engine": "auto|tmp|legacy",   // auto = TMP if present, else legacy
+  "engine": "auto|tmp|legacy",   // auto = TMP only with a usable font, else legacy
   "color": "#FFFFFFFF",
   "align": "center|left|right|top-left|top-center",  // → TMP TextAlignmentOptions / legacy TextAnchor
   "font": "Assets/.../Font SDF.asset",   // TMP_FontAsset or legacy Font (icon-font glyph path too)
@@ -255,6 +255,13 @@ When the root node has `element: "canvas"`, `ui_doc apply` creates a standalone
 Canvas at the scene root and applies the top-level `canvas` block to its
 `CanvasScaler`. Set `reference_resolution` to the HTML design size so that
 HTML pixel values map 1:1 to uGUI canvas units.
+
+The root Canvas also ensures an EventSystem exists. If the scene already has an
+EventSystem without a compatible built-in input module, Hera adds the module
+selected by Unity's active input-handling compile defines (`InputSystemUIInputModule`
+for Input System-only projects, otherwise `StandaloneInputModule`). In an
+exclusive input mode, an incompatible built-in module already on that
+EventSystem is disabled through Unity Undo so it cannot keep throwing at runtime.
 
 ```jsonc
 {
@@ -338,9 +345,13 @@ When you have a sprite kit instead of procedural shapes, two actions feed real
 ## Apply semantics
 
 - `apply --file <doc.json>` (doc passed by file, never inline in context).
+- The project-level `asset-config.json` `ui_system` key is authoritative. Hera
+  never guesses or switches the backend from scene contents. When a document
+  declares `backend`, it must match `ui_system` or apply fails before mutation.
 - `--mode create` (default): always new objects.
-- `--mode upsert`: match existing children by name; update rect/image/text/layout
-  in place (no duplicates, no deletes). Button labels are reused.
+- `--mode upsert`: match existing objects by name, including a root object when
+  no parent is supplied; update rect/image/text/layout in place (no duplicates,
+  no deletes). Button labels are reused.
 - Before realization, `apply` runs the official-manual-backed uGUI fixer. It
   auto-corrects deterministic IR issues such as stretched RectTransforms using
   `size`/`pos` instead of offsets and filled Images missing `type:"filled"`.

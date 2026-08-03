@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -12,10 +13,61 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/poll"
 )
 
-func testCmd(ctx context.Context, args []string, send SendFunc, _ instanceResolver, timeout time.Duration) (*client.CommandResponse, error) {
+func isTestResume(category string, args []string) bool {
+	if category != "test" {
+		return false
+	}
+	for _, arg := range args {
+		if arg == "--resume" {
+			return true
+		}
+	}
+	return false
+}
+
+func testResumeRunID(args []string) (string, bool, error) {
+	for i, arg := range args {
+		if arg != "--resume" {
+			continue
+		}
+		if i+1 >= len(args) || len(args[i+1]) >= 2 && args[i+1][:2] == "--" {
+			return "", true, fmt.Errorf("--resume requires a run_id")
+		}
+		runID := args[i+1]
+		if runID == "" || len(runID) > 128 {
+			return "", true, fmt.Errorf("invalid --resume run_id")
+		}
+		for _, ch := range runID {
+			if ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch == '-' || ch == '_' {
+				continue
+			}
+			return "", true, fmt.Errorf("invalid --resume run_id")
+		}
+		return runID, true, nil
+	}
+	return "", false, nil
+}
+
+func testCmd(ctx context.Context, args []string, send SendFunc, resolve instanceResolver, timeout time.Duration) (*client.CommandResponse, error) {
+	resumeRunID, resume, err := testResumeRunID(args)
+	if err != nil {
+		return nil, err
+	}
 	parsedParams, _, err := buildParams(args, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if resume {
+		if resolve == nil {
+			return nil, fmt.Errorf("--resume requires a selected Unity Editor")
+		}
+		inst, err := resolve()
+		if err != nil {
+			return nil, fmt.Errorf("resolve Unity Editor for test resume: %w", err)
+		}
+		fmt.Fprintf(os.Stderr, "Resuming Unity test run %s on port %d...\n", resumeRunID, inst.Port)
+		return pollTestResults(ctx, inst.Port, resumeRunID, timeout)
 	}
 
 	mode := "EditMode"
@@ -73,5 +125,40 @@ func pollTestResults(ctx context.Context, port int, runID string, timeout time.D
 		resultPath = paths.TestResultPath(port, runID)
 	}
 
-	return poll.WaitForAsyncJob(ctx, resultPath, port, timeout, "test results")
+	resp, err := poll.WaitForAsyncJob(ctx, resultPath, port, timeout, "test results")
+	if err == nil || runID == "" {
+		return resp, err
+	}
+	if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, poll.ErrWaitTimeout) {
+		return nil, err
+	}
+
+	pendingPath := paths.TestPendingPath(port, runID)
+	if _, statErr := os.Stat(pendingPath); statErr != nil {
+		return nil, err
+	}
+
+	data, marshalErr := json.Marshal(struct {
+		Status string `json:"status"`
+		Port   int    `json:"port"`
+		RunID  string `json:"run_id"`
+	}{
+		Status: "running",
+		Port:   port,
+		RunID:  runID,
+	})
+	if marshalErr != nil {
+		return nil, marshalErr
+	}
+
+	return &client.CommandResponse{
+		Success: false,
+		Code:    "TEST_RUN_PENDING",
+		Message: "Unity has not written the test result yet. The test run is still pending; a stale heartbeat during Test Runner work does not by itself mean the Editor is unresponsive.",
+		Suggestions: []string{
+			fmt.Sprintf("Resume this same run without starting another test: hera-agent-unity --port %d test --resume %s --timeout <milliseconds>", port, runID),
+			"Check the Unity process or port separately only if the pending run never produces a result.",
+		},
+		Data: data,
+	}, nil
 }

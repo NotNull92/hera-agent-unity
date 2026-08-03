@@ -191,6 +191,23 @@ file until it is available. This unifies the modes and makes the result
 delivery resilient to a PlayMode domain reload. There is no test-specific
 `--wait` flag; the global `--timeout` bounds the polling interval.
 
+The Connector creates a run-scoped pending record before returning the
+asynchronous handle. If the CLI deadline expires while that record remains,
+the CLI reports `TEST_RUN_PENDING` rather than treating a stale heartbeat as
+proof that Unity is unresponsive. `test --resume <run_id>` bypasses the normal
+fresh-heartbeat readiness wait, polls the same run-scoped result, and does not
+send another `run_tests` mutation. Project/port discovery still selects the
+Editor identity, so a resume cannot silently move to another open project.
+
+The standalone `task list` and `task status <task_id>` commands read this same
+file bus without entering the normal Unity HTTP readiness path. `task list`
+filters pending test/package records by the selected project's fingerprint and
+current port, then returns opaque handles compatible with the shared Go task
+store. `task status` accepts either one of those handles or an MCP Tasks handle
+and resolves `working`/`completed` directly from pending/result files. Listing
+discovers active work only; retaining the handle is what makes a completed
+result addressable after Unity clears its pending record.
+
 During CLI/connector upgrades, the connector also writes the legacy
 port-scoped result file for PlayMode clients that do not yet understand a
 `run_id`; current clients prefer the run-scoped file.

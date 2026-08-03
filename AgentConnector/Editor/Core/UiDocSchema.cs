@@ -250,7 +250,11 @@ namespace HeraAgent
                     Stretch(go);
                     break;
                 case "text":
-                    AddTextComponent(go, node?["text"]?["engine"]?.ToString(), stats);
+                    AddTextComponent(
+                        go,
+                        node?["text"]?["engine"]?.ToString(),
+                        node?["text"]?["font"]?.ToString(),
+                        stats);
                     SizeTo(go, 200, 50);
                     break;
                 case "button":
@@ -410,6 +414,7 @@ namespace HeraAgent
         {
             if (text == null) return;
             string engine = text["engine"]?.ToString();
+            string fontPath = text["font"]?.ToString();
 
             Component txt;
             if (element == "button")
@@ -420,7 +425,7 @@ namespace HeraAgent
                 if (txt == null)
                 {
                     var labelGo = new GameObject("Text", typeof(RectTransform));
-                    txt = AddTextComponent(labelGo, engine, stats);
+                    txt = AddTextComponent(labelGo, engine, fontPath, stats);
                     if (txt != null)
                     {
                         labelGo.transform.SetParent(go.transform, worldPositionStays: false);
@@ -431,6 +436,16 @@ namespace HeraAgent
             else
             {
                 txt = GetComponentByName(go, "TextMeshProUGUI") ?? GetComponentByName(go, "Text");
+            }
+
+            if (IsAutoTextEngine(engine)
+                && txt != null
+                && txt.GetType().Name == "TextMeshProUGUI"
+                && !HasUsableFont(txt, fontPath))
+            {
+                var textObject = txt.gameObject;
+                Object.DestroyImmediate(txt);
+                txt = AddTextComponent(textObject, engine, fontPath, stats);
             }
 
             if (txt == null) return;
@@ -480,7 +495,16 @@ namespace HeraAgent
 
         static GameObject FindChildByName(Transform parent, string name)
         {
-            if (parent == null) return null;
+            if (parent == null)
+            {
+                foreach (var root in UnityEngine.SceneManagement.SceneManager
+                    .GetActiveScene()
+                    .GetRootGameObjects())
+                {
+                    if (root.name == name) return root;
+                }
+                return null;
+            }
             for (int i = 0; i < parent.childCount; i++)
             {
                 var c = parent.GetChild(i);
@@ -502,7 +526,11 @@ namespace HeraAgent
 
         // ---- element-build helpers (replicated minimal from ManageUI) ----
 
-        static Component AddTextComponent(GameObject go, string engine, ApplyStats stats)
+        static Component AddTextComponent(
+            GameObject go,
+            string engine,
+            string fontPath,
+            ApplyStats stats)
         {
             string e = engine?.ToLowerInvariant();
             bool wantTmp;
@@ -513,13 +541,31 @@ namespace HeraAgent
             if (wantTmp)
             {
                 var tmp = AddByName(go, "TextMeshProUGUI");
-                if (tmp != null) return tmp;
+                if (tmp != null && (!IsAutoTextEngine(engine) || HasUsableFont(tmp, fontPath)))
+                    return tmp;
+                if (tmp != null) Object.DestroyImmediate(tmp);
             }
             var legacy = AddByName(go, "Text");
             if (legacy == null) { stats.Errors.Add($"could not add a Text component on '{go.name}' (is com.unity.ugui installed?)."); return null; }
             var font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (font != null) SetProp(legacy, "font", font);
             return legacy;
+        }
+
+        static bool IsAutoTextEngine(string engine) =>
+            string.IsNullOrEmpty(engine)
+            || string.Equals(engine, "auto", StringComparison.OrdinalIgnoreCase);
+
+        static bool HasUsableFont(Component text, string fontPath)
+        {
+            var property = text.GetType().GetProperty("font", BindingFlags.Public | BindingFlags.Instance);
+            if (property == null) return false;
+            if (!string.IsNullOrEmpty(fontPath))
+            {
+                var requested = AssetDatabase.LoadAssetAtPath<Object>(fontPath);
+                return requested != null && property.PropertyType.IsInstanceOfType(requested);
+            }
+            return property.GetValue(text) is Object current && current != null;
         }
 
         static Component AddOrError(GameObject go, string typeName, ApplyStats stats)

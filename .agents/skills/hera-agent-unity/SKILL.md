@@ -201,6 +201,24 @@ Editor restart, a lost target, and a port reused by another project. Never
 blindly resend a mutation: only idempotent calls or operation-ledger-backed
 operations may retry.
 
+**[Rule 14]** Continue approval-gated CLI work with the exact request that was
+preflighted. In a non-interactive shell, both typed `call` and established
+commands return `APPROVAL_REQUIRED`; repeat the same command and append
+`--approve <token>`. Do not change the project, tool, action, arguments, or
+operation ID, because the short-lived token is bound to all of them and is
+single-use. Never approve automatically on the user's behalf.
+
+**[Rule 15]** Treat `TEST_RUN_PENDING` as a slow Unity Test Runner result, not
+as proof that the Editor is unresponsive. The error data contains the exact
+`port` and `run_id`; continue the same run with `hera-agent-unity --port <port>
+test --resume <run_id> --timeout <milliseconds>`. Resume polls the durable
+result without sending `run_tests` again. A stale heartbeat can occur while
+Unity's main thread is busy recording test results, so check the pending run,
+the OS process, and port reachability before declaring the Editor lost. For an
+immediate, non-waiting check, use `task list` and retain its `task_id`, then use
+`task status <task_id>`; both read the same local durable state as MCP Tasks and
+do not contact or mutate Unity.
+
 ## 1.5 Ultra Hera
 
 Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.
@@ -322,9 +340,11 @@ Useful when you're not sure a refactor compiles before issuing a destructive cal
       "text": { "value": "Play", "engine": "auto" } } ] } }
 ```
 
-`image.sprite` = `{ "asset": "Assets/..." }` or `{ "gen": {<spec>} }` (baked on apply; `nine_slice` auto-sets Image type Sliced). `text` takes `value` + optional `engine` (auto/tmp/legacy), `color` (#hex), `align` (center/left/right/top-left), `font` (asset path to a TMP/legacy font — also the icon-font-glyph path). With Game Feel UI Mode (Beta) on, `apply` returns per-element-type juice recipes as an `agent_hint`.
+`image.sprite` = `{ "asset": "Assets/..." }` or `{ "gen": {<spec>} }` (baked on apply; `nine_slice` auto-sets Image type Sliced). `text` takes `value` + optional `engine` (auto/tmp/legacy), `color` (#hex), `align` (center/left/right/top-left), `font` (asset path to a TMP/legacy font — also the icon-font-glyph path). `auto` uses TMP only when it has a usable default or requested font, otherwise it falls back to legacy Text with `LegacyRuntime.ttf`. Both uGUI authoring paths (`manage_ui create` and `ui_doc apply`) share one EventSystem policy: ensure the active input backend and disable an incompatible built-in module in an exclusive input mode. Root-level `ui_doc` upsert reuses a same-named scene root. With Game Feel UI Mode (Beta) on, `apply` returns per-element-type juice recipes as an `agent_hint`.
 
 **UI Toolkit v1** — `ui_doc apply` emits `.uxml` + shared `.hera-*` `.uss` + a screen-space `PanelSettings` and wired `UIDocument` into `Assets/HeraGenerated/UI`. It rejects unknown runtime elements/UXML attributes, warns and omits unsupported USS properties, and keeps MVVM data binding out of scope. World-space is allowed only when the **live runtime** is Unity `6000.2+`; never infer that from the docs bucket. `manage_ui create` follows the same backend choice; `get_rect`, `set_anchor`, and `set_rect` are uGUI-only.
+
+`asset-config.json`의 `ui_system` (`ugui` 또는 `uitk`)이 프로젝트 UI 개발 방식을 고르는 단일 기준이다. 씬 내용이나 입력 문서를 보고 백엔드를 추측하거나 자동 전환하지 않는다. `ui_doc`가 명시한 `backend`가 현재 설정과 다르면 생성·파일 쓰기 전에 `UI_SYSTEM_MISMATCH`로 중단한다.
 
 **Icons** (no SVG gen): reference an existing sprite via `image.sprite.asset`, or use an icon-font glyph — a `text` element whose `value` is the glyph char, then assign the icon TMP font with `manage_components set --property m_fontAsset --value <font.asset>`. See COMMANDS.md → ui_doc → Icons.
 
@@ -565,7 +585,8 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `editor play \| stop \| pause \| refresh` | Editor lifecycle | `--wait` (play), `--compile`, `--force` (refresh) |
 | `menu "<path>"` | Execute menu item | (none) |
 | `screenshot` | Capture view or isolated target | `--view scene\|game`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
-| `test` | Run tests | `--mode EditMode\|PlayMode`, `--filter <ns.class>` |
+| `test` | Run tests or resume an existing run | `--mode EditMode\|PlayMode`, `--filter <ns.class>`, `--resume <run_id>` |
+| `task list` / `task status <task_id>` | Inspect durable test/package work without contacting Unity | `--project <full-path>` or `--port N` |
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
 | `reserialize [paths...]` | Force YAML reserialize | (no args = whole project) |
 | `log "<msg>"` | Write to Unity console | `--level log\|warning\|error` |

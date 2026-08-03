@@ -111,6 +111,31 @@ open Unity to the network, replace the Connector, or silently relax approvals.
 Unsupported approval or operation-ledger features fail closed instead of
 guessing that an operation is safe.
 
+#### Does it make Hera more accurate?
+
+MCP by itself does not make an AI smarter, and the adapter does not use a
+different Unity execution engine. Accuracy improves at the delivery layer: an
+exact normalized project path prevents a request from drifting to another open
+Editor; strict live contracts reject malformed or outdated arguments; and a
+fresh heartbeat distinguishes a domain reload, an Editor restart, a lost
+target, and a port that another project has taken over. Operation IDs and the
+Connector ledger also prevent an uncertain response from becoming the same
+mutation twice.
+
+In everyday terms, Hera now checks both the full delivery address and the
+receipt before acting. That reduces wrong-project calls, invalid requests, and
+duplicate changes. It does **not** guarantee that the AI's design decision is
+correct, replace Unity tests, or prove a numerical accuracy improvement. No
+repository benchmark currently supports an “X% more accurate” claim; the
+measurable promise is narrower: detect more ambiguous or stale connection
+states and stop safely instead of guessing.
+
+The first retained end-to-end game-creation run is the
+[Crystal Forge real-world benchmark](docs/benchmarks/user-scenario/crystal-forge-6000.3.5f2.md).
+It reached the correct playable result only after several repairs; first
+attempt success was **not** achieved. It is a regression baseline, not an
+MCP-versus-CLI A/B result or proof of higher model accuracy.
+
 #### Does it use more tokens?
 
 The normal CLI path has no new token cost because it has not changed. MCP adds
@@ -411,7 +436,9 @@ Hera also reports the active official uGUI docs bucket (`2022.3`, `2023.2`,
 ## UI Systems
 
 `ui_system` makes the output backend explicit. Set it in `asset-config.json`;
-each UI request stays within the selected backend.
+each UI request stays within the selected backend. Hera never guesses from the
+scene or silently switches systems; a mismatched `ui_doc.backend` is rejected
+before any scene or asset mutation.
 
 | Backend | Best for | Hera emits |
 |:---|:---|:---|

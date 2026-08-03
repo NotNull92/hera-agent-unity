@@ -398,39 +398,10 @@ namespace HeraAgent.Tools
 
         private static ErrorResponse EnsureEventSystem(List<string> created)
         {
-            var esType = ComponentTypeResolver.Resolve("EventSystem");
-            if (esType == null) return new ErrorResponse("UI_MISSING_EVENTSYSTEM", "EventSystem type not found (com.unity.ugui missing).");
-#if UNITY_6000_5_OR_NEWER
-            var existing = Object.FindAnyObjectByType(esType);
-#elif UNITY_2023_1_OR_NEWER
-            var existing = Object.FindFirstObjectByType(esType);
-#else
-            var existing = Object.FindObjectOfType(esType);
-#endif
-            if (existing != null) return null;
-
-            var go = new GameObject("EventSystem");
-            if (go.AddComponent(esType) == null)
-            {
-                Object.DestroyImmediate(go);
-                return new ErrorResponse("UI_EVENTSYSTEM_CREATE_FAILED", "Could not add EventSystem.");
-            }
-            // Pick the input module that matches the project's *active* input
-            // handling, not just which type happens to be loadable. Unity sets
-            // ENABLE_INPUT_SYSTEM / ENABLE_LEGACY_INPUT_MANAGER from Player
-            // Settings, so this gates exactly like Unity's own EventSystem menu.
-            // New-only: StandaloneInputModule would still add (the type ships
-            // with com.unity.ugui) but throws at runtime — so prefer the new
-            // module there and only fall back if it's somehow unavailable.
-#if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-            if (AddByName(go, "InputSystemUIInputModule") == null)
-                AddByName(go, "StandaloneInputModule");
-#else
-            if (AddByName(go, "StandaloneInputModule") == null)
-                AddByName(go, "InputSystemUIInputModule");
-#endif
-            Undo.RegisterCreatedObjectUndo(go, "Hera Create EventSystem");
-            created.Add("EventSystem");
+            var result = UiEventSystem.Ensure();
+            if (!result.Success)
+                return new ErrorResponse(result.ErrorCode, result.ErrorMessage);
+            if (result.Created) created.Add("EventSystem");
             return null;
         }
 

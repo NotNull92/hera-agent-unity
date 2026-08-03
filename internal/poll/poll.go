@@ -3,6 +3,7 @@ package poll
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -10,6 +11,8 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/client"
 	"github.com/NotNull92/hera-agent-unity/internal/unitystate"
 )
+
+var ErrWaitTimeout = errors.New("async result wait timeout")
 
 // WaitForFile polls a filesystem result file until it appears, Unity stops,
 // or the timeout expires. It uses exponential backoff starting at 100 ms and
@@ -64,7 +67,7 @@ func WaitForFile(ctx context.Context, resultPath string, port int, timeout time.
 		}
 	}
 
-	return nil, fmt.Errorf("timed out waiting for %s", opName)
+	return nil, fmt.Errorf("%w: timed out waiting for %s", ErrWaitTimeout, opName)
 }
 
 func WaitForAsyncJob(ctx context.Context, resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {

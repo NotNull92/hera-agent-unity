@@ -42,6 +42,8 @@ type TaskError struct {
 type Task struct {
 	ID            string          `json:"taskId"`
 	Kind          Kind            `json:"kind"`
+	Port          int             `json:"port"`
+	UnderlyingID  string          `json:"underlyingId"`
 	State         State           `json:"status"`
 	StatusMessage string          `json:"statusMessage,omitempty"`
 	Progress      *Progress       `json:"progress,omitempty"`
@@ -120,6 +122,7 @@ func (store *Store) Get(taskID string) (*Task, error) {
 	created := time.UnixMilli(key.CreatedMS).UTC()
 	task := &Task{
 		ID: taskID, Kind: key.Kind, State: StateWorking, StatusMessage: "Unity operation is still running.",
+		Port: key.Port, UnderlyingID: key.UnderlyingID,
 		OperationID: key.OperationID, CreatedAt: created, UpdatedAt: created,
 	}
 	resultPath := store.resultPath(key)

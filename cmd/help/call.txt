@@ -35,3 +35,7 @@ Quoting-free stdin is recommended for nested JSON:
 
 The existing command syntax remains supported:
   hera-agent-unity scene info
+
+Approval continuation also works with existing command syntax. Repeat the exact
+same command and append the token returned by APPROVAL_REQUIRED:
+  hera-agent-unity menu "HeraAgent/Tests/UiDocApply" --approve <token>

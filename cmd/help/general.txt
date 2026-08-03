@@ -191,6 +191,9 @@ Tests:
   test                            Run EditMode tests (default)
   test --mode PlayMode            Run PlayMode tests
   test --filter <name>            Filter by namespace, class, or full test name
+  test --resume <run_id>          Continue waiting for an existing test run
+  task list                       List active durable test/package tasks
+  task status <task_id>           Read a durable task without contacting Unity
 
 Profiler:
   profiler hierarchy              Top-level profiler samples (last frame)

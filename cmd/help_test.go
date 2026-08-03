@@ -81,6 +81,7 @@ func TestHelpFilesAreReachableTopics(t *testing.T) {
 		"screenshot":        true,
 		"setup":             true,
 		"status":            true,
+		"task":              true,
 		"test":              true,
 		"ui_doc":            true,
 		"unity_docs":        true,

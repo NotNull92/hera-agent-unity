@@ -6,10 +6,18 @@ Options:
   --mode <EditMode|PlayMode>    Test mode (default: EditMode)
   --filter <name>               Filter by namespace, class, or full test name
                                 Must be the full path (e.g. MyNamespace.MyClass)
+  --resume <run_id>             Keep waiting for an existing test run without
+                                starting the tests again
 
 Both EditMode and PlayMode tests start asynchronously. Their final results are
 written to ~/.hera-agent-unity/status/test-results-<port>-<run_id>.json; the CLI polls
 that file until completion (domain reload safe). There is no --wait flag.
+If the wait reaches the global --timeout while the Connector's pending record
+still exists, the CLI returns code TEST_RUN_PENDING. This means the result is
+late, not that the Editor is unresponsive. Resume that exact run with a longer
+timeout; this does not send run_tests again:
+  hera-agent-unity --port <port> test --resume <run_id> --timeout 300000
+
 For an older connector response without run_id, the CLI falls back to
 test-results-<port>.json. Current connectors also write that legacy file for
 older PlayMode clients. Current CLIs send async_results=true; without it,
@@ -22,4 +30,5 @@ Examples:
   hera-agent-unity test --mode PlayMode
   hera-agent-unity test --filter MyNamespace.MyTests
   hera-agent-unity test --mode EditMode --filter MyNamespace.MyTests.SpecificTest
+  hera-agent-unity --port 8094 test --resume <run_id> --timeout 300000
 

@@ -55,6 +55,8 @@ func (runner standaloneRunner) Run(
 		return true, statusErr
 	case "ping":
 		return true, pingCmd(runner.config.Project, runner.config.Port)
+	case "task":
+		return true, taskCmd(runner.config, subArgs)
 	case "asset-config":
 		if len(subArgs) > 0 && subArgs[0] == "detect" {
 			return false, nil
@@ -82,6 +84,57 @@ func (runner unityCommandRunner) Run(
 ) (*client.CommandResponse, error) {
 	var resp *client.CommandResponse
 	var err error
+	send := runner.send
+	if category != "call" {
+		var approvalToken string
+		subArgs, approvalToken, err = extractLegacyApproval(subArgs)
+		if err != nil {
+			return nil, err
+		}
+		var preflight callPreflightFunc
+		var resolveAction func(string, map[string]any) (string, error)
+		if runner.instance != nil && instanceSupports(runner.instance, client.FeatureApprovalV1) {
+			registry := toolregistry.NewRegistry(toolregistry.RegistryOptions{})
+			preflight = func(request client.ApprovalPreflightRequest) (*client.ApprovalPreflight, error) {
+				request.TimeoutMS = runner.config.TimeoutMillis()
+				return client.DefaultClient.PreflightApproval(ctx, runner.instance, request)
+			}
+			resolveAction = func(command string, params map[string]any) (string, error) {
+				snapshot, loadErr := registry.Load(ctx, runner.instance)
+				if loadErr != nil {
+					return "", fmt.Errorf("load tool catalog for approval: %w", loadErr)
+				}
+				tool, resolveErr := resolveCallTool(snapshot.Catalog, command, "")
+				if resolveErr != nil {
+					return "", resolveErr
+				}
+				return resolveLegacyAction(tool, params), nil
+			}
+		}
+		send = withLegacyApproval(send, legacyApprovalOptions{
+			token:         approvalToken,
+			preflight:     preflight,
+			resolveAction: resolveAction,
+			sendOperation: func(
+				command string,
+				params map[string]any,
+				options client.SendOptions,
+			) (*client.CommandResponse, error) {
+				return client.DefaultClient.SendWithOptions(
+					ctx,
+					runner.instance,
+					command,
+					params,
+					runner.config.TimeoutMillis(),
+					options,
+				)
+			},
+			interactive: approvalTTY(os.Stdin, os.Stderr),
+			confirm: func(summary client.ApprovalSummary) (bool, error) {
+				return promptCallApproval(os.Stdin, os.Stderr, summary)
+			},
+		})
+	}
 
 	switch category {
 	case "batch":
@@ -127,27 +180,27 @@ func (runner unityCommandRunner) Run(
 	case "editor":
 		resp, err = runEditorCmd(ctx, subArgs, editorRuntime{
 			Config:  runner.config,
-			Send:    runner.send,
+			Send:    send,
 			Resolve: runner.resolve,
 		})
 	case "test":
 		resp, err = testCmd(
 			ctx,
 			subArgs,
-			runner.send,
+			send,
 			runner.resolve,
 			runner.config.Timeout,
 		)
 	case "manage_packages":
 		resp, err = managePackagesCmd(ctx, subArgs, packageRuntime{
 			Config:  runner.config,
-			Send:    runner.send,
+			Send:    send,
 			Resolve: runner.resolve,
 		})
 	case "unity_docs":
-		resp, err = unityDocsCmd(subArgs, runner.send)
+		resp, err = unityDocsCmd(subArgs, send)
 	case "ui_doc":
-		resp, err = uiDocCmd(subArgs, runner.send)
+		resp, err = uiDocCmd(subArgs, send)
 	case "asset-config":
 		if len(subArgs) == 0 || subArgs[0] != "detect" {
 			return nil, fmt.Errorf("unsupported Unity-backed asset-config command")
@@ -158,7 +211,7 @@ func (runner unityCommandRunner) Run(
 		var params map[string]interface{}
 		params, _, err = buildParams(subArgs[1:], nil)
 		if err == nil {
-			resp, err = runner.send("detect_assets", params)
+			resp, err = send("detect_assets", params)
 		}
 	case "exec":
 		subArgs, err = readExecFileIfPresent(subArgs)
@@ -174,14 +227,14 @@ func (runner unityCommandRunner) Run(
 				delete(params, "check")
 			}
 			request := newToolRequest("exec", params)
-			resp, err = runner.send(request.Command, request.Params)
+			resp, err = send(request.Command, request.Params)
 		}
 	default:
 		var params map[string]interface{}
 		params, _, err = buildParams(subArgs, nil)
 		if err == nil {
 			request := newToolRequest(category, params)
-			resp, err = runner.send(request.Command, request.Params)
+			resp, err = send(request.Command, request.Params)
 		}
 	}
 

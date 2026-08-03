@@ -138,9 +138,11 @@ func Execute(ctx context.Context) error {
 	}
 
 	freshResolve := makeFreshResolver(inst, config.Project, config.Port)
-	inst, err = config.Wait(category).WaitForAlive(ctx, freshResolve)
-	if err != nil {
-		return err
+	if !isTestResume(category, subArgs) {
+		inst, err = config.Wait(category).WaitForAlive(ctx, freshResolve)
+		if err != nil {
+			return err
+		}
 	}
 
 	send := prepareSend(ctx, inst, category, config.TimeoutMillis(), config.Verbose)
