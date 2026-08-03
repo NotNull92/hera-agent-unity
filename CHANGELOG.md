@@ -7,8 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-04
 
-### Changed (Connector 0.0.80 / CLI source — architecture refinement)
+### Changed (Connector 0.0.80 / CLI v0.1.1 - architecture refinement)
 
 - Split the active repository rules from the historical decision ledger, keeping
   current locks in `CLAUDE.md` while moving completed investigations to

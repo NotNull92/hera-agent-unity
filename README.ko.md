@@ -81,6 +81,21 @@ Python 서버는 필요 없습니다. production 기본값인 CLI 경로에는 M
 
 ## 새로운 점
 
+### v0.1.1 - 계약, 복구, 릴리스 검증 강화
+
+이번 릴리스는 검증된 Unity 실행 코어를 교체하지 않고, 완성된 CLI + 선택형 MCP
+구조의 계약과 장애 복구 경계를 더 명확하게 다듬었습니다.
+
+| 릴리스 변경 | 쉬운 뜻 |
+|:---|:---|
+| 실행 프로토콜 버전 명시 | 현재 단일 명령은 `hera.execution/1`을 보내며, 지원하지 않는 버전은 승인·기록·Unity 실행 전에 중단됩니다. |
+| 복구 경계 강화 | 오래된 catalog, 고아 ledger, 부분 Settings 읽기, stale config lock, 결과 불명 timeout을 명시적으로 차단하거나 복구합니다. |
+| Compact 조회 축소 | `tool_describe`가 전체 Tool 대신 필요한 Action 하나만 반환할 수 있습니다. 가장 큰 실측 사례는 약 92% 작아졌습니다. |
+| 반복 가능한 릴리스 게이트 | Go/C# 생성물 drift, Unity 5개 compile bucket, 격리된 NUnit package test, race test, catalog payload 측정을 자동 검증합니다. |
+| Connector 0.0.80 | UPM 패키지에도 같은 runtime 안정화와 release-gate 변경이 포함됩니다. CLI와 Connector 버전은 계속 독립적입니다. |
+
+일반 CLI는 계속 production 기본값입니다. MCP는 선택형·default-off·stdio-only로 유지됩니다.
+
 ### v0.1.0 — 안전한 다중 Editor 선택과 선택형 MCP adapter
 
 이번 릴리스는 일반 CLI를 대체하지 않으면서 M0-M17 adapter migration을
@@ -197,22 +212,22 @@ UI Toolkit 경로를 추가했습니다.
 
 [UI 시스템 선택하기 →](#ui-시스템) · [UI 문서 계약 보기 →](docs/UI_DOC_IR.md)
 
-### 최신 CLI 릴리스 — v0.1.0
+### 최신 CLI 릴리스 - v0.1.1
 
-공개된 최신 CLI 릴리스는 **v0.1.0**입니다(2026년 8월 3일). 이 릴리스의
-Unity 패키지는 **Connector 0.0.76**입니다. CLI와 Connector 버전은 의도적으로
+공개된 최신 CLI 릴리스는 **v0.1.1**입니다(2026년 8월 4일). 이 릴리스의
+Unity 패키지는 **Connector 0.0.80**입니다. CLI와 Connector 버전은 의도적으로
 분리되어 있습니다.
 
 | 현재 하이라이트 | 쉬운 뜻 |
 |:---|:---|
-| **프로젝트에 안전한 다중 Editor 선택** | 포트가 바뀌거나 재사용되어도 `--project <전체-경로>`로 의도한 Editor를 식별합니다. |
-| **실험적 MCP 포함** | 같은 바이너리에서 명시적으로 켠 경우에만 stdio MCP를 열며 CLI가 계속 기본값입니다. |
-| **UPM 컴파일 정지 수정** | Connector 테스트 소스가 production assembly로 섞이거나 TestRunner를 중복 참조하지 않습니다. |
-| **Apache-2.0 라이선스** | 소스, npm, UPM, Codex 플러그인이 같은 라이선스와 출처 고지를 포함합니다. |
+| **버전과 catalog가 맞는 요청만 실행** | 실행 프로토콜과 live catalog가 맞지 않으면 Unity를 변경하기 전에 중단합니다. |
+| **더 작은 Compact 조회** | 필요한 Action 하나만 설명할 수 있어 관계없는 Action schema를 반복해서 보내지 않습니다. |
+| **복구 경계 강화** | ledger, Settings, config lock, timeout, MCP lifecycle이 결과 불명 상태에서 추측하지 않습니다. |
+| **반복 가능한 릴리스 증거** | Unity 5개 compile bucket과 격리된 Connector NUnit gate를 자동 검증하고 fixture manifest를 원상복구합니다. |
 
 릴리스 호환성 매트릭스:
 
-| Unity Editor | Connector 0.0.76 exact-source compile |
+| Unity Editor | Connector 0.0.80 exact-source compile |
 |:---|:---:|
 | 2022.3.62f2 | PASS |
 | 2023.2.22f1 | PASS |

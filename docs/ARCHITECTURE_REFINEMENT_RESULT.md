@@ -14,7 +14,7 @@ The work improved cleanliness where the cost was concrete:
 - smaller active rule context;
 - repeatable release, compatibility, race, and payload evidence.
 
-Connector source is `0.0.80`, unreleased. No commit, push, tag, release, publication, dependency installation, or production-project mutation occurred.
+Connector `0.0.80` and CLI `v0.1.1` are the release versions for this refinement wave. Connector and CLI versions remain independent; their Git tags are `connector-0.0.80` and `v0.1.1`.
 
 ## Completed tasks
 

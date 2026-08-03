@@ -81,6 +81,22 @@ adapter for intentionally configured MCP clients. See
 
 ## What's New
 
+### v0.1.1 - hardened contracts, recovery, and release evidence
+
+This release tightens the completed CLI + optional MCP architecture without
+replacing its proven Unity execution core.
+
+| Release change | What it means |
+|:---|:---|
+| Versioned execution metadata | Current single-command clients send `hera.execution/1`; unsupported future versions fail before approval, journaling, or Unity execution. |
+| Stronger recovery boundaries | Stale catalogs, abandoned ledger entries, partial Hera Settings reads, stale config locks, and uncertain mutation timeouts now fail or recover explicitly. |
+| Smaller Compact discovery | `tool_describe` can return one action contract instead of an entire multi-action tool; the largest measured case is about 92% smaller. |
+| Repeatable release gates | Generated Go/C# contract drift, five Unity compile buckets, isolated NUnit package tests, race tests, and catalog payload budgets have reproducible checks. |
+| Connector 0.0.80 | The UPM package carries the matching runtime hardening and release-gate changes; CLI and Connector versions remain independent. |
+
+The normal CLI remains the production default. MCP remains optional,
+default-off, and stdio-only.
+
 ### v0.1.0 — safe multi-Editor targeting and an optional MCP adapter
 
 This release completes the M0-M17 adapter migration without replacing the
@@ -200,22 +216,22 @@ agent to guess version-specific APIs.
 
 [Choose a UI system →](#ui-systems) · [Read the UI document contract →](docs/UI_DOC_IR.md)
 
-### Latest CLI release — v0.1.0
+### Latest CLI release - v0.1.1
 
-The latest published CLI release is **v0.1.0** (August 3, 2026). Its released
-Unity package is **Connector 0.0.76**. CLI and connector versions are
+The latest published CLI release is **v0.1.1** (August 4, 2026). Its released
+Unity package is **Connector 0.0.80**. CLI and connector versions are
 intentionally separate.
 
 | Current highlight | Simple meaning |
 |:---|:---|
-| **Project-safe multi-Editor targeting** | `--project <full-path>` identifies the intended Editor even when ports change or are reused. |
-| **Experimental MCP included** | The same binary can expose stdio MCP when explicitly enabled; the CLI remains the default. |
-| **UPM compile-stall fix** | Connector test sources no longer leak into production assemblies or create duplicate TestRunner references. |
-| **Apache-2.0 licensing** | Source, npm, UPM, and the Codex plugin carry matching license and attribution files. |
+| **Versioned and stale-safe execution** | Requests carry an explicit execution version and live catalog hash, so incompatible or outdated calls stop before Unity changes. |
+| **Smaller Compact discovery** | Action-specific describe avoids returning unrelated action contracts while preserving the existing full-tool form. |
+| **Recovery hardening** | Ledger, settings, config-lock, timeout, and MCP lifecycle states now have explicit fail-closed behavior. |
+| **Repeatable release evidence** | Five Unity compile buckets and the isolated Connector NUnit gate are automated and leave fixture manifests unchanged. |
 
 Release compatibility matrix:
 
-| Unity Editor | Connector 0.0.76 exact-source compile |
+| Unity Editor | Connector 0.0.80 exact-source compile |
 |:---|:---:|
 | 2022.3.62f2 | PASS |
 | 2023.2.22f1 | PASS |
