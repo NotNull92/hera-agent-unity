@@ -32,6 +32,11 @@ var sharedHTTPClient = &http.Client{
 	},
 }
 
+const (
+	instanceReadAttempts = 5
+	instanceReadDelay    = 50 * time.Millisecond
+)
+
 // IsProcessDead is the public probe used by polling commands that want to
 // detect a crashed Unity Editor without waiting for the heartbeat to stale.
 // Returns true only when the OS confirms the process is gone.
@@ -82,12 +87,22 @@ func (c *Client) scanInstances(useCache bool) ([]Instance, error) {
 			continue
 		}
 		fp := filepath.Join(dir, e.Name())
-		data, err := os.ReadFile(fp)
-		if err != nil {
-			continue
-		}
 		var inst Instance
-		if err := json.Unmarshal(data, &inst); err != nil {
+		var instanceErr error
+		for attempt := 0; attempt < instanceReadAttempts; attempt++ {
+			var data []byte
+			data, instanceErr = c.readFile(fp)
+			if instanceErr == nil {
+				instanceErr = json.Unmarshal(data, &inst)
+			}
+			if instanceErr == nil {
+				break
+			}
+			if attempt+1 < instanceReadAttempts {
+				c.sleep(instanceReadDelay)
+			}
+		}
+		if instanceErr != nil {
 			continue
 		}
 		if inst.PID > 0 && c.processDeadChecker(inst.PID) {
@@ -178,8 +193,9 @@ func FindActiveByPortFresh(port int) (*Instance, error) {
 }
 
 // DiscoverInstance finds a running Unity instance from ~/.hera-agent-unity/instances/.
-// If port > 0, matches an active instance by port.
-// If project is set, matches by project path substring.
+// If port > 0, matches an active instance by port and verifies project when set.
+// If project is set, prefers an exact normalized path and accepts a unique
+// substring match for backward compatibility.
 // Otherwise returns the most recently active instance.
 func (c *Client) DiscoverInstance(project string, port int) (*Instance, error) {
 	return c.discoverInstance(project, port, false)
@@ -193,10 +209,26 @@ func (c *Client) DiscoverInstanceFresh(project string, port int) (*Instance, err
 
 func (c *Client) discoverInstance(project string, port int, fresh bool) (*Instance, error) {
 	if port > 0 {
+		var (
+			instance *Instance
+			err      error
+		)
 		if fresh {
-			return c.FindActiveByPortFresh(port)
+			instance, err = c.FindActiveByPortFresh(port)
+		} else {
+			instance, err = c.FindActiveByPort(port)
 		}
-		return c.FindActiveByPort(port)
+		if err != nil {
+			return nil, err
+		}
+		if project != "" && !projectPathsEqual(instance.ProjectPath, project) {
+			return nil, &TargetMismatchError{
+				Port:            port,
+				ExpectedProject: project,
+				ActualProject:   instance.ProjectPath,
+			}
+		}
+		return instance, nil
 	}
 
 	var (
@@ -226,19 +258,14 @@ func (c *Client) discoverInstance(project string, port int, fresh bool) (*Instan
 	}
 
 	if project != "" {
-		for _, inst := range alive {
-			if strings.Contains(filepath.ToSlash(inst.ProjectPath), filepath.ToSlash(project)) {
-				return &inst, nil
-			}
-		}
-		return nil, fmt.Errorf("no Unity instance found for project: %s", project)
+		return resolveProjectInstance(alive, project)
 	}
 
 	// Try to match by current working directory before falling back to timestamp
 	if cwd, err := os.Getwd(); err == nil {
-		cwdNorm := filepath.ToSlash(cwd)
+		cwdNorm := normalizeProjectPath(cwd)
 		for _, inst := range alive {
-			projNorm := filepath.ToSlash(inst.ProjectPath)
+			projNorm := normalizeProjectPath(inst.ProjectPath)
 			if cwdNorm == projNorm || strings.HasPrefix(cwdNorm, projNorm+"/") {
 				return &inst, nil
 			}

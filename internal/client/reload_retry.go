@@ -59,8 +59,49 @@ func (c *Client) doWithReloadRetry(
 			err = io.ErrUnexpectedEOF
 		}
 		lastErr = err
+		next, targetErr := c.inspectTarget(project, port)
+		if targetErr != nil {
+			if !policy.allowRetry && policy.unknown != nil {
+				policy.unknown.Cause = targetErr
+				return nil, policy.unknown
+			}
+			return nil, targetErr
+		}
 		if ctx.Err() != nil {
-			return nil, ctx.Err()
+			var timeoutErr error
+			if next != nil {
+				if inst.PID > 0 && next.PID > 0 && inst.PID != next.PID {
+					timeoutErr = &TargetRestartedError{
+						Project:     next.ProjectPath,
+						PreviousPID: inst.PID,
+						CurrentPID:  next.PID,
+						Port:        next.Port,
+						State:       next.State,
+						Cause:       ctx.Err(),
+					}
+				} else {
+					timeoutErr = &TargetUnresponsiveError{
+						Project: next.ProjectPath,
+						Port:    next.Port,
+						PID:     next.PID,
+						State:   next.State,
+						Cause:   ctx.Err(),
+					}
+				}
+			} else if project != "" {
+				timeoutErr = &TargetLostError{
+					Project:      project,
+					PreviousPort: port,
+					Cause:        ctx.Err(),
+				}
+			} else {
+				timeoutErr = ctx.Err()
+			}
+			if !policy.allowRetry && policy.unknown != nil {
+				policy.unknown.Cause = timeoutErr
+				return nil, policy.unknown
+			}
+			return nil, timeoutErr
 		}
 		if !isReloadTransient(err) {
 			return nil, fmt.Errorf("cannot connect to Unity at port %d: %w", port, err)
@@ -75,8 +116,7 @@ func (c *Client) doWithReloadRetry(
 		if time.Now().After(deadline) {
 			break
 		}
-		next, derr := c.DiscoverInstanceFresh(project, 0)
-		if derr == nil {
+		if next != nil {
 			port = next.Port
 		}
 		select {

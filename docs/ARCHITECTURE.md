@@ -30,7 +30,11 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
 1. Unity Editor opens → `HttpServer` starts on an available localhost port (8090 default, then 8091–8099)
 2. `Heartbeat` writes `~/.hera-agent-unity/instances/<md5(projectPath)>.json` every 1.0 second
 3. CLI scans the instances directory via `internal/client.ScanInstances()`
-4. CLI discovers the Unity instance and connects
+4. CLI resolves one Editor by exact normalized project path when provided;
+   legacy substring selection must be unique, and `--project` plus `--port`
+   must identify the same heartbeat
+5. CLI connects to the heartbeat's current port; the project path remains the
+   identity if a reload or restart binds a different port
 
 ### 2. Command Execution
 
@@ -41,7 +45,7 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
      │
      ▷  ② root.go: category="editor", subArgs=["play","--wait"]
      │
-     ▷  ③ client.DiscoverInstance() → cached one-shot read of instance JSON files
+     ▷  ③ client.DiscoverInstance() → exact-first, ambiguity-safe target resolution
      │
      ▷  ④ waitForAlive() → fresh-polls instance files until Unity is alive
      │
@@ -57,7 +61,7 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
      │
      ▷  ⑩ ManageEditor.play → EditorApplication.isPlaying = true; SuccessResponse returned immediately
      │
-     ▷  ⑪ JSON response returned to Go (HTTP listener may die mid-response due to domain reload — retry absorbs it)
+     ▷  ⑪ JSON response returned to Go (on failure/timeout, fresh heartbeat ownership is checked before a safe retry)
      │
      ▷  ⑫ Go: if --wait, waitForState(resolve, 60000, "playing", "paused") polls heartbeat until isPlaying observed
      │

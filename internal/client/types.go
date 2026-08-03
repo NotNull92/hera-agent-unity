@@ -3,6 +3,8 @@ package client
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"time"
 )
 
 type Client struct {
@@ -10,6 +12,8 @@ type Client struct {
 	httpClient         *http.Client
 	cache              *InstanceCache
 	processDeadChecker func(int) bool
+	readFile           func(string) ([]byte, error)
+	sleep              func(time.Duration)
 }
 
 func NewClient() *Client {
@@ -17,6 +21,8 @@ func NewClient() *Client {
 		httpClient:         sharedHTTPClient,
 		cache:              NewInstanceCache(),
 		processDeadChecker: checkProcessDead,
+		readFile:           os.ReadFile,
+		sleep:              time.Sleep,
 	}
 }
 

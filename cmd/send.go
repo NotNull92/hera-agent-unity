@@ -14,12 +14,12 @@ type SendFunc func(command string, params interface{}) (*client.CommandResponse,
 type SendBatchFunc func(ctx context.Context, inst *client.Instance, req client.BatchCommandRequest, timeoutMs int) (*client.BatchCommandResponse, error)
 
 func makeFreshResolver(inst *client.Instance, project string, port int) instanceResolver {
-	targetProject := project
-	if port == 0 && targetProject == "" {
-		targetProject = inst.ProjectPath
+	targetProject := inst.ProjectPath
+	if targetProject == "" {
+		targetProject = project
 	}
 	return func() (*client.Instance, error) {
-		if port > 0 {
+		if targetProject == "" {
 			return client.DiscoverInstanceFresh("", port)
 		}
 		return client.DiscoverInstanceFresh(targetProject, 0)

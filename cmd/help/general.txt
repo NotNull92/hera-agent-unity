@@ -264,7 +264,8 @@ Use "hera-agent-unity <command> --help" for more information about a command.
 
 Notes:
   - Unity must be open with the Connector package installed
-  - Multiple Unity instances: use --port or --project to select
+  - Multiple Unity instances: prefer the full --project path; ports are dynamic
+  - Using --project with --port requires both to identify the same Editor
   - Custom tools: any [HeraTool] class is auto-discovered
   - Run 'list' to see all available tools
 

@@ -18,6 +18,13 @@ These flags work with any command:
 `--timeout` is always milliseconds: `--timeout 120000` means two minutes,
 while `--timeout 120` means 120 milliseconds.
 
+Ports are dynamic connection endpoints selected from `8090`–`8099`, not Editor
+identities. With multiple Editors, prefer the full project path. Exact normalized
+paths take precedence; a partial path must match exactly one live project. When
+both `--project` and `--port` are present they must resolve to the same heartbeat.
+Transport failures and request timeouts trigger a fresh heartbeat ownership
+check before any retry.
+
 ---
 
 ## mcp (experimental)

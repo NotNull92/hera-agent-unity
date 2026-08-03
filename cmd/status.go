@@ -109,10 +109,10 @@ func pingCmd(project string, port int) error {
 }
 
 func discoverStatusInstance(project string, port int) (*client.Instance, error) {
-	if port > 0 {
+	if port > 0 && project == "" {
 		return client.FindByPortFresh(port)
 	}
-	return client.DiscoverInstanceFresh(project, 0)
+	return client.DiscoverInstanceFresh(project, port)
 }
 
 // waitForAlive resolves the current target instance, then polls until a newer heartbeat appears.

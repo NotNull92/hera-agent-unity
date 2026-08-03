@@ -2,6 +2,7 @@ package client
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -363,6 +364,122 @@ func TestDiscoverInstance_ProjectPathMatchesSlashVariants(t *testing.T) {
 	}
 	if got.ProjectPath != "E:/GamerAworlD" {
 		t.Errorf("ProjectPath: got %q, want %q", got.ProjectPath, "E:/GamerAworlD")
+	}
+}
+
+func TestDiscoverInstance_prefers_exact_project_path_over_substring_match(t *testing.T) {
+	// Given
+	stubIsProcessDead(t, map[int]bool{})
+	writeInstanceFiles(t, map[string]Instance{
+		"aaa_copy.json": {
+			State:       unitystate.Ready,
+			ProjectPath: "C:/Projects/test6.5-copy",
+			Port:        8090,
+			PID:         100,
+			Timestamp:   1000,
+		},
+		"bbb_exact.json": {
+			State:       unitystate.Ready,
+			ProjectPath: "C:/Projects/test6.5",
+			Port:        8091,
+			PID:         200,
+			Timestamp:   2000,
+		},
+	})
+
+	// When
+	got, err := DiscoverInstance("C:/Projects/test6.5", 0)
+
+	// Then
+	if err != nil {
+		t.Fatalf("DiscoverInstance error = %v", err)
+	}
+	if got.ProjectPath != "C:/Projects/test6.5" {
+		t.Fatalf("ProjectPath = %q, want exact project", got.ProjectPath)
+	}
+}
+
+func TestDiscoverInstance_rejects_ambiguous_project_substring(t *testing.T) {
+	// Given
+	stubIsProcessDead(t, map[int]bool{})
+	writeInstanceFiles(t, map[string]Instance{
+		"one.json": {
+			State:       unitystate.Ready,
+			ProjectPath: "C:/Projects/test6.5-alpha",
+			Port:        8090,
+			PID:         100,
+			Timestamp:   1000,
+		},
+		"two.json": {
+			State:       unitystate.Ready,
+			ProjectPath: "C:/Projects/test6.5-beta",
+			Port:        8091,
+			PID:         200,
+			Timestamp:   2000,
+		},
+	})
+
+	// When
+	_, err := DiscoverInstance("test6.5", 0)
+
+	// Then
+	var ambiguous *AmbiguousProjectError
+	if !errors.As(err, &ambiguous) {
+		t.Fatalf("error = %v, want *AmbiguousProjectError", err)
+	}
+	if len(ambiguous.Matches) != 2 {
+		t.Fatalf("match count = %d, want 2", len(ambiguous.Matches))
+	}
+}
+
+func TestDiscoverInstance_rejects_port_owned_by_different_project(t *testing.T) {
+	// Given
+	stubIsProcessDead(t, map[int]bool{})
+	writeInstanceFiles(t, map[string]Instance{
+		"inventoria.json": {
+			State:       unitystate.Ready,
+			ProjectPath: "C:/Projects/Inventoria",
+			Port:        8090,
+			PID:         100,
+			Timestamp:   1000,
+		},
+	})
+
+	// When
+	_, err := DiscoverInstance("C:/Projects/test6.5", 8090)
+
+	// Then
+	var mismatch *TargetMismatchError
+	if !errors.As(err, &mismatch) {
+		t.Fatalf("error = %v, want *TargetMismatchError", err)
+	}
+	if mismatch.ActualProject != "C:/Projects/Inventoria" {
+		t.Fatalf("ActualProject = %q", mismatch.ActualProject)
+	}
+}
+
+func TestDiscoverInstance_accepts_port_owned_by_requested_project(t *testing.T) {
+	// Given
+	stubIsProcessDead(t, map[int]bool{})
+	writeInstanceFiles(t, map[string]Instance{
+		"target.json": {
+			State:       unitystate.Ready,
+			ProjectPath: "C:/Projects/test6.5",
+			Port:        8091,
+			PID:         200,
+			Timestamp:   2000,
+		},
+	})
+
+	// When
+	got, err := DiscoverInstance("C:/Projects/test6.5", 8091)
+
+	// Then
+	if err != nil {
+		t.Fatalf("DiscoverInstance error = %v", err)
+	}
+	if got.ProjectPath != "C:/Projects/test6.5" {
+		t.Fatalf("ProjectPath = %q", got.ProjectPath)
 	}
 }
 

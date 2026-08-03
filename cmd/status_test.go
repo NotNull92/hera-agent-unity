@@ -121,6 +121,26 @@ func TestWaitForInstance_recovers_when_resolver_is_temporarily_empty(t *testing.
 	}
 }
 
+func TestWaitForInstance_fails_immediately_for_target_mismatch(t *testing.T) {
+	start := time.Now()
+	resolve := func() (*client.Instance, error) {
+		return nil, &client.TargetMismatchError{
+			Port:            8091,
+			ExpectedProject: "/projects/requested",
+			ActualProject:   "/projects/other",
+		}
+	}
+
+	_, err := waitForInstance(context.Background(), resolve, 200)
+	var mismatch *client.TargetMismatchError
+	if !errors.As(err, &mismatch) {
+		t.Fatalf("error = %v, want TargetMismatchError", err)
+	}
+	if elapsed := time.Since(start); elapsed >= 100*time.Millisecond {
+		t.Fatalf("terminal mismatch took %s, want immediate failure", elapsed)
+	}
+}
+
 func TestInitialDiscoveryTimeout_preserves_unbounded_request_timeout(t *testing.T) {
 	if got := initialDiscoveryTimeoutMs(0); got != instanceDiscoveryTimeoutMs {
 		t.Fatalf("initialDiscoveryTimeoutMs(0) = %d, want %d", got, instanceDiscoveryTimeoutMs)
@@ -175,6 +195,48 @@ func TestDiscoverStatusInstance_PortAllowsStoppedInstance(t *testing.T) {
 	}
 	if got.Port != 8090 {
 		t.Errorf("Port: got %d, want 8090", got.Port)
+	}
+}
+
+func TestDiscoverStatusInstance_ProjectAndPortRejectDifferentProject(t *testing.T) {
+	want := client.Instance{
+		State:       unitystate.Ready,
+		ProjectPath: "/projects/other",
+		Port:        8090,
+		PID:         os.Getpid(),
+		Timestamp:   time.Now().UnixMilli(),
+	}
+
+	writeInstanceFile(t, want)
+
+	_, err := discoverStatusInstance("/projects/requested", 8090)
+	var mismatch *client.TargetMismatchError
+	if !errors.As(err, &mismatch) {
+		t.Fatalf("error = %v, want TargetMismatchError", err)
+	}
+}
+
+func TestMakeFreshResolver_FollowsSelectedProjectInsteadOfOriginalPort(t *testing.T) {
+	want := client.Instance{
+		State:       unitystate.Ready,
+		ProjectPath: "/projects/selected",
+		Port:        8091,
+		PID:         os.Getpid(),
+		Timestamp:   time.Now().UnixMilli(),
+	}
+
+	writeInstanceFile(t, want)
+	resolve := makeFreshResolver(&client.Instance{
+		ProjectPath: want.ProjectPath,
+		Port:        8090,
+	}, "", 8090)
+
+	got, err := resolve()
+	if err != nil {
+		t.Fatalf("resolve error = %v", err)
+	}
+	if got.Port != want.Port {
+		t.Fatalf("resolved port = %d, want %d", got.Port, want.Port)
 	}
 }
 

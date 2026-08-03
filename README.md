@@ -665,9 +665,14 @@ No.
 ### Which Unity Editor does it talk to?
 
 Each CLI invocation or MCP process targets one Unity Editor. If several Editor
-heartbeats are present, use `--project` or `--port` to select one explicitly;
-without a selector Hera prefers a project matching the current working
-directory, then the most recent live heartbeat.
+heartbeats are present, prefer `--project` with the full project path. Ports are
+temporary endpoints chosen from `8090`–`8099`; they may change after an Editor
+restart or domain reload. Exact normalized project paths win, a partial project
+match must be unique, and `--project` plus `--port` must identify the same
+Editor. Without a selector Hera prefers a project matching the current working
+directory, then the most recent live heartbeat. After a transport failure or
+request timeout Hera reads fresh heartbeat state before any safe retry, so it
+does not silently follow a port that another project has claimed.
 
 ### What should I do when it cannot connect?
 
