@@ -4,7 +4,7 @@ param(
         "2023.2.22f1",
         "6000.0.35f1",
         "6000.3.5f2",
-        "6000.5.0f1"
+        "6000.5.6f1"
     ),
     [string]$HubRoot = (Join-Path $env:ProgramFiles "Unity\Hub\Editor"),
     [switch]$Json

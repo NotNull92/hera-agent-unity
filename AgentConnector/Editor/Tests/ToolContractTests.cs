@@ -1242,17 +1242,19 @@ namespace HeraAgent.Tests
             var createAssetData = assets.Actions["create"].OutputSchema["properties"]?["data"];
             var importData = uiDoc.Actions["import"].OutputSchema["properties"]?["data"];
             var applyData = uiDoc.Actions["apply"].OutputSchema["properties"]?["data"];
-            return Expect(nameof(TestM23OutputSchemas),
+            var assetSchemasValid =
                 defaultTools.All(tool => HasOutputEnvelope(ToolContractRegistry.Get(tool).OutputSchema))
                 && assets.Actions["find"].OutputSchema["properties"]?["data"]?["properties"]?["assets"] != null
                 && createAssetData?["properties"]?["applied"]?["type"]?.Value<string>() == "array"
-                && createAssetData?["properties"]?["applied"]?["items"]?["type"]?.Value<string>() == "string"
-                && animation.Actions["set_curve"].OutputSchema["properties"]?["data"]?["properties"]?["keys"] != null
+                && createAssetData?["properties"]?["applied"]?["items"]?["type"]?.Value<string>() == "string";
+            var uiSchemasValid =
+                animation.Actions["set_curve"].OutputSchema["properties"]?["data"]?["properties"]?["keys"] != null
                 && ui.Actions["get_rect"].OutputSchema["properties"]?["data"]?["properties"]?["rect"]?["properties"]?["anchor_min"] != null
                 && importData?["properties"]?["imported"]?["type"]?.Value<string>() == "array"
                 && importData?["properties"]?["skipped"]?["type"]?.Value<string>() == "array"
                 && applyData?["properties"] is JObject applyProperties
-                && applyProperties.Count == 0);
+                && applyProperties.Count == 0;
+            return Expect(nameof(TestM23OutputSchemas), assetSchemasValid && uiSchemasValid);
         }
 
         private static bool TestM24StrictToolCoverage()
@@ -1581,12 +1583,13 @@ namespace HeraAgent.Tests
                 .Select(property => property.Name)
                 .OrderBy(name => name, StringComparer.Ordinal)
                 .ToArray() ?? Array.Empty<string>();
-            return Expect(nameof(TestM24OutputSchemas),
+            var packageSchemasValid =
                 packages.Actions["list"].OutputSchema["properties"]?["data"]?
                     ["properties"]?["packages"]?["items"]?["properties"]?["name"] != null
                 && packages.Actions["add"].OutputSchema["properties"]?["data"]?
-                    ["properties"]?["job_id"] != null
-                && profilerDefaultData?["properties"]?["threadIndex"] != null
+                    ["properties"]?["job_id"] != null;
+            var profilerSchemasValid =
+                profilerDefaultData?["properties"]?["threadIndex"] != null
                 && profilerDefaultData?["properties"]?["thread_index"] == null
                 && profilerHierarchyData?["properties"]?["parentName"] != null
                 && profilerHierarchyData?["properties"]?["parent_name"] == null
@@ -1594,8 +1597,9 @@ namespace HeraAgent.Tests
                     ["type"]?.Value<string>() == "array"
                 && profilerStatusData?["properties"]?["firstFrame"] != null
                 && profilerStatusData?["properties"]?["first_frame"] == null
-                && runtimeStatusProperties.SequenceEqual(schemaStatusProperties)
-                && runTests.OutputSchema["properties"]?["data"]?
+                && runtimeStatusProperties.SequenceEqual(schemaStatusProperties);
+            var remainingSchemasValid =
+                runTests.OutputSchema["properties"]?["data"]?
                     ["properties"]?["run_id"] != null
                 && runTests.OutputSchema["properties"]?["data"]?
                     ["properties"]?["failures"]?["items"]?["type"]?.Value<string>()
@@ -1603,7 +1607,9 @@ namespace HeraAgent.Tests
                 && log.OutputSchema["properties"]?["data"]?
                     ["properties"]?["level"] != null
                 && menu.Actions["list"].OutputSchema["properties"]?["data"]?
-                    ["properties"]?["groups"]?["type"]?.Value<string>() == "array");
+                    ["properties"]?["groups"]?["type"]?.Value<string>() == "array";
+            return Expect(nameof(TestM24OutputSchemas),
+                packageSchemasValid && profilerSchemasValid && remainingSchemasValid);
         }
 
         private static bool HasOutputEnvelope(JObject schema)
