@@ -5,13 +5,14 @@
 External state was last checked on 2026-08-04.
 
 ```text
-CLI release target:   v0.1.3
-npm package target:   0.1.3
+CLI release:          v0.1.3
+npm package:          0.1.3 (latest)
 UPM Connector:        0.0.80
 Codex plugin bundle:  1.0.1
+Release commit:       2612e41077598e558dbb76f3a41e426f4e30d19c
 Distribution commit:  5cf8b239d5b999bdc890cc6cfc122c4ef0d1438f
 Connector tag:        connector-0.0.80
-CLI tag target:       v0.1.3
+CLI tag:              v0.1.3
 ```
 
 CLI, Connector, npm, and plugin versions are intentionally independent.
@@ -20,17 +21,17 @@ CLI, Connector, npm, and plugin versions are intentionally independent.
 
 | Channel | External state | Repository state | Next action |
 |---|---|---|---|
-| GitHub Release binaries | `v0.1.2` published with five native assets | `v0.1.3` follow-up prepared | Push `v0.1.3` tag |
-| PowerShell / shell installers | Resolve GitHub `releases/latest` | Automatically follows stable releases | Verify after `v0.1.3` publishes |
-| Go install | Resolves the latest module tag | `v0.1.3` source prepared | Verify after tag publication |
+| GitHub Release binaries | `v0.1.3` published with five native assets | Complete | None |
+| PowerShell / shell installers | Resolve GitHub `releases/latest` | Complete and follows `v0.1.3` | None |
+| Go install | Resolves the latest module tag | Complete through `v0.1.3` | None |
 | Unity UPM Git package | `connector-0.0.80` tag published | Complete | None |
 | OpenUPM | Registry `latest` is `0.0.80` | Complete | Keep Connector package metadata compatible with OpenUPM |
-| npm | Registry `latest` is `0.1.2` | Package `0.1.3` and workflow-run publication prepared | Publish after the `v0.1.3` GitHub Release succeeds |
+| npm | Registry `latest` is `0.1.3` | Complete; automatic workflow-run publication is active | None |
 | HOL awesome-codex-plugins | Hera Agent Unity is listed; source scanner passed for `5cf8b23` | Plugin `1.0.1` is scanner-gated | Upstream mirror refresh remains upstream-owned |
 | HOL awesome-ai-plugins | Hera Agent Unity is listed | Uses the same upstream bundle | No separate package publication |
 | Publisher-owned Codex marketplace | `main` exposes `.agents/plugins/marketplace.json` | Complete | Keep the catalog entry and plugin bundle in sync |
 | Skills CLI / skills.sh | Repository-backed skill is installable | `.agents/skills/hera-agent-unity/SKILL.md` is the canonical source | Directory visibility remains telemetry-driven |
-| Official MCP Registry | First `0.1.2` attempt failed because GitHub OIDC namespace casing is exact | Correct `io.github.NotNull92/hera-agent-unity` identity prepared | Publish automatically after npm `0.1.3` succeeds |
+| Official MCP Registry | `io.github.NotNull92/hera-agent-unity` version `0.1.3` is published | Complete; npm stdio launch metadata verified through the public API | Monitor preview Registry compatibility |
 | GitHub MCP Registry | Hera is not listed | Candidate after official MCP Registry publication | Request curated inclusion after the official entry is live |
 | Glama | No Hera-specific entry verified | Can ingest the official MCP Registry or a GitHub submission | Prefer official Registry ingestion; do not market Hera as a remote hosted server |
 | Smithery | No Hera entry verified | Local stdio publication requires an MCPB bundle | Add an MCPB release artifact only if this extra packaging surface is worth maintaining |
@@ -53,8 +54,11 @@ Workflow filename: npm-publish.yml
 Allowed action:    npm publish
 ```
 
-The `0.1.1` publication completed in
-[Publish npm Package run 30858410191](https://github.com/NotNull92/hera-agent-unity/actions/runs/30858410191).
+Successful npm publications include
+[0.1.1 run 30858410191](https://github.com/NotNull92/hera-agent-unity/actions/runs/30858410191),
+[0.1.2 run 30862729736](https://github.com/NotNull92/hera-agent-unity/actions/runs/30862729736),
+and the automatic
+[0.1.3 run 30863071866](https://github.com/NotNull92/hera-agent-unity/actions/runs/30863071866).
 The workflow fails before publishing unless:
 
 - `npm/package.json` equals the requested `v*` tag;
@@ -68,6 +72,8 @@ succeeds. It verifies that the exact package version is visible on npm, checks
 the registry contract test, downloads checksum-pinned `mcp-publisher` `1.7.9`,
 authenticates with GitHub OIDC, and publishes `server.json`. A manual stable-tag
 dispatch provides an idempotent recovery path when npm is already published.
+The first successful Registry publication is
+[0.1.3 run 30863089628](https://github.com/NotNull92/hera-agent-unity/actions/runs/30863089628).
 
 ## Publisher-owned Codex marketplace
 
