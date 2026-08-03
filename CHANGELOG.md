@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-08-03
+
+### Changed (licensing)
+
+- Relicensed the project from MIT to Apache License 2.0 and added NOTICE files
+  to the repository and each independently distributed package.
+
 ### Changed (CLI — project-safe multi-Editor targeting)
 
 - Unity ports are now treated as dynamic endpoints instead of stable Editor

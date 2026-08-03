@@ -9,10 +9,10 @@
 Tests, TUI, batch engine, and asset-config layer sit on top — but the engine that talks to Unity stays lean.
 
 The production-default CLI path uses **no WebSockets, JSON-RPC, Python, or
-persistent server process**. Current `main` source includes an unreleased,
-experimental, default-off stdio MCP adapter in front of the shared execution
-core. M17 completed with the decision to retain the CLI as the production
-default because the measured benefit gates did not justify MCP promotion.
+persistent server process**. CLI `v0.1.0+` also includes an experimental,
+default-off stdio MCP adapter in front of the shared execution core. M17
+completed with the decision to retain the CLI as the production default because
+the measured benefit gates did not justify MCP promotion.
 
 ```
 ┌─────────────────┐      HTTP POST      ┌─────────────────────┐

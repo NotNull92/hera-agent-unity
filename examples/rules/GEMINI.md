@@ -30,7 +30,7 @@ Ultra loop: split success criteria, snapshot before changing, apply the change, 
 
 ## AntiGravity-specific notes
 
-- **The production default is Terminal/Bash.** The published CLI is a plain shell binary returning JSON. Current `main` source also contains an unreleased, experimental, default-off, stdio-only MCP adapter; it does not replace the CLI or localhost Connector. See `docs/MCP.md` in the Hera repository for the source-build preview and compatibility boundaries.
+- **The production default is Terminal/Bash.** The published CLI is a plain shell binary returning JSON. CLI `v0.1.0+` also contains an experimental, default-off, stdio-only MCP adapter; it does not replace the CLI or localhost Connector. See `docs/MCP.md` in the Hera repository for setup and compatibility boundaries.
 - **No parallel calls.** The Unity connector serializes every command on the Editor main thread (a 120s `SemaphoreSlim` lock). Issuing two hera-agent-unity calls concurrently just makes the second wait — run them **sequentially**, or compose them into one `exec` / `batch`.
 - **Domain reloads drop the connection.** Any `exec` that recompiles scripts or imports assets triggers a domain reload that kills the in-flight HTTP request (the CLI auto-retries ~5s). For large projects raise the budget: `--timeout 120000` or `HERA_AGENT_TIMEOUT_MS=120000`. Use `editor refresh --compile` when you need compilation finished before continuing.
 - **PowerShell quoting trap.** PowerShell `'single quotes'` pass `\"` as a literal `\` → csc `CS1056`. `"double quotes"` eat `$`, backtick, `;`. The reliable pattern is a here-string piped to stdin:

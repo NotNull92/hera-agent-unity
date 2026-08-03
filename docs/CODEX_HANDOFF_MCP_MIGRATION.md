@@ -13,7 +13,7 @@ decision.
   `docs/MCP_MIGRATION_PROGRESS.md`.
 - `origin/main` baseline before M17 documentation is `9080f94`.
 - The Go CLI and localhost HTTP Unity Connector remain the execution core.
-- Current-source MCP is an unreleased, stdio-only, environment-gated adapter.
+- CLI `v0.1.0+` includes the stdio-only, environment-gated MCP adapter.
   It supports native Profile, Compact, Full-safe, explicitly permitted
   Advanced, approval/MRTR, operation-ledger replay, negotiated Tasks with
   blocking fallback, catalog invalidation, and bounded large-result resources.
@@ -85,8 +85,9 @@ mutate Inventoria for later audits.
 - Keep localhost HTTP, main-thread serialization, heartbeat discovery,
   file-bus recovery, and the single-selected-Editor model.
 - Keep CLI and Connector versions separate.
-- Keep MCP unreleased and default-off unless a future benchmark satisfies the
-  decision gates and the user explicitly selects a new default.
+- Keep MCP experimental and default-off unless a future benchmark satisfies the
+  decision gates and the user explicitly selects a new default. Shipping the
+  adapter does not promote it over the CLI.
 - `AGENTS.md` is the canonical generated-guide source. Do not edit generated
   guides independently.
 
@@ -103,7 +104,8 @@ mutate Inventoria for later audits.
 
 ## Environment notes
 
-- Use a source-built binary when validating unreleased MCP behavior.
+- Use CLI `v0.1.0+` or an exact-source development build when validating MCP
+  behavior.
 - Exact-source Connector QA must compile repository sources, not infer behavior
   from an installed older package.
 - Use unique temporary assembly names to avoid stale in-memory Unity assemblies.

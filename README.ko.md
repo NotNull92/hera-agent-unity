@@ -6,7 +6,7 @@
 
 [![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent-unity?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent-unity/releases)
 [![GitHub stars](https://img.shields.io/github/stars/NotNull92/hera-agent-unity?style=flat-square&logo=github&label=stars&color=181717)](https://github.com/NotNull92/hera-agent-unity/stargazers)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square&color=blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go](https://img.shields.io/badge/go-%5E1.25-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
@@ -73,14 +73,27 @@ hera-agent-unity editor play --wait
 ```
 
 Python 서버는 필요 없습니다. production 기본값인 CLI 경로에는 MCP 설정
-파일이나 특별한 에이전트 플러그인이 필요 없습니다. 현재 `main` 소스에는 MCP
-클라이언트를 위한 실험적·default-off stdio adapter도 있지만 최신 공개 CLI
-릴리스에는 아직 포함되지 않았습니다. source-build preview는
-[docs/MCP.md](docs/MCP.md)에 있습니다.
+파일이나 특별한 에이전트 플러그인이 필요 없습니다. CLI `v0.1.0+`에는 명시적으로
+설정한 MCP 클라이언트용 실험적·default-off stdio adapter도 포함됩니다. 설정과
+호환성 경계는 [docs/MCP.md](docs/MCP.md)에 있습니다.
 
 ---
 
 ## 새로운 점
+
+### v0.1.0 — 안전한 다중 Editor 선택과 선택형 MCP adapter
+
+이번 릴리스는 일반 CLI를 대체하지 않으면서 M0-M17 adapter migration을
+완료합니다. MCP는 실험적·stdio-only·환경 변수 opt-in 기능으로 배포되며, typed
+CLI와 localhost Unity Connector가 계속 production 기본값입니다.
+
+| 릴리스 변경 | 쉬운 뜻 |
+|:---|:---|
+| 프로젝트 기반 Editor 선택 | 정규화된 전체 프로젝트 경로로 Editor를 식별합니다. 포트는 임시 연결점으로 취급하고 모호한 선택은 실패합니다. |
+| 안전한 응답 손실 복구 | 재시도 전에 domain reload, Editor 재시작, 사라진 대상, 포트 재사용을 구분합니다. 비멱등 mutation은 무작정 반복하지 않습니다. |
+| 실험적 MCP adapter | `HERA_MCP_ENABLED=1 hera-agent-unity mcp`로 Profile, Compact, Full-safe, 승인, operation ledger, Tasks, 제한된 result resource를 사용할 수 있습니다. |
+| Connector 0.0.76 패키징 | UPM 테스트를 production assembly에서 분리해 Unity 6000.5 컴파일 정지와 중복 TestRunner 참조를 제거했습니다. |
+| Apache-2.0 | 명시적인 특허 조건, 수정 표시, 배포용 `NOTICE` 파일을 적용했습니다. |
 
 ### Unity De-slop Mode (Beta) — 정적 시각 규율
 
@@ -113,20 +126,33 @@ UI Toolkit 경로를 추가했습니다.
 
 [UI 시스템 선택하기 →](#ui-시스템) · [UI 문서 계약 보기 →](docs/UI_DOC_IR.md)
 
-### 최신 CLI 릴리스 — v0.0.42
+### 최신 CLI 릴리스 — v0.1.0
 
-공개된 최신 CLI 릴리스는 **v0.0.42**입니다(2026년 7월 20일). 이 릴리스의
-Unity 패키지는 **Connector 0.0.64**입니다. CLI와 Connector 버전은 의도적으로
+공개된 최신 CLI 릴리스는 **v0.1.0**입니다(2026년 8월 3일). 이 릴리스의
+Unity 패키지는 **Connector 0.0.76**입니다. CLI와 Connector 버전은 의도적으로
 분리되어 있습니다.
 
 | 현재 하이라이트 | 쉬운 뜻 |
 |:---|:---|
-| **Unity De-slop Mode (Beta)** | UI-slop tell 택소노미를 함께 배포합니다. 각 tell은 uGUI·UI Toolkit 판정과 기계적 수정법을 가집니다. |
-| **도메인 리로드 중 조용한 stderr** | 리로드로 끝나는 명령이 더 이상 `unsolicited response` 경고를 찍지 않습니다. 실패처럼 보였지만 실패였던 적은 없습니다. |
-| **`editor stop --wait`가 실제로 기다립니다** | 문서에는 있었지만 무시되던 플래그입니다. 그래서 직후 `status`가 아직 `playing`을 보고할 수 있었습니다. 이제 ready 복귀를 확인합니다. |
-| **정직한 타입 메타데이터** | `describe_type`이 "setter가 있으면 무조건 쓰기 가능" 대신, 내 코드가 실제로 대입할 수 있을 때만 쓰기 가능이라고 답합니다. |
+| **프로젝트에 안전한 다중 Editor 선택** | 포트가 바뀌거나 재사용되어도 `--project <전체-경로>`로 의도한 Editor를 식별합니다. |
+| **실험적 MCP 포함** | 같은 바이너리에서 명시적으로 켠 경우에만 stdio MCP를 열며 CLI가 계속 기본값입니다. |
+| **UPM 컴파일 정지 수정** | Connector 테스트 소스가 production assembly로 섞이거나 TestRunner를 중복 참조하지 않습니다. |
+| **Apache-2.0 라이선스** | 소스, npm, UPM, Codex 플러그인이 같은 라이선스와 출처 고지를 포함합니다. |
 
-현재 검증 기준:
+릴리스 호환성 매트릭스:
+
+| Unity Editor | Connector 0.0.76 exact-source compile |
+|:---|:---:|
+| 2022.3.62f2 | PASS |
+| 2023.2.22f1 | PASS |
+| 6000.0.35f1 | PASS |
+| 6000.3.5f2 | PASS |
+| 6000.5.6f1 | PASS |
+
+직전 Connector 0.0.75는 같은 매트릭스에서 clean UPM import와 runtime 검사도
+통과했습니다. 근거: [Unity 호환성 인벤토리](docs/UNITY_EDITOR_VERSION_INVENTORY.md)
+
+낮은 토큰 벤치마크 기준:
 
 | Unity Editor | `list --compact` | `find_gameobjects --ids` | 상세 |
 |:---|---:|---:|:---|
@@ -615,10 +641,9 @@ Unity 패키지가 작은 로컬 HTTP 서버를 엽니다. CLI가 그 서버에 
 ### MCP인가요?
 
 production 기본값은 일반 CLI이므로 셸 명령을 실행할 수 있는 모든 에이전트가
-사용할 수 있습니다. 현재 `main` 소스에는 실험적·default-off·stdio-only MCP
-adapter도 있지만 최신 공개 CLI 릴리스에는 아직 없고 기본값도 아닙니다. CLI와
-localhost Connector 실행 코어를 그대로 사용합니다.
-[source-build MCP preview](docs/MCP.md)를 참고하세요.
+사용할 수 있습니다. CLI `v0.1.0+`에는 실험적·default-off·stdio-only MCP
+adapter도 포함되지만 기본값은 아닙니다. CLI와 localhost Connector 실행 코어를
+그대로 사용합니다. [MCP adapter 가이드](docs/MCP.md)를 참고하세요.
 
 ### Python이 필요한가요?
 
@@ -627,9 +652,14 @@ localhost Connector 실행 코어를 그대로 사용합니다.
 ### 어떤 Unity Editor에 연결되나요?
 
 각 CLI 호출이나 MCP 프로세스는 Unity Editor 하나를 대상으로 합니다. 여러
-Editor heartbeat가 있으면 `--project` 또는 `--port`로 하나를 명시적으로
-선택하세요. 선택자가 없으면 현재 작업 디렉터리와 일치하는 프로젝트를 먼저,
-그다음 가장 최근의 살아 있는 heartbeat를 선택합니다.
+Editor heartbeat가 있으면 정규화된 전체 프로젝트 경로를 `--project`에 지정하는
+방식을 우선하세요. 포트는 `8090`–`8099`에서 선택되는 임시 연결점이라 Editor
+재시작이나 domain reload 뒤에 바뀔 수 있습니다. 정확한 프로젝트 경로가 우선하고,
+부분 경로는 하나의 프로젝트만 식별할 때만 허용되며, `--project`와 `--port`를
+함께 쓰면 둘 다 같은 Editor를 가리켜야 합니다. 선택자가 없으면 현재 작업
+디렉터리와 일치하는 프로젝트를 먼저, 그다음 가장 최근의 살아 있는 heartbeat를
+선택합니다. 응답 손실이나 timeout 뒤에는 heartbeat 소유권을 다시 확인해 다른
+프로젝트가 재사용한 포트로 mutation을 재전송하지 않습니다.
 
 ### 연결이 안 되면 어떻게 하나요?
 
@@ -680,7 +710,7 @@ Discord: [Hera 커뮤니티 참여하기](https://discord.gg/QBzEVuYwK)
 
 ## 후원
 
-Hera는 무료이며 MIT 라이선스로 제공됩니다. Hera가 시간을 아껴줬다면 개발을 후원할 수 있습니다:
+Hera는 무료이며 Apache-2.0 라이선스로 제공됩니다. Hera가 시간을 아껴줬다면 개발을 후원할 수 있습니다:
 
 [![Support on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/notnull92)
 
@@ -688,4 +718,4 @@ Hera는 무료이며 MIT 라이선스로 제공됩니다. Hera가 시간을 아�
 
 ## 라이선스
 
-MIT. [LICENSE](LICENSE)를 확인하세요.
+Apache License 2.0. [LICENSE](LICENSE)와 [NOTICE](NOTICE)를 확인하세요.

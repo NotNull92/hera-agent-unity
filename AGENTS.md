@@ -177,13 +177,12 @@ cannot capture Unity screenshot state and no native OS/window input backend is
 available, record the physical-click criterion as **BLOCKED** even when
 EventSystem input QA passes.
 
-**[Rule 12]** Current `main` source contains an unreleased MCP adapter that is
-experimental, default-off, and stdio-only. The normal CLI remains the production
-default. Use `HERA_MCP_ENABLED=1 hera-agent-unity mcp` only with a source-built
-binary and intentionally configured MCP client, keep stdout free of shell
-banners and diagnostics, and use Compact exposure for older Connectors. Missing
-approval or operation-ledger features must fail closed. Full setup and
-compatibility rules are in `docs/MCP.md`.
+**[Rule 12]** CLI `v0.1.0+` includes an experimental MCP adapter that remains
+default-off and stdio-only. The normal CLI remains the production default. Use
+`HERA_MCP_ENABLED=1 hera-agent-unity mcp` only with an intentionally configured
+MCP client, keep stdout free of shell banners and diagnostics, and use Compact
+exposure for older Connectors. Missing approval or operation-ledger features
+must fail closed. Full setup and compatibility rules are in `docs/MCP.md`.
 
 **[Rule 13]** Treat a Unity port as a temporary connection endpoint, not an
 Editor identity. At the start of Unity work, run the bootstrap sequence and

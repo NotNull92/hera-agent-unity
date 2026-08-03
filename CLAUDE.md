@@ -3,7 +3,7 @@
 > See [`AGENTS.md`](AGENTS.md) for the canonical cross-tool agent rules file (read natively by Codex, Claude Code, Cursor, Copilot, and 30+ tools).
 
 CLI tool to control Unity Editor from the command line.
-Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free under MIT.
+Unified successor to `hera-agent` + `hera-agent-pro`. All features ship free under Apache-2.0.
 
 ## 협업 개발 (Claude ↔ Codex)
 
@@ -18,7 +18,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 **기존 Go CLI와 localhost HTTP Unity Connector가 실행 코어라는 결정은 유지한다** 🔒. `HttpServer`, `CommandRouter`, `ToolDiscovery`, `Heartbeat`, Unity main-thread queue, 파일버스 복구 경로를 교체하거나 Unity Connector 안에 MCP를 직접 구현하지 않는다.
 
-**CLI + MCP adapter migration의 M0부터 M17까지 PASS다** 🔒. 기존 바이너리 안의 선택적 Go stdio MCP adapter는 같은 실행 코어 앞에 있으며 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 하나의 정규화된 tool contract registry를 공유한다. M17에서 열네 개 section 28.3 시나리오와 복구 증거를 완결하고 독립 PASS B 승인을 받았다. Profile의 도구 정의 절감 기준은 통과했지만 Typed contract 및 MCP-primary 이득 기준은 충족하지 못했으므로 Typed CLI와 기존 CLI가 production default이고, MCP는 unreleased·experimental·default-off 상태를 유지한다. 이후 기본값 변경은 완전한 새 근거와 명시적 사용자 결정 없이는 금지한다.
+**CLI + MCP adapter migration의 M0부터 M17까지 PASS다** 🔒. 기존 바이너리 안의 선택적 Go stdio MCP adapter는 같은 실행 코어 앞에 있으며 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 하나의 정규화된 tool contract registry를 공유한다. M17에서 열네 개 section 28.3 시나리오와 복구 증거를 완결하고 독립 PASS B 승인을 받았다. Profile의 도구 정의 절감 기준은 통과했지만 Typed contract 및 MCP-primary 이득 기준은 충족하지 못했으므로 Typed CLI와 기존 CLI가 production default이고, MCP는 `v0.1.0`부터 배포되지만 experimental·default-off 상태를 유지한다. 이후 기본값 변경은 완전한 새 근거와 명시적 사용자 결정 없이는 금지한다.
 
 이유:
 - 런타임 의존성 0개 — 사용자는 바이너리 하나 + UPM 패키지 하나만 설치
@@ -30,7 +30,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 - **Authoritative implementation specification:** `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - **Milestone evidence and rollback ledger:** `docs/MCP_MIGRATION_PROGRESS.md`
-- **현재 상태:** M0부터 M17까지 PASS다. current `main` source의 unreleased `mcp`는 `HERA_MCP_ENABLED=1`일 때만 stdio로 시작하며 Profile, Compact 3-tool fallback, Full-safe, 명시적 arbitrary-code permission이 필요한 Advanced, 승인/MRTR, operation ledger, Tasks와 blocking fallback, large-result resource를 지원한다. 오래된 Connector는 Compact-only로 보수적으로 저하되고 안전 feature 누락은 fail-closed다. M17은 Inventoria 증거, 하나의 marked disposable fixture에서 완결한 열네 개 integration 시나리오, 복구 증거, 독립 PASS B 승인을 보유한다. 측정 이득 기준이 MCP 승격을 정당화하지 못했으므로 Typed CLI와 기존 CLI가 production default이고 MCP는 experimental·default-off다.
+- **현재 상태:** M0부터 M17까지 PASS다. CLI `v0.1.0+`의 `mcp`는 `HERA_MCP_ENABLED=1`일 때만 stdio로 시작하며 Profile, Compact 3-tool fallback, Full-safe, 명시적 arbitrary-code permission이 필요한 Advanced, 승인/MRTR, operation ledger, Tasks와 blocking fallback, large-result resource를 지원한다. 오래된 Connector는 Compact-only로 보수적으로 저하되고 안전 feature 누락은 fail-closed다. M17은 Inventoria 증거, 하나의 marked disposable fixture에서 완결한 열네 개 integration 시나리오, 복구 증거, 독립 PASS B 승인을 보유한다. 측정 이득 기준이 MCP 승격을 정당화하지 못했으므로 Typed CLI와 기존 CLI가 production default이고 MCP는 experimental·default-off다.
 - **보존 경계:** 기존 Go CLI, localhost HTTP Connector, single-selected-target model, main-thread serialization, heartbeat discovery, package/test file bus, CLI/Connector 독립 버전은 계속 잠금 상태다.
 
 ### Rule-document hierarchy

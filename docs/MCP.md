@@ -1,9 +1,9 @@
 # Experimental MCP Adapter
 
-Hera Agent Unity's current `main` source includes an optional stdio MCP adapter
-in the existing Go CLI. This experimental adapter is not included in the latest
-published CLI release, `v0.0.42`. The CLI and localhost Unity Connector remain
-the execution core and the normal CLI remains the production default.
+Hera Agent Unity CLI `v0.1.0+` includes an optional stdio MCP adapter in the
+existing Go binary. The adapter remains experimental and default-off. The CLI
+and localhost Unity Connector remain the execution core and the normal CLI
+remains the production default.
 
 ## Start the server
 
@@ -18,20 +18,18 @@ Protocol frames are written only to stdout. Diagnostics are written to stderr.
 The server requires a running Unity Editor and loads its current tool catalog
 before accepting MCP sessions.
 
-Until a later CLI release includes the adapter, build the current source with a
-supported Go toolchain. This does not install or alter the Unity package:
+Install CLI `v0.1.0+` using one of the normal methods in the README, then verify
+that the binary exposes the adapter command:
 
 ```bash
-git clone https://github.com/NotNull92/hera-agent-unity.git
-cd hera-agent-unity
-go build -o hera-agent-unity .
-./hera-agent-unity mcp --help
+hera-agent-unity version
+HERA_MCP_ENABLED=1 hera-agent-unity mcp --help
 ```
 
 Keep the normal Unity package installation from the [README](../README.md#install).
-Then configure an MCP client to launch the source-built binary as a child
-process. A client configuration with `command`, `args`, and `env` fields has
-this portable shape (adapt the outer key and command path to the client):
+Then configure an MCP client to launch the installed binary as a child process.
+A client configuration with `command`, `args`, and `env` fields has this
+portable shape (adapt the outer key and command path to the client):
 
 ```json
 {
@@ -195,7 +193,7 @@ The normal global `HERA_AGENT_PROJECT`, `HERA_AGENT_PORT`, and
 
 ## Release boundary
 
-The current-source MCP adapter is unreleased, experimental, default-off,
+The MCP adapter ships in CLI `v0.1.0+` but remains experimental, default-off,
 stdio-only, and limited to one selected local Editor per process. It does not
 replace the localhost Connector, expose Unity over the network, bypass
 Connector validation, or make arbitrary code safe.

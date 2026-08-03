@@ -6,7 +6,7 @@
 
 [![Release](https://img.shields.io/github/v/release/NotNull92/hera-agent-unity?style=flat-square&logo=github&color=00d4aa)](https://github.com/NotNull92/hera-agent-unity/releases)
 [![GitHub stars](https://img.shields.io/github/stars/NotNull92/hera-agent-unity?style=flat-square&logo=github&label=stars&color=181717)](https://github.com/NotNull92/hera-agent-unity/stargazers)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square&color=blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go](https://img.shields.io/badge/go-%5E1.25-00ADD8?style=flat-square&logo=go)](https://go.dev)
 [![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
@@ -73,13 +73,28 @@ hera-agent-unity editor play --wait
 ```
 
 No Python server. The production-default CLI path needs no MCP config or special
-agent plugin. Current `main` source also contains an experimental, default-off
-stdio MCP adapter for MCP clients; it is not in the latest published CLI
-release. See [docs/MCP.md](docs/MCP.md) for the source-build preview.
+agent plugin. CLI `v0.1.0+` also includes an experimental, default-off stdio MCP
+adapter for intentionally configured MCP clients. See
+[docs/MCP.md](docs/MCP.md) for setup and compatibility boundaries.
 
 ---
 
 ## What's New
+
+### v0.1.0 — safe multi-Editor targeting and an optional MCP adapter
+
+This release completes the M0-M17 adapter migration without replacing the
+normal CLI. MCP is shipped as an experimental, stdio-only, environment-gated
+option; the typed CLI and localhost Unity Connector remain the production
+default.
+
+| Release change | What it means |
+|:---|:---|
+| Project-aware Editor selection | Full normalized project paths identify Editors; ports are treated as temporary endpoints and ambiguous matches fail. |
+| Safe response-loss recovery | Hera detects domain reloads, Editor restarts, lost targets, and port reuse before any eligible retry. Non-idempotent mutations are never blindly repeated. |
+| Experimental MCP adapter | `HERA_MCP_ENABLED=1 hera-agent-unity mcp` exposes Profile, Compact, Full-safe, approval, operation-ledger, Tasks, and bounded result-resource paths. |
+| Connector 0.0.76 packaging | UPM tests are isolated from production assemblies, removing the Unity 6000.5 compile-stall regression and duplicate TestRunner references. |
+| Apache-2.0 | The project now carries explicit patent terms, modification notices, and distributable `NOTICE` files. |
 
 ### Unity De-slop Mode (Beta) — static visual discipline
 
@@ -111,20 +126,33 @@ agent to guess version-specific APIs.
 
 [Choose a UI system →](#ui-systems) · [Read the UI document contract →](docs/UI_DOC_IR.md)
 
-### Latest CLI release — v0.0.42
+### Latest CLI release — v0.1.0
 
-The latest published CLI release is **v0.0.42** (July 20, 2026). Its released
-Unity package is **Connector 0.0.64**. CLI and connector versions are
+The latest published CLI release is **v0.1.0** (August 3, 2026). Its released
+Unity package is **Connector 0.0.76**. CLI and connector versions are
 intentionally separate.
 
 | Current highlight | Simple meaning |
 |:---|:---|
-| **Unity De-slop Mode (Beta)** | A bundled taxonomy of UI-slop tells, each with a uGUI and a UI Toolkit check plus the mechanical fix. |
-| **Quiet stderr through domain reloads** | Commands that end in a reload no longer print an `unsolicited response` warning that looked like a failure but never was. |
-| **`editor stop --wait` waits** | The flag was documented but ignored, so a following `status` could still report `playing`. It now confirms the editor is back to ready. |
-| **Honest type metadata** | `describe_type` reports a property as writable only when your code could actually assign it, instead of whenever any setter exists. |
+| **Project-safe multi-Editor targeting** | `--project <full-path>` identifies the intended Editor even when ports change or are reused. |
+| **Experimental MCP included** | The same binary can expose stdio MCP when explicitly enabled; the CLI remains the default. |
+| **UPM compile-stall fix** | Connector test sources no longer leak into production assemblies or create duplicate TestRunner references. |
+| **Apache-2.0 licensing** | Source, npm, UPM, and the Codex plugin carry matching license and attribution files. |
 
-Current verified baseline:
+Release compatibility matrix:
+
+| Unity Editor | Connector 0.0.76 exact-source compile |
+|:---|:---:|
+| 2022.3.62f2 | PASS |
+| 2023.2.22f1 | PASS |
+| 6000.0.35f1 | PASS |
+| 6000.3.5f2 | PASS |
+| 6000.5.6f1 | PASS |
+
+The preceding Connector 0.0.75 also passed clean UPM import and runtime checks
+across the same matrix. Evidence: [Unity compatibility inventory](docs/UNITY_EDITOR_VERSION_INVENTORY.md)
+
+Low-token benchmark baseline:
 
 | Unity Editor | `list --compact` | `find_gameobjects --ids` | Details |
 |:---|---:|---:|:---|
@@ -653,10 +681,9 @@ Architecture details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 ### Is this MCP?
 
 The production default is a normal CLI, so any agent that can run shell commands
-can use Hera. Current `main` source also contains an experimental, default-off,
-stdio-only MCP adapter. It reuses the CLI and localhost Connector execution core,
-is not in the latest published CLI release, and is not the default. See the
-[source-build MCP preview](docs/MCP.md).
+can use Hera. CLI `v0.1.0+` also includes an experimental, default-off,
+stdio-only MCP adapter. It reuses the CLI and localhost Connector execution core
+and is not the default. See the [MCP adapter guide](docs/MCP.md).
 
 ### Does it need Python?
 
@@ -722,7 +749,7 @@ Discord: [Join the Hera community](https://discord.gg/QBzEVuYwK)
 
 ## Support
 
-Hera is free and MIT-licensed. If it saves you time, you can support development:
+Hera is free and licensed under Apache-2.0. If it saves you time, you can support development:
 
 [![Support on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/notnull92)
 
@@ -730,4 +757,4 @@ Hera is free and MIT-licensed. If it saves you time, you can support development
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

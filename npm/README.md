@@ -14,3 +14,7 @@ https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 ```
 
 Documentation and source: <https://github.com/NotNull92/hera-agent-unity>
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
