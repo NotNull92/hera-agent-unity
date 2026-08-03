@@ -9,7 +9,7 @@ namespace HeraAgent.Tests
 {
     public static class ToolCatalogTests
     {
-        const string SchemaVersion = "hera.tool-catalog/1";
+        const string SchemaVersion = ProtocolContracts.ToolCatalogSchemaVersion;
 
         [MenuItem("HeraAgent/Tests/ToolCatalog")]
         public static void RunTests()
@@ -33,6 +33,8 @@ namespace HeraAgent.Tests
             allPassed &= TestCatalogSnapshotIsComplete();
             allPassed &= TestLegacyCustomActionsAreCataloged();
             allPassed &= TestCatalogListModeReturnsValidatedBuiltIns();
+            allPassed &= TestExecutionProtocolValidation();
+            allPassed &= TestRequestCatalogHashValidation();
             return allPassed;
         }
 
@@ -100,11 +102,12 @@ namespace HeraAgent.Tests
                 && heartbeat.Value<string>("domainEpoch") == current
                 && features.SequenceEqual(new[]
                 {
-                    "approval_v1",
-                    "domain_epoch_v1",
-                    "operation_ledger_v1",
-                    "task_bridge_v1",
-                    "tool_catalog_v1",
+                    ProtocolContracts.FeatureApprovalV1,
+                    ProtocolContracts.FeatureDomainEpochV1,
+                    ProtocolContracts.FeatureExecutionProtocolV1,
+                    ProtocolContracts.FeatureOperationLedgerV1,
+                    ProtocolContracts.FeatureTaskBridgeV1,
+                    ProtocolContracts.FeatureToolCatalogV1,
                 }));
         }
 
@@ -239,6 +242,88 @@ namespace HeraAgent.Tests
                 && serialized.IndexOf("projectPath", StringComparison.Ordinal) < 0
                 && serialized.IndexOf(Application.dataPath, StringComparison.OrdinalIgnoreCase) < 0
                 && serialized.IndexOf(projectPath, StringComparison.OrdinalIgnoreCase) < 0);
+        }
+
+        static bool TestExecutionProtocolValidation()
+        {
+            var arguments = new JObject { ["action"] = "info" };
+            if (!CommandRequestContext.TryCreate(
+                new JObject(), arguments, out var legacy, out _)
+                || !CommandRequestContext.TryCreate(
+                    new JObject
+                    {
+                        ["protocol_version"] = ProtocolContracts.ExecutionProtocolVersion,
+                    },
+                    arguments,
+                    out var current,
+                    out _)
+                || !CommandRequestContext.TryCreate(
+                    new JObject
+                    {
+                        ["protocol_version"] = "hera.execution/999",
+                    },
+                    arguments,
+                    out var future,
+                    out _))
+            {
+                return Expect(nameof(TestExecutionProtocolValidation), false);
+            }
+
+            var error = future.ValidateProtocol();
+            var data = error?.data == null ? null : JObject.FromObject(error.data);
+            return Expect(
+                nameof(TestExecutionProtocolValidation),
+                legacy.ValidateProtocol() == null
+                && current.ValidateProtocol() == null
+                && error?.code == "EXECUTION_PROTOCOL_UNSUPPORTED"
+                && data?.Value<string>("request_protocol_version") == "hera.execution/999"
+                && data?.Value<string>("current_protocol_version")
+                    == ProtocolContracts.ExecutionProtocolVersion);
+        }
+        static bool TestRequestCatalogHashValidation()
+        {
+            var arguments = new JObject { ["action"] = "info" };
+            if (!CommandRequestContext.TryCreate(
+                new JObject(),
+                arguments,
+                out var legacy,
+                out _))
+            {
+                return Expect(nameof(TestRequestCatalogHashValidation), false);
+            }
+
+            var currentHash = ToolCatalogRuntime.CatalogHash;
+            if (!CommandRequestContext.TryCreate(
+                new JObject { ["catalog_hash"] = currentHash },
+                arguments,
+                out var current,
+                out _))
+            {
+                return Expect(nameof(TestRequestCatalogHashValidation), false);
+            }
+
+            var staleHash = "sha256:" + new string('0', 64);
+            if (staleHash == currentHash)
+                staleHash = "sha256:" + new string('f', 64);
+            if (!CommandRequestContext.TryCreate(
+                new JObject { ["catalog_hash"] = staleHash },
+                arguments,
+                out var stale,
+                out _))
+            {
+                return Expect(nameof(TestRequestCatalogHashValidation), false);
+            }
+
+            var error = stale.ValidateCatalog();
+            var data = error?.data == null ? null : JObject.FromObject(error.data);
+            return Expect(
+                nameof(TestRequestCatalogHashValidation),
+                legacy.ValidateCatalog() == null
+                && current.ValidateCatalog() == null
+                && error?.code == "CATALOG_STALE"
+                && data?.Value<string>("request_catalog_hash") == staleHash
+                && data?.Value<string>("current_catalog_hash") == currentHash
+                && data?.Value<string>("domain_epoch") == ToolCatalogRuntime.DomainEpoch);
         }
 
         static bool Expect(string label, bool passed)

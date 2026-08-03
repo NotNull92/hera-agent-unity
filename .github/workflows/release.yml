@@ -19,6 +19,9 @@ jobs:
         with:
           go-version-file: go.mod
 
+      - name: Generated runtime contract drift
+        run: go run ./tools/generate-runtime-contracts --check
+
       - name: Connector package integrity
         run: go run ./tools/validate-connector-package
 

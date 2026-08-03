@@ -180,6 +180,17 @@ namespace HeraAgent
             JObject parameters,
             CommandRequestContext requestContext = null)
         {
+            if (requestContext != null)
+            {
+                var protocolError = requestContext.ValidateProtocol();
+                if (protocolError != null)
+                    return protocolError;
+
+                var catalogError = requestContext.ValidateCatalog();
+                if (catalogError != null)
+                    return catalogError;
+            }
+
             if (command == "list")
                 return HandleList(parameters);
 
@@ -247,7 +258,8 @@ namespace HeraAgent
                     "APPROVAL_REQUIRED",
                     $"{command}{(usedAction ? ":" + action : "")} requires individual approval.");
             }
-            if (requestContext != null)
+            var useLedger = ShouldUseOperationLedger(requestContext, safety);
+            if (useLedger)
             {
                 var decision = OperationLedger.Default.Begin(
                     requestContext,
@@ -259,7 +271,7 @@ namespace HeraAgent
             }
 
             object Commit(object response) =>
-                requestContext == null
+                !useLedger
                     ? response
                     : OperationLedger.Default.Commit(requestContext, response);
 
@@ -322,6 +334,12 @@ namespace HeraAgent
                 return Commit(new ErrorResponse(code, $"{command}{suffix} failed: {inner.Message}"));
             }
         }
+
+        internal static bool ShouldUseOperationLedger(
+            CommandRequestContext context,
+            ToolSafetyContract safety) => context != null
+                && safety != null
+                && !(safety.ReadOnly && safety.Idempotent);
 
         static ToolSafetyContract ResolveRequestSafety(string command, JObject parameters)
         {
@@ -403,7 +421,7 @@ namespace HeraAgent
                             actual = schemaVersion,
                         });
                 }
-                return new SuccessResponse("Tool catalog", ToolCatalogBuilder.Build());
+                return new SuccessResponse("Tool catalog", ToolCatalogRuntime.Catalog);
             }
 
             var tool = parameters?["tool"]?.ToString();

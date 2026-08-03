@@ -73,6 +73,8 @@ namespace HeraAgent.TestRunner
 
                     if (pending.OwnerPid == CurrentProcessId)
                         return true;
+                    if (!HeraAgent.ProjectIdentity.IsProcessConfirmedDead(pending.OwnerPid))
+                        return true;
 
                     CompleteInterruptedRun(file, pending, "Test run belongs to a previous Unity Editor process.");
                 }
@@ -108,7 +110,8 @@ namespace HeraAgent.TestRunner
 
                     if (pending.OwnerPid != CurrentProcessId)
                     {
-                        CompleteInterruptedRun(file, pending, "Test run belongs to a previous Unity Editor process.");
+                        if (HeraAgent.ProjectIdentity.IsProcessConfirmedDead(pending.OwnerPid))
+                            CompleteInterruptedRun(file, pending, "Test run belongs to a previous Unity Editor process.");
                         continue;
                     }
 

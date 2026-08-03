@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using Newtonsoft.Json.Linq;
@@ -19,6 +20,29 @@ namespace HeraAgent
             {
                 using (var process = Process.GetCurrentProcess())
                     return process.Id;
+            }
+        }
+
+        internal static bool IsProcessConfirmedDead(int pid)
+        {
+            if (pid <= 0)
+                return false;
+            try
+            {
+                using var process = Process.GetProcessById(pid);
+                return process.HasExited;
+            }
+            catch (ArgumentException)
+            {
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (Win32Exception)
+            {
+                return false;
             }
         }
 

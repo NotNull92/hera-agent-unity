@@ -108,11 +108,12 @@ func (c *Client) SendWithOptions(
 		Command: command,
 		Params:  params,
 		Meta: RequestMeta{
-			OperationID:   operationID,
-			ArgumentsHash: hash,
-			ClientKind:    clientKind,
-			ApprovalToken: optionalToken(options.ApprovalToken),
-			CatalogHash:   options.CatalogHash,
+			ProtocolVersion: ExecutionProtocolVersion,
+			OperationID:     operationID,
+			ArgumentsHash:   hash,
+			ClientKind:      clientKind,
+			ApprovalToken:   optionalToken(options.ApprovalToken),
+			CatalogHash:     options.CatalogHash,
 		},
 	})
 	if err != nil {
@@ -130,11 +131,14 @@ func (c *Client) SendWithOptions(
 	c.debugPost(url, body)
 	start := time.Now()
 	resp, err := c.doWithReloadRetry(ctx, body, inst, "/command", retryPolicy{
-		allowRetry: options.Idempotent || hasFeature(inst, FeatureOperationLedgerV1),
+		allowRetry:           options.Idempotent || hasFeature(inst, FeatureOperationLedgerV1),
+		unknownOnContextDone: !options.Idempotent,
 		unknown: &OperationOutcomeUnknownError{
 			Code:        "OPERATION_OUTCOME_UNKNOWN",
 			OperationID: operationID,
 			Command:     command,
+			Project:     inst.ProjectPath,
+			Port:        inst.Port,
 		},
 	})
 	if err != nil {

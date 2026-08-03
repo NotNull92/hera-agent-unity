@@ -79,8 +79,8 @@ func instanceHasFeature(instance *client.Instance, feature string) bool {
 func nativeToolHandler(runtime nativeRuntime, toolName, profile string) mcp.ToolHandler {
 	return func(ctx context.Context, request *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		current, err := runtime.acquire()
-		if errors.Is(err, errCatalogStale) {
-			return errorResult("CATALOG_STALE", err.Error(), nil), nil
+		if result, handled := catalogAvailabilityResult(err); handled {
+			return result, nil
 		}
 		if err != nil {
 			return nil, err
@@ -162,6 +162,15 @@ func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvoc
 		},
 	)
 	if err != nil {
+		var unknown *client.OperationOutcomeUnknownError
+		if errors.As(err, &unknown) {
+			return errorResult(unknown.Code, unknown.Error(), map[string]any{
+				"operation_id": string(unknown.OperationID),
+				"tool":         unknown.Command,
+				"project":      unknown.Project,
+				"port":         unknown.Port,
+			}), nil
+		}
 		return nil, fmt.Errorf("invoke Unity tool %q: %w", tool.Name, err)
 	}
 	if response == nil {

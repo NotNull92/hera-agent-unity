@@ -38,6 +38,11 @@ namespace HeraAgent.Tests
                 ["port"] = port,
             }, processId), "unscoped legacy package state must fail closed");
 
+            Assert(!ProjectIdentity.IsProcessConfirmedDead(ProjectIdentity.CurrentProcessId),
+                "the current Unity process must be treated as alive");
+            Assert(ProjectIdentity.IsProcessConfirmedDead(int.MaxValue),
+                "an impossible process id must be confirmed dead");
+
             var root = Path.Combine(Path.GetTempPath(), "AssetsArchive", "Project");
             var assets = Path.Combine(root, "Assets");
             Assert(ProjectIdentity.ResolveRoot(assets) == Path.GetFullPath(root),

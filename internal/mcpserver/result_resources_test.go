@@ -55,6 +55,25 @@ func TestMaxInlineBytesDefaultsAndRejectsNegativeValues(t *testing.T) {
 	}
 }
 
+func TestSensitiveKeyAvoidsBenignTokenAndSecretNames(t *testing.T) {
+	for _, key := range []string{"cancellationToken", "tokenCount", "secretDoor", "credentialStatus"} {
+		if sensitiveKey(key) {
+			t.Fatalf("benign key %q was classified as sensitive", key)
+		}
+	}
+}
+
+func TestSensitiveKeyRecognizesCredentialKeysAndSuffixes(t *testing.T) {
+	for _, key := range []string{
+		"token", "authorization", "api_key", "clientSecret", "databasePassword",
+		"refresh_token", "sessionCookie", "connectionString",
+	} {
+		if !sensitiveKey(key) {
+			t.Fatalf("credential key %q was not classified as sensitive", key)
+		}
+	}
+}
+
 func TestBoundedCommandResultSpoolsOversizedResult(t *testing.T) {
 	runtime := resultTestRuntime(t, 96)
 	payload := strings.Repeat("large-result-", 30)

@@ -81,6 +81,11 @@ func snapshotWithDynamicTool(t *testing.T) *toolregistry.Snapshot {
 		Source:       toolregistry.Source{Kind: "custom", Assembly: "M10.Tests", Type: "DynamicProbe"},
 		ContractMode: toolregistry.ContractStrict, Profiles: []string{"custom", "full"},
 		InputSchema: objectSchema, OutputSchema: json.RawMessage(`{"type":"object","additionalProperties":true}`),
+		Actions: []toolregistry.Action{{
+			Name: "inspect", Description: "Inspect the custom probe", Aliases: []string{"show"},
+			InputSchema: objectSchema, OutputSchema: json.RawMessage(`{"type":"object","additionalProperties":true}`),
+			Safety: toolregistry.Safety{RiskClass: "read_only", ReadOnly: true, Idempotent: true, Reversible: true},
+		}},
 		Safety: toolregistry.Safety{RiskClass: "read_only", ReadOnly: true, Idempotent: true, Reversible: true},
 	})
 	slices.SortFunc(snapshot.Catalog.Tools, func(left, right toolregistry.Tool) int {

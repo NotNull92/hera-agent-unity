@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -22,7 +21,26 @@ type compactSearchInput struct {
 }
 
 type compactDescribeInput struct {
-	Name string `json:"name"`
+	Name   string `json:"name"`
+	Action string `json:"action,omitempty"`
+}
+
+type compactToolIdentity struct {
+	Name         string              `json:"name"`
+	Title        string              `json:"title"`
+	Description  string              `json:"description"`
+	Source       toolregistry.Source `json:"source"`
+	ContractMode string              `json:"contract_mode"`
+	Profiles     []string            `json:"profiles"`
+	Aliases      []string            `json:"aliases"`
+}
+
+type compactActionDescription struct {
+	Tool        compactToolIdentity `json:"tool"`
+	Action      toolregistry.Action `json:"action"`
+	ToolSafety  toolregistry.Safety `json:"tool_safety"`
+	CatalogHash string              `json:"catalog_hash"`
+	DomainEpoch string              `json:"domain_epoch"`
 }
 
 type compactCallInput struct {
@@ -67,8 +85,8 @@ func compactDescribeRuntimeHandler(runtime nativeRuntime, allowArbitraryCode boo
 
 func acquireCatalogRuntime(runtime nativeRuntime) (nativeRuntime, *mcp.CallToolResult, error) {
 	current, err := runtime.acquire()
-	if errors.Is(err, errCatalogStale) {
-		return nativeRuntime{}, errorResult("CATALOG_STALE", err.Error(), nil), nil
+	if result, handled := catalogAvailabilityResult(err); handled {
+		return nativeRuntime{}, result, nil
 	}
 	return current, nil, err
 }
@@ -85,7 +103,7 @@ func compactSearchTool() *mcp.Tool {
 func compactDescribeTool() *mcp.Tool {
 	return &mcp.Tool{
 		Name: "tool_describe", Title: "Tool Describe", Description: "Describe one live normalized Unity tool contract",
-		InputSchema:  json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string","minLength":1}},"required":["name"]}`),
+		InputSchema:  json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"name":{"type":"string","minLength":1},"action":{"type":"string","minLength":1}},"required":["name"]}`),
 		OutputSchema: envelopeSchema(json.RawMessage(`{"type":"object"}`)),
 		Annotations:  &mcp.ToolAnnotations{Title: "Tool Describe", ReadOnlyHint: true, DestructiveHint: boolPointer(false), IdempotentHint: true, OpenWorldHint: boolPointer(false)},
 	}
@@ -139,7 +157,26 @@ func compactDescribeHandler(catalog *toolregistry.Catalog, allowArbitraryCode bo
 		if toolregistry.ToolHasArbitraryCode(tool) && !allowArbitraryCode {
 			return errorResult("TOOL_NOT_FOUND", fmt.Sprintf("tool %q was not found", input.Name), nil), nil
 		}
-		return dataResult(map[string]any{"tool": tool, "catalog_hash": catalog.CatalogHash, "domain_epoch": catalog.DomainEpoch})
+		if input.Action == "" {
+			return dataResult(map[string]any{"tool": tool, "catalog_hash": catalog.CatalogHash, "domain_epoch": catalog.DomainEpoch})
+		}
+		action, ok := findCatalogAction(tool, input.Action)
+		if !ok {
+			return errorResult(
+				"ACTION_NOT_FOUND",
+				fmt.Sprintf("action %q was not found for tool %q", input.Action, tool.Name),
+				map[string]any{"tool": tool.Name, "available_actions": catalogActionNames(tool)},
+			), nil
+		}
+		return dataResult(compactActionDescription{
+			Tool: compactToolIdentity{
+				Name: tool.Name, Title: tool.Title, Description: tool.Description,
+				Source: tool.Source, ContractMode: tool.ContractMode,
+				Profiles: tool.Profiles, Aliases: tool.Aliases,
+			},
+			Action: action, ToolSafety: tool.Safety,
+			CatalogHash: catalog.CatalogHash, DomainEpoch: catalog.DomainEpoch,
+		})
 	}
 }
 
@@ -203,6 +240,23 @@ func decodeJSONObject(raw json.RawMessage) (map[string]any, *nativeToolError) {
 		return nil, &nativeToolError{code: "INVALID_ARGUMENT", message: "arguments contain trailing JSON"}
 	}
 	return value, nil
+}
+
+func findCatalogAction(tool toolregistry.Tool, name string) (toolregistry.Action, bool) {
+	for _, action := range tool.Actions {
+		if action.Name == name || slices.Contains(action.Aliases, name) {
+			return action, true
+		}
+	}
+	return toolregistry.Action{}, false
+}
+
+func catalogActionNames(tool toolregistry.Tool) []string {
+	names := make([]string, len(tool.Actions))
+	for index, action := range tool.Actions {
+		names[index] = action.Name
+	}
+	return names
 }
 
 func findCatalogTool(catalog *toolregistry.Catalog, name string) (toolregistry.Tool, bool) {

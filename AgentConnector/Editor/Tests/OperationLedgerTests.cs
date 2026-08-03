@@ -19,6 +19,11 @@ namespace HeraAgent.Tests
             passed &= Run(nameof(TestNonIdempotentUnknownDoesNotInvokeHandler), TestNonIdempotentUnknownDoesNotInvokeHandler);
             passed &= Run(nameof(TestLedgerAtomicWriteFallback), TestLedgerAtomicWriteFallback);
             passed &= Run(nameof(TestLedgerRetentionCleanup), TestLedgerRetentionCleanup);
+            passed &= Run(nameof(TestReadOnlyRequestBypassesLedger), TestReadOnlyRequestBypassesLedger);
+            passed &= Run(nameof(TestCleanupConvertsPriorDomainRunning), TestCleanupConvertsPriorDomainRunning);
+            passed &= Run(nameof(TestCleanupConvertsExpiredSameDomainRunning), TestCleanupConvertsExpiredSameDomainRunning);
+            passed &= Run(nameof(TestCleanupKeepsActiveSameDomainRunning), TestCleanupKeepsActiveSameDomainRunning);
+            passed &= Run(nameof(TestByteCapRemovesResponseLessStaleRecord), TestByteCapRemovesResponseLessStaleRecord);
             if (passed)
                 Debug.Log("[OperationLedgerTests] ALL PASSED");
             else
@@ -132,6 +137,102 @@ namespace HeraAgent.Tests
 
             fixture.Ledger.Cleanup(DateTimeOffset.UtcNow);
             return !File.Exists(path);
+        }
+
+        static bool TestReadOnlyRequestBypassesLedger()
+        {
+            using var fixture = new LedgerFixture();
+            var context = fixture.Context("op_readonly_skip", new JObject());
+            var readOnly = new ToolSafetyContract
+            {
+                RiskClass = HeraRiskClass.ReadOnly,
+                ReadOnly = true,
+                Idempotent = true,
+            };
+            return !CommandRouter.ShouldUseOperationLedger(context, readOnly)
+                && CommandRouter.ShouldUseOperationLedger(context, fixture.Mutation)
+                && !Directory.Exists(fixture.Root);
+        }
+
+        static bool TestCleanupConvertsPriorDomainRunning()
+        {
+            using var fixture = new LedgerFixture();
+            const string operationId = "op_cleanup_prior";
+            var context = fixture.Context(operationId, new JObject());
+            fixture.Ledger.Begin(context, "fixture", "mutate", fixture.Mutation);
+            var path = Path.Combine(fixture.Root, operationId + ".json");
+            var record = JObject.Parse(File.ReadAllText(path));
+            record["domain_epoch"] = "domain-before-reload";
+            File.WriteAllText(path, record.ToString(Newtonsoft.Json.Formatting.None));
+
+            fixture.Ledger.Cleanup(DateTimeOffset.UtcNow);
+            record = JObject.Parse(File.ReadAllText(path));
+            return record.Value<string>("state") == "outcome_unknown";
+        }
+
+        static bool TestCleanupConvertsExpiredSameDomainRunning()
+        {
+            using var fixture = new LedgerFixture();
+            const string operationId = "op_cleanup_expired";
+            var context = fixture.Context(operationId, new JObject());
+            fixture.Ledger.Begin(context, "fixture", "mutate", fixture.Mutation);
+            var path = Path.Combine(fixture.Root, operationId + ".json");
+            var record = JObject.Parse(File.ReadAllText(path));
+            record["started_at_ms"] = DateTimeOffset.UtcNow.Subtract(TimeSpan.FromHours(2))
+                .ToUnixTimeMilliseconds();
+            File.WriteAllText(path, record.ToString(Newtonsoft.Json.Formatting.None));
+
+            fixture.Ledger.Cleanup(DateTimeOffset.UtcNow);
+            record = JObject.Parse(File.ReadAllText(path));
+            return record.Value<string>("state") == "outcome_unknown";
+        }
+
+        static bool TestCleanupKeepsActiveSameDomainRunning()
+        {
+            using var fixture = new LedgerFixture();
+            const string operationId = "op_cleanup_active";
+            var context = fixture.Context(operationId, new JObject());
+            fixture.Ledger.Begin(context, "fixture", "mutate", fixture.Mutation);
+            var path = Path.Combine(fixture.Root, operationId + ".json");
+
+            fixture.Ledger.Cleanup(DateTimeOffset.UtcNow);
+            var record = JObject.Parse(File.ReadAllText(path));
+            return record.Value<string>("state") == "running";
+        }
+
+        static bool TestByteCapRemovesResponseLessStaleRecord()
+        {
+            var root = Path.Combine(Path.GetTempPath(), "hera-ledger-cap-" + Guid.NewGuid().ToString("N"));
+            try
+            {
+                var ledger = new OperationLedger(root, "domain-a", 1);
+                var metadata = new JObject { ["operation_id"] = "op_stale_cap_01" };
+                if (!CommandRequestContext.TryCreate(
+                    metadata,
+                    new JObject(),
+                    out var context,
+                    out _))
+                {
+                    return false;
+                }
+                var mutation = new ToolSafetyContract
+                {
+                    RiskClass = HeraRiskClass.Write,
+                    Idempotent = false,
+                };
+                ledger.Begin(context, "fixture", "mutate", mutation);
+                var path = Path.Combine(root, "op_stale_cap_01.json");
+                var record = JObject.Parse(File.ReadAllText(path));
+                record["domain_epoch"] = "domain-old";
+                File.WriteAllText(path, record.ToString(Newtonsoft.Json.Formatting.None));
+
+                ledger.Cleanup(DateTimeOffset.UtcNow);
+                return !File.Exists(path);
+            }
+            finally
+            {
+                try { Directory.Delete(root, true); } catch { }
+            }
         }
 
         static bool IsUnknown(OperationLedgerDecision decision) =>

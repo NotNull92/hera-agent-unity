@@ -213,29 +213,8 @@ func (runner unityCommandRunner) Run(
 		if err == nil {
 			resp, err = send("detect_assets", params)
 		}
-	case "exec":
-		subArgs, err = readExecFileIfPresent(subArgs)
-		if err != nil {
-			return nil, err
-		}
-		subArgs = readStdinIfPiped(subArgs)
-		var params map[string]interface{}
-		params, _, err = buildParams(subArgs, nil)
-		if err == nil {
-			if v, ok := params["check"].(bool); ok && v {
-				params["compile_only"] = true
-				delete(params, "check")
-			}
-			request := newToolRequest("exec", params)
-			resp, err = send(request.Command, request.Params)
-		}
 	default:
-		var params map[string]interface{}
-		params, _, err = buildParams(subArgs, nil)
-		if err == nil {
-			request := newToolRequest(category, params)
-			resp, err = send(request.Command, request.Params)
-		}
+		resp, err = runLegacyToolCommand(category, subArgs, send)
 	}
 
 	return resp, err

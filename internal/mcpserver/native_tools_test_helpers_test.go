@@ -14,6 +14,7 @@ import (
 
 type recordingToolSender struct {
 	response       *client.CommandResponse
+	err            error
 	calls          int
 	command        string
 	params         any
@@ -43,7 +44,7 @@ func (sender *recordingToolSender) SendWithOptions(
 	sender.command = command
 	sender.params = params
 	sender.options = options
-	return sender.response, nil
+	return sender.response, sender.err
 }
 
 const nativeTestCatalogHash = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"

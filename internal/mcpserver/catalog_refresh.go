@@ -15,7 +15,19 @@ import (
 
 const catalogRefreshInterval = time.Second
 
-var errCatalogStale = errors.New("unity tool catalog is being refreshed")
+type catalogPhase uint8
+
+const (
+	catalogReady catalogPhase = iota
+	catalogRefreshing
+	catalogRestartRequired
+)
+
+var (
+	errCatalogStale          = errors.New("unity tool catalog is being refreshed")
+	errMCPRestartRequired    = errors.New("MCP process restart required")
+	errTaskCapabilityChanged = errors.New("unity task capability changed")
+)
 
 type catalogLoader interface {
 	Load(context.Context, *client.Instance) (*toolregistry.Snapshot, error)
@@ -27,24 +39,39 @@ type catalogState struct {
 	mu         sync.RWMutex
 	registryMu sync.RWMutex
 	runtime    nativeRuntime
-	stale      bool
+	phase      catalogPhase
+	phaseErr   error
 	ready      chan struct{}
 }
 
 func newCatalogState(runtime nativeRuntime) *catalogState {
 	runtime.catalogs = nil
+	return &catalogState{
+		runtime: runtime,
+		phase:   catalogReady,
+		ready:   closedCatalogSignal(),
+	}
+}
+
+func closedCatalogSignal() chan struct{} {
 	ready := make(chan struct{})
 	close(ready)
-	return &catalogState{runtime: runtime, ready: ready}
+	return ready
 }
 
 func (state *catalogState) acquire() (nativeRuntime, error) {
 	state.mu.RLock()
 	defer state.mu.RUnlock()
-	if state.stale {
+	switch state.phase {
+	case catalogReady:
+		return state.runtime, nil
+	case catalogRefreshing:
 		return nativeRuntime{}, errCatalogStale
+	case catalogRestartRequired:
+		return nativeRuntime{}, state.phaseErr
+	default:
+		return nativeRuntime{}, fmt.Errorf("unknown catalog phase %d", state.phase)
 	}
-	return state.runtime, nil
 }
 
 func (state *catalogState) current() nativeRuntime {
@@ -53,37 +80,85 @@ func (state *catalogState) current() nativeRuntime {
 	return state.runtime
 }
 
-func (state *catalogState) markStale() nativeRuntime {
+func (state *catalogState) currentForRefresh() (nativeRuntime, error) {
+	state.mu.RLock()
+	defer state.mu.RUnlock()
+	if state.phase == catalogRestartRequired {
+		return nativeRuntime{}, state.phaseErr
+	}
+	return state.runtime, nil
+}
+
+func (state *catalogState) beginRefresh() (nativeRuntime, error) {
 	state.mu.Lock()
 	defer state.mu.Unlock()
-	if !state.stale {
+	if state.phase == catalogRestartRequired {
+		return nativeRuntime{}, state.phaseErr
+	}
+	if state.phase != catalogRefreshing {
+		state.phase = catalogRefreshing
+		state.phaseErr = nil
 		state.ready = make(chan struct{})
 	}
-	state.stale = true
-	return state.runtime
+	return state.runtime, nil
+}
+
+func (state *catalogState) markRestartRequired(reason error) error {
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	if state.phase == catalogRestartRequired {
+		return state.phaseErr
+	}
+	if state.phase == catalogRefreshing {
+		close(state.ready)
+	}
+	if reason == nil {
+		reason = errors.New("runtime capability changed")
+	}
+	state.phase = catalogRestartRequired
+	state.phaseErr = fmt.Errorf("%w: %w", errMCPRestartRequired, reason)
+	state.ready = closedCatalogSignal()
+	return state.phaseErr
 }
 
 func (state *catalogState) replace(runtime nativeRuntime) {
 	runtime.catalogs = nil
 	state.mu.Lock()
+	defer state.mu.Unlock()
+	if state.phase == catalogRestartRequired {
+		return
+	}
 	state.runtime = runtime
-	wasStale := state.stale
-	state.stale = false
-	if wasStale {
+	if state.phase == catalogRefreshing {
 		close(state.ready)
 	}
-	state.mu.Unlock()
+	state.phase = catalogReady
+	state.phaseErr = nil
 }
 
 func (state *catalogState) wait(ctx context.Context) error {
-	state.mu.RLock()
-	ready := state.ready
-	state.mu.RUnlock()
-	select {
-	case <-ready:
-		return nil
-	case <-ctx.Done():
-		return ctx.Err()
+	for {
+		state.mu.RLock()
+		phase := state.phase
+		phaseErr := state.phaseErr
+		ready := state.ready
+		state.mu.RUnlock()
+
+		switch phase {
+		case catalogReady:
+			return nil
+		case catalogRestartRequired:
+			return phaseErr
+		case catalogRefreshing:
+			select {
+			case <-ready:
+				continue
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		default:
+			return fmt.Errorf("unknown catalog phase %d", phase)
+		}
 	}
 }
 
@@ -94,13 +169,23 @@ func (state *catalogState) withRegistryRead(ctx context.Context, read func() (mc
 		}
 		state.registryMu.RLock()
 		state.mu.RLock()
-		stale := state.stale
+		phase := state.phase
+		phaseErr := state.phaseErr
 		state.mu.RUnlock()
-		if !stale {
+		switch phase {
+		case catalogReady:
 			defer state.registryMu.RUnlock()
 			return read()
+		case catalogRefreshing:
+			state.registryMu.RUnlock()
+			continue
+		case catalogRestartRequired:
+			state.registryMu.RUnlock()
+			return nil, phaseErr
+		default:
+			state.registryMu.RUnlock()
+			return nil, fmt.Errorf("unknown catalog phase %d", phase)
 		}
-		state.registryMu.RUnlock()
 	}
 }
 
@@ -117,18 +202,27 @@ func (refresher *catalogRefresher) refresh(ctx context.Context) (bool, error) {
 	refresher.mu.Lock()
 	defer refresher.mu.Unlock()
 
-	current := refresher.state.current()
+	current, stateErr := refresher.state.currentForRefresh()
+	if stateErr != nil {
+		return false, stateErr
+	}
 	instance, err := refresher.discover(refresher.config.Project, refresher.config.Port)
 	if err != nil {
-		refresher.state.markStale()
+		_, _ = refresher.state.beginRefresh()
 		return false, fmt.Errorf("discover Unity catalog epoch: %w", err)
+	}
+	if instanceHasFeature(instance, client.FeatureTaskBridgeV1) != current.taskMode {
+		return false, refresher.state.markRestartRequired(errTaskCapabilityChanged)
 	}
 	if instance.DomainEpoch == current.instance.DomainEpoch {
 		refresher.state.replace(current)
 		return false, nil
 	}
 
-	current = refresher.state.markStale()
+	current, stateErr = refresher.state.beginRefresh()
+	if stateErr != nil {
+		return false, stateErr
+	}
 	snapshot, err := refresher.loader.Load(ctx, instance)
 	if err != nil {
 		return false, fmt.Errorf("reload Unity tool catalog: %w", err)
@@ -162,6 +256,16 @@ func catalogConsistencyMiddleware(state *catalogState) mcp.Middleware {
 	}
 }
 
+func catalogAvailabilityResult(err error) (*mcp.CallToolResult, bool) {
+	switch {
+	case errors.Is(err, errCatalogStale):
+		return errorResult("CATALOG_STALE", err.Error(), nil), true
+	case errors.Is(err, errMCPRestartRequired):
+		return errorResult("MCP_RESTART_REQUIRED", err.Error(), nil), true
+	default:
+		return nil, false
+	}
+}
 func (refresher *catalogRefresher) reconcile(current, next nativeRuntime) (bool, error) {
 	if refresher.config.exposure() == ExposureCompact || current.snapshot.Catalog.CatalogHash == next.snapshot.Catalog.CatalogHash {
 		return false, nil
@@ -228,6 +332,9 @@ func (refresher *catalogRefresher) observe(ctx context.Context, diagnostics func
 		case <-ticker.C:
 			if _, err := refresher.refresh(ctx); err != nil && !errors.Is(err, context.Canceled) {
 				diagnostics("MCP catalog refresh: %v\n", err)
+				if errors.Is(err, errMCPRestartRequired) {
+					return
+				}
 			}
 		}
 	}

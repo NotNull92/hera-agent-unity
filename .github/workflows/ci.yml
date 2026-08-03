@@ -28,6 +28,12 @@ jobs:
       - name: Test
         run: go test ./...
 
+      - name: Generated runtime contract drift
+        run: go run ./tools/generate-runtime-contracts --check
+
+      - name: Agent guide drift
+        run: go run ./tools/sync-agent-guides --check
+
       - name: Connector package integrity
         run: go run ./tools/validate-connector-package
 

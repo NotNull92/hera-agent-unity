@@ -9,6 +9,9 @@ namespace HeraAgent
 {
     internal sealed class OperationLedger
     {
+        private const long DefaultMaxBytes = 64L * 1024 * 1024;
+        private static readonly TimeSpan RunningExecutionCeiling = TimeSpan.FromHours(1);
+
         internal static readonly OperationLedger Default = new OperationLedger(
             Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
@@ -25,15 +28,26 @@ namespace HeraAgent
         readonly ApprovalAuthority _approvals;
 
         internal OperationLedger(string root, string domainEpoch)
-            : this(root, domainEpoch, ApprovalPolicy.Authority)
+            : this(root, domainEpoch, ApprovalPolicy.Authority, DefaultMaxBytes)
         {
         }
 
-        internal OperationLedger(string root, string domainEpoch, ApprovalAuthority approvals)
+        internal OperationLedger(string root, string domainEpoch, long maxBytes)
+            : this(root, domainEpoch, ApprovalPolicy.Authority, maxBytes)
+        {
+        }
+
+        internal OperationLedger(
+            string root,
+            string domainEpoch,
+            ApprovalAuthority approvals,
+            long maxBytes = DefaultMaxBytes)
         {
             _root = root;
             _domainEpoch = domainEpoch;
-            _maxBytes = 64 * 1024 * 1024;
+            _maxBytes = maxBytes > 0
+                ? maxBytes
+                : throw new ArgumentOutOfRangeException(nameof(maxBytes));
             _approvals = approvals ?? throw new ArgumentNullException(nameof(approvals));
         }
 
@@ -144,26 +158,42 @@ namespace HeraAgent
         {
             if (!Directory.Exists(_root))
                 return;
+
             foreach (var path in Directory.GetFiles(_root, "*.json"))
             {
                 OperationLedgerRecord record;
                 try { record = JsonConvert.DeserializeObject<OperationLedgerRecord>(File.ReadAllText(path)); }
                 catch { continue; }
-                if (record == null || record.State == "running")
+                if (record == null)
                     continue;
+
+                if (record.State == "running")
+                {
+                    var started = SafeTimestamp(record.StartedAtMs, now);
+                    var priorDomain = !string.Equals(
+                        record.DomainEpoch,
+                        _domainEpoch,
+                        StringComparison.Ordinal);
+                    if (!priorDomain && now - started <= RunningExecutionCeiling)
+                        continue;
+
+                    record.State = "outcome_unknown";
+                    Write(record);
+                }
+
                 var retainedFor = record.State == "outcome_unknown"
                     ? TimeSpan.FromDays(7)
                     : TimeSpan.FromHours(24);
                 var reference = record.CommittedAtMs ?? record.StartedAtMs;
-                if (now - DateTimeOffset.FromUnixTimeMilliseconds(reference) > retainedFor)
+                if (now - SafeTimestamp(reference, now) > retainedFor)
                 {
                     try { File.Delete(path); } catch { }
                 }
             }
-            CompactToLimit();
+            CompactToLimit(now);
         }
 
-        void CompactToLimit()
+        void CompactToLimit(DateTimeOffset now)
         {
             var files = Directory.GetFiles(_root, "*.json")
                 .Select(path => new FileInfo(path))
@@ -199,6 +229,48 @@ namespace HeraAgent
                 Write(record);
                 total -= before - new FileInfo(path).Length;
             }
+
+            if (total <= _maxBytes)
+                return;
+
+            var removable = new List<(FileInfo File, long StartedAtMs)>();
+            foreach (var file in Directory.GetFiles(_root, "*.json")
+                .Select(path => new FileInfo(path)))
+            {
+                try
+                {
+                    var record = JsonConvert.DeserializeObject<OperationLedgerRecord>(
+                        File.ReadAllText(file.FullName));
+                    if (record != null
+                        && record.State == "running"
+                        && string.Equals(record.DomainEpoch, _domainEpoch, StringComparison.Ordinal)
+                        && now - SafeTimestamp(record.StartedAtMs, now) <= RunningExecutionCeiling)
+                    {
+                        continue;
+                    }
+                    removable.Add((file, record?.StartedAtMs ?? new DateTimeOffset(file.LastWriteTimeUtc).ToUnixTimeMilliseconds()));
+                }
+                catch
+                {
+                    removable.Add((file, new DateTimeOffset(file.LastWriteTimeUtc).ToUnixTimeMilliseconds()));
+                }
+            }
+
+            foreach (var candidate in removable.OrderBy(item => item.StartedAtMs))
+            {
+                if (total <= _maxBytes)
+                    break;
+                var length = candidate.File.Exists ? candidate.File.Length : 0;
+                try { candidate.File.Delete(); }
+                catch { continue; }
+                total -= length;
+            }
+        }
+
+        static DateTimeOffset SafeTimestamp(long value, DateTimeOffset fallback)
+        {
+            try { return DateTimeOffset.FromUnixTimeMilliseconds(value); }
+            catch (ArgumentOutOfRangeException) { return fallback; }
         }
 
         OperationLedgerDecision Unknown(string operationId) =>

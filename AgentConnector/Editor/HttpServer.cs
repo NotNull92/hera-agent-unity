@@ -397,7 +397,7 @@ namespace HeraAgent
                 return contextError;
             }
 
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var queueError = Enqueue(new WorkItem
             {
                 Command = command,
@@ -421,7 +421,7 @@ namespace HeraAgent
             if (bodyError != null) return bodyError;
             var (json, jsonError) = ParseRequestObject(body);
             if (jsonError != null) return jsonError;
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var queueError = Enqueue(new WorkItem
             {
                 ApprovalRequest = json,
@@ -478,7 +478,7 @@ namespace HeraAgent
                 Atomic = optionsObj?["atomic"]?.Value<bool>() ?? false,
             };
 
-            var tcs = new TaskCompletionSource<object>();
+            var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             var queueError = Enqueue(new WorkItem
             {
                 IsBatch = true,

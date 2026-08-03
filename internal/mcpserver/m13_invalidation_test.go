@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/NotNull92/hera-agent-unity/internal/client"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -65,6 +66,105 @@ func TestDomainEpochInvalidatesCatalog(t *testing.T) {
 	}
 }
 
+func TestTaskCapabilityAdditionRequiresMCPRestart(t *testing.T) {
+	oldSnapshot := m13Snapshot(t, "epoch-old", m13Hash('a'), "alpha")
+	newSnapshot := m13Snapshot(t, "epoch-new", m13Hash('b'), "alpha")
+	state, refresher := m13Refresher(t, oldSnapshot, newSnapshot)
+	refresher.discover = func(string, int) (*client.Instance, error) {
+		return &client.Instance{
+			Port:        1234,
+			DomainEpoch: newSnapshot.Catalog.DomainEpoch,
+			Features: []string{
+				client.FeatureApprovalV1,
+				client.FeatureOperationLedgerV1,
+				client.FeatureTaskBridgeV1,
+			},
+		}, nil
+	}
+
+	if _, err := refresher.refresh(context.Background()); !errors.Is(err, errTaskCapabilityChanged) {
+		t.Fatalf("refresh error = %v, want task capability restart error", err)
+	}
+	if _, err := state.acquire(); !errors.Is(err, errMCPRestartRequired) {
+		t.Fatalf("state error = %v, want restart required", err)
+	}
+}
+
+func TestTaskCapabilityRemovalRequiresMCPRestart(t *testing.T) {
+	oldSnapshot := m13Snapshot(t, "epoch-old", m13Hash('a'), "alpha")
+	newSnapshot := m13Snapshot(t, "epoch-new", m13Hash('b'), "alpha")
+	state, refresher := m13Refresher(t, oldSnapshot, newSnapshot)
+	current := state.current()
+	current.taskMode = true
+	current.instance.Features = append(current.instance.Features, client.FeatureTaskBridgeV1)
+	state.replace(current)
+	refresher.discover = func(string, int) (*client.Instance, error) {
+		return &client.Instance{
+			Port:        1234,
+			DomainEpoch: newSnapshot.Catalog.DomainEpoch,
+			Features: []string{
+				client.FeatureApprovalV1,
+				client.FeatureOperationLedgerV1,
+			},
+		}, nil
+	}
+
+	if _, err := refresher.refresh(context.Background()); !errors.Is(err, errTaskCapabilityChanged) {
+		t.Fatalf("refresh error = %v, want task capability restart error", err)
+	}
+	if _, err := state.acquire(); !errors.Is(err, errMCPRestartRequired) {
+		t.Fatalf("state error = %v, want restart required", err)
+	}
+}
+
+func TestRestartRequiredToolsListDoesNotWait(t *testing.T) {
+	state := newCatalogState(nativeRuntime{})
+	if err := state.markRestartRequired(errTaskCapabilityChanged); !errors.Is(err, errMCPRestartRequired) {
+		t.Fatalf("markRestartRequired error = %v", err)
+	}
+	middleware := catalogConsistencyMiddleware(state)(func(context.Context, string, mcp.Request) (mcp.Result, error) {
+		t.Fatal("tools/list reached the registry after restart became required")
+		return nil, nil
+	})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	started := time.Now()
+	_, err := middleware(ctx, "tools/list", nil)
+	if !errors.Is(err, errMCPRestartRequired) {
+		t.Fatalf("tools/list error = %v, want restart required", err)
+	}
+	if elapsed := time.Since(started); elapsed > 100*time.Millisecond {
+		t.Fatalf("tools/list waited %s after restart became required", elapsed)
+	}
+}
+
+func TestRestartRequiredCannotBeClearedByReplace(t *testing.T) {
+	oldSnapshot := m13Snapshot(t, "epoch-old", m13Hash('a'), "alpha")
+	state := newCatalogState(nativeRuntime{snapshot: oldSnapshot})
+	if err := state.markRestartRequired(errTaskCapabilityChanged); !errors.Is(err, errMCPRestartRequired) {
+		t.Fatalf("markRestartRequired error = %v", err)
+	}
+	next := state.current()
+	next.snapshot = m13Snapshot(t, "epoch-new", m13Hash('b'), "beta")
+	state.replace(next)
+	if _, err := state.acquire(); !errors.Is(err, errMCPRestartRequired) {
+		t.Fatalf("replace cleared restart-required state: %v", err)
+	}
+}
+
+func TestRestartRequiredToolCallReturnsStructuredError(t *testing.T) {
+	oldSnapshot := m13Snapshot(t, "epoch-old", m13Hash('a'), "alpha")
+	state := newCatalogState(nativeRuntime{snapshot: oldSnapshot})
+	if err := state.markRestartRequired(errTaskCapabilityChanged); !errors.Is(err, errMCPRestartRequired) {
+		t.Fatalf("markRestartRequired error = %v", err)
+	}
+	handler := nativeToolHandler(nativeRuntime{catalogs: state}, "alpha", "custom")
+	result, err := handler(context.Background(), m13Call("alpha"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertStructuredCode(t, result, "MCP_RESTART_REQUIRED")
+}
 func TestSameCatalogHashAvoidsSpuriousChange(t *testing.T) {
 	hash := m13Hash('a')
 	oldSnapshot := m13Snapshot(t, "epoch-old", hash, "alpha")

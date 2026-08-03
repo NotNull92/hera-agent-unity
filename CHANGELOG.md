@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+
+### Changed (Connector 0.0.80 / CLI source — architecture refinement)
+
+- Split the active repository rules from the historical decision ledger, keeping
+  current locks in `CLAUDE.md` while moving completed investigations to
+  `docs/DECISION_LEDGER.md` for on-demand lookup.
+- Added a generated cross-language runtime-contract manifest for catalog,
+  execution-protocol, feature, and asset-config lock constants. CI and release
+  checks now reject drift between the manifest and generated Go/C# sources.
+- Versioned single-command execution metadata with `hera.execution/1`; current
+  clients send it, old clients may omit it, and unsupported versions fail before
+  catalog validation, approval, ledger, or handler execution.
+- Added action-specific Compact `tool_describe`, an explicit MCP catalog
+  lifecycle (`ready`, `refreshing`, `restart_required`), and a single isolated
+  legacy CLI passthrough boundary without changing existing command syntax.
+- Added reproducible Unity compatibility-matrix and catalog payload reporting
+  tools plus an explicit NUnit release-gate suite manifest. Transport keep-alive
+  and polling changes remain measurement-gated rather than being enabled by this
+  cleanup.
+
+### Fixed (Connector 0.0.79 / CLI source — post-migration stability)
+
+- Reject Typed CLI and MCP requests carrying a stale `catalog_hash` before
+  approval, ledger, or handler execution while preserving legacy clients that
+  omit the field.
+- Stop durably journaling read-only calls, convert abandoned `running` ledger
+  records to `outcome_unknown`, and enforce the ledger byte cap without deleting
+  an active current-domain mutation.
+- Preserve Hera Settings' last-known-good snapshot across partial or locked
+  reads, retry failed timestamps, and recover stale cross-process config locks
+  only after confirming the owner process ended.
+- Run HTTP queue continuations asynchronously, preserve operation identity on
+  dispatched mutation timeouts, fail closed when MCP Tasks capability changes
+  mid-session, and reduce false-positive credential detection for oversized
+  results.
+- Add NUnit release-gate entry points for the isolated Connector test assembly
+  and prevent a live same-project Test Runner helper process from being mistaken
+  for a terminated Editor owner.
+
 ## [0.1.0] - 2026-08-03
 
 ### Changed (licensing)

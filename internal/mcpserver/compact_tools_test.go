@@ -67,6 +67,42 @@ func TestCompactDescribeReturnsCatalogIdentity(t *testing.T) {
 	}
 }
 
+func TestCompactDescribeCanReturnOneAction(t *testing.T) {
+	// Given
+	snapshot := snapshotWithDynamicTool(t)
+	session, closeSession := startConfiguredTestSession(t, testServerSetup{compactTestConfig(), snapshot, &recordingToolSender{response: successResponse()}})
+	defer closeSession()
+
+	// When
+	full := callToolData(t, session, "tool_describe", map[string]any{"name": "dynamic_probe"})
+	selected := callToolData(t, session, "tool_describe", map[string]any{"name": "dynamic_probe", "action": "show"}).(map[string]any)
+
+	// Then
+	action := selected["action"].(map[string]any)
+	if action["name"] != "inspect" || selected["catalog_hash"] != nativeTestCatalogHash {
+		t.Fatalf("selected action=%#v", selected)
+	}
+	if len(mustJSON(t, selected)) >= len(mustJSON(t, full)) {
+		t.Fatalf("action-specific description was not smaller: selected=%d full=%d", len(mustJSON(t, selected)), len(mustJSON(t, full)))
+	}
+}
+
+func TestCompactDescribeRejectsUnknownActionCompactly(t *testing.T) {
+	// Given
+	session, closeSession := startConfiguredTestSession(t, testServerSetup{compactTestConfig(), snapshotWithDynamicTool(t), &recordingToolSender{response: successResponse()}})
+	defer closeSession()
+
+	// When
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name: "tool_describe", Arguments: map[string]any{"name": "dynamic_probe", "action": "missing"},
+	})
+
+	// Then
+	if err != nil || !result.IsError {
+		t.Fatalf("result=%#v error=%v", result, err)
+	}
+	assertStructuredCode(t, result, "ACTION_NOT_FOUND")
+}
 func TestCompactCallUsesClientOperationIDForDynamicCustomTool(t *testing.T) {
 	// Given
 	sender := &recordingToolSender{response: successResponse()}

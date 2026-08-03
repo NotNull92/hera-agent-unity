@@ -1,0 +1,273 @@
+{
+  "schema": "hera.catalog-payload-report/1",
+  "catalog_hash": "sha256:7258eca77eb15e1d374662a5cbf2ed900298bc023e53aeb066f1a9013719af9e",
+  "input_bytes": 185299,
+  "normalized_catalog_bytes": 185339,
+  "tool_count": 31,
+  "action_count": 75,
+  "description_characters": 8123,
+  "profiles": [
+    {
+      "name": "advanced",
+      "tool_count": 2,
+      "normalized_contract_bytes": 4540
+    },
+    {
+      "name": "assets",
+      "tool_count": 9,
+      "normalized_contract_bytes": 37068
+    },
+    {
+      "name": "core",
+      "tool_count": 8,
+      "normalized_contract_bytes": 51488
+    },
+    {
+      "name": "diagnostics",
+      "tool_count": 10,
+      "normalized_contract_bytes": 27258
+    },
+    {
+      "name": "full",
+      "tool_count": 29,
+      "normalized_contract_bytes": 180525
+    },
+    {
+      "name": "scene",
+      "tool_count": 9,
+      "normalized_contract_bytes": 67091
+    },
+    {
+      "name": "testing",
+      "tool_count": 6,
+      "normalized_contract_bytes": 50166
+    },
+    {
+      "name": "ui",
+      "tool_count": 8,
+      "normalized_contract_bytes": 95416
+    }
+  ],
+  "largest_tools": [
+    {
+      "name": "input",
+      "bytes": 27778,
+      "action_count": 8,
+      "description_characters": 102
+    },
+    {
+      "name": "manage_gameobject",
+      "bytes": 17114,
+      "action_count": 8,
+      "description_characters": 140
+    },
+    {
+      "name": "manage_ui",
+      "bytes": 15329,
+      "action_count": 4,
+      "description_characters": 336
+    },
+    {
+      "name": "ui_doc",
+      "bytes": 14817,
+      "action_count": 5,
+      "description_characters": 605
+    },
+    {
+      "name": "manage_components",
+      "bytes": 12128,
+      "action_count": 5,
+      "description_characters": 442
+    },
+    {
+      "name": "manage_animation",
+      "bytes": 10913,
+      "action_count": 6,
+      "description_characters": 298
+    },
+    {
+      "name": "profiler",
+      "bytes": 8992,
+      "action_count": 5,
+      "description_characters": 75
+    },
+    {
+      "name": "manage_assets",
+      "bytes": 8491,
+      "action_count": 6,
+      "description_characters": 246
+    },
+    {
+      "name": "manage_material",
+      "bytes": 6793,
+      "action_count": 4,
+      "description_characters": 421
+    },
+    {
+      "name": "manage_editor",
+      "bytes": 6667,
+      "action_count": 8,
+      "description_characters": 119
+    }
+  ],
+  "largest_actions": [
+    {
+      "tool": "manage_ui",
+      "action": "set_rect",
+      "bytes": 4234,
+      "description_characters": 0
+    },
+    {
+      "tool": "manage_ui",
+      "action": "set_anchor",
+      "bytes": 4042,
+      "description_characters": 0
+    },
+    {
+      "tool": "input",
+      "action": "drag",
+      "bytes": 3707,
+      "description_characters": 0
+    },
+    {
+      "tool": "input",
+      "action": "scroll",
+      "bytes": 3305,
+      "description_characters": 0
+    },
+    {
+      "tool": "ui_doc",
+      "action": "gen_sprite",
+      "bytes": 3255,
+      "description_characters": 0
+    },
+    {
+      "tool": "input",
+      "action": "pointer_down",
+      "bytes": 3120,
+      "description_characters": 0
+    },
+    {
+      "tool": "input",
+      "action": "pointer_up",
+      "bytes": 3116,
+      "description_characters": 0
+    },
+    {
+      "tool": "input",
+      "action": "submit",
+      "bytes": 3108,
+      "description_characters": 0
+    },
+    {
+      "tool": "input",
+      "action": "click",
+      "bytes": 3106,
+      "description_characters": 0
+    },
+    {
+      "tool": "input",
+      "action": "inspect",
+      "bytes": 3103,
+      "description_characters": 0
+    }
+  ],
+  "action_describe_savings": [
+    {
+      "tool": "input",
+      "action": "state",
+      "full_tool_describe_bytes": 27926,
+      "action_describe_bytes": 2264,
+      "saved_bytes": 25662,
+      "saved_ratio": 0.918928597006374
+    },
+    {
+      "tool": "input",
+      "action": "inspect",
+      "full_tool_describe_bytes": 27926,
+      "action_describe_bytes": 3851,
+      "saved_bytes": 24075,
+      "saved_ratio": 0.8620998352789515
+    },
+    {
+      "tool": "input",
+      "action": "click",
+      "full_tool_describe_bytes": 27926,
+      "action_describe_bytes": 3854,
+      "saved_bytes": 24072,
+      "saved_ratio": 0.8619924085082002
+    },
+    {
+      "tool": "input",
+      "action": "submit",
+      "full_tool_describe_bytes": 27926,
+      "action_describe_bytes": 3856,
+      "saved_bytes": 24070,
+      "saved_ratio": 0.8619207906610328
+    },
+    {
+      "tool": "input",
+      "action": "pointer_up",
+      "full_tool_describe_bytes": 27926,
+      "action_describe_bytes": 3864,
+      "saved_bytes": 24062,
+      "saved_ratio": 0.8616343192723627
+    },
+    {
+      "tool": "input",
+      "action": "pointer_down",
+      "full_tool_describe_bytes": 27926,
+      "action_describe_bytes": 3868,
+      "saved_bytes": 24058,
+      "saved_ratio": 0.8614910835780276
+    },
+    {
+      "tool": "input",
+      "action": "scroll",
+      "full_tool_describe_bytes": 27926,
+      "action_describe_bytes": 4053,
+      "saved_bytes": 23873,
+      "saved_ratio": 0.8548664327150326
+    },
+    {
+      "tool": "input",
+      "action": "drag",
+      "full_tool_describe_bytes": 27926,
+      "action_describe_bytes": 4455,
+      "saved_bytes": 23471,
+      "saved_ratio": 0.8404712454343622
+    },
+    {
+      "tool": "manage_gameobject",
+      "action": "destroy",
+      "full_tool_describe_bytes": 17262,
+      "action_describe_bytes": 2442,
+      "saved_bytes": 14820,
+      "saved_ratio": 0.8585331942996176
+    },
+    {
+      "tool": "manage_gameobject",
+      "action": "get_transform",
+      "full_tool_describe_bytes": 17262,
+      "action_describe_bytes": 2443,
+      "saved_bytes": 14819,
+      "saved_ratio": 0.8584752635847527
+    }
+  ],
+  "rough_token_estimates": {
+    "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+    "low_4_bytes_per_token": 46335,
+    "central_3_2_bytes_per_token": 57919,
+    "high_2_5_bytes_per_token": 74136
+  },
+  "warnings": [
+    "profile assets uses 37068 normalized bytes (warning budget 24000)",
+    "profile core uses 51488 normalized bytes (warning budget 24000)",
+    "profile diagnostics uses 27258 normalized bytes (warning budget 24000)",
+    "profile full uses 180525 normalized bytes (warning budget 24000)",
+    "profile scene uses 67091 normalized bytes (warning budget 24000)",
+    "profile testing uses 50166 normalized bytes (warning budget 24000)",
+    "profile ui uses 95416 normalized bytes (warning budget 24000)",
+    "tool input uses 27778 normalized bytes (warning budget 20000)"
+  ]
+}

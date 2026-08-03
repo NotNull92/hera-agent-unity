@@ -66,6 +66,9 @@ func TestSendWithOptionsCarriesApprovalToken(t *testing.T) {
 	if got.Meta.ApprovalToken == nil || *got.Meta.ApprovalToken != token {
 		t.Fatalf("approval_token=%v", got.Meta.ApprovalToken)
 	}
+	if got.Meta.ProtocolVersion != ExecutionProtocolVersion {
+		t.Fatalf("protocol_version=%q, want %q", got.Meta.ProtocolVersion, ExecutionProtocolVersion)
+	}
 }
 
 func TestPreflightSendsArgumentsForConnectorAuthority(t *testing.T) {

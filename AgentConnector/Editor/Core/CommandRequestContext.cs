@@ -6,6 +6,7 @@ namespace HeraAgent
 {
     public sealed class CommandRequestContext
     {
+        public string ProtocolVersion { get; }
         public string OperationId { get; }
         public string ArgumentsHash { get; }
         public string ApprovalToken { get; }
@@ -14,6 +15,7 @@ namespace HeraAgent
         public CancellationToken CancellationToken { get; }
 
         CommandRequestContext(
+            string protocolVersion,
             string operationId,
             string argumentsHash,
             string approvalToken,
@@ -21,6 +23,7 @@ namespace HeraAgent
             string catalogHash,
             CancellationToken cancellationToken)
         {
+            ProtocolVersion = protocolVersion;
             OperationId = operationId;
             ArgumentsHash = argumentsHash;
             ApprovalToken = approvalToken;
@@ -61,6 +64,7 @@ namespace HeraAgent
             }
 
             context = new CommandRequestContext(
+                metadata["protocol_version"]?.ToString(),
                 operationId,
                 computedHash,
                 metadata["approval_token"]?.Type == JTokenType.Null
@@ -71,6 +75,47 @@ namespace HeraAgent
                 CancellationToken.None);
             error = null;
             return true;
+        }
+
+        internal ErrorResponse ValidateProtocol()
+        {
+            if (string.IsNullOrWhiteSpace(ProtocolVersion)
+                || string.Equals(
+                    ProtocolVersion,
+                    ProtocolContracts.ExecutionProtocolVersion,
+                    StringComparison.Ordinal))
+            {
+                return null;
+            }
+
+            return new ErrorResponse(
+                "EXECUTION_PROTOCOL_UNSUPPORTED",
+                "The request uses an unsupported Hera execution protocol version.",
+                new
+                {
+                    request_protocol_version = ProtocolVersion,
+                    current_protocol_version = ProtocolContracts.ExecutionProtocolVersion,
+                });
+        }
+
+        internal ErrorResponse ValidateCatalog()
+        {
+            if (string.IsNullOrWhiteSpace(CatalogHash))
+                return null;
+
+            var current = ToolCatalogRuntime.CatalogHash;
+            if (string.Equals(CatalogHash, current, StringComparison.Ordinal))
+                return null;
+
+            return new ErrorResponse(
+                "CATALOG_STALE",
+                "The request was validated against an older Unity tool catalog. Refresh the catalog and retry with a new operation ID.",
+                new
+                {
+                    request_catalog_hash = CatalogHash,
+                    current_catalog_hash = current,
+                    domain_epoch = ToolCatalogRuntime.DomainEpoch,
+                });
         }
 
         internal static bool IsSafeOperationId(string value)

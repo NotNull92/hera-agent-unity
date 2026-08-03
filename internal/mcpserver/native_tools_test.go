@@ -88,6 +88,37 @@ func TestNativeMutationUsesOperationID(t *testing.T) {
 	}
 }
 
+func TestNativeToolReturnsStructuredUnknownOutcome(t *testing.T) {
+	sender := &recordingToolSender{err: &client.OperationOutcomeUnknownError{
+		Code:        "OPERATION_OUTCOME_UNKNOWN",
+		OperationID: client.OperationID("op_mcp_unknown_01"),
+		Command:     "scene",
+		Project:     "C:/Projects/game",
+		Port:        8093,
+	}}
+	session, closeSession := startNativeTestSession(t, "core", sender)
+	defer closeSession()
+
+	result, err := session.CallTool(context.Background(), &mcp.CallToolParams{
+		Name:      "scene",
+		Arguments: map[string]any{"action": "info"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !result.IsError {
+		t.Fatalf("result = %#v, want tool error", result)
+	}
+	assertStructuredCode(t, result, "OPERATION_OUTCOME_UNKNOWN")
+	envelope := result.StructuredContent.(map[string]any)
+	data := envelope["data"].(map[string]any)
+	if data["operation_id"] != "op_mcp_unknown_01" ||
+		data["tool"] != "scene" || data["project"] != "C:/Projects/game" ||
+		data["port"] != float64(8093) {
+		t.Fatalf("data = %#v", data)
+	}
+}
+
 func TestNativeApprovalRequiredBeforeUnity(t *testing.T) {
 	// Given
 	sender := &recordingToolSender{response: successResponse()}

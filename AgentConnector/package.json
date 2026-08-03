@@ -1,6 +1,6 @@
 {
   "name": "com.notnull92.hera-agent-unity",
-  "version": "0.0.78",
+  "version": "0.0.80",
   "displayName": "Hera Agent Unity",
   "description": "Control Unity Editor from the command line. Unified successor to hera-agent and hera-agent-pro — single Go CLI, localhost HTTP bridge, runtime C# execution, [HeraTool] custom-tool dispatch. Apache-2.0 licensed.",
   "unity": "2022.3",
@@ -9,7 +9,11 @@
     "name": "NotNull92",
     "url": "https://github.com/NotNull92"
   },
-  "keywords": ["cli", "tools", "editor"],
+  "keywords": [
+    "cli",
+    "tools",
+    "editor"
+  ],
   "type": "library",
   "dependencies": {
     "com.unity.nuget.newtonsoft-json": "3.2.1"

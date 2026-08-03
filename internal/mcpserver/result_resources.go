@@ -116,12 +116,20 @@ func sensitiveKey(key string) bool {
 		}
 		return -1
 	}, key)
-	for _, marker := range []string{"password", "passwd", "secret", "credential", "authorization", "privatekey", "sshkey", "apikey", "apitoken", "accesstoken", "refreshtoken", "sessiontoken", "idtoken", "authtoken", "securitytoken", "bearertoken", "approvaltoken", "cookie", "connectionstring"} {
-		if strings.Contains(normalized, marker) {
+	if normalized == "token" || normalized == "authorization" || normalized == "cookie" {
+		return true
+	}
+	for _, suffix := range []string{
+		"password", "passwd", "secret", "credential", "privatekey", "sshkey",
+		"apikey", "apitoken", "accesstoken", "refreshtoken", "sessiontoken",
+		"idtoken", "authtoken", "securitytoken", "bearertoken", "approvaltoken",
+		"cookie", "connectionstring",
+	} {
+		if strings.HasSuffix(normalized, suffix) {
 			return true
 		}
 	}
-	return normalized == "token"
+	return false
 }
 
 func registerResultResources(server *mcp.Server, store *resultstore.Store) {

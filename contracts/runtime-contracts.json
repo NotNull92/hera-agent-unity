@@ -1,0 +1,21 @@
+{
+  "schema_version": "hera.runtime-contracts/1",
+  "tool_catalog": {
+    "schema_version": "hera.tool-catalog/1"
+  },
+  "execution": {
+    "protocol_version": "hera.execution/1"
+  },
+  "features": {
+    "approval": "approval_v1",
+    "domain_epoch": "domain_epoch_v1",
+    "execution_protocol": "execution_protocol_v1",
+    "operation_ledger": "operation_ledger_v1",
+    "task_bridge": "task_bridge_v1",
+    "tool_catalog": "tool_catalog_v1"
+  },
+  "asset_config_lock": {
+    "version": 1,
+    "stale_after_ms": 120000
+  }
+}

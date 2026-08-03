@@ -61,13 +61,20 @@ namespace HeraAgent
     internal static class ToolCatalogRuntime
     {
         internal static readonly string DomainEpoch = CreateDomainEpoch();
+        private static readonly Lazy<ToolCatalogEnvelope> CatalogValue =
+            new Lazy<ToolCatalogEnvelope>(ToolCatalogBuilder.Build);
+
+        internal static ToolCatalogEnvelope Catalog => CatalogValue.Value;
+        internal static string CatalogHash => Catalog.CatalogHash;
+
         internal static readonly string[] Features =
         {
-            "approval_v1",
-            "domain_epoch_v1",
-            "operation_ledger_v1",
-            "task_bridge_v1",
-            "tool_catalog_v1",
+            ProtocolContracts.FeatureApprovalV1,
+            ProtocolContracts.FeatureDomainEpochV1,
+            ProtocolContracts.FeatureExecutionProtocolV1,
+            ProtocolContracts.FeatureOperationLedgerV1,
+            ProtocolContracts.FeatureTaskBridgeV1,
+            ProtocolContracts.FeatureToolCatalogV1,
         };
 
         internal static string ProjectId =>

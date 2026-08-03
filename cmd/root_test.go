@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 
@@ -22,6 +23,29 @@ func mockSend(wantCmd string, t *testing.T) (SendFunc, *map[string]interface{}) 
 		return &client.CommandResponse{Success: true}, nil
 	}
 	return fn, &captured
+}
+
+func TestOperationOutcomeResponsePreservesIdentity(t *testing.T) {
+	response := operationOutcomeResponse(&client.OperationOutcomeUnknownError{
+		Code:        "OPERATION_OUTCOME_UNKNOWN",
+		OperationID: client.OperationID("op_root_unknown_01"),
+		Command:     "manage_gameobject",
+		Project:     "C:/Projects/game",
+		Port:        8093,
+	})
+	if response == nil || response.Success || response.Code != "OPERATION_OUTCOME_UNKNOWN" {
+		t.Fatalf("response = %#v", response)
+	}
+	var data map[string]any
+	if err := json.Unmarshal(response.Data, &data); err != nil {
+		t.Fatal(err)
+	}
+	if data["operation_id"] != "op_root_unknown_01" ||
+		data["tool"] != "manage_gameobject" ||
+		data["project"] != "C:/Projects/game" ||
+		data["port"] != float64(8093) {
+		t.Fatalf("data = %#v", data)
+	}
 }
 
 func TestSplitArgs(t *testing.T) {

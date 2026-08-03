@@ -16,8 +16,9 @@ const reloadRetryFallbackDeadline = 60 * time.Second
 var reloadRetryDelay = 500 * time.Millisecond
 
 type retryPolicy struct {
-	allowRetry bool
-	unknown    *OperationOutcomeUnknownError
+	allowRetry           bool
+	unknownOnContextDone bool
+	unknown              *OperationOutcomeUnknownError
 }
 
 func (c *Client) doWithReloadRetry(
@@ -97,9 +98,11 @@ func (c *Client) doWithReloadRetry(
 			} else {
 				timeoutErr = ctx.Err()
 			}
+			if policy.unknownOnContextDone {
+				return nil, preserveUnknownOutcome(policy, timeoutErr, project, port)
+			}
 			if !policy.allowRetry && policy.unknown != nil {
-				policy.unknown.Cause = timeoutErr
-				return nil, policy.unknown
+				return nil, preserveUnknownOutcome(policy, timeoutErr, project, port)
 			}
 			return nil, timeoutErr
 		}
@@ -121,12 +124,31 @@ func (c *Client) doWithReloadRetry(
 		}
 		select {
 		case <-ctx.Done():
+			if policy.unknownOnContextDone {
+				return nil, preserveUnknownOutcome(policy, ctx.Err(), project, port)
+			}
 			return nil, ctx.Err()
 		case <-time.After(reloadRetryDelay):
 		}
 	}
-	return nil, fmt.Errorf("cannot connect to Unity for project %q after %s (still reloading?): %w",
+	failure := fmt.Errorf("cannot connect to Unity for project %q after %s (still reloading?): %w",
 		project, reloadRetryFallbackDeadline, lastErr)
+	if policy.unknownOnContextDone {
+		return nil, preserveUnknownOutcome(policy, failure, project, port)
+	}
+	return nil, failure
+}
+
+func preserveUnknownOutcome(policy retryPolicy, cause error, project string, port int) error {
+	if policy.unknown == nil {
+		return cause
+	}
+	policy.unknown.Cause = cause
+	if policy.unknown.Project == "" {
+		policy.unknown.Project = project
+	}
+	policy.unknown.Port = port
+	return policy.unknown
 }
 
 func isReloadTransient(err error) bool {

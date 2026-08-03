@@ -82,6 +82,28 @@ func (rp *ResponsePrinter) shouldCompactJSON(category string) bool {
 // failure in the user's C# snippet rather than a hera-agent-unity or
 // environment failure. Used to reframe the CLI output prefix so snippet
 // failures don't read as tool failures.
+func operationOutcomeResponse(err error) *client.CommandResponse {
+	var unknown *client.OperationOutcomeUnknownError
+	if !errors.As(err, &unknown) {
+		return nil
+	}
+	data, marshalErr := json.Marshal(map[string]any{
+		"operation_id": string(unknown.OperationID),
+		"tool":         unknown.Command,
+		"project":      unknown.Project,
+		"port":         unknown.Port,
+	})
+	if marshalErr != nil {
+		return nil
+	}
+	return &client.CommandResponse{
+		Success: false,
+		Code:    unknown.Code,
+		Message: unknown.Error(),
+		Data:    data,
+	}
+}
+
 func isUserCodeDiagnostic(code string) bool {
 	switch code {
 	case "EXEC_COMPILE_ERROR",
@@ -153,6 +175,13 @@ func Execute(ctx context.Context) error {
 		resolve:  freshResolve,
 	}).Run(ctx, category, subArgs)
 	if err != nil {
+		if outcome := operationOutcomeResponse(err); outcome != nil {
+			(&ResponsePrinter{
+				Quiet:       config.Quiet,
+				CompactJSON: config.CompactJSON,
+			}).Print(outcome, category)
+			return ErrCommandFailed
+		}
 		return err
 	}
 

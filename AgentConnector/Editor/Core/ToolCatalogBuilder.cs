@@ -8,7 +8,7 @@ namespace HeraAgent
 {
     internal static class ToolCatalogBuilder
     {
-        internal const string SchemaVersion = "hera.tool-catalog/1";
+        internal const string SchemaVersion = ProtocolContracts.ToolCatalogSchemaVersion;
 
         internal static ToolCatalogEnvelope Build()
         {

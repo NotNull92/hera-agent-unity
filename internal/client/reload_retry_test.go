@@ -211,6 +211,49 @@ func Test_ClientSend_preserves_unknown_outcome_for_mutation_timeout(t *testing.T
 	}
 }
 
+func Test_ClientSend_preserves_unknown_outcome_for_ledger_mutation_timeout(t *testing.T) {
+	writeInstanceFiles(t, map[string]Instance{
+		"target.json": {
+			State:       unitystate.Ready,
+			ProjectPath: "C:/Projects/test6.5",
+			Port:        8090,
+			PID:         100,
+			Timestamp:   2000,
+		},
+	})
+	c := NewClient()
+	c.processDeadChecker = func(int) bool { return false }
+	c.httpClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		<-request.Context().Done()
+		return nil, request.Context().Err()
+	})}
+
+	_, err := c.SendWithOptions(
+		context.Background(),
+		&Instance{
+			Port: 8090, ProjectPath: "C:/Projects/test6.5", PID: 100,
+			Features: []string{FeatureOperationLedgerV1},
+		},
+		"scene",
+		map[string]any{"action": "save"},
+		10,
+		SendOptions{OperationID: OperationID("op_timeout_ledger"), Idempotent: false},
+	)
+
+	var unknown *OperationOutcomeUnknownError
+	if !errors.As(err, &unknown) {
+		t.Fatalf("error = %v, want *OperationOutcomeUnknownError", err)
+	}
+	if unknown.OperationID != "op_timeout_ledger" ||
+		unknown.Project != "C:/Projects/test6.5" || unknown.Port != 8090 {
+		t.Fatalf("unknown = %#v", unknown)
+	}
+	var unresponsive *TargetUnresponsiveError
+	if !errors.As(err, &unresponsive) {
+		t.Fatalf("error cause = %v, want *TargetUnresponsiveError", err)
+	}
+}
+
 func Test_ClientSend_reports_editor_restart_when_pid_changes_during_timeout(t *testing.T) {
 	// Given
 	writeInstanceFiles(t, map[string]Instance{

@@ -3,13 +3,14 @@ package toolregistry
 import (
 	"encoding/json"
 
+	"github.com/NotNull92/hera-agent-unity/internal/protocol"
 	"github.com/NotNull92/hera-agent-unity/internal/schema"
 )
 
 const (
-	CatalogSchemaV1      = "hera.tool-catalog/1"
-	FeatureDomainEpochV1 = "domain_epoch_v1"
-	FeatureToolCatalogV1 = "tool_catalog_v1"
+	CatalogSchemaV1      = protocol.ToolCatalogSchemaVersion
+	FeatureDomainEpochV1 = protocol.FeatureDomainEpochV1
+	FeatureToolCatalogV1 = protocol.FeatureToolCatalogV1
 	ContractStrict       = "strict"
 	ContractLegacy       = "legacy"
 )
