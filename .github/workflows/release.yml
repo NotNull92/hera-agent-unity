@@ -10,7 +10,20 @@ permissions:
   contents: write
 
 jobs:
+  connector-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Connector package integrity
+        run: go run ./tools/validate-connector-package
+
   build:
+    needs: connector-package
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:

@@ -28,6 +28,9 @@ jobs:
       - name: Test
         run: go test ./...
 
+      - name: Connector package integrity
+        run: go run ./tools/validate-connector-package
+
       - name: Lint
         uses: golangci/golangci-lint-action@v9
         with:

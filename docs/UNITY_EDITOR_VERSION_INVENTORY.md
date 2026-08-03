@@ -42,6 +42,21 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 
 ## Completed Checks
 
+### Connector 0.0.76 exact-source refactor compile matrix (development only)
+
+The repository's current Connector and TestRunner sources were compiled with
+`tools/verify-unity-package/compile-exact-source.ps1` against existing Bee
+response files. The script does not launch or modify an Editor project and
+fails on compiler warnings as well as errors.
+
+| Bucket | Representative | Status |
+|---|---|---|
+| `2022.3` | `2022.3.62f2` | PASS |
+| `2023.2` | `2023.2.22f1` | PASS |
+| `6000.0`–`6000.2` | `6000.0.35f1` | PASS |
+| `6000.3`–`6000.4` | `6000.3.5f2` | PASS |
+| `6000.5+` | `6000.5.6f1` | PASS |
+
 ### Connector 0.0.75 clean UPM compile matrix (development only)
 
 | Bucket | Representative | Status | Evidence |
