@@ -1,6 +1,6 @@
 {
   "name": "hera-unity",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Low-token live Unity Editor workflows through the Hera CLI.",
   "author": {
     "name": "NotNull92"

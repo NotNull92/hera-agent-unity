@@ -1,6 +1,6 @@
 {
   "name": "hera-agent-unity",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Low-token CLI for AI agents to control a live Unity Editor.",
   "license": "Apache-2.0",
   "author": "NotNull92",
@@ -24,7 +24,7 @@
   },
   "scripts": {
     "postinstall": "node scripts/install.js",
-    "test": "node test/install.test.js"
+    "test": "node test/install.test.js && node test/distribution.test.js"
   },
   "files": [
     "bin/hera-agent-unity.js",

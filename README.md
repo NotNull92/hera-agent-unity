@@ -703,11 +703,21 @@ The goal is simple: the agent should not close the task while Unity is still bro
 
 Put Hera rules in your Unity project so agents know how to use it before they start guessing.
 
-Codex users can install the bundled plugin directly:
+Codex users can add the publisher-owned marketplace directly:
 
 ```bash
-npx codex-marketplace add NotNull92/hera-agent-unity/plugins/hera-unity --plugin
+codex plugin marketplace add NotNull92/hera-agent-unity --ref main
 ```
+
+Then open Codex, run `/plugins`, choose **Hera Agent Unity**, and enable **Hera Unity**. The same plugin is also mirrored by the HOL `awesome-codex-plugins` and `awesome-ai-plugins` catalogs.
+
+For the standalone Agent Skill without the plugin marketplace:
+
+```bash
+npx skills add NotNull92/hera-agent-unity --skill hera-agent-unity --agent codex
+```
+
+Use either installation path; both teach the same CLI-first Unity workflow.
 
 This repository includes ready-to-use rule files for the main coding agents:
 

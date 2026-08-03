@@ -1,0 +1,20 @@
+{
+  "name": "hera-agent-unity",
+  "interface": {
+    "displayName": "Hera Agent Unity"
+  },
+  "plugins": [
+    {
+      "name": "hera-unity",
+      "source": {
+        "source": "local",
+        "path": "./plugins/hera-unity"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Development"
+    }
+  ]
+}

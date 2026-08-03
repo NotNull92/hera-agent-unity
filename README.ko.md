@@ -659,11 +659,21 @@ hera-agent-unity ui_doc capture --out ...
 
 프로젝트에 Hera 규칙을 넣으면 AI가 추측하기 전에 Hera부터 사용합니다.
 
-Codex에서는 저장소에 포함된 플러그인을 바로 설치할 수도 있습니다:
+Codex 사용자는 배포자 직영 marketplace를 바로 추가할 수 있습니다:
 
 ```bash
-npx codex-marketplace add NotNull92/hera-agent-unity/plugins/hera-unity --plugin
+codex plugin marketplace add NotNull92/hera-agent-unity --ref main
 ```
+
+그다음 Codex에서 `/plugins`를 열고 **Hera Agent Unity**의 **Hera Unity**를 활성화합니다. 같은 플러그인은 HOL의 `awesome-codex-plugins`와 `awesome-ai-plugins` 카탈로그에도 등록되어 있습니다.
+
+플러그인 marketplace 없이 standalone Agent Skill만 설치하려면:
+
+```bash
+npx skills add NotNull92/hera-agent-unity --skill hera-agent-unity --agent codex
+```
+
+두 설치 경로 중 하나만 선택하면 되며, 둘 다 같은 CLI-first Unity 작업 흐름을 안내합니다.
 
 이 저장소에는 주요 코딩 에이전트용 규칙 파일이 준비되어 있습니다:
 

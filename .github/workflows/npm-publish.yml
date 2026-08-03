@@ -1,0 +1,73 @@
+name: Publish npm Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing stable GitHub release tag matching npm/package.json
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          package-manager-cache: false
+
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            tag="${{ github.event.release.tag_name }}"
+          else
+            tag="${{ inputs.release_tag }}"
+          fi
+          if [[ -z "$tag" ]]; then
+            echo "release tag is required" >&2
+            exit 1
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Install package metadata without postinstall download
+        working-directory: npm
+        run: npm ci --ignore-scripts
+
+      - name: Verify package version and GitHub native assets
+        working-directory: npm
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          HERA_AGENT_UNITY_RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          if [[ "v${version}" != "$HERA_AGENT_UNITY_RELEASE_TAG" ]]; then
+            echo "npm version ${version} does not match ${HERA_AGENT_UNITY_RELEASE_TAG}" >&2
+            exit 1
+          fi
+          if npm view "hera-agent-unity@${version}" version >/dev/null 2>&1; then
+            echo "hera-agent-unity@${version} is already published" >&2
+            exit 1
+          fi
+          node scripts/verify-release.js
+
+      - name: Test and inspect package
+        working-directory: npm
+        run: |
+          npm test
+          npm pack --dry-run
+
+      - name: Publish with npm trusted publishing
+        working-directory: npm
+        run: npm publish --access public

@@ -17,7 +17,7 @@ hera-agent-unity status
 hera-agent-unity list --compact
 ```
 
-Report the project, port, Unity version, state, and tool count. If Unity is unreachable, ask the user to open the project with the connector installed.
+Report the project, port, Unity version, state, and tool count. If more than one Editor is open, bind later calls with the full normalized `--project` path. If Unity is unreachable, ask the user to open the project with the connector installed.
 
 ## Working loop
 
@@ -44,7 +44,8 @@ hera-agent-unity screenshot --view game
 - Prefer `scene`, `console`, `editor`, `test`, `describe_type`, and other dedicated commands over `exec`.
 - Batch related side effects into one `exec`; return `null` or omit the return.
 - Never return a `UnityEngine.Object` directly. Return only the fields needed.
-- Branch on structured error `code`, not message text.
+- Prefer `call <tool> --json ...` when a dynamic tool needs strict live-schema validation.
+- Branch on structured error `code`, not message text; refresh discovery after `CATALOG_STALE`.
 - Throw or use `--strict` when a logical failure must produce a non-zero exit.
 - Treat `input` commands as Unity EventSystem QA, not proof of a physical OS click.
 

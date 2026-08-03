@@ -2,6 +2,16 @@
 
 This plugin teaches Codex to use the `hera-agent-unity` CLI for live Unity Editor inspection, changes, and verification.
 
+## Install from the publisher marketplace
+
+Add this repository as a Codex marketplace:
+
+```bash
+codex plugin marketplace add NotNull92/hera-agent-unity --ref main
+```
+
+Then open Codex, run `/plugins`, choose **Hera Agent Unity**, and enable **Hera Unity**. The plugin is also mirrored in the HOL `awesome-codex-plugins` and `awesome-ai-plugins` catalogs.
+
 ## Prerequisites
 
 Install the CLI and Unity connector by following the [main project README](https://github.com/NotNull92/hera-agent-unity#install), then open the Unity project before using the skill.

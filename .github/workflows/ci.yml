@@ -37,6 +37,18 @@ jobs:
       - name: Connector package integrity
         run: go run ./tools/validate-connector-package
 
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Distribution metadata and npm package
+        working-directory: npm
+        run: |
+          npm ci --ignore-scripts
+          npm test
+          npm pack --dry-run
+
       - name: Lint
         uses: golangci/golangci-lint-action@v9
         with:

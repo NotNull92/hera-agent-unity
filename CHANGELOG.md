@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (distribution preparation)
+
+- Prepared npm wrapper `0.1.1` with a release-asset verification gate and an OIDC trusted-publishing workflow; the npm registry is not changed by this commit.
+- Added a publisher-owned Codex marketplace at `.agents/plugins/marketplace.json`, updated the Hera Unity plugin to `1.0.1`, replaced the obsolete marketplace command with the current Codex flow, and documented the repository-backed standalone `npx skills` channel.
+- Documented every active, pending, mirrored, and candidate distribution channel in `docs/DISTRIBUTION_CHANNELS.md`.
+
 ## [0.1.1] - 2026-08-04
 
 ### Changed (Connector 0.0.80 / CLI v0.1.1 - architecture refinement)

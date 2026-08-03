@@ -5,11 +5,13 @@ on:
     branches: [main]
     paths:
       - "plugins/hera-unity/**"
+      - ".agents/plugins/marketplace.json"
       - ".github/workflows/hol-plugin-scanner.yml"
   pull_request:
     branches: [main]
     paths:
       - "plugins/hera-unity/**"
+      - ".agents/plugins/marketplace.json"
       - ".github/workflows/hol-plugin-scanner.yml"
 
 permissions:
