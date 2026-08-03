@@ -18,7 +18,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 **기존 Go CLI와 localhost HTTP Unity Connector가 실행 코어라는 결정은 유지한다** 🔒. `HttpServer`, `CommandRouter`, `ToolDiscovery`, `Heartbeat`, Unity main-thread queue, 파일버스 복구 경로를 교체하거나 Unity Connector 안에 MCP를 직접 구현하지 않는다.
 
-**CLI + MCP adapter migration의 M0부터 M16까지 PASS이며 M17은 BLOCKED다** 🔒. 기존 바이너리 안의 선택적 Go stdio MCP adapter는 같은 실행 코어 앞에 있으며 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 하나의 정규화된 tool contract registry를 공유한다. M17 부분 실측에서 Profile의 도구 정의 절감 기준은 통과했지만 Typed contract 및 MCP-primary 이득 기준은 충족하지 못했고, 필수 fixture 시나리오와 독립 검토 가능한 영구 증거가 완결되지 않았다. 따라서 Typed CLI와 기존 CLI가 production default이고, MCP는 unreleased·experimental·default-off 상태를 유지한다. 이후 기본값 변경은 완전한 새 근거와 명시적 사용자 결정 없이는 금지한다.
+**CLI + MCP adapter migration의 M0부터 M16까지 PASS이며 M17은 BLOCKED다** 🔒. 기존 바이너리 안의 선택적 Go stdio MCP adapter는 같은 실행 코어 앞에 있으며 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 하나의 정규화된 tool contract registry를 공유한다. M17 부분 실측에서 Profile의 도구 정의 절감 기준은 통과했지만 Typed contract 및 MCP-primary 이득 기준은 충족하지 못했다. Inventoria의 9개 증거 범주는 영구 보고서로 보강됐지만, section 28.3 전체 matrix가 하나의 marked disposable fixture에서 완결되지 않았다. 따라서 Typed CLI와 기존 CLI가 production default이고, MCP는 unreleased·experimental·default-off 상태를 유지한다. 이후 기본값 변경은 완전한 새 근거와 명시적 사용자 결정 없이는 금지한다.
 
 이유:
 - 런타임 의존성 0개 — 사용자는 바이너리 하나 + UPM 패키지 하나만 설치
@@ -30,8 +30,8 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 - **Authoritative implementation specification:** `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - **Milestone evidence and rollback ledger:** `docs/MCP_MIGRATION_PROGRESS.md`
-- **현재 상태:** M0부터 M16까지 PASS이고 M17은 BLOCKED다. current `main` source의 unreleased `mcp`는 `HERA_MCP_ENABLED=1`일 때만 stdio로 시작하며 Profile, Compact 3-tool fallback, Full-safe, 명시적 arbitrary-code permission이 필요한 Advanced, 승인/MRTR, operation ledger, Tasks와 blocking fallback, large-result resource를 지원한다. 오래된 Connector는 Compact-only로 보수적으로 저하되고 안전 feature 누락은 fail-closed다. M17의 부분 측정과 증거 공백은 승격을 정당화하지 않으므로 Typed CLI와 기존 CLI가 production default이고 MCP는 experimental·default-off다.
-- **보존 경계:** 기존 Go CLI, localhost HTTP Connector, single-editor model, main-thread serialization, heartbeat discovery, package/test file bus, CLI/Connector 독립 버전은 계속 잠금 상태다.
+- **현재 상태:** M0부터 M16까지 PASS이고 M17은 BLOCKED다. current `main` source의 unreleased `mcp`는 `HERA_MCP_ENABLED=1`일 때만 stdio로 시작하며 Profile, Compact 3-tool fallback, Full-safe, 명시적 arbitrary-code permission이 필요한 Advanced, 승인/MRTR, operation ledger, Tasks와 blocking fallback, large-result resource를 지원한다. 오래된 Connector는 Compact-only로 보수적으로 저하되고 안전 feature 누락은 fail-closed다. M17은 Inventoria의 9개 증거 범주를 영구 보고서로 보강했지만 하나의 disposable fixture에서 전체 integration matrix를 실행하지 못했고 측정 이득 기준도 충족하지 못했다. 따라서 Typed CLI와 기존 CLI가 production default이고 MCP는 experimental·default-off다.
+- **보존 경계:** 기존 Go CLI, localhost HTTP Connector, single-selected-target model, main-thread serialization, heartbeat discovery, package/test file bus, CLI/Connector 독립 버전은 계속 잠금 상태다.
 
 ### Rule-document hierarchy
 
@@ -47,7 +47,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 - **CLI ↔ Connector 버전 핸드셰이크 불필요**: 두 버전이 일치한다는 전제 자체가 없음. HTTP+JSON forward-compat과 동적 dispatch가 자연 처리. "버전 매칭 검사 추가하자"는 제안은 모델 밖.
 - **버전 용어 분리 필수**: CLI release tag(`hera-agent-unity vX.Y.Z`, git tag)는 Go 바이너리 버전이다. Unity UPM connector 버전은 `AgentConnector/package.json` 의 `version` 값(`0.0.N`)이다. 둘은 독립 버전이므로 같은 숫자라고 말하거나, UPM 패키지 버전을 CLI tag처럼 `vX.Y.Z`로 부르지 않는다. Git lock hash/commit 은 "어느 커밋의 connector를 받았는지"만 증명하며 UPM package version 자체가 아니다.
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
-- **단일 에디터 모델 (멀티 에디터 미지원)** 🔒: 한 머신에 Unity 에디터 하나를 전제. 포트 바인딩 구조상 같은 머신에서 멀티 에디터는 실사용 불가 — instance discovery 는 "한" 인스턴스를 해석하고, 재시도·재해석(`doWithReloadRetry` 의 `DiscoverInstance` 포트 추종 등)이 *다른* 에디터를 집을 위험은 **모델 밖**. "여러 에디터 구분/디스앰비규에이션 추가하자", "재해석이 substring 매치로 잘못된 에디터를 고를 수 있다", "PID 로 정확 매칭하자" 같은 지적·제안은 모델 밖 — 멀티 인스턴스 충돌은 발생하지 않는 전제이므로 새 문제로 제기 금지.
+- **다중 에디터 발견 + 단일 선택 모델** 🔒: 한 머신의 여러 Unity heartbeat를 발견할 수 있지만 각 CLI 명령과 MCP 프로세스는 한 에디터만 선택한다. 프로젝트의 정규화된 절대경로가 안정적인 정체성이고 `port`는 `8090`–`8099`에서 재시작/domain reload 때 바뀔 수 있는 임시 연결 정보다. `--project`는 exact match 우선, legacy substring은 유일할 때만 허용하며 모호하면 실패한다. `--project`와 `--port`를 함께 주면 같은 heartbeat를 가리켜야 한다. 전송 실패/timeout 때는 fresh heartbeat로 port 재사용·PID 변경·target 소실을 다시 확인하고, idempotent 또는 operation-ledger-backed 작업만 재시도한다. 여러 에디터 broadcast/fan-out은 모델 밖이다.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
   - **표준 envelope tool 명령** (`call`, `exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, `ui_doc`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
   - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
@@ -358,6 +358,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 | MCP migration M10 Compact/Full exposure | ✅ 완료 (2026-08-01) | Compact MCP가 `tool_search`/`tool_describe`/`tool_call`만 등록해 live native 또는 legacy catalog를 deterministic lexical ranking으로 탐색하고, normalized definition·catalog hash·domain epoch를 설명하며 shared schema/policy/ledger/operation-ID 경로로 호출한다. Full-safe는 `full` profile의 strict normal-policy 도구만 노출하고 arbitrary-code를 제외한다. Advanced는 `--allow-arbitrary-code` 없이는 시작하지 않으며, Compact에서도 권한 없는 arbitrary 도구를 검색·설명·호출할 수 없다. 실제 Inventoria에서 Compact scene search/describe/call, Full 29-tool no-exec/menu, Advanced blocked/allowed 목록을 공식 SDK client로 확인했다. M11 승인/MRTR은 미구현이고 CLI production default는 불변이다. |
 | MCP migration M11 Approval/MRTR | ✅ 완료 (2026-08-01) | Connector가 process-local HMAC 승인 토큰을 발급하고 operation/tool/action/arguments hash/risk/project/expiry/single-use를 mutation과 ledger `running` 전에 재검증한다. Typed CLI는 human TTY 확인과 비대화형 preflight/`--approve` 재호출을, MCP는 opt-in Form elicitation과 `hera/approval_token` fallback을 지원하며 구 Connector에서는 `APPROVAL_UNSUPPORTED`로 닫힌다. PASS B에서 client-controlled summary, response-loss replay ordering, risk-class spelling, debug token leakage를 교정했다. Go 전체 gate와 Unity 6000.3.5f2 exact-source compile, 활성 Inventoria의 7개 승인 경계 테스트 및 console error 0이 통과했다. Connector manifest는 unreleased `0.0.73`; M12는 별도 승인 전 미구현이다. |
 | MCP migration M12 Tasks bridge | ✅ 완료 (2026-08-01) | 기존 test `run_id`와 package `job_id`, pending/result 파일, reload 후 검증을 보존한 stateless Go task bridge를 추가했다. Connector `task_bridge_v1`과 MCP `io.modelcontextprotocol/tasks`가 협상되면 package add/remove/embed 및 test run이 재시작 가능한 task handle을 반환하고, 미협상·구 Connector에서는 기존 blocking polling을 유지한다. tool error는 completed task result로 보존하며 실제 Unity 작업 중단을 지원하지 않는 test/package cancel은 `supported:false`/`cancelled:false`로 정직하게 응답한다. PASS B에서 범위 밖 `running` 응답 오해석, task ID bounds/error taxonomy, false field wire omission, full-GUID 회귀 공백을 교정했다. Go 전체 gate와 exact-source feature/package probe, 실제 EditMode 파일버스 lifecycle, console error 0이 통과했다. Connector manifest는 unreleased `0.0.74`; M13은 별도 승인 전 미구현이다. |
+| UPM 최초 script compilation 정체 회귀 | ✅ 완료 (2026-08-02, Connector 0.0.75) | `Editor/Tests`가 production `HeraAgent.Editor`에 섞인 상태에서 M23/M24 장문 schema assertion이 Unity 6000.5의 Roslyn 4.10 병적 컴파일 시간을 유발했다. 테스트를 `HeraAgent.Editor.Tests` TestAssemblies asmdef로 격리하고 조건식을 분할했다. 이후 Connector 변경은 `2022.3`, `2023.2`, `6000.0–6000.2`, `6000.3–6000.4`, `6000.5+` 다섯 지원 버킷의 disposable blank-project UPM 최초 컴파일 게이트를 모두 통과해야 하며, 미실행 버킷은 PASS가 아니라 BLOCKED다. 이 규칙은 저장소 개발 전용이고 downstream agent guide에는 배포하지 않는다. |
 
 > **핵심 원칙**: 위 표에 있는 내용을 "새로 발견한 문제"라고 제기하지 말 것.
 
@@ -420,6 +421,44 @@ gofmt -w .
 ~/go/bin/golangci-lint fmt --diff
 go test ./...
 ```
+
+### Connector UPM 전체 호환 버전 릴리스 게이트
+
+Connector 코드, asmdef, 패키지 의존성, 테스트 소스 또는 `package.json`이
+바뀌면 한 Unity 버전에서의 성공만으로 검증 완료라고 기록하지 않는다. 현재
+지원 범위(`AgentConnector/package.json`의 최소 `2022.3`, README의
+`2022.3+`)를 컴파일러/API 경계별로 나눈 다음 **다섯 버킷 전부** 확인한다:
+
+1. `2022.3`
+2. `2023.2`
+3. `6000.0`–`6000.2`
+4. `6000.3`–`6000.4`
+5. `6000.5+`
+
+각 버킷에서 사용할 실제 대표 에디터 버전의 source of truth는
+`docs/UNITY_EDITOR_VERSION_INVENTORY.md`다. 인벤토리의 대표 버전을 최신화해야
+하면 먼저 갱신하고, 설치되지 않았거나 실행할 수 없는 버킷은 **PASS가 아니라
+BLOCKED**로 기록한다. 특정 버킷 하나(예: `6000.5`)만 확인하고 전체 호환 검증을
+통과했다고 표현하지 않는다.
+
+각 버킷은 새 disposable blank project 또는 `Library`를 초기화한 disposable
+project에서 동일 Connector 후보를 일반 UPM dependency로 설치하여 다음을 모두
+확인한다:
+
+- bounded timeout 안에 최초 script compilation이 끝나고 Editor가 `ready`가 된다.
+- `console --type error`의 compiler/package 오류가 0건이다.
+- 일반 설치의 `HeraAgent.Editor` compiler response file에
+  `AgentConnector/Editor/Tests/` 소스가 0개이고 `HeraAgent.Editor.Tests` assembly가
+  만들어지지 않는다.
+- 별도의 test-enabled pass에서는 `testables`를 켰을 때
+  `HeraAgent.Editor.Tests`가 독립적으로 컴파일된다. 일반 설치 manifest에는
+  `testables`를 남기지 않는다.
+- timeout, `compiling` 고착, Roslyn/csc 비정상 장기 실행은 재시도로 덮지 않고
+  release-blocking failure로 기록한다.
+
+이 게이트는 Hera 저장소 개발자용이다. 아래 내용을 `doctor --agent-rules`,
+`AGENT.md`, `cmd/AGENT.md`, `examples/rules/`, UPM 사용 가이드 또는 기타
+downstream 사용자 규칙에 복사하지 않는다.
 
 ### Integration Tests (requires Unity)
 

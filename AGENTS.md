@@ -185,6 +185,18 @@ banners and diagnostics, and use Compact exposure for older Connectors. Missing
 approval or operation-ledger features must fail closed. Full setup and
 compatibility rules are in `docs/MCP.md`.
 
+**[Rule 13]** Treat a Unity port as a temporary connection endpoint, not an
+Editor identity. At the start of Unity work, run the bootstrap sequence and
+confirm the selected project's full path. When several heartbeats exist, prefer
+`--project <full-path>`; exact normalized paths win, a legacy substring is
+accepted only when it identifies one project, and an ambiguous match fails.
+Supplying both `--project` and `--port` requires both to identify the same
+Editor. If a request loses its response or times out, Hera fresh-reads the
+heartbeat before retrying and distinguishes a domain-reload port change, an
+Editor restart, a lost target, and a port reused by another project. Never
+blindly resend a mutation: only idempotent calls or operation-ledger-backed
+operations may retry.
+
 ## 1.5 Ultra Hera
 
 Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.
@@ -726,3 +738,41 @@ agents collaborate to build one polished tool — one catches what the other mis
   predicate against a property you have not looked up, and phrase version claims
   as the buckets actually measured. Do not lock a claim in `CLAUDE.md` that the
   evidence does not reach.
+
+### 7.2 Connector UPM compatibility release gate (development only)
+
+Any change to Connector C# code, asmdefs, package dependencies, test sources, or
+`AgentConnector/package.json` requires a clean UPM-install compile check in **all
+supported compatibility buckets**, not only the Unity version where the bug was
+reported:
+
+1. `2022.3`
+2. `2023.2`
+3. `6000.0`–`6000.2`
+4. `6000.3`–`6000.4`
+5. `6000.5+`
+
+Use the exact representative Editor installations recorded in
+`docs/UNITY_EDITOR_VERSION_INVENTORY.md`; update that inventory first when the
+representative changes. A missing or unavailable bucket is **BLOCKED**, never a
+PASS, and evidence from one bucket must not be described as full compatibility.
+
+For every bucket, install the same Connector candidate as a normal UPM dependency
+in a new disposable blank project, or a disposable project whose `Library` was
+reset, then require all of the following:
+
+- initial script compilation reaches `ready` within a bounded timeout;
+- `console --type error` reports zero compiler/package errors;
+- the normal `HeraAgent.Editor` compiler response contains zero sources under
+  `AgentConnector/Editor/Tests/`, and no `HeraAgent.Editor.Tests` assembly is
+  produced by the ordinary install;
+- a separate test-enabled pass compiles `HeraAgent.Editor.Tests` independently,
+  after which `testables` is removed from the normal-install manifest; and
+- a timeout, stuck `compiling` state, or abnormally long Roslyn/csc process is
+  recorded as a release-blocking failure rather than hidden by retries.
+
+This gate prevents the Connector 0.0.74 regression where test sources were folded
+into the production assembly and long schema assertions caused pathological
+Roslyn 4.10 compile times. It is repository-development policy only. Do not copy
+it into `doctor --agent-rules`, `AGENT.md`, `cmd/AGENT.md`, `examples/rules/`, UPM
+usage documentation, or any downstream user's Claude/Codex rules.

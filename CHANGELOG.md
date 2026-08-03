@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (CLI — project-safe multi-Editor targeting)
+
+- Unity ports are now treated as dynamic endpoints instead of stable Editor
+  identities. Full normalized project paths take precedence, partial project
+  matches must be unique, and supplying `--project` with `--port` verifies that
+  both identify the same live heartbeat.
+- Transport failures and request timeouts now re-read heartbeat ownership before
+  retrying. The client distinguishes a reused port, an Editor restart, a target
+  that disappeared, and a still-live but unresponsive target while preserving
+  the existing idempotence and operation-ledger retry gates.
+
+### Fixed (Connector 0.0.75 — UPM installs no longer stall while compiling scripts)
+
+- Moved the Connector's Editor test sources into a dedicated
+  `HeraAgent.Editor.Tests` test assembly, so ordinary UPM consumers no longer
+  compile those sources into the production `HeraAgent.Editor` assembly.
+- Split two deeply chained output-schema assertions that triggered pathological
+  Roslyn 4.10 compile times in Unity 6000.5. A fresh Unity 6000.5.6f1 project now
+  resolves the package, finishes compilation, and starts the Hera Connector
+  without console errors.
+- Updated Input QA object discovery to use Unity 6000.5's non-deprecated
+  `FindAnyObjectByType` and unsorted `FindObjectsByType` overloads while keeping
+  the existing 2022.3–6000.4 compatibility path.
+
 ### Added (CLI — experimental MCP adapter documentation)
 
 - Documented the existing default-off, stdio-only MCP adapter, client process

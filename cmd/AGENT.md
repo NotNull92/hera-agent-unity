@@ -185,6 +185,18 @@ banners and diagnostics, and use Compact exposure for older Connectors. Missing
 approval or operation-ledger features must fail closed. Full setup and
 compatibility rules are in `docs/MCP.md`.
 
+**[Rule 13]** Treat a Unity port as a temporary connection endpoint, not an
+Editor identity. At the start of Unity work, run the bootstrap sequence and
+confirm the selected project's full path. When several heartbeats exist, prefer
+`--project <full-path>`; exact normalized paths win, a legacy substring is
+accepted only when it identifies one project, and an ambiguous match fails.
+Supplying both `--project` and `--port` requires both to identify the same
+Editor. If a request loses its response or times out, Hera fresh-reads the
+heartbeat before retrying and distinguishes a domain-reload port change, an
+Editor restart, a lost target, and a port reused by another project. Never
+blindly resend a mutation: only idempotent calls or operation-ledger-backed
+operations may retry.
+
 ## 1.5 Ultra Hera
 
 Ultra Hera helps AI check its Unity work. Hera does not do the AI work by itself. This setting tells AI agents how carefully they should check Unity work after using Hera.
