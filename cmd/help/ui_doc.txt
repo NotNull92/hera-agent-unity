@@ -27,3 +27,5 @@ Notes:
   - uGUI apply reports docs_version / ugui_package; UITK apply reports
     uitk_version / uxml_traits / uxml_api. Both report fixes and diagnostics.
   - import/gen_sprite destinations must remain inside Assets/
+  - capture requires approval-gated --overwrite to replace an existing PNG;
+    replacement is limited to the project and system temp directory

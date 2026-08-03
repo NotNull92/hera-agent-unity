@@ -7,7 +7,10 @@ Options:
   --width <N>        Image width in pixels (default: 1920)
   --height <N>       Image height in pixels (default: 1080)
   --output_path <path>  Output path, absolute or relative to project root
-                        (default: Screenshots/screenshot.png)
+                        (default: unique PNG under Screenshots/)
+  --overwrite        Approval-gated replacement of an existing PNG under the
+                     project or system temp directory. Existing external files
+                     are never overwritten.
   --isolated         Render only one GameObject through a temporary camera
   --target <path>    Hierarchy path for isolated capture (same as --path)
   --path <path>      Hierarchy path for isolated capture

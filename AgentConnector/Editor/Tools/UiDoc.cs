@@ -34,6 +34,12 @@ namespace HeraAgent.Tools
         "to",
         "direction",
         Action = "gen_sprite")]
+    [HeraSafetyRule(
+        "ui_doc.capture.overwrite",
+        "overwrite",
+        "true",
+        RiskClass = HeraRiskClass.Write,
+        RequiresConfirmation = true)]
     [HeraTool(
         Name = "ui_doc",
         Description = "Unity UI pipeline. With ui_system=ugui, export/apply build the existing compact ui_doc/2 GameObject + RectTransform IR. With ui_system=uitk, apply accepts backend=uitk and emits validated runtime UXML + shared USS + PanelSettings + UIDocument scaffolding under Assets/HeraGenerated/UI; every runtime element, UXML attribute, and USS property is checked against the connected Editor's bundled reflection schema. import/gen_sprite remain asset helpers; capture/export are uGUI-only. Element property edits stay in manage_components; juice recipes ride apply's agent_hint when Game Feel UI Mode (Beta) is on.",
@@ -58,7 +64,7 @@ namespace HeraAgent.Tools
         Profiles = new[] { "ui" },
         RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
-    public static class UiDoc
+    public static partial class UiDoc
     {
         private const string ObjectOrJsonSchema =
             "{\"oneOf\":[{\"type\":\"object\",\"additionalProperties\":true},{\"type\":\"string\"}]}";
@@ -191,6 +197,9 @@ namespace HeraAgent.Tools
 
             [ToolParameter("Output PNG path.")]
             public string Out { get; set; }
+
+            [ToolParameter("Allow replacing an existing PNG under the project or system temp directory.")]
+            public bool Overwrite { get; set; }
         }
 
         public sealed class ImportedSpriteResult
@@ -271,6 +280,9 @@ namespace HeraAgent.Tools
 
             [ToolParameter("capture: restrict to one Canvas by path/InstanceID. Default: all root non-world canvases.")]
             public string Canvas { get; set; }
+
+            [ToolParameter("capture: allow replacing an existing PNG under the project or system temp directory.")]
+            public bool Overwrite { get; set; }
 
             [ToolParameter("import: source image absolute path (single-sprite form). Use --file for many sprites / per-sprite settings.")]
             public string Src { get; set; }
@@ -672,128 +684,6 @@ namespace HeraAgent.Tools
             foreach (var c in Path.GetInvalidFileNameChars())
                 name = name.Replace(c, '_');
             return name;
-        }
-
-        // Capture renders the live UI to a PNG. ScreenSpaceOverlay canvases are
-        // composited after the camera, so a normal `screenshot` (camera render)
-        // misses them; here we temporarily route every root non-world canvas
-        // through a throwaway camera + RenderTexture, ReadPixels → PNG, then
-        // restore each canvas. This institutionalizes the verify loop (build →
-        // capture → compare to reference) the agent otherwise hand-rolled via exec.
-        static object Capture(JObject raw)
-        {
-            var p = new ToolParams(raw);
-
-#if UNITY_6000_5_OR_NEWER
-            var all = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude);
-#else
-            var all = Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-#endif
-            Canvas only = null;
-            var canvasSel = p.Get("canvas");
-            if (!string.IsNullOrEmpty(canvasSel))
-            {
-                var (t, err) = TargetResolver.ResolveTransform(canvasSel);
-                if (err != null) return err;
-                var c = t.GetComponentInParent<Canvas>();
-                only = c != null ? c.rootCanvas : null;
-                if (only == null) return new ErrorResponse("TARGET_NOT_FOUND", $"[Hera] I found '{canvasSel}' but it isn't under a Canvas.");
-            }
-
-            var targets = new List<Canvas>();
-            foreach (var c in all)
-            {
-                if (!c.isRootCanvas) continue;
-                if (c.renderMode == RenderMode.WorldSpace) continue; // world canvases render through the normal camera
-                if (only != null && c != only) continue;
-                targets.Add(c);
-            }
-
-            int w = p.GetInt("width", 0) ?? 0;
-            int h = p.GetInt("height", 0) ?? 0;
-            if (targets.Count > 0)
-            {
-                var pr = targets[0].pixelRect;
-                if (w <= 0) w = Mathf.RoundToInt(pr.width);
-                if (h <= 0) h = Mathf.RoundToInt(pr.height);
-            }
-            if (w <= 0) w = 1920;
-            if (h <= 0) h = 1080;
-
-            var bg = new Color(0.10f, 0.10f, 0.12f, 1f);
-            var bgStr = p.Get("bg");
-            if (!string.IsNullOrEmpty(bgStr) && SerializedPropertyValue.TryParseColor(new JValue(bgStr), out var parsed, out _))
-                bg = parsed;
-
-            var outPath = p.Get("out");
-            if (string.IsNullOrEmpty(outPath))
-                outPath = Path.Combine(Path.GetTempPath(), "hera_ui_capture.png");
-
-            var saved = new (Canvas c, RenderMode mode, Camera cam, float pd)[targets.Count];
-            GameObject camGO = null;
-            RenderTexture rt = null;
-            Texture2D tex = null;
-            try
-            {
-                camGO = new GameObject("HeraShotCam") { hideFlags = HideFlags.HideAndDontSave };
-                var cam = camGO.AddComponent<Camera>();
-                cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = bg;
-                cam.orthographic = true;
-                camGO.transform.position = new Vector3(0, 0, -100);
-
-                rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32);
-                cam.targetTexture = rt;
-
-                for (int i = 0; i < targets.Count; i++)
-                {
-                    var c = targets[i];
-                    saved[i] = (c, c.renderMode, c.worldCamera, c.planeDistance);
-                    c.renderMode = RenderMode.ScreenSpaceCamera;
-                    c.worldCamera = cam;
-                    c.planeDistance = 50f;
-                }
-
-                Canvas.ForceUpdateCanvases();
-                cam.Render();
-
-                var prevActive = RenderTexture.active;
-                RenderTexture.active = rt;
-                tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
-                tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
-                tex.Apply();
-                RenderTexture.active = prevActive;
-
-                var bytes = tex.EncodeToPNG();
-                File.WriteAllBytes(outPath, bytes);
-
-                return new SuccessResponse($"Captured {targets.Count} canvas(es) -> {outPath}", new
-                {
-                    path = outPath,
-                    width = w,
-                    height = h,
-                    bytes = bytes.Length,
-                    canvases = targets.Count,
-                });
-            }
-            catch (System.Exception e)
-            {
-                return new ErrorResponse("CAPTURE_FAILED", $"[Hera] I couldn't capture the UI: {e.Message}");
-            }
-            finally
-            {
-                for (int i = 0; i < saved.Length; i++)
-                {
-                    var s = saved[i];
-                    if (s.c == null) continue;
-                    s.c.renderMode = s.mode;
-                    s.c.worldCamera = s.cam;
-                    s.c.planeDistance = s.pd;
-                }
-                if (camGO != null) Object.DestroyImmediate(camGO);
-                if (rt != null) { rt.Release(); Object.DestroyImmediate(rt); }
-                if (tex != null) Object.DestroyImmediate(tex);
-            }
         }
 
         static void CopyIfPresent(ToolParams p, JObject spec, string key)

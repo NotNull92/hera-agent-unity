@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 
 namespace HeraAgent.Tools
@@ -23,7 +22,7 @@ namespace HeraAgent.Tools
             }
         }
 
-        private static object CaptureIsolated(ToolParams p, int width, int height, string outputPath)
+        private static object CaptureIsolated(ToolParams p, int width, int height, string outputPath, bool overwrite)
         {
             if (width <= 0 || height <= 0)
                 return new ErrorResponse("INVALID_PARAM", "'width' and 'height' must be positive.");
@@ -75,7 +74,7 @@ namespace HeraAgent.Tools
                     tiles.Add(RenderAngle(camera, lightObject.transform, bounds, angle, width, height, padding));
 
                 sheet = BuildSheet(tiles, width, height, background, out var sheetWidth, out var sheetHeight);
-                File.WriteAllBytes(outputPath, sheet.EncodeToPNG());
+                OutputFilePolicy.WriteAllBytes(outputPath, sheet.EncodeToPNG(), overwrite);
 
                 return new SuccessResponse($"Isolated screenshot saved to {outputPath}", new
                 {

@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -25,6 +24,12 @@ namespace HeraAgent.Tools
         "instance_id",
         Path = "/isolated",
         Expected = "target, path, or instance_id when isolated is true")]
+    [HeraSafetyRule(
+        "screenshot.overwrite",
+        "overwrite",
+        "true",
+        RiskClass = HeraRiskClass.Write,
+        RequiresConfirmation = true)]
     public static partial class EditorScreenshot
     {
         private const int DefaultWidth = 1920;
@@ -50,8 +55,11 @@ namespace HeraAgent.Tools
                 SchemaJson = "{\"type\":\"integer\",\"minimum\":1}")]
             public int Height { get; set; }
 
-            [ToolParameter("Output file path, absolute or relative to project root (default: Screenshots/screenshot.png)", Required = false)]
+            [ToolParameter("Output file path, absolute or relative to project root (default: unique PNG under Screenshots/)", Required = false)]
             public string OutputPath { get; set; }
+
+            [ToolParameter("Allow replacing an existing PNG under the project or system temp directory.", Required = false)]
+            public bool Overwrite { get; set; }
 
             [ToolParameter("Capture only one GameObject by --target, --path, or --instance_id.", Required = false)]
             public bool Isolated { get; set; }
@@ -93,7 +101,6 @@ namespace HeraAgent.Tools
             var view = p.Get("view", "scene").ToLowerInvariant();
             var width = p.GetInt("width", DefaultWidth).Value;
             var height = p.GetInt("height", DefaultHeight).Value;
-            var outputPath = ResolveOutputPath(p.Get("output_path"));
             var wantsIsolated = p.GetBool("isolated")
                 || p.GetRaw("target") != null
                 || p.GetRaw("path") != null
@@ -101,19 +108,25 @@ namespace HeraAgent.Tools
 
             try
             {
-                var dir = Path.GetDirectoryName(outputPath);
-                if (!string.IsNullOrEmpty(dir))
-                    Directory.CreateDirectory(dir);
+                var overwrite = p.GetBool("overwrite");
+                if (!OutputFilePolicy.TryResolvePng(
+                    p.Get("output_path"),
+                    "Screenshots/screenshot-" + Guid.NewGuid().ToString("N") + ".png",
+                    overwrite,
+                    out var outputPath,
+                    out var pathErrorCode,
+                    out var pathError))
+                    return new ErrorResponse(pathErrorCode, pathError);
 
                 if (wantsIsolated)
-                    return CaptureIsolated(p, width, height, outputPath);
+                    return CaptureIsolated(p, width, height, outputPath, overwrite);
 
                 switch (view)
                 {
                     case "scene":
-                        return CaptureSceneView(width, height, outputPath);
+                        return CaptureSceneView(width, height, outputPath, overwrite);
                     case "game":
-                        return CaptureGameView(width, height, outputPath);
+                        return CaptureGameView(width, height, outputPath, overwrite);
                     default:
                         return new ErrorResponse("INVALID_PARAM", $"Unknown view '{view}'. Valid: scene, game.");
                 }
@@ -124,25 +137,13 @@ namespace HeraAgent.Tools
             }
         }
 
-        private static string ResolveOutputPath(string userPath)
-        {
-            if (string.IsNullOrEmpty(userPath))
-                userPath = "Screenshots/screenshot.png";
-
-            if (Path.IsPathRooted(userPath))
-                return Path.GetFullPath(userPath);
-
-            var projectRoot = Path.GetDirectoryName(Application.dataPath);
-            return Path.GetFullPath(Path.Combine(projectRoot, userPath));
-        }
-
-        private static object CaptureSceneView(int width, int height, string outputPath)
+        private static object CaptureSceneView(int width, int height, string outputPath, bool overwrite)
         {
             var sceneView = SceneView.lastActiveSceneView;
             if (!sceneView)
                 return new ErrorResponse("SCENEVIEW_NOT_FOUND", "No active SceneView found.");
 
-            var sceneCapture = CaptureSceneViewWindow(sceneView, width, height, outputPath);
+            var sceneCapture = CaptureSceneViewWindow(sceneView, width, height, outputPath, overwrite);
             if (sceneCapture != null)
                 return sceneCapture;
 
@@ -153,12 +154,12 @@ namespace HeraAgent.Tools
             if (!CanUseDirectCameraRender())
                 return DirectCameraRenderUnavailable("SceneView");
 
-            return CaptureCamera(camera, width, height, outputPath);
+            return CaptureCamera(camera, width, height, outputPath, overwrite);
         }
 
-        private static object CaptureGameView(int width, int height, string outputPath)
+        private static object CaptureGameView(int width, int height, string outputPath, bool overwrite)
         {
-            var gameCapture = CaptureGameViewWindow(width, height, outputPath);
+            var gameCapture = CaptureGameViewWindow(width, height, outputPath, overwrite);
             if (gameCapture != null)
                 return gameCapture;
 
@@ -179,10 +180,10 @@ namespace HeraAgent.Tools
             if (!CanUseDirectCameraRender())
                 return DirectCameraRenderUnavailable("GameView");
 
-            return CaptureCamera(camera, width, height, outputPath);
+            return CaptureCamera(camera, width, height, outputPath, overwrite);
         }
 
-        private static object CaptureSceneViewWindow(SceneView sceneView, int width, int height, string outputPath)
+        private static object CaptureSceneViewWindow(SceneView sceneView, int width, int height, string outputPath, bool overwrite)
         {
             sceneView.Focus();
             sceneView.Repaint();
@@ -191,6 +192,7 @@ namespace HeraAgent.Tools
                 width,
                 height,
                 outputPath,
+                overwrite,
                 rt => TryInvokeInternalEditorCapture(
                     "CaptureSceneView",
                     new[] { typeof(SceneView), typeof(RenderTexture) },
@@ -203,6 +205,7 @@ namespace HeraAgent.Tools
                 width,
                 height,
                 outputPath,
+                overwrite,
                 rt => TryInvokeInternalEditorCapture(
                     "CaptureEditorWindow",
                     new[] { typeof(EditorWindow), typeof(RenderTexture) },
@@ -210,7 +213,7 @@ namespace HeraAgent.Tools
                     rt));
         }
 
-        private static object CaptureGameViewWindow(int width, int height, string outputPath)
+        private static object CaptureGameViewWindow(int width, int height, string outputPath, bool overwrite)
         {
             var gameViewType = Type.GetType("UnityEditor.GameView,UnityEditor");
             if (gameViewType == null) return null;
@@ -224,6 +227,7 @@ namespace HeraAgent.Tools
                 width,
                 height,
                 outputPath,
+                overwrite,
                 rt => TryInvokeInternalEditorCapture(
                     "CaptureEditorWindow",
                     new[] { typeof(EditorWindow), typeof(RenderTexture) },
@@ -252,6 +256,7 @@ namespace HeraAgent.Tools
             int width,
             int height,
             string outputPath,
+            bool overwrite,
             Func<RenderTexture, bool> capture)
         {
             var previousRT = RenderTexture.active;
@@ -269,7 +274,7 @@ namespace HeraAgent.Tools
                 tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 tex.Apply();
 
-                File.WriteAllBytes(outputPath, tex.EncodeToPNG());
+                OutputFilePolicy.WriteAllBytes(outputPath, tex.EncodeToPNG(), overwrite);
 
                 return new SuccessResponse($"Screenshot saved to {outputPath}",
                     new { path = outputPath, width, height });
@@ -299,7 +304,7 @@ namespace HeraAgent.Tools
                 $"[Hera] I couldn't capture {view} through the editor window, and direct Camera.Render fallback is disabled for URP because it can trigger Unity 6 RenderGraph errors.");
         }
 
-        private static object CaptureCamera(Camera camera, int width, int height, string outputPath)
+        private static object CaptureCamera(Camera camera, int width, int height, string outputPath, bool overwrite)
         {
             var previousRT = camera.targetTexture;
             RenderTexture rt = null;
@@ -316,7 +321,7 @@ namespace HeraAgent.Tools
                 tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 tex.Apply();
 
-                File.WriteAllBytes(outputPath, tex.EncodeToPNG());
+                OutputFilePolicy.WriteAllBytes(outputPath, tex.EncodeToPNG(), overwrite);
 
                 return new SuccessResponse($"Screenshot saved to {outputPath}",
                     new { path = outputPath, width, height });
