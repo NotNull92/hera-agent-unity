@@ -11,8 +11,8 @@ Tests, TUI, batch engine, and asset-config layer sit on top — but the engine t
 The production-default CLI path uses **no WebSockets, JSON-RPC, Python, or
 persistent server process**. Current `main` source includes an unreleased,
 experimental, default-off stdio MCP adapter in front of the shared execution
-core. The CLI remains the production default until the M17 evidence and decision
-gate passes.
+core. M17 completed with the decision to retain the CLI as the production
+default because the measured benefit gates did not justify MCP promotion.
 
 ```
 ┌─────────────────┐      HTTP POST      ┌─────────────────────┐

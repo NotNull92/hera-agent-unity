@@ -12,7 +12,8 @@ Final restored Connector: Git package `0.0.64`
 ## Result
 
 The Inventoria cross-verification is **PASS** for every safe live category
-executed below. Milestone M17 remains **BLOCKED** because section 28.3 requires
+executed below. At the time of this 2026-08-02 run, M17 was **BLOCKED** because
+section 28.3 requires
 the complete 14-case integration matrix to run in a marked disposable fixture.
 The retained earlier fixture run and this production-project-safe Inventoria
 run are complementary, but combining observations from two environments is
@@ -128,5 +129,13 @@ asset mutation, Play Mode, tests, package job, domain reload, invalid argument
 repair, missing target, destructive approve/deny, batch, and custom-tool
 reload. Retain its bounded transcript and cleanup proof. Response-loss
 exactly-once remains a separate M17 evidence category and must also stay
-retained. Then repeat the independent PASS B review. Until then M17 is BLOCKED
-and no default may change.
+retained. The required next step at that time was an independent PASS B review;
+no default change was authorized. The follow-up below records its completion.
+
+## Follow-up — 2026-08-03
+
+The disposable-fixture prerequisite above is now fulfilled by
+[`m17_fixture_6000.3.5f2_20260803.md`](m17_fixture_6000.3.5f2_20260803.md),
+which retains all fourteen section 28.3 scenarios and cleanup proof from one
+marked Unity `6000.3.5f2` fixture. The required independent PASS B review then
+returned `APPROVE` with no findings, closing M17 as PASS without promoting MCP.

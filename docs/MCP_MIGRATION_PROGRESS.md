@@ -2,8 +2,8 @@
 
 This ledger records milestone evidence for the migration specified by
 [`CODEX_MCP_MIGRATION_IMPLEMENTATION.md`](CODEX_MCP_MIGRATION_IMPLEMENTATION.md).
-The existing CLI remains the production default until the M17 completion and
-benchmark gates pass.
+M17 completed the migration and retained the existing CLI as the production
+default because the measured benefit gates did not justify MCP promotion.
 
 ## Status Summary
 
@@ -25,8 +25,8 @@ benchmark gates pass.
 | M13 Catalog invalidation and list-changed | PASS |
 | M14 Large result resources | PASS |
 | M15 Telemetry and benchmark harness | PASS |
-| M16 Documentation, compatibility, and release hardening | PENDING |
-| M17 Cross-verification and default decision | BLOCKED |
+| M16 Documentation, compatibility, and release hardening | PASS |
+| M17 Cross-verification and default decision | PASS |
 
 ## M0 Migration Authority, Rules, and Progress Ledger
 
@@ -1406,17 +1406,19 @@ benchmark gates pass.
 
 ## M17 Cross-verification and default decision
 
-- **Status:** BLOCKED — partial cross-verification only; **do not promote MCP**
+- **Status:** PASS — independent PASS B `APPROVE`; **do not promote MCP**
 - **M17-start commit baseline:** `9080f94`; the follow-up Inventoria evidence
   ran from source revision `2ea5c38` after the initial BLOCKED record landed.
-- **Date:** 2026-08-02
-- **Implemented scope:** Attempted the ten M17 evidence categories, measured
+- **Date:** 2026-08-03
+- **Implemented scope:** Completed the ten M17 evidence categories, measured
   the A-to-E smoke run and Profile/Full definition size, and completed a second
   production-safe Inventoria pass with bounded evidence in
-  `docs/benchmarks/mcp/m17_inventoria_20260802.md`. Nine categories now have
-  retained PASS evidence. The complete section 28.3 matrix still has not run in
-  one marked disposable fixture, so M17 remains BLOCKED. No runtime
-  implementation changed.
+  `docs/benchmarks/mcp/m17_inventoria_20260802.md`. A replacement marked
+  disposable Unity `6000.3.5f2` fixture then completed all fourteen section
+  28.3 scenarios with retained transcript and byte-for-byte cleanup proof in
+  `docs/benchmarks/mcp/m17_fixture_6000.3.5f2_20260803.md`. All ten categories
+  now have retained PASS A evidence. The required independent PASS B audit
+  returned `APPROVE` with no findings. No runtime implementation changed.
 - **Measured decision:**
   - Typed contract A-versus-B recorded zero invalid arguments, 100% first and
     final success, and zero unsafe mutations on both surfaces. The relative
@@ -1462,6 +1464,15 @@ benchmark gates pass.
     cover the full required matrix: fixture tests, package job,
     invalid-argument repair, missing target, destructive approve/deny, and
     batch remain unverified as fixture scenarios.
+  - A replacement marked disposable fixture at source `006b8e7` completed the
+    entire fourteen-case matrix in one Unity `6000.3.5f2` project. The real
+    EditMode CLI returned one pass and zero failures with a 300000 ms wait
+    budget; an earlier 300 ms diagnostic timeout was correctly rejected as
+    operator error, not a Connector defect. Package add/remove, reload,
+    approval denial and single-use approval, repaired batch, and strict custom
+    tool lifecycle all passed. Final scene, manifest, and package-lock hashes
+    matched their baselines, the catalog returned to 31 tools, and console
+    errors and fixture assemblies were zero.
   - A source-built MCP process passed a live official Go SDK connection to the
     Inventoria Editor: server identity `hera-agent-unity`, eight core Profile
     tools, and a successful clean `GameScene` result. The focused MCP
@@ -1482,13 +1493,9 @@ benchmark gates pass.
     elapsed times were A 699 ms, B 659 ms, C 153 ms, D 280 ms, and E 192 ms;
     aggregate p50 was 280 ms and p95 was 699 ms.
 - **Known limitations:**
-  - The bounded Inventoria transcript now retains Connector compilation,
-    Editor suites, MCP conformance, approval execution, response-loss replay,
-    catalog reload, and cleanup evidence. It does not replace the required
-    complete disposable-fixture suite: the earlier fixture and later
-    Inventoria runs cover complementary cases in different environments.
-    Section 28.3 requires the entire matrix in a marked disposable fixture, so
-    the ten-category M17 PASS gate is still incomplete.
+  - Independent PASS B audited evidence validity, cleanup, rule drift,
+    rollback, and the no-default-promotion constraint from retained artifacts
+    rather than re-executing the live Unity scenarios.
   - A-to-E is one deterministic read-only task per surface with no model calls.
     Model tokens and billed cost are zero, so it is transport smoke evidence,
     not statistical model-quality or economic evidence. Tool-result token
@@ -1510,11 +1517,13 @@ benchmark gates pass.
   - `CLAUDE.md` records the completed M17 decision lock. Generated agent guides
     remain unchanged because the canonical `AGENTS.md` runtime instructions did
     not change.
-- **Final decision:** M17 is BLOCKED, not PASS. The incomplete disposable
-  integration evidence and unmet measured benefit gates cannot justify MCP
-  primary status, so Typed CLI and the existing CLI remain primary and MCP
-  remains experimental/default-off.
-- **Next prerequisite:** Run the complete section 28.3 matrix in one marked
-  disposable fixture and retain its bounded transcript and cleanup proof before
-  another independent PASS B review. No later migration milestone, default
-  change, package publication, or release is implicitly authorized.
+- **Independent PASS B:** `APPROVE`, no findings. The reviewer verified all ten
+  evidence categories, all fourteen fixture scenarios, cleanup hashes, timeout
+  semantics, absence of secrets and machine paths, guide consistency,
+  rollback, and absence of automatic MCP promotion. Residual risk is limited
+  to auditing retained Unity artifacts rather than re-executing the live run.
+- **Final decision:** M17 is PASS. The measured Typed and MCP-primary benefit
+  gates remain unmet and cannot justify MCP primary status, so Typed CLI and
+  the existing CLI remain primary and MCP remains experimental/default-off.
+- **Next prerequisite:** None for this migration. No default change, package
+  publication, release, or later milestone is implicitly authorized.

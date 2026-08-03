@@ -1,0 +1,18 @@
+M17 disposable fixture restoration proof
+date=2026-08-03
+unity=6000.3.5f2
+connector=0.0.75
+source=006b8e7282afa971c05c64477d7983986b7f9117
+
+FINAL_EDITOR state=ready scene=SampleScene dirty=false root_count=2 tools=31 console_errors=0
+FINAL_ASSEMBLIES HeraM17Fixture=0 HeraAgent.Editor.Tests=0
+FINAL_TARGETS Assets/__HeraM17FixtureCode=absent Assets/__HeraM17FixtureArtifacts=absent Assets/HeraGenerated=absent
+
+MANIFEST current=c826d7a7852621736dadc46b4bc17f2f4917254e2eba02cf1dd9ce6399f5854c baseline=c826d7a7852621736dadc46b4bc17f2f4917254e2eba02cf1dd9ce6399f5854 match=true
+PACKAGE_LOCK current=3dac6fdef1abaaebbe4bd85cdcd9a0afd113c46384d0c166f025a760750764da baseline=3dac6fdef1abaaebbe4bd85cdcd9a0afd113c46384d0c166f025a760750764da match=true
+SCENE current=387d8216a517be775b6ecc2ab55b97ece687c3372322da2ba027a96908014912 baseline=387d8216a517be775b6ecc2ab55b97ece687c3372322da2ba027a96908014912 match=true
+
+REPOSITORY_GATES gofmt=PASS vet=PASS build=PASS test=PASS lint=PASS guide_sync=PASS diff_check=PASS
+LINT issues=0
+APPROVAL_TOKENS retained=false
+RESULT=PASS

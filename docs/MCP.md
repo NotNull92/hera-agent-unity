@@ -199,6 +199,6 @@ The current-source MCP adapter is unreleased, experimental, default-off,
 stdio-only, and limited to one selected local Editor per process. It does not
 replace the localhost Connector, expose Unity over the network, bypass
 Connector validation, or make arbitrary code safe.
-The CLI remains the production default until the separate M17 evidence and
-default-decision gate is completed. No benchmark in this repository currently
-justifies promoting MCP to the default.
+M17 completed with the decision to retain the CLI as the production default.
+No benchmark in this repository currently justifies promoting MCP to the
+default.

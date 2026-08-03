@@ -1,0 +1,16 @@
+{"evidence":"fixture_identity","schema":"hera.mcp-benchmark-fixture/1","disposable":true,"unity":"6000.3.5f2","connector":"0.0.75","source":"006b8e7282afa971c05c64477d7983986b7f9117","result":"PASS"}
+{"scenario":"query","scene":"SampleScene","dirty":false,"root_count":2,"result":"PASS"}
+{"scenario":"gameobject_creation","target":"/__HeraM17FixtureRoot","position":[17,0,0],"reread":true,"result":"PASS"}
+{"scenario":"component_mutation","target":"/__HeraM17FixtureRoot","component":"BoxCollider","property":"m_IsTrigger","value":true,"reread":true,"result":"PASS"}
+{"scenario":"ui_creation","backend":"uitk","root":"/__HeraM17Canvas","assets":["__HeraM17Canvas.uxml","__HeraM17Canvas.uss","__HeraM17CanvasPanelSettings.asset"],"result":"PASS"}
+{"scenario":"asset_mutation","asset":"Assets/__HeraM17FixtureArtifacts/VolumeCopy.asset","created":true,"reread":true,"result":"PASS"}
+{"scenario":"play_mode","entered":"playing","exited":"ready","console_errors":0,"result":"PASS"}
+{"scenario":"tests","mode":"EditMode","filter":"HeraM17Fixture.Tests.HeraM17FixtureSmokeTests","total":1,"passed":1,"failed":0,"skipped":0,"timeout_ms":300000,"result":"PASS"}
+{"scenario":"package_job","package":"com.unity.ai.navigation","version":"2.0.14","add":"success","remove":"success","remaining":0,"result":"PASS"}
+{"scenario":"domain_reload","project_target_preserved":true,"ports_observed":[8094,8091,8094],"pid_stable":true,"result":"PASS"}
+{"scenario":"invalid_argument_repair","tool":"manage_gameobject","invalid_position_length":2,"rejected_before_unity":true,"repair":"17,0,0","result":"PASS"}
+{"scenario":"missing_target","target":"/__HeraM17DefinitelyMissing","code":"TARGET_NOT_FOUND","result":"PASS"}
+{"scenario":"destructive_approval","denied_code":"APPROVAL_REQUIRED","denied_completed":0,"target_preserved":true,"approved_deleted_exact_target":true,"post_code":"TARGET_NOT_FOUND","result":"PASS"}
+{"scenario":"batch","read_items_completed":2,"invalid_include_ids_rejected":true,"repair":"ids","destructive_denied_completed":0,"result":"PASS"}
+{"scenario":"custom_tool_reload","tool":"m17_fixture_probe","catalog_before":31,"catalog_added":32,"value":17,"catalog_restored":31,"result":"PASS"}
+{"evidence":"cleanup","scene":"SampleScene","dirty":false,"root_count":2,"tools":31,"fixture_test_assemblies":0,"console_errors":0,"manifest_match":true,"lock_match":true,"scene_match":true,"result":"PASS"}

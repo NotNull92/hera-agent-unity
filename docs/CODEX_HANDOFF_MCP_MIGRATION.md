@@ -2,13 +2,14 @@
 
 ## Goal
 
-Preserve the completed M0-M16 migration and the truthful M17 BLOCKED record.
-Future work must keep the locked architecture and must not promote MCP without
-complete measured evidence plus an explicit user decision.
+Preserve the completed M0-M17 migration and the M17 decision to retain the CLI
+as the production default. Future work must keep the locked architecture and
+must not promote MCP without new measured evidence plus an explicit user
+decision.
 
 ## Current state
 
-- M0 through M16 are recorded as `PASS`; M17 is `BLOCKED` in
+- M0 through M17 are recorded as `PASS` in
   `docs/MCP_MIGRATION_PROGRESS.md`.
 - `origin/main` baseline before M17 documentation is `9080f94`.
 - The Go CLI and localhost HTTP Unity Connector remain the execution core.
@@ -16,16 +17,18 @@ complete measured evidence plus an explicit user decision.
   It supports native Profile, Compact, Full-safe, explicitly permitted
   Advanced, approval/MRTR, operation-ledger replay, negotiated Tasks with
   blocking fallback, catalog invalidation, and bounded large-result resources.
-- M17 now has bounded Inventoria evidence for nine of its ten required
-  categories. The Profile-versus-Full definition-size subgate measured a 72.5%
+- M17 PASS A now has bounded evidence for all ten required categories. The
+  complete section 28.3 fourteen-case matrix passed in one marked disposable
+  Unity `6000.3.5f2` fixture and was restored byte-for-byte. The
+  Profile-versus-Full definition-size subgate measured a 72.5%
   estimated token reduction, but the Typed benefit and MCP-primary gates were
-  not met by the zero-model-call ceiling-effect smoke run. The complete section
-  28.3 matrix still has not run in one marked disposable fixture.
+  not met by the zero-model-call ceiling-effect smoke run. The required
+  independent PASS B evidence audit returned `APPROVE` with no findings.
 - Typed CLI and the existing CLI therefore remain the production default. MCP
   remains experimental and default-off. No runtime default or Connector
   architecture changed.
 
-## M17 partial verification summary
+## M17 verification summary
 
 - Full Go format, vet, build, test, lint, and guide-sync gates pass.
 - Repository Connector `0.0.74` compiled in Inventoria on Unity `6000.3.5f2`.
@@ -46,8 +49,16 @@ complete measured evidence plus an explicit user decision.
   wrong-tool, invalid-argument, duplicate, unsafe, reload-recovery, and human
   intervention events. It makes no model calls and is not statistical accuracy
   or billing evidence. The raw benchmark records, definition-size output, and
-  bounded Inventoria report are retained. M17 cannot be marked PASS until the
-  complete integration matrix runs in one disposable fixture.
+  bounded Inventoria report are retained.
+- The marked `M17Fixture6000.3.5f2` project completed query, GameObject,
+  component, UI, asset, Play Mode, tests, package job, domain reload,
+  invalid-argument repair, missing-target, destructive approval, batch, and
+  custom-tool reload scenarios. Its final scene, package manifest, and package
+  lock matched their pre-run hashes; console errors and temporary assemblies
+  were zero. The retained report is
+  `docs/benchmarks/mcp/m17_fixture_6000.3.5f2_20260803.md`.
+- Independent PASS B audited the new fixture evidence and final repository
+  state, reported no findings, and recommended `APPROVE`.
 
 ## Operational follow-up
 
@@ -61,6 +72,11 @@ Inventoria's `Library` for M17 recovery.
 
 The marked M17 fixture and temporary Connector copies were moved to the Recycle
 Bin. They are recoverable and are not repository or Inventoria project state.
+
+The replacement marked fixture `M17Fixture6000.3.5f2` is currently restored to
+its clean baseline with the Git Connector dependency, clean `SampleScene`, and
+no M17 temporary assets. Its Editor lifecycle remains user-controlled; do not
+mutate Inventoria for later audits.
 
 ## Locked decisions
 
@@ -81,6 +97,7 @@ Bin. They are recoverable and are not repository or Inventoria project state.
 - `docs/MCP_MIGRATION_PROGRESS.md`
 - `docs/benchmarks/mcp/6000.3.5f2.md`
 - `docs/benchmarks/mcp/m17_inventoria_20260802.md`
+- `docs/benchmarks/mcp/m17_fixture_6000.3.5f2_20260803.md`
 - `CLAUDE.md`
 - `AGENTS.md`
 
