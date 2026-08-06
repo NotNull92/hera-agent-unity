@@ -81,6 +81,25 @@ adapter for intentionally configured MCP clients. See
 
 ## What's New
 
+### Current `main` (unreleased) - multi-Editor policy locks and bounded agent context
+
+The current source keeps Hera's automatic multi-Editor workflow instead of
+adopting a blanket "more than one Editor means stop" rule. The first target is
+chosen deliberately, then its normalized full project path stays pinned while
+ports move during domain reloads or Editor restarts.
+
+| Source update | What it means |
+|:---|:---|
+| No-selector order is regression-locked | Hera still prefers the Unity project containing the current working directory, then the most recent live heartbeat. A newer competing Editor cannot steal the request after selection. |
+| Compact project rules | `doctor --agent-rules --compact` emits the small always-loaded operating contract. Its reviewed default baseline is **2,277 UTF-8 bytes**; the full Quick Rules and Pitfalls guide remains available on demand. |
+| Catalog admission gate | `tools/catalog-payload-report` can compare a live built-in catalog with the reviewed baseline. `--fail-on-change` and `--fail-on-growth` mark review-required changes with tool exit code `3`; `go run` surfaces that as `exit status 3`. Useful growth is reviewed, not forbidden. |
+| Production-surface package evidence | The disposable package-test flow measures the production catalog before enabling test fixtures, then runs the isolated EditMode suite and restores the manifest byte-for-byte. |
+
+A live Unity `6000.3.5f2` comparison matched the [reviewed baseline](docs/metrics/catalog-payload-baseline.json) exactly:
+**31 tools, 75 actions, and 185,339 normalized catalog bytes**, with zero
+profile deltas. These source changes are not a published CLI release yet; the
+latest published release remains **v0.1.3**.
+
 ### v0.1.3 - package-backed MCP discovery
 
 This follow-up patch publishes the existing default-off stdio MCP adapter
@@ -390,6 +409,7 @@ Here are the commands most agents use first.
 |:---|:---|
 | `status` | Shows which Unity Editor is connected. |
 | `doctor --json` | Checks install, PATH, and Unity connection. |
+| `doctor --agent-rules --compact` | Emits the small always-loaded rules for targeting, safety, approval, and verification. |
 | `list --compact` | Lists tools with a small response. |
 | `call <tool> --json '{...}'` | Validates a strict live tool contract, then invokes it. |
 | `console --type error` | Reads real Unity errors. |
@@ -750,7 +770,12 @@ Fast setup for a small always-loaded shared file:
 hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 ```
 
-The compact form keeps bootstrap, multi-Editor targeting, safety, approval, and verification rules in the project context. Run `doctor --agent-rules` without `--compact` only when you want the full Quick Rules and Pitfalls guide embedded directly.
+The compact form keeps bootstrap, multi-Editor targeting, safety, approval,
+and verification rules in the project context. With default guidance settings,
+its reviewed baseline is **2,277 UTF-8 bytes**; a test requires an explicit
+baseline update if that always-loaded surface changes. Run
+`doctor --agent-rules` without `--compact` only when you want the full Quick
+Rules and Pitfalls guide embedded directly.
 
 Cursor setup:
 
@@ -809,8 +834,9 @@ No.
 
 ### Which Unity Editor does it talk to?
 
-Each CLI invocation or MCP process targets one Unity Editor. If several Editor
-heartbeats are present, prefer `--project` with the full project path. Ports are
+Hera does not abort merely because several Editors are open. Each CLI
+invocation or MCP process targets one Unity Editor. If several Editor heartbeats
+are present, prefer `--project` with the full project path. Ports are
 temporary endpoints chosen from `8090`–`8099`; they may change after an Editor
 restart or domain reload. Exact normalized project paths win, a partial project
 match must be unique, and `--project` plus `--port` must identify the same
@@ -818,6 +844,15 @@ Editor. Without a selector Hera prefers a project matching the current working
 directory, then the most recent live heartbeat. After a transport failure or
 request timeout Hera reads fresh heartbeat state before any safe retry, so it
 does not silently follow a port that another project has claimed.
+
+### How does Hera stop the tool surface from growing silently?
+
+Maintainers export the live built-in catalog from a disposable blank Unity
+project and compare it with `docs/metrics/catalog-payload-baseline.json`. The
+report shows tool, action, description, and per-profile byte deltas. A changed
+surface requires the failure being solved, contract and safety updates,
+regression evidence, and an intentionally reviewed baseline update. See
+[the catalog payload gate](tools/catalog-payload-report/README.md).
 
 ### What should I do when it cannot connect?
 

@@ -81,6 +81,24 @@ Python 서버는 필요 없습니다. production 기본값인 CLI 경로에는 M
 
 ## 새로운 점
 
+### 현재 `main` (미배포) - 다중 Editor 정책 고정과 작은 상시 컨텍스트
+
+현재 소스는 "Editor가 여러 개면 무조건 중단"하는 규칙을 가져오지 않고 Hera의
+자동 다중 Editor 흐름을 유지합니다. 첫 대상을 정한 뒤에는 domain reload나 Editor
+재시작으로 포트가 바뀌어도 정규화된 전체 프로젝트 경로를 신분증으로 고정합니다.
+
+| 소스 업데이트 | 쉬운 뜻 |
+|:---|:---|
+| 선택자 없는 순서를 회귀 테스트로 고정 | 현재 작업 디렉터리를 포함하는 Unity 프로젝트를 먼저 고르고, 없으면 가장 최근의 살아 있는 heartbeat를 고릅니다. 선택한 뒤에는 더 최근의 경쟁 Editor가 요청을 가져갈 수 없습니다. |
+| Compact 프로젝트 규칙 | `doctor --agent-rules --compact`가 항상 읽히는 작은 운영 규칙만 출력합니다. 기본 설정의 검토된 기준은 **UTF-8 2,277바이트**이며, Quick Rules와 Pitfalls 전체는 필요할 때만 읽습니다. |
+| Catalog 변경 심사 | `tools/catalog-payload-report`가 라이브 built-in catalog와 검토된 기준을 비교합니다. `--fail-on-change`와 `--fail-on-growth`는 리뷰가 필요한 변경을 도구 exit code `3`으로 표시하며, `go run`은 이를 `exit status 3`으로 보여 줍니다. 유용한 기능 추가를 막는 것이 아니라 근거 없는 비대화를 막습니다. |
+| 제품용 Catalog를 기준으로 하는 패키지 검증 | 폐기 가능한 검증 프로젝트에서 test fixture를 켜기 전에 제품용 catalog를 측정합니다. 그다음 격리된 EditMode 테스트를 실행하고 manifest를 바이트 단위로 원상 복구합니다. |
+
+Unity `6000.3.5f2` 라이브 비교에서도 [검토된 기준](docs/metrics/catalog-payload-baseline.json)과 정확히 일치했습니다:
+**Tool 31개, Action 75개, 정규화된 catalog 185,339바이트**이며,
+Profile별 차이도 0입니다. 이 변경은 아직 공개 CLI 릴리스가 아니며, 최신 공개
+릴리스는 계속 **v0.1.3**입니다.
+
 ### v0.1.3 - 패키지 기반 MCP 탐색
 
 이 후속 패치는 기존의 default-off stdio MCP adapter를 공식 MCP Registry에
@@ -385,6 +403,7 @@ AI가 가장 자주 쓰는 명령어입니다.
 |:---|:---|
 | `status` | 어떤 Unity Editor에 연결됐는지 보여 줍니다. |
 | `doctor --json` | 설치, PATH, Unity 연결을 검사합니다. |
+| `doctor --agent-rules --compact` | 대상 선택, 안전, 승인, 검증에 필요한 작은 상시 규칙을 출력합니다. |
 | `list --compact` | 작은 응답으로 도구 목록을 봅니다. |
 | `call <tool> --json '{...}'` | live strict tool contract로 검증한 뒤 호출합니다. |
 | `console --type error` | Unity의 실제 에러를 읽습니다. |
@@ -705,7 +724,10 @@ npx skills add NotNull92/hera-agent-unity --skill hera-agent-unity --agent codex
 hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 ```
 
-compact 출력에는 부트스트랩, 다중 Editor 선택, 안전·승인·검증 규칙만 들어갑니다. Quick Rules와 Pitfalls 전체를 프로젝트 규칙에 직접 넣어야 할 때만 `--compact` 없이 실행합니다.
+compact 출력에는 부트스트랩, 다중 Editor 선택, 안전·승인·검증 규칙만
+들어갑니다. 기본 설정에서 검토된 기준은 **UTF-8 2,277바이트**이며, 이 상시 규칙
+표면이 바뀌면 테스트가 명시적인 기준 갱신을 요구합니다. Quick Rules와 Pitfalls
+전체를 프로젝트 규칙에 직접 넣어야 할 때만 `--compact` 없이 실행합니다.
 
 Cursor용:
 
@@ -764,15 +786,25 @@ adapter도 포함되지만 기본값은 아닙니다. CLI와 localhost Connector
 
 ### 어떤 Unity Editor에 연결되나요?
 
-각 CLI 호출이나 MCP 프로세스는 Unity Editor 하나를 대상으로 합니다. 여러
-Editor heartbeat가 있으면 정규화된 전체 프로젝트 경로를 `--project`에 지정하는
-방식을 우선하세요. 포트는 `8090`–`8099`에서 선택되는 임시 연결점이라 Editor
-재시작이나 domain reload 뒤에 바뀔 수 있습니다. 정확한 프로젝트 경로가 우선하고,
-부분 경로는 하나의 프로젝트만 식별할 때만 허용되며, `--project`와 `--port`를
-함께 쓰면 둘 다 같은 Editor를 가리켜야 합니다. 선택자가 없으면 현재 작업
-디렉터리와 일치하는 프로젝트를 먼저, 그다음 가장 최근의 살아 있는 heartbeat를
-선택합니다. 응답 손실이나 timeout 뒤에는 heartbeat 소유권을 다시 확인해 다른
-프로젝트가 재사용한 포트로 mutation을 재전송하지 않습니다.
+Editor가 여러 개 열려 있다는 이유만으로 Hera가 중단되지는 않습니다. 각 CLI
+호출이나 MCP 프로세스는 Unity Editor 하나를 대상으로 합니다. 여러 Editor
+heartbeat가 있으면 정규화된 전체 프로젝트 경로를 `--project`에 지정하는 방식을
+우선하세요. 포트는 `8090`–`8099`에서 선택되는 임시 연결점이라 Editor 재시작이나
+domain reload 뒤에 바뀔 수 있습니다. 정확한 프로젝트 경로가 우선하고, 부분
+경로는 하나의 프로젝트만 식별할 때만 허용되며, `--project`와 `--port`를 함께
+쓰면 둘 다 같은 Editor를 가리켜야 합니다. 선택자가 없으면 현재 작업 디렉터리와
+일치하는 프로젝트를 먼저, 그다음 가장 최근의 살아 있는 heartbeat를 선택합니다.
+응답 손실이나 timeout 뒤에는 heartbeat 소유권을 다시 확인해 다른 프로젝트가
+재사용한 포트로 변경 명령을 보내지 않습니다.
+
+### 도구 표면이 몰래 비대해지는 것은 어떻게 막나요?
+
+유지보수자는 폐기 가능한 빈 Unity 프로젝트에서 live built-in catalog를 내보내고
+`docs/metrics/catalog-payload-baseline.json`과 비교합니다. 보고서는 Tool·Action·설명과
+Profile별 바이트 차이를 보여 줍니다. 표면이 바뀌면 해결하려는 실패, contract와
+safety 변경, 회귀 증거, 의도적으로 검토한 baseline 갱신을 같은 변경에 남겨야
+합니다. 자세한 사용법은 [catalog payload gate](tools/catalog-payload-report/README.md)에
+있습니다.
 
 ### 연결이 안 되면 어떻게 하나요?
 
@@ -786,9 +818,8 @@ hera-agent-unity doctor --json
 
 ### 자세한 문서는 어디에 있나요?
 
-- [docs/MCP.md](docs/MCP.md)
-
 - [docs/COMMANDS.md](docs/COMMANDS.md)
+- [docs/MCP.md](docs/MCP.md)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - [docs/CSHARP_CONNECTOR.md](docs/CSHARP_CONNECTOR.md)
 - [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
