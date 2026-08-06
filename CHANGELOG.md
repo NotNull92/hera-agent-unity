@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-08-06
+
 ### Added (CLI and development gates)
 
 - Added `doctor --agent-rules --compact`, a reviewed 2,277-byte default-mode always-loaded

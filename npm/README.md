@@ -1,6 +1,6 @@
 # hera-agent-unity
 
-Install CLI **v0.1.3**, the low-token command-line client that lets AI coding agents control and verify a live Unity Editor:
+Install CLI **v0.1.4**, the low-token command-line client that lets AI coding agents control and verify a live Unity Editor:
 
 ```bash
 npm install --global hera-agent-unity

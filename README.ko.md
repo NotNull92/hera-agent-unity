@@ -81,13 +81,13 @@ Python 서버는 필요 없습니다. production 기본값인 CLI 경로에는 M
 
 ## 새로운 점
 
-### 현재 `main` (미배포) - 다중 Editor 정책 고정과 작은 상시 컨텍스트
+### v0.1.4 - 다중 Editor 정책 고정과 작은 상시 컨텍스트
 
-현재 소스는 "Editor가 여러 개면 무조건 중단"하는 규칙을 가져오지 않고 Hera의
+이번 릴리스는 "Editor가 여러 개면 무조건 중단"하는 규칙을 가져오지 않고 Hera의
 자동 다중 Editor 흐름을 유지합니다. 첫 대상을 정한 뒤에는 domain reload나 Editor
 재시작으로 포트가 바뀌어도 정규화된 전체 프로젝트 경로를 신분증으로 고정합니다.
 
-| 소스 업데이트 | 쉬운 뜻 |
+| 릴리스 변경 | 쉬운 뜻 |
 |:---|:---|
 | 선택자 없는 순서를 회귀 테스트로 고정 | 현재 작업 디렉터리를 포함하는 Unity 프로젝트를 먼저 고르고, 없으면 가장 최근의 살아 있는 heartbeat를 고릅니다. 선택한 뒤에는 더 최근의 경쟁 Editor가 요청을 가져갈 수 없습니다. |
 | Compact 프로젝트 규칙 | `doctor --agent-rules --compact`가 항상 읽히는 작은 운영 규칙만 출력합니다. 기본 설정의 검토된 기준은 **UTF-8 2,277바이트**이며, Quick Rules와 Pitfalls 전체는 필요할 때만 읽습니다. |
@@ -96,8 +96,8 @@ Python 서버는 필요 없습니다. production 기본값인 CLI 경로에는 M
 
 Unity `6000.3.5f2` 라이브 비교에서도 [검토된 기준](docs/metrics/catalog-payload-baseline.json)과 정확히 일치했습니다:
 **Tool 31개, Action 75개, 정규화된 catalog 185,339바이트**이며,
-Profile별 차이도 0입니다. 이 변경은 아직 공개 CLI 릴리스가 아니며, 최신 공개
-릴리스는 계속 **v0.1.3**입니다.
+Profile별 차이도 0입니다. 이번 릴리스는 CLI, npm wrapper, MCP package metadata를
+0.1.4로 올리며 Unity Connector는 **0.0.80**을 유지합니다.
 
 ### v0.1.3 - 패키지 기반 MCP 탐색
 
@@ -242,19 +242,19 @@ UI Toolkit 경로를 추가했습니다.
 
 [UI 시스템 선택하기 →](#ui-시스템) · [UI 문서 계약 보기 →](docs/UI_DOC_IR.md)
 
-### 최신 CLI 릴리스 - v0.1.3
+### 최신 CLI 릴리스 - v0.1.4
 
-공개된 최신 CLI 릴리스는 **v0.1.3**입니다(2026년 8월 4일). 이 릴리스의
-Unity 패키지는 **Connector 0.0.80**입니다. CLI와 Connector 버전은 의도적으로
-분리되어 있습니다.
+공개된 최신 CLI 릴리스는 **v0.1.4**입니다(2026년 8월 6일). 이 릴리스의
+Unity 패키지는 계속 **Connector 0.0.80**입니다. CLI와 Connector 버전은
+의도적으로 분리되어 있습니다.
 
 | 현재 하이라이트 | 쉬운 뜻 |
 |:---|:---|
-| **버전과 catalog가 맞는 요청만 실행** | 실행 프로토콜과 live catalog가 맞지 않으면 Unity를 변경하기 전에 중단합니다. |
-| **더 작은 Compact 조회** | 필요한 Action 하나만 설명할 수 있어 관계없는 Action schema를 반복해서 보내지 않습니다. |
-| **복구 경계 강화** | ledger, Settings, config lock, timeout, MCP lifecycle이 결과 불명 상태에서 추측하지 않습니다. |
-| **반복 가능한 릴리스 증거** | Unity 5개 compile bucket과 격리된 Connector NUnit gate를 자동 검증하고 fixture manifest를 원상복구합니다. |
-| **MCP Registry 탐색** | npm 패키지가 검증 가능한 MCP 소유권 메타데이터와 재현 가능한 로컬 stdio 실행 계약을 포함합니다. |
+| **프로젝트 안전 다중 Editor 정책** | 선택자가 없으면 현재 프로젝트와 최신 heartbeat 순으로 고르고, 선택한 전체 프로젝트 경로를 포트 변경 뒤에도 유지합니다. |
+| **2,277바이트 Compact 프로젝트 규칙** | `doctor --agent-rules --compact`가 대상 선택, 안전, 승인, 검증 규칙만 항상 읽히게 하고 전체 가이드는 필요할 때 불러옵니다. |
+| **Catalog 변경 근거** | Tool·Action·설명·Profile payload 변화를 검토된 live baseline과 비교한 뒤 릴리스합니다. |
+| **제품 표면 패키지 게이트** | Test fixture를 켜기 전에 제품용 catalog를 측정하고, 검증 뒤 폐기 가능한 manifest를 바이트 단위로 복원합니다. |
+| **MCP Registry 연속성** | npm과 MCP metadata는 0.1.4로 올라가지만 default-off stdio adapter와 Connector 0.0.80은 그대로 유지합니다. |
 
 릴리스 호환성 매트릭스:
 

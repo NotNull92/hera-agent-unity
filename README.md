@@ -81,14 +81,14 @@ adapter for intentionally configured MCP clients. See
 
 ## What's New
 
-### Current `main` (unreleased) - multi-Editor policy locks and bounded agent context
+### v0.1.4 - multi-Editor policy locks and bounded agent context
 
-The current source keeps Hera's automatic multi-Editor workflow instead of
+This release keeps Hera's automatic multi-Editor workflow instead of
 adopting a blanket "more than one Editor means stop" rule. The first target is
 chosen deliberately, then its normalized full project path stays pinned while
 ports move during domain reloads or Editor restarts.
 
-| Source update | What it means |
+| Release change | What it means |
 |:---|:---|
 | No-selector order is regression-locked | Hera still prefers the Unity project containing the current working directory, then the most recent live heartbeat. A newer competing Editor cannot steal the request after selection. |
 | Compact project rules | `doctor --agent-rules --compact` emits the small always-loaded operating contract. Its reviewed default baseline is **2,277 UTF-8 bytes**; the full Quick Rules and Pitfalls guide remains available on demand. |
@@ -97,8 +97,8 @@ ports move during domain reloads or Editor restarts.
 
 A live Unity `6000.3.5f2` comparison matched the [reviewed baseline](docs/metrics/catalog-payload-baseline.json) exactly:
 **31 tools, 75 actions, and 185,339 normalized catalog bytes**, with zero
-profile deltas. These source changes are not a published CLI release yet; the
-latest published release remains **v0.1.3**.
+profile deltas. This release updates the CLI, npm wrapper, and MCP package
+metadata while keeping the Unity Connector at **0.0.80**.
 
 ### v0.1.3 - package-backed MCP discovery
 
@@ -248,19 +248,19 @@ agent to guess version-specific APIs.
 
 [Choose a UI system →](#ui-systems) · [Read the UI document contract →](docs/UI_DOC_IR.md)
 
-### Latest CLI release - v0.1.3
+### Latest CLI release - v0.1.4
 
-The latest published CLI release is **v0.1.3** (August 4, 2026). Its released
-Unity package is **Connector 0.0.80**. CLI and connector versions are
+The latest published CLI release is **v0.1.4** (August 6, 2026). Its released
+Unity package remains **Connector 0.0.80**. CLI and connector versions are
 intentionally separate.
 
 | Current highlight | Simple meaning |
 |:---|:---|
-| **Versioned and stale-safe execution** | Requests carry an explicit execution version and live catalog hash, so incompatible or outdated calls stop before Unity changes. |
-| **Smaller Compact discovery** | Action-specific describe avoids returning unrelated action contracts while preserving the existing full-tool form. |
-| **Recovery hardening** | Ledger, settings, config-lock, timeout, and MCP lifecycle states now have explicit fail-closed behavior. |
-| **Repeatable release evidence** | Five Unity compile buckets and the isolated Connector NUnit gate are automated and leave fixture manifests unchanged. |
-| **MCP Registry discovery** | The npm package carries verified MCP ownership metadata and a reproducible local stdio launch contract. |
+| **Project-safe multi-Editor policy** | No-selector calls prefer the current project and then the newest live heartbeat; the selected full project path remains pinned across port changes. |
+| **2,277-byte Compact project rules** | `doctor --agent-rules --compact` keeps targeting, safety, approval, and verification guidance always available without loading the full guide. |
+| **Catalog admission evidence** | Tool, action, description, and profile payload changes are compared with a reviewed live baseline before release. |
+| **Production-surface package gate** | The package flow measures the production catalog before enabling test fixtures, then restores the disposable manifest byte-for-byte. |
+| **MCP Registry continuity** | npm and MCP metadata advance to 0.1.4 while the default-off stdio adapter and Connector 0.0.80 remain unchanged. |
 
 Release compatibility matrix:
 
