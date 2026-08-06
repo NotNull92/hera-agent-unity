@@ -2,18 +2,25 @@
 
 ## Current release baseline
 
-External state was last checked on 2026-08-04.
+External state was last checked on 2026-08-06.
 
 ```text
-CLI release:          v0.1.3
-npm package:          0.1.3 (latest)
+CLI release:          v0.1.4
+npm package:          0.1.4 (latest)
 UPM Connector:        0.0.80
 Codex plugin bundle:  1.0.1
-Release commit:       2612e41077598e558dbb76f3a41e426f4e30d19c
-Distribution commit:  5cf8b239d5b999bdc890cc6cfc122c4ef0d1438f
+Release commit:       2e73316717709a5c550d708dae53e532dc8cb347
+Distribution commit:  2e73316717709a5c550d708dae53e532dc8cb347
 Connector tag:        connector-0.0.80
-CLI tag:              v0.1.3
+CLI tag:              v0.1.4
 ```
+
+Release evidence:
+
+- [main CI run 31069934044](https://github.com/NotNull92/hera-agent-unity/actions/runs/31069934044)
+- [GitHub Release run 31069980864](https://github.com/NotNull92/hera-agent-unity/actions/runs/31069980864)
+- [npm 0.1.4 run 31070049824](https://github.com/NotNull92/hera-agent-unity/actions/runs/31070049824)
+- [MCP Registry 0.1.4 run 31070065379](https://github.com/NotNull92/hera-agent-unity/actions/runs/31070065379)
 
 CLI, Connector, npm, and plugin versions are intentionally independent.
 
@@ -21,17 +28,17 @@ CLI, Connector, npm, and plugin versions are intentionally independent.
 
 | Channel | External state | Repository state | Next action |
 |---|---|---|---|
-| GitHub Release binaries | `v0.1.3` published with five native assets | Complete | None |
-| PowerShell / shell installers | Resolve GitHub `releases/latest` | Complete and follows `v0.1.3` | None |
-| Go install | Resolves the latest module tag | Complete through `v0.1.3` | None |
+| GitHub Release binaries | `v0.1.4` published with five native assets | Complete | None |
+| PowerShell / shell installers | Resolve GitHub `releases/latest` | Complete and follows `v0.1.4` | None |
+| Go install | Resolves the latest module tag | Complete through `v0.1.4` | None |
 | Unity UPM Git package | `connector-0.0.80` tag published | Complete | None |
 | OpenUPM | Registry `latest` is `0.0.80` | Complete | Keep Connector package metadata compatible with OpenUPM |
-| npm | Registry `latest` is `0.1.3` | Complete; automatic workflow-run publication is active | None |
+| npm | Registry `latest` is `0.1.4` | Complete; automatic workflow-run publication is active | None |
 | HOL awesome-codex-plugins | Hera Agent Unity is listed; source scanner passed for `5cf8b23` | Plugin `1.0.1` is scanner-gated | Upstream mirror refresh remains upstream-owned |
 | HOL awesome-ai-plugins | Hera Agent Unity is listed | Uses the same upstream bundle | No separate package publication |
 | Publisher-owned Codex marketplace | `main` exposes `.agents/plugins/marketplace.json` | Complete | Keep the catalog entry and plugin bundle in sync |
 | Skills CLI / skills.sh | Repository-backed skill is installable | `.agents/skills/hera-agent-unity/SKILL.md` is the canonical source | Directory visibility remains telemetry-driven |
-| Official MCP Registry | `io.github.NotNull92/hera-agent-unity` version `0.1.3` is published | Complete; npm stdio launch metadata verified through the public API | Monitor preview Registry compatibility |
+| Official MCP Registry | `io.github.NotNull92/hera-agent-unity` version `0.1.4` is active and latest | Complete; npm stdio launch metadata verified through the public API | Monitor preview Registry compatibility |
 | GitHub MCP Registry | Hera is not listed | Candidate after official MCP Registry publication | Request curated inclusion after the official entry is live |
 | Glama | No Hera-specific entry verified | Can ingest the official MCP Registry or a GitHub submission | Prefer official Registry ingestion; do not market Hera as a remote hosted server |
 | Smithery | No Hera entry verified | Local stdio publication requires an MCPB bundle | Add an MCPB release artifact only if this extra packaging surface is worth maintaining |
@@ -57,8 +64,9 @@ Allowed action:    npm publish
 Successful npm publications include
 [0.1.1 run 30858410191](https://github.com/NotNull92/hera-agent-unity/actions/runs/30858410191),
 [0.1.2 run 30862729736](https://github.com/NotNull92/hera-agent-unity/actions/runs/30862729736),
+[0.1.3 run 30863071866](https://github.com/NotNull92/hera-agent-unity/actions/runs/30863071866),
 and the automatic
-[0.1.3 run 30863071866](https://github.com/NotNull92/hera-agent-unity/actions/runs/30863071866).
+[0.1.4 run 31070049824](https://github.com/NotNull92/hera-agent-unity/actions/runs/31070049824).
 The workflow fails before publishing unless:
 
 - `npm/package.json` equals the requested `v*` tag;
@@ -74,6 +82,8 @@ authenticates with GitHub OIDC, and publishes `server.json`. A manual stable-tag
 dispatch provides an idempotent recovery path when npm is already published.
 The first successful Registry publication is
 [0.1.3 run 30863089628](https://github.com/NotNull92/hera-agent-unity/actions/runs/30863089628).
+The current latest publication is
+[0.1.4 run 31070065379](https://github.com/NotNull92/hera-agent-unity/actions/runs/31070065379); the public API reports `0.1.4` as active and latest.
 
 ## Publisher-owned Codex marketplace
 
@@ -111,7 +121,7 @@ CLI-first workflow.
 
 ### What the migration unlocked
 
-CLI `v0.1.3` contains a real local MCP server. It uses stdio and can be launched
+CLI `v0.1.4` contains a real local MCP server. It uses stdio and can be launched
 from the published npm package with this process contract:
 
 ```text
@@ -127,9 +137,9 @@ UPM Connector installed. The adapter remains experimental and default-off.
 
 ### Publication flow
 
-1. **GitHub Release first.** The stable `v0.1.3` tag produces the five native
+1. **GitHub Release first.** The stable `v0.1.4` tag produces the five native
    CLI assets used by every installer and by the npm wrapper.
-2. **npm second.** Trusted publishing releases `hera-agent-unity@0.1.3` with
+2. **npm second.** Trusted publishing releases `hera-agent-unity@0.1.4` with
    immutable `mcpName` ownership metadata.
 3. **Official MCP Registry third.** The successful npm workflow triggers the
    separate MCP workflow, which publishes the matching `server.json` through
