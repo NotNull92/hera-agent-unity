@@ -1,17 +1,19 @@
 # Codex Implementation Plan: CLI + MCP Adapter Migration
 
-> **Document status:** Approved implementation plan  
-> **Execution target:** OpenAI Codex, `gpt-5.6-sol medium`  
-> **Repository baseline:** `main` at `f25ccd54f9d521f4cbff71440109842830744e44`  
-> **Target architecture:** Existing CLI and Unity Connector retained, stdio MCP adapter added on the shared execution core  
-> **Implementation state:** Not started by this document  
-> **Normative scope:** This document defines the migration order, contracts, tests, stop conditions, rule-document changes, and rollback boundaries.
+> **Document status:** Historical implementation plan, completed and superseded
+> **Execution target at the time:** OpenAI Codex, `gpt-5.6-sol medium`
+> **Repository baseline:** `main` at `f25ccd54f9d521f4cbff71440109842830744e44`
+> **Completed architecture:** Existing CLI and Unity Connector retained, stdio MCP adapter added on the shared execution core
+> **Current authority:** `CLAUDE.md`, `docs/ARCHITECTURE.md`, and `docs/MCP.md`
+> **Historical scope:** This document preserves the migration order, contracts, tests, stop conditions, and rollback boundaries used for M0-M17. It is not a current lock when later code and current authority documents disagree.
+>
+> Do not use this historical plan to reverse the project-safe multi-Editor targeting shipped after its baseline.
 
 ---
 
 ## 0. How Codex must use this document
 
-This is an implementation specification, not an architecture discussion prompt.
+This was the implementation specification used during M0-M17. The obligations below are historical unless a current authority document repeats them.
 
 Codex must:
 
@@ -62,7 +64,7 @@ It does not supersede these existing decisions:
 - The Unity Connector remains Editor-only.
 - Unity work enters through the existing main-thread queue.
 - CLI and Connector versions remain independent.
-- The single-editor model remains unchanged.
+- Each CLI invocation or MCP process selects one Editor; multi-Editor discovery remains supported.
 - Heartbeat and file-bus recovery remain valid architectural assets.
 - Shared docs must not contain machine-specific absolute paths.
 - Connector C# files and folders require Unity `.meta` files.
@@ -196,7 +198,7 @@ The following decisions are fixed for this migration.
 3. **LOCKED:** Keep localhost HTTP as the Go-to-Unity transport.
 4. **LOCKED:** Keep heartbeat-based instance discovery.
 5. **LOCKED:** Keep package and test file-bus recovery.
-6. **LOCKED:** Keep the single-editor operating model.
+6. **LOCKED AT COMPLETION:** Keep one selected Editor per CLI invocation or MCP process; multi-Editor discovery and project-safe targeting are supported.
 7. **LOCKED:** Do not add a Python runtime, WebSocket relay, or separate Unity MCP package.
 
 ## 3.2 Interface model
@@ -236,7 +238,7 @@ The following decisions are fixed for this migration.
 The migration does not:
 
 - Convert Unity transport from HTTP to MCP.
-- Add multi-editor disambiguation.
+- Broadcast or fan out one request to multiple Editors.
 - Add a public remote MCP endpoint.
 - Add OAuth in the first release.
 - Add a persistent Windows service.

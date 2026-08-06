@@ -339,6 +339,103 @@ func TestScanInstances_KeepsZeroPID(t *testing.T) {
 	}
 }
 
+func TestDiscoverInstance_withoutSelector_prefersCwdProjectOverNewerHeartbeat(t *testing.T) {
+	// Given
+	stubIsProcessDead(t, map[int]bool{})
+	workspace := t.TempDir()
+	cwdProject := filepath.Join(workspace, "cwd-project")
+	otherProject := filepath.Join(workspace, "newer-project")
+	cwdChild := filepath.Join(cwdProject, "Assets", "Scripts")
+	if err := os.MkdirAll(cwdChild, 0o755); err != nil {
+		t.Fatalf("create cwd project: %v", err)
+	}
+	if err := os.MkdirAll(otherProject, 0o755); err != nil {
+		t.Fatalf("create other project: %v", err)
+	}
+	writeInstanceFiles(t, map[string]Instance{
+		"cwd.json": {
+			State:       unitystate.Ready,
+			ProjectPath: cwdProject,
+			Port:        8090,
+			PID:         100,
+			Timestamp:   1000,
+		},
+		"newer.json": {
+			State:       unitystate.Ready,
+			ProjectPath: otherProject,
+			Port:        8091,
+			PID:         200,
+			Timestamp:   2000,
+		},
+	})
+	previousCwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get cwd: %v", err)
+	}
+	if err := os.Chdir(cwdChild); err != nil {
+		t.Fatalf("change cwd: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(previousCwd) })
+
+	// When
+	got, err := DiscoverInstance("", 0)
+
+	// Then
+	if err != nil {
+		t.Fatalf("DiscoverInstance error = %v", err)
+	}
+	if !projectPathsEqual(got.ProjectPath, cwdProject) {
+		t.Fatalf("ProjectPath = %q, want cwd project %q", got.ProjectPath, cwdProject)
+	}
+}
+
+func TestDiscoverInstance_withoutSelector_usesNewestLiveHeartbeatWhenCwdDoesNotMatch(t *testing.T) {
+	// Given
+	stubIsProcessDead(t, map[int]bool{})
+	workspace := t.TempDir()
+	olderProject := filepath.Join(workspace, "older-project")
+	newerProject := filepath.Join(workspace, "newer-project")
+	unrelatedCwd := filepath.Join(workspace, "outside")
+	if err := os.MkdirAll(unrelatedCwd, 0o755); err != nil {
+		t.Fatalf("create unrelated cwd: %v", err)
+	}
+	writeInstanceFiles(t, map[string]Instance{
+		"older.json": {
+			State:       unitystate.Ready,
+			ProjectPath: olderProject,
+			Port:        8090,
+			PID:         100,
+			Timestamp:   1000,
+		},
+		"newer.json": {
+			State:       unitystate.Ready,
+			ProjectPath: newerProject,
+			Port:        8091,
+			PID:         200,
+			Timestamp:   2000,
+		},
+	})
+	previousCwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("get cwd: %v", err)
+	}
+	if err := os.Chdir(unrelatedCwd); err != nil {
+		t.Fatalf("change cwd: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(previousCwd) })
+
+	// When
+	got, err := DiscoverInstance("", 0)
+
+	// Then
+	if err != nil {
+		t.Fatalf("DiscoverInstance error = %v", err)
+	}
+	if !projectPathsEqual(got.ProjectPath, newerProject) {
+		t.Fatalf("ProjectPath = %q, want newest live project %q", got.ProjectPath, newerProject)
+	}
+}
+
 // TestDiscoverInstance_ProjectPathMatchesSlashVariants verifies --project can
 // match Windows-style backslashes against Unity's forward-slash projectPath.
 func TestDiscoverInstance_ProjectPathMatchesSlashVariants(t *testing.T) {

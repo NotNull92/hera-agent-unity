@@ -226,6 +226,21 @@ func TestMakeFreshResolver_FollowsSelectedProjectInsteadOfOriginalPort(t *testin
 	}
 
 	writeInstanceFile(t, want)
+	competing := client.Instance{
+		State:       unitystate.Ready,
+		ProjectPath: "/projects/newer-but-not-selected",
+		Port:        8092,
+		PID:         os.Getpid(),
+		Timestamp:   want.Timestamp + 1000,
+	}
+	data, err := json.Marshal(competing)
+	if err != nil {
+		t.Fatalf("marshal competing instance: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(paths.InstancesDir(), "competing.json"), data, 0o644); err != nil {
+		t.Fatalf("write competing instance: %v", err)
+	}
+
 	resolve := makeFreshResolver(&client.Instance{
 		ProjectPath: want.ProjectPath,
 		Port:        8090,
@@ -235,8 +250,9 @@ func TestMakeFreshResolver_FollowsSelectedProjectInsteadOfOriginalPort(t *testin
 	if err != nil {
 		t.Fatalf("resolve error = %v", err)
 	}
-	if got.Port != want.Port {
-		t.Fatalf("resolved port = %d, want %d", got.Port, want.Port)
+	if got.Port != want.Port || got.ProjectPath != want.ProjectPath {
+		t.Fatalf("resolved target = %q on %d, want %q on %d",
+			got.ProjectPath, got.Port, want.ProjectPath, want.Port)
 	}
 }
 
