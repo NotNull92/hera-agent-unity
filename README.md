@@ -744,16 +744,18 @@ This repository includes ready-to-use rule files for the main coding agents:
 | Google AntiGravity | `GEMINI.md`, `.agents/agents.md`, `.agents/skills/hera-agent-unity/SKILL.md` | Project entry rule, workspace handoff, and on-demand skill. |
 | Continue.dev | `.continuerules` | Plain markdown rules. |
 
-Fast setup for the common shared file:
+Fast setup for a small always-loaded shared file:
 
 ```bash
-hera-agent-unity doctor --agent-rules >> AGENTS.md
+hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 ```
+
+The compact form keeps bootstrap, multi-Editor targeting, safety, approval, and verification rules in the project context. Run `doctor --agent-rules` without `--compact` only when you want the full Quick Rules and Pitfalls guide embedded directly.
 
 Cursor setup:
 
 ```bash
-hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+hera-agent-unity doctor --agent-rules --compact --format cursor > .cursor/rules/hera-agent-unity.mdc
 ```
 
 Copilot, AntiGravity, and Continue templates are in [examples/rules](examples/rules). This repo also contains live examples at [.github/copilot-instructions.md](.github/copilot-instructions.md), [.github/instructions/hera-agent-unity.instructions.md](.github/instructions/hera-agent-unity.instructions.md), [GEMINI.md](GEMINI.md), and [.agents/skills/hera-agent-unity/SKILL.md](.agents/skills/hera-agent-unity/SKILL.md).

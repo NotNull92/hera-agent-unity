@@ -14,7 +14,12 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
 
-const reportSchema = "hera.catalog-payload-report/1"
+const (
+	reportSchema = "hera.catalog-payload-report/1"
+	// reviewRequiredExitCode is preserved by a built binary. `go run` wraps
+	// child failures as its own non-zero exit and prints `exit status 3`.
+	reviewRequiredExitCode = 3
+)
 
 type reportOptions struct {
 	WarnProfileBytes int
@@ -23,25 +28,49 @@ type reportOptions struct {
 }
 
 type report struct {
-	Schema                 string           `json:"schema"`
-	CatalogHash            string           `json:"catalog_hash"`
-	InputBytes             int              `json:"input_bytes"`
-	NormalizedCatalogBytes int              `json:"normalized_catalog_bytes"`
-	ToolCount              int              `json:"tool_count"`
-	ActionCount            int              `json:"action_count"`
-	DescriptionCharacters  int              `json:"description_characters"`
-	Profiles               []profileSize    `json:"profiles"`
-	LargestTools           []toolSize       `json:"largest_tools"`
-	LargestActions         []actionSize     `json:"largest_actions"`
-	ActionDescribeSavings  []describeSaving `json:"action_describe_savings"`
-	RoughTokens            tokenEstimates   `json:"rough_token_estimates"`
-	Warnings               []string         `json:"warnings"`
+	Schema                 string            `json:"schema"`
+	CatalogHash            string            `json:"catalog_hash"`
+	InputBytes             int               `json:"input_bytes"`
+	NormalizedCatalogBytes int               `json:"normalized_catalog_bytes"`
+	ToolCount              int               `json:"tool_count"`
+	ActionCount            int               `json:"action_count"`
+	DescriptionCharacters  int               `json:"description_characters"`
+	Profiles               []profileSize     `json:"profiles"`
+	LargestTools           []toolSize        `json:"largest_tools"`
+	LargestActions         []actionSize      `json:"largest_actions"`
+	ActionDescribeSavings  []describeSaving  `json:"action_describe_savings"`
+	RoughTokens            tokenEstimates    `json:"rough_token_estimates"`
+	Warnings               []string          `json:"warnings"`
+	Comparison             *reportComparison `json:"comparison,omitempty"`
 }
 
 type profileSize struct {
 	Name                    string `json:"name"`
 	ToolCount               int    `json:"tool_count"`
 	NormalizedContractBytes int    `json:"normalized_contract_bytes"`
+}
+
+type reportComparison struct {
+	BaselineCatalogHash         string         `json:"baseline_catalog_hash"`
+	ContractChanged             bool           `json:"contract_changed"`
+	ToolCountDelta              int            `json:"tool_count_delta"`
+	ActionCountDelta            int            `json:"action_count_delta"`
+	NormalizedCatalogBytesDelta int            `json:"normalized_catalog_bytes_delta"`
+	DescriptionCharactersDelta  int            `json:"description_characters_delta"`
+	Profiles                    []profileDelta `json:"profiles"`
+	Growth                      bool           `json:"growth"`
+	ReviewRequired              bool           `json:"review_required"`
+	Reasons                     []string       `json:"reasons"`
+}
+
+type profileDelta struct {
+	Name                  string `json:"name"`
+	BaselineToolCount     int    `json:"baseline_tool_count"`
+	CurrentToolCount      int    `json:"current_tool_count"`
+	ToolCountDelta        int    `json:"tool_count_delta"`
+	BaselineContractBytes int    `json:"baseline_contract_bytes"`
+	CurrentContractBytes  int    `json:"current_contract_bytes"`
+	ContractBytesDelta    int    `json:"contract_bytes_delta"`
 }
 
 type toolSize struct {
@@ -85,48 +114,96 @@ type tokenEstimates struct {
 }
 
 func main() {
-	catalogPath := flag.String("catalog", "", "catalog JSON file; stdin when omitted")
-	outputPath := flag.String("output", "", "write report to a file instead of stdout")
-	options := reportOptions{}
-	flag.IntVar(&options.WarnProfileBytes, "warn-profile-bytes", 24_000, "warning budget for one normalized profile")
-	flag.IntVar(&options.WarnToolBytes, "warn-tool-bytes", 20_000, "warning budget for one normalized tool")
-	flag.IntVar(&options.Largest, "largest", 10, "number of largest tools and actions to report")
-	flag.Parse()
-	if flag.NArg() != 0 {
-		fail("catalog-payload-report accepts flags only")
-	}
-	raw, err := readInput(*catalogPath)
+	exitCode, err := run(os.Args[1:], os.Stdin, os.Stdout)
 	if err != nil {
-		fail(err.Error())
+		fmt.Fprintln(os.Stderr, strings.TrimSpace(err.Error()))
+		os.Exit(1)
+	}
+	if exitCode != 0 {
+		os.Exit(exitCode)
+	}
+}
+
+func run(args []string, stdin io.Reader, stdout io.Writer) (int, error) {
+	flags := flag.NewFlagSet("catalog-payload-report", flag.ContinueOnError)
+	flags.SetOutput(io.Discard)
+	catalogPath := flags.String("catalog", "", "catalog JSON file; stdin when omitted")
+	outputPath := flags.String("output", "", "write report to a file instead of stdout")
+	comparePath := flags.String("compare", "", "compare against a checked-in payload report")
+	failOnGrowth := flags.Bool("fail-on-growth", false, "exit 3 when tool, action, description, or profile payload grows")
+	failOnChange := flags.Bool("fail-on-change", false, "exit 3 when the catalog contract differs from the baseline")
+	options := reportOptions{}
+	flags.IntVar(&options.WarnProfileBytes, "warn-profile-bytes", 24_000, "warning budget for one normalized profile")
+	flags.IntVar(&options.WarnToolBytes, "warn-tool-bytes", 20_000, "warning budget for one normalized tool")
+	flags.IntVar(&options.Largest, "largest", 10, "number of largest tools and actions to report")
+	if err := flags.Parse(args); err != nil {
+		return 0, fmt.Errorf("parse arguments: %w", err)
+	}
+	if flags.NArg() != 0 {
+		return 0, fmt.Errorf("catalog-payload-report accepts flags only")
+	}
+	if *failOnGrowth && *comparePath == "" {
+		return 0, fmt.Errorf("--fail-on-growth requires --compare")
+	}
+	if *failOnChange && *comparePath == "" {
+		return 0, fmt.Errorf("--fail-on-change requires --compare")
+	}
+
+	raw, err := readInput(*catalogPath, stdin)
+	if err != nil {
+		return 0, err
 	}
 	catalogData, err := unwrapCatalog(raw)
 	if err != nil {
-		fail(err.Error())
+		return 0, err
 	}
 	catalog, err := toolregistry.ParseCatalog(catalogData)
 	if err != nil {
-		fail(fmt.Sprintf("parse catalog: %v", err))
+		return 0, fmt.Errorf("parse catalog: %w", err)
 	}
 	result, err := buildReport(catalog, len(bytes.TrimSpace(catalogData)), options)
 	if err != nil {
-		fail(err.Error())
+		return 0, err
 	}
+	if *comparePath != "" {
+		baseline, readErr := readReport(*comparePath)
+		if readErr != nil {
+			return 0, readErr
+		}
+		comparison := compareReports(baseline, result)
+		result.Comparison = &comparison
+		if comparison.ReviewRequired {
+			result.Warnings = append(result.Warnings,
+				"catalog payload differs from the checked-in baseline: "+strings.Join(comparison.Reasons, "; "))
+			slices.Sort(result.Warnings)
+		}
+	}
+
 	encoded, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
-		fail(fmt.Sprintf("encode report: %v", err))
+		return 0, fmt.Errorf("encode report: %w", err)
 	}
 	encoded = append(encoded, '\n')
 	if *outputPath == "" {
-		_, err = os.Stdout.Write(encoded)
+		_, err = stdout.Write(encoded)
 	} else {
 		err = os.WriteFile(*outputPath, encoded, 0o644)
 	}
 	if err != nil {
-		fail(fmt.Sprintf("write report: %v", err))
+		return 0, fmt.Errorf("write report: %w", err)
 	}
+	if result.Comparison != nil {
+		if *failOnChange && result.Comparison.ReviewRequired {
+			return reviewRequiredExitCode, nil
+		}
+		if *failOnGrowth && result.Comparison.Growth {
+			return reviewRequiredExitCode, nil
+		}
+	}
+	return 0, nil
 }
 
-func readInput(path string) ([]byte, error) {
+func readInput(path string, stdin io.Reader) ([]byte, error) {
 	if path != "" {
 		data, err := os.ReadFile(path)
 		if err != nil {
@@ -134,7 +211,7 @@ func readInput(path string) ([]byte, error) {
 		}
 		return data, nil
 	}
-	data, err := io.ReadAll(os.Stdin)
+	data, err := io.ReadAll(stdin)
 	if err != nil {
 		return nil, fmt.Errorf("read catalog stdin: %w", err)
 	}
@@ -142,6 +219,21 @@ func readInput(path string) ([]byte, error) {
 		return nil, fmt.Errorf("catalog input is empty")
 	}
 	return data, nil
+}
+
+func readReport(path string) (report, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return report{}, fmt.Errorf("read comparison report: %w", err)
+	}
+	var value report
+	if err := json.Unmarshal(data, &value); err != nil {
+		return report{}, fmt.Errorf("parse comparison report: %w", err)
+	}
+	if value.Schema != reportSchema {
+		return report{}, fmt.Errorf("unsupported comparison report schema %q", value.Schema)
+	}
+	return value, nil
 }
 
 func unwrapCatalog(raw []byte) ([]byte, error) {
@@ -294,6 +386,94 @@ func buildReport(catalog *toolregistry.Catalog, inputBytes int, options reportOp
 	return result, nil
 }
 
+func compareReports(baseline, current report) reportComparison {
+	comparison := reportComparison{
+		BaselineCatalogHash:         baseline.CatalogHash,
+		ContractChanged:             baseline.CatalogHash != current.CatalogHash,
+		ToolCountDelta:              current.ToolCount - baseline.ToolCount,
+		ActionCountDelta:            current.ActionCount - baseline.ActionCount,
+		NormalizedCatalogBytesDelta: current.NormalizedCatalogBytes - baseline.NormalizedCatalogBytes,
+		DescriptionCharactersDelta:  current.DescriptionCharacters - baseline.DescriptionCharacters,
+		Profiles:                    compareProfiles(baseline.Profiles, current.Profiles),
+	}
+
+	if comparison.ContractChanged {
+		comparison.Reasons = append(comparison.Reasons, "catalog contract hash changed")
+	}
+	if comparison.ToolCountDelta > 0 {
+		comparison.Growth = true
+		comparison.Reasons = append(comparison.Reasons,
+			fmt.Sprintf("tool count increased by %d", comparison.ToolCountDelta))
+	}
+	if comparison.ActionCountDelta > 0 {
+		comparison.Growth = true
+		comparison.Reasons = append(comparison.Reasons,
+			fmt.Sprintf("action count increased by %d", comparison.ActionCountDelta))
+	}
+	if comparison.DescriptionCharactersDelta > 0 {
+		comparison.Growth = true
+		comparison.Reasons = append(comparison.Reasons,
+			fmt.Sprintf("tool descriptions grew by %d characters", comparison.DescriptionCharactersDelta))
+	}
+	for _, profile := range comparison.Profiles {
+		switch {
+		case profile.ToolCountDelta > 0 && profile.ContractBytesDelta > 0:
+			comparison.Growth = true
+			comparison.Reasons = append(comparison.Reasons,
+				fmt.Sprintf("profile %s grew by %d tool(s) and %d byte(s)",
+					profile.Name, profile.ToolCountDelta, profile.ContractBytesDelta))
+		case profile.ToolCountDelta > 0:
+			comparison.Growth = true
+			comparison.Reasons = append(comparison.Reasons,
+				fmt.Sprintf("profile %s gained %d tool(s)", profile.Name, profile.ToolCountDelta))
+		case profile.ContractBytesDelta > 0:
+			comparison.Growth = true
+			comparison.Reasons = append(comparison.Reasons,
+				fmt.Sprintf("profile %s grew by %d byte(s)", profile.Name, profile.ContractBytesDelta))
+		}
+	}
+	comparison.ReviewRequired = comparison.ContractChanged || comparison.Growth
+	if len(comparison.Reasons) == 0 {
+		comparison.Reasons = []string{}
+	}
+	return comparison
+}
+
+func compareProfiles(baseline, current []profileSize) []profileDelta {
+	baselineByName := make(map[string]profileSize, len(baseline))
+	currentByName := make(map[string]profileSize, len(current))
+	names := make(map[string]struct{}, len(baseline)+len(current))
+	for _, profile := range baseline {
+		baselineByName[profile.Name] = profile
+		names[profile.Name] = struct{}{}
+	}
+	for _, profile := range current {
+		currentByName[profile.Name] = profile
+		names[profile.Name] = struct{}{}
+	}
+	orderedNames := make([]string, 0, len(names))
+	for name := range names {
+		orderedNames = append(orderedNames, name)
+	}
+	sort.Strings(orderedNames)
+
+	result := make([]profileDelta, 0, len(orderedNames))
+	for _, name := range orderedNames {
+		before := baselineByName[name]
+		after := currentByName[name]
+		result = append(result, profileDelta{
+			Name:                  name,
+			BaselineToolCount:     before.ToolCount,
+			CurrentToolCount:      after.ToolCount,
+			ToolCountDelta:        after.ToolCount - before.ToolCount,
+			BaselineContractBytes: before.NormalizedContractBytes,
+			CurrentContractBytes:  after.NormalizedContractBytes,
+			ContractBytesDelta:    after.NormalizedContractBytes - before.NormalizedContractBytes,
+		})
+	}
+	return result
+}
+
 func tokenRange(size int) tokenEstimates {
 	return tokenEstimates{
 		Assumption: "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
@@ -312,9 +492,4 @@ func min(left, right int) int {
 		return left
 	}
 	return right
-}
-
-func fail(message string) {
-	fmt.Fprintln(os.Stderr, strings.TrimSpace(message))
-	os.Exit(1)
 }

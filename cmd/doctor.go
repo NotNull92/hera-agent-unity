@@ -31,6 +31,7 @@ var agentGuide string
 func doctorCmd(args []string) error {
 	jsonMode := false
 	agentRulesMode := false
+	compactAgentRulesMode := false
 	format := "markdown"
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -38,6 +39,8 @@ func doctorCmd(args []string) error {
 			jsonMode = true
 		case "--agent-rules", "--print-agent-rules":
 			agentRulesMode = true
+		case "--compact":
+			compactAgentRulesMode = true
 		case "--format":
 			if i+1 < len(args) {
 				format = args[i+1]
@@ -45,8 +48,15 @@ func doctorCmd(args []string) error {
 			}
 		}
 	}
+	if compactAgentRulesMode && !agentRulesMode {
+		return fmt.Errorf("--compact requires --agent-rules")
+	}
 	if agentRulesMode {
-		fmt.Print(extractAgentRules(format))
+		if compactAgentRulesMode {
+			fmt.Print(extractCompactAgentRules(format))
+		} else {
+			fmt.Print(extractAgentRules(format))
+		}
 		return nil
 	}
 	if jsonMode {
@@ -55,6 +65,11 @@ func doctorCmd(args []string) error {
 	return doctorText()
 }
 
+// Agent-rules output can be full or compact. The full form pulls the
+// "Quick Rules" and "Pitfalls" sections out of the embedded guide, while
+// --compact emits a stable bootstrap and operating contract for always-loaded
+// project rules.
+//
 // extractAgentRules pulls the "Quick Rules" and "Pitfalls" sections out of
 // the embedded AGENT.md, with a header preamble pointing back to the full
 // guide. Designed to be appended to a project's AI rules file (CLAUDE.md /

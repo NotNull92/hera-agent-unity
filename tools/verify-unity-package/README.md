@@ -25,6 +25,8 @@ pwsh tools/verify-unity-package/run-package-tests.ps1 `
   -Filter HeraAgent.Tests
 ```
 
+Before EditMode tests, the script exports the live built-in tool catalog and compares it with `docs/metrics/catalog-payload-baseline.json`. Any unreviewed contract change exits non-zero and prints the comparison report. Run this gate with a disposable blank project so project custom tools are not included.
+
 The script always attempts restoration in `finally`. A missing test count,
 failed test, restore hash mismatch, or post-restore compile failure is an error.
 Never use a production project as the verification fixture.

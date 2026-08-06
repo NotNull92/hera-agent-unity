@@ -11,9 +11,11 @@ not found, points at the wrong copy, or can't see your Unity Editor.
 Options:
   --json                   Emit structured envelope (binary, shell, unity)
                            for agents.
-  --agent-rules            Print the Quick Rules + Pitfalls subset of AGENT.md
-                           so you can append it to your project's AI rules file
-                           (CLAUDE.md / AGENTS.md / .cursor/rules / ...).
+  --agent-rules            Print rules for a project's AI instructions file.
+                           The default includes Quick Rules + Pitfalls.
+  --compact                With --agent-rules, emit the small always-loaded
+                           bootstrap, targeting, safety, and verification rules;
+                           keep the full guide on demand.
   --format <name>          Output format for --agent-rules:
                              markdown (default) — Claude / Codex / Copilot /
                                                   Continue.dev all accept it
@@ -24,8 +26,9 @@ Options:
 Examples:
   hera-agent-unity doctor
   hera-agent-unity doctor --json
-  hera-agent-unity doctor --agent-rules >> CLAUDE.md
-  hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+  hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
+  hera-agent-unity doctor --agent-rules --compact --format cursor > .cursor/rules/hera-agent-unity.mdc
+  hera-agent-unity doctor --agent-rules > full-hera-agent-guide.md
 
 Environment:
   HERA_AGENT_NO_PATH_CHECK=1   Silence the implicit per-command PATH warning.

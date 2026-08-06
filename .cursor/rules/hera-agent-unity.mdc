@@ -39,14 +39,14 @@ alwaysApply: true
 > 1. **Static** — copy the matching stub from [`examples/rules/`](../../examples/rules/) (one file per tool, already formatted).
 > 2. **Dynamic** — let the CLI generate it from this guide:
 >     ```bash
->     # AGENTS.md / CLAUDE.md / Copilot / Continue.dev — plain markdown
->     hera-agent-unity doctor --agent-rules >> AGENTS.md
+>     # AGENTS.md / CLAUDE.md / Copilot / Continue.dev — compact always-loaded rules
+>     hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 >
->     # Cursor — frontmatter prepended automatically
->     hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+>     # Cursor — compact rules with activation frontmatter
+>     hera-agent-unity doctor --agent-rules --compact --format cursor > .cursor/rules/hera-agent-unity.mdc
 >
->     # AntiGravity — project rule + on-demand skill
->     hera-agent-unity doctor --agent-rules >> GEMINI.md
+>     # AntiGravity — compact project entry + full on-demand skill
+>     hera-agent-unity doctor --agent-rules --compact >> GEMINI.md
 >     hera-agent-unity doctor --agent-rules --format antigravity > .agents/skills/hera-agent-unity/SKILL.md
 >     ```
 

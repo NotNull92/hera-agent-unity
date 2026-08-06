@@ -4,6 +4,27 @@
 
 <!-- 1-3 sentences describing the change. -->
 
+## Failure prevented
+
+<!-- Name the reproducible user failure, missing workflow, or safety gap. -->
+
+- Failure / missing workflow:
+- Reproduction or evidence:
+- Invariant guaranteed after this change:
+
+## Surface admission
+
+<!-- Required when adding/changing a tool, action, profile, or always-loaded agent rule. -->
+
+- [ ] Existing tool action / flag / projection / `exec` / on-demand skill cannot solve this cleanly; rationale is written below.
+- [ ] Strict input/output and safety contracts are updated.
+- [ ] Regression tests reproduce the old failure and protect the new invariant.
+- [ ] Live Unity evidence is attached when Editor behavior changes.
+- [ ] Tool count, action count, profile payload, compact agent-rules size, dependency, and distribution deltas are recorded.
+- [ ] A changed built-in catalog includes a reviewed `docs/metrics/catalog-payload-baseline.json` update.
+
+Rationale and measured deltas:
+
 ## Scope
 
 - [ ] CLI (Go) — `cmd/`, `internal/`
@@ -23,6 +44,8 @@
 - [ ] `go build ./...` passes
 - [ ] `go vet ./...` passes
 - [ ] `go test ./...` passes
+- [ ] `go run ./tools/sync-agent-guides --check` passes
+- [ ] N/A (no built-in catalog change), or catalog comparison passes / its reviewed baseline is updated
 - [ ] `golangci-lint run ./...` passes
 - [ ] `golangci-lint fmt --diff` shows no changes
 - [ ] `gofmt -w .` produces no diff

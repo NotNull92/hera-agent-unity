@@ -699,16 +699,18 @@ npx skills add NotNull92/hera-agent-unity --skill hera-agent-unity --agent codex
 | Google AntiGravity | `GEMINI.md`, `.agents/agents.md`, `.agents/skills/hera-agent-unity/SKILL.md` | 프로젝트 진입 규칙, 워크스페이스 연결, 온디맨드 스킬입니다. |
 | Continue.dev | `.continuerules` | 일반 Markdown 규칙입니다. |
 
-가장 흔한 공통 파일은 이렇게 만듭니다:
+항상 읽히는 공통 파일은 작게 만듭니다:
 
 ```bash
-hera-agent-unity doctor --agent-rules >> AGENTS.md
+hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 ```
+
+compact 출력에는 부트스트랩, 다중 Editor 선택, 안전·승인·검증 규칙만 들어갑니다. Quick Rules와 Pitfalls 전체를 프로젝트 규칙에 직접 넣어야 할 때만 `--compact` 없이 실행합니다.
 
 Cursor용:
 
 ```bash
-hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+hera-agent-unity doctor --agent-rules --compact --format cursor > .cursor/rules/hera-agent-unity.mdc
 ```
 
 Copilot, AntiGravity, Continue 템플릿은 [examples/rules](examples/rules)에 있습니다. 이 저장소에는 실제 예시도 들어 있습니다: [.github/copilot-instructions.md](.github/copilot-instructions.md), [.github/instructions/hera-agent-unity.instructions.md](.github/instructions/hera-agent-unity.instructions.md), [GEMINI.md](GEMINI.md), [.agents/skills/hera-agent-unity/SKILL.md](.agents/skills/hera-agent-unity/SKILL.md).

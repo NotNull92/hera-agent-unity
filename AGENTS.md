@@ -33,14 +33,14 @@
 > 1. **Static** — copy the matching stub from [`examples/rules/`](examples/rules/) (one file per tool, already formatted).
 > 2. **Dynamic** — let the CLI generate it from this guide:
 >     ```bash
->     # AGENTS.md / CLAUDE.md / Copilot / Continue.dev — plain markdown
->     hera-agent-unity doctor --agent-rules >> AGENTS.md
+>     # AGENTS.md / CLAUDE.md / Copilot / Continue.dev — compact always-loaded rules
+>     hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 >
->     # Cursor — frontmatter prepended automatically
->     hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+>     # Cursor — compact rules with activation frontmatter
+>     hera-agent-unity doctor --agent-rules --compact --format cursor > .cursor/rules/hera-agent-unity.mdc
 >
->     # AntiGravity — project rule + on-demand skill
->     hera-agent-unity doctor --agent-rules >> GEMINI.md
+>     # AntiGravity — compact project entry + full on-demand skill
+>     hera-agent-unity doctor --agent-rules --compact >> GEMINI.md
 >     hera-agent-unity doctor --agent-rules --format antigravity > .agents/skills/hera-agent-unity/SKILL.md
 >     ```
 
@@ -796,3 +796,38 @@ into the production assembly and long schema assertions caused pathological
 Roslyn 4.10 compile times. It is repository-development policy only. Do not copy
 it into `doctor --agent-rules`, `AGENT.md`, `cmd/AGENT.md`, `examples/rules/`, UPM
 usage documentation, or any downstream user's Claude/Codex rules.
+
+### 7.3 Feature admission gate (development only)
+
+A new top-level tool, action, MCP profile exposure, or always-loaded agent-rule
+section needs evidence in the same change:
+
+1. Name the reproducible user failure or missing workflow it prevents.
+2. Explain why an existing tool action, flag, projection, `exec`, or on-demand
+   skill cannot solve it cleanly.
+3. Add strict input/output and safety contracts plus regression tests.
+4. Record live Unity evidence when Editor behavior changes.
+5. Measure tool/action counts, profile payload, compact agent-rules size, new
+   dependencies, and distribution impact.
+6. Regenerate and review `docs/metrics/catalog-payload-baseline.json` when the
+   canonical built-in catalog changes.
+
+Use a disposable blank Unity project and run:
+
+```powershell
+go run . --project $env:HERA_UNITY_PROJECT list --catalog `
+  --schema_version hera.tool-catalog/1 > catalog.json
+
+go run ./tools/catalog-payload-report `
+  --catalog catalog.json `
+  --compare docs/metrics/catalog-payload-baseline.json `
+  --fail-on-change
+```
+
+A `review_required` comparison means the surface differs from the reviewed
+baseline and needs an explicit decision. A built binary exits `3`; `go run`
+returns non-zero and prints `exit status 3`. This is not a blanket ban on useful
+growth. Prefer adding an
+action or flag to an existing coherent tool over creating another top-level
+name. This section is repository-development policy only and must not enter the
+generated downstream agent guides.

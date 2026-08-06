@@ -262,6 +262,31 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 6. Add to `cmd/root.go` `humanCategories` if the command is **human-target** (install, status, doctor, etc.). Omit for AI-target tool commands (exec, manage_components, batch, etc.).
 7. Add help text in `cmd/root.go` `printHelp()` overview and `printTopicHelp()` detailed section.
 
+### Feature admission gate
+
+외부 실행 표면을 늘리는 변경은 "코드가 동작한다"만으로 입장시키지 않는다. 새 top-level tool, 새 action, profile 노출 변경, agent-rules 상시 주입 확대는 다음 증거를 같은 변경에 남긴다.
+
+1. **Failure prevented** — 실제로 발생했거나 재현 가능한 사용자 실패, 누락된 workflow, 또는 안전성 구멍을 한 문장으로 명시한다.
+2. **Existing surface reuse** — 기존 tool의 action/flag, 기존 projection, `exec`, 또는 on-demand skill로 해결할 수 없는 이유를 기록한다. 기존 action으로 자연스럽게 흡수할 수 있으면 새 top-level tool을 만들지 않는다.
+3. **Contract and safety** — strict input/output schema, action safety, approval·ledger 영향, Unity 버전 경계를 함께 수정한다.
+4. **Regression evidence** — 실패 재현 테스트와 수정 후 회귀 테스트를 추가하고, Unity 동작이면 disposable Editor에서 live evidence를 남긴다.
+5. **Surface cost** — tool/action 수, profile payload, compact agent-rules baseline, 신규 의존성과 배포 크기 변화를 기록한다.
+6. **Reviewed baseline** — live built-in catalog가 바뀌면 `docs/metrics/catalog-payload-baseline.json`을 의도적으로 재생성하고 같은 리뷰에서 승인한다. baseline 변경 없이 계약을 조용히 키우지 않는다.
+
+카탈로그 비교 명령:
+
+```powershell
+go run . --project $env:HERA_UNITY_PROJECT list --catalog `
+  --schema_version hera.tool-catalog/1 > catalog.json
+
+go run ./tools/catalog-payload-report `
+  --catalog catalog.json `
+  --compare docs/metrics/catalog-payload-baseline.json `
+  --fail-on-change
+```
+
+`--fail-on-change`의 `review_required` 결과는 기능이 금지됐다는 뜻이 아니라, surface 변경과 baseline 갱신을 명시적으로 리뷰해야 한다는 뜻이다. 직접 빌드한 비교기는 이때 exit code `3`을 사용하고, `go run`은 이를 자체 non-zero 상태와 `exit status 3` 메시지로 감싼다. 내부 리팩터링은 기존 tool/action 목록, response envelope, compact 규칙 baseline이 그대로임을 테스트로 증명하면 충분하다.
+
 ### Adding C# files to the Connector (.meta is mandatory)
 
 새 `.cs` 파일을 `AgentConnector/` 아래에 추가할 때는 **같은 폴더에 `<file>.cs.meta`를 함께 커밋한다.** UPM 패키지 안의 `.cs`는 immutable로 취급되어 Unity가 .meta 없는 파일을 컴파일 대상에서 제외함 — Unity 안에서 직접 만든 게 아니므로 자동 생성도 안 됨. 누락 시 사용자는 cascading "name does not exist" 컴파일 에러를 봄.

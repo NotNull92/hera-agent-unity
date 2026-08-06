@@ -224,8 +224,9 @@ Diagnostics:
   doctor                        Self-check: binary path, PATH resolution,
                                 duplicate installs, shell hints, Unity instances
   doctor --json                 Same data, JSON envelope for agent parsing
-  doctor --agent-rules          Print Quick Rules + Pitfalls from AGENT.md
-                                (append to CLAUDE.md / AGENTS.md / etc.)
+  doctor --agent-rules          Print full Quick Rules + Pitfalls from AGENT.md
+  doctor --agent-rules --compact  Print the small always-loaded project rules
+                                  (recommended for AGENTS.md / Cursor rules)
 
 Batch:
   batch --file <path>           Execute multiple commands from a JSON file

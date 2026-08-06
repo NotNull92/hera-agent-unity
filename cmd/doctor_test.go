@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -129,6 +130,115 @@ func TestExtractAgentRules(t *testing.T) {
 			t.Error("expected Pitfalls section")
 		}
 	})
+}
+
+func TestExtractCompactAgentRules(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	out := extractCompactAgentRules("markdown")
+	for _, want := range []string{
+		"# hera-agent-unity - Compact Project Rules",
+		"hera-agent-unity list --compact",
+		"current-working-directory match and then the most recent live heartbeat",
+		"normalized project path remains the identity across port changes",
+		"OPERATION_OUTCOME_UNKNOWN",
+		"Current Ultra Hera setting: `light`",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("compact rules missing %q", want)
+		}
+	}
+	for _, unwanted := range []string{"## 4. Pitfalls", "## Game Feel Mode (Beta)", "## Unity De-slop Mode (Beta)"} {
+		if strings.Contains(out, unwanted) {
+			t.Errorf("compact rules unexpectedly include %q", unwanted)
+		}
+	}
+	if strings.HasPrefix(out, "---") {
+		t.Error("markdown compact rules should not start with frontmatter")
+	}
+
+	cursor := extractCompactAgentRules("cursor")
+	if !strings.HasPrefix(cursor, "---\n") || !strings.Contains(cursor, "alwaysApply: true") {
+		t.Error("cursor compact rules must include activation frontmatter")
+	}
+
+	const (
+		compactAgentRulesBaselineUTF8Bytes = 2277
+		compactAgentRulesBaselineNewlines  = 28
+	)
+	if got := len([]byte(out)); got != compactAgentRulesBaselineUTF8Bytes {
+		t.Fatalf("compact rules UTF-8 bytes = %d, reviewed baseline = %d",
+			got, compactAgentRulesBaselineUTF8Bytes)
+	}
+	if got := strings.Count(out, "\n"); got != compactAgentRulesBaselineNewlines {
+		t.Fatalf("compact rules newlines = %d, reviewed baseline = %d",
+			got, compactAgentRulesBaselineNewlines)
+	}
+}
+
+func TestDoctorCmdCompactAgentRules(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+
+	out := captureDoctorStdout(t, func() error {
+		return doctorCmd([]string{"--agent-rules", "--compact"})
+	})
+	if !strings.Contains(out, "# hera-agent-unity - Compact Project Rules") {
+		t.Fatalf("doctor compact output = %q", out)
+	}
+	if strings.Contains(out, "## 4. Pitfalls") {
+		t.Fatal("doctor compact output included full pitfalls")
+	}
+}
+
+func TestDoctorCmdRejectsCompactWithoutAgentRules(t *testing.T) {
+	if err := doctorCmd([]string{"--compact"}); err == nil || !strings.Contains(err.Error(), "requires --agent-rules") {
+		t.Fatalf("doctor --compact error = %v", err)
+	}
+}
+
+func captureDoctorStdout(t *testing.T, run func() error) string {
+	t.Helper()
+	oldStdout := os.Stdout
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = writer
+	t.Cleanup(func() { os.Stdout = oldStdout })
+
+	runErr := run()
+	_ = writer.Close()
+	os.Stdout = oldStdout
+	output, readErr := io.ReadAll(reader)
+	_ = reader.Close()
+	if runErr != nil {
+		t.Fatalf("doctor command failed: %v", runErr)
+	}
+	if readErr != nil {
+		t.Fatalf("read doctor output: %v", readErr)
+	}
+	return string(output)
+}
+
+func TestBuildCompactUltraHeraAgentRules(t *testing.T) {
+	tests := []struct {
+		mode assetconfig.LoopEngineeringMode
+		want string
+	}{
+		{mode: assetconfig.LoopEngineeringOff, want: "Current Ultra Hera setting: `off`"},
+		{mode: assetconfig.LoopEngineeringLight, want: "Current Ultra Hera setting: `light`"},
+		{mode: assetconfig.LoopEngineeringUltra, want: "Current Ultra Hera setting: `ultra`"},
+		{mode: assetconfig.LoopEngineeringMode("invalid"), want: "Current Ultra Hera setting: `light`"},
+	}
+	for _, test := range tests {
+		if got := buildCompactUltraHeraAgentRules(test.mode); !strings.Contains(got, test.want) {
+			t.Errorf("buildCompactUltraHeraAgentRules(%q) missing %q in %q", test.mode, test.want, got)
+		}
+	}
 }
 
 func TestBuildUltraHeraAgentRules(t *testing.T) {

@@ -9,6 +9,27 @@ GitHub 은 `.github/PULL_REQUEST_TEMPLATE.md` (영어, default) 만 자동 채�
 
 <!-- 1-3줄로 변경 요약 -->
 
+## 막으려는 실패
+
+<!-- 실제로 재현 가능한 사용자 실패, 누락된 작업 흐름, 안전성 구멍을 적습니다. -->
+
+- 실패 / 누락된 작업 흐름:
+- 재현 절차 또는 증거:
+- 변경 후 보장되는 invariant:
+
+## 실행 표면 입장 심사
+
+<!-- 새 tool/action/profile/상시 agent rule을 추가하거나 바꿀 때 필수입니다. -->
+
+- [ ] 기존 tool action / flag / projection / `exec` / on-demand skill로 자연스럽게 해결할 수 없는 이유를 아래에 적었습니다.
+- [ ] strict input/output 및 safety contract를 함께 수정했습니다.
+- [ ] 이전 실패를 재현하고 새 invariant를 보호하는 회귀 테스트가 있습니다.
+- [ ] Editor 동작 변경이면 live Unity 증거가 있습니다.
+- [ ] tool 수, action 수, profile payload, compact agent-rules 크기, 의존성, 배포 영향 변화를 기록했습니다.
+- [ ] built-in catalog가 바뀌면 `docs/metrics/catalog-payload-baseline.json`을 같은 리뷰에서 갱신했습니다.
+
+근거와 실측 변화:
+
 ## 변경 범위
 
 - [ ] CLI (Go) — `cmd/`, `internal/`
@@ -28,6 +49,8 @@ GitHub 은 `.github/PULL_REQUEST_TEMPLATE.md` (영어, default) 만 자동 채�
 - [ ] `go build ./...` 통과
 - [ ] `go vet ./...` 통과
 - [ ] `go test ./...` 통과
+- [ ] `go run ./tools/sync-agent-guides --check` 통과
+- [ ] 해당 없음(built-in catalog 변경 없음) 또는 catalog 비교 통과 / baseline 검토·갱신
 - [ ] `golangci-lint run ./...` 통과
 - [ ] `golangci-lint fmt --diff` 변경 없음
 - [ ] `gofmt -w .` 후 diff 없음

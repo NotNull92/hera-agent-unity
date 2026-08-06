@@ -27,13 +27,13 @@ Most agents accept plain markdown — `AGENTS.md`, `CLAUDE.md`, `copilot-instruc
 
 ```bash
 # Claude Code / Codex / Copilot / Continue.dev — plain markdown
-hera-agent-unity doctor --agent-rules >> CLAUDE.md
+hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 
 # Cursor — adds frontmatter automatically
-hera-agent-unity doctor --agent-rules --format cursor > .cursor/rules/hera-agent-unity.mdc
+hera-agent-unity doctor --agent-rules --compact --format cursor > .cursor/rules/hera-agent-unity.mdc
 
 # AntiGravity — GEMINI.md is plain markdown; the on-demand skill needs SKILL.md frontmatter
-hera-agent-unity doctor --agent-rules >> GEMINI.md
+hera-agent-unity doctor --agent-rules --compact >> GEMINI.md
 hera-agent-unity doctor --agent-rules --format antigravity > .agents/skills/hera-agent-unity/SKILL.md
 ```
 

@@ -26,9 +26,48 @@ $beforeHash = (Get-FileHash -LiteralPath $manifest -Algorithm SHA256).Hash.ToLow
 $primaryError = $null
 $testExit = 0
 $restoreExit = 0
+$catalogFile = $null
+$catalogReportFile = $null
+$catalogBaseline = Join-Path $repository "docs\metrics\catalog-payload-baseline.json"
 
 Push-Location $repository
 try {
+    # Measure the production package before enabling the test assembly. Test
+    # fixtures intentionally declare [HeraTool] classes and must not enter the
+    # built-in runtime surface baseline.
+    & go run . --project $project --timeout $TimeoutMs editor refresh --compile
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unity compilation failed before catalog payload validation"
+    }
+    if (-not (Test-Path -LiteralPath $catalogBaseline)) {
+        throw "Catalog payload baseline not found: $catalogBaseline"
+    }
+    $catalogFile = Join-Path ([IO.Path]::GetTempPath()) (
+        "hera-tool-catalog-" + [Guid]::NewGuid().ToString("N") + ".json")
+    $catalogReportFile = Join-Path ([IO.Path]::GetTempPath()) (
+        "hera-tool-catalog-report-" + [Guid]::NewGuid().ToString("N") + ".json")
+    $catalogOutput = & go run . --project $project --timeout $TimeoutMs `
+        list --catalog --schema_version hera.tool-catalog/1
+    if ($LASTEXITCODE -ne 0) {
+        throw "Live Unity tool catalog export failed"
+    }
+    [IO.File]::WriteAllText(
+        $catalogFile,
+        ([string]::Join([Environment]::NewLine, [string[]]$catalogOutput) + [Environment]::NewLine),
+        [Text.UTF8Encoding]::new($false))
+
+    & go run ./tools/catalog-payload-report `
+        --catalog $catalogFile `
+        --compare $catalogBaseline `
+        --fail-on-change `
+        --output $catalogReportFile
+    if ($LASTEXITCODE -ne 0) {
+        if (Test-Path -LiteralPath $catalogReportFile) {
+            [Console]::Error.WriteLine([IO.File]::ReadAllText($catalogReportFile))
+        }
+        throw "Unity tool catalog differs from the reviewed payload baseline"
+    }
+
     try {
         $document = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
         $testables = @()
@@ -84,6 +123,11 @@ try {
     }
 }
 finally {
+    foreach ($temporaryPath in @($catalogFile, $catalogReportFile)) {
+        if ($null -ne $temporaryPath -and (Test-Path -LiteralPath $temporaryPath)) {
+            Remove-Item -LiteralPath $temporaryPath -Force -ErrorAction SilentlyContinue
+        }
+    }
     Pop-Location
 }
 

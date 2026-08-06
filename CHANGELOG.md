@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI and development gates)
+
+- Added `doctor --agent-rules --compact`, a reviewed 2,277-byte default-mode always-loaded
+  rule surface that keeps bootstrap, project-safe multi-Editor targeting,
+  mutation recovery, approval, durable-test, and verification rules while
+  leaving the full Pitfalls guide on demand.
+- Added catalog payload baseline comparison with `--compare`,
+  `--fail-on-growth`, and `--fail-on-change`; comparisons now mark tool
+  contract or measured surface changes that need explicit review. A built
+  reporter exits `3`, while `go run` surfaces the same result as non-zero.
+- Added failure-prevention and surface-cost evidence sections to the pull
+  request templates and the repository-development rules.
+
+### Changed (targeting and release evidence)
+
+- Locked the intended no-selector order with regression tests: current-working-
+  directory project first, then the most recent live heartbeat. After initial
+  selection, fresh resolution remains pinned to the selected project's full
+  path even when another Editor has a newer heartbeat.
+- Marked the completed MCP migration plan as historical where its old
+  single-Editor wording had been superseded by project-safe multi-Editor
+  targeting.
+- Extended the disposable Unity package test flow to export the live built-in
+  catalog and reject unreviewed contract drift before running EditMode tests.
+
 ## [0.1.3] - 2026-08-04
 
 ### Fixed (distribution)

@@ -408,6 +408,7 @@ Next prerequisite:
 - `tools/catalog-payload-report` separates raw input bytes, normalized catalog bytes, profile/tool/action sizes, description characters, and clearly labelled rough token estimates.
 - Current baseline: `185,339` normalized bytes, `31` tools, `75` actions, `8,123` tool-description characters.
 - The report records the largest tools/profiles and action-specific describe savings. Budgets are warnings, not arbitrary release failures.
+- The report now compares a live catalog with the reviewed baseline. `--fail-on-change` marks any canonical contract difference for review, while `--fail-on-growth` gates only positive tool/action/description/profile deltas. A built reporter exits `3`; `go run` surfaces that child status as its own non-zero result. The disposable package test path runs the contract comparison before EditMode tests.
 
 ### A10 Transport and observer optimization
 
