@@ -11,15 +11,15 @@
 [![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
-**AI 코딩 에이전트를 위한 토큰 절약형 Unity Editor 조작 CLI입니다.**
+# hera-agent-unity
 
-<sub>Codex, Claude, Cursor, Copilot, AntiGravity가 열린 Unity 프로젝트를 직접 확인하고 수정하게 합니다 — 기본 CLI 경로는 MCP 설정 없음, Python 서버 없음.</sub>
+**AI 코딩 에이전트에게 Unity 안에서 움직이는 손, 결과를 보는 눈, 작업을 확인하는 체크리스트를 줍니다.**
+
+<sub>Codex, Claude, Cursor, Copilot, AntiGravity 같은 AI가 실제 Unity Editor를 확인하고, 수정하고, 실행하고, 테스트하고, 결과를 다시 본 뒤 근거가 맞을 때까지 고치게 합니다.</sub>
 
 <br>
 
-[1분 시작](#바로-시작) · [설치](#설치) · [UI 시스템](#ui-시스템) · [명령어](#명령어) · [전체 문서](docs/COMMANDS.md)
-
-<sub>[새로운 점](#새로운-점) · [검증](#ultra-hera) · [AI 규칙](#ai용-규칙-넣기) · [FAQ](#faq)</sub>
+[3단계로 시작](#어떻게-사용하나요) · [무엇을 할 수 있나요?](#실제로-무엇을-할-수-있나요) · [왜 Hera인가요?](#왜-hera를-써야-하나요) · [얼마나 좋은가요?](#얼마나-좋은가요) · [활용 예시](#어떻게-응용할-수-있나요) · [명령 한눈에 보기](#명령-한눈에-보기)
 
 [English](README.md) · **한국어**
 
@@ -27,238 +27,203 @@
 
 ---
 
-## 무엇인가요?
+## Hera를 1분 만에 이해하기
 
-`hera-agent-unity`는 AI 코딩 에이전트가 실행 중인 Unity Editor를 낮은 토큰 비용으로 조작하게 해 주는 CLI입니다.
+Hera 없이도 AI는 Unity C# 코드를 작성할 수 있습니다. 하지만 코드를 쓴 다음 **실제 Unity Editor가 어떤 상태인지**는 스스로 확실히 알기 어렵습니다.
 
-쉽게 말하면, AI에게 살아 있는 Unity Editor 리모컨을 쥐여 주는 도구입니다.
-
-| AI가 하고 싶은 일 | Hera가 해 주는 일 |
-|:---|:---|
-| Unity가 켜져 있는지 보기 | 실제 Editor 상태를 확인합니다. |
-| C# 코드를 실행하기 | 지금 열린 Unity 프로젝트 안에서 실행합니다. |
-| 콘솔 에러 보기 | Unity Console의 실제 에러를 읽습니다. |
-| Play 버튼 누르기 | Play Mode에 들어가고 기다립니다. |
-| 오브젝트 만들기/고치기 | Unity API로 직접 처리합니다. |
-| UI 만들기 | 진짜 Unity UI 오브젝트를 만들고 캡처합니다. |
-| UI 입력 검증하기 | 화면 좌표에 의존하지 않고 Unity EventSystem 이벤트를 보냅니다. |
-
-AI가 오래된 학습 데이터로 추측하지 않아도 됩니다. 실제 Editor를 보고, 실행하고, 결과를 다시 확인할 수 있습니다.
+보통 작업은 이렇게 됩니다:
 
 ```text
-AI 에이전트  ->  hera-agent-unity  ->  Unity Editor
+사람이 AI에게 요청
+   ↓
+AI가 코드 작성
+   ↓
+사람이 Unity로 이동해서 컴파일 대기
+   ↓
+에러를 복사해서 AI에게 전달
+   ↓
+AI가 수정
+   ↓
+사람이 Play 버튼을 누르고 결과 설명
+   ↓
+반복...
 ```
+
+Hera를 붙이면 이렇게 바뀝니다:
+
+```text
+사람이 AI에게 요청
+   ↓
+AI가 Hera 사용
+   ↓
+Unity에서 컴파일, 실행, 테스트, UI 입력, 화면 확인
+   ↓
+Hera가 실제 결과를 AI에게 전달
+   ↓
+AI가 실패 원인을 고치고 다시 확인
+   ↓
+검증된 결과
+```
+
+가장 쉽게 표현하면 이렇습니다.
+
+> **AI가 두뇌라면 Hera는 Unity 안에서 움직이는 손이고, 결과를 보는 눈이며, 아직 망가진 상태에서 "완료"라고 말하지 않게 해 주는 체크리스트입니다.**
+
+Hera가 Unity를 대신하는 것도 아니고 AI를 대신하는 것도 아닙니다. 둘 사이를 연결해서 AI가 소스 코드만 보고 추측하지 않고 **지금 내 프로젝트의 실제 상태**를 보고 일하게 해 줍니다.
 
 ---
 
-## 왜 필요한가요?
+## 이게 왜 필요한가요?
 
-AI는 Unity 화면을 볼 수 없어서 자주 넘겨짚습니다.
+Unity 개발의 중요한 피드백은 코드 파일 밖에 있습니다.
 
-예를 들면 이런 것을 틀릴 수 있습니다:
+코드만 보면 맞는 것 같아도 실제로는 이런 문제가 생길 수 있습니다.
 
-- 지금 어떤 씬이 열려 있는지;
-- 어떤 오브젝트가 있는지;
-- 내 Unity 버전에 어떤 API가 있는지;
-- Play Mode가 제대로 되는지;
-- Console에 어떤 에러가 있는지.
+- Unity가 컴파일하지 못했습니다.
+- 엉뚱한 Scene이 열려 있습니다.
+- 필요한 GameObject나 Component가 없습니다.
+- Inspector의 직렬화 값이 예상과 다릅니다.
+- 내가 쓰는 Unity 버전에서 API가 달라졌습니다.
+- Console에 예외가 떠 있습니다.
+- Edit Mode에서는 괜찮지만 Play Mode에서 깨집니다.
+- 버튼은 보이지만 클릭을 받지 못합니다.
+- UI는 구조상 정상인데 실제 화면은 이상합니다.
+- AI가 아무것도 확인하지 않고 "완료했습니다"라고 말합니다.
 
-Hera를 쓰면 AI가 Unity에게 직접 물어볼 수 있습니다.
+Hera를 쓰면 AI가 실제 Unity에게 직접 물어봅니다.
 
 ```bash
 hera-agent-unity status
 hera-agent-unity console --type error
-hera-agent-unity exec "return Application.unityVersion;"
+hera-agent-unity scene info
 hera-agent-unity editor play --wait
+hera-agent-unity test --mode PlayMode
 ```
 
-Python 서버는 필요 없습니다. production 기본값인 CLI 경로에는 MCP 설정
-파일이나 특별한 에이전트 플러그인이 필요 없습니다. CLI `v0.1.0+`에는 명시적으로
-설정한 MCP 클라이언트용 실험적·default-off stdio adapter도 포함됩니다. 설정과
-호환성 경계는 [docs/MCP.md](docs/MCP.md)에 있습니다.
+중요한 것은 명령어 이름이 아닙니다. 핵심은 AI가 사람 대신 **확인 → 수정 → 실행 → 검증 → 재수정**을 반복할 수 있다는 점입니다.
 
 ---
 
-## 새로운 점
+## 실제로 무엇을 할 수 있나요?
 
-### v0.1.4 - 다중 Editor 정책 고정과 작은 상시 컨텍스트
+한 줄짜리 상태 확인부터 꽤 긴 Unity 제작 작업까지 사용할 수 있습니다.
 
-이번 릴리스는 "Editor가 여러 개면 무조건 중단"하는 규칙을 가져오지 않고 Hera의
-자동 다중 Editor 흐름을 유지합니다. 첫 대상을 정한 뒤에는 domain reload나 Editor
-재시작으로 포트가 바뀌어도 정규화된 전체 프로젝트 경로를 신분증으로 고정합니다.
-
-| 릴리스 변경 | 쉬운 뜻 |
+| AI에게 시키고 싶은 일 | Hera가 제공하는 것 |
 |:---|:---|
-| 선택자 없는 순서를 회귀 테스트로 고정 | 현재 작업 디렉터리를 포함하는 Unity 프로젝트를 먼저 고르고, 없으면 가장 최근의 살아 있는 heartbeat를 고릅니다. 선택한 뒤에는 더 최근의 경쟁 Editor가 요청을 가져갈 수 없습니다. |
-| Compact 프로젝트 규칙 | `doctor --agent-rules --compact`가 항상 읽히는 작은 운영 규칙만 출력합니다. 기본 설정의 검토된 기준은 **UTF-8 2,277바이트**이며, Quick Rules와 Pitfalls 전체는 필요할 때만 읽습니다. |
-| Catalog 변경 심사 | `tools/catalog-payload-report`가 라이브 built-in catalog와 검토된 기준을 비교합니다. `--fail-on-change`와 `--fail-on-growth`는 리뷰가 필요한 변경을 도구 exit code `3`으로 표시하며, `go run`은 이를 `exit status 3`으로 보여 줍니다. 유용한 기능 추가를 막는 것이 아니라 근거 없는 비대화를 막습니다. |
-| 제품용 Catalog를 기준으로 하는 패키지 검증 | 폐기 가능한 검증 프로젝트에서 test fixture를 켜기 전에 제품용 catalog를 측정합니다. 그다음 격리된 EditMode 테스트를 실행하고 manifest를 바이트 단위로 원상 복구합니다. |
+| Unity가 정상인지 확인 | 실제 Editor 상태, 버전, 프로젝트, 컴파일 상태, Console 에러 확인 |
+| 현재 Scene 이해 | Scene 정보, GameObject 검색, Component와 Inspector 값 조회 |
+| Scene 수정 | GameObject 생성, 복제, 이름 변경, 부모 변경, 이동, 삭제 |
+| Component 편집 | Component 추가, 제거, 조회, 직렬화 값 수정 |
+| 프로젝트 에셋 관리 | `Assets/` 아래에서 찾기, 생성, 복사, 이동, 삭제 |
+| 프로젝트용 C# 실행 | 현재 열린 프로젝트의 Unity API와 Assembly를 사용해 Editor 안에서 C# 실행 |
+| 애니메이션 제작 | AnimationClip과 AnimatorController 상태머신 저작 |
+| 기능 테스트 | EditMode/PlayMode 테스트 실행, Domain Reload를 넘어 결과 추적 |
+| 게임 실행 | 실제 Play Mode 진입을 기다리고 상태를 확인한 뒤 Stop |
+| Unity가 그린 화면 확인 | Scene/Game View, 단일 오브젝트, live uGUI overlay 캡처 |
+| uGUI 버튼 검증 | Unity EventSystem으로 click, submit, scroll, drag 검증 |
+| UI 제작 | uGUI 또는 UI Toolkit 레이아웃 제작과 결과 검증 |
+| 참고 이미지로 UI 재현 | 색과 레이아웃 측정 → Unity UI 생성 → 캡처 → 비교 → 반복 수정 |
+| 게임 감각 개선 | shake, hit stop, 카메라, 사운드, 보상, 접근성 레시피 제공 |
+| 생성형 티가 나는 UI 정리 | 장식, 계층, 간격, 타이포, 색상 문제와 수정법 제공 |
+| 우리 프로젝트 전용 명령 만들기 | `[HeraTool]`로 프로젝트 전용 작업을 자동 발견 |
+| Editor 여러 개 다루기 | 프로젝트를 명확히 고르고 포트가 바뀌어도 같은 프로젝트를 추적 |
+| 위험한 작업 승인받기 | 파괴적인 작업을 먼저 검토하고 해당 요청에 묶인 승인 토큰으로만 진행 |
 
-Unity `6000.3.5f2` 라이브 비교에서도 [검토된 기준](docs/metrics/catalog-payload-baseline.json)과 정확히 일치했습니다:
-**Tool 31개, Action 75개, 정규화된 catalog 185,339바이트**이며,
-Profile별 차이도 0입니다. 이번 릴리스는 CLI, npm wrapper, MCP package metadata를
-0.1.4로 올리며 Unity Connector는 **0.0.80**을 유지합니다.
+즉 Hera는 단순한 "Play 버튼 리모컨"이 아니라, **Unity를 수정하고 다시 확인하는 전체 반복 작업**을 AI에게 열어 주는 도구입니다.
 
-### v0.1.3 - 패키지 기반 MCP 탐색
+---
 
-이 후속 패치는 기존의 default-off stdio MCP adapter를 공식 MCP Registry에
-배포합니다. Unity Connector와 일반 CLI 기본 경로는 변경하지 않습니다.
+## 왜 Hera를 써야 하나요?
 
-| 릴리스 변경 | 쉬운 뜻 |
-|:---|:---|
-| 공식 MCP 식별자 | `io.github.NotNull92/hera-agent-unity`가 대소문자를 구분하는 GitHub OIDC namespace와 정확히 일치하며 Registry 항목과 npm을 연결합니다. |
-| 재현 가능한 로컬 실행 | Registry client가 고정된 `mcp --transport stdio --profile core` 인자와 `HERA_MCP_ENABLED=1` opt-in을 받습니다. |
-| 순서가 보장된 trusted 배포 | GitHub Actions가 npm을 먼저 배포한 뒤 GitHub OIDC와 checksum으로 고정한 publisher로 MCP Registry를 배포합니다. |
-| Connector 변경 없음 | Unity 패키지는 Connector 0.0.80을 유지하며 CLI와 Connector 버전은 계속 독립적입니다. |
+### 1. AI가 자기 작업을 직접 확인할 수 있습니다
 
-### v0.1.1 - 계약, 복구, 릴리스 검증 강화
+Editor를 볼 수 없는 AI는 자주 이렇게 끝냅니다.
 
-이번 릴리스는 검증된 Unity 실행 코어를 교체하지 않고, 완성된 CLI + 선택형 MCP
-구조의 계약과 장애 복구 경계를 더 명확하게 다듬었습니다.
+> "아마 잘 작동할 겁니다."
 
-| 릴리스 변경 | 쉬운 뜻 |
-|:---|:---|
-| 실행 프로토콜 버전 명시 | 현재 단일 명령은 `hera.execution/1`을 보내며, 지원하지 않는 버전은 승인·기록·Unity 실행 전에 중단됩니다. |
-| 복구 경계 강화 | 오래된 catalog, 고아 ledger, 부분 Settings 읽기, stale config lock, 결과 불명 timeout을 명시적으로 차단하거나 복구합니다. |
-| Compact 조회 축소 | `tool_describe`가 전체 Tool 대신 필요한 Action 하나만 반환할 수 있습니다. 가장 큰 실측 사례는 약 92% 작아졌습니다. |
-| 반복 가능한 릴리스 게이트 | Go/C# 생성물 drift, Unity 5개 compile bucket, 격리된 NUnit package test, race test, catalog payload 측정을 자동 검증합니다. |
-| Connector 0.0.80 | UPM 패키지에도 같은 runtime 안정화와 release-gate 변경이 포함됩니다. CLI와 Connector 버전은 계속 독립적입니다. |
+Hera를 쓰면 이런 근거로 끝낼 수 있습니다.
 
-일반 CLI는 계속 production 기본값입니다. MCP는 선택형·default-off·stdio-only로 유지됩니다.
+```text
+컴파일: 통과
+Console 에러: 0
+EditMode 테스트: 18/18
+PlayMode 테스트: 6/6
+버튼 입력: EventSystem 경로 확인
+최종 Game View: 캡처 완료
+```
 
-### v0.1.0 — 안전한 다중 Editor 선택과 선택형 MCP adapter
+이 차이가 Hera를 만든 가장 중요한 이유입니다.
 
-이번 릴리스는 일반 CLI를 대체하지 않으면서 M0-M17 adapter migration을
-완료합니다. MCP는 실험적·stdio-only·환경 변수 opt-in 기능으로 배포되며, typed
-CLI와 localhost Unity Connector가 계속 production 기본값입니다.
+### 2. 사람이 복사-붙여넣기 중계기가 되지 않아도 됩니다
 
-#### 왜 이 마이그레이션을 했나요?
+매번 다음 일을 반복하지 않아도 됩니다.
 
-이제 여러 AI 프로그램이 도구를 찾고 실행하는 공통 방식으로 MCP를 사용합니다.
-Hera에는 이미 작고 효율적인 CLI와 검증된 Unity 실행 경로가 있으므로, 제품 전체를
-MCP 중심으로 다시 만들면 같은 기능을 중복 구현하고 기존 사용법까지 바꾸게 됩니다.
-그래서 v0.1.0은 가장자리에 얇은 번역기만 추가했습니다. MCP를 아는 AI는 익숙한
-방식으로 요청하고, 실제 작업은 기존과 같은 Hera CLI와 Connector 경로에서
-검증·실행됩니다.
+1. AI가 만든 코드를 복사합니다.
+2. Unity로 이동합니다.
+3. 컴파일을 기다립니다.
+4. 에러를 다시 복사합니다.
+5. Scene 계층을 설명합니다.
+6. Play를 누릅니다.
+7. 결과를 말로 설명합니다.
 
-쉽게 비유하면 CLI는 Hera 전용의 작고 빠른 리모컨입니다. MCP adapter는 다른
-기기도 그 리모컨을 사용할 수 있게 해 주는 작은 변환 젠더이지, 리모컨을 크고
-복잡한 조종판으로 교체하는 장치가 아닙니다.
+이 반복의 상당 부분을 AI가 직접 수행할 수 있습니다.
 
-#### 어떻게 작동하나요?
+### 3. 지금 쓰는 AI 도구를 그대로 사용할 수 있습니다
 
-요청은 `AI client → 선택형 MCP adapter → 기존 Hera 실행 core → localhost
-Connector → 선택한 Unity Editor` 순서로 이동합니다. Adapter는 필요한 도구를
-찾고 설명하며, 요청 형식과 안전 규칙을 확인한 뒤 기존 Hera 실행 경로로 넘깁니다.
-Unity를 외부 네트워크에 공개하거나 Connector를 교체하지 않으며, 승인을 몰래
-생략하지도 않습니다. 승인이나 작업 기록 기능을 지원하지 않는 환경에서는 안전하다고
-추측해 실행하는 대신 요청을 차단합니다.
+제품 기본 경로는 CLI입니다. 셸 명령을 실행할 수 있는 AI라면 사용할 수 있습니다.
 
-#### 정확도는 어떻게 달라졌나요?
+- Codex
+- Claude Code
+- Cursor
+- GitHub Copilot
+- AntiGravity
+- 스크립트와 CI
+- 직접 만든 자동화
 
-MCP 자체가 AI를 더 똑똑하게 만들지는 않으며, adapter가 다른 Unity 실행 엔진을
-사용하는 것도 아닙니다. 정확도는 요청을 전달하는 과정에서 개선됐습니다. 정규화된
-전체 프로젝트 경로로 다른 열린 Editor에 요청이 잘못 전달되는 것을 막고, 현재
-Editor가 공개한 엄격한 도구 형식으로 잘못되거나 오래된 인자를 거부합니다. 응답이
-끊기면 heartbeat를 새로 읽어 domain reload, Editor 재시작, 사라진 대상, 다른
-프로젝트가 가져간 포트를 구분합니다. Operation ID와 Connector 작업 기록은 결과를
-확인하지 못한 요청이 같은 변경을 두 번 만드는 것도 방지합니다.
+Python 서버가 필요하지 않습니다. MCP도 필수가 아니라 선택 기능입니다.
 
-일상적인 말로 표현하면, Hera가 작업 전에 전체 배송 주소와 영수증을 함께 확인하게
-된 것입니다. 따라서 잘못된 프로젝트 호출, 유효하지 않은 요청, 중복 변경 가능성이
-줄어듭니다. 하지만 AI의 디자인 판단이 반드시 옳다고 보장하거나 Unity test를
-대체하지는 않으며, 정확도가 몇 퍼센트 높아졌다고 말할 근거도 아직 없습니다. 현재
-저장소에는 그런 수치 주장을 뒷받침하는 benchmark가 없습니다. 이번 릴리스가 보장하는
-범위는 더 좁고 분명합니다. 모호하거나 오래된 연결 상태를 더 많이 감지하고, 추측해
-실행하는 대신 안전하게 멈춥니다.
+### 4. 사람보다 AI가 읽기 좋은 출력에 신경 씁니다
 
-처음으로 보존한 전체 게임 제작 실험은
-[Crystal Forge 실사용 benchmark](docs/benchmarks/user-scenario/crystal-forge-6000.3.5f2.md)입니다.
-최종 플레이 결과는 정확했지만 여러 차례 수리한 뒤에야 통과했으며, 최초 시도 성공은
-달성하지 못했습니다. 이 결과는 회귀 검증 기준이지 MCP와 CLI의 A/B 결과나 모델
-정확도 향상의 증거가 아닙니다.
+도구 응답이 커지면 AI가 다음 판단을 위해 읽어야 할 입력도 커집니다. 그래서 Hera는 ID만 필요한 검색, 필요한 Tool 하나의 schema만 조회하는 방식처럼 작은 출력 경로를 제공합니다.
 
-#### 토큰을 더 사용하나요?
+목표는 단순합니다. **다음 결정을 내리는 데 필요한 Unity 정보만 작게 전달합니다.**
 
-일반 CLI 경로는 바뀌지 않았으므로 새로 늘어나는 토큰 비용이 없습니다. MCP를
-사용하면 프로토콜의 부가 정보가 생기므로 토큰 사용량이 **항상 CLI와 똑같다고
-보장할 수는 없으며**, 사용하는 AI client와 작업에 따라 달라집니다. Hera는 이
-증가분을 두 가지 방식으로 줄입니다. Profile은 작고 고정된 기본 도구만 보여 주고,
-Compact MCP는 찾기·설명·실행이라는 세 개의 관문 도구만 등록한 뒤 실제로 필요한
-도구의 설명을 그때 가져옵니다. 모든 도구를 한꺼번에 펼치는 Full 방식은 기본값이
-아니라 진단·개발용 선택지로 남겨 두었습니다.
+### 5. "요청을 보냈다"와 "작업이 끝났다"를 구분합니다
 
-현재 저장소에는 CLI와 MCP의 토큰 사용량이 정확히 같다고 증명하는 benchmark가
-없습니다. 따라서 목표를 과장하지 않습니다. 기존 CLI 비용은 그대로 보존하고, MCP
-호환성 때문에 처음부터 대화에 들어오는 정보량을 가능한 한 작게 만드는 것이 이번
-설계의 정확한 목표입니다.
+Unity는 스크립트를 다시 컴파일하고, Domain Reload를 하고, 포트를 바꾸고, Play Mode에 들어가고, 테스트를 실행하면서 연결이 잠깐 끊길 수 있습니다.
 
-#### CLI 중심인 Hera가 왜 Compact MCP를 빌려왔나요?
+Hera는 HTTP 요청이 성공했다는 이유만으로 Unity 작업이 완료됐다고 간주하지 않습니다.
 
-Hera의 핵심 철학은 특정 프로토콜만 고집하는 것이 아니라, 적은 토큰으로 Unity를
-검증 가능하게 제어하는 것입니다. MCP를 완전히 거부하면 이를 사용하는 AI와 연결할
-수 없고, 일반적인 “모든 도구 등록” MCP 구조를 그대로 쓰면 사용하지도 않을 도구의
-이름·설명·형식이 대화에 먼저 들어옵니다. v0.1.0은 MCP를 바깥쪽 대화 언어로만
-사용하고 production 중심에는 계속 CLI를 둡니다. Compact 방식은 호환성을 필요할
-때만 불러오므로, 호환성이 매번 지불하는 고정 토큰 비용이 되지 않게 하면서 기존
-철학을 지킵니다.
+### 6. 프로젝트가 커지면 Hera도 우리 도구가 될 수 있습니다
 
-| 릴리스 변경 | 쉬운 뜻 |
-|:---|:---|
-| 프로젝트 기반 Editor 선택 | 정규화된 전체 프로젝트 경로로 Editor를 식별합니다. 포트는 임시 연결점으로 취급하고 모호한 선택은 실패합니다. |
-| 안전한 응답 손실 복구 | 재시도 전에 domain reload, Editor 재시작, 사라진 대상, 포트 재사용을 구분합니다. 비멱등 mutation은 무작정 반복하지 않습니다. |
-| 실험적 MCP adapter | `HERA_MCP_ENABLED=1 hera-agent-unity mcp`로 Profile, Compact, Full-safe, 승인, operation ledger, Tasks, 제한된 result resource를 사용할 수 있습니다. |
-| Connector 0.0.76 패키징 | UPM 테스트를 production assembly에서 분리해 Unity 6000.5 컴파일 정지와 중복 TestRunner 참조를 제거했습니다. |
-| Apache-2.0 | 명시적인 특허 조건, 수정 표시, 배포용 `NOTICE` 파일을 적용했습니다. |
+처음에는 기본 명령만 쓰면 됩니다. 나중에는 매일 반복하는 프로젝트 작업을 `[HeraTool]`로 만들 수 있습니다.
 
-### Unity De-slop Mode (Beta) — 정적 시각 규율
+예를 들어 던전 테스트 룸 생성, 퀘스트 그래프 검사, 테이블 빌드, 전투 fixture 생성, 에셋 규칙 검사 같은 일을 프로젝트 전용 명령으로 만들 수 있습니다.
 
-Game Feel Mode가 화면이 *어떻게 움직이는가*를 다룬다면, De-slop Mode는 화면이
-*가만히 있을 때*를 다룹니다. 생성된 UI를 생성된 티 나게 만드는 흔적들입니다.
-택소노미는 Connector 안에 함께 들어 있으므로(**0.0.63** 이상) 따로 받아올 것이
-없습니다.
+---
 
-| 하는 일 | 그렇게 만든 이유 |
-|:---|:---|
-| 5개 영역 49개 tell, A → B → C → D → E 순서로 수정 | 상류 수정이 하류 수정의 충돌을 미리 녹여 없앱니다 |
-| 모든 tell이 uGUI *와* UI Toolkit 판정을 함께 가집니다 | UI Toolkit 쪽은 각 Unity 버전이 실제로 제공하는 USS 어휘에 대고 작성했습니다 |
-| 판정은 상태가 아니라 라이브 씬에서 매번 재측정하는 술어입니다 | "완료" 를 저장하는 체크리스트는 낡지만, 측정하는 체크리스트는 낡지 않습니다 |
-| 간격·타입 스케일은 1280x720 기준 해상도에 대고 해석합니다 | 기준 해상도를 말하지 않은 절대 px 는 의미가 없습니다 |
-| 반복되는 인터랙션 셀은 절대 평탄화하지 않습니다 | 게임 UI 의 중첩 표면은 대개 기능입니다 — 인벤토리 슬롯, 핫바, HUD 패널 |
+## 얼마나 좋은가요?
 
-[모드 살펴보기 →](#unity-de-slop-mode-beta) · [Game Feel Mode →](#game-feel-mode-beta)
+Hera는 "AI니까 알아서 잘합니다" 같은 모호한 표현 대신 저장소에 남아 있는 실측과 호환성 근거를 사용합니다.
 
-### 라이브 Editor에 근거한 UI Toolkit 스캐폴딩
+### 자주 읽는 정보는 작게 보냅니다
 
-Connector **0.0.61**은 에이전트가 버전별 API를 추측하지 않아도 되는
-UI Toolkit 경로를 추가했습니다.
+`list --compact`의 보존된 저토큰 측정은 테스트한 Unity 버전들에서 **약 93 토큰 추정치**입니다. `find_gameobjects --ids`는 **약 49~55 토큰 추정치**를 기록했습니다.
 
-| 선택 | Hera 동작 | 기본 경계 |
-|:---|:---|:---|
-| `ugui` (기본값) | Canvas / GameObject / RectTransform 워크플로를 유지합니다 | 기존 uGUI 파이프라인 |
-| `uitk` | 검증된 `.uxml`, 공유 `.hera-*` `.uss`, `PanelSettings`, `UIDocument`를 생성합니다 | runtime-only 리플렉션 element, UXML attribute, USS property |
-| World-space | 라이브 Unity 6000.2+에서만 활성화합니다 | 문서 bucket에서 추론하지 않음 |
-| v1 범위 | layout scaffolding에 집중합니다 | MVVM과 data binding은 의도적으로 제외 |
+| Unity Editor | `list --compact` | `find_gameobjects --ids` |
+|:---|---:|---:|
+| 2022.3.62f2 | **93 T** | **54 T** |
+| 2023.2.22f1 | **93 T** | **54 T** |
+| 6000.3.5f2 | **93 T** | **49 T** |
+| 6000.5.0f1 | **93 T** | **55 T** |
 
-[UI 시스템 선택하기 →](#ui-시스템) · [UI 문서 계약 보기 →](docs/UI_DOC_IR.md)
+`T`는 Hera CLI 출력의 UTF-8 바이트를 `ceil(bytes / 4)`로 계산한 단순 추정치입니다. AI 서비스의 실제 과금 토큰을 뜻하지 않습니다. 측정 방법: [token-reduction benchmark](docs/benchmarks/token-reduction/README.md).
 
-### 최신 CLI 릴리스 - v0.1.4
+### 여러 Unity 세대에서 패키지 컴파일을 확인합니다
 
-공개된 최신 CLI 릴리스는 **v0.1.4**입니다(2026년 8월 6일). 이 릴리스의
-Unity 패키지는 계속 **Connector 0.0.80**입니다. CLI와 Connector 버전은
-의도적으로 분리되어 있습니다.
+현재 공개 Connector는 **0.0.80**, CLI는 **v0.1.4**입니다. Connector의 동일 소스가 다음 대표 Editor에서 릴리스 컴파일 게이트를 통과했습니다.
 
-| 현재 하이라이트 | 쉬운 뜻 |
-|:---|:---|
-| **프로젝트 안전 다중 Editor 정책** | 선택자가 없으면 현재 프로젝트와 최신 heartbeat 순으로 고르고, 선택한 전체 프로젝트 경로를 포트 변경 뒤에도 유지합니다. |
-| **2,277바이트 Compact 프로젝트 규칙** | `doctor --agent-rules --compact`가 대상 선택, 안전, 승인, 검증 규칙만 항상 읽히게 하고 전체 가이드는 필요할 때 불러옵니다. |
-| **Catalog 변경 근거** | Tool·Action·설명·Profile payload 변화를 검토된 live baseline과 비교한 뒤 릴리스합니다. |
-| **제품 표면 패키지 게이트** | Test fixture를 켜기 전에 제품용 catalog를 측정하고, 검증 뒤 폐기 가능한 manifest를 바이트 단위로 복원합니다. |
-| **MCP Registry 연속성** | npm과 MCP metadata는 0.1.4로 올라가지만 default-off stdio adapter와 Connector 0.0.80은 그대로 유지합니다. |
-
-릴리스 호환성 매트릭스:
-
-| Unity Editor | Connector 0.0.80 exact-source compile |
+| Unity Editor | 결과 |
 |:---|:---:|
 | 2022.3.62f2 | PASS |
 | 2023.2.22f1 | PASS |
@@ -266,80 +231,48 @@ Unity 패키지는 계속 **Connector 0.0.80**입니다. CLI와 Connector 버전
 | 6000.3.5f2 | PASS |
 | 6000.5.6f1 | PASS |
 
-직전 Connector 0.0.75는 같은 매트릭스에서 clean UPM import와 runtime 검사도
-통과했습니다. 근거: [Unity 호환성 인벤토리](docs/UNITY_EDITOR_VERSION_INVENTORY.md)
+CLI 버전과 Connector 버전은 의도적으로 따로 관리합니다.
 
-낮은 토큰 벤치마크 기준:
+### 실제 작은 게임 제작 실험도 끝까지 통과했습니다
 
-| Unity Editor | `list --compact` | `find_gameobjects --ids` | 상세 |
-|:---|---:|---:|:---|
-| 2022.3.62f2 | **93 T** | **54 T** | [벤치마크](docs/benchmarks/token-reduction/2022.3.62f2.md) |
-| 2023.2.22f1 | **93 T** | **54 T** | [벤치마크](docs/benchmarks/token-reduction/2023.2.22f1.md) |
-| 6000.3.5f2 | **93 T** | **49 T** | [벤치마크](docs/benchmarks/token-reduction/6000.3.5f2.md) |
-| 6000.5.0f1 | **93 T** | **55 T** | [벤치마크](docs/benchmarks/token-reduction/6000.5.0f1.md) |
+보존된 Crystal Forge 실험에서는 AI에게 코드와 테스트 작성, UI 생성, 컴파일, Unity EventSystem 입력, 테스트, 화면 캡처, 마지막 깨끗한 Editor 상태까지 요구했습니다.
 
-전체 벤치마크: [docs/benchmarks/token-reduction/README.md](docs/benchmarks/token-reduction/README.md)
+**최종 결과: 수정 후 PASS. 첫 시도: FAIL.**
+
+측정된 실행 구간은 **15분 52초**였습니다. 이 실험에서 중요한 점은 실패를 숨기지 않았다는 것입니다. 내부 상태는 맞았지만 실제 UI 텍스트가 보이지 않는 상태가 있었고, AI가 다시 관찰하고 고친 뒤 화면까지 확인해야 최종 PASS가 됐습니다.
+
+이 결과는 Hera를 쓰면 모든 작업이 첫 시도에 성공한다는 뜻이 아닙니다. AI가 몇 퍼센트 더 똑똑해진다는 주장도 아닙니다. 더 현실적인 의미는 이것입니다.
+
+> **Hera는 AI에게 실제 Editor의 피드백을 주기 때문에, 첫 번째 그럴듯한 답에서 멈추지 않고 통합 문제를 찾아 고치고 다시 확인하는 루프를 만들 수 있습니다.**
+
+전체 기록: [Crystal Forge 실사용 benchmark](docs/benchmarks/user-scenario/crystal-forge-6000.3.5f2.md).
 
 ---
 
-## 바로 시작
+## 어떻게 사용하나요?
 
-### 1. Unity를 엽니다
-
-Hera Unity 패키지가 설치된 프로젝트를 엽니다.
-
-### 2. 연결을 확인합니다
-
-```bash
-hera-agent-unity status
-```
-
-프로젝트 이름, Unity 버전, 포트, 상태가 나오면 연결된 것입니다.
-
-### 3. AI에게 시킵니다
-
-예시:
+필요한 것은 두 개뿐입니다.
 
 ```text
-hera-agent-unity를 사용해줘. Unity 콘솔을 확인하고, Play Mode에 들어가서 문제를 재현한 뒤 고쳐줘.
+내 컴퓨터                     내 Unity 프로젝트
+─────────                     ───────────────
+Hera CLI        <---------->  Hera Unity Connector
 ```
 
-그러면 AI는 이런 명령을 직접 실행할 수 있습니다:
+### 1단계. CLI 설치
 
-```bash
-hera-agent-unity console --type error
-hera-agent-unity editor play --wait
-hera-agent-unity exec "return EditorSceneManager.GetActiveScene().name;"
-hera-agent-unity test --mode PlayMode
-```
-
----
-
-## 설치
-
-설치는 두 부분입니다.
-
-1. 컴퓨터에 CLI 프로그램 설치;
-2. Unity 프로젝트에 Unity 패키지 설치.
-
-### CLI
-
-**npm (Windows, macOS, Linux)**
+가장 간단한 크로스플랫폼 방법은 npm입니다.
 
 ```bash
 npm install --global hera-agent-unity
 ```
 
+또는 운영체제용 설치 스크립트를 사용할 수 있습니다.
+
 **Windows PowerShell**
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.ps1 | iex"
-```
-
-설치 후 새 터미널을 열고 확인합니다:
-
-```powershell
-hera-agent-unity version
 ```
 
 **macOS / Linux**
@@ -348,7 +281,16 @@ hera-agent-unity version
 curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.sh | bash
 ```
 
-**Go로 설치**
+확인:
+
+```bash
+hera-agent-unity version
+```
+
+<details>
+<summary>다른 CLI 설치 방법</summary>
+
+**Go install**
 
 ```bash
 go install github.com/NotNull92/hera-agent-unity@latest
@@ -356,13 +298,15 @@ go install github.com/NotNull92/hera-agent-unity@latest
 
 **수동 설치**
 
-[Releases](https://github.com/NotNull92/hera-agent-unity/releases)에서 파일을 받은 뒤 실행합니다:
+[GitHub Releases](https://github.com/NotNull92/hera-agent-unity/releases)에서 바이너리를 받은 뒤:
 
 ```bash
 hera-agent-unity install
 ```
 
-### Unity 패키지
+</details>
+
+### 2단계. Unity 패키지 추가
 
 Unity에서:
 
@@ -370,98 +314,96 @@ Unity에서:
 Window -> Package Manager -> Add package from git URL
 ```
 
-아래 주소를 넣습니다:
+아래 주소를 넣습니다.
 
 ```text
 https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 ```
 
-또는 `Packages/manifest.json`에 직접 추가합니다:
+또는 `Packages/manifest.json`에 추가합니다.
 
 ```json
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
-최신을 따라가지 않고 특정 커넥터(UPM) 버전을 고정하려면 존재하는
-`connector-<버전>` git 태그를 뒤에 붙입니다:
+Editor가 열리면 Connector가 자동으로 시작합니다.
+
+특정 Connector 태그를 고정하려면:
 
 ```json
-"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-<버전>"
+"com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-<version>"
 ```
 
-Connector 버전은 CLI `v*` 릴리스와 분리되어 있습니다.
-
-Unity가 열리면 커넥터가 자동으로 시작합니다.
-
----
-
-## 명령어
-
-AI가 가장 자주 쓰는 명령어입니다.
-
-| 명령어 | 하는 일 |
-|:---|:---|
-| `status` | 어떤 Unity Editor에 연결됐는지 보여 줍니다. |
-| `doctor --json` | 설치, PATH, Unity 연결을 검사합니다. |
-| `doctor --agent-rules --compact` | 대상 선택, 안전, 승인, 검증에 필요한 작은 상시 규칙을 출력합니다. |
-| `list --compact` | 작은 응답으로 도구 목록을 봅니다. |
-| `call <tool> --json '{...}'` | live strict tool contract로 검증한 뒤 호출합니다. |
-| `console --type error` | Unity의 실제 에러를 읽습니다. |
-| `exec "..."` | Unity 안에서 C#을 실행합니다. |
-| `editor play --wait` | Play Mode에 들어가고 기다립니다. |
-| `editor stop --wait` | Play Mode를 멈추고 기다립니다. |
-| `scene info` | 현재 씬 정보를 봅니다. |
-| `find_gameobjects` | 열린 씬에서 오브젝트를 찾습니다. |
-| `manage_assets` | `Assets/` 아래 프로젝트 에셋을 찾고, 폴더를 만들고, ScriptableObject `.asset`을 생성하고, 복사·이동·삭제합니다. |
-| `manage_gameobject` | GameObject를 만들고, 복제하고, 옮기고, 이름을 바꿉니다. |
-| `manage_components` | 컴포넌트를 추가, 삭제, 조회, 수정합니다. |
-| `manage_animation` | AnimationClip과 AnimatorController 상태머신을 저작합니다. |
-| `ui_doc` | uGUI 또는 UI Toolkit 스캐폴드를 만들고, uGUI overlay를 캡처합니다. |
-| `input` | Unity EventSystem raycast와 pointer handler로 uGUI 상호작용을 검증합니다. |
-| `game_feel` | 게임 필 레시피를 조회합니다 (screen shake, hit stop, honest juice 등). |
-| `ui_slop` | UI 슬롭 항목과 수정법을 조회합니다 (장식, 레이아웃, 간격, 타이포, 색). |
-| `test` | Unity 테스트를 실행합니다. |
-| `screenshot` | Scene/Game 뷰나 단일 GameObject를 캡처합니다. |
-| `batch` | 여러 명령을 한 번에 실행합니다 (atomic 롤백 옵션). |
-
-전체 명령어: [docs/COMMANDS.md](docs/COMMANDS.md)
-
----
-
-## 토큰 절약
-
-Hera는 AI 에이전트를 위해 만들었습니다. 그래서 응답이 작아야 합니다.
-
-응답이 크면 AI의 입력 토큰도 커집니다. 토큰이 커지면 돈도 더 들고, 대화창도 빨리 찹니다. 그래서 Hera는 자주 쓰는 명령의 응답을 작게 만듭니다.
-
-추천 경로:
+### 3단계. Unity를 열고 연결 확인
 
 ```bash
-hera-agent-unity list --compact
-hera-agent-unity find_gameobjects --name Player --ids
-hera-agent-unity list --tool manage_gameobject
+hera-agent-unity doctor --json
+hera-agent-unity status
 ```
 
-정말 필요할 때만 큰 응답을 받습니다:
+실제 프로젝트 경로, Unity 버전, Editor 상태, 연결 정보가 보이면 준비된 것입니다.
 
-```bash
-hera-agent-unity list
-hera-agent-unity find_gameobjects --fields all
-hera-agent-unity console --lines 0 --stacktrace full
+이제 AI에게 이렇게 말하면 됩니다.
+
+```text
+이 Unity 프로젝트에서는 hera-agent-unity를 사용해줘.
+먼저 현재 Editor 상태를 확인해.
+요청한 내용을 구현한 뒤 컴파일하고 실제 Console 에러를 읽어.
+바꾼 오브젝트나 UI를 다시 확인하고,
+Unity가 깨끗한 상태라는 근거가 있기 전에는 완료했다고 하지 마.
 ```
+
+이게 Hera의 기본 사용 흐름입니다.
 
 ---
 
-## 스크린샷으로 Unity UI 만들기
+## 어떻게 응용할 수 있나요?
 
-Unity UI는 AI가 틀리기 쉽습니다. 앵커, 피벗, 레이아웃이 복잡하기 때문입니다.
+### 컴파일 또는 런타임 에러 자동 수정
 
-Hera는 AI에게 이런 반복 작업을 시킵니다:
+```text
+Hera를 사용해 Unity Console의 실제 에러를 읽고 원인을 고쳐줘.
+다시 컴파일하고 에러가 없어질 때까지 반복해줘.
+```
 
-1. 지금 UI를 읽습니다;
-2. 진짜 Unity UI 오브젝트를 만듭니다;
-3. Unity가 그린 화면을 캡처합니다;
-4. 비교하고 고칩니다.
+AI는 보통 이런 명령을 사용합니다.
+
+```bash
+hera-agent-unity console --type error --lines 20
+hera-agent-unity editor refresh --compile
+hera-agent-unity console --type error --lines 20
+```
+
+### 기능을 만들고 실제 동작까지 증명
+
+```text
+인벤토리 필터 기능을 구현해줘.
+Hera로 컴파일하고 관련 EditMode/PlayMode 테스트를 돌려.
+필요하면 Play Mode에도 들어가서 확인한 뒤 최종 근거를 보고해줘.
+```
+
+### 게임플레이 버그 재현
+
+```text
+올바른 Scene을 열고 Play Mode에서 관련 오브젝트를 확인해.
+버그를 재현하고 수정한 뒤 같은 경로를 다시 실행해서 고쳐졌는지 증명해줘.
+```
+
+### 참고 이미지로 UI 제작
+
+Hera는 AI에게 눈대중 루프가 아니라 측정 루프를 줄 수 있습니다.
+
+```text
+참고 이미지
+   ↓ 색/레이아웃 측정
+Unity UI 생성
+   ↓ 캡처
+비교
+   ↓ 수정
+다시 캡처
+```
+
+예시:
 
 ```bash
 hera-agent-unity ui_doc export --path /Canvas/HUD
@@ -470,172 +412,59 @@ hera-agent-unity ui_doc apply --file hud.json --parent /Canvas --mode upsert
 hera-agent-unity ui_doc capture --out hud_built.png
 ```
 
-핵심은 간단합니다. UI를 찍어서 확인하고 고칩니다. 눈대중으로 맞추지 않습니다.
-`ui_doc apply`는 현재 Unity Editor 버전에 맞는 공식 uGUI 문서 bucket도 보고합니다.
-예를 들어 Unity 6000.3은 `com.unity.ugui@2.0`, Unity 6000.5+는
-`com.unity.ugui@2.5` 규칙을 사용합니다. 자동으로 고친 항목은 `fixes`,
-판단이 필요한 구조 문제는 `diagnostics`에 나옵니다.
+Hera는 **uGUI**와 **런타임 UI Toolkit**을 모두 지원합니다. 어떤 UI 시스템을 사용할지 명시적으로 선택하므로 둘을 몰래 섞지 않습니다.
 
----
-
-## UI 시스템
-
-`ui_system`은 출력 backend를 명시합니다. `asset-config.json`에서 설정하며,
-각 UI 요청은 선택한 backend 안에서 처리됩니다. Hera는 씬을 보고 UI 방식을
-추측하거나 자동 전환하지 않으며, `ui_doc.backend`가 설정과 다르면 씬이나
-에셋을 변경하기 전에 거부합니다.
-
-| Backend | 적합한 용도 | Hera 생성물 |
-|:---|:---|:---|
-| `ugui` (기본값) | Canvas 기반 UI | GameObject와 RectTransform |
-| `uitk` | 런타임 UI Toolkit layout | 검증된 UXML, 공유 USS, `PanelSettings`, `UIDocument` |
-
-런타임 UI Toolkit 프로젝트라면 `uitk`를 설정합니다:
-
-```bash
-hera-agent-unity asset-config ui-system uitk
-hera-agent-unity ui_doc apply --file settings-uitk.json
-```
-
-UITK 문서는 `backend: "uitk"`를 사용하고, 정확한 runtime element 이름,
-리플렉션으로 검증된 UXML attribute, 리플렉션으로 검증된 USS property를
-사용합니다. 생성 파일은 `Assets/HeraGenerated/UI` 아래에 둡니다.
-
-| 요구 사항 | UI Toolkit v1 동작 |
-|:---|:---|
-| Screen-space | 지원하는 모든 Editor에서 기본값 |
-| World-space | 라이브 Unity runtime 6000.2+에서만 지원하며 문서 bundle bucket과 별개 |
-| 검증 | 리플렉션으로 확인한 runtime element, attribute, USS property schema |
-| Data binding | v1 범위에서 의도적으로 제외 |
-
-두 backend 계약은 [UI_DOC_IR.md](docs/UI_DOC_IR.md)를 참고하세요.
-
----
-
-## Input QA
-
-일부 에이전트 환경은 Unity screenshot state를 안정적으로 얻지 못해서 물리 좌표 클릭을 거부합니다. Hera의 `input` 명령은 이때 사용할 수 있는 별도의 Unity 레벨 QA 경로입니다.
+### 화면 좌표를 찍지 않고 버튼 검증
 
 ```bash
 hera-agent-unity input state
 hera-agent-unity input inspect --path /Canvas/StartButton --details true
 hera-agent-unity input click --path /Canvas/StartButton --settle_frames 2
-hera-agent-unity input submit --path /Canvas/StartButton
-hera-agent-unity input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
-hera-agent-unity input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
 ```
 
-`input`은 Unity uGUI의 `EventSystem.RaycastAll`과 `ExecuteEvents` pointer handler를 사용합니다. blocker, handler, interactability, submit, scroll, drag 동작까지 Unity UI 이벤트 경로가 실제로 동작하는지 확인할 수 있습니다.
+이 방식은 Unity EventSystem 경로를 검증합니다. 실제 Windows/macOS 마우스 클릭과는 다르므로 두 증거는 구분해서 보고합니다.
 
-입력 작업과 진단 출력은 dispatch 전에 제한됩니다. `hold_ms`는 5000 이하, `settle_frames`는 120 이하, `steps`는 120 이하, `click_count`는 3 이하, `max_results`는 100 이하(기본 50)여야 하며 잘못된 값은 `INPUT_INVALID_PARAM`을 반환합니다.
+### 반복 Scene 작업 자동화
 
-단, 물리 OS/window 클릭은 아닙니다. 증거는 분리해서 보고해야 합니다:
+AI에게 다음을 묶어서 시킬 수 있습니다.
 
-| QA 기준 | 보고 방식 |
-|:---|:---|
-| Unity EventSystem input QA | `input inspect`, `input click`, callback, console log, Play Mode test 결과로 PASS/FAIL을 기록합니다. |
-| Physical OS click QA | Computer Use가 Unity screenshot state를 얻지 못하거나 native window input backend를 쓸 수 없으면 BLOCKED로 기록합니다. |
+- 테스트 전장 생성
+- Prefab 배치
+- Component 추가와 값 설정
+- ScriptableObject 생성
+- Animator 상태 구성
+- Scene 저장
+- 마지막 검증
 
-자세한 명령 문서: [docs/COMMANDS.md](docs/COMMANDS.md#input)
+### 우리 스튜디오 전용 명령 만들기
+
+프로젝트에서 자주 반복하는 작업이 있다면 `[HeraTool]`로 노출할 수 있습니다. 그러면 Hera가 자동으로 발견합니다.
+
+예시:
+
+- `build_test_battle`
+- `validate_item_database`
+- `spawn_quest_fixture`
+- `bake_localization_table`
+- `check_prefab_rules`
+
+즉 Hera는 처음에는 범용 Unity 연결 도구로 시작하지만, 나중에는 **우리 게임 제작 파이프라인 전용 CLI**로 자랄 수 있습니다.
 
 ---
 
-## Game Feel Mode (Beta)
+## Ultra Hera: "완료"를 "검증 완료"로 바꾸기
 
-AI는 돌아가는 게임은 만들 수 있습니다. Game Feel Mode (Beta)는 그 게임이 *제대로 느껴지게* 도와줍니다.
+<div align="center">
 
-이 모드를 켜면 Hera로 작업하는 에이전트가 게임플레이 자체의 game feel 가이드를 받습니다 — screen shake, hit stop, knockback, 조작감(coyote time, input buffering), 카메라, 사운드, 보상 연출 — *Game Feel & Juice Bible*과 *Ethical Engagement Game Feel Framework*에서 가져온 구체적 수치(px, 초, %, Hz)와 함께.
+<img src="docs/assets/ultra_hera_logo.png" width="42%" alt="Ultra Hera">
 
-윤리 원칙은 나중에 검사하는 게 아니라 레시피에 내장되어 있습니다. 모든 레시피가 제약을 함께 담습니다 — screen shake 강도 옵션, 광과민성 flash 감소, 정직한 보상 연출, 확률 투명성 — 그래서 에이전트가 만든 결과물은 애초에 윤리 체크리스트를 통과하는 구조입니다 (**Honest Juice**: 연출 강도는 실제 성취 가치와 일치해야 한다).
+<br>
 
-세 가지 표면이 함께 동작합니다:
+**작업한다. 확인한다. 그다음 결과를 보고한다.**
 
-- `hera-agent-unity game_feel <토픽>` — 동봉 지식 베이스 (54개 토픽, ethics 우선 정렬), 항상 사용 가능
-- `doctor --agent-rules` — 모드가 켜져 있으면 핵심 원칙 + 워크플로 주입
-- 도구 힌트 — `manage_components`로 Camera / ParticleSystem / AudioSource / Rigidbody / Light / Animator를 붙이면 관련 토픽을 안내
+</div>
 
-가이드만 제공합니다 — Hera가 런타임 컴포넌트를 자동으로 붙이지 않습니다.
-
-Unity에서 켭니다:
-
-```text
-HeraAgent -> Hera Settings -> Game Feel Mode (Beta)
-```
-
-CLI에서는: `hera-agent-unity asset-config gamefeel on`
-
----
-
-## Game Feel UI Mode (Beta)
-
-AI는 작동하는 버튼은 만들 수 있습니다. Game Feel UI Mode (Beta)는 그 버튼이 게임처럼 느껴지게 도와줍니다.
-
-이 모드를 켜면 Hera가 UI 생성 결과에 `agent_hint`를 붙입니다. 이 힌트에는 hover 확대, press 눌림, release bounce, 대칭 선택 버튼을 갖춘 팝업 overshoot, 등급별 보상 연출 사다리, 크리티컬 스펙을 포함한 숫자 카운트업, dual-response 체력바, 차지/쿨다운 패턴, ECN-DMN 밀도 가이드, 햅틱, 접근성 기본 요건 같은 구체적인 game-feel 레시피가 들어갑니다. 힌트 끝에는 `game_feel` 지식 베이스의 `ui` 카테고리 포인터가 붙어 — 요소별 스펙 표, 인지 부하 이론, 선택 대칭 윤리, 2026 트렌드 — 필요할 때 깊이 조회할 수 있습니다.
-
-이 기능은 가이드이지 무거운 런타임 기능이 아닙니다. Hera가 씬에 큰 컴포넌트를 자동으로 붙이지 않습니다. 에이전트가 레시피를 받고, 평소처럼 Unity 수정 명령으로 애니메이션과 피드백을 적용합니다.
-
-uGUI fixer는 game-feel 레시피와 별개입니다. `ui_doc apply`는 항상 공식문서 기반
-`fixes` / `diagnostics`를 보고하고, Game Feel UI Mode (Beta)는 선택적으로 game-feel
-가이드를 `agent_hint`에 붙입니다.
-
-Unity에서 켭니다:
-
-```text
-HeraAgent -> Hera Settings -> Game Feel UI Mode (Beta)
-```
-
-CLI에서는: `hera-agent-unity asset-config gamefeel-ui on`
-
-같은 Hera Settings 패널에서 DOTween이 켜져 있으면 DOTween 방식의 트윈을 추천합니다. 없으면 coroutine이나 lerp 방식으로 안내합니다.
-
-대표 레시피:
-
-| UI 요소 | Game-feel 힌트 |
-|:---|:---|
-| Button | hover 확대, press 눌림, release bounce, 클릭음, 햅틱. |
-| Popup / panel | pop-in 등장, 화면 dim, 빠르고 조용한 퇴장. |
-| Text | 줄별 등장, 숫자 카운트업, 떠오르는 데미지 텍스트. |
-| Image / reward | pop-in, 희귀도 pulse, glow, hover lift. |
-| Bar | 즉시 줄어드는 fill, 늦게 따라오는 chip bar, 낮은 수치 pulse, segment tick. |
-
-자세한 명령 문서: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
-
----
-
-## Unity De-slop Mode (Beta)
-
-Game Feel Mode가 화면이 **어떻게 움직이는지**를 다룬다면, De-slop Mode는 화면이 **가만히 있을 때의 모습**을 다룹니다. 생성된 UI를 생성물처럼 보이게 만드는 통계적 신호 — 반사적인 장식, 규율 없는 컨테이너, 눈대중으로 정한 간격, 장식용 이탤릭, 무지개 팔레트 — 를 걷어냅니다.
-
-동봉된 `ui_slop` 택소노미는 이를 5개 영역으로 나누고, 수정은 이 순서로 진행합니다. 상류 수정이 하류에서 생길 충돌을 미리 없애기 때문입니다.
-
-| 영역 | 다루는 것 |
-|:---|:---|
-| A | 장식 스윕 — 오브, 글로우, 글래스, 스파클, 이모지 아이콘 |
-| B | 레이아웃, RectTransform, 컨테이너, 앵커, Raycast Target |
-| C | 간격 — 사다리, 밀도, 그루핑, 죽은 여백 |
-| D | 타이포 — 이탤릭, 폰트 역할, 타입 스케일, 한글 조판 |
-| E | 색 — 시맨틱 역할, 팔레트 규율, WCAG 대비 |
-
-각 항목은 uGUI 검사와 UI Toolkit 검사를 함께 갖습니다. UI Toolkit 쪽은 각 Unity 버전이 실제로 지원하는 USS 어휘에 맞춰 작성됐습니다. 여기에 기계적인 수정법과 **슬롭으로 취급하면 안 되는 기능적 예외**가 함께 붙습니다 — 게임 UI에서 중첩 표면은 대개 정당하므로, 인벤토리 슬롯처럼 반복되는 인터랙티브 셀은 절대 평탄화하지 않습니다.
-
-```bash
-hera-agent-unity ui_slop                 # 영역별 택소노미 인덱스
-hera-agent-unity ui_slop box-in-box      # 항목 하나: 검사, 예외, 수정법
-```
-
-도구 자체는 항상 사용할 수 있습니다. 모드를 켜면 추가로 `doctor --agent-rules`가 de-slop 규율을 주입하고, `manage_components add`가 관련 항목을 가리킵니다.
-
-```text
-HeraAgent -> Hera Settings -> Unity De-slop Mode (Beta)
-```
-
-CLI에서는: `hera-agent-unity asset-config uislop on`
-
----
-
-## Ultra Hera
-
-Ultra Hera는 AI 에이전트 규칙 설정입니다. 이 기능이 AI 작업을 대신 하지는 않습니다. AI가 Hera로 Unity 작업을 한 뒤 얼마나 꼼꼼히 확인해야 하는지 알려줍니다.
+Ultra Hera는 AI Unity 작업을 위한 검증 규칙입니다. 기능을 대신 만드는 모드가 아니라, AI가 Hera로 한 작업을 얼마나 꼼꼼히 확인할지 정합니다.
 
 위치:
 
@@ -643,111 +472,223 @@ Ultra Hera는 AI 에이전트 규칙 설정입니다. 이 기능이 AI 작업을
 HeraAgent -> Hera Settings -> Ultra Hera
 ```
 
-모드:
-
 | 모드 | 쉬운 뜻 |
 |:---|:---|
-| `Off` | AI가 Hera 사용 후 다시 확인하지 않아도 됩니다. |
-| `Light` | 기본값입니다. AI가 목표를 확인하고, 필요한 상태만 읽고, 코드/씬/Inspector를 바꾸고, 컴파일 또는 상태를 확인하고, 콘솔 에러를 읽고, 바꾼 대상만 다시 본 뒤, 필요하면 한두 번 고칩니다. |
-| `Ultra` | 모든 작업에는 Light 확인을 쓰고, 중요한 요청은 테스트, Play Mode, Inspector 재확인, screenshot, `ui_doc` capture 같은 더 강한 확인으로 올립니다. |
+| `Off` | 추가 확인 규칙 없음 |
+| `Light` | 기본값. 컴파일/상태, Console 에러, 바꾼 대상을 다시 확인하고 종료 |
+| `Ultra` | 중요한 작업. 테스트, Play Mode, Inspector, screenshot, `ui_doc` capture 같은 강한 증거까지 추가 |
 
-Light는 "틀린 상태로 끝내지 않기"가 목표입니다. Ultra는 "정확히 검증해줘", "플레이해서 확인해줘", "UI 맞춰줘", "인스펙터까지 봐줘" 같은 요청에 씁니다.
+`Light`가 안전벨트 확인이라면 `Ultra`는 비행 전 점검에 가깝습니다.
 
-대표 Light 명령:
+이런 요청에서 Ultra가 잘 맞습니다.
 
-```bash
-hera-agent-unity status
-hera-agent-unity console --type error --lines 20
-hera-agent-unity editor refresh --compile
-hera-agent-unity find_gameobjects --ids
-hera-agent-unity exec --depth 1 ...
-```
+- "정확히 검증해줘"
+- "플레이해서 확인해줘"
+- "이 UI랑 맞춰줘"
+- "Inspector까지 확인해줘"
+- "테스트가 전부 통과하기 전에는 끝내지 마"
 
-대표 Ultra 명령:
-
-```bash
-hera-agent-unity test --mode EditMode
-hera-agent-unity test --mode PlayMode
-hera-agent-unity editor play --wait
-hera-agent-unity screenshot --view game
-hera-agent-unity ui_doc capture --out ...
-```
+목표는 하나입니다. **Unity가 아직 깨져 있는데 AI가 작업을 닫지 않게 하는 것.**
 
 ---
 
-## Unity 버전
+## 단순한 Editor 리모컨보다 더 많은 것
 
-| Unity 버전 | 상태 | 설명 |
+Hera에는 오브젝트를 수정하는 기능 외에도 AI가 더 좋은 결과를 만들게 돕는 선택형 제작 시스템이 있습니다.
+
+### UI 시스템
+
+| Backend | 잘 맞는 용도 | Hera가 만드는 것 |
 |:---|:---|:---|
-| 2022.3 LTS | 지원 | `2022.3.62f2`에서 확인했습니다. |
-| 2023.2 | 지원 | `2023.2.22f1`에서 확인했습니다. |
-| 6000.0 - 6000.4 | 지원 | Unity 6입니다. |
-| 6000.5+ | 지원 | 필요한 경우 Unity의 새 오브젝트 ID 방식을 사용합니다. |
-| 2022.3 미만 | 미지원 | 최소 지원 버전은 Unity 2022.3입니다. |
+| `ugui` | Canvas 기반 UI | GameObject, RectTransform, Component |
+| `uitk` | 런타임 UI Toolkit | 검증된 UXML, USS, `PanelSettings`, `UIDocument` |
+
+명시적으로 선택합니다.
+
+```bash
+hera-agent-unity asset-config ui-system uitk
+```
+
+Hera는 Scene을 보고 UI 방식을 추측하지 않습니다.
+
+### Game Feel Mode (Beta)
+
+게임이 단순히 동작하는 것을 넘어 **어떻게 느껴지는지** 생각하게 돕습니다. Screen shake, hit stop, knockback, 카메라, 조작감, 사운드, 보상 연출, 햅틱, 접근성 가이드를 제공합니다.
+
+```bash
+hera-agent-unity asset-config gamefeel on
+hera-agent-unity game_feel hit-stop
+```
+
+가이드 기능이며 Hera가 몰래 무거운 런타임 시스템을 붙이지 않습니다.
+
+### Game Feel UI Mode (Beta)
+
+Hover 확대, press squash, popup 등장, 숫자 카운트업, 체력바 반응, cooldown 피드백, 접근성 같은 UI 감각 레시피를 AI에게 제공합니다.
+
+```bash
+hera-agent-unity asset-config gamefeel-ui on
+```
+
+### Unity De-slop Mode (Beta)
+
+생성형 UI에서 자주 보이는 불필요한 장식, 약한 간격 규칙, box-in-box, 장식용 이탤릭, 들쭉날쭉한 색상 같은 문제를 찾고 수정 방향을 줍니다.
+
+```bash
+hera-agent-unity asset-config uislop on
+hera-agent-unity ui_slop box-in-box
+```
+
+인벤토리 슬롯처럼 기능적으로 반복돼야 하는 게임 UI를 무조건 평탄화하지 않도록 예외 규칙도 포함합니다.
 
 ---
 
-## AI용 규칙 넣기
+## 명령 한눈에 보기
 
-프로젝트에 Hera 규칙을 넣으면 AI가 추측하기 전에 Hera부터 사용합니다.
+외울 필요는 없습니다. AI에게 어떤 손과 눈을 제공하는지 이해하기 위한 표입니다.
 
-Codex 사용자는 배포자 직영 marketplace를 바로 추가할 수 있습니다:
+| 명령 | 쉬운 뜻 |
+|:---|:---|
+| `doctor --json` | "Hera가 설치됐고 Unity에 연결되나요?" |
+| `status` / `ping` | Editor 상태와 생존 여부 확인 |
+| `list --compact` | 기본/프로젝트 전용 Tool을 작은 응답으로 발견 |
+| `call <tool>` | 현재 Tool 규격을 검증하고 안전하게 호출 |
+| `console` | 실제 Unity Console 읽기/초기화 |
+| `scene` | Scene 조회, 열기, 저장, 목록, 닫기 |
+| `find_gameobjects` | 열린 Scene의 GameObject 검색 |
+| `manage_gameobject` | GameObject 생성과 편집 |
+| `manage_components` | Component 조회, 추가, 제거, 수정 |
+| `manage_assets` | `Assets/` 아래 에셋 작업 |
+| `manage_animation` | AnimationClip/AnimatorController 저작 |
+| `exec` | Editor 안에서 프로젝트를 아는 C# 실행 |
+| `editor` | Play, Stop, Pause, Refresh, Compile |
+| `test` | Unity 테스트 실행/재개 |
+| `task` | Unity에 다시 명령하지 않고 장기 작업 상태 확인 |
+| `screenshot` | Scene/Game View 또는 단일 오브젝트 캡처 |
+| `ui_doc` | Unity UI 조회, 생성, 측정, 캡처 |
+| `input` | Unity EventSystem으로 uGUI 검증 |
+| `profiler` | Profiler hierarchy snapshot 읽기 |
+| `game_feel` | Game Feel 가이드 조회 |
+| `ui_slop` | UI 정리 가이드 조회 |
+| `batch` | 여러 작업을 한 요청으로 실행 |
+| 프로젝트 `[HeraTool]` | 우리 프로젝트가 정의한 전용 명령 실행 |
+
+전체 명령 문서: [docs/COMMANDS.md](docs/COMMANDS.md).
+
+---
+
+## AI가 Hera를 자동으로 쓰게 만들기
+
+프로젝트 규칙에 Hera 사용법을 넣으면 AI가 Unity 상태를 추측하기 전에 Hera부터 확인할 수 있습니다.
+
+### Codex plugin
 
 ```bash
 codex plugin marketplace add NotNull92/hera-agent-unity --ref main
 ```
 
-그다음 Codex에서 `/plugins`를 열고 **Hera Agent Unity**의 **Hera Unity**를 활성화합니다. 같은 플러그인은 HOL의 `awesome-codex-plugins`와 `awesome-ai-plugins` 카탈로그에도 등록되어 있습니다.
+그다음 `/plugins`에서 **Hera Agent Unity**의 **Hera Unity**를 활성화합니다.
 
-플러그인 marketplace 없이 standalone Agent Skill만 설치하려면:
+### Standalone Agent Skill
 
 ```bash
 npx skills add NotNull92/hera-agent-unity --skill hera-agent-unity --agent codex
 ```
 
-두 설치 경로 중 하나만 선택하면 되며, 둘 다 같은 CLI-first Unity 작업 흐름을 안내합니다.
-
-이 저장소에는 주요 코딩 에이전트용 규칙 파일이 준비되어 있습니다:
-
-| 에이전트 | 넣을 파일 | 뜻 |
-|:---|:---|:---|
-| Codex / Claude / Gemini CLI / 대부분의 에이전트 | `AGENTS.md` | 셸 명령을 실행하는 에이전트가 함께 읽는 기본 가이드입니다. |
-| Cursor | `.cursor/rules/hera-agent-unity.mdc` | Cursor는 `.mdc` frontmatter가 있어야 프로젝트 규칙이 켜집니다. |
-| GitHub Copilot | `.github/copilot-instructions.md` | 저장소 전체에 적용되는 Copilot 지침입니다. |
-| GitHub Copilot, 파일별 | `.github/instructions/hera-agent-unity.instructions.md` | `.cs`, `.prefab`, `.unity`, `Assets/**` 같은 Unity 파일에 적용됩니다. |
-| Google AntiGravity | `GEMINI.md`, `.agents/agents.md`, `.agents/skills/hera-agent-unity/SKILL.md` | 프로젝트 진입 규칙, 워크스페이스 연결, 온디맨드 스킬입니다. |
-| Continue.dev | `.continuerules` | 일반 Markdown 규칙입니다. |
-
-항상 읽히는 공통 파일은 작게 만듭니다:
+### 공용 `AGENTS.md`
 
 ```bash
 hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 ```
 
-compact 출력에는 부트스트랩, 다중 Editor 선택, 안전·승인·검증 규칙만
-들어갑니다. 기본 설정에서 검토된 기준은 **UTF-8 2,277바이트**이며, 이 상시 규칙
-표면이 바뀌면 테스트가 명시적인 기준 갱신을 요구합니다. Quick Rules와 Pitfalls
-전체를 프로젝트 규칙에 직접 넣어야 할 때만 `--compact` 없이 실행합니다.
+기본 compact 규칙은 의도적으로 작습니다. 검토된 기준은 **UTF-8 2,277바이트**이며 bootstrap, 대상 선택, 승인, 안전, 검증에 필요한 핵심 규칙만 항상 읽게 합니다. 전체 가이드는 필요할 때 가져옵니다.
 
-Cursor용:
-
-```bash
-hera-agent-unity doctor --agent-rules --compact --format cursor > .cursor/rules/hera-agent-unity.mdc
-```
-
-Copilot, AntiGravity, Continue 템플릿은 [examples/rules](examples/rules)에 있습니다. 이 저장소에는 실제 예시도 들어 있습니다: [.github/copilot-instructions.md](.github/copilot-instructions.md), [.github/instructions/hera-agent-unity.instructions.md](.github/instructions/hera-agent-unity.instructions.md), [GEMINI.md](GEMINI.md), [.agents/skills/hera-agent-unity/SKILL.md](.agents/skills/hera-agent-unity/SKILL.md).
-
-가장 중요한 규칙:
-
-- 도구 목록은 `list --compact`로 작게 읽기;
-- 다음 명령에 오브젝트 ID만 필요하면 `find_gameobjects --ids` 쓰기;
-- 씬을 바꾸는 `exec`는 보통 `return null;`로 끝내기;
-- 큰 Unity 오브젝트를 그대로 반환하지 않기;
-- 에러는 추측하지 말고 `console --type error`로 읽기.
+Cursor, Copilot, AntiGravity, Continue 등 다른 환경용 템플릿도 [examples/rules](examples/rules)에 있습니다.
 
 ---
 
-## 어떻게 동작하나요?
+## 안전성과 신뢰성을 쉬운 말로
+
+Hera는 실제 Unity 프로젝트를 바꿀 수 있으므로 빠르기만 하면 안 됩니다. **언제 멈춰야 하는지도 알아야 합니다.**
+
+### 포트 번호보다 프로젝트를 신분증으로 봅니다
+
+Unity는 Domain Reload나 재시작 뒤 로컬 포트가 바뀔 수 있습니다. Hera는 정규화된 전체 프로젝트 경로를 Editor 신분으로 우선 사용하고 포트는 임시 연결점으로 취급합니다.
+
+Editor가 여러 개면:
+
+```bash
+hera-agent-unity --project /full/path/to/project status
+```
+
+모호하면 추측하지 않고 실패합니다.
+
+### 위험한 작업은 승인받을 수 있습니다
+
+승인이 필요한 작업은 먼저 무엇을 하려는지 검사합니다. 반환된 토큰은 그 요청의 대상과 인자에 묶이며 한 번만 사용할 수 있습니다.
+
+### 결과가 애매한 변경을 무작정 다시 하지 않습니다
+
+Reload나 timeout 중 응답이 사라졌다면 새로운 Editor 상태와 소유권을 확인한 뒤 재시도 가능한 작업만 재시도합니다. 응답을 못 받았다는 이유만으로 같은 변경을 두 번 실행하지 않습니다.
+
+### 오래 걸리는 테스트는 새로 시작하지 않고 이어서 기다릴 수 있습니다
+
+Test Runner가 오래 걸리면 실행 상태를 파일에 남기므로 AI가 같은 테스트를 다시 시작하는 대신 기존 run을 이어서 확인할 수 있습니다.
+
+---
+
+## Unity 버전
+
+| Unity 버전 | 상태 | 대표 검증 |
+|:---|:---|:---|
+| 2022.3 LTS | 지원 | `2022.3.62f2` |
+| 2023.2 | 지원 | `2023.2.22f1` |
+| 6000.0 - 6000.4 | 지원 | Unity 6 호환 bucket |
+| 6000.5+ | 지원 | `6000.5.6f1` 릴리스 게이트 |
+| 2022.3 미만 | 미지원 | 최소 Unity 2022.3 |
+
+버전별 동작은 Unity 한 버전을 보고 추측하지 않고 실제 대표 Editor에서 확인합니다.
+
+---
+
+## CLI가 기본, MCP는 선택
+
+제품 기본값은 일반 CLI입니다.
+
+```text
+AI / 터미널 -> Hera CLI -> localhost Connector -> Unity Editor
+```
+
+따라서 셸을 실행할 수 있는 AI라면 MCP 설정 없이 Hera를 사용할 수 있습니다.
+
+CLI `v0.1.0+`에는 MCP를 원하는 호스트를 위해 **실험적·default-off·stdio-only MCP adapter**도 들어 있습니다. 별도의 Unity backend를 만드는 것이 아니라 같은 Hera 실행 코어를 사용합니다.
+
+```text
+MCP AI -> 선택형 Hera MCP adapter -> 같은 Hera 실행 코어 -> Unity
+```
+
+MCP 자체가 AI를 더 똑똑하게 만드는 것은 아닙니다. 같은 Unity 기능을 노출하는 다른 인터페이스입니다. Hera는 단순하고 명시적이며 대부분의 AI에서 사용할 수 있는 CLI를 계속 기본값으로 둡니다.
+
+MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
+
+---
+
+## 현재 릴리스
+
+- CLI: **v0.1.4**
+- Unity Connector: **0.0.80**
+- License: **Apache-2.0**
+
+두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
+
+v0.1.4의 핵심은 안전한 다중 Editor 대상 선택, 작은 상시 AI 규칙, Tool catalog 성장 검토, 반복 가능한 릴리스/패키지 검증입니다.
+
+릴리스별 기술 변경을 모두 보고 싶다면 메인 README보다 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
+
+---
+
+<details>
+<summary><strong>Hera는 내부에서 어떻게 동작하나요?</strong></summary>
 
 ```text
 터미널 / AI 에이전트
@@ -760,69 +701,79 @@ Go CLI
         v
 Unity Editor 패키지
         |
-        | Unity 메인 스레드
+        | 직렬화된 Unity main-thread 작업
         v
-씬, 콘솔, Play Mode, 에셋, UI
+Scene, Console, Play Mode, Assets, Tests, UI
 ```
 
-Unity 패키지가 작은 로컬 HTTP 서버를 엽니다. CLI가 그 서버에 명령을 보냅니다. 명령은 Unity Editor 안에서 실행됩니다.
+Unity 패키지가 로컬 HTTP listener를 열고 CLI가 local heartbeat 상태에서 대상 Editor를 고른 뒤 명령을 보냅니다. Unity 작업은 Editor 메인 스레드에서 실행됩니다.
 
-구조 자세히 보기: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+Domain Reload와 장기 작업은 파일시스템 상태를 사용해 HTTP listener가 재생성돼도 컴파일, 테스트, 복구 흐름을 이어갑니다.
+
+자세한 구조: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+</details>
+
+<details>
+<summary><strong>고급 exec, 토큰, async 사용 참고</strong></summary>
+
+- 전용 명령이 있으면 임의 `exec`보다 전용 명령을 우선합니다.
+- ID만 필요하면 `find_gameobjects --ids`처럼 작은 projection을 사용합니다.
+- 상태를 바꾸는 `exec`는 보통 큰 결과를 반환하지 말고 `null` 또는 무반환을 사용합니다.
+- 정말 필요하지 않다면 `UnityEngine.Object` 전체를 반환하지 않습니다.
+- 로그 에러가 CLI 실패로 보여야 하면 `--strict` 또는 예외를 사용합니다.
+- 실행하지 않고 컴파일만 확인하려면 `exec --check`를 사용합니다.
+- 오래 걸리는 비동기 작업은 한 번 실행하고 끝나는 `exec` 안에서 떼어내기보다 추적 가능한 `[HeraTool]`, task, test 흐름으로 표현하는 편이 안전합니다.
+
+전체 에이전트 운영 가이드: [AGENTS.md](AGENTS.md).
+
+</details>
 
 ---
 
 ## FAQ
 
-### MCP인가요?
+### Hera를 쓰면 AI가 더 똑똑해지나요?
 
-production 기본값은 일반 CLI이므로 셸 명령을 실행할 수 있는 모든 에이전트가
-사용할 수 있습니다. CLI `v0.1.0+`에는 실험적·default-off·stdio-only MCP
-adapter도 포함되지만 기본값은 아닙니다. CLI와 localhost Connector 실행 코어를
-그대로 사용합니다. [MCP adapter 가이드](docs/MCP.md)를 참고하세요.
+아닙니다. Hera는 AI에게 **내 Unity의 실제 상태**와 결과를 검증할 방법을 줍니다. 설계와 구현 판단은 여전히 사용하는 AI 모델이 합니다.
 
 ### Python이 필요한가요?
 
-아니요.
+아니요. 기본 설치는 native CLI 하나와 Unity 패키지 하나입니다.
 
-### 어떤 Unity Editor에 연결되나요?
+### MCP가 꼭 필요한가요?
 
-Editor가 여러 개 열려 있다는 이유만으로 Hera가 중단되지는 않습니다. 각 CLI
-호출이나 MCP 프로세스는 Unity Editor 하나를 대상으로 합니다. 여러 Editor
-heartbeat가 있으면 정규화된 전체 프로젝트 경로를 `--project`에 지정하는 방식을
-우선하세요. 포트는 `8090`–`8099`에서 선택되는 임시 연결점이라 Editor 재시작이나
-domain reload 뒤에 바뀔 수 있습니다. 정확한 프로젝트 경로가 우선하고, 부분
-경로는 하나의 프로젝트만 식별할 때만 허용되며, `--project`와 `--port`를 함께
-쓰면 둘 다 같은 Editor를 가리켜야 합니다. 선택자가 없으면 현재 작업 디렉터리와
-일치하는 프로젝트를 먼저, 그다음 가장 최근의 살아 있는 heartbeat를 선택합니다.
-응답 손실이나 timeout 뒤에는 heartbeat 소유권을 다시 확인해 다른 프로젝트가
-재사용한 포트로 변경 명령을 보내지 않습니다.
+아니요. CLI가 production 기본값입니다. MCP는 선택형이며 기본으로 꺼져 있습니다.
 
-### 도구 표면이 몰래 비대해지는 것은 어떻게 막나요?
+### Unity Editor를 여러 개 열어도 되나요?
 
-유지보수자는 폐기 가능한 빈 Unity 프로젝트에서 live built-in catalog를 내보내고
-`docs/metrics/catalog-payload-baseline.json`과 비교합니다. 보고서는 Tool·Action·설명과
-Profile별 바이트 차이를 보여 줍니다. 표면이 바뀌면 해결하려는 실패, contract와
-safety 변경, 회귀 증거, 의도적으로 검토한 baseline 갱신을 같은 변경에 남겨야
-합니다. 자세한 사용법은 [catalog payload gate](tools/catalog-payload-report/README.md)에
-있습니다.
+각 명령은 Editor 하나를 대상으로 합니다. 여러 개가 열려 있으면 전체 `--project` 경로를 지정하는 것이 가장 명확합니다. 로컬 포트가 바뀌어도 선택한 프로젝트 신분을 추적합니다.
 
-### 연결이 안 되면 어떻게 하나요?
+### Unity 창을 실제 마우스로 클릭할 수 있나요?
 
-이 명령을 실행하세요:
+`input`은 uGUI QA를 위해 Unity EventSystem 이벤트를 보냅니다. Unity 이벤트 경로가 동작한다는 증거이지 운영체제의 물리 마우스 클릭 증거는 아닙니다. 두 종류의 결과를 따로 보고해야 합니다.
+
+### uGUI뿐 아니라 UI Toolkit도 만들 수 있나요?
+
+네. uGUI와 런타임 UI Toolkit backend가 분리되어 있습니다. 둘을 섞지 않고 명시적으로 선택합니다.
+
+### 연결이 안 되면 무엇을 하나요?
 
 ```bash
 hera-agent-unity doctor --json
 ```
 
-그리고 Unity 패키지가 설치되어 있는지, Unity 컴파일이 끝났는지 확인하세요.
+Unity 패키지가 설치되어 있고 Editor 컴파일이 끝났는지도 확인하세요.
 
 ### 자세한 문서는 어디에 있나요?
 
-- [docs/COMMANDS.md](docs/COMMANDS.md)
-- [docs/MCP.md](docs/MCP.md)
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/CSHARP_CONNECTOR.md](docs/CSHARP_CONNECTOR.md)
-- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- [명령어](docs/COMMANDS.md)
+- [문제 해결](docs/TROUBLESHOOTING.md)
+- [아키텍처](docs/ARCHITECTURE.md)
+- [C# Connector](docs/CSHARP_CONNECTOR.md)
+- [MCP adapter](docs/MCP.md)
+- [UI document contract](docs/UI_DOC_IR.md)
+- [Agent 운영 가이드](AGENTS.md)
 
 ---
 
@@ -830,13 +781,13 @@ hera-agent-unity doctor --json
 
 | 프로젝트 | 설명 |
 |:---|:---|
-| **NoMoreRolls** | AI가 Hera로 Unity Editor를 조작하며 만든 Unity 게임입니다. |
+| **NoMoreRolls** | AI가 Hera를 통해 Unity Editor를 조작하며 만든 1인 개발 Unity 게임 |
 
 <div align="center">
 
 https://github.com/user-attachments/assets/15d353e4-b7bb-4534-bbca-c27de0792147
 
-<sub><b>NoMoreRolls</b> — Hera로 Unity Editor 작업을 보조하며 만든 Unity 게임의 전체 Play Mode 영상입니다.</sub>
+<sub><b>NoMoreRolls</b> - Hera가 Unity Editor 작업을 보조해 만든 게임의 전체 Play Mode 영상입니다.</sub>
 
 </div>
 
@@ -844,7 +795,7 @@ https://github.com/user-attachments/assets/15d353e4-b7bb-4534-bbca-c27de0792147
 
 ## 제작자
 
-**Victor** — 라이브 서비스 MMORPG 프로덕션 경험 6년 이상의 Unity/C# 개발자.
+**Victor** - 라이브 서비스 MMORPG 프로덕션 경험 6년 이상의 Unity/C# 개발자.
 
 GitHub: [@NotNull92](https://github.com/NotNull92)
 
@@ -854,7 +805,7 @@ Discord: [Hera 커뮤니티 참여하기](https://discord.gg/QBzEVuYwK)
 
 ## 후원
 
-Hera는 무료이며 Apache-2.0 라이선스로 제공됩니다. Hera가 시간을 아껴줬다면 개발을 후원할 수 있습니다:
+Hera는 무료이며 Apache-2.0 라이선스로 제공됩니다. Hera가 시간을 아껴줬다면 개발을 후원할 수 있습니다.
 
 [![Support on Ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/notnull92)
 

@@ -11,260 +11,217 @@
 [![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
-**Low-token Unity Editor control for AI coding agents.**
+# hera-agent-unity
 
-<sub>Let Codex, Claude, Cursor, Copilot, and AntiGravity inspect and change your live Unity project — no MCP setup for the default CLI path, no Python server.</sub>
+**Give your AI coding agent hands, eyes, and a checklist inside Unity.**
+
+<sub>Codex, Claude, Cursor, Copilot, AntiGravity, and other shell-capable agents can inspect your live Unity Editor, change it, run it, test it, see the result, and keep fixing until the evidence says it is done.</sub>
 
 <br>
 
-[Start in 60 seconds](#quick-start) · [Install](#install) · [UI systems](#ui-systems) · [Commands](#commands) · [Full docs](docs/COMMANDS.md)
+[Start in 3 steps](#how-do-i-use-it) · [What can it do?](#what-can-it-actually-do) · [Why Hera?](#why-use-hera) · [How good is it?](#how-good-is-it) · [Examples](#what-can-i-do-with-it) · [Commands](#command-overview)
 
-<sub>[What's new](#whats-new) · [Verification](#ultra-hera) · [Agent rules](#add-project-rules-for-agents) · [FAQ](#faq)</sub>
-
-**English** · [한국어](README.ko.md)
+[English](README.md) · [한국어](README.ko.md)
 
 </div>
 
 ---
 
-## What It Is
+## Hera in one minute
 
-`hera-agent-unity` is a low-token CLI that lets AI coding agents control a running Unity Editor.
+An AI can write Unity C# without Hera, but it cannot reliably know what your **live Editor** looks like after the code is written.
 
-Think of it like a remote control for the live Editor:
-
-| You want the AI to... | Hera lets it... |
-|:---|:---|
-| See if Unity is open | ask the real Editor |
-| Run C# code | run it inside your loaded project |
-| Check console errors | read the actual Unity Console |
-| Enter Play Mode | press Play and wait |
-| Create or edit objects | use Unity APIs safely |
-| Build UI | create real Unity UI objects and capture the result |
-| Verify UI input | send Unity EventSystem events without relying on screen coordinates |
-
-The AI does not need to guess from stale training data. It can inspect the real Editor, act on it, and check the result.
+Normally the loop looks like this:
 
 ```text
-AI agent  ->  hera-agent-unity  ->  Unity Editor
+You ask the AI
+   ↓
+AI writes code
+   ↓
+You open Unity and wait for compile
+   ↓
+You copy the error back to the AI
+   ↓
+AI fixes it
+   ↓
+You press Play and explain what happened
+   ↓
+repeat...
 ```
+
+Hera closes that loop:
+
+```text
+You ask the AI
+   ↓
+AI uses Hera
+   ↓
+Unity compiles, runs, tests, clicks UI, captures the result
+   ↓
+Hera gives the real result back to the AI
+   ↓
+AI fixes what failed and checks again
+   ↓
+verified result
+```
+
+A simple way to think about it:
+
+> **The AI is the brain. Hera gives that brain hands to operate Unity, eyes to inspect the result, and a checklist so it does not stop while the project is still broken.**
+
+Hera does not replace Unity and it does not replace the coding agent. It connects the two so the agent can work with facts from your actual project instead of guessing from source code alone.
 
 ---
 
-## Why It Helps
+## What problem does it solve?
 
-AI often makes mistakes in Unity because it cannot see your Editor.
+Unity development has a feedback loop that lives outside the source files.
 
-It may guess:
+A change can look correct in code and still fail because:
 
-- which scene is open;
-- which objects exist;
-- which Unity API exists in your version;
-- whether Play Mode works;
-- what error is in the console.
+- Unity did not compile it;
+- the wrong Scene is open;
+- a GameObject or Component is missing;
+- the Inspector has a different serialized value;
+- a Unity API changed in your Editor version;
+- the Console contains an exception;
+- Play Mode behaves differently from Edit Mode;
+- a button is visually present but cannot receive input;
+- a UI layout is technically valid but looks wrong;
+- the AI says "done" before it has actually checked any of those things.
 
-Hera fixes that by letting the AI ask Unity directly.
+Hera lets the agent ask the real Editor instead.
 
 ```bash
 hera-agent-unity status
 hera-agent-unity console --type error
-hera-agent-unity exec "return Application.unityVersion;"
+hera-agent-unity scene info
 hera-agent-unity editor play --wait
+hera-agent-unity test --mode PlayMode
 ```
 
-No Python server. The production-default CLI path needs no MCP config or special
-agent plugin. CLI `v0.1.0+` also includes an experimental, default-off stdio MCP
-adapter for intentionally configured MCP clients. See
-[docs/MCP.md](docs/MCP.md) for setup and compatibility boundaries.
+The important part is not the command names. The important part is that the agent can **observe → change → run → verify → repair** without making you act as the courier between the AI and Unity.
 
 ---
 
-## What's New
+## What can it actually do?
 
-### v0.1.4 - multi-Editor policy locks and bounded agent context
+You can use Hera for tiny one-line checks or for a full AI-assisted Unity workflow.
 
-This release keeps Hera's automatic multi-Editor workflow instead of
-adopting a blanket "more than one Editor means stop" rule. The first target is
-chosen deliberately, then its normalized full project path stays pinned while
-ports move during domain reloads or Editor restarts.
-
-| Release change | What it means |
+| What you want the AI to do | What Hera gives it |
 |:---|:---|
-| No-selector order is regression-locked | Hera still prefers the Unity project containing the current working directory, then the most recent live heartbeat. A newer competing Editor cannot steal the request after selection. |
-| Compact project rules | `doctor --agent-rules --compact` emits the small always-loaded operating contract. Its reviewed default baseline is **2,277 UTF-8 bytes**; the full Quick Rules and Pitfalls guide remains available on demand. |
-| Catalog admission gate | `tools/catalog-payload-report` can compare a live built-in catalog with the reviewed baseline. `--fail-on-change` and `--fail-on-growth` mark review-required changes with tool exit code `3`; `go run` surfaces that as `exit status 3`. Useful growth is reviewed, not forbidden. |
-| Production-surface package evidence | The disposable package-test flow measures the production catalog before enabling test fixtures, then runs the isolated EditMode suite and restores the manifest byte-for-byte. |
+| Check whether Unity is healthy | Live Editor status, version, project, compile state, Console errors |
+| Understand the current Scene | Scene info, GameObject search, Component and Inspector reads |
+| Change the Scene | Create, duplicate, rename, parent, move, or delete GameObjects |
+| Edit Components | Add, remove, inspect, and change serialized Component values |
+| Work with project assets | Find, create, copy, move, or delete assets under `Assets/` |
+| Run project-specific C# | Execute C# inside the loaded Editor with access to Unity APIs and project assemblies |
+| Make animations | Author AnimationClips and AnimatorController state machines |
+| Test a feature | Run EditMode and PlayMode tests and keep the result across domain reloads |
+| Play the game | Enter Play Mode, wait for the real state change, inspect, then stop |
+| See what Unity rendered | Capture Scene/Game views, isolated objects, or live uGUI overlays |
+| Test uGUI input | Inspect raycast targets and send click, submit, scroll, and drag through Unity EventSystem |
+| Build UI | Author uGUI or UI Toolkit layouts and verify the generated result |
+| Recreate a reference UI | Measure a reference, build the real Unity UI, capture it, compare, and iterate |
+| Improve game feel | Give the agent recipes for shake, hit stop, feedback, camera, sound, rewards, and accessibility |
+| Clean up generated-looking UI | Detect common spacing, hierarchy, typography, color, and decoration problems |
+| Create your own studio commands | Add project-specific `[HeraTool]` actions that appear automatically |
+| Work with several open Editors | Target the intended project and keep that project identity through port changes |
+| Require approval for risky work | Preflight destructive operations and continue only with the matching approval token |
 
-A live Unity `6000.3.5f2` comparison matched the [reviewed baseline](docs/metrics/catalog-payload-baseline.json) exactly:
-**31 tools, 75 actions, and 185,339 normalized catalog bytes**, with zero
-profile deltas. This release updates the CLI, npm wrapper, and MCP package
-metadata while keeping the Unity Connector at **0.0.80**.
+In short, Hera is not just a "press Play" remote. It is a bridge for the **whole edit-and-check loop** around a running Unity project.
 
-### v0.1.3 - package-backed MCP discovery
+---
 
-This follow-up patch publishes the existing default-off stdio MCP adapter
-through the official MCP Registry without changing the Unity Connector or
-normal CLI path.
+## Why use Hera?
 
-| Release change | What it means |
-|:---|:---|
-| Official MCP identity | `io.github.NotNull92/hera-agent-unity` exactly matches the case-sensitive GitHub OIDC namespace and links the registry entry to npm. |
-| Reproducible local launch | Registry clients receive the fixed `mcp --transport stdio --profile core` arguments and `HERA_MCP_ENABLED=1` opt-in. |
-| Ordered trusted publication | GitHub Actions publishes npm first, then uses GitHub OIDC and a checksum-pinned publisher for the MCP Registry. |
-| Connector unchanged | The released Unity package remains Connector 0.0.80; CLI and Connector versions stay independent. |
+### 1. The AI can check its own work
 
-### v0.1.1 - hardened contracts, recovery, and release evidence
+Without Editor access, the agent often ends with:
 
-This release tightens the completed CLI + optional MCP architecture without
-replacing its proven Unity execution core.
+> "This should work."
 
-| Release change | What it means |
-|:---|:---|
-| Versioned execution metadata | Current single-command clients send `hera.execution/1`; unsupported future versions fail before approval, journaling, or Unity execution. |
-| Stronger recovery boundaries | Stale catalogs, abandoned ledger entries, partial Hera Settings reads, stale config locks, and uncertain mutation timeouts now fail or recover explicitly. |
-| Smaller Compact discovery | `tool_describe` can return one action contract instead of an entire multi-action tool; the largest measured case is about 92% smaller. |
-| Repeatable release gates | Generated Go/C# contract drift, five Unity compile buckets, isolated NUnit package tests, race tests, and catalog payload budgets have reproducible checks. |
-| Connector 0.0.80 | The UPM package carries the matching runtime hardening and release-gate changes; CLI and Connector versions remain independent. |
+With Hera, it can finish with evidence such as:
 
-The normal CLI remains the production default. MCP remains optional,
-default-off, and stdio-only.
+```text
+compile: passed
+console errors: 0
+EditMode tests: 18/18
+PlayMode tests: 6/6
+button click: verified through EventSystem
+final Game View: captured
+```
 
-### v0.1.0 — safe multi-Editor targeting and an optional MCP adapter
+That difference is the main reason Hera exists.
 
-This release completes the M0-M17 adapter migration without replacing the
-normal CLI. MCP is shipped as an experimental, stdio-only, environment-gated
-option; the typed CLI and localhost Unity Connector remain the production
-default.
+### 2. You stop being the copy-and-paste bridge
 
-#### Why make this migration?
+You no longer need to repeatedly:
 
-More AI applications now speak MCP as a common way to discover and call tools.
-Hera already had a small, efficient CLI and a proven Unity execution path, so
-rebuilding the product around MCP would have duplicated that work and changed a
-workflow that existing users rely on. Instead, v0.1.0 adds a thin translator at
-the edge: an MCP-capable AI can speak its familiar protocol while Hera keeps
-executing the same validated CLI and Connector operations underneath.
+1. copy code from the AI;
+2. switch to Unity;
+3. wait for compile;
+4. copy errors back;
+5. explain the Scene hierarchy;
+6. press Play;
+7. describe what happened.
 
-Think of the CLI as Hera's compact dedicated remote control. The MCP adapter is
-a small plug converter that lets a different device use that remote; it does
-not replace the remote with a larger control panel.
+The AI can perform most of that loop itself.
 
-#### How does it work?
+### 3. It works with the tools you already use
 
-The path is `AI client → optional MCP adapter → existing Hera execution core →
-localhost Connector → the selected Unity Editor`. The adapter searches and
-describes tools, validates the requested operation, applies the same safety
-policy, and then hands the call to Hera's existing execution path. It does not
-open Unity to the network, replace the Connector, or silently relax approvals.
-Unsupported approval or operation-ledger features fail closed instead of
-guessing that an operation is safe.
+The normal production path is a CLI. Any agent that can run shell commands can use it.
 
-#### Does it make Hera more accurate?
+- Codex
+- Claude Code
+- Cursor
+- GitHub Copilot
+- AntiGravity
+- scripts and CI jobs
+- your own automation
 
-MCP by itself does not make an AI smarter, and the adapter does not use a
-different Unity execution engine. Accuracy improves at the delivery layer: an
-exact normalized project path prevents a request from drifting to another open
-Editor; strict live contracts reject malformed or outdated arguments; and a
-fresh heartbeat distinguishes a domain reload, an Editor restart, a lost
-target, and a port that another project has taken over. Operation IDs and the
-Connector ledger also prevent an uncertain response from becoming the same
-mutation twice.
+No Python server is required. MCP is optional, not mandatory.
 
-In everyday terms, Hera now checks both the full delivery address and the
-receipt before acting. That reduces wrong-project calls, invalid requests, and
-duplicate changes. It does **not** guarantee that the AI's design decision is
-correct, replace Unity tests, or prove a numerical accuracy improvement. No
-repository benchmark currently supports an “X% more accurate” claim; the
-measurable promise is narrower: detect more ambiguous or stale connection
-states and stop safely instead of guessing.
+### 4. It is designed for AI context, not just humans
 
-The first retained end-to-end game-creation run is the
-[Crystal Forge real-world benchmark](docs/benchmarks/user-scenario/crystal-forge-6000.3.5f2.md).
-It reached the correct playable result only after several repairs; first
-attempt success was **not** achieved. It is a regression baseline, not an
-MCP-versus-CLI A/B result or proof of higher model accuracy.
+A giant tool response becomes more input for the model to read. Hera therefore gives common commands compact views such as IDs-only GameObject searches and on-demand tool schemas.
 
-#### Does it use more tokens?
+The goal is simple: **send the agent the smallest amount of Unity state that is enough to make the next decision.**
 
-The normal CLI path has no new token cost because it has not changed. MCP adds
-some unavoidable protocol metadata, so token use is **not guaranteed to be
-identical** and depends on the AI client and the task. Hera limits that overhead
-in two ways: Profile exposes a small, stable native surface, while Compact MCP
-registers only three gateway tools — search, describe, and call — and fetches a
-tool's details only when they are needed. The large Full surface remains an
-explicit diagnostic option rather than the default.
+### 5. It knows that "request sent" is not the same as "work finished"
 
-There is not yet a repository benchmark that proves exact CLI/MCP token parity.
-The design goal is therefore honest and narrower: preserve the CLI's current
-cost, and make MCP compatibility pay as little up-front context cost as
-possible.
+Unity recompiles scripts, reloads domains, changes ports, enters Play Mode, runs tests, and sometimes drops a connection while doing it.
 
-#### Why borrow Compact MCP if Hera is CLI-first?
+Hera tracks these workflows instead of treating a successful HTTP send as proof that Unity is finished.
 
-Hera's principle is low-token, verifiable Unity control — not loyalty to one
-protocol. Refusing MCP completely would isolate Hera from compatible AI hosts;
-adopting a conventional “register every tool” MCP design would send a large
-catalog of names, descriptions, and schemas into context before most of it was
-needed. v0.1.0 deliberately uses MCP only as the outside language and keeps the
-CLI as the production core. Compact exposure preserves the original philosophy
-by making compatibility on-demand instead of turning compatibility into a
-permanent token tax.
+### 6. It can grow with your project
 
-| Release change | What it means |
-|:---|:---|
-| Project-aware Editor selection | Full normalized project paths identify Editors; ports are treated as temporary endpoints and ambiguous matches fail. |
-| Safe response-loss recovery | Hera detects domain reloads, Editor restarts, lost targets, and port reuse before any eligible retry. Non-idempotent mutations are never blindly repeated. |
-| Experimental MCP adapter | `HERA_MCP_ENABLED=1 hera-agent-unity mcp` exposes Profile, Compact, Full-safe, approval, operation-ledger, Tasks, and bounded result-resource paths. |
-| Connector 0.0.76 packaging | UPM tests are isolated from production assemblies, removing the Unity 6000.5 compile-stall regression and duplicate TestRunner references. |
-| Apache-2.0 | The project now carries explicit patent terms, modification notices, and distributable `NOTICE` files. |
+Start with the built-in commands. Later you can add a `[HeraTool]` for the workflow your own project repeats every day: build a dungeon room, validate a quest graph, bake a table, spawn a test battle, or check your studio-specific asset rules.
 
-### Unity De-slop Mode (Beta) — static visual discipline
+---
 
-Game Feel Mode covers how a screen moves. De-slop Mode covers how it sits
-still: the tells that make generated UI look generated. The taxonomy ships
-inside the connector (**0.0.63** and up), so there is nothing to fetch.
+## How good is it?
 
-| What it does | Why it works that way |
-|:---|:---|
-| 49 tells across five areas, fixed in order A → B → C → D → E | An upstream fix dissolves the conflicts a downstream one would hit |
-| Every tell carries a uGUI *and* a UI Toolkit check | The UI Toolkit side is written against the USS vocabulary each Unity version actually ships |
-| Findings are predicates, re-measured against the live scene | A checklist that stores "done" goes stale; one that measures cannot |
-| Spacing and type scales resolve against a 1280x720 reference | Absolute pixels mean nothing until the reference resolution is stated |
-| Repeated interactive cells are never flattened | Nested surfaces in game UI are usually functional — inventory slots, hotbars, HUD panels |
+Hera avoids vague "AI magic" claims. The repository keeps concrete measurements and compatibility evidence instead.
 
-[Read the mode →](#unity-de-slop-mode-beta) · [Game Feel Mode →](#game-feel-mode-beta)
+### Small responses for common agent reads
 
-### UI Toolkit scaffolding, grounded in the live Editor
+Measured low-token baselines for `list --compact` are **about 93 estimated tokens** across the tested Unity versions. `find_gameobjects --ids` measured **49 to 55 estimated tokens** in the retained cross-version fixtures.
 
-Connector **0.0.61** added a first-class UI Toolkit path without asking an
-agent to guess version-specific APIs.
+| Unity Editor | `list --compact` | `find_gameobjects --ids` |
+|:---|---:|---:|
+| 2022.3.62f2 | **93 T** | **54 T** |
+| 2023.2.22f1 | **93 T** | **54 T** |
+| 6000.3.5f2 | **93 T** | **49 T** |
+| 6000.5.0f1 | **93 T** | **55 T** |
 
-| Choose | Hera does | Built-in boundary |
-|:---|:---|:---|
-| `ugui` (default) | Keeps the Canvas / GameObject / RectTransform workflow | Existing uGUI pipeline |
-| `uitk` | Emits validated `.uxml`, shared `.hera-*` `.uss`, `PanelSettings`, and `UIDocument` | Runtime-only reflected elements, UXML attributes, and USS properties |
-| World-space | Enables it only on live Unity 6000.2+ | Never inferred from a documentation bucket |
-| v1 scope | Focuses on layout scaffolding | MVVM and data binding are intentionally out |
+`T` is a simple `ceil(UTF-8 bytes / 4)` estimate for Hera's CLI payload only. It is not provider billing telemetry. Full methodology: [token-reduction benchmark](docs/benchmarks/token-reduction/README.md).
 
-[Choose a UI system →](#ui-systems) · [Read the UI document contract →](docs/UI_DOC_IR.md)
+### Compatibility is checked across Unity generations
 
-### Latest CLI release - v0.1.4
+The current released Connector is **0.0.80** and the current CLI release is **v0.1.4**. The Connector's exact source passed the release compile gate in these representative Editors:
 
-The latest published CLI release is **v0.1.4** (August 6, 2026). Its released
-Unity package remains **Connector 0.0.80**. CLI and connector versions are
-intentionally separate.
-
-| Current highlight | Simple meaning |
-|:---|:---|
-| **Project-safe multi-Editor policy** | No-selector calls prefer the current project and then the newest live heartbeat; the selected full project path remains pinned across port changes. |
-| **2,277-byte Compact project rules** | `doctor --agent-rules --compact` keeps targeting, safety, approval, and verification guidance always available without loading the full guide. |
-| **Catalog admission evidence** | Tool, action, description, and profile payload changes are compared with a reviewed live baseline before release. |
-| **Production-surface package gate** | The package flow measures the production catalog before enabling test fixtures, then restores the disposable manifest byte-for-byte. |
-| **MCP Registry continuity** | npm and MCP metadata advance to 0.1.4 while the default-off stdio adapter and Connector 0.0.80 remain unchanged. |
-
-Release compatibility matrix:
-
-| Unity Editor | Connector 0.0.80 exact-source compile |
+| Unity Editor | Result |
 |:---|:---:|
 | 2022.3.62f2 | PASS |
 | 2023.2.22f1 | PASS |
@@ -272,69 +229,41 @@ Release compatibility matrix:
 | 6000.3.5f2 | PASS |
 | 6000.5.6f1 | PASS |
 
-The preceding Connector 0.0.75 also passed clean UPM import and runtime checks
-across the same matrix. Evidence: [Unity compatibility inventory](docs/UNITY_EDITOR_VERSION_INVENTORY.md)
+CLI and Connector versions are intentionally separate.
 
-Low-token benchmark baseline:
+### A real game-creation run reached a verified playable result
 
-| Unity Editor | `list --compact` | `find_gameobjects --ids` | Details |
-|:---|---:|---:|:---|
-| 2022.3.62f2 | **93 T** | **54 T** | [benchmark](docs/benchmarks/token-reduction/2022.3.62f2.md) |
-| 2023.2.22f1 | **93 T** | **54 T** | [benchmark](docs/benchmarks/token-reduction/2023.2.22f1.md) |
-| 6000.3.5f2 | **93 T** | **49 T** | [benchmark](docs/benchmarks/token-reduction/6000.3.5f2.md) |
-| 6000.5.0f1 | **93 T** | **55 T** | [benchmark](docs/benchmarks/token-reduction/6000.5.0f1.md) |
+The retained Crystal Forge scenario asked an AI to author code and tests, build UI, compile, drive Unity EventSystem input, run tests, capture the rendered result, and leave the Editor clean.
 
-Full benchmark notes: [docs/benchmarks/token-reduction/README.md](docs/benchmarks/token-reduction/README.md)
+**Final result: PASS after repair. First attempt: FAIL.**
+
+The measured execution window was **15 minutes 52 seconds**. The run is useful because the failures were kept instead of being edited out. It showed why a closed verification loop matters: hidden state was correct before the UI was actually visible, and the agent had to observe, repair, and verify again.
+
+This is not a claim that Hera makes every task succeed on the first try, and it is not an "X% smarter AI" benchmark. It demonstrates something more practical: **Hera can give an agent enough real Editor feedback to find and repair integration failures instead of stopping at the first plausible answer.**
+
+Full evidence: [Crystal Forge real-world benchmark](docs/benchmarks/user-scenario/crystal-forge-6000.3.5f2.md).
 
 ---
 
-## Quick Start
+## How do I use it?
 
-### 1. Open Unity
-
-Open a Unity project that has the Hera Unity package installed.
-
-### 2. Check the connection
-
-```bash
-hera-agent-unity status
-```
-
-You should see the project name, Unity version, port, and state.
-
-### 3. Ask your AI agent to use it
-
-Example prompt:
+There are only two pieces:
 
 ```text
-Use hera-agent-unity. Check the Unity console, enter Play Mode, reproduce the issue, and fix it.
+your computer                 your Unity project
+──────────────                ──────────────────
+Hera CLI        <---------->  Hera Unity Connector
 ```
 
-The agent can then run commands like:
+### Step 1. Install the CLI
 
-```bash
-hera-agent-unity console --type error
-hera-agent-unity editor play --wait
-hera-agent-unity exec "return EditorSceneManager.GetActiveScene().name;"
-hera-agent-unity test --mode PlayMode
-```
-
----
-
-## Install
-
-There are two parts:
-
-1. the CLI program on your computer;
-2. the Unity package inside your project.
-
-### CLI
-
-**npm (Windows, macOS, Linux)**
+The simplest cross-platform option is npm:
 
 ```bash
 npm install --global hera-agent-unity
 ```
+
+Or use the native installer.
 
 **Windows PowerShell**
 
@@ -342,17 +271,20 @@ npm install --global hera-agent-unity
 powershell -ExecutionPolicy ByPass -c "irm https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.ps1 | iex"
 ```
 
-Open a new terminal after install, then check:
-
-```powershell
-hera-agent-unity version
-```
-
 **macOS / Linux**
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/NotNull92/hera-agent-unity/main/install.sh | bash
 ```
+
+Check it:
+
+```bash
+hera-agent-unity version
+```
+
+<details>
+<summary>Other CLI installation methods</summary>
 
 **Go install**
 
@@ -362,13 +294,15 @@ go install github.com/NotNull92/hera-agent-unity@latest
 
 **Manual**
 
-Download a binary from [Releases](https://github.com/NotNull92/hera-agent-unity/releases), then run:
+Download a binary from [GitHub Releases](https://github.com/NotNull92/hera-agent-unity/releases), then run:
 
 ```bash
 hera-agent-unity install
 ```
 
-### Unity Package
+</details>
+
+### Step 2. Add the Unity package
 
 In Unity:
 
@@ -376,98 +310,96 @@ In Unity:
 Window -> Package Manager -> Add package from git URL
 ```
 
-Use this URL:
+Paste:
 
 ```text
 https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector
 ```
 
-Or add this to `Packages/manifest.json`:
+Or add it to `Packages/manifest.json`:
 
 ```json
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector"
 ```
 
-To pin a specific connector (UPM) version instead of tracking the latest, append
-an existing `connector-<version>` git tag:
+The Connector starts automatically when the Editor opens.
+
+To pin an existing Connector tag:
 
 ```json
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-<version>"
 ```
 
-Connector versions are separate from CLI `v*` releases.
-
-The connector starts by itself when Unity opens.
-
----
-
-## Commands
-
-Here are the commands most agents use first.
-
-| Command | What it does |
-|:---|:---|
-| `status` | Shows which Unity Editor is connected. |
-| `doctor --json` | Checks install, PATH, and Unity connection. |
-| `doctor --agent-rules --compact` | Emits the small always-loaded rules for targeting, safety, approval, and verification. |
-| `list --compact` | Lists tools with a small response. |
-| `call <tool> --json '{...}'` | Validates a strict live tool contract, then invokes it. |
-| `console --type error` | Reads real Unity errors. |
-| `exec "..."` | Runs C# inside Unity. |
-| `editor play --wait` | Enters Play Mode and waits. |
-| `editor stop --wait` | Stops Play Mode and waits. |
-| `scene info` | Shows the active scene. |
-| `find_gameobjects` | Finds objects in the loaded scenes. |
-| `manage_assets` | Finds, makes folders, authors ScriptableObject `.asset` files, copies, moves, or deletes project assets under `Assets/`. |
-| `manage_gameobject` | Creates, duplicates, moves, renames, parents, or deletes GameObjects. |
-| `manage_components` | Adds, removes, reads, or edits components. |
-| `manage_animation` | Authors AnimationClips and AnimatorController state machines. |
-| `ui_doc` | Builds uGUI or UI Toolkit scaffolding; captures live uGUI overlays. |
-| `input` | Verifies uGUI interaction through Unity EventSystem raycasts and pointer handlers. |
-| `game_feel` | Looks up game-feel recipes (screen shake, hit stop, honest juice, ...). |
-| `ui_slop` | Looks up UI-slop tells and their fixes (decoration, layout, spacing, typography, color). |
-| `test` | Runs Unity tests. |
-| `screenshot` | Captures Scene/Game view or one isolated GameObject. |
-| `batch` | Runs several commands in one request (optionally atomic). |
-
-Full command list: [docs/COMMANDS.md](docs/COMMANDS.md)
-
----
-
-## Token Saving
-
-Hera is built for agents, so small answers matter.
-
-Big answers become input tokens. Input tokens cost money and fill context. So common Hera commands return small data by default.
-
-Good default path:
+### Step 3. Open Unity and check the connection
 
 ```bash
-hera-agent-unity list --compact
-hera-agent-unity find_gameobjects --name Player --ids
-hera-agent-unity list --tool manage_gameobject
+hera-agent-unity doctor --json
+hera-agent-unity status
 ```
 
-Use bigger output only when needed:
+You should see the real project path, Unity version, Editor state, and connection information.
 
-```bash
-hera-agent-unity list
-hera-agent-unity find_gameobjects --fields all
-hera-agent-unity console --lines 0 --stacktrace full
+Now you can simply tell your agent:
+
+```text
+Use hera-agent-unity for this Unity project.
+Check the current Editor state first.
+Make the requested change.
+Compile it, read the real Console errors, verify the changed object or UI,
+and do not say it is finished until Unity is in a clean state.
 ```
+
+That is the normal Hera workflow.
 
 ---
 
-## Unity UI From a Screenshot
+## What can I do with it?
 
-Unity UI is hard for AI because anchors, pivots, and layout groups are easy to guess wrong.
+### Fix a compiler or runtime error
 
-Hera gives the AI a loop:
+```text
+Use Hera. Read the Unity Console, find the actual error, fix the code,
+compile again, and keep repeating until the error Console is clean.
+```
 
-1. read the current UI;
-2. build real Unity UI objects;
-3. capture what Unity rendered;
-4. compare and fix.
+Typical commands behind the scenes:
+
+```bash
+hera-agent-unity console --type error --lines 20
+hera-agent-unity editor refresh --compile
+hera-agent-unity console --type error --lines 20
+```
+
+### Build a feature and prove it works
+
+```text
+Implement the inventory filter.
+Use Hera to compile it, run the relevant EditMode and PlayMode tests,
+enter Play Mode if needed, and report the final evidence.
+```
+
+### Reproduce a gameplay bug
+
+```text
+Open the correct Scene, enter Play Mode, inspect the related objects,
+reproduce the bug, fix it, then reproduce the same path again to prove the fix.
+```
+
+### Build UI from a reference image
+
+Hera can give the agent a measurement loop instead of an eyeballing loop:
+
+```text
+reference image
+   ↓ sample colors / measure layout
+Unity UI
+   ↓ capture
+compare
+   ↓ fix
+capture again
+```
+
+Example commands:
 
 ```bash
 hera-agent-unity ui_doc export --path /Canvas/HUD
@@ -476,169 +408,47 @@ hera-agent-unity ui_doc apply --file hud.json --parent /Canvas --mode upsert
 hera-agent-unity ui_doc capture --out hud_built.png
 ```
 
-This is the main idea: do not guess the UI. Measure it. During `ui_doc apply`,
-Hera also reports the active official uGUI docs bucket (`2022.3`, `2023.2`,
-`6000.0`, `6000.3`, or `6000.5`), deterministic `fixes`, and remaining
-`diagnostics` so the agent can correct version-specific uGUI structure.
+Hera supports both **uGUI** and **runtime UI Toolkit**. The selected UI system is explicit, so the agent does not silently mix the two.
 
----
-
-## UI Systems
-
-`ui_system` makes the output backend explicit. Set it in `asset-config.json`;
-each UI request stays within the selected backend. Hera never guesses from the
-scene or silently switches systems; a mismatched `ui_doc.backend` is rejected
-before any scene or asset mutation.
-
-| Backend | Best for | Hera emits |
-|:---|:---|:---|
-| `ugui` (default) | Canvas-based UI | GameObjects and RectTransforms |
-| `uitk` | Runtime UI Toolkit layout | Validated UXML, shared USS, `PanelSettings`, and `UIDocument` |
-
-Choose `uitk` when the project uses runtime UI Toolkit:
-
-```bash
-hera-agent-unity asset-config ui-system uitk
-hera-agent-unity ui_doc apply --file settings-uitk.json
-```
-
-The UITK document uses `backend: "uitk"`, exact runtime element names,
-reflection-validated UXML attributes, and reflection-validated USS properties.
-Generated files live under `Assets/HeraGenerated/UI`.
-
-| Requirement | UI Toolkit v1 behavior |
-|:---|:---|
-| Screen-space | Default on every supported Editor |
-| World-space | Only on live Unity runtime 6000.2+; independent of the documentation-bundle bucket |
-| Validation | Exact reflected runtime element, attribute, and USS-property schema |
-| Data binding | Intentionally out of scope in v1 |
-
-See [UI_DOC_IR.md](docs/UI_DOC_IR.md) for both backend contracts.
-
----
-
-## Input QA
-
-Some agent environments cannot capture a reliable Unity screenshot state, so they refuse physical coordinate clicks. Hera's `input` command gives agents a separate Unity-level QA path.
+### Verify buttons without guessing screen coordinates
 
 ```bash
 hera-agent-unity input state
 hera-agent-unity input inspect --path /Canvas/StartButton --details true
 hera-agent-unity input click --path /Canvas/StartButton --settle_frames 2
-hera-agent-unity input submit --path /Canvas/StartButton
-hera-agent-unity input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
-hera-agent-unity input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
 ```
 
-`input` uses Unity's uGUI `EventSystem.RaycastAll` and `ExecuteEvents` pointer handlers. It can prove that the Unity UI event path works, including blockers, handlers, interactability, submit, scroll, and drag behavior.
+This verifies Unity's EventSystem path. It is not a physical Windows/macOS mouse click, so Hera reports those two kinds of evidence separately.
 
-Input work and diagnostics are bounded before dispatch: `hold_ms` ≤ 5000, `settle_frames` ≤ 120, `steps` ≤ 120, `click_count` ≤ 3, and `max_results` ≤ 100 (default 50). Invalid values return `INPUT_INVALID_PARAM`.
+### Automate repetitive Scene work
 
-It is not a physical OS/window click. Report evidence separately:
+You can ask an agent to:
 
-| QA criterion | How to report |
-|:---|:---|
-| Unity EventSystem input QA | PASS/FAIL from `input inspect`, `input click`, callbacks, console logs, and Play Mode tests. |
-| Physical OS click QA | BLOCKED if Computer Use still cannot capture Unity screenshot state or use a native window input backend. |
+- create a test arena;
+- place prefabs under a new root;
+- add and configure Components;
+- create ScriptableObject assets;
+- wire Animator states;
+- save the Scene;
+- run validation afterwards.
 
-Detailed command docs: [docs/COMMANDS.md](docs/COMMANDS.md#input)
+### Create studio-specific tools
+
+If your project has a repeated workflow, expose it as a custom `[HeraTool]`. The tool appears in Hera's live catalog automatically.
+
+Examples:
+
+- `build_test_battle`
+- `validate_item_database`
+- `spawn_quest_fixture`
+- `bake_localization_table`
+- `check_prefab_rules`
+
+Hera can therefore start as a generic Unity bridge and gradually become a CLI for **your own game production pipeline**.
 
 ---
 
-## Game Feel Mode (Beta)
-
-AI can make a game that works. Game Feel Mode (Beta) helps it make a game that *feels* right.
-
-When this mode is on, agents working through Hera get game-feel guidance for gameplay itself — screen shake, hit stop, knockback, control feel (coyote time, input buffering), camera work, sound design, reward presentation — with concrete parameters (px, seconds, %, Hz) from the *Game Feel & Juice Bible* and the *Ethical Engagement Game Feel Framework*.
-
-The ethics are built in, not bolted on. Every recipe carries its constraints — screen-shake intensity options, flash-reduction for photosensitivity, honest reward presentation, transparent probabilities — so what the agent builds passes the ethics checklist by construction (**Honest Juice**: presentation intensity must match real achievement).
-
-Three surfaces work together:
-
-- `hera-agent-unity game_feel <topic>` — the bundled knowledge base (54 topics, ethics listed first), always available
-- `doctor --agent-rules` — injects the core principles + workflow when the mode is on
-- Tool hints — adding a Camera / ParticleSystem / AudioSource / Rigidbody / Light / Animator via `manage_components` points the agent at the matching topics
-
-Guidance only — Hera never attaches runtime components for you.
-
-Turn it on in Unity:
-
-```text
-HeraAgent -> Hera Settings -> Game Feel Mode (Beta)
-```
-
-Or from the CLI: `hera-agent-unity asset-config gamefeel on`
-
----
-
-## Game Feel UI Mode (Beta)
-
-AI can make a button that works. Game Feel UI Mode (Beta) helps it make a button that feels like a game.
-
-When this mode is on, Hera adds an `agent_hint` to UI creation results. The hint gives concrete game-feel recipes: hover scale, press squash, release bounce, popup overshoot with symmetric choice buttons, rarity-laddered reward presentation, count-up numbers with critical specs, dual-response health bars, charge/cooldown patterns, ECN-DMN density guidance, haptics, and accessibility baselines. Each hint ends with a pointer into the `game_feel` knowledge base's `ui` category — per-element spec tables, cognitive-load theory, choice-symmetry ethics, and 2026 trends — for depth on demand.
-
-It is guidance, not runtime bloat. Hera does not attach heavy gameplay components for you. The agent receives the recipe, then applies the animation or feedback through normal Unity edits.
-
-The uGUI fixer is separate from the game-feel recipe: `ui_doc apply` always reports
-manual-backed `fixes` / `diagnostics`, while Game Feel UI Mode (Beta) only adds optional
-game-feel guidance in `agent_hint`.
-
-Turn it on in Unity:
-
-```text
-HeraAgent -> Hera Settings -> Game Feel UI Mode (Beta)
-```
-
-Or from the CLI: `hera-agent-unity asset-config gamefeel-ui on`
-
-If DOTween is enabled in the same Hera Settings panel, the hint suggests DOTween-style tweens. If not, it falls back to coroutine or lerp-style guidance.
-
-Common recipes:
-
-| UI element | Game-feel guidance |
-|:---|:---|
-| Button | Hover grow, press squash, release bounce, click sound, haptic. |
-| Popup / panel | Pop-in entrance, screen dim, fast quiet exit. |
-| Text | Staggered text, count-up numbers, floating damage text. |
-| Image / reward | Pop-in, rarity pulse, glow, hover lift. |
-| Bar | Instant fill drop, delayed chip bar, low-value pulse, segment ticks. |
-
-Detailed command docs: [docs/COMMANDS.md](docs/COMMANDS.md#ui_doc)
-
----
-
-## Unity De-slop Mode (Beta)
-
-Game Feel Mode covers how a screen *moves*. De-slop Mode covers how it *sits still* — the statistical tells that make generated UI look generated: reflexive decoration, undisciplined containers, spacing picked by eye, decorative italics, rainbow palettes.
-
-The bundled `ui_slop` taxonomy groups these into five areas, and fixes land in that order so an upstream fix dissolves the conflicts a downstream one would hit:
-
-| Area | Covers |
-|:---|:---|
-| A | Decorative sweep — orbs, glow, glass, sparkles, emoji icons |
-| B | Layout, RectTransform, containers, anchors, raycast targets |
-| C | Spacing — the ladder, density, grouping, dead whitespace |
-| D | Typography — italics, font roles, type scale, Hangul typesetting |
-| E | Color — semantic roles, palette discipline, WCAG contrast |
-
-Every tell carries a uGUI check and a UI Toolkit check, written against the USS vocabulary each Unity version actually ships, plus the mechanical fix and the functional cases that must *not* be treated as slop — nested surfaces are usually legitimate in game UI, so repeated interactive cells like inventory slots are never flattened.
-
-```bash
-hera-agent-unity ui_slop                 # taxonomy index by area
-hera-agent-unity ui_slop box-in-box      # one tell: check, exception, fix
-```
-
-The tool is always available. Turning the mode on additionally makes `doctor --agent-rules` inject the de-slop discipline and `manage_components add` point at the relevant tell:
-
-```text
-HeraAgent -> Hera Settings -> Unity De-slop Mode (Beta)
-```
-
-Or from the CLI: `hera-agent-unity asset-config uislop on`
-
----
-
-## Ultra Hera
+## Ultra Hera: make "done" mean checked
 
 <div align="center">
 
@@ -646,156 +456,235 @@ Or from the CLI: `hera-agent-unity asset-config uislop on`
 
 <br>
 
-**Hera's signature verification mode for AI-assisted Unity work.**
-
-<sub>Ultra Hera helps an AI agent check its Unity work before it says "done".</sub>
+**Do the work. Check the work. Only then report the result.**
 
 </div>
 
-Ultra Hera is Hera's safety belt for AI Unity work.
+Ultra Hera is a verification rule for AI-assisted Unity work. It does not write the feature by itself. It tells the agent how carefully to check the work it just did through Hera.
 
-When an AI changes code, a scene, or the Inspector, it can be wrong in small ways: Unity may not compile, the Console may have errors, a GameObject may not have the component you expected, or Play Mode may fail after the edit.
-
-Ultra Hera gives the agent a simple rule:
-
-```text
-Do the work. Check the work. Only then report the result.
-```
-
-It does not replace the AI. It tells the AI how carefully to verify Unity work after using Hera.
-
-Find it here:
+Find it in:
 
 ```text
 HeraAgent -> Hera Settings -> Ultra Hera
 ```
 
-Modes:
-
-| Mode | Simple meaning |
+| Mode | Easy meaning |
 |:---|:---|
-| `Off` | No extra checking rule. |
-| `Light` | Default. The agent does a small check after every Unity task, so it does not finish in a clearly wrong state. |
-| `Ultra` | The agent uses Light checks for every task, then upgrades important requests to stronger checks like tests, Play Mode, Inspector reads, screenshots, or `ui_doc` capture. |
+| `Off` | No extra verification rule. |
+| `Light` | Default. Compile/check state, read errors, and re-read the changed target before finishing. |
+| `Ultra` | For important work. Add stronger evidence such as tests, Play Mode, Inspector reads, screenshots, or `ui_doc` capture. |
 
-Think of the modes like this:
+Think of `Light` as a seatbelt check and `Ultra` as a pre-flight inspection.
 
-| Mode | Like a... | What it checks |
-|:---|:---|:---|
-| `Light` | Quick seatbelt check | "Did Unity compile? Are there Console errors? Did the thing I changed really change?" |
-| `Ultra` | Full pre-flight check | "Does it compile, run, look right, and match the user's request with evidence?" |
+Use Ultra when the request sounds like:
 
-Use Light for everyday coding and Inspector edits. Use Ultra when the user says things like "verify exactly", "play it and confirm", "match the UI", or "check the Inspector too".
+- "verify it exactly";
+- "play it and confirm";
+- "match this UI";
+- "check the Inspector too";
+- "do not finish until all tests pass".
 
-What Ultra Hera makes agents do better:
-
-- Check Unity instead of guessing.
-- Read only the state they need.
-- Compile after edits.
-- Read real Console errors.
-- Re-check the changed GameObject, component, asset, or UI.
-- Use Play Mode, tests, screenshots, or `ui_doc` capture when the task needs stronger proof.
-- Report short evidence instead of a vague "it should work".
-
-Representative Light commands:
-
-```bash
-hera-agent-unity status
-hera-agent-unity console --type error --lines 20
-hera-agent-unity editor refresh --compile
-hera-agent-unity find_gameobjects --ids
-hera-agent-unity exec --depth 1 ...
-```
-
-Representative Ultra commands:
-
-```bash
-hera-agent-unity test --mode EditMode
-hera-agent-unity test --mode PlayMode
-hera-agent-unity editor play --wait
-hera-agent-unity screenshot --view game
-hera-agent-unity ui_doc capture --out ...
-```
-
-The goal is simple: the agent should not close the task while Unity is still broken.
+The goal is simple: **the agent should not close the task while Unity is still broken.**
 
 ---
 
-## Unity Versions
+## More than Editor control
 
-| Unity version | Status | Notes |
+Hera includes optional guidance and authoring systems that help the agent do more than change raw objects.
+
+### UI systems
+
+| Backend | Best for | Hera creates |
 |:---|:---|:---|
-| 2022.3 LTS | Supported | Verified on `2022.3.62f2`. |
-| 2023.2 | Supported | Verified on `2023.2.22f1`. |
-| 6000.0 - 6000.4 | Supported | Unity 6. |
-| 6000.5+ | Supported | Uses Unity's newer object ID system when needed. |
-| Older than 2022.3 | Not supported | Minimum supported version is Unity 2022.3. |
+| `ugui` | Canvas-based UI | GameObjects, RectTransforms, Components |
+| `uitk` | Runtime UI Toolkit | validated UXML, USS, `PanelSettings`, `UIDocument` |
+
+Choose explicitly:
+
+```bash
+hera-agent-unity asset-config ui-system uitk
+```
+
+Hera validates the selected backend instead of guessing from the Scene.
+
+### Game Feel Mode (Beta)
+
+Helps the agent think about how gameplay **feels**, not only whether it functions: screen shake, hit stop, knockback, camera, control feel, sound, reward presentation, haptics, and accessibility constraints.
+
+```bash
+hera-agent-unity asset-config gamefeel on
+hera-agent-unity game_feel hit-stop
+```
+
+The knowledge is guidance. Hera does not secretly add heavy runtime systems to your game.
+
+### Game Feel UI Mode (Beta)
+
+Adds practical UI feedback recipes such as hover scale, press squash, popup entrance, count-up text, health-bar response, cooldown feedback, and accessibility baselines.
+
+```bash
+hera-agent-unity asset-config gamefeel-ui on
+```
+
+### Unity De-slop Mode (Beta)
+
+Helps agents catch common generated-looking UI habits: unnecessary decoration, weak spacing systems, box-in-box layouts, decorative italics, inconsistent colors, and other visual tells.
+
+```bash
+hera-agent-unity asset-config uislop on
+hera-agent-unity ui_slop box-in-box
+```
+
+The rules include exceptions so functional game UI such as inventory cells is not flattened just because it is repetitive.
 
 ---
 
-## Add Project Rules For Agents
+## Command overview
 
-Put Hera rules in your Unity project so agents know how to use it before they start guessing.
+You do not need to memorize these. They are here so you can understand the surface Hera gives an agent.
 
-Codex users can add the publisher-owned marketplace directly:
+| Command | Plain-language purpose |
+|:---|:---|
+| `doctor --json` | "Is Hera installed and can it reach Unity?" |
+| `status` / `ping` | Check Editor state and liveness. |
+| `list --compact` | Discover available built-in and project-specific tools cheaply. |
+| `call <tool>` | Validate a strict live tool contract, then call it. |
+| `console` | Read or clear the real Unity Console. |
+| `scene` | Inspect, load, save, list, or close Scenes. |
+| `find_gameobjects` | Search the loaded Scene hierarchy. |
+| `manage_gameobject` | Create and edit GameObjects. |
+| `manage_components` | Read, add, remove, or modify Components. |
+| `manage_assets` | Work with project assets under `Assets/`. |
+| `manage_animation` | Author AnimationClips and AnimatorController state machines. |
+| `exec` | Run arbitrary project-aware C# inside the Editor. |
+| `editor` | Play, stop, pause, refresh, and compile. |
+| `test` | Run or resume Unity tests. |
+| `task` | Inspect durable test/package work without contacting Unity. |
+| `screenshot` | Capture Scene/Game views or isolated objects. |
+| `ui_doc` | Inspect, build, sample, and capture Unity UI. |
+| `input` | Test uGUI through Unity EventSystem events. |
+| `profiler` | Read profiler hierarchy snapshots. |
+| `game_feel` | Query game-feel guidance. |
+| `ui_slop` | Query UI cleanup guidance. |
+| `batch` | Run several operations in one request. |
+| custom `[HeraTool]` | Call tools defined by your own Unity project. |
+
+Full reference: [docs/COMMANDS.md](docs/COMMANDS.md).
+
+---
+
+## Teach your AI agent to use Hera automatically
+
+You can put Hera's operating rules in the project so the agent knows to inspect Unity before guessing.
+
+### Codex plugin
 
 ```bash
 codex plugin marketplace add NotNull92/hera-agent-unity --ref main
 ```
 
-Then open Codex, run `/plugins`, choose **Hera Agent Unity**, and enable **Hera Unity**. The same plugin is also mirrored by the HOL `awesome-codex-plugins` and `awesome-ai-plugins` catalogs.
+Then open `/plugins`, choose **Hera Agent Unity**, and enable **Hera Unity**.
 
-For the standalone Agent Skill without the plugin marketplace:
+### Standalone Agent Skill
 
 ```bash
 npx skills add NotNull92/hera-agent-unity --skill hera-agent-unity --agent codex
 ```
 
-Use either installation path; both teach the same CLI-first Unity workflow.
-
-This repository includes ready-to-use rule files for the main coding agents:
-
-| Agent | File to add | Why |
-|:---|:---|:---|
-| Codex / Claude / Gemini CLI / most agents | `AGENTS.md` | One shared guide for shell-based agents. |
-| Cursor | `.cursor/rules/hera-agent-unity.mdc` | Cursor needs `.mdc` frontmatter to activate project rules. |
-| GitHub Copilot | `.github/copilot-instructions.md` | Repo-wide Copilot instructions. |
-| GitHub Copilot, file-specific | `.github/instructions/hera-agent-unity.instructions.md` | Applies Hera rules to Unity files like `.cs`, `.prefab`, `.unity`, and `Assets/**`. |
-| Google AntiGravity | `GEMINI.md`, `.agents/agents.md`, `.agents/skills/hera-agent-unity/SKILL.md` | Project entry rule, workspace handoff, and on-demand skill. |
-| Continue.dev | `.continuerules` | Plain markdown rules. |
-
-Fast setup for a small always-loaded shared file:
+### Shared `AGENTS.md`
 
 ```bash
 hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 ```
 
-The compact form keeps bootstrap, multi-Editor targeting, safety, approval,
-and verification rules in the project context. With default guidance settings,
-its reviewed baseline is **2,277 UTF-8 bytes**; a test requires an explicit
-baseline update if that always-loaded surface changes. Run
-`doctor --agent-rules` without `--compact` only when you want the full Quick
-Rules and Pitfalls guide embedded directly.
+The compact default guidance is intentionally small. Its reviewed baseline is **2,277 UTF-8 bytes** and contains the important rules for bootstrap, targeting, approvals, safety, and verification. The full guide is available on demand.
 
-Cursor setup:
-
-```bash
-hera-agent-unity doctor --agent-rules --compact --format cursor > .cursor/rules/hera-agent-unity.mdc
-```
-
-Copilot, AntiGravity, and Continue templates are in [examples/rules](examples/rules). This repo also contains live examples at [.github/copilot-instructions.md](.github/copilot-instructions.md), [.github/instructions/hera-agent-unity.instructions.md](.github/instructions/hera-agent-unity.instructions.md), [GEMINI.md](GEMINI.md), and [.agents/skills/hera-agent-unity/SKILL.md](.agents/skills/hera-agent-unity/SKILL.md).
-
-The most important rules are:
-
-- use `list --compact` to find available tools;
-- use `find_gameobjects --ids` when the next command only needs object IDs;
-- return `null` from side-effecting `exec` calls;
-- do not return big Unity objects directly;
-- read `console --type error` instead of guessing errors.
+This repository also ships templates for Cursor, Copilot, AntiGravity, Continue, and other agent environments under [examples/rules](examples/rules).
 
 ---
 
-## How It Works
+## Safety and reliability in plain language
+
+Hera can make real changes to a Unity project, so "fast" is not enough. It also needs to know when to stop.
+
+### It identifies the project, not just a port number
+
+Unity can change its local port after a domain reload or restart. Hera prefers the normalized full project path as the Editor identity and treats the port as a temporary endpoint.
+
+If several Editors are open, use:
+
+```bash
+hera-agent-unity --project /full/path/to/project status
+```
+
+Ambiguous targeting fails instead of guessing.
+
+### Risky operations can require approval
+
+Approval-gated work is preflighted first. The returned token is tied to that exact request and is single-use. Changing the target or arguments invalidates the approval.
+
+### It does not blindly repeat an uncertain mutation
+
+If a response disappears during a reload or timeout, Hera checks fresh Editor ownership/state before an eligible retry. A mutation is not resent merely because the network response was unclear.
+
+### Slow tests can be resumed instead of started again
+
+A long Test Runner job can outlive a normal request window. Hera stores durable run state so an agent can resume waiting for the same run instead of accidentally starting another test execution.
+
+---
+
+## Unity versions
+
+| Unity version | Status | Representative verification |
+|:---|:---|:---|
+| 2022.3 LTS | Supported | `2022.3.62f2` |
+| 2023.2 | Supported | `2023.2.22f1` |
+| 6000.0 - 6000.4 | Supported | Unity 6 compatibility buckets |
+| 6000.5+ | Supported | `6000.5.6f1` release gate |
+| Older than 2022.3 | Not supported | Minimum is Unity 2022.3 |
+
+Version-specific behavior is checked against live Editors rather than assumed from one Unity version.
+
+---
+
+## CLI first, MCP optional
+
+The production default is the normal CLI.
+
+```text
+AI / terminal -> Hera CLI -> localhost Connector -> Unity Editor
+```
+
+That means any shell-capable coding agent can use Hera without configuring MCP.
+
+CLI `v0.1.0+` also ships an **experimental, default-off, stdio-only MCP adapter** for hosts that intentionally want MCP discovery and invocation. It uses the same Hera execution core instead of creating a second Unity backend.
+
+```text
+AI with MCP -> optional Hera MCP adapter -> same Hera execution core -> Unity
+```
+
+MCP does not magically make the model smarter. It is another way to expose the same Unity capabilities. Hera keeps the CLI path as the default because it remains simple, explicit, and broadly compatible.
+
+MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
+
+---
+
+## Current release
+
+- CLI: **v0.1.4**
+- Unity Connector: **0.0.80**
+- License: **Apache-2.0**
+
+The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
+
+v0.1.4 focuses on safer multi-Editor targeting, a bounded always-loaded agent context, catalog growth review, and reproducible release/package evidence.
+
+For release-by-release engineering detail, read [CHANGELOG.md](CHANGELOG.md) instead of treating the main README as a migration log.
+
+---
+
+<details>
+<summary><strong>How does Hera work internally?</strong></summary>
 
 ```text
 Terminal / AI agent
@@ -808,73 +697,83 @@ Go CLI
         v
 Unity Editor package
         |
-        | Unity main thread
+        | serialized Unity main-thread work
         v
-Scene, Console, Play Mode, Assets, UI
+Scene, Console, Play Mode, Assets, Tests, UI
 ```
 
-The Unity package starts a small local HTTP server. The CLI sends commands to it. The command runs inside the Editor.
+The Unity package opens a local HTTP listener. The CLI selects the intended Editor from local heartbeat state and sends the command. Unity work is marshaled to the Editor main thread.
 
-Architecture details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+Domain reloads and long-running operations use filesystem-backed state so compilation, tests, and recovery can survive the HTTP listener being recreated.
+
+Architecture details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+</details>
+
+<details>
+<summary><strong>Advanced exec, token, and async notes</strong></summary>
+
+- Prefer dedicated commands over arbitrary `exec` when one exists.
+- Use small projections such as `find_gameobjects --ids` when IDs are enough.
+- Side-effecting `exec` snippets should normally return `null` or nothing rather than a large status object.
+- Do not return a full `UnityEngine.Object` unless you truly need its reflected graph.
+- Use `--strict` or throw an exception when a logged error must fail the CLI operation.
+- Use `exec --check` when you want to compile-check a snippet without executing it.
+- Long asynchronous workflows are better represented as tracked `[HeraTool]` actions or durable task/test operations than as detached work inside a one-shot `exec`.
+
+The complete agent operating guide is [AGENTS.md](AGENTS.md).
+
+</details>
 
 ---
 
 ## FAQ
 
-### Is this MCP?
+### Does Hera make the AI smarter?
 
-The production default is a normal CLI, so any agent that can run shell commands
-can use Hera. CLI `v0.1.0+` also includes an experimental, default-off,
-stdio-only MCP adapter. It reuses the CLI and localhost Connector execution core
-and is not the default. See the [MCP adapter guide](docs/MCP.md).
+No. Hera gives the AI better access to **your real Unity state** and better ways to verify the result. The coding model still makes the design and implementation decisions.
 
 ### Does it need Python?
 
-No.
+No. The normal install is one native CLI plus one Unity package.
 
-### Which Unity Editor does it talk to?
+### Do I need MCP?
 
-Hera does not abort merely because several Editors are open. Each CLI
-invocation or MCP process targets one Unity Editor. If several Editor heartbeats
-are present, prefer `--project` with the full project path. Ports are
-temporary endpoints chosen from `8090`–`8099`; they may change after an Editor
-restart or domain reload. Exact normalized project paths win, a partial project
-match must be unique, and `--project` plus `--port` must identify the same
-Editor. Without a selector Hera prefers a project matching the current working
-directory, then the most recent live heartbeat. After a transport failure or
-request timeout Hera reads fresh heartbeat state before any safe retry, so it
-does not silently follow a port that another project has claimed.
+No. The CLI is the production default. MCP is optional and default-off.
 
-### How does Hera stop the tool surface from growing silently?
+### Can it control more than one open Unity Editor?
 
-Maintainers export the live built-in catalog from a disposable blank Unity
-project and compare it with `docs/metrics/catalog-payload-baseline.json`. The
-report shows tool, action, description, and per-profile byte deltas. A changed
-surface requires the failure being solved, contract and safety updates,
-regression evidence, and an intentionally reviewed baseline update. See
-[the catalog payload gate](tools/catalog-payload-report/README.md).
+Each command targets one Editor. If several are open, use the full `--project` path for the clearest selection. Hera tracks the selected project identity even if the local port changes.
 
-### What should I do when it cannot connect?
+### Can it physically click the Unity window?
 
-Run:
+The `input` command sends Unity EventSystem events for uGUI QA. That proves the Unity event path, not a physical operating-system mouse click. Physical click evidence must be reported separately.
+
+### Can it build UI Toolkit as well as uGUI?
+
+Yes. Hera has separate uGUI and runtime UI Toolkit backends. Select the backend explicitly instead of mixing them.
+
+### What should I do if it cannot connect?
 
 ```bash
 hera-agent-unity doctor --json
 ```
 
-Also check that the Unity package is installed and Unity has finished compiling.
+Also check that the Unity package is installed and the Editor has finished compiling.
 
 ### Where are the detailed docs?
 
-- [docs/COMMANDS.md](docs/COMMANDS.md)
-- [docs/MCP.md](docs/MCP.md)
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- [docs/CSHARP_CONNECTOR.md](docs/CSHARP_CONNECTOR.md)
-- [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- [Commands](docs/COMMANDS.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [C# Connector](docs/CSHARP_CONNECTOR.md)
+- [MCP adapter](docs/MCP.md)
+- [UI document contract](docs/UI_DOC_IR.md)
+- [Agent operating guide](AGENTS.md)
 
 ---
 
-## Projects Using Hera
+## Projects using Hera
 
 | Project | Notes |
 |:---|:---|
@@ -884,7 +783,7 @@ Also check that the Unity package is installed and Unity has finished compiling.
 
 https://github.com/user-attachments/assets/15d353e4-b7bb-4534-bbca-c27de0792147
 
-<sub><b>NoMoreRolls</b> — Full Play Mode video from a Unity game built with Hera-assisted editor work.</sub>
+<sub><b>NoMoreRolls</b> - full Play Mode video from a Unity game built with Hera-assisted Editor work.</sub>
 
 </div>
 
@@ -892,7 +791,7 @@ https://github.com/user-attachments/assets/15d353e4-b7bb-4534-bbca-c27de0792147
 
 ## Author
 
-**Victor** — Unity/C# developer with 6+ years of live-service MMORPG production experience.
+**Victor** - Unity/C# developer with 6+ years of live-service MMORPG production experience.
 
 GitHub: [@NotNull92](https://github.com/NotNull92)
 
