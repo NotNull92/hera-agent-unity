@@ -1,6 +1,6 @@
 ﻿# Hera vNext Capability Migration Handoff
 
-Status: **READY FOR M1**
+Status: **READY FOR M2**
 
 Date: 2026-08-09
 
@@ -501,7 +501,17 @@ Exit criteria:
 - no tool/action/catalog change unless unavoidable,
 - production LOC delta recorded.
 
-Status: **READY**
+Status: **PASS**
+
+Decision:
+
+- Keep the two await-based `NextEditorUpdate` implementations local for now.
+- `InputQaEventSystem` and `ManagePackages` are still the only production
+  consumers with the same task-returning, main-thread continuation contract.
+- `PackageJobState` uses persistent callback watchers with domain-reload
+  recovery, so it is not the same abstraction.
+- Extract the shared Core primitive when the optional Input System automation
+  engine or input sequence/replay becomes the third production consumer.
 
 ### M2: optional Input System keyboard/mouse backend
 
@@ -780,6 +790,80 @@ Tools/actions baseline: 31 / 75
 Production LOC baseline: Go 11,639 / C# 24,050
 Blocked decisions: A Unity launch/restart Go exception, B exec Restricted-default semantics
 Next step: M1, re-read actual update/frame consumers and implement only justified common primitive/input cleanup
+```
+
+### 2026-08-09 19:38 +09:00 - M1 passed without speculative extraction
+
+```text
+HEAD before: d221c930af1b3e8d72ad43c46022357cecb3be84
+HEAD after implementation: d221c930af1b3e8d72ad43c46022357cecb3be84 (no production change; this handoff update is the session-close commit)
+Milestone: M1 PASS; M2 is next
+Files changed: docs/handoffs/hera-vnext-capability-migration-2026-08-09.md only
+Behavior added/removed: none
+
+Decision evidence:
+- Current production await-based next-update consumers are exactly
+  AgentConnector/Editor/Core/InputQaEventSystem.cs and
+  AgentConnector/Editor/Tools/ManagePackages.cs.
+- docs/DECISION_LEDGER.md records the existing lock: keep the helper local at
+  two consumers and extract it when a third production consumer exists.
+- AgentConnector/Editor/Core/PackageJobState.cs uses callback watchers that
+  persist/recover package jobs across domain reloads; its lifecycle and API are
+  intentionally different.
+- The planned Input System automation engine and sequence/replay code do not
+  exist yet. Adding a Core helper in M1 would therefore be speculative.
+
+Tests and repository gates:
+- go clean -testcache: PASS
+- gofmt -w .: PASS, zero diff
+- golangci-lint run ./...: PASS, 0 issues
+- golangci-lint fmt --diff: PASS, zero diff
+- go vet ./...: PASS
+- go test -count=1 ./...: PASS, all packages
+- go run ./tools/generate-runtime-contracts --check: PASS
+- go run ./tools/sync-agent-guides --check: PASS
+- go run ./tools/validate-connector-package: PASS
+- git diff --check: PASS before the handoff edit
+
+Live Unity evidence:
+- Bootstrap PASS: Inventoria, port 8090, Unity 6000.3.5f2, state ready,
+  31 tools, CLI v0.1.4.
+- Installed UPM connector package is 0.0.80 from git commit
+  6c6050c81a91753ecb04733e54901dfc2e4f4dd6.
+- manage_packages list: PASS; the package request completed and returned the
+  resolved package set.
+- input state: PASS; EventSystem /EventSystem and one active GraphicRaycaster
+  at /GameCanvas were reported; Input System capability was available.
+- editor refresh --compile --timeout 120000: PASS; Editor returned to ready.
+- console --type error --lines 50: PASS, 0 matched errors.
+- This is a 6000.3 smoke check only. The five-bucket Connector compatibility
+  release gate was not triggered because M1 changed no Connector code, asmdef,
+  package dependency, tests, or package version.
+
+Surface and production metrics:
+- Tools: 31 -> 31 (delta 0)
+- Actions: 75 -> 75 (delta 0)
+- Normalized catalog bytes: 185,339 -> 185,339 (delta 0)
+- Production Go LOC: 11,639 -> 11,639 (delta 0)
+- Production C# LOC: 24,050 -> 24,050 (delta 0)
+- No catalog comparison/baseline regeneration was required because the only
+  post-baseline repository changes are handoff documentation.
+
+Open risks:
+- M2 must choose the optional Input System compilation boundary before a third
+  consumer can justify the shared update/frame primitive.
+- M2 must preserve EventSystem compilation and behavior when
+  com.unity.inputsystem is absent.
+
+Next exact step:
+- M2: inspect the supported-bucket compilation options for an optional Input
+  System keyboard/mouse backend, select the least-permanent dependency surface,
+  and only then extract the shared update/frame helper when that engine becomes
+  its third production consumer.
+
+User decisions still blocked:
+- Decision A: Unity launch/restart Go-side bootstrap exception.
+- Decision B: exec Restricted-default semantics.
 ```
 
 ## 18. First prompt for a new Codex session
