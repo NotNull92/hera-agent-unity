@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -186,21 +185,7 @@ namespace HeraAgent
 
         internal static async Task Wait(int frames, int delayMs)
         {
-            if (delayMs > 0) await Task.Delay(delayMs);
-            while (frames-- > 0)
-                await NextEditorUpdate();
-        }
-
-        private static Task NextEditorUpdate()
-        {
-            var source = new TaskCompletionSource<bool>();
-            void Tick()
-            {
-                EditorApplication.update -= Tick;
-                source.TrySetResult(true);
-            }
-            EditorApplication.update += Tick;
-            return source.Task;
+            await EditorUpdate.Wait(frames, delayMs);
         }
 
         internal static bool IsTargetOrChild(GameObject target, GameObject candidate)

@@ -120,7 +120,7 @@ You can use Hera for tiny one-line checks or for a full AI-assisted Unity workfl
 | Test a feature | Run EditMode and PlayMode tests and keep the result across domain reloads |
 | Play the game | Enter Play Mode, wait for the real state change, inspect, then stop |
 | See what Unity rendered | Capture Scene/Game views, isolated objects, or live uGUI overlays |
-| Test uGUI input | Inspect raycast targets and send click, submit, scroll, and drag through Unity EventSystem |
+| Test Unity input | Inspect uGUI raycasts through EventSystem, or synthesize optional Input System keyboard/mouse state in Play Mode |
 | Build UI | Author uGUI or UI Toolkit layouts and verify the generated result |
 | Recreate a reference UI | Measure a reference, build the real Unity UI, capture it, compare, and iterate |
 | Improve game feel | Give the agent recipes for shake, hit stop, feedback, camera, sound, rewards, and accessibility |
@@ -420,6 +420,16 @@ hera-agent-unity input click --path /Canvas/StartButton --settle_frames 2
 
 This verifies Unity's EventSystem path. It is not a physical Windows/macOS mouse click, so Hera reports those two kinds of evidence separately.
 
+Projects that already use the optional Input System package can also verify gameplay input without adding a Hera dependency:
+
+```bash
+hera-agent-unity input state --backend inputsystem
+hera-agent-unity input keyboard --key space --mode press
+hera-agent-unity input mouse --mode click --button left --position 640,360
+```
+
+Keyboard and mouse mutations require Play Mode. Hera resolves the package at runtime, never creates devices, and releases any held controls when Play Mode exits.
+
 ### Automate repetitive Scene work
 
 You can ask an agent to:
@@ -562,7 +572,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `task` | Inspect durable test/package work without contacting Unity. |
 | `screenshot` | Capture Scene/Game views or isolated objects. |
 | `ui_doc` | Inspect, build, sample, and capture Unity UI. |
-| `input` | Test uGUI through Unity EventSystem events. |
+| `input` | Test uGUI through EventSystem or optional Input System keyboard/mouse state. |
 | `profiler` | Read profiler hierarchy snapshots. |
 | `game_feel` | Query game-feel guidance. |
 | `ui_slop` | Query UI cleanup guidance. |
@@ -747,7 +757,7 @@ Each command targets one Editor. If several are open, use the full `--project` p
 
 ### Can it physically click the Unity window?
 
-The `input` command sends Unity EventSystem events for uGUI QA. That proves the Unity event path, not a physical operating-system mouse click. Physical click evidence must be reported separately.
+The `input` command sends Unity EventSystem events for uGUI QA and can synthesize optional Input System keyboard/mouse state in Play Mode. Both prove Unity-level behavior, not a physical operating-system click. Physical click evidence must be reported separately.
 
 ### Can it build UI Toolkit as well as uGUI?
 

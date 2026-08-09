@@ -15,7 +15,7 @@ namespace HeraAgent.Tests
         [MenuItem("HeraAgent/Tests/InputQa")]
         public static async void RunTests()
         {
-            var allPassed = RunLimitTests();
+            var allPassed = RunContractTests();
             if (!Application.isPlaying)
             {
                 if (allPassed)
@@ -224,9 +224,26 @@ namespace HeraAgent.Tests
             return ExpectEqual(label, expectedCode, response?.code);
         }
 
-        private static bool RunLimitTests()
+        internal static bool RunContractTests()
         {
             var allPassed = true;
+            var inputSystemState = InputTool.HandleCommand(new JObject
+            {
+                ["action"] = "state",
+                ["backend"] = "inputsystem",
+            }).GetAwaiter().GetResult() as SuccessResponse;
+            allPassed &= ExpectTrue(
+                "Input System capability state is always queryable",
+                inputSystemState != null);
+            allPassed &= ExpectError(
+                "EventSystem backend rejects keyboard synthesis",
+                new JObject
+                {
+                    ["action"] = "keyboard",
+                    ["backend"] = "eventsystem",
+                    ["key"] = "space",
+                },
+                "INPUT_BACKEND_ACTION_MISMATCH");
             allPassed &= ExpectError(
                 "hold_ms above the cap is rejected before dispatch",
                 new JObject { ["action"] = "state", ["hold_ms"] = 5001 },

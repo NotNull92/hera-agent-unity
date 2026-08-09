@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (next Connector release)
+
+- Added optional, reflection-only Input System keyboard and mouse synthesis for
+  Play Mode through `input keyboard` and `input mouse`; projects without
+  `com.unity.inputsystem` retain the existing EventSystem backend and gain no
+  package or assembly dependency.
+- Added held-control ownership and Play Mode exit cleanup so Hera cannot leave a
+  synthesized key or mouse button pressed across commands or after stopping play.
+- Shared the Editor update wait primitive used by input QA and package polling,
+  and added strict contract, safety, and release-gate coverage for the two new
+  input actions.
+
 ## [0.1.4] - 2026-08-06
 
 ### Added (CLI and development gates)

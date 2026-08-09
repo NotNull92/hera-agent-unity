@@ -8,8 +8,11 @@ namespace HeraAgent
     {
         public string Action;
         public string Backend;
+        public string Mode;
+        public string Key;
         public GameObject Target;
         public Vector2? Position;
+        public Vector2? Delta;
         public Vector2? Normalized;
         public Vector2? Offset;
         public Vector2? ScrollDelta;

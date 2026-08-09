@@ -143,6 +143,11 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       #   full-scan Levenshtein suggest. Owned by GameFeelStore
                       #   and UiSlopStore; UnityDocsStore excluded on purpose),
                       # Response, ParamCoercion, ToolParams,
+                      # EditorUpdate (shared EditorApplication.update wait used
+                      # by input QA and package polling),
+                      # InputQaEventSystem (uGUI raycast/ExecuteEvents backend),
+                      # InputQaInputSystem (reflection-only optional keyboard/
+                      # mouse state backend; held-control cleanup),
                       # AtomicFile (temp-write + replace for JSON file bus),
                       # AssetPathGuard (normalized Assets/ containment),
                       # StringCaseUtility, ToolMetadata, UnityPitfalls,

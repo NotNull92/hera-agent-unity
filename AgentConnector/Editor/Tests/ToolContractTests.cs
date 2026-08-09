@@ -525,6 +525,14 @@ namespace HeraAgent.Tests
                 {
                     return Expect(nameof(TestEveryM22ActionContract), false);
                 }
+
+                if (entry.tool == "input"
+                    && (entry.action == "keyboard" || entry.action == "mouse")
+                    && (!action.Safety.RequiresPlayMode
+                        || action.Safety.RiskClass != HeraRiskClass.Write))
+                {
+                    return Expect(nameof(TestEveryM22ActionContract), false);
+                }
             }
 
             return Expect(nameof(TestEveryM22ActionContract), true);
@@ -1735,6 +1743,17 @@ namespace HeraAgent.Tests
             }
 
             yield return ("input", "state", new JObject { ["action"] = "state" });
+            yield return ("input", "keyboard", new JObject
+            {
+                ["action"] = "keyboard",
+                ["key"] = "space",
+            });
+            yield return ("input", "mouse", new JObject
+            {
+                ["action"] = "mouse",
+                ["mode"] = "move",
+                ["position"] = "100,200",
+            });
             foreach (var action in new[]
             {
                 "inspect",

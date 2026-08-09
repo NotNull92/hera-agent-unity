@@ -2,6 +2,7 @@ Input QA:
   hera-agent-unity input <action> [flags]
 
   input state                         Report EventSystem/raycaster availability
+  input state --backend inputsystem   Report optional Input System devices/state
   input inspect --path /Canvas/Button Raycast target point and report blockers
   input click --path /Canvas/Button   Drive pointer enter/down/up/click through EventSystem
   input pointer_down --path /Canvas/Button
@@ -13,6 +14,16 @@ Input QA:
                                       Execute scroll handler
   input drag --path /Canvas/Handle --to_normalized 0.8,0.5
                                       Execute begin/drag/end handlers
+  input keyboard --key space          Press and release an Input System key
+  input keyboard --key a --mode down  Hold a key until a matching mode=up call
+  input mouse --mode move --position 640,360
+                                      Move the Input System mouse
+  input mouse --mode click --button left --position 640,360
+                                      Click and release an Input System button
+  input mouse --mode delta --delta 12,-4
+                                      Set mouse delta for the current update
+  input mouse --mode scroll --scroll_delta 0,3
+                                      Set Input System scroll delta
 
   Target:
     --path </Canvas/Button>           Target by hierarchy path
@@ -27,7 +38,9 @@ Input QA:
     --to_normalized x,y               Drag end point inside target rect
 
   Options:
-    --backend eventsystem             Current implementation (default)
+    --backend eventsystem|inputsystem|auto
+                                      EventSystem is the default for UI actions;
+                                      keyboard/mouse default to Input System
     --button left|right|middle        Pointer button (default: left)
     --click_count <N>                 Click count 1..3 (default: 1)
     --scroll_delta x,y                Scroll delta (default: 0,-1; alias: --delta)
@@ -38,6 +51,18 @@ Input QA:
     --strict true|false               Fail when blocked/not reached (default: true)
     --details true                    Return full raycast/handler diagnostics
 
+  Input System options (Play Mode only):
+    --key <InputSystem Key>           Keyboard key enum name (required)
+    --mode press|down|up              Keyboard mode (default: press)
+    --mode move|click|down|up|delta|scroll
+                                      Mouse mode (default: click)
+    --position x,y                    Absolute mouse screen position
+    --delta x,y                       Mouse delta
+    --scroll_delta x,y                Mouse scroll delta
+    --button left|right|middle        Mouse button (default: left)
+    --hold_ms <N>                     Press/click hold 0..5000 ms (default: 50)
+    --settle_frames <N>               Updates after the final event 0..120
+
   Examples:
     input state
     input inspect --path /Canvas/StartButton --details true
@@ -45,6 +70,9 @@ Input QA:
     input submit --path /Canvas/StartButton
     input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
     input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
+    input state --backend inputsystem
+    input keyboard --key space --mode press
+    input mouse --mode click --button left --position 640,360
 
   Windows Git Bash:
     MSYS rewrites arguments that begin with "/" as filesystem paths. Prefix
@@ -53,7 +81,8 @@ Input QA:
       MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/StartButton
 
   Evidence:
-    This is Unity EventSystem input QA, not physical OS click QA. It verifies
-    EventSystem.RaycastAll plus ExecuteEvents pointer handlers. If Computer Use
-    cannot acquire Unity screenshot state, physical coordinate-click QA can
-    still be BLOCKED while this command PASSes Unity-level UI input.
+    EventSystem actions verify EventSystem.RaycastAll plus ExecuteEvents pointer
+    handlers. Input System actions verify synthesized gameplay device state.
+    Neither backend is physical OS click QA. If Computer Use cannot acquire Unity
+    screenshot state, physical coordinate-click QA can still be BLOCKED while a
+    Unity-level input command PASSes.

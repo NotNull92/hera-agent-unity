@@ -21,6 +21,7 @@ namespace HeraAgent.Tests
             nameof(AssetConfigPersistence),
             nameof(AssetMutationPreflight),
             nameof(AtomicFile),
+            nameof(InputQa),
             nameof(OperationLedger),
             nameof(OutputFilePolicy),
             nameof(ProjectIdentity),
@@ -43,6 +44,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void AtomicFile() => AtomicFileTests.RunTests();
+
+        [Test]
+        public void InputQa() => Assert.IsTrue(InputQaTests.RunContractTests());
 
         [Test]
         public void OperationLedger() => OperationLedgerTests.RunTests();

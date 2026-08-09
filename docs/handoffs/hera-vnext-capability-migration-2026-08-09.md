@@ -1,6 +1,6 @@
 ﻿# Hera vNext Capability Migration Handoff
 
-Status: **READY FOR M2**
+Status: **READY FOR M3**
 
 Date: 2026-08-09
 
@@ -537,7 +537,7 @@ Exit criteria:
 - operation ledger/safety metadata are correct,
 - catalog gate reviewed.
 
-Status: **PENDING M1**
+Status: **PASS**
 
 ### M3: input sequence
 
@@ -560,7 +560,7 @@ Measure:
 - HTTP call count,
 - output bytes.
 
-Status: **PENDING M2**
+Status: **READY**
 
 ### M4: versioned input record/replay
 
@@ -860,6 +860,96 @@ Next exact step:
   System keyboard/mouse backend, select the least-permanent dependency surface,
   and only then extract the shared update/frame helper when that engine becomes
   its third production consumer.
+
+User decisions still blocked:
+- Decision A: Unity launch/restart Go-side bootstrap exception.
+- Decision B: exec Restricted-default semantics.
+```
+
+### 2026-08-09 23:22 +09:00 - M2 optional Input System backend passed
+
+```text
+HEAD before: d4d84a683fa88119bdb9c8f3299468cfb9e60cbd
+HEAD after implementation: d4d84a683fa88119bdb9c8f3299468cfb9e60cbd (implementation and this handoff update are included in the session-close commit)
+Milestone: M2 PASS; M3 is next
+
+Files changed:
+- Added Core/EditorUpdate.cs and Core/InputQaInputSystem.cs with Unity meta files.
+- Extended InputQaEventSystem, InputQaResolver, InputQaTypes, and Tools/Input.
+- Reused EditorUpdate from ManagePackages as the third production consumer
+  justified by the M1 decision.
+- Extended InputQa, release-gate, catalog, contract, discovery, and safety tests.
+- Updated input help, command/design docs, README files, AGENTS/CLAUDE guidance,
+  generated agent guides, changelog, and reviewed catalog baseline.
+- Connector package version remains 0.0.80; no release version was bumped.
+
+Behavior added:
+- Existing `input` now exposes strict `keyboard` and `mouse` actions through an
+  optional reflection-only Unity Input System backend.
+- Keyboard supports press/down/up. Mouse supports move/click/down/up/delta/scroll.
+- Mutations require active, unpaused PlayMode and current devices; no synthetic
+  device is created and no compile-time package/assembly dependency is added.
+- Hera-owned held keys/buttons reject duplicate ownership and are released on
+  explicit up, PlayMode exit, or assembly reload.
+- Existing EventSystem state/inspect/click/submit/scroll/drag behavior remains on
+  its original backend.
+
+Tests and repository gates:
+- go test ./...: PASS, all Go packages.
+- go vet ./...: PASS.
+- go run ./tools/sync-agent-guides --check: PASS.
+- go run ./tools/validate-connector-package: PASS.
+- Exact-source Connector compatibility matrix: PASS 5/5, compile_failed 0,
+  blocked 0: Unity 2022.3.62f2, 2023.2.22f1, 6000.0.35f1, 6000.3.5f2,
+  and 6000.5.6f1.
+- Source-injected disposable Unity 6000.5.6f1 EditMode suite: PASS 22/22 for
+  HeraAgent.Tests, including InputQa, ToolCatalog, ToolContract, ToolDiscovery,
+  ToolSafety, ReleaseGate, and UiDocApply coverage.
+- The normal blank-project UPM package-test path was independently attempted but
+  the local Unity Package Manager failed before Hera import with `[Package
+  Manager] The "path" argument must be of type string. Received undefined`.
+  The exact-source five-bucket compile gate and source-injected suite were used
+  instead; this environment failure was not treated as a Hera test failure.
+
+Live Unity evidence:
+- Disposable Unity 6000.5.6f1 with Input System 1.20.0 reported the optional
+  backend available with current keyboard and mouse.
+- EditMode mutation correctly returned INPUTSYSTEM_PLAY_MODE_REQUIRED.
+- In PlayMode, Space down/up, A press, mouse move, left down/up, delta, scroll,
+  right click, B down, and middle down all changed the live Input System state as
+  requested. After leaving PlayMode, both held-control lists were empty.
+- Mutation records were written to the operation ledger; no approval token was
+  auto-approved. This proves Unity gameplay-state synthesis, not physical OS
+  keyboard/mouse input.
+- The disposable test6.5 Unity process was stopped. Its activeInputHandler was
+  restored to Input System, injected test assets were moved to a recoverable
+  system temporary directory, and only the user's Inventoria Editor remained.
+
+Surface and production metrics:
+- Tools: 31 -> 31 (delta 0)
+- Actions: 75 -> 77 (delta +2, both on existing `input`)
+- Normalized catalog bytes: 185,339 -> 188,751 (delta +3,412)
+- Catalog hash: sha256:fbf56525f4a1d3fdeede7e009d7daddc7a53bb53a8b1ce65c289ef81c8f8b6d7
+- Catalog baseline was regenerated after explicit review; recompare with
+  --fail-on-change passed with contract_changed=false and review_required=false.
+- Production Go LOC: 11,639 -> 11,639 (delta 0)
+- Production C# files: 108 -> 110 (delta +2)
+- Production C# nonblank LOC: 24,050 -> 24,938 (delta +888)
+
+Open risks:
+- Normal UPM package tests remain locally blocked by the external Unity Package
+  Manager `path` exception; rerun that packaging surface when the local UPM
+  installation is healthy.
+- The backend intentionally depends on reflected internal Input System event
+  layout. The five supported Unity buckets compile cleanly, and live behavior is
+  proven on Input System 1.20.0; future Input System releases still require the
+  same compatibility/live gate.
+
+Next exact step:
+- M3: extend the existing `input` surface with one bounded sequence action,
+  validate the full sequence before mutation, execute frame-timed steps in one
+  Unity request, and guarantee cleanup of every held key/button on completion,
+  cancellation, or failure. Measure it against N single-event CLI invocations.
 
 User decisions still blocked:
 - Decision A: Unity launch/restart Go-side bootstrap exception.

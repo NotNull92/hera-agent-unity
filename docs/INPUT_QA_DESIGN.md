@@ -388,8 +388,13 @@ Use stable `code` fields. Agents must branch on `code`, not messages.
 |:---|:---|
 | `INPUTSYSTEM_UNAVAILABLE` | `Unity.InputSystem` assembly or required type not loaded. |
 | `INPUTSYSTEM_DEVICE_UNAVAILABLE` | Requested device cannot be found or created. |
-| `INPUTSYSTEM_CONTROL_NOT_FOUND` | Requested control path/key/button cannot be resolved. |
-| `INPUTSYSTEM_EVENT_FAILED` | Queueing or updating input event failed. |
+| `INPUTSYSTEM_CONTROL_UNAVAILABLE` | Requested current-device control is unavailable. |
+| `INPUTSYSTEM_MISSING_KEY` / `INPUTSYSTEM_INVALID_KEY` | Keyboard key is missing or not a valid Input System `Key`. |
+| `INPUTSYSTEM_MISSING_ARGUMENT` / `INPUTSYSTEM_INVALID_MODE` | Required mode argument is missing or the mode is unsupported. |
+| `INPUTSYSTEM_PLAY_MODE_REQUIRED` / `INPUTSYSTEM_PLAY_MODE_PAUSED` | Mutation needs active, unpaused Play Mode. |
+| `INPUTSYSTEM_ALREADY_HELD` / `INPUTSYSTEM_NOT_HELD` | A cross-command down/up violates Hera's held-control ownership. |
+| `INPUTSYSTEM_INVOCATION_FAILED` | Reflection or Input System state application failed. |
+| `INPUT_BACKEND_ACTION_MISMATCH` | EventSystem action requested Input System, or keyboard/mouse requested EventSystem. |
 
 ### Native Windows backend errors
 
@@ -895,25 +900,35 @@ QA:
 
 ### Phase 4: Add optional Input System backend
 
+Status: implemented for the next Connector release for keyboard and mouse device-state QA.
+
 Files:
 
 - `AgentConnector/Editor/Core/InputQaInputSystem.cs`
-- Possibly update `AgentConnector/Editor/HeraAgent.asmdef` only if reflection is insufficient.
+- `AgentConnector/Editor/Core/EditorUpdate.cs`
+- `AgentConnector/Editor/Tools/Input.cs`
 
 Tasks:
 
-1. Implement reflection-based type detection.
-2. Add `input state --backend inputsystem`.
-3. Implement keyboard key press/release.
-4. Implement text input through `QueueTextEvent`.
-5. Implement mouse move/down/up by screen position.
-6. Implement optional device creation behind `--create_device true`.
-7. Ensure Edit Mode requires `--allow_edit_mode true`.
-8. Do not use `InputTestFixture` in production tool.
+1. Resolve Input System types and methods through reflection, with no package or asmdef dependency.
+2. Keep `input state --backend inputsystem` queryable when the package is absent.
+3. Implement keyboard `press`, `down`, and `up` with held-control ownership.
+4. Implement mouse move, click, down/up, delta, and scroll.
+5. Apply full device state events in the configured Input System update phase.
+6. Require active, unpaused Play Mode for mutations; never create devices.
+7. Release Hera-held controls on Play Mode exit or assembly reload.
+8. Do not use `InputTestFixture` in production code.
+
+Text input and device creation are intentionally outside this milestone. The
+backend operates only on existing current devices so enabling QA cannot mutate a
+project's device topology.
 
 QA:
 
-- In Play Mode, queue a key and verify a test MonoBehaviour observed an InputAction or device state.
+- In Play Mode, verify keyboard down/up and press against current device state.
+- Verify mouse position, click/down/up, delta, and scroll against current device state.
+- Hold a key and mouse button, exit Play Mode, and verify Hera's held-control state is empty.
+- Without the optional package, verify `state` reports unavailable and exact-source compilation remains dependency-free.
 - `hera-agent-unity console --type error --lines 50`.
 
 ### Phase 5: Add optional native Windows backend

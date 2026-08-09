@@ -1083,7 +1083,7 @@ hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-
 
 ## input
 
-Unity input QA for uGUI. This command is for the case where an external automation surface cannot acquire Unity screenshot state and therefore cannot safely click physical screen coordinates. It does **not** claim to be a physical OS click. It verifies Unity's UI event path by using `EventSystem.RaycastAll` and `ExecuteEvents` pointer handlers inside the running Editor.
+Unity-level input QA for uGUI and projects using the optional Input System package. This command is for the case where an external automation surface cannot acquire Unity screenshot state and therefore cannot safely click physical screen coordinates. It does **not** claim to be a physical OS click. EventSystem actions verify Unity's UI event path through `EventSystem.RaycastAll` and `ExecuteEvents`; Input System actions synthesize current keyboard and mouse device state during Play Mode.
 
 ```bash
 hera-agent-unity input <action> [flags]
@@ -1091,7 +1091,7 @@ hera-agent-unity input <action> [flags]
 
 | Action | Flags | Description |
 |:---|:---|:---|
-| `state` | `[--backend eventsystem]`; `[--max_results N]` | Report EventSystem, input module, raycaster, InputSystem availability, and native-Windows backend status. |
+| `state` | `[--backend eventsystem\|inputsystem\|auto]`; `[--max_results N]` | Report EventSystem/raycaster status, or optional Input System availability, package version, current devices, and controls held by Hera. |
 | `inspect` | `--path </path>` or `--instance_id <id>` or `--target <path\|id>`; `[--position x,y]`; `[--normalized x,y]`; `[--offset x,y]`; `[--details true]`; `[--max_results N]` | Resolve the target point, raycast through the EventSystem, and report top hit, blocker, handlers, and interactability. |
 | `click` | same target/point flags; `[--button left\|right\|middle]`; `[--click_count N]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--strict true\|false]`; `[--details true]`; `[--max_results N]` | Drive pointer enter/down/up/click through `ExecuteEvents`. In strict mode, fails if another object blocks the target or the expected click handler is not reached. |
 | `pointer_down` | same target/point flags | Drive pointer enter/down without a matching up. Useful for press-state QA; no cross-command press state is retained. |
@@ -1099,6 +1099,8 @@ hera-agent-unity input <action> [flags]
 | `submit` | `--path </path>` or `--instance_id <id>` or `--target <path\|id>`; `[--settle_frames N]`; `[--strict true\|false]`; `[--max_results N]` | Select the target and execute `ISubmitHandler` through `ExecuteEvents.submitHandler`. |
 | `scroll` | same target/point flags; `[--scroll_delta x,y]` or `[--delta x,y]`; `[--settle_frames N]`; `[--strict true\|false]`; `[--max_results N]` | Execute `IScrollHandler` through `ExecuteEvents.ExecuteHierarchy`. Default scroll delta is `0,-1`. |
 | `drag` | same target/point flags; `--to_position x,y` or `--to x,y` or `--to_normalized x,y`; `[--steps N]`; `[--settle_frames N]`; `[--strict true\|false]`; `[--max_results N]` | Execute initialize-potential-drag, begin-drag, drag steps, and end-drag handlers. Default steps: 8. |
+| `keyboard` | `--key <InputSystem Key>`; `[--mode press\|down\|up]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--backend inputsystem\|auto]` | Press/release a current Input System keyboard key in Play Mode. `down` remains held until the matching `up`; `press` releases automatically. |
+| `mouse` | `[--mode move\|click\|down\|up\|delta\|scroll]`; `[--button left\|right\|middle]`; `[--position x,y]`; `[--delta x,y]`; `[--scroll_delta x,y]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--backend inputsystem\|auto]` | Move, click, hold/release, or set delta/scroll on the current Input System mouse in Play Mode. |
 
 ```bash
 hera-agent-unity input state
@@ -1107,6 +1109,9 @@ hera-agent-unity input click --path /Canvas/StartButton --settle_frames 2
 hera-agent-unity input submit --path /Canvas/StartButton
 hera-agent-unity input scroll --path /Canvas/ScrollRect --scroll_delta 0,-3
 hera-agent-unity input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
+hera-agent-unity input state --backend inputsystem
+hera-agent-unity input keyboard --key space --mode press
+hera-agent-unity input mouse --mode click --button left --position 640,360
 ```
 
 **Windows Git Bash** — MSYS path conversion treats a Unity hierarchy path that
@@ -1116,13 +1121,16 @@ starts with `/` as a filesystem path. Preserve it with `MSYS_NO_PATHCONV=1`:
 MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/StartButton --details true
 ```
 
-**Input limits** — numeric values are validated before an EventSystem action is dispatched: `hold_ms` is `0..5000`, `settle_frames` is `0..120`, `steps` is `1..120`, `click_count` is `1..3`, and `max_results` is `1..100` (default `50`). Oversized or malformed values return `INPUT_INVALID_PARAM`. `raycasters_total` / `raycasters_truncated` and detailed `hits_total` / `hits_truncated` make a capped diagnostic explicit.
+**Input limits** — numeric values are validated before dispatch: `hold_ms` is `0..5000`, `settle_frames` is `0..120`, `steps` is `1..120`, `click_count` is `1..3`, and `max_results` is `1..100` (default `50`). Oversized or malformed values return `INPUT_INVALID_PARAM`. `raycasters_total` / `raycasters_truncated` and detailed `hits_total` / `hits_truncated` make a capped EventSystem diagnostic explicit.
+
+**Optional Input System** — the Connector resolves `Unity.InputSystem` through reflection and does not add `com.unity.inputsystem` to the package manifest or asmdef. `input state --backend inputsystem` remains queryable without the package and reports `available:false`; keyboard/mouse mutations return `INPUTSYSTEM_UNAVAILABLE`. Mutations require active, unpaused Play Mode and an existing current device. Hera never creates a device. Held keys/buttons are owned across commands, reject duplicate down or unowned up, and are released when Play Mode exits or scripts reload.
 
 **Evidence classification** — report this separately from OS-level click QA:
 
 ```text
 Physical OS click QA: BLOCKED if Computer Use cannot acquire Unity screenshot state.
 Unity EventSystem input QA: PASS when input inspect/click reaches the target through EventSystem.RaycastAll and ExecuteEvents.
+Unity Input System QA: PASS when keyboard/mouse output and device state confirm the synthesized gameplay input.
 ```
 
 Current backend status:
@@ -1130,7 +1138,7 @@ Current backend status:
 | Backend | Status |
 |:---|:---|
 | `eventsystem` | Implemented for `state`, `inspect`, `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, and `drag`. |
-| `inputsystem` | Planned; not selected by `auto` yet. |
+| `inputsystem` | Implemented for `state`, `keyboard`, and `mouse`. Keyboard/mouse select it by default; EventSystem actions do not auto-switch to it. |
 | `native-win32` | Planned optional fallback; never a default backend. |
 
 ---

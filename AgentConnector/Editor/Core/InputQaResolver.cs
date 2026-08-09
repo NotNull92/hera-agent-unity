@@ -20,7 +20,8 @@ namespace HeraAgent
             var p = new ToolParams(raw);
             string action = p.Get("action") ?? Arg(raw, 0);
             if (string.IsNullOrEmpty(action))
-                return (null, new ErrorResponse("INPUT_MISSING_ACTION", "Input action required: state, inspect, click, submit, scroll, drag, pointer_down, or pointer_up."));
+                return (null, new ErrorResponse("INPUT_MISSING_ACTION", "Input action required: state, inspect, click, submit, scroll, drag, pointer_down, pointer_up, keyboard, or mouse."));
+            action = action.ToLowerInvariant();
 
             var (clickCount, clickCountErr) = ParseBoundedInt(p, "click_count", 1, 1, MaxClickCount);
             if (clickCountErr != null) return (null, clickCountErr);
@@ -35,8 +36,11 @@ namespace HeraAgent
 
             var options = new InputQaOptions
             {
-                Action = action.ToLowerInvariant(),
-                Backend = (p.Get("backend", "eventsystem") ?? "eventsystem").ToLowerInvariant(),
+                Action = action,
+                Backend = (p.Get("backend", IsInputSystemAction(action) ? "inputsystem" : "eventsystem")
+                    ?? "eventsystem").ToLowerInvariant(),
+                Mode = p.Get("mode")?.ToLowerInvariant(),
+                Key = p.Get("key"),
                 ClickCount = clickCount,
                 HoldMs = holdMs,
                 SettleFrames = settleFrames,
@@ -53,20 +57,27 @@ namespace HeraAgent
             if (normErr != null) return (null, normErr);
             var (offset, offsetErr) = ParseVector(p.Get("offset"), "offset");
             if (offsetErr != null) return (null, offsetErr);
-            var (scrollDelta, scrollErr) = ParseVector(p.Get("scroll_delta") ?? p.Get("delta"), "scroll_delta");
+            var (delta, deltaErr) = ParseVector(
+                options.Action == "mouse" ? p.Get("delta") : null,
+                "delta");
+            if (deltaErr != null) return (null, deltaErr);
+            var (scrollDelta, scrollErr) = ParseVector(
+                p.Get("scroll_delta") ?? (options.Action == "scroll" ? p.Get("delta") : null),
+                "scroll_delta");
             if (scrollErr != null) return (null, scrollErr);
             var (toPosition, toPosErr) = ParseVector(p.Get("to_position") ?? p.Get("to"), "to_position");
             if (toPosErr != null) return (null, toPosErr);
             var (toNormalized, toNormErr) = ParseVector(p.Get("to_normalized"), "to_normalized");
             if (toNormErr != null) return (null, toNormErr);
             options.Position = position;
+            options.Delta = delta;
             options.Normalized = normalized;
             options.Offset = offset;
             options.ScrollDelta = scrollDelta;
             options.ToPosition = toPosition;
             options.ToNormalized = toNormalized;
 
-            if (options.Action != "state")
+            if (IsEventSystemTargetAction(options.Action))
             {
                 var (target, targetErr) = ResolveTarget(raw);
                 if (targetErr != null) return (null, targetErr);
@@ -74,6 +85,28 @@ namespace HeraAgent
             }
 
             return (options, null);
+        }
+
+        private static bool IsInputSystemAction(string action)
+        {
+            return action == "keyboard" || action == "mouse";
+        }
+
+        private static bool IsEventSystemTargetAction(string action)
+        {
+            switch (action)
+            {
+                case "inspect":
+                case "click":
+                case "pointer_down":
+                case "pointer_up":
+                case "submit":
+                case "scroll":
+                case "drag":
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public static (EventSystem eventSystem, ErrorResponse err) ResolveEventSystem()

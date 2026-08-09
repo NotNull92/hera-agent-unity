@@ -57,6 +57,8 @@ namespace HeraAgent.Tests
                 ["ui_doc/export"] = HeraRiskClass.ReadOnly,
                 ["input/click"] = HeraRiskClass.Write,
                 ["input/drag"] = HeraRiskClass.Write,
+                ["input/keyboard"] = HeraRiskClass.Write,
+                ["input/mouse"] = HeraRiskClass.Write,
                 ["input/pointer_down"] = HeraRiskClass.Write,
                 ["input/pointer_up"] = HeraRiskClass.Write,
                 ["input/scroll"] = HeraRiskClass.Write,

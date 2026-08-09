@@ -120,7 +120,7 @@ hera-agent-unity test --mode PlayMode
 | 기능 테스트 | EditMode/PlayMode 테스트 실행, Domain Reload를 넘어 결과 추적 |
 | 게임 실행 | 실제 Play Mode 진입을 기다리고 상태를 확인한 뒤 Stop |
 | Unity가 그린 화면 확인 | Scene/Game View, 단일 오브젝트, live uGUI overlay 캡처 |
-| uGUI 버튼 검증 | Unity EventSystem으로 click, submit, scroll, drag 검증 |
+| Unity 입력 검증 | EventSystem으로 uGUI raycast를 검증하거나 Play Mode에서 선택적 Input System 키보드/마우스 상태 합성 |
 | UI 제작 | uGUI 또는 UI Toolkit 레이아웃 제작과 결과 검증 |
 | 참고 이미지로 UI 재현 | 색과 레이아웃 측정 → Unity UI 생성 → 캡처 → 비교 → 반복 수정 |
 | 게임 감각 개선 | shake, hit stop, 카메라, 사운드, 보상, 접근성 레시피 제공 |
@@ -424,6 +424,16 @@ hera-agent-unity input click --path /Canvas/StartButton --settle_frames 2
 
 이 방식은 Unity EventSystem 경로를 검증합니다. 실제 Windows/macOS 마우스 클릭과는 다르므로 두 증거는 구분해서 보고합니다.
 
+이미 선택적 Input System 패키지를 사용하는 프로젝트라면 Hera 의존성을 추가하지 않고 게임플레이 입력도 검증할 수 있습니다.
+
+```bash
+hera-agent-unity input state --backend inputsystem
+hera-agent-unity input keyboard --key space --mode press
+hera-agent-unity input mouse --mode click --button left --position 640,360
+```
+
+키보드와 마우스 mutation은 Play Mode에서만 동작합니다. Hera는 런타임에 패키지를 확인하고, 장치를 생성하지 않으며, Play Mode가 끝나면 잡고 있던 control을 해제합니다.
+
 ### 반복 Scene 작업 자동화
 
 AI에게 다음을 묶어서 시킬 수 있습니다.
@@ -566,7 +576,7 @@ hera-agent-unity ui_slop box-in-box
 | `task` | Unity에 다시 명령하지 않고 장기 작업 상태 확인 |
 | `screenshot` | Scene/Game View 또는 단일 오브젝트 캡처 |
 | `ui_doc` | Unity UI 조회, 생성, 측정, 캡처 |
-| `input` | Unity EventSystem으로 uGUI 검증 |
+| `input` | EventSystem uGUI 또는 선택적 Input System 키보드/마우스 상태 검증 |
 | `profiler` | Profiler hierarchy snapshot 읽기 |
 | `game_feel` | Game Feel 가이드 조회 |
 | `ui_slop` | UI 정리 가이드 조회 |
@@ -751,7 +761,7 @@ Domain Reload와 장기 작업은 파일시스템 상태를 사용해 HTTP liste
 
 ### Unity 창을 실제 마우스로 클릭할 수 있나요?
 
-`input`은 uGUI QA를 위해 Unity EventSystem 이벤트를 보냅니다. Unity 이벤트 경로가 동작한다는 증거이지 운영체제의 물리 마우스 클릭 증거는 아닙니다. 두 종류의 결과를 따로 보고해야 합니다.
+`input`은 uGUI QA용 Unity EventSystem 이벤트를 보내며, Play Mode에서 선택적 Input System 키보드/마우스 상태도 합성할 수 있습니다. 둘 다 Unity 수준 동작의 증거이지 운영체제의 물리 클릭 증거는 아닙니다. 물리 클릭 결과는 따로 보고해야 합니다.
 
 ### uGUI뿐 아니라 UI Toolkit도 만들 수 있나요?
 

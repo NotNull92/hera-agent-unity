@@ -5,13 +5,15 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "input",
-        Description = "Unity input QA: inspect and synthesize uGUI EventSystem input events without Computer Use coordinates.",
+        Description = "Unity input QA: synthesize uGUI EventSystem events and optional Input System keyboard/mouse input.",
         RequiresPlayMode = false,
         Examples = new[]
         {
             "input state",
             "input inspect --path /Canvas/StartButton --details true",
             "input click --path /Canvas/StartButton --settle_frames 2",
+            "input keyboard --key space --mode press",
+            "input mouse --mode move --position 640,360",
             "input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5",
             "input submit --path /Canvas/StartButton"
         },
@@ -20,6 +22,8 @@ namespace HeraAgent.Tools
             "Report EventSystem, raycaster, InputSystem, and native backend availability",
             "Raycast a target point and report blockers/handlers",
             "Drive pointer enter/down/up/click through Unity's EventSystem",
+            "Press and release an Input System keyboard key in Play Mode",
+            "Move the current Input System mouse in Play Mode",
             "Drive begin/drag/end handlers from the target point to a target-local point",
             "Select the target and execute its submit handler"
         },
@@ -58,6 +62,16 @@ namespace HeraAgent.Tools
         "drag",
         typeof(InputTool.DragParameters),
         RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract(
+        "keyboard",
+        typeof(InputTool.KeyboardParameters),
+        RiskClass = HeraRiskClass.Write,
+        RequiresPlayMode = true)]
+    [HeraActionContract(
+        "mouse",
+        typeof(InputTool.MouseParameters),
+        RiskClass = HeraRiskClass.Write,
+        RequiresPlayMode = true)]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "inspect")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "click")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "pointer_down")]
@@ -82,7 +96,7 @@ namespace HeraAgent.Tools
         {
             [ToolParameter(
                 "Backend.",
-                SchemaJson = "{\"type\":\"string\",\"enum\":[\"eventsystem\",\"auto\"]}")]
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"eventsystem\",\"inputsystem\",\"auto\"]}")]
             public string Backend { get; set; }
 
             [ToolParameter(
@@ -124,6 +138,60 @@ namespace HeraAgent.Tools
 
         public sealed class StateParameters : CommonParameters
         {
+        }
+
+        public class InputSystemParameters
+        {
+            [ToolParameter(
+                "Backend.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"inputsystem\",\"auto\"]}")]
+            public string Backend { get; set; }
+
+            [ToolParameter(
+                "Delay between down and up for a press/click in milliseconds.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":0,\"maximum\":5000}")]
+            public int? HoldMs { get; set; }
+
+            [ToolParameter(
+                "Editor updates to wait after the final event.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":0,\"maximum\":120}")]
+            public int? SettleFrames { get; set; }
+        }
+
+        public sealed class KeyboardParameters : InputSystemParameters
+        {
+            [ToolParameter("Input System Key enum name.", Required = true)]
+            public string Key { get; set; }
+
+            [ToolParameter(
+                "Keyboard mode.",
+                Default = "press",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"press\",\"down\",\"up\"]}")]
+            public string Mode { get; set; }
+        }
+
+        public sealed class MouseParameters : InputSystemParameters
+        {
+            [ToolParameter(
+                "Mouse mode.",
+                Default = "click",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"move\",\"click\",\"down\",\"up\",\"delta\",\"scroll\"]}")]
+            public string Mode { get; set; }
+
+            [ToolParameter(
+                "Mouse button for click/down/up.",
+                Default = "left",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"left\",\"right\",\"middle\"]}")]
+            public string Button { get; set; }
+
+            [ToolParameter("Absolute screen position.", SchemaJson = Vector2Schema)]
+            public string Position { get; set; }
+
+            [ToolParameter("Pointer delta.", SchemaJson = Vector2Schema)]
+            public string Delta { get; set; }
+
+            [ToolParameter("Scroll delta.", SchemaJson = Vector2Schema)]
+            public string ScrollDelta { get; set; }
         }
 
         public class TargetParameters : CommonParameters
@@ -171,13 +239,19 @@ namespace HeraAgent.Tools
         public class Parameters
         {
             [ToolParameter(
-                "Action: state, inspect, click, pointer_down, pointer_up, drag, scroll, submit.",
+                "Action: state, inspect, click, pointer_down, pointer_up, drag, scroll, submit, keyboard, mouse.",
                 Required = true,
-                SchemaJson = "{\"type\":\"string\",\"enum\":[\"state\",\"inspect\",\"click\",\"pointer_down\",\"pointer_up\",\"drag\",\"scroll\",\"submit\"]}")]
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"state\",\"inspect\",\"click\",\"pointer_down\",\"pointer_up\",\"drag\",\"scroll\",\"submit\",\"keyboard\",\"mouse\"]}")]
             public string Action { get; set; }
 
-            [ToolParameter("Backend: eventsystem or auto. InputSystem/native backends are planned but not phase-1 defaults.")]
+            [ToolParameter("Backend: eventsystem, inputsystem, or auto.")]
             public string Backend { get; set; }
+
+            [ToolParameter("Input System keyboard/mouse mode.")]
+            public string Mode { get; set; }
+
+            [ToolParameter("Input System keyboard key.")]
+            public string Key { get; set; }
 
             [ToolParameter("Target by InstanceID.")]
             public int? InstanceId { get; set; }
@@ -190,6 +264,9 @@ namespace HeraAgent.Tools
 
             [ToolParameter("Screen position 'x,y' in Unity bottom-left screen coordinates.")]
             public string Position { get; set; }
+
+            [ToolParameter("Input System pointer delta 'x,y'.")]
+            public string Delta { get; set; }
 
             [ToolParameter("Point inside target RectTransform as normalized 'x,y'.")]
             public string Normalized { get; set; }
@@ -236,7 +313,9 @@ namespace HeraAgent.Tools
             var (options, err) = InputQaResolver.Parse(raw);
             if (err != null) return err;
 
-            if (options.Backend != "eventsystem" && options.Backend != "auto")
+            if (options.Backend != "eventsystem"
+                && options.Backend != "inputsystem"
+                && options.Backend != "auto")
                 return new ErrorResponse(
                     "INPUT_BACKEND_UNIMPLEMENTED",
                     $"Input backend '{options.Backend}' is not implemented in this connector build.");
@@ -244,24 +323,46 @@ namespace HeraAgent.Tools
             switch (options.Action)
             {
                 case "state":
-                    return InputQaEventSystem.State(options);
+                    return options.Backend == "inputsystem"
+                        ? InputQaInputSystem.State()
+                        : InputQaEventSystem.State(options);
                 case "inspect":
+                    if (options.Backend == "inputsystem") return BackendMismatch(options);
                     return InputQaEventSystem.Inspect(options);
                 case "click":
+                    if (options.Backend == "inputsystem") return BackendMismatch(options);
                     return await InputQaEventSystem.Click(options);
                 case "pointer_down":
+                    if (options.Backend == "inputsystem") return BackendMismatch(options);
                     return await InputQaEventSystem.PointerDown(options);
                 case "pointer_up":
+                    if (options.Backend == "inputsystem") return BackendMismatch(options);
                     return await InputQaEventSystem.PointerUp(options);
                 case "submit":
+                    if (options.Backend == "inputsystem") return BackendMismatch(options);
                     return await InputQaEventSystem.Submit(options);
                 case "scroll":
+                    if (options.Backend == "inputsystem") return BackendMismatch(options);
                     return await InputQaEventSystem.Scroll(options);
                 case "drag":
+                    if (options.Backend == "inputsystem") return BackendMismatch(options);
                     return await InputQaEventSystem.Drag(options);
+                case "keyboard":
+                    if (options.Backend == "eventsystem") return BackendMismatch(options);
+                    return await InputQaInputSystem.Keyboard(options);
+                case "mouse":
+                    if (options.Backend == "eventsystem") return BackendMismatch(options);
+                    return await InputQaInputSystem.Mouse(options);
                 default:
-                    return new ErrorResponse("INPUT_UNKNOWN_ACTION", $"Unknown input action: '{options.Action}'. Use state, inspect, click, pointer_down, pointer_up, submit, scroll, or drag.");
+                    return new ErrorResponse("INPUT_UNKNOWN_ACTION", $"Unknown input action: '{options.Action}'. Use state, inspect, click, pointer_down, pointer_up, submit, scroll, drag, keyboard, or mouse.");
             }
+        }
+
+        private static ErrorResponse BackendMismatch(InputQaOptions options)
+        {
+            return new ErrorResponse(
+                "INPUT_BACKEND_ACTION_MISMATCH",
+                $"Input action '{options.Action}' is not supported by backend '{options.Backend}'.");
         }
     }
 }

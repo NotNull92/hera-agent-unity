@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
-using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
 
@@ -101,7 +100,7 @@ namespace HeraAgent.Tools
                 if (DateTime.UtcNow > deadline)
                     return new ErrorResponse("PACKAGE_LIST_TIMEOUT",
                         "Client.List did not complete within 60s.");
-                await NextEditorUpdate();
+                await EditorUpdate.Next();
             }
 
             if (request.Status >= StatusCode.Failure)
@@ -116,21 +115,6 @@ namespace HeraAgent.Tools
                 pkgs.Add(PackageJobState.BuildPackageShallow(info));
 
             return new SuccessResponse($"{pkgs.Count} packages.", new { packages = pkgs });
-        }
-
-        // Completes on the next EditorApplication.update tick, keeping the awaiting
-        // continuation on the main thread. (Same pattern as InputQaEventSystem;
-        // kept local until a third consumer justifies a Core/ helper.)
-        private static Task NextEditorUpdate()
-        {
-            var source = new TaskCompletionSource<bool>();
-            void Tick()
-            {
-                EditorApplication.update -= Tick;
-                source.TrySetResult(true);
-            }
-            EditorApplication.update += Tick;
-            return source.Task;
         }
 
         // ---- Async add / remove / embed ----
