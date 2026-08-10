@@ -1,8 +1,8 @@
 {
   "schema": "hera.catalog-payload-report/1",
-  "catalog_hash": "sha256:feb2b2eac7fb5fef74c9c280e80bded419a669c3d09ecda964f3a78417b5140f",
-  "input_bytes": 194658,
-  "normalized_catalog_bytes": 194698,
+  "catalog_hash": "sha256:e8aeadb4a94cfffa1149d091f45ff522e4287d27698cf25bdfbf08e934ffb680",
+  "input_bytes": 194997,
+  "normalized_catalog_bytes": 195037,
   "tool_count": 31,
   "action_count": 80,
   "description_characters": 8174,
@@ -30,7 +30,7 @@
     {
       "name": "full",
       "tool_count": 29,
-      "normalized_contract_bytes": 189590
+      "normalized_contract_bytes": 189929
     },
     {
       "name": "scene",
@@ -40,18 +40,18 @@
     {
       "name": "testing",
       "tool_count": 6,
-      "normalized_contract_bytes": 59231
+      "normalized_contract_bytes": 59570
     },
     {
       "name": "ui",
       "tool_count": 8,
-      "normalized_contract_bytes": 104481
+      "normalized_contract_bytes": 104820
     }
   ],
   "largest_tools": [
     {
       "name": "input",
-      "bytes": 35090,
+      "bytes": 35429,
       "action_count": 13,
       "description_characters": 108
     },
@@ -176,98 +176,98 @@
     {
       "tool": "input",
       "action": "replay",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 1493,
-      "saved_bytes": 33745,
-      "saved_ratio": 0.9576309665701799
+      "saved_bytes": 34084,
+      "saved_ratio": 0.9580346853304101
     },
     {
       "tool": "input",
       "action": "record",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 1575,
-      "saved_bytes": 33663,
-      "saved_ratio": 0.9553039332538736
+      "saved_bytes": 34002,
+      "saved_ratio": 0.9557298254490261
     },
     {
       "tool": "input",
       "action": "keyboard",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 1860,
-      "saved_bytes": 33378,
-      "saved_ratio": 0.9472160735569556
+      "saved_bytes": 33717,
+      "saved_ratio": 0.9477190319588498
     },
     {
       "tool": "input",
       "action": "state",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 2284,
-      "saved_bytes": 32954,
-      "saved_ratio": 0.9351836086043476
+      "saved_bytes": 33293,
+      "saved_ratio": 0.9358012198892542
     },
     {
       "tool": "input",
       "action": "mouse",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 2502,
-      "saved_bytes": 32736,
-      "saved_ratio": 0.9289971053975822
+      "saved_bytes": 33075,
+      "saved_ratio": 0.9296736655704528
     },
     {
       "tool": "input",
       "action": "sequence",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 2838,
-      "saved_bytes": 32400,
-      "saved_ratio": 0.9194619444917419
+      "saved_bytes": 32739,
+      "saved_ratio": 0.920229361666245
     },
     {
       "tool": "input",
       "action": "inspect",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 3871,
-      "saved_bytes": 31367,
-      "saved_ratio": 0.8901470003972983
+      "saved_bytes": 31706,
+      "saved_ratio": 0.8911937487702729
     },
     {
       "tool": "input",
       "action": "click",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 3874,
-      "saved_bytes": 31364,
-      "saved_ratio": 0.8900618650320676
+      "saved_bytes": 31703,
+      "saved_ratio": 0.891109424628271
     },
     {
       "tool": "input",
       "action": "submit",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 3876,
-      "saved_bytes": 31362,
-      "saved_ratio": 0.8900051081219138
+      "saved_bytes": 31701,
+      "saved_ratio": 0.8910532085336031
     },
     {
       "tool": "input",
       "action": "pointer_up",
-      "full_tool_describe_bytes": 35238,
+      "full_tool_describe_bytes": 35577,
       "action_describe_bytes": 3884,
-      "saved_bytes": 31354,
-      "saved_ratio": 0.8897780804812986
+      "saved_bytes": 31693,
+      "saved_ratio": 0.8908283441549315
     }
   ],
   "rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-    "low_4_bytes_per_token": 48675,
-    "central_3_2_bytes_per_token": 60844,
-    "high_2_5_bytes_per_token": 77880
+    "low_4_bytes_per_token": 48760,
+    "central_3_2_bytes_per_token": 60950,
+    "high_2_5_bytes_per_token": 78015
   },
   "warnings": [
     "profile assets uses 37068 normalized bytes (warning budget 24000)",
     "profile core uses 53241 normalized bytes (warning budget 24000)",
     "profile diagnostics uses 29011 normalized bytes (warning budget 24000)",
-    "profile full uses 189590 normalized bytes (warning budget 24000)",
+    "profile full uses 189929 normalized bytes (warning budget 24000)",
     "profile scene uses 68844 normalized bytes (warning budget 24000)",
-    "profile testing uses 59231 normalized bytes (warning budget 24000)",
-    "profile ui uses 104481 normalized bytes (warning budget 24000)",
-    "tool input uses 35090 normalized bytes (warning budget 20000)"
+    "profile testing uses 59570 normalized bytes (warning budget 24000)",
+    "profile ui uses 104820 normalized bytes (warning budget 24000)",
+    "tool input uses 35429 normalized bytes (warning budget 20000)"
   ]
 }

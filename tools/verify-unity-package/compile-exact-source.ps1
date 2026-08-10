@@ -53,10 +53,7 @@ try {
     $editorOutput = Join-Path $temporary "HeraAgent.Editor.dll"
     $editorReference = Join-Path $temporary "HeraAgent.Editor.ref.dll"
     $editorLines = Get-Content -LiteralPath (Find-ResponseFile "HeraAgent.Editor.rsp") |
-        Where-Object {
-            $_ -notmatch 'PackageCache[/\\]com\.notnull92\.hera-agent-unity@.*[/\\]Editor[/\\].+\.cs"$' -and
-            $_ -notmatch '[/\\]AgentConnector[/\\]Editor[/\\].+\.cs"$'
-        } |
+        Where-Object { $_ -notmatch '^\s*".+\.cs"\s*$' } |
         ForEach-Object {
             if ($_ -match '^-out:') { '-out:"' + $editorOutput + '"' }
             elseif ($_ -match '^-refout:') { '-refout:"' + $editorReference + '"' }
@@ -80,10 +77,7 @@ try {
         $testOutput = Join-Path $temporary "HeraAgent.TestRunner.dll"
         $testReference = Join-Path $temporary "HeraAgent.TestRunner.ref.dll"
         $testLines = Get-Content -LiteralPath (Find-ResponseFile "HeraAgent.TestRunner.rsp") |
-            Where-Object {
-                $_ -notmatch 'PackageCache[/\\]com\.notnull92\.hera-agent-unity@.*[/\\]Editor[/\\]TestRunner[/\\].+\.cs"$' -and
-                $_ -notmatch '[/\\]AgentConnector[/\\]Editor[/\\]TestRunner[/\\].+\.cs"$'
-            } |
+        Where-Object { $_ -notmatch '^\s*".+\.cs"\s*$' } |
             ForEach-Object {
                 if ($_ -match '^-out:') { '-out:"' + $testOutput + '"' }
                 elseif ($_ -match '^-refout:') { '-refout:"' + $testReference + '"' }

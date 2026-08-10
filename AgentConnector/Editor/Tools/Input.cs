@@ -15,6 +15,8 @@ namespace HeraAgent.Tools
             "input keyboard --key space --mode press",
             "input mouse --mode move --position 640,360",
             "input sequence --params '{\"steps\":[{\"action\":\"keyboard\",\"key\":\"space\"}]}'",
+            "call input --json '{\"action\":\"record\",\"mode\":\"start\"}'",
+            "call input --json '{\"action\":\"replay\",\"path\":\"Library/HeraAgent/Recordings/input.json\"}'",
             "input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5",
             "input submit --path /Canvas/StartButton"
         },

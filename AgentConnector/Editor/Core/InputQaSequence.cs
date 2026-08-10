@@ -120,7 +120,7 @@ namespace HeraAgent
             {
                 activeSource = null;
                 source.Dispose();
-                cleanup = InputQaInputSystem.ReleaseSequenceControls();
+                cleanup = InputQaInputSystem.ReleaseHeldControls();
                 stopwatch.Stop();
             }
 

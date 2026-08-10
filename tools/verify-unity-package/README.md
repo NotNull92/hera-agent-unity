@@ -2,7 +2,9 @@
 
 Compile the repository's current Connector and TestRunner sources against an
 existing Unity project's Bee response files without changing or launching the
-Editor:
+Editor. Existing C# source inputs in those response files are discarded before
+the current repository sources are appended, so stale package-cache or
+source-injected paths cannot leak into the exact-source result:
 
 ```powershell
 pwsh tools/verify-unity-package/compile-exact-source.ps1 `

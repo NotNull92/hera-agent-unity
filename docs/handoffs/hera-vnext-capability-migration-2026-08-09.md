@@ -1,6 +1,6 @@
 # Hera vNext Capability Migration Handoff
 
-Status: **M9 PASS; M10 CLEANUP AND ADMISSION REVIEW IS NEXT**
+Status: **M10 PASS; VNEXT CAPABILITY MIGRATION COMPLETE**
 
 Date: 2026-08-09
 
@@ -590,7 +590,7 @@ Exit criteria:
 - verify repeated replay does not leave stuck input state,
 - verify file compatibility after domain reload where relevant.
 
-Status: **READY**
+Status: **PASS**
 
 ### M5: screenshot UI annotation and annotation-only mode
 
@@ -636,7 +636,7 @@ Status: **PASS**
 
 ### M7: Unity launch/restart
 
-Status: **IMPLEMENTED; LIVE HEARTBEAT/RESTART ACCEPTANCE BLOCKED**
+Status: **PASS**
 
 Implement the approved narrow Go-side bootstrap exception after the preceding
 milestones.
@@ -693,7 +693,7 @@ After functionality is proven:
 - scan for unintentional new dependencies,
 - verify no temporary reference source was copied into the package.
 
-Status: **PENDING**
+Status: **PASS**
 
 ## 13. Validation discipline
 
@@ -1851,77 +1851,170 @@ Next exact step:
 User decisions still blocked:
 - None.
 ```
+### 2026-08-10 18:56 +09:00 - M10 cleanup and admission review complete
+
+```text
+Status: PASS
+
+HEAD before: aa43c76 (docs(handoff): complete M9 exec benchmark)
+HEAD after implementation: this session-close commit
+
+Production cleanup:
+- Restored the two missing `input` catalog calls for record/replay. The tool now
+  has 10 examples and 10 descriptions instead of silently dropping two orphan
+  descriptions. Added a catalog regression that rejects descriptions with no
+  corresponding callable example.
+- Removed the pure `ReleaseSequenceControls` delegation wrapper and called the
+  shared held-control cleanup directly. No behavior or public contract changed.
+- Binary inspection showed the EntityId replacement APIs are absent in
+  6000.0.35f1 but present in 6000.3.5f2 and 6000.5.6f1. The compatibility shim
+  now uses EntityId from 6000.3 onward, removing the obsolete
+  InstanceIDToObject warning while preserving the 6000.0-6000.2 fallback.
+- No speculative split of InputQaInputSystem or new scheduler/facade was added;
+  the large reflection backend remains cohesive around one optional Input System
+  capability and had no proven dead-method or duplication win worth another layer.
+
+Verification-harness cleanup:
+- `compile-exact-source.ps1` now discards every existing C# source input from a
+  fixture response file before appending the current repository sources. This
+  replaced path-specific filters that allowed stale source-injected files to
+  contaminate an exact-source gate.
+- The first M10 matrix intentionally surfaced two fixture/compatibility issues:
+  a 6000.3 obsolete warning and a stale 6000.5 source-injected rsp. Neither was
+  recorded as PASS. The final gate was rerun only after both causes were fixed
+  or replaced with clean evidence.
+
+Unity compatibility and live evidence:
+- Final exact-source compatibility matrix: PASS 5/5, failed 0, blocked 0:
+  2022.3.62f2, 2023.2.22f1, 6000.0.35f1, 6000.3.5f2, 6000.5.6f1.
+- Normal-UPM disposable Unity 6000.3.5f2 loaded local Connector 0.0.86, exported
+  the canonical catalog, ran HeraAgent.Tests.ReleaseGateTests.ToolCatalog 1/1
+  PASS, and ended with zero matched console errors. Its manifest and package lock
+  were restored byte-for-byte.
+- A separate disposable Unity 6000.5.6f1 normal-UPM baseline loaded the local
+  package with zero matched console errors, restored its manifest/lock
+  byte-for-byte, and then passed exact-source Editor + TestRunner compilation.
+- All disposable Unity processes were stopped by exact PID. Inventoria was not
+  selected for mutation.
+
+Catalog admission:
+- Tools: 31 -> 31 during the whole migration.
+- Actions: 75 -> 80 from the migration baseline; M10 delta 0.
+- M9 reviewed catalog: 194,698 normalized bytes.
+- M10 catalog before baseline update: 195,037 bytes, delta +339, hash
+  sha256:e8aeadb4a94cfffa1149d091f45ff522e4287d27698cf25bdfbf08e934ffb680.
+- The old-baseline comparison returned contract_changed=true and
+  review_required=true exactly because the restored input examples grew the
+  full/testing/ui profiles by 339 bytes. After explicit review, the baseline was
+  regenerated and --fail-on-change returned review_required=false.
+- Migration catalog growth: 185,339 -> 195,037, delta +9,698 bytes (+5 actions,
+  zero top-level tools).
+
+Final source metrics versus the migration baseline:
+- Go production files: 102 -> 108; nonblank LOC 11,639 -> 12,016 (+377).
+- C# production files: 108 -> 117; nonblank LOC 24,050 -> 26,833 (+2,783).
+- Total production Go+C#: 35,689 -> 38,849 (+3,160, +8.9%).
+- M10 itself: Go production LOC delta 0; C# production LOC 26,835 -> 26,833
+  (-2) while fixing the catalog contract and compatibility warning.
+- Final test LOC: Go 10,494 / C# 7,368.
+
+Dependency and provenance review:
+- No go.mod/go.sum dependency delta from the migration start.
+- No HeraAgent.asmdef dependency delta from the migration start.
+- Connector runtime dependency remains only com.unity.nuget.newtonsoft-json.
+- Production/user-facing scan found no unity-cli-loop, hatayama, uloop,
+  launch-unity, or copied attribution marker. No temporary reference source was
+  added to the package.
+
+Performance evidence retained:
+- M3 eight-event input sequence: 8 HTTP calls / 1,367 ms / 1,500 bytes ->
+  1 HTTP call / 191 ms / 871 bytes, measured 7.16x wall-time speedup.
+- M9 warm unique exec average: 326.065 ms CLI wall / 136 ms compile.
+- M9 memory cache average: 227.382 ms CLI wall / 0.888 ms handler.
+- Persistent compiler worker remains rejected; the measured perfect-compiler
+  upper bound was only 98.684 ms average warm-unique end-to-end savings.
+
+Repository gates:
+- go clean -testcache: PASS.
+- gofmt -w . and gofmt -l .: PASS, clean.
+- golangci-lint run ./...: PASS, 0 issues.
+- golangci-lint fmt --diff: PASS, zero diff.
+- go vet ./...: PASS.
+- go test -count=1 ./...: PASS, all packages.
+- go run ./tools/generate-runtime-contracts --check: PASS.
+- go run ./tools/sync-agent-guides --check: PASS.
+- go run ./tools/validate-connector-package: PASS.
+- catalog baseline self-check --fail-on-change: PASS.
+- M10 static checks: 10 input examples / 10 descriptions, no
+  ReleaseSequenceControls reference, no upstream provenance on production or
+  user-facing surfaces.
+- git diff --check: PASS apart from line-ending normalization warnings.
+
+Final product state:
+- Connector source: 0.0.86.
+- CLI release remains v0.1.4; no CLI version/tag was changed in M10.
+- No tag, push, release, or publication was performed.
+- User decisions still blocked: none.
+
+Next exact step:
+- None in this handoff. The vNext capability migration is complete through M10.
+  Any new implementation must start from a new workstream/handoff instead of
+  silently extending this migration.
+```
+
 ## 18. Next-session continuation snapshot
 
 ### Goal
 
-Continue with M10 cleanup and admission review. M9 rejected a persistent
-compiler worker on measured cost/benefit grounds; do not reopen that decision
-without new cross-bucket performance evidence or an explicit user request.
+No implementation milestone remains in this workstream. M0 through M10 are
+complete. Preserve the final architecture and evidence unless a new requirement
+creates a separate workstream with its own handoff.
 
-### Current state
+### Final state
 
-- M0 through M9 are complete and verified.
-- M9 changed no production code. Raw benchmark evidence is
-  `docs/benchmarks/exec/m9-exec-performance-2026-08-10.json`.
-- Warm unique exec averaged 326.065 ms CLI wall / 136 ms compile. Ten memory
-  cache hits averaged 227.382 ms CLI wall / 0.888 ms handler. The measured
-  perfect-compiler upper bound is therefore 98.684 ms end-to-end for the warm
-  unique workload, and a real worker would save less.
-- The architecture decision is to retain Roslyn `/shared`, compiler prewarm,
-  disk DLL cache, and in-memory Assembly cache. No persistent compiler worker or
-  fast path is approved or needed from current evidence.
-- `exec` defaults to Full Access; Restricted remains explicit opt-in with the
-  same approval, operation-ledger, and strict-contract boundary.
-- The canonical catalog remains 31 tools / 80 actions / 194,698 normalized
-  bytes. Connector source remains 0.0.85.
-- Inventoria remains on its installed Connector 0.0.84 and was not mutated by
-  the M9 fixture work.
+- Connector source: 0.0.86. CLI release: v0.1.4.
+- Canonical catalog: 31 tools / 80 actions / 195,037 normalized bytes,
+  sha256:e8aeadb4a94cfffa1149d091f45ff522e4287d27698cf25bdfbf08e934ffb680.
+- Production source: Go 12,016 LOC + C# 26,833 LOC = 38,849 nonblank LOC.
+- Final exact-source compatibility gate: PASS for 2022.3.62f2, 2023.2.22f1,
+  6000.0.35f1, 6000.3.5f2, and 6000.5.6f1.
+- Normal-UPM ToolCatalog release gate: PASS 1/1 on Unity 6000.3.5f2; live
+  console errors 0; fixture manifest and lock restored exactly.
+- Go/module and Connector assembly dependency surfaces did not grow during this
+  migration beyond the already existing Newtonsoft Connector dependency.
+- Production/user-facing provenance scan is clean; no reference implementation
+  source or naming leaked into the package.
 
-### Decisions and open questions
+### Locked conclusions
 
-- No user decision blocks M10.
-- Treat first-command CLI/catalog/discovery latency as a separate future
-  measurement target only if further exec latency optimization is requested.
-  Do not use it as justification for compiler-worker work.
+- Keep the Go CLI -> localhost HTTP -> C# Connector control plane.
+- Keep MCP experimental/default-off and on the same execution path.
+- Keep project absolute path as Editor identity; port remains a temporary
+  endpoint.
+- Keep Input System optional/reflection-only.
+- Keep Full Access as exec default and Restricted as explicit opt-in.
+- Keep Roslyn /shared + prewarm + disk DLL + memory Assembly caches; M9 did not
+  justify a persistent compiler worker.
+- Do not split large implementation files merely to reduce line count. M10 found
+  no evidence that another abstraction would improve the current input backend.
 
-### Next steps
+### Retained evidence
 
-1. Read `docs/handoffs/ACTIVE.md`, this handoff, `AGENTS.md`, and `CLAUDE.md`;
-   verify branch/status/current code before editing.
-2. Run M10 cleanup/admission review across the M1-M9 changes: remove only proven
-   dead/superseded code or true duplication, reconcile stale milestone labels,
-   inspect new dependencies, and keep public surface growth intentional.
-3. Record final production LOC, tool/action/catalog deltas and latency summary;
-   run the applicable repository gates and final Unity evidence before closing
-   the migration.
+- Active/completed handoff: this file.
+- Raw M9 benchmark: `docs/benchmarks/exec/m9-exec-performance-2026-08-10.json`.
+- Reviewed catalog baseline: `docs/metrics/catalog-payload-baseline.json`.
+- Unity representative inventory: `docs/UNITY_EDITOR_VERSION_INVENTORY.md`.
 
-### References and environment gotchas
+### Future work
 
-- M9 raw evidence:
-  `docs/benchmarks/exec/m9-exec-performance-2026-08-10.json`.
-- Primary exec code: `AgentConnector/Editor/Tools/ExecuteCsharp.cs`,
-  `ExecuteCsharp.Compilation.cs`, `ExecCompileCache.cs`, and
-  `ExecuteCsharp.Restricted.cs`.
-- The installed PATH CLI may lag repository source; use `go run .` only for
-  repository-source verification when needed, following the existing execution
-  rules for normal CLI use.
-- A source-injected `-noUpm` fixture exposes 30 canonical built-in tools because
-  `manage_packages` is unavailable. Use normal-UPM evidence for the canonical
-  31-tool catalog when M10 rechecks the surface.
-- The Windows restart launcher already contains the ALLUSERSPROFILE repair.
-  Do not regress it, and never auto-approve arbitrary-code tokens.
+There is no automatic next milestone. If new optimization, capability, release,
+or architecture work is requested, create/select a new handoff and update
+`docs/handoffs/ACTIVE.md` instead of adding M11 here.
 
-### Suggested skills
-
-- `hyper-mode` for repository implementation/verification discipline.
-- `hera-agent-unity` for live Editor and final evidence.
-- `omo:programming` only if M10 requires real production changes;
-  `omo:debugging` for a runtime anomaly; `omo:git-master` when committing.
 ## 19. First prompt for a new Codex session
 
 Use this from the repository root:
 
 ```text
-Read docs/handoffs/ACTIVE.md and the handoff it points to. Follow AGENTS.md and CLAUDE.md. Verify git status and actual current code first, then continue from the first incomplete milestone. Preserve existing user commits and changes. Do not implement any BLOCKED: USER DECISION item unless the handoff shows that the user explicitly approved it. Update the handoff with evidence before ending the session.
+Read docs/handoffs/ACTIVE.md, AGENTS.md, and CLAUDE.md, then verify git status and actual current code. The vNext capability migration handoff is complete through M10, so do not invent M11 or continue implementation in it. If the user requests new work, create or select a new handoff/workstream, preserve existing user commits and changes, and keep the completed migration evidence intact.
 ```

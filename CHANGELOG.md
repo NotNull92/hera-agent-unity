@@ -21,6 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and package-list requests from failing with an undefined path after
   `editor launch` or `editor restart`.
 
+### Fixed (Connector 0.0.86)
+
+- Restored the missing `input` catalog examples for bounded recording and
+  replay, and added a regression check so example descriptions cannot silently
+  outnumber their callable examples.
+- Use Unity's EntityId APIs from 6000.3 onward, removing the obsolete
+  `InstanceIDToObject` compatibility path where the replacement API is already
+  available while keeping the 6000.0-6000.2 fallback.
+
+### Changed (development verification)
+
+- Exact-source Connector verification now replaces every C# source input from
+  the fixture response file with the current repository sources, preventing
+  stale package-cache or source-injected paths from contaminating the gate.
+
 ### Added (Connector 0.0.85)
 
 - Added explicit `exec --security-mode restricted` defense in depth while

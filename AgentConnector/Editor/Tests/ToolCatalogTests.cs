@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -31,6 +32,7 @@ namespace HeraAgent.Tests
             allPassed &= TestPackageJobIdsRetainGuidEntropy();
             allPassed &= TestLegacyListShapesRemainCompatible();
             allPassed &= TestCatalogSnapshotIsComplete();
+            allPassed &= TestExampleDescriptionsHaveMatchingCalls();
             allPassed &= TestLegacyCustomActionsAreCataloged();
             allPassed &= TestCatalogListModeReturnsValidatedBuiltIns();
             allPassed &= TestExecutionProtocolValidation();
@@ -196,6 +198,19 @@ namespace HeraAgent.Tests
                 && catalog.Tools.Count == 31
                 && actionCount == 80
                 && fieldsComplete);
+        }
+
+        static bool TestExampleDescriptionsHaveMatchingCalls()
+        {
+            var invalid = typeof(ToolCatalogBuilder).Assembly.GetTypes()
+                .Select(type => type.GetCustomAttribute<HeraToolAttribute>())
+                .Where(attribute => attribute != null
+                    && (attribute.ExampleDescriptions?.Length ?? 0)
+                        > (attribute.Examples?.Length ?? 0))
+                .ToArray();
+            return Expect(
+                nameof(TestExampleDescriptionsHaveMatchingCalls),
+                invalid.Length == 0);
         }
 
         static bool TestLegacyCustomActionsAreCataloged()

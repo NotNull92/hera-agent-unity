@@ -236,7 +236,7 @@ Measured low-token baselines for `list --compact` are **about 93 estimated token
 
 ### Compatibility is checked across Unity generations
 
-The current Connector source is **0.0.82** and the current CLI release is **v0.1.4**. The Connector's exact source passed the release compile gate in these representative Editors:
+The current Connector source is **0.0.86** and the current CLI release is **v0.1.4**. The Connector's exact source passed the release compile gate in these representative Editors:
 
 | Unity Editor | Result |
 |:---|:---:|
@@ -703,7 +703,7 @@ MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
 ## Current release
 
 - CLI: **v0.1.4**
-- Unity Connector source: **0.0.82**
+- Unity Connector source: **0.0.86**
 - License: **Apache-2.0**
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.

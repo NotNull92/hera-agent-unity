@@ -238,7 +238,7 @@ Hera는 "AI니까 알아서 잘합니다" 같은 모호한 표현 대신 저장�
 
 ### 여러 Unity 세대에서 패키지 컴파일을 확인합니다
 
-현재 Connector 소스는 **0.0.82**, CLI 릴리스는 **v0.1.4**입니다. Connector의 동일 소스가 다음 대표 Editor에서 릴리스 컴파일 게이트를 통과했습니다.
+현재 Connector 소스는 **0.0.86**, CLI 릴리스는 **v0.1.4**입니다. Connector의 동일 소스가 다음 대표 Editor에서 릴리스 컴파일 게이트를 통과했습니다.
 
 | Unity Editor | 결과 |
 |:---|:---:|
@@ -707,7 +707,7 @@ MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
 ## 현재 릴리스
 
 - CLI: **v0.1.4**
-- Unity Connector 소스: **0.0.82**
+- Unity Connector 소스: **0.0.86**
 - License: **Apache-2.0**
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.

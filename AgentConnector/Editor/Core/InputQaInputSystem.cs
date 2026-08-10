@@ -381,12 +381,7 @@ namespace HeraAgent
             }
         }
 
-        internal static InputQaCleanupResult ReleaseSequenceControls()
-        {
-            return ReleaseHeldControls();
-        }
-
-        private static InputQaCleanupResult ReleaseHeldControls()
+        internal static InputQaCleanupResult ReleaseHeldControls()
         {
             var keyNames = Sorted(HeldKeys);
             var buttonNames = Sorted(HeldMouseButtons);
