@@ -12,11 +12,11 @@ npm/*.tgz
 
 # Local agent tooling (not shared — public repo)
 .omo/
+# .omc/ is kept ignored as a local scratch dir, not as agent state
 .omc/
 .omx/
 .claude/
 .agents/skills/hyper-mode/
-.agents/skills/omc-reference/
 .agents/skills/review-hera-agent-unity/
 .agents/skills/sync-claude-md/
 .agents/skills/unity-deslop/
