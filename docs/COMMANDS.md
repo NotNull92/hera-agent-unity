@@ -1101,6 +1101,7 @@ hera-agent-unity input <action> [flags]
 | `drag` | same target/point flags; `--to_position x,y` or `--to x,y` or `--to_normalized x,y`; `[--steps N]`; `[--settle_frames N]`; `[--strict true\|false]`; `[--max_results N]` | Execute initialize-potential-drag, begin-drag, drag steps, and end-drag handlers. Default steps: 8. |
 | `keyboard` | `--key <InputSystem Key>`; `[--mode press\|down\|up]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--backend inputsystem\|auto]` | Press/release a current Input System keyboard key in Play Mode. `down` remains held until the matching `up`; `press` releases automatically. |
 | `mouse` | `[--mode move\|click\|down\|up\|delta\|scroll]`; `[--button left\|right\|middle]`; `[--position x,y]`; `[--delta x,y]`; `[--scroll_delta x,y]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--backend inputsystem\|auto]` | Move, click, hold/release, or set delta/scroll on the current Input System mouse in Play Mode. |
+| `sequence` | strict `steps` JSON array through `call input --json ...` | Execute 1..32 PlayMode Input System `keyboard`/`mouse` steps in one Unity request. Nested sequences, read actions, and EventSystem actions are rejected. |
 
 ```bash
 hera-agent-unity input state
@@ -1112,6 +1113,7 @@ hera-agent-unity input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5
 hera-agent-unity input state --backend inputsystem
 hera-agent-unity input keyboard --key space --mode press
 hera-agent-unity input mouse --mode click --button left --position 640,360
+hera-agent-unity call input --json '{"action":"sequence","steps":[{"action":"keyboard","key":"space","mode":"down"},{"action":"keyboard","key":"space","mode":"up"}]}'
 ```
 
 **Windows Git Bash** — MSYS path conversion treats a Unity hierarchy path that
@@ -1121,9 +1123,11 @@ starts with `/` as a filesystem path. Preserve it with `MSYS_NO_PATHCONV=1`:
 MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/StartButton --details true
 ```
 
-**Input limits** — numeric values are validated before dispatch: `hold_ms` is `0..5000`, `settle_frames` is `0..120`, `steps` is `1..120`, `click_count` is `1..3`, and `max_results` is `1..100` (default `50`). Oversized or malformed values return `INPUT_INVALID_PARAM`. `raycasters_total` / `raycasters_truncated` and detailed `hits_total` / `hits_truncated` make a capped EventSystem diagnostic explicit.
+**Input limits** — numeric values are validated before dispatch: `hold_ms` is `0..5000`, `settle_frames` is `0..120`, drag `steps` is `1..120`, `click_count` is `1..3`, and `max_results` is `1..100` (default `50`). Oversized or malformed values return `INPUT_INVALID_PARAM`. `raycasters_total` / `raycasters_truncated` and detailed `hits_total` / `hits_truncated` make a capped EventSystem diagnostic explicit.
 
-**Optional Input System** — the Connector resolves `Unity.InputSystem` through reflection and does not add `com.unity.inputsystem` to the package manifest or asmdef. `input state --backend inputsystem` remains queryable without the package and reports `available:false`; keyboard/mouse mutations return `INPUTSYSTEM_UNAVAILABLE`. Mutations require active, unpaused Play Mode and an existing current device. Hera never creates a device. Held keys/buttons are owned across commands, reject duplicate down or unowned up, and are released when Play Mode exits or scripts reload.
+**Input sequences** — `sequence` is PlayMode-only and accepts 1..32 strict Input System keyboard/mouse step objects. The Connector validates the complete JSON shape, action-specific requirements, device/control availability, aggregate hold time (`<=30000 ms`), aggregate awaited frames (`<=600`), and sequence-local down/up ownership before the first mutation. A sequence has a 45-second wall-clock deadline, fails at the first leaf error, rejects any pre-existing Hera-held control, and releases controls acquired by that sequence in `finally`. The compact result reports `completed_count`, `failed_step_index`, `cause_code`, cleanup details, and `held_after`. A response-loss outcome remains operation-ledger protected and is never blindly retried.
+
+**Optional Input System** — the Connector resolves `Unity.InputSystem` through reflection and does not add `com.unity.inputsystem` to the package manifest or asmdef. `input state --backend inputsystem` remains queryable without the package and reports `available:false`; keyboard/mouse/sequence mutations return `INPUTSYSTEM_UNAVAILABLE`. Mutations require active, unpaused Play Mode and an existing current device. Hera never creates a device. Held keys/buttons are owned across commands, reject duplicate down or unowned up, and are released when Play Mode exits or scripts reload.
 
 **Evidence classification** — report this separately from OS-level click QA:
 
@@ -1138,7 +1142,7 @@ Current backend status:
 | Backend | Status |
 |:---|:---|
 | `eventsystem` | Implemented for `state`, `inspect`, `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, and `drag`. |
-| `inputsystem` | Implemented for `state`, `keyboard`, and `mouse`. Keyboard/mouse select it by default; EventSystem actions do not auto-switch to it. |
+| `inputsystem` | Implemented for `state`, `keyboard`, `mouse`, and bounded `sequence`. Keyboard/mouse/sequence select it by default; EventSystem actions do not auto-switch to it. |
 | `native-win32` | Planned optional fallback; never a default backend. |
 
 ---

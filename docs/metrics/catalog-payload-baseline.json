@@ -1,11 +1,11 @@
 {
   "schema": "hera.catalog-payload-report/1",
-  "catalog_hash": "sha256:fbf56525f4a1d3fdeede7e009d7daddc7a53bb53a8b1ce65c289ef81c8f8b6d7",
-  "input_bytes": 188711,
-  "normalized_catalog_bytes": 188751,
+  "catalog_hash": "sha256:0b1e13bb595df72d57c3fc2939be3c13a789cbd4fce16f5ef177be97101626bc",
+  "input_bytes": 191003,
+  "normalized_catalog_bytes": 191043,
   "tool_count": 31,
-  "action_count": 77,
-  "description_characters": 8119,
+  "action_count": 78,
+  "description_characters": 8129,
   "profiles": [
     {
       "name": "advanced",
@@ -30,7 +30,7 @@
     {
       "name": "full",
       "tool_count": 29,
-      "normalized_contract_bytes": 183937
+      "normalized_contract_bytes": 186229
     },
     {
       "name": "scene",
@@ -40,20 +40,20 @@
     {
       "name": "testing",
       "tool_count": 6,
-      "normalized_contract_bytes": 53578
+      "normalized_contract_bytes": 55870
     },
     {
       "name": "ui",
       "tool_count": 8,
-      "normalized_contract_bytes": 98828
+      "normalized_contract_bytes": 101120
     }
   ],
   "largest_tools": [
     {
       "name": "input",
-      "bytes": 31190,
-      "action_count": 10,
-      "description_characters": 98
+      "bytes": 33482,
+      "action_count": 11,
+      "description_characters": 108
     },
     {
       "name": "manage_gameobject",
@@ -176,98 +176,98 @@
     {
       "tool": "input",
       "action": "keyboard",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 1850,
-      "saved_bytes": 29488,
-      "saved_ratio": 0.9409662390707767
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 1860,
+      "saved_bytes": 31770,
+      "saved_ratio": 0.944692239072257
     },
     {
       "tool": "input",
       "action": "state",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 2274,
-      "saved_bytes": 29064,
-      "saved_ratio": 0.9274363392686196
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 2284,
+      "saved_bytes": 31346,
+      "saved_ratio": 0.9320844484091585
     },
     {
       "tool": "input",
       "action": "mouse",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 2492,
-      "saved_bytes": 28846,
-      "saved_ratio": 0.920479928521284
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 2502,
+      "saved_bytes": 31128,
+      "saved_ratio": 0.9256021409455844
+    },
+    {
+      "tool": "input",
+      "action": "sequence",
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 2838,
+      "saved_bytes": 30792,
+      "saved_ratio": 0.9156110615521855
     },
     {
       "tool": "input",
       "action": "inspect",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 3861,
-      "saved_bytes": 27477,
-      "saved_ratio": 0.8767949454336588
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 3871,
+      "saved_bytes": 29759,
+      "saved_ratio": 0.8848944394885518
     },
     {
       "tool": "input",
       "action": "click",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 3864,
-      "saved_bytes": 27474,
-      "saved_ratio": 0.8766992150105304
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 3874,
+      "saved_bytes": 29756,
+      "saved_ratio": 0.8848052334225394
     },
     {
       "tool": "input",
       "action": "submit",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 3866,
-      "saved_bytes": 27472,
-      "saved_ratio": 0.8766353947284447
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 3876,
+      "saved_bytes": 29754,
+      "saved_ratio": 0.8847457627118644
     },
     {
       "tool": "input",
       "action": "pointer_up",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 3874,
-      "saved_bytes": 27464,
-      "saved_ratio": 0.8763801136001022
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 3884,
+      "saved_bytes": 29746,
+      "saved_ratio": 0.8845078798691645
     },
     {
       "tool": "input",
       "action": "pointer_down",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 3878,
-      "saved_bytes": 27460,
-      "saved_ratio": 0.8762524730359308
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 3888,
+      "saved_bytes": 29742,
+      "saved_ratio": 0.8843889384478144
     },
     {
       "tool": "input",
       "action": "scroll",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 4063,
-      "saved_bytes": 27275,
-      "saved_ratio": 0.8703490969430084
-    },
-    {
-      "tool": "input",
-      "action": "drag",
-      "full_tool_describe_bytes": 31338,
-      "action_describe_bytes": 4465,
-      "saved_bytes": 26873,
-      "saved_ratio": 0.8575212202437935
+      "full_tool_describe_bytes": 33630,
+      "action_describe_bytes": 4073,
+      "saved_bytes": 29557,
+      "saved_ratio": 0.8788878977103777
     }
   ],
   "rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-    "low_4_bytes_per_token": 47188,
-    "central_3_2_bytes_per_token": 58985,
-    "high_2_5_bytes_per_token": 75501
+    "low_4_bytes_per_token": 47761,
+    "central_3_2_bytes_per_token": 59701,
+    "high_2_5_bytes_per_token": 76418
   },
   "warnings": [
     "profile assets uses 37068 normalized bytes (warning budget 24000)",
     "profile core uses 51488 normalized bytes (warning budget 24000)",
     "profile diagnostics uses 27258 normalized bytes (warning budget 24000)",
-    "profile full uses 183937 normalized bytes (warning budget 24000)",
+    "profile full uses 186229 normalized bytes (warning budget 24000)",
     "profile scene uses 67091 normalized bytes (warning budget 24000)",
-    "profile testing uses 53578 normalized bytes (warning budget 24000)",
-    "profile ui uses 98828 normalized bytes (warning budget 24000)",
-    "tool input uses 31190 normalized bytes (warning budget 20000)"
+    "profile testing uses 55870 normalized bytes (warning budget 24000)",
+    "profile ui uses 101120 normalized bytes (warning budget 24000)",
+    "tool input uses 33482 normalized bytes (warning budget 20000)"
   ]
 }

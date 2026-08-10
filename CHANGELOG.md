@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added (next Connector release)
+### Added (Connector 0.0.81)
 
 - Added optional, reflection-only Input System keyboard and mouse synthesis for
   Play Mode through `input keyboard` and `input mouse`; projects without
@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shared the Editor update wait primitive used by input QA and package polling,
   and added strict contract, safety, and release-gate coverage for the two new
   input actions.
+- Added bounded `input sequence` execution for PlayMode Input System keyboard
+  and mouse steps in one Unity request. The Connector preflights all steps,
+  enforces aggregate duration/frame limits, fails fast, and releases
+  sequence-owned held controls on completion or failure.
+- Runs synthesized Input System changes in the configured update phase and
+  wakes settle-frame waits so background Editors cannot leave an input request
+  waiting forever.
 
 ## [0.1.4] - 2026-08-06
 

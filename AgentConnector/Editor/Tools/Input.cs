@@ -5,7 +5,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "input",
-        Description = "Unity input QA: synthesize uGUI EventSystem events and optional Input System keyboard/mouse input.",
+        Description = "Unity input QA: synthesize uGUI EventSystem events and optional Input System keyboard/mouse input sequences.",
         RequiresPlayMode = false,
         Examples = new[]
         {
@@ -14,6 +14,7 @@ namespace HeraAgent.Tools
             "input click --path /Canvas/StartButton --settle_frames 2",
             "input keyboard --key space --mode press",
             "input mouse --mode move --position 640,360",
+            "input sequence --params '{\"steps\":[{\"action\":\"keyboard\",\"key\":\"space\"}]}'",
             "input drag --path /Canvas/Slider/Handle --to_normalized 0.8,0.5",
             "input submit --path /Canvas/StartButton"
         },
@@ -24,6 +25,7 @@ namespace HeraAgent.Tools
             "Drive pointer enter/down/up/click through Unity's EventSystem",
             "Press and release an Input System keyboard key in Play Mode",
             "Move the current Input System mouse in Play Mode",
+            "Execute bounded Input System keyboard/mouse steps in one request",
             "Drive begin/drag/end handlers from the target point to a target-local point",
             "Select the target and execute its submit handler"
         },
@@ -72,6 +74,11 @@ namespace HeraAgent.Tools
         typeof(InputTool.MouseParameters),
         RiskClass = HeraRiskClass.Write,
         RequiresPlayMode = true)]
+    [HeraActionContract(
+        "sequence",
+        typeof(InputTool.SequenceParameters),
+        RiskClass = HeraRiskClass.Write,
+        RequiresPlayMode = true)]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "inspect")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "click")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "pointer_down")]
@@ -87,7 +94,7 @@ namespace HeraAgent.Tools
     [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "position", "normalized", "offset", Action = "scroll")]
     [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "position", "normalized", "offset", Action = "drag")]
     [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "to_position", "to_normalized", Action = "drag")]
-    public static class InputTool
+    public static partial class InputTool
     {
         private const string Vector2Schema =
             "{\"type\":\"string\",\"pattern\":\"^\\\\s*[-+]?(?:\\\\d+(?:\\\\.\\\\d*)?|\\\\.\\\\d+)(?:[eE][-+]?\\\\d+)?\\\\s*,\\\\s*[-+]?(?:\\\\d+(?:\\\\.\\\\d*)?|\\\\.\\\\d+)(?:[eE][-+]?\\\\d+)?\\\\s*$\"}";
@@ -239,9 +246,9 @@ namespace HeraAgent.Tools
         public class Parameters
         {
             [ToolParameter(
-                "Action: state, inspect, click, pointer_down, pointer_up, drag, scroll, submit, keyboard, mouse.",
+                "Action: state, inspect, click, pointer_down, pointer_up, drag, scroll, submit, keyboard, mouse, sequence.",
                 Required = true,
-                SchemaJson = "{\"type\":\"string\",\"enum\":[\"state\",\"inspect\",\"click\",\"pointer_down\",\"pointer_up\",\"drag\",\"scroll\",\"submit\",\"keyboard\",\"mouse\"]}")]
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"state\",\"inspect\",\"click\",\"pointer_down\",\"pointer_up\",\"drag\",\"scroll\",\"submit\",\"keyboard\",\"mouse\",\"sequence\"]}")]
             public string Action { get; set; }
 
             [ToolParameter("Backend: eventsystem, inputsystem, or auto.")]
@@ -310,6 +317,14 @@ namespace HeraAgent.Tools
 
         public static async Task<object> HandleCommand(JObject raw)
         {
+            if (string.Equals(
+                    raw?["action"]?.ToString(),
+                    "sequence",
+                    System.StringComparison.OrdinalIgnoreCase))
+            {
+                return await InputQaSequence.Execute(raw);
+            }
+
             var (options, err) = InputQaResolver.Parse(raw);
             if (err != null) return err;
 
@@ -354,7 +369,7 @@ namespace HeraAgent.Tools
                     if (options.Backend == "eventsystem") return BackendMismatch(options);
                     return await InputQaInputSystem.Mouse(options);
                 default:
-                    return new ErrorResponse("INPUT_UNKNOWN_ACTION", $"Unknown input action: '{options.Action}'. Use state, inspect, click, pointer_down, pointer_up, submit, scroll, drag, keyboard, or mouse.");
+                    return new ErrorResponse("INPUT_UNKNOWN_ACTION", $"Unknown input action: '{options.Action}'. Use state, inspect, click, pointer_down, pointer_up, submit, scroll, drag, keyboard, mouse, or sequence.");
             }
         }
 

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -26,6 +27,16 @@ namespace HeraAgent
         public int MaxResults;
         public bool Strict;
         public bool Details;
+        public CancellationToken CancellationToken;
+    }
+
+    internal sealed class InputQaCleanupResult
+    {
+        public bool attempted = true;
+        public bool succeeded;
+        public string[] released_keys;
+        public string[] released_mouse_buttons;
+        public string[] errors;
     }
 
     internal sealed class InputQaHit

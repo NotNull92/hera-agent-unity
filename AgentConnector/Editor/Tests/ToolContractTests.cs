@@ -527,7 +527,9 @@ namespace HeraAgent.Tests
                 }
 
                 if (entry.tool == "input"
-                    && (entry.action == "keyboard" || entry.action == "mouse")
+                    && (entry.action == "keyboard"
+                        || entry.action == "mouse"
+                        || entry.action == "sequence")
                     && (!action.Safety.RequiresPlayMode
                         || action.Safety.RiskClass != HeraRiskClass.Write))
                 {
@@ -777,11 +779,47 @@ namespace HeraAgent.Tests
             var setParent = ToolContractRegistry.Get("manage_gameobject")
                 .Actions["set_parent"];
             var parentSchema = setParent.InputSchema["properties"]?["parent"] as JObject;
+            var validSequence = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("input"),
+                new JObject
+                {
+                    ["action"] = "sequence",
+                    ["steps"] = new JArray(new JObject
+                    {
+                        ["action"] = "keyboard",
+                        ["key"] = "space",
+                    }),
+                },
+                "sequence");
+            var invalidNestedAction = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("input"),
+                new JObject
+                {
+                    ["action"] = "sequence",
+                    ["steps"] = new JArray(new JObject { ["action"] = "state" }),
+                },
+                "sequence");
+            var invalidNestedField = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("input"),
+                new JObject
+                {
+                    ["action"] = "sequence",
+                    ["steps"] = new JArray(new JObject
+                    {
+                        ["action"] = "keyboard",
+                        ["key"] = "space",
+                        ["unknown"] = true,
+                    }),
+                },
+                "sequence");
             return Expect(nameof(TestM22ComplexSchemaValues),
                 moveArray.IsValid
                 && moveObject.IsValid
                 && invalidMove.Error?.code == "ARGUMENT_TYPE_MISMATCH"
                 && componentValue.IsValid
+                && validSequence.IsValid
+                && invalidNestedAction.Error != null
+                && invalidNestedField.Error != null
                 && SchemaContainsType(parentSchema, "null"));
         }
 
@@ -1753,6 +1791,15 @@ namespace HeraAgent.Tests
                 ["action"] = "mouse",
                 ["mode"] = "move",
                 ["position"] = "100,200",
+            });
+            yield return ("input", "sequence", new JObject
+            {
+                ["action"] = "sequence",
+                ["steps"] = new JArray(new JObject
+                {
+                    ["action"] = "keyboard",
+                    ["key"] = "space",
+                }),
             });
             foreach (var action in new[]
             {

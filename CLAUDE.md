@@ -148,6 +148,8 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # InputQaEventSystem (uGUI raycast/ExecuteEvents backend),
                       # InputQaInputSystem (reflection-only optional keyboard/
                       # mouse state backend; held-control cleanup),
+                      # InputQaSequence + InputQaSequencePlan (strict bounded
+                      # PlayMode keyboard/mouse plans; aggregate budgets and cleanup),
                       # AtomicFile (temp-write + replace for JSON file bus),
                       # AssetPathGuard (normalized Assets/ containment),
                       # StringCaseUtility, ToolMetadata, UnityPitfalls,

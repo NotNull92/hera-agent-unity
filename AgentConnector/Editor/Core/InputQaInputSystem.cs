@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
 using UnityEngine;
@@ -37,12 +38,67 @@ namespace HeraAgent
                 paused = EditorApplication.isPaused,
                 keyboard = DeviceShape(api?.Keyboard),
                 mouse = DeviceShape(api?.Mouse),
-                injected = new
-                {
-                    keys = Sorted(HeldKeys),
-                    mouse_buttons = Sorted(HeldMouseButtons),
-                },
+                injected = InjectedState(),
             });
+        }
+
+        internal static bool HasHeldControls()
+        {
+            return HeldKeys.Count != 0 || HeldMouseButtons.Count != 0;
+        }
+
+        internal static object InjectedState()
+        {
+            return new
+            {
+                keys = Sorted(HeldKeys),
+                mouse_buttons = Sorted(HeldMouseButtons),
+            };
+        }
+
+        internal static ErrorResponse ValidateForSequence(InputQaOptions options)
+        {
+            var api = Api.TryCreate(out var reason);
+            if (api == null)
+                return Unavailable(reason);
+            var playModeError = ValidatePlayMode();
+            if (playModeError != null)
+                return playModeError;
+
+            if (options.Action == "keyboard")
+            {
+                if (api.Keyboard == null)
+                    return new ErrorResponse(
+                        "INPUTSYSTEM_DEVICE_UNAVAILABLE",
+                        "[Hera] I couldn't find a current Input System Keyboard device.");
+                if (!TryResolveKey(api, options.Key, out var key, out var canonicalKey))
+                    return new ErrorResponse(
+                        "INPUTSYSTEM_INVALID_KEY",
+                        $"[Hera] I don't recognize the Input System key '{options.Key}'.");
+                if (api.KeyboardIndexer.GetValue(api.Keyboard, new[] { key }) == null)
+                    return new ErrorResponse(
+                        "INPUTSYSTEM_CONTROL_UNAVAILABLE",
+                        $"[Hera] I couldn't access the Keyboard control '{canonicalKey}'.");
+                return null;
+            }
+
+            if (api.Mouse == null)
+                return new ErrorResponse(
+                    "INPUTSYSTEM_DEVICE_UNAVAILABLE",
+                    "[Hera] I couldn't find a current Input System Mouse device.");
+            var mode = options.Mode ?? "click";
+            var controlName = mode == "move"
+                ? "position"
+                : mode == "delta"
+                    ? "delta"
+                    : mode == "scroll"
+                        ? "scroll"
+                        : ButtonName(options.Button) + "Button";
+            if (api.GetMouseControl(controlName) == null)
+                return new ErrorResponse(
+                    "INPUTSYSTEM_CONTROL_UNAVAILABLE",
+                    $"[Hera] I couldn't access the Mouse control '{controlName}'.");
+            return null;
         }
 
         internal static async Task<object> Keyboard(InputQaOptions options)
@@ -80,35 +136,44 @@ namespace HeraAgent
                     case "press":
                         if (HeldKeys.Contains(canonicalKey))
                             return AlreadyHeld("key", canonicalKey);
-                        await api.ApplyButton(control, true);
+                        await api.ApplyButton(control, true, options.CancellationToken);
                         HeldKeys.Add(canonicalKey);
                         try
                         {
-                            await EditorUpdate.Wait(1, options.HoldMs);
+                            await EditorUpdate.Wait(
+                                1,
+                                options.HoldMs,
+                                options.CancellationToken);
                         }
                         finally
                         {
-                            await api.ApplyButton(control, false);
+                            if (options.CancellationToken.IsCancellationRequested)
+                                api.SetButton(control, false);
+                            else
+                                await api.ApplyButton(control, false, CancellationToken.None);
                             HeldKeys.Remove(canonicalKey);
                         }
                         break;
                     case "down":
                         if (HeldKeys.Contains(canonicalKey))
                             return AlreadyHeld("key", canonicalKey);
-                        await api.ApplyButton(control, true);
+                        await api.ApplyButton(control, true, options.CancellationToken);
                         HeldKeys.Add(canonicalKey);
                         break;
                     case "up":
                         if (!HeldKeys.Contains(canonicalKey))
                             return NotHeld("key", canonicalKey);
-                        await api.ApplyButton(control, false);
+                        await api.ApplyButton(control, false, options.CancellationToken);
                         HeldKeys.Remove(canonicalKey);
                         break;
                     default:
                         return InvalidMode("keyboard", mode, "press, down, or up");
                 }
 
-                await EditorUpdate.Wait(options.SettleFrames);
+                await EditorUpdate.Wait(
+                    options.SettleFrames,
+                    0,
+                    options.CancellationToken);
                 return new SuccessResponse("Input System keyboard", new
                 {
                     backend = "inputsystem",
@@ -119,6 +184,10 @@ namespace HeraAgent
                     pressed_after = api.IsPressed(control),
                     held_by_hera = HeldKeys.Contains(canonicalKey),
                 });
+            }
+            catch (OperationCanceledException)
+            {
+                return Cancelled();
             }
             catch (Exception ex)
             {
@@ -149,49 +218,73 @@ namespace HeraAgent
                     case "move":
                         if (!options.Position.HasValue)
                             return MissingVector("position", "mouse move");
-                        await api.ApplyVector(api.GetMouseControl("position"), options.Position.Value);
+                        await api.ApplyVector(
+                            api.GetMouseControl("position"),
+                            options.Position.Value,
+                            options.CancellationToken);
                         break;
                     case "delta":
                         if (!options.Delta.HasValue)
                             return MissingVector("delta", "mouse delta");
-                        await api.ApplyVector(api.GetMouseControl("delta"), options.Delta.Value);
+                        await api.ApplyVector(
+                            api.GetMouseControl("delta"),
+                            options.Delta.Value,
+                            options.CancellationToken);
                         break;
                     case "scroll":
                         if (!options.ScrollDelta.HasValue)
                             return MissingVector("scroll_delta", "mouse scroll");
-                        await api.ApplyVector(api.GetMouseControl("scroll"), options.ScrollDelta.Value);
+                        await api.ApplyVector(
+                            api.GetMouseControl("scroll"),
+                            options.ScrollDelta.Value,
+                            options.CancellationToken);
                         break;
                     case "click":
                         if (options.Position.HasValue)
-                            await api.ApplyVector(api.GetMouseControl("position"), options.Position.Value);
+                            await api.ApplyVector(
+                                api.GetMouseControl("position"),
+                                options.Position.Value,
+                                options.CancellationToken);
                         if (HeldMouseButtons.Contains(buttonName))
                             return AlreadyHeld("mouse button", buttonName);
-                        await api.ApplyButton(button, true);
+                        await api.ApplyButton(button, true, options.CancellationToken);
                         HeldMouseButtons.Add(buttonName);
                         try
                         {
-                            await EditorUpdate.Wait(1, options.HoldMs);
+                            await EditorUpdate.Wait(
+                                1,
+                                options.HoldMs,
+                                options.CancellationToken);
                         }
                         finally
                         {
-                            await api.ApplyButton(button, false);
+                            if (options.CancellationToken.IsCancellationRequested)
+                                api.SetButton(button, false);
+                            else
+                                await api.ApplyButton(button, false, CancellationToken.None);
                             HeldMouseButtons.Remove(buttonName);
                         }
                         break;
                     case "down":
                         if (options.Position.HasValue)
-                            await api.ApplyVector(api.GetMouseControl("position"), options.Position.Value);
+                            await api.ApplyVector(
+                                api.GetMouseControl("position"),
+                                options.Position.Value,
+                                options.CancellationToken);
                         if (HeldMouseButtons.Contains(buttonName))
                             return AlreadyHeld("mouse button", buttonName);
-                        await api.ApplyButton(button, true);
+                        await api.ApplyButton(button, true, options.CancellationToken);
                         HeldMouseButtons.Add(buttonName);
                         break;
                     case "up":
                         if (options.Position.HasValue)
-                            await api.ApplyVector(api.GetMouseControl("position"), options.Position.Value);
+                            await api.ApplyVector(
+                                api.GetMouseControl("position"),
+                                options.Position.Value,
+                                options.CancellationToken);
                         if (!HeldMouseButtons.Contains(buttonName))
                             return NotHeld("mouse button", buttonName);
-                        await api.ApplyButton(button, false);
+                        await api.ApplyButton(button, false, options.CancellationToken);
                         HeldMouseButtons.Remove(buttonName);
                         break;
                     default:
@@ -201,7 +294,10 @@ namespace HeraAgent
                             "move, click, down, up, delta, or scroll");
                 }
 
-                await EditorUpdate.Wait(options.SettleFrames);
+                await EditorUpdate.Wait(
+                    options.SettleFrames,
+                    0,
+                    options.CancellationToken);
                 return new SuccessResponse("Input System mouse", new
                 {
                     backend = "inputsystem",
@@ -217,6 +313,10 @@ namespace HeraAgent
                     pressed_after = button == null ? (bool?)null : api.IsPressed(button),
                     held_by_hera = HeldMouseButtons.Contains(buttonName),
                 });
+            }
+            catch (OperationCanceledException)
+            {
+                return Cancelled();
             }
             catch (Exception ex)
             {
@@ -250,43 +350,96 @@ namespace HeraAgent
 
         private static void ReleaseInjectedControls()
         {
-            try
+            var result = ReleaseHeldControls();
+            if (!result.succeeded)
             {
-                var api = Api.TryCreate(out _);
-                if (api?.Keyboard != null)
+                Debug.LogWarning(
+                    "[Hera] I couldn't clean up Input System controls: " +
+                    string.Join("; ", result.errors ?? Array.Empty<string>()));
+            }
+        }
+
+        internal static InputQaCleanupResult ReleaseSequenceControls()
+        {
+            return ReleaseHeldControls();
+        }
+
+        private static InputQaCleanupResult ReleaseHeldControls()
+        {
+            var keyNames = Sorted(HeldKeys);
+            var buttonNames = Sorted(HeldMouseButtons);
+            var releasedKeys = new List<string>();
+            var releasedButtons = new List<string>();
+            var errors = new List<string>();
+            if (keyNames.Length == 0 && buttonNames.Length == 0)
+            {
+                return new InputQaCleanupResult
                 {
-                    foreach (var keyName in Sorted(HeldKeys))
+                    succeeded = true,
+                    released_keys = Array.Empty<string>(),
+                    released_mouse_buttons = Array.Empty<string>(),
+                    errors = Array.Empty<string>(),
+                };
+            }
+
+            var api = Api.TryCreate(out var reason);
+            if (api == null)
+            {
+                errors.Add(reason ?? "The Input System API is unavailable during cleanup.");
+            }
+            else
+            {
+                foreach (var keyName in keyNames)
+                {
+                    try
                     {
-                        if (TryResolveKey(api, keyName, out var key, out _))
-                        {
-                            var control = api.KeyboardIndexer.GetValue(
-                                api.Keyboard,
-                                new[] { key });
-                            if (control != null)
-                                api.SetButton(control, false);
-                        }
+                        if (api.Keyboard == null
+                            || !TryResolveKey(api, keyName, out var key, out _))
+                            throw new InvalidOperationException(
+                                $"Keyboard control '{keyName}' is unavailable.");
+                        var control = api.KeyboardIndexer.GetValue(api.Keyboard, new[] { key });
+                        if (control == null)
+                            throw new InvalidOperationException(
+                                $"Keyboard control '{keyName}' is unavailable.");
+                        api.SetButton(control, false);
+                        HeldKeys.Remove(keyName);
+                        releasedKeys.Add(keyName);
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add("key " + keyName + ": " + Unwrap(ex).Message);
                     }
                 }
 
-                if (api?.Mouse != null)
+                foreach (var buttonName in buttonNames)
                 {
-                    foreach (var buttonName in Sorted(HeldMouseButtons))
+                    try
                     {
+                        if (api.Mouse == null)
+                            throw new InvalidOperationException(
+                                $"Mouse button '{buttonName}' is unavailable.");
                         var control = api.GetMouseControl(buttonName + "Button");
-                        if (control != null)
-                            api.SetButton(control, false);
+                        if (control == null)
+                            throw new InvalidOperationException(
+                                $"Mouse button '{buttonName}' is unavailable.");
+                        api.SetButton(control, false);
+                        HeldMouseButtons.Remove(buttonName);
+                        releasedButtons.Add(buttonName);
+                    }
+                    catch (Exception ex)
+                    {
+                        errors.Add("mouse button " + buttonName + ": " + Unwrap(ex).Message);
                     }
                 }
             }
-            catch (Exception ex)
+
+            return new InputQaCleanupResult
             {
-                Debug.LogWarning("Hera Input System cleanup failed: " + Unwrap(ex).Message);
-            }
-            finally
-            {
-                HeldKeys.Clear();
-                HeldMouseButtons.Clear();
-            }
+                succeeded = errors.Count == 0,
+                released_keys = releasedKeys.ToArray(),
+                released_mouse_buttons = releasedButtons.ToArray(),
+                errors = errors.ToArray(),
+            };
         }
 
         private static bool TryResolveKey(
@@ -318,7 +471,7 @@ namespace HeraAgent
                 .Replace(" ", string.Empty);
         }
 
-        private static string ButtonName(UnityEngine.EventSystems.PointerEventData.InputButton button)
+        internal static string ButtonName(UnityEngine.EventSystems.PointerEventData.InputButton button)
         {
             switch (button)
             {
@@ -387,6 +540,13 @@ namespace HeraAgent
                 $"Unknown {action} mode '{mode}'. Use {expected}.");
         }
 
+        private static ErrorResponse Cancelled()
+        {
+            return new ErrorResponse(
+                "INPUT_SEQUENCE_CANCELLED",
+                "[Hera] I cancelled the input sequence before the current step completed.");
+        }
+
         private static ErrorResponse InvocationFailure(Exception exception)
         {
             var inner = Unwrap(exception);
@@ -450,7 +610,6 @@ namespace HeraAgent
             private object Settings { get; set; }
             private PropertyInfo UpdateMode { get; set; }
             private object ExplicitUpdateMode { get; set; }
-            private bool RequiresExplicitUpdate { get; set; }
 
             internal static Api TryCreate(out string reason)
             {
@@ -488,7 +647,6 @@ namespace HeraAgent
                     updateType,
                     settings,
                     updateMode,
-                    out var requiresExplicit,
                     out var explicitUpdateMode);
                 if (keyboardType == null || mouseType == null || keyType == null
                     || updateType == null || eventPtrType == null || allocatorType == null
@@ -519,7 +677,6 @@ namespace HeraAgent
                     Settings = settings,
                     UpdateMode = updateMode,
                     ExplicitUpdateMode = explicitUpdateMode,
-                    RequiresExplicitUpdate = requiresExplicit,
                 };
             }
 
@@ -533,15 +690,24 @@ namespace HeraAgent
                 SetValue(control, pressed ? 1f : 0f, typeof(float));
             }
 
-            internal Task ApplyButton(object control, bool pressed)
-            {
-                return ApplyOnNextConfiguredUpdate(() => SetButton(control, pressed));
-            }
-
-            internal Task ApplyVector(object control, Vector2 value)
+            internal Task ApplyButton(
+                object control,
+                bool pressed,
+                CancellationToken cancellationToken)
             {
                 return ApplyOnNextConfiguredUpdate(
-                    () => SetValue(control, value, typeof(Vector2)));
+                    () => SetButton(control, pressed),
+                    cancellationToken);
+            }
+
+            internal Task ApplyVector(
+                object control,
+                Vector2 value,
+                CancellationToken cancellationToken)
+            {
+                return ApplyOnNextConfiguredUpdate(
+                    () => SetValue(control, value, typeof(Vector2)),
+                    cancellationToken);
             }
 
             private void SetValue(object control, object value, Type valueType)
@@ -583,9 +749,16 @@ namespace HeraAgent
                 }
             }
 
-            private Task ApplyOnNextConfiguredUpdate(Action apply)
+            private Task ApplyOnNextConfiguredUpdate(
+                Action apply,
+                CancellationToken cancellationToken)
             {
+                if (cancellationToken.IsCancellationRequested)
+                    return Task.FromCanceled(cancellationToken);
+
                 var source = new TaskCompletionSource<bool>();
+                CancellationTokenRegistration registration = default;
+                var completionState = 0;
                 Action callback = null;
                 callback = () =>
                 {
@@ -594,6 +767,9 @@ namespace HeraAgent
                         return;
 
                     BeforeUpdate.RemoveEventHandler(null, callback);
+                    registration.Dispose();
+                    if (Interlocked.CompareExchange(ref completionState, 1, 0) != 0)
+                        return;
                     try
                     {
                         apply();
@@ -606,23 +782,31 @@ namespace HeraAgent
                 };
 
                 BeforeUpdate.AddEventHandler(null, callback);
-                if (RequiresExplicitUpdate)
+                registration = cancellationToken.Register(() =>
                 {
-                    try
-                    {
-                        RunExplicitUpdate();
-                        if (!source.Task.IsCompleted)
-                        {
-                            BeforeUpdate.RemoveEventHandler(null, callback);
-                            source.TrySetException(new InvalidOperationException(
-                                "Input System did not enter its configured update phase."));
-                        }
-                    }
-                    catch (Exception ex)
+                    if (Interlocked.CompareExchange(ref completionState, 2, 0) == 0)
+                        source.TrySetCanceled(cancellationToken);
+                });
+                try
+                {
+                    RunExplicitUpdate();
+                    if (!source.Task.IsCompleted)
                     {
                         BeforeUpdate.RemoveEventHandler(null, callback);
-                        source.TrySetException(Unwrap(ex));
+                        registration.Dispose();
+                        if (Interlocked.CompareExchange(ref completionState, 3, 0) == 0)
+                        {
+                            source.TrySetException(new InvalidOperationException(
+                                "[Hera] I couldn't enter the configured Input System update phase."));
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    BeforeUpdate.RemoveEventHandler(null, callback);
+                    registration.Dispose();
+                    if (Interlocked.CompareExchange(ref completionState, 3, 0) == 0)
+                        source.TrySetException(Unwrap(ex));
                 }
                 return source.Task;
             }
@@ -748,23 +932,17 @@ namespace HeraAgent
                 Type updateType,
                 object settings,
                 PropertyInfo updateMode,
-                out bool requiresExplicit,
                 out object explicitUpdateMode)
             {
                 var selected = "Dynamic";
                 var mode = updateMode?.GetValue(settings)?.ToString();
-                requiresExplicit = false;
                 if (mode == "ProcessEventsManually")
                 {
                     selected = "Manual";
-                    requiresExplicit = true;
                 }
                 else if (mode == "ProcessEventsInFixedUpdate")
                 {
-                    if (Time.timeScale > 0f)
-                        selected = "Fixed";
-                    else
-                        requiresExplicit = true;
+                    selected = "Fixed";
                 }
 
                 explicitUpdateMode = updateMode == null

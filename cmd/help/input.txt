@@ -24,6 +24,8 @@ Input QA:
                                       Set mouse delta for the current update
   input mouse --mode scroll --scroll_delta 0,3
                                       Set Input System scroll delta
+  call input --json '{"action":"sequence","steps":[...]}'
+                                      Run bounded keyboard/mouse steps in one request
 
   Target:
     --path </Canvas/Button>           Target by hierarchy path
@@ -63,6 +65,13 @@ Input QA:
     --hold_ms <N>                     Press/click hold 0..5000 ms (default: 50)
     --settle_frames <N>               Updates after the final event 0..120
 
+  Sequence contract (strict call input JSON only):
+    steps                             1..32 keyboard/mouse objects
+    aggregate hold                    At most 30000 ms
+    aggregate awaited frames          At most 600
+    wall-clock deadline               45 seconds
+    ownership                         Rejects pre-held controls; cleans sequence holds
+
   Examples:
     input state
     input inspect --path /Canvas/StartButton --details true
@@ -73,6 +82,7 @@ Input QA:
     input state --backend inputsystem
     input keyboard --key space --mode press
     input mouse --mode click --button left --position 640,360
+    call input --json '{"action":"sequence","steps":[{"action":"keyboard","key":"space","mode":"press"}]}'
 
   Windows Git Bash:
     MSYS rewrites arguments that begin with "/" as filesystem paths. Prefix

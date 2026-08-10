@@ -176,7 +176,8 @@ identifies the connector source commit that Unity resolved.
 
 **[Rule 11]** Separate Unity-level input QA from physical OS click QA. Use
 `input inspect` / `input click` / `input submit` / `input scroll` / `input drag`
-for uGUI EventSystem behavior, and use `input keyboard` / `input mouse` in Play
+for uGUI EventSystem behavior, and use `input keyboard` / `input mouse` or a
+bounded strict `input sequence` in Play
 Mode when the project already has the optional Input System package. These
 commands synthesize Unity events or device state; they do **not** prove that a
 physical OS/window click worked. If Computer Use still cannot capture Unity
@@ -298,7 +299,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Force recompile | `editor refresh --compile` | Waits until compile finishes or `--timeout` (60s default) elapses — raise `--timeout` for big projects, or use `refresh_unity --compile request` to fire-and-forget. |
 | Trigger a menu item | `menu "Window/General/Console"` | `File/Quit` is blocked for safety. |
 | Capture screenshot | `screenshot [--view game]` / `screenshot --isolated --target /Player` | Default scene view, 1920×1080; isolated mode renders one GameObject. |
-| Drive Unity input for QA | `input inspect --path ...` / `input click --path ...` / `input keyboard --key space` / `input mouse --mode click ...` | Sends uGUI EventSystem events or optional Input System device state inside Unity. Neither is a physical OS click. |
+| Drive Unity input for QA | `input inspect --path ...` / `input click --path ...` / `input keyboard --key space` / `call input --json '{"action":"sequence",...}'` | Sends uGUI EventSystem events or optional Input System device state inside Unity. Neither is a physical OS click. |
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
 | Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
@@ -323,7 +324,7 @@ hera-agent-unity exec "var x = SomeType.SomeMethod();" --check
 ```
 Useful when you're not sure a refactor compiles before issuing a destructive call.
 
-**Input QA (`input`)** — use this for Unity-level behavior when physical screen-coordinate automation is unavailable. EventSystem actions resolve targets by hierarchy path, instance ID, or normalized screen/canvas position, then dispatch uGUI events (`click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, `drag`). Start with `input state`, then `input inspect --path /Canvas/Button --details true`. Projects with the optional Input System package may use `input state --backend inputsystem`, `input keyboard --key space`, and `input mouse --mode click --position 640,360` in Play Mode. Hera adds no Input System dependency, does not create devices, and releases held controls on Play Mode exit. Evidence should be classified precisely:
+**Input QA (`input`)** — use this for Unity-level behavior when physical screen-coordinate automation is unavailable. EventSystem actions resolve targets by hierarchy path, instance ID, or normalized screen/canvas position, then dispatch uGUI events (`click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, `drag`). Start with `input state`, then `input inspect --path /Canvas/Button --details true`. Projects with the optional Input System package may use `input state --backend inputsystem`, `input keyboard --key space`, `input mouse --mode click --position 640,360`, or a strict `call input --json '{"action":"sequence","steps":[...]}'` in Play Mode. A sequence accepts 1..32 keyboard/mouse steps, validates the whole plan before mutation, and releases sequence-owned held controls on completion or failure. Hera adds no Input System dependency, does not create devices, and releases held controls on Play Mode exit. Evidence should be classified precisely:
 
 - **Windows Git Bash:** MSYS rewrites arguments beginning with `/` as filesystem paths. Prefix hierarchy-path calls with `MSYS_NO_PATHCONV=1`, for example `MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/Button`.
 - **Unity EventSystem input QA:** PASS/FAIL based on `input` results, console logs, state reads, Play Mode tests, or UI callbacks.
