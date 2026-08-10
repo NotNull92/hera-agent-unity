@@ -113,7 +113,9 @@ hera-agent-unity --project C:/Projects/Game editor restart
 `%ProgramFiles%\Unity\Hub\Editor`)에서 찾습니다. Hub 위치가 다르면
 `--hub-root`를 사용합니다. 시작 시 Package Manager를 정상 사용하며 `-noUpm`을
 전달하지 않습니다. 새 프로세스가 정확한 프로젝트 heartbeat를 게시하면
-명령이 반환됩니다.
+명령이 반환됩니다. Windows에서는 에이전트 셸이 표준 공용 프로필 환경 변수를
+누락한 경우 Unity 자식 프로세스에 복원하여, 일반 데스크톱 실행과 같은 기준으로
+UPM 경로 해석을 시작합니다.
 
 중요한 것은 명령어 이름이 아닙니다. 핵심은 AI가 사람 대신 **확인 → 수정 → 실행 → 검증 → 재수정**을 반복할 수 있다는 점입니다.
 

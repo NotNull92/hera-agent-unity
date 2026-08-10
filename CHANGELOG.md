@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recorded Unity version from installed Hub Editors, use normal Package Manager
   startup, and wait for the new process heartbeat before returning.
 
+### Fixed (CLI)
+
+- Restored the standard Windows common-profile environment for Unity child
+  processes when an agent shell omits it, preventing Package Manager registry
+  and package-list requests from failing with an undefined path after
+  `editor launch` or `editor restart`.
+
 ### Added (Connector 0.0.84)
 
 - Extended `screenshot` with bounded 3D physics evidence sampled through the

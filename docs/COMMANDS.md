@@ -113,9 +113,12 @@ hera-agent-unity --project C:/Projects/Game editor launch --hub-root D:/Unity/Hu
 
 `--port` is rejected because ports do not identify an Editor before startup.
 `restart` terminates the selected process, so save pending work first. These
-commands do not pass `-noUpm` and do not repair a Package Manager resolution
-failure; after the heartbeat appears, use the normal `status`, `console`, and
-other Connector commands.
+commands do not pass `-noUpm`. On Windows, they restore `ALLUSERSPROFILE` from
+`ProgramData` for the Unity child when the invoking agent shell omitted it;
+this prevents UPM path initialization from receiving an undefined common
+profile. They do not rewrite package metadata or repair unrelated Package
+Manager failures. After the heartbeat appears, use the normal `status`,
+`console`, and other Connector commands.
 
 ### play
 

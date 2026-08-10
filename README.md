@@ -112,7 +112,10 @@ The project version comes from `ProjectSettings/ProjectVersion.txt`; the
 matching Unity Hub install comes from `UNITY_HUB_EDITOR` or the platform default
 (`%ProgramFiles%\Unity\Hub\Editor` on Windows). Pass `--hub-root` for a custom
 Hub location. Startup uses normal Package Manager behavior, not `-noUpm`, and
-returns when the new process publishes that exact project's heartbeat.
+returns when the new process publishes that exact project's heartbeat. On
+Windows, Hera also restores the standard common-profile environment for the
+Unity child when an agent shell omitted it, so UPM path resolution still starts
+with the same baseline as a normal desktop launch.
 
 The important part is not the command names. The important part is that the agent can **observe → change → run → verify → repair** without making you act as the courier between the AI and Unity.
 
