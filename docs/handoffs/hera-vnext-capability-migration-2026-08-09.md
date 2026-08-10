@@ -1,6 +1,6 @@
 ﻿# Hera vNext Capability Migration Handoff
 
-Status: **READY FOR M7**
+Status: **M7 IMPLEMENTED; LIVE SUCCESS BLOCKED BY EXTERNAL UPM FAILURE**
 
 Date: 2026-08-09
 
@@ -636,7 +636,7 @@ Status: **PASS**
 
 ### M7: Unity launch/restart
 
-Status: **APPROVED FOR M7**
+Status: **IMPLEMENTED; LIVE HEARTBEAT/RESTART ACCEPTANCE BLOCKED**
 
 Implement the approved narrow Go-side bootstrap exception after the preceding
 milestones.
@@ -1464,6 +1464,94 @@ Next exact step:
 - M7: implement the approved narrow Go-side Unity launch/restart bootstrap,
   preserving project-safe exact targeting and avoiding the external UPM path
   failure assumptions documented in this handoff.
+```
+
+### 2026-08-10 - M7 exact-project Unity launch/restart implemented
+
+```text
+Status: IMPLEMENTED; LIVE SUCCESS BLOCKED BY EXTERNAL UPM FAILURE
+
+Implementation commit:
+- 601f2a2 feat(editor): add exact-project launch and restart
+
+Implemented contract:
+- Added `editor launch` and `editor restart` to the existing editor command.
+  The standalone dispatch path handles only these two actions before normal
+  Connector discovery; play/stop/pause/refresh remain Connector-backed.
+- Both actions require an exact `--project` path and reject `--port` before any
+  process mutation. The project path is normalized from the filesystem and its
+  exact Unity version is read from ProjectSettings/ProjectVersion.txt.
+- The matching Unity executable is resolved from `--hub-root`, then
+  UNITY_HUB_EDITOR, then the platform Unity Hub default. No Node or
+  launch-unity dependency was added.
+- Unity starts with exactly `-projectPath <exact-path>`. The production launch
+  path does not pass `-noUpm`, batch mode, or hidden package flags.
+- `launch` refuses an already running exact-project heartbeat. `restart`
+  refuses a missing exact-project heartbeat, stops only its recorded PID,
+  waits for OS-confirmed exit, attempts exact Temp/UnityLockfile cleanup, and
+  starts the new process. A lock cleanup failure is reported without leaving
+  the already-stopped project permanently down.
+- Completion requires a fresh heartbeat whose normalized project path and PID
+  both match the process just started. Timeout returns stable
+  EDITOR_HEARTBEAT_TIMEOUT data with the started PID and explicitly forbids a
+  blind second launch.
+- Windows and Unix process launch/stop implementations are separated by Go
+  build tags. The CLI process releases the started Editor handle so the Editor
+  survives CLI exit; Unix uses a new process group and Windows uses a new
+  process group without suppressing the Editor GUI.
+- CLI/help, COMMANDS, English/Korean README, changelog, CLAUDE structure, and
+  generated agent-guide command inventory are synchronized. This was a Go-only
+  change, so Connector package 0.0.84 was not changed.
+
+Automated evidence:
+- Added boundary tests for exact new-PID heartbeat selection, restart stopping
+  only the exact project's PID, exact stale-lock target, pre-mutation --port
+  rejection, installed version resolution, and the exact normal-UPM Unity argv.
+- go test ./...: PASS.
+- go vet ./...: PASS.
+- go run ./tools/validate-connector-package: PASS.
+- go run ./tools/sync-agent-guides --check: PASS.
+- git diff --check: PASS (line-ending conversion warnings only).
+- CGO-disabled linux/amd64, darwin/amd64, and windows/amd64 cross-builds: PASS.
+- The referenced scripts/go-gauntlet.sh path does not exist in the current
+  repository; the explicit Go test/vet/build/tool gates above were run instead.
+
+Live process and failure evidence:
+- Inventoria was never selected for mutation and remained on its original Unity
+  6000.3.5f2 PID 56188.
+- `editor launch` started the existing marked M17 fixture with the exact
+  6000.3.5f2 Unity executable and separate `-projectPath` argv. UPM connected,
+  registered 67 packages including the Hera Git package, then failed before
+  Connector import with `[Package Manager] The "path" argument must be of type
+  string. Received undefined`; therefore no Hera heartbeat appeared.
+- A second marked source-injected disposable fixture removed the Hera Git
+  dependency candidate and supplied a valid empty Packages/manifest.json.
+  Normal UPM launch still failed at the same pre-import undefined-path error and
+  loaded no packages. This narrows the local failure away from the Hera Git
+  package path and a missing manifest, but the retained Unity log still lacks
+  the underlying Node stack, so the root cause remains unproven.
+- The second launch returned the intended compact failure envelope with code
+  EDITOR_HEARTBEAT_TIMEOUT, exact project/version/editor path, started PID
+  51324, heartbeat_seen=false, and the no-blind-retry message.
+- Because both normal-UPM disposable launches failed before the Connector could
+  publish a heartbeat, a real successful heartbeat handoff and subsequent
+  `editor restart` PID transition could not be honestly demonstrated. M7 stays
+  live-acceptance blocked and M8 must not start yet.
+
+Preservation and cleanup:
+- All three failed disposable Unity processes were verified against their exact
+  command-line project path and stopped by exact PID. The newly created marked
+  QA fixtures and temporary binaries/logs were sent to the Windows Recycle Bin,
+  so they remain recoverable; the existing M17 fixture itself was preserved.
+- All existing user commits and changes were preserved. No release tag or push
+  was performed.
+
+Next exact step:
+- Reproduce the normal-UPM undefined-path failure with a retained Package
+  Manager/Node stack or obtain a known UPM-healthy disposable project, then run
+  one successful `editor launch` heartbeat handoff and one exact-PID
+  `editor restart` transition. Only after that live closure may M7 become PASS
+  and M8 option 2 begin.
 ```
 
 ## 18. First prompt for a new Codex session
