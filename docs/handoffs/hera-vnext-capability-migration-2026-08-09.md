@@ -1,6 +1,6 @@
-﻿# Hera vNext Capability Migration Handoff
+# Hera vNext Capability Migration Handoff
 
-Status: **M8 PASS; M9 EXEC PERFORMANCE A/B IS NEXT**
+Status: **M9 PASS; M10 CLEANUP AND ADMISSION REVIEW IS NEXT**
 
 Date: 2026-08-09
 
@@ -676,7 +676,7 @@ Record compile/load/execute/serialize timings and total CLI wall time.
 
 Only proceed with a new compiler architecture if the gain is material and repeatable across supported Unity buckets.
 
-Status: **PENDING PREVIOUS DECISIONS/FEATURES**
+Status: **PASS**
 
 ### M10: cleanup and admission review
 
@@ -1706,64 +1706,218 @@ Next exact step:
   any persistent compiler worker or fast-path architecture.
 ```
 
+### 2026-08-10 17:56 +09:00 - M9 exec performance A/B complete
+
+```text
+Status: PASS
+
+HEAD before: f24711c293004663c385c700f8020f073610402b
+HEAD after production measurement: f24711c293004663c385c700f8020f073610402b
+(no production source changed; the raw evidence and handoff update form the
+session-close documentation commit)
+Files changed:
+- docs/benchmarks/exec/m9-exec-performance-2026-08-10.json
+- docs/handoffs/hera-vnext-capability-migration-2026-08-09.md
+Behavior added/removed: none
+
+Scope and methodology:
+- Measured the current Hera exec pipeline only; no compiler-worker or fast-path
+  implementation was added.
+- Used the existing marked disposable Unity 6000.5.6f1 source-injected fixture
+  with exact current Connector 0.0.85 sources. Accepted measurements ran in
+  `-batchmode -nographics -noUpm`.
+- Added a fixture-only strict `m9_exec_benchmark` helper under the injected
+  `HeraAgent.Editor` asmdef. It accepts only an enum plus integer nonce and calls
+  `ExecuteCsharp.HandleCommand` with a fixed benign UnityEngine return snippet.
+  This measures the real exec compile/load/invoke/serialize pipeline without
+  consuming an arbitrary-code approval token for user-supplied C#.
+- Each outer benchmark invocation used the current source-built Hera CLI as a
+  separate process, so `cli_wall_ms` includes CLI startup, project discovery,
+  HTTP, router, response handling, and the inner exec work.
+- Raw accepted evidence is checked in at
+  `docs/benchmarks/exec/m9-exec-performance-2026-08-10.json`.
+
+Measured results:
+- First unique exec after fixture startup: 1,177.631 ms CLI wall;
+  149.283 ms handler, 142 ms compile, 1 ms load.
+- Warm unique no-cache exec: 351.838 ms CLI wall; 128.202 ms handler,
+  126 ms compile.
+- Twelve unique snippets in one Editor session averaged 326.065 ms CLI wall,
+  139.069 ms handler, and 136.000 ms compile.
+- Ten identical in-memory cache hits averaged 227.382 ms CLI wall while the
+  exec handler averaged 0.888 ms; compile/load/execute/serialize were all 0 ms.
+- After a real domain reload, the first unique exec was 1,191.188 ms CLI wall;
+  181.499 ms handler, 174 ms compile, and 1 ms load.
+- The pre-reload cached snippet then hit the disk DLL cache after reload:
+  194.766 ms CLI wall, 5.475 ms handler, 0 ms compile, 1 ms load, cache=1.
+  Repeating it immediately became a memory hit: 200.352 ms CLI wall,
+  1.233 ms handler, cache=2.
+- Five Restricted unique no-cache calls averaged 357.760 ms CLI wall,
+  149.175 ms handler, and 139.600 ms compile. Relative to the Full unique set,
+  the Restricted validation layers added about 10.1 ms at handler level; the
+  compile delta was within run-to-run noise.
+- A normal non-interactive `exec` preflight returned APPROVAL_REQUIRED in
+  889.535 ms and its token was discarded. The exec handler did not run. This
+  confirms that approval/control-plane latency is separate from compiler cost.
+- The explicit `editor refresh --compile` domain-reload cycle took 6,282.151 ms;
+  this is Editor recompilation/reload time, not exec compile time.
+
+A/B decision evidence:
+- The memory-cache path is an empirical zero-compile lower bound for the current
+  user-facing CLI architecture. Warm unique CLI wall averaged 326.065 ms versus
+  227.382 ms for memory hits, so even a hypothetical perfect compiler that costs
+  0 ms can save at most 98.684 ms, or 30.265%, on this warm-unique workload.
+  A real persistent worker would save less than that upper bound.
+- Compiler cost is not the dominant source of first-call latency. The first
+  startup call spent 142 ms compiling inside 1,177.631 ms total wall time
+  (~12.1%); the first post-domain-reload call spent 174 ms compiling inside
+  1,191.188 ms total (~14.6%).
+- Current Hera already uses Roslyn `/shared`, compiler prewarm, cached reference
+  response files, disk DLL cache, and in-memory Assembly cache. Fresh warm
+  compile is already roughly 0.14 s and the memory-hit handler is sub-millisecond.
+- At the pinned reference commit, its Compilation directory is 6,044 nonblank
+  C# LOC, including an 822-line shared worker host and 390-line Roslyn backend.
+  Current Hera's complete exec implementation including cache, serialization,
+  source building, loading, and Restricted validation is 1,881 nonblank C# LOC.
+  These are not line-for-line equivalent systems, but the worker architecture
+  would add substantial lifecycle/protocol/fallback/version-compat maintenance
+  for an end-to-end saving bounded below 100 ms in the measured warm workload.
+
+Architecture decision:
+- DO NOT add a persistent compiler worker or new compiler fast path.
+- Keep the current `/shared` + prewarm + disk DLL + in-memory Assembly cache
+  architecture.
+- If further exec latency work is requested later, measure the first-command
+  CLI/catalog/discovery/control-plane path before revisiting the compiler. The
+  measured cold/reload wall time shows more headroom outside compile itself.
+
+Benchmark harness correction:
+- The first GUI fixture attempt produced two CS0246 errors and Unity's Safe Mode
+  prompt because the temporary benchmark helper was initially placed under
+  `Assets/M9Qa`, causing it to compile into Assembly-CSharp without the
+  Newtonsoft.Json reference used by the Hera tool contract.
+- The fixture process was stopped immediately. The helper was moved under the
+  injected `HeraAgent.Editor` asmdef, where the exact current Hera sources
+  already compile with that reference. All accepted measurements came only
+  after the fixture returned to a clean ready state in batchmode.
+- The user's Inventoria Editor was never selected for this fixture mutation.
+  Inventoria remained PID 34236 / port 8090 / ready, and a read-only console
+  check returned zero matched errors. Existing Inventoria working-tree changes
+  were preserved and not modified.
+
+Repository gates:
+- `gofmt -l .`: PASS, no files reported.
+- `go vet ./...`: PASS.
+- `go test -count=1 ./...`: PASS, all packages.
+- `golangci-lint run ./...`: PASS, 0 issues.
+- `golangci-lint fmt --diff`: PASS, zero diff.
+- `go run ./tools/generate-runtime-contracts --check`: PASS.
+- `go run ./tools/sync-agent-guides --check`: PASS.
+- `go run ./tools/validate-connector-package`: PASS.
+- Raw benchmark JSON schema/count check: PASS, 33 accepted cases.
+- `git diff --check`: PASS; only the existing CRLF normalization warning was
+  emitted by Git.
+- The five-bucket Connector release gate was not re-run because M9 changed no
+  Connector source, asmdef, package dependency, test source, or package version.
+  M9's behavioral measurements used exact 0.0.85 source on Unity 6000.5.6f1;
+  M8 already retained the 5/5 compatibility evidence for that source.
+
+Surface and source deltas:
+- Production Go LOC delta: 0.
+- Production C# LOC delta: 0.
+- Tools: 31 -> 31.
+- Actions: 80 -> 80.
+- Normalized catalog bytes: 194,698 -> 194,698.
+- Connector source remains 0.0.85; CLI release remains v0.1.4.
+- No release, tag, push, package mutation, or user-project mutation was made.
+
+Open risks:
+- Absolute wall times are machine-specific. The A/B comparisons are same-host,
+  same-Editor-session measurements and should be rerun if the execution model or
+  supported compiler/runtime changes materially.
+- No cross-bucket worker benchmark was run because the candidate failed the
+  first admission gate: even a zero-cost compiler is bounded to less than
+  100 ms average warm-unique end-to-end savings on the measured bucket. Any
+  future worker proposal must bring new evidence and then prove the gain across
+  the supported Unity buckets before architecture changes.
+- First-command CLI/catalog/discovery overhead was identified but not decomposed
+  further because that is outside M9's compiler-architecture decision.
+
+Next exact step:
+- M10: cleanup and admission review. Remove only proven superseded helpers or
+  duplication, verify final catalog/LOC/dependency deltas, reconcile stale
+  handoff milestone labels, and run the final repository/Unity evidence gates.
+
+User decisions still blocked:
+- None.
+```
 ## 18. Next-session continuation snapshot
 
 ### Goal
 
-Continue with M9's exec performance A/B measurements. Do not begin a
-persistent compiler worker or fast-path implementation until the benchmark
-evidence justifies a separate decision.
+Continue with M10 cleanup and admission review. M9 rejected a persistent
+compiler worker on measured cost/benefit grounds; do not reopen that decision
+without new cross-bucket performance evidence or an explicit user request.
 
 ### Current state
 
-- M0 through M8 are complete and verified. M8's implementation is commit
-  `d1a1ae99ab48bcf5cbc81030b87fccae7f6841d0`
-  (`feat(exec): add restricted dynamic-code mode`). See the M8 progress entry
-  above for the full verification ledger instead of repeating it here.
-- `exec` defaults to Full Access; Restricted is an explicit opt-in and keeps
-  the same approval, operation-ledger, and strict-contract boundary.
-- The canonical catalog is 31 tools / 80 actions. Connector source is 0.0.85.
-- Inventoria was deliberately left on its installed Connector 0.0.84 and is
-  not M8 source-validation evidence.
+- M0 through M9 are complete and verified.
+- M9 changed no production code. Raw benchmark evidence is
+  `docs/benchmarks/exec/m9-exec-performance-2026-08-10.json`.
+- Warm unique exec averaged 326.065 ms CLI wall / 136 ms compile. Ten memory
+  cache hits averaged 227.382 ms CLI wall / 0.888 ms handler. The measured
+  perfect-compiler upper bound is therefore 98.684 ms end-to-end for the warm
+  unique workload, and a real worker would save less.
+- The architecture decision is to retain Roslyn `/shared`, compiler prewarm,
+  disk DLL cache, and in-memory Assembly cache. No persistent compiler worker or
+  fast path is approved or needed from current evidence.
+- `exec` defaults to Full Access; Restricted remains explicit opt-in with the
+  same approval, operation-ledger, and strict-contract boundary.
+- The canonical catalog remains 31 tools / 80 actions / 194,698 normalized
+  bytes. Connector source remains 0.0.85.
+- Inventoria remains on its installed Connector 0.0.84 and was not mutated by
+  the M9 fixture work.
 
 ### Decisions and open questions
 
-- There is no user decision blocking the start of M9: measure only.
-- Any persistent worker, compiler-process lifetime change, or new fast path
-  remains unapproved architecture work until M9 establishes a measured need
-  and the handoff records the resulting decision.
+- No user decision blocks M10.
+- Treat first-command CLI/catalog/discovery latency as a separate future
+  measurement target only if further exec latency optimization is requested.
+  Do not use it as justification for compiler-worker work.
 
 ### Next steps
 
 1. Read `docs/handoffs/ACTIVE.md`, this handoff, `AGENTS.md`, and `CLAUDE.md`;
-   then verify branch, status, current code, and exact selected Unity project.
-2. Run the M9 matrix already defined above: cold unique snippet, warm unique
-   snippet, exact cache hit, first call after domain reload, and multiple unique
-   snippets. Record wall time plus compile/load/execute/serialize timings.
-3. Compare the measured cost and document the result in this handoff. Stop at
-   evidence unless a later explicit user decision authorizes architecture work.
+   verify branch/status/current code before editing.
+2. Run M10 cleanup/admission review across the M1-M9 changes: remove only proven
+   dead/superseded code or true duplication, reconcile stale milestone labels,
+   inspect new dependencies, and keep public surface growth intentional.
+3. Record final production LOC, tool/action/catalog deltas and latency summary;
+   run the applicable repository gates and final Unity evidence before closing
+   the migration.
 
 ### References and environment gotchas
 
-- Primary code: `AgentConnector/Editor/Tools/ExecuteCsharp.cs` and
-  `AgentConnector/Editor/Tools/ExecuteCsharp.Restricted.cs`.
-- Contract/docs: `docs/COMMANDS.md` and
-  `docs/metrics/catalog-payload-baseline.json`.
-- The installed PATH CLI may lag repository source; use `go run .` when M9
-  needs the current CLI implementation.
-- A source-injected `-noUpm` fixture exposes 30 tools because
-  `manage_packages` is unavailable. Use a normal-UPM fixture for canonical
-  31-tool catalog evidence.
+- M9 raw evidence:
+  `docs/benchmarks/exec/m9-exec-performance-2026-08-10.json`.
+- Primary exec code: `AgentConnector/Editor/Tools/ExecuteCsharp.cs`,
+  `ExecuteCsharp.Compilation.cs`, `ExecCompileCache.cs`, and
+  `ExecuteCsharp.Restricted.cs`.
+- The installed PATH CLI may lag repository source; use `go run .` only for
+  repository-source verification when needed, following the existing execution
+  rules for normal CLI use.
+- A source-injected `-noUpm` fixture exposes 30 canonical built-in tools because
+  `manage_packages` is unavailable. Use normal-UPM evidence for the canonical
+  31-tool catalog when M10 rechecks the surface.
 - The Windows restart launcher already contains the ALLUSERSPROFILE repair.
   Do not regress it, and never auto-approve arbitrary-code tokens.
 
 ### Suggested skills
 
 - `hyper-mode` for repository implementation/verification discipline.
-- `hera-agent-unity` for live Editor bootstrap and performance evidence.
-- `omo:programming` only if M9 requires Go changes; `omo:debugging` for a real
-  runtime anomaly; `omo:git-master` when committing.
-
+- `hera-agent-unity` for live Editor and final evidence.
+- `omo:programming` only if M10 requires real production changes;
+  `omo:debugging` for a runtime anomaly; `omo:git-master` when committing.
 ## 19. First prompt for a new Codex session
 
 Use this from the repository root:
