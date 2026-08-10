@@ -202,7 +202,8 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # 30 [HeraTool] classes. Name= explicit unless noted
                       # (no Name= → filename snake_case). ExecCompileCache.cs is
                       # NOT a tool — internal helper for exec compile caching.
-                      #   exec        ExecuteCsharp
+                      #   exec        ExecuteCsharp (Full Access default + opt-in
+                      #               Restricted source/metadata/IL validation)
                       #   console     ReadConsole  /  log          LogToConsole
                       #   scene       ManageScene  /  menu          ExecuteMenuItem
                       #   screenshot  EditorScreenshot / profiler   ManageProfiler

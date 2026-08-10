@@ -115,6 +115,8 @@ new GameObject("X");
 
 > The CLI emits compact JSON automatically for non-human commands (anything outside `install/uninstall/status/update/doctor`). Pass `--compact-json` or set `HERA_AGENT_COMPACT_JSON=1` to force compact on a TTY too.
 
+> Full Access remains the `exec` default. Add `--security-mode restricted` only when the snippet can stay within platform APIs and should be denied file, network, process, reflection, native, threading, `UnityEditor`, and project-assembly access. Restricted mode is defense in depth; arbitrary-code permission, approval, the operation ledger, and the strict contract still apply.
+
 **[Rule 2]** Never return a `UnityEngine.Object` directly. `Transform`, `GameObject`, `Component`, `Scene`, `Material`, etc. expand to thousands of bytes of reflected properties.
 
 ```cs
@@ -582,7 +584,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | Command | Purpose | Key flags |
 |---|---|---|
 | `call <tool>` | Validate and invoke a live strict tool contract | `--json`, `--file`, stdin, `--profile`, `--validate-only`, `--explain` |
-| `exec <code>` | Run C# in Editor | `--usings`, `--check`, `--depth N`, `--stacktrace {none\|user\|full}`, `--strict`, `--no-cache` |
+| `exec <code>` | Run C# in Editor | `--usings`, `--check`, `--depth N`, `--stacktrace {none\|user\|full}`, `--strict`, `--no-cache`, `--security-mode full\|restricted` |
 | `console` | Read/clear log entries | `--type error,warning,log`, `--lines N`, `--stacktrace`, `--clear`, `--since N` |
 | `scene info` / `load` / `save` / `close` / `list` | Scene management | `--mode single\|additive\|additive_without_loading` (load) |
 | `editor launch \| restart \| play \| stop \| pause \| refresh` | Editor lifecycle | exact `--project`, `--hub-root` (bootstrap); `--wait` (play); `--compile`, `--force` (refresh) |
@@ -625,6 +627,7 @@ Common `code` values you might branch on:
 - `EXEC_COMPILE_ERROR` — `data.compile_errors: [{line, col, error_code, message}, ...]`. `line` is relative to the user snippet (1-based); errors that fall inside the internal wrapper (e.g. a bad `--usings` namespace) report the raw csc line as a fallback.
 - `EXEC_RUNTIME_ERROR` — `data.exception_type`, `data.stack_trace` (user-filtered unless `--stacktrace full`). The synthetic wrapper frame is collapsed to `at (your snippet)` in user-filtered mode; pass `--stacktrace full` to see the raw `__CliDynamic.Execute` frame.
 - `EXEC_LOGGED_ERROR` — `--strict` mode only. `data.logged_errors: [{type, message}, ...]`, `data.returned` is the value the snippet would have returned.
+- `EXEC_RESTRICTED_SOURCE_DENIED` / `EXEC_RESTRICTED_METADATA_DENIED` / `EXEC_RESTRICTED_IL_DENIED` — `--security-mode restricted` rejected the snippet before compile, before assembly load, or after load but before invocation. `data.stage` and `data.violation` identify the failed layer.
 - `EXEC_CSC_NOT_FOUND` / `EXEC_DOTNET_NOT_FOUND` — `suggestions[]` tells the user how to recover
 - `EXEC_COMPILE_TIMEOUT` — 30s csc timeout
 - `UNKNOWN_COMMAND` — typo'd command name. `data.did_you_mean: [...]` lists up to 3 commands within Levenshtein distance 2; act on the first match before re-running `list --compact`.

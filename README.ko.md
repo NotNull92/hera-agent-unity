@@ -753,6 +753,7 @@ Domain Reload와 장기 작업은 파일시스템 상태를 사용해 HTTP liste
 - 상태를 바꾸는 `exec`는 보통 큰 결과를 반환하지 말고 `null` 또는 무반환을 사용합니다.
 - 정말 필요하지 않다면 `UnityEngine.Object` 전체를 반환하지 않습니다.
 - 로그 에러가 CLI 실패로 보여야 하면 `--strict` 또는 예외를 사용합니다.
+- 플랫폼 API만 필요한 코드에서 파일·네트워크·프로세스·리플렉션·네이티브·스레드·`UnityEditor`·프로젝트 어셈블리 접근을 막으려면 `--security-mode restricted`를 사용합니다. 기본값은 기존 Full Access입니다.
 - 실행하지 않고 컴파일만 확인하려면 `exec --check`를 사용합니다.
 - 오래 걸리는 비동기 작업은 한 번 실행하고 끝나는 `exec` 안에서 떼어내기보다 추적 가능한 `[HeraTool]`, task, test 흐름으로 표현하는 편이 안전합니다.
 

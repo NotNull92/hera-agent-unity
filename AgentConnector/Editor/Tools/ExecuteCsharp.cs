@@ -55,6 +55,12 @@ namespace HeraAgent.Tools
             [ToolParameter("Capture Debug.LogError/LogException/LogAssert raised during the snippet and surface them as EXEC_LOGGED_ERROR even if Execute() returned normally.")]
             public bool Strict { get; set; }
 
+            [ToolParameter(
+                "Dynamic-code security mode. 'full' preserves unrestricted access (default); 'restricted' blocks external I/O, native/process/reflection APIs, UnityEditor APIs, and non-platform assembly references before execution.",
+                Aliases = new[] { "security-mode" },
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"full\",\"restricted\"]}")]
+            public string SecurityMode { get; set; }
+
             [ToolParameter("Max object graph depth in serialized return value (default 3, max 8).")]
             public int Depth { get; set; }
         }
@@ -85,9 +91,21 @@ namespace HeraAgent.Tools
             var stacktrace = (p.Get("stacktrace") ?? "user").ToLowerInvariant();
             var strict = p.GetBool("strict");
             var depth = ClampDepth(p.GetInt("depth") ?? 0);
+            var securityMode = (p.Get("security_mode") ?? p.Get("security-mode") ?? "full").ToLowerInvariant();
+            if (securityMode != "full" && securityMode != "restricted")
+                return new ErrorResponse("INVALID_ARGUMENT",
+                    "'security_mode' must be 'full' or 'restricted'.");
+            var restricted = securityMode == "restricted";
+
+            if (restricted)
+            {
+                var sourceError = ValidateRestrictedSource(code, extraUsings);
+                if (sourceError != null) return sourceError;
+                depth = Math.Min(depth, 2);
+            }
 
             var built = BuildSource(code, extraUsings);
-            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth, strict);
+            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth, strict, restricted);
         }
 
         /// <summary>
@@ -115,7 +133,7 @@ namespace HeraAgent.Tools
             }
         }
 
-        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth, bool strict)
+        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth, bool strict, bool restricted)
         {
             var timings = new Dictionary<string, long>();
             string cacheKey = null;
@@ -124,7 +142,8 @@ namespace HeraAgent.Tools
                 try
                 {
                     var compilationIdentity = ExecCompileCache.GetCompilationIdentity(cscOverride, dotnetOverride, LangVersion);
-                    cacheKey = ExecCompileCache.ComputeKey(source, LangVersion, compilationIdentity);
+                    var cacheSource = restricted ? source + "\n// hera restricted cache v1" : source;
+                    cacheKey = ExecCompileCache.ComputeKey(cacheSource, LangVersion, compilationIdentity);
                 }
                 catch (Exception ex)
                 {
@@ -144,6 +163,11 @@ namespace HeraAgent.Tools
                 timings["compile_ms"] = 0;
                 timings["load_ms"] = 0;
                 cacheState = 2;
+                if (restricted)
+                {
+                    var ilError = ValidateRestrictedIl(compiled);
+                    if (ilError != null) return ilError;
+                }
                 if (compileOnly)
                 {
                     timings["cache"] = cacheState;
@@ -156,6 +180,12 @@ namespace HeraAgent.Tools
             var dllPath = noCache ? null : Path.Combine(ExecCompileCache.BinCacheDir, cacheKey + ".dll");
             if (compiled == null && dllPath != null && File.Exists(dllPath))
             {
+                var cachedBytes = File.ReadAllBytes(dllPath);
+                if (restricted)
+                {
+                    var metadataError = ValidateRestrictedMetadata(cachedBytes);
+                    if (metadataError != null) return metadataError;
+                }
                 if (compileOnly)
                 {
                     // A prior successful compile produced this DLL — sufficient
@@ -169,8 +199,17 @@ namespace HeraAgent.Tools
                 var loadSw = Stopwatch.StartNew();
                 try
                 {
-                    var loaded = LoadAssembly(File.ReadAllBytes(dllPath), cacheKey);
+                    var loaded = LoadAssembly(cachedBytes, cacheKey);
                     compiled = loaded.Assembly;
+                    if (restricted)
+                    {
+                        var ilError = ValidateRestrictedIl(compiled);
+                        if (ilError != null)
+                        {
+                            ExecCompileCache.TryUnload(loaded.LoadContext);
+                            return ilError;
+                        }
+                    }
                     ExecCompileCache.StoreAssembly(cacheKey, compiled, loaded.LoadContext);
                     timings["compile_ms"] = 0;
                     timings["load_ms"] = loadSw.ElapsedMilliseconds;
@@ -193,6 +232,12 @@ namespace HeraAgent.Tools
                 {
                     ResponseTimings.Merge(compileResult.Error, timings);
                     return compileResult.Error;
+                }
+
+                if (restricted)
+                {
+                    var metadataError = ValidateRestrictedMetadata(compileResult.Bytes);
+                    if (metadataError != null) return metadataError;
                 }
 
                 if (!noCache)
@@ -234,6 +279,15 @@ namespace HeraAgent.Tools
                 timings["load_ms"] = loadSw.ElapsedMilliseconds;
 
                 compiled = loaded.Assembly;
+                if (restricted)
+                {
+                    var ilError = ValidateRestrictedIl(compiled);
+                    if (ilError != null)
+                    {
+                        ExecCompileCache.TryUnload(loaded.LoadContext);
+                        return ilError;
+                    }
+                }
                 if (!noCache)
                     ExecCompileCache.StoreAssembly(cacheKey, compiled, loaded.LoadContext);
                 else

@@ -21,6 +21,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and package-list requests from failing with an undefined path after
   `editor launch` or `editor restart`.
 
+### Added (Connector 0.0.85)
+
+- Added explicit `exec --security-mode restricted` defense in depth while
+  preserving Full Access as the default. Restricted snippets pass source,
+  pre-load metadata, and post-load IL validation before invocation.
+- Restricted mode denies external I/O, process/native/reflection/threading,
+  `UnityEditor`, and non-platform assembly access, and keeps Unity object
+  results shallow. Existing arbitrary-code permission, approval, ledger, and
+  strict-contract gates remain unchanged.
+
 ### Added (Connector 0.0.84)
 
 - Extended `screenshot` with bounded 3D physics evidence sampled through the

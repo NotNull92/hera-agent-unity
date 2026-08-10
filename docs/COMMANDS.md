@@ -185,6 +185,7 @@ echo '<code>' | hera-agent-unity exec [flags]
 | `--csc` | Path to csc compiler | Auto-detected |
 | `--dotnet` | Path to dotnet runtime | Auto-detected |
 | `--no-cache` | Bypass exec caches; do not read or write cached assemblies or disk DLLs | `false` |
+| `--security-mode` | `full` preserves unrestricted access; `restricted` enables source, pre-load metadata, and post-load IL validation | `full` |
 | `--depth` | Maximum returned object-graph depth. At depths `1` and `2`, every `UnityEngine.Object` is the compact `{name, type, instanceID}` shape; depth `3` (default) and above reflect its public members. | `3` (max `8`) |
 
 ```bash
@@ -199,6 +200,9 @@ echo 'return EditorSceneManager.GetActiveScene().name;' | hera-agent-unity exec
 
 # Custom usings for ECS
 hera-agent-unity exec "return World.All.Count;" --usings Unity.Entities
+
+# Opt in to defense-in-depth restrictions for a platform-only inspection
+hera-agent-unity exec "return Application.unityVersion;" --security-mode restricted
 ```
 
 **Default usings**: `System`, `System.Collections.Generic`, `System.IO`, `System.Linq`, `System.Reflection`, `System.Threading.Tasks`, `UnityEngine`, `UnityEngine.SceneManagement`, `UnityEditor`, `UnityEditor.SceneManagement`, `UnityEditorInternal`
@@ -206,6 +210,8 @@ hera-agent-unity exec "return World.All.Count;" --usings Unity.Entities
 **Note**: Use `return` for output. Use `return null;` for void operations.
 
 **Return-size control**: Prefer `--depth 1` or `--depth 2` when returning a `GameObject`, `Transform`, `Component`, or other `UnityEngine.Object`. Both depths preserve only its name, runtime type, and instance ID; use depth `3` only when the reflected member graph is required.
+
+**Restricted mode**: `--security-mode restricted` is an explicit defense-in-depth mode. It rejects dangerous source constructs before compilation, rejects native interop and non-platform assembly references from compiled metadata before loading, and validates actual IL call targets after loading but before `Execute()`. File, network, process, reflection, threading, dynamic-loading, `UnityEditor`, and user/third-party assembly access are denied. Returned `UnityEngine.Object` values are forced to the shallow depth-2 shape. The normal arbitrary-code permission, approval, operation ledger, and strict tool contract still apply; Restricted does not replace them. Full Access remains the default for compatibility.
 
 **Caching**: Compiled assemblies are cached in `Library/HeraAgentCache/` and held in memory. The cache key includes the source, reference-set hash, language version, and a versioned compiler/compilation fingerprint, so incompatible compiler inputs cannot reuse an old DLL. The first call per Unity session is the cold path (csc invocation); identical follow-up calls skip both compile and load. Cache invalidates automatically on assembly reload. `--no-cache` bypasses every exec cache read and write: it compiles against transient reference arguments, does not load or store cached assemblies, and does not persist a DLL — including with `--check`.
 

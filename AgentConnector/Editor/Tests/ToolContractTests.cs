@@ -68,6 +68,7 @@ namespace HeraAgent.Tests
             allPassed &= TestM24AliasesNormalize();
             allPassed &= TestM24MutuallyExclusiveTargets();
             allPassed &= TestM24OutputSchemas();
+            allPassed &= TestM8RestrictedExecContract();
 
             if (allPassed)
                 Debug.Log("[ToolContractTests] ALL PASSED");
@@ -1528,6 +1529,39 @@ namespace HeraAgent.Tests
                 && menuPositional.IsValid
                 && menuPositional.Normalized.Value<string>("menu_path") == "Assets/Refresh"
                 && logLevelAliases);
+        }
+
+        private static bool TestM8RestrictedExecContract()
+        {
+            var contract = ToolContractRegistry.Get("exec");
+            var restricted = ToolContractValidator.Validate(
+                contract,
+                new JObject
+                {
+                    ["code"] = "return 1;",
+                    ["security_mode"] = "restricted",
+                });
+            var dashed = ToolContractValidator.Validate(
+                contract,
+                new JObject
+                {
+                    ["code"] = "return 1;",
+                    ["security-mode"] = "restricted",
+                });
+            var invalid = ToolContractValidator.Validate(
+                contract,
+                new JObject
+                {
+                    ["code"] = "return 1;",
+                    ["security_mode"] = "unknown",
+                });
+
+            return Expect(nameof(TestM8RestrictedExecContract),
+                restricted.IsValid
+                && restricted.Normalized.Value<string>("security_mode") == "restricted"
+                && dashed.IsValid
+                && dashed.Normalized.Value<string>("security_mode") == "restricted"
+                && invalid.Error?.code == "INVALID_ARGUMENT");
         }
 
         private static bool TestM24MutuallyExclusiveTargets()

@@ -749,6 +749,7 @@ Architecture details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 - Side-effecting `exec` snippets should normally return `null` or nothing rather than a large status object.
 - Do not return a full `UnityEngine.Object` unless you truly need its reflected graph.
 - Use `--strict` or throw an exception when a logged error must fail the CLI operation.
+- Use `--security-mode restricted` when a snippet only needs platform APIs and should be denied file, network, process, reflection, native, threading, `UnityEditor`, and project-assembly access. Full Access remains the default.
 - Use `exec --check` when you want to compile-check a snippet without executing it.
 - Long asynchronous workflows are better represented as tracked `[HeraTool]` actions or durable task/test operations than as detached work inside a one-shot `exec`.
 
