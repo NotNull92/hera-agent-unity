@@ -917,8 +917,9 @@ hera-agent-unity menu list --filter "Tools/" --limit 50
 ## screenshot
 
 Capture a screenshot of the Unity editor or an isolated GameObject. Game View
-captures can also return bounded, identity-first uGUI metadata, or return that
-metadata alone without rendering or writing PNG pixels.
+captures can also return bounded, identity-first uGUI or visible 3D collider
+metadata, or return that metadata alone without rendering or writing PNG
+pixels.
 
 ```bash
 hera-agent-unity screenshot [flags]
@@ -940,12 +941,21 @@ hera-agent-unity screenshot [flags]
 | `--annotate_ui` | Add active uGUI Selectable identity, interaction, blocking, and coordinate metadata to a Game View capture | `false` |
 | `--annotations_only` | Return UI metadata without rendering or writing PNG pixels; implies Game View annotation and rejects PNG output/overwrite flags | `false` |
 | `--max_annotations` | Maximum number of UI elements returned (`1..100`) | `32` |
+| `--annotate_physics` | Add visible 3D collider identity and coordinates sampled through the live `Camera.main` | `false` |
+| `--physics_only` | Return 3D physics evidence without rendering or writing PNG pixels; implies Game View physics annotation and rejects PNG output/overwrite flags | `false` |
+| `--physics_grid_size` | Square sampling density (`1..16`, so at most 256 rays) | `9` |
+| `--max_physics_hits` | Maximum clustered collider candidates returned (`1..100`) | `32` |
+| `--physics_layer_mask` | Signed 32-bit physics layer mask, intersected with `Camera.main.cullingMask` | camera culling mask |
+| `--physics_max_distance` | Positive ray distance, at most 100000 world units | camera far clip plane |
+| `--physics_query_triggers` | `use_global`, `ignore`, or `collide` | `use_global` |
 
 ```bash
 hera-agent-unity screenshot
 hera-agent-unity screenshot --view game
 hera-agent-unity screenshot --view game --annotate_ui --max_annotations 50
 hera-agent-unity screenshot --annotations_only
+hera-agent-unity screenshot --physics_only --physics_grid_size 9
+hera-agent-unity screenshot --view game --annotate_physics --physics_layer_mask -1
 hera-agent-unity screenshot --width 3840 --height 2160
 hera-agent-unity screenshot --output_path captures/my_scene.png
 hera-agent-unity screenshot --isolated --target /Player --output_path captures/player.png
@@ -963,6 +973,16 @@ captured Game View window can include editor chrome. Results are path-sorted,
 bounded by `max_annotations`, and report total/skipped/truncated counts. An
 active `EventSystem` is required. Isolated capture cannot be combined with UI
 annotation.
+
+Physics entries identify both the hit GameObject and its 3D `Collider`, then
+report layer, representative hit distance/point/normal, sample count, and
+input/image point and sampled coverage bounds. Hera casts one nearest-hit ray
+per bounded grid cell, intersects the requested physics mask with the live
+camera culling mask, groups samples by collider, sorts by sample count and
+stable identity, and truncates only after clustering. `physics_raycast` reports
+the camera identity, requested/camera/effective masks, grid and ray counts,
+distance, and trigger policy. An active camera tagged `MainCamera` is required.
+This path does not scan scene colliders and does not include Physics2D.
 
 ---
 

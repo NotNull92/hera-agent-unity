@@ -26,6 +26,7 @@ namespace HeraAgent.Tests
             nameof(OutputFilePolicy),
             nameof(ProjectIdentity),
             nameof(ScreenshotAnnotations),
+            nameof(ScreenshotPhysics),
             nameof(ToolCatalog),
             nameof(ToolContract),
             nameof(ToolDiscovery),
@@ -60,6 +61,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void ScreenshotAnnotations() => ScreenshotAnnotationTests.RunTests();
+
+        [Test]
+        public void ScreenshotPhysics() => ScreenshotPhysicsTests.RunTests();
 
         [Test]
         public void ToolCatalog() => ToolCatalogTests.RunTests();

@@ -10,7 +10,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "screenshot",
-        Description = "Capture a Scene/Game view or isolated target, with optional bounded uGUI identity and input-coordinate annotations.",
+        Description = "Capture a Scene/Game view or isolated target, with optional bounded uGUI or 3D physics identity and input-coordinate evidence.",
         Profiles = new[] { "core", "scene", "ui", "diagnostics", "testing" },
         RiskClass = HeraRiskClass.Write,
         Reversible = true,
@@ -106,6 +106,46 @@ namespace HeraAgent.Tools
                 Required = false,
                 SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":100}")]
             public int MaxAnnotations { get; set; }
+
+            [ToolParameter(
+                "Attach bounded 3D collider identity and input-coordinate evidence sampled through Camera.main. Game view only.",
+                Required = false)]
+            public bool AnnotatePhysics { get; set; }
+
+            [ToolParameter(
+                "Return 3D physics evidence without resolving an output path, rendering pixels, encoding PNG, or writing a file. Implies annotate_physics and defaults view to game.",
+                Required = false)]
+            public bool PhysicsOnly { get; set; }
+
+            [ToolParameter(
+                "Square 3D raycast grid density (default 9, maximum 16; at most 256 rays).",
+                Required = false,
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":16}")]
+            public int PhysicsGridSize { get; set; }
+
+            [ToolParameter(
+                "Maximum clustered 3D collider results returned (default 32, maximum 100).",
+                Required = false,
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":100}")]
+            public int MaxPhysicsHits { get; set; }
+
+            [ToolParameter(
+                "Optional 3D physics layer mask, intersected with Camera.main.cullingMask (default: camera culling mask).",
+                Required = false,
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":-2147483648,\"maximum\":2147483647}")]
+            public int PhysicsLayerMask { get; set; }
+
+            [ToolParameter(
+                "Maximum 3D raycast distance in world units (default: Camera.main far clip plane).",
+                Required = false,
+                SchemaJson = "{\"type\":\"number\",\"minimum\":0.0001,\"maximum\":100000}")]
+            public float PhysicsMaxDistance { get; set; }
+
+            [ToolParameter(
+                "3D trigger handling for physics evidence.",
+                Required = false,
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"use_global\",\"ignore\",\"collide\"]}")]
+            public string PhysicsQueryTriggers { get; set; }
         }
 
         public static object HandleCommand(JObject @params)
@@ -116,7 +156,10 @@ namespace HeraAgent.Tools
             var p = new ToolParams(@params);
             var annotationsOnly = p.GetBool("annotations_only");
             var annotateUi = p.GetBool("annotate_ui") || annotationsOnly;
-            var view = p.Get("view", annotateUi ? "game" : "scene").ToLowerInvariant();
+            var physicsOnly = p.GetBool("physics_only");
+            var annotatePhysics = p.GetBool("annotate_physics") || physicsOnly;
+            var wantsEvidence = annotateUi || annotatePhysics;
+            var view = p.Get("view", wantsEvidence ? "game" : "scene").ToLowerInvariant();
             var width = p.GetInt("width", DefaultWidth).Value;
             var height = p.GetInt("height", DefaultHeight).Value;
             var wantsIsolated = p.GetBool("isolated")
@@ -134,12 +177,27 @@ namespace HeraAgent.Tools
                     return new ErrorResponse(
                         "SCREENSHOT_UI_ANNOTATION_ISOLATED_CONFLICT",
                         "[Hera] I can't combine uGUI annotations with isolated GameObject rendering.");
+                if (annotatePhysics && view != "game")
+                    return new ErrorResponse(
+                        "SCREENSHOT_PHYSICS_EVIDENCE_REQUIRES_GAME_VIEW",
+                        "[Hera] I can collect 3D physics evidence only in the game view coordinate space.");
+                if (annotatePhysics && wantsIsolated)
+                    return new ErrorResponse(
+                        "SCREENSHOT_PHYSICS_EVIDENCE_ISOLATED_CONFLICT",
+                        "[Hera] I can't combine 3D physics evidence with isolated GameObject rendering.");
                 if (annotationsOnly &&
                     (p.GetRaw("output_path") != null || p.GetBool("overwrite")))
                 {
                     return new ErrorResponse(
                         "SCREENSHOT_ANNOTATIONS_ONLY_OUTPUT_CONFLICT",
                         "[Hera] I don't accept output_path or overwrite when annotations_only skips all PNG work.");
+                }
+                if (physicsOnly &&
+                    (p.GetRaw("output_path") != null || p.GetBool("overwrite")))
+                {
+                    return new ErrorResponse(
+                        "SCREENSHOT_PHYSICS_ONLY_OUTPUT_CONFLICT",
+                        "[Hera] I don't accept output_path or overwrite when physics_only skips all PNG work.");
                 }
 
                 var (maxAnnotations, maxError) = ParseMaxAnnotations(p);
@@ -151,8 +209,24 @@ namespace HeraAgent.Tools
                     if (collected.error != null) return collected.error;
                     annotations = collected.annotations;
                 }
-                if (annotationsOnly)
-                    return BuildAnnotationsOnlyResponse(annotations);
+                ScreenshotPhysicsAnnotationCollection physicsAnnotations = null;
+                if (annotatePhysics)
+                {
+                    var collected = CollectPhysicsAnnotations(p);
+                    if (collected.error != null) return collected.error;
+                    physicsAnnotations = collected.annotations;
+                }
+                if (annotationsOnly || physicsOnly)
+                {
+                    object evidenceResponse = new SuccessResponse(
+                        "Screenshot evidence collected without capturing pixels",
+                        new { pixels_requested = false });
+                    if (annotations != null)
+                        evidenceResponse = AttachUiAnnotations(evidenceResponse, annotations, 0, 0);
+                    if (physicsAnnotations != null)
+                        evidenceResponse = AttachPhysicsAnnotations(evidenceResponse, physicsAnnotations, 0, 0);
+                    return evidenceResponse;
+                }
 
                 var overwrite = p.GetBool("overwrite");
                 if (!OutputFilePolicy.TryResolvePng(
@@ -179,9 +253,11 @@ namespace HeraAgent.Tools
                     default:
                         return new ErrorResponse("INVALID_PARAM", $"Unknown view '{view}'. Valid: scene, game.");
                 }
-                return annotations == null
-                    ? response
-                    : AttachUiAnnotations(response, annotations, width, height);
+                if (annotations != null)
+                    response = AttachUiAnnotations(response, annotations, width, height);
+                if (physicsAnnotations != null)
+                    response = AttachPhysicsAnnotations(response, physicsAnnotations, width, height);
+                return response;
             }
             catch (Exception e)
             {

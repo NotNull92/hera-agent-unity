@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.84)
+
+- Extended `screenshot` with bounded 3D physics evidence sampled through the
+  live `Camera.main`, constrained by camera culling and an optional physics
+  layer mask.
+- Added collider clustering, stable GameObject/collider identity, explicit
+  image/input coordinates, configurable trigger handling, and `physics_only`
+  metadata mode without PNG work. The square sampling grid is capped at 16x16
+  rays and responses at 100 collider candidates.
+
 ### Added (Connector 0.0.83)
 
 - Extended `screenshot` with bounded uGUI identity, reachability, blocking, and

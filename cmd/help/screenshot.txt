@@ -1,7 +1,7 @@
 Usage: hera-agent-unity screenshot [options]
 
 Capture a screenshot of the Unity editor, an isolated GameObject, or bounded
-identity-first metadata for active uGUI Selectables.
+identity-first metadata for active uGUI Selectables and visible 3D colliders.
 
 Options:
   --view <mode>      scene (default), game
@@ -24,16 +24,29 @@ Options:
                      coordinate metadata to a Game View screenshot
   --annotations_only Return the same UI metadata without rendering or writing PNG pixels
   --max_annotations <N>  Maximum UI elements returned, 1..100 (default: 32)
+  --annotate_physics Add bounded 3D collider identity and coordinates sampled
+                     through Camera.main
+  --physics_only     Return the same 3D physics evidence without PNG work
+  --physics_grid_size <N> Square grid density, 1..16 (default: 9; at most 256 rays)
+  --max_physics_hits <N> Maximum clustered colliders, 1..100 (default: 32)
+  --physics_layer_mask <N> Signed 32-bit physics mask intersected with camera culling
+  --physics_max_distance <N> Positive ray distance, at most 100000 (default: camera far clip)
+  --physics_query_triggers <mode> use_global, ignore, or collide (default: use_global)
 
 UI annotations require an active EventSystem and Game View coordinates. Input
 coordinates use bottom-left origin with Y up; image coordinates use top-left
-origin with Y down. Annotation-only mode rejects PNG output/overwrite options.
+origin with Y down. Physics evidence requires an active Camera tagged
+MainCamera, samples only the nearest visible 3D Collider per grid point, and
+clusters results by collider. Metadata-only modes reject PNG output/overwrite
+options. Physics2D colliders are not included.
 
 Examples:
   hera-agent-unity screenshot
   hera-agent-unity screenshot --view game
   hera-agent-unity screenshot --view game --annotate_ui --max_annotations 50
   hera-agent-unity screenshot --annotations_only
+  hera-agent-unity screenshot --physics_only --physics_grid_size 9
+  hera-agent-unity screenshot --view game --annotate_physics --physics_layer_mask -1
   hera-agent-unity screenshot --view scene --width 3840 --height 2160
   hera-agent-unity screenshot --output_path captures/my_scene.png
   hera-agent-unity screenshot --isolated --target /Player --output_path captures/player.png

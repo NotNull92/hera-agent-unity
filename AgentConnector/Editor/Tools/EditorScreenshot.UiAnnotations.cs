@@ -141,15 +141,6 @@ namespace HeraAgent.Tools
             return (result, null);
         }
 
-        private static object BuildAnnotationsOnlyResponse(
-            ScreenshotUiAnnotationCollection annotations)
-        {
-            var response = new SuccessResponse(
-                "UI annotations collected without capturing pixels",
-                new { pixels_requested = false });
-            return AttachUiAnnotations(response, annotations, 0, 0);
-        }
-
         private static object AttachUiAnnotations(
             object response,
             ScreenshotUiAnnotationCollection annotations,
@@ -168,34 +159,11 @@ namespace HeraAgent.Tools
             data["ui_annotations_skipped"] = annotations.skipped;
             data["ui_annotations_truncated"] = annotations.truncated;
             data["ui_annotations_limit"] = annotations.max_annotations;
-            data["coordinate_spaces"] = JObject.FromObject(new
-            {
-                input = new
-                {
-                    name = "unity_screen_bottom_left_pixels",
-                    origin = "bottom_left",
-                    y_axis = "up",
-                    width = annotations.game_view_width,
-                    height = annotations.game_view_height,
-                },
-                image = new
-                {
-                    name = "game_view_top_left_pixels",
-                    origin = "top_left",
-                    y_axis = "down",
-                    width = annotations.game_view_width,
-                    height = annotations.game_view_height,
-                },
-                captured_png = pixelsRequested
-                    ? new
-                    {
-                        width = capturedWidth,
-                        height = capturedHeight,
-                        annotation_coordinates = "game_view_top_left_pixels",
-                        includes_editor_window_chrome = true,
-                    }
-                    : null,
-            });
+            data["coordinate_spaces"] = CreateCoordinateSpaces(
+                annotations.game_view_width,
+                annotations.game_view_height,
+                capturedWidth,
+                capturedHeight);
             success.data = data;
             return success;
         }
