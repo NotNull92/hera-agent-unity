@@ -1,5 +1,5 @@
 # Release Rules
-<!-- last-analyzed: 2026-08-03T23:13:59Z -->
+<!-- last-analyzed: 2026-08-10T12:45:00Z -->
 
 ## Version Sources
 
@@ -25,9 +25,9 @@
 - GitHub Actions creates a GitHub Release and uploads native binaries after a successful `v*` tag build.
 - The npm wrapper is published by `.github/workflows/npm-publish.yml` through npm trusted publishing and GitHub OIDC. Stable release publication can trigger it, and maintainers can dispatch it with a matching `release_tag`.
 - The Unity Connector is installed from the Git repository and can be pinned to `connector-<version>`.
-- OpenUPM mirrors the tagged Connector package; registry `latest` was `0.0.80` at the last analysis.
+- OpenUPM mirrors the tagged Connector package; registry `latest` is `0.0.86` as verified on 2026-08-10.
 - The publisher-owned Codex catalog lives at `.agents/plugins/marketplace.json`; HOL mirrors are scanner-gated by `.github/workflows/hol-plugin-scanner.yml`.
-- The shipped MCP adapter is not yet registered in the official MCP Registry. The next npm release needs `mcpName`, a root `server.json`, and registry publication automation.
+- The shipped MCP adapter is registered in the official MCP Registry; successful npm trusted publication triggers the matching OIDC-backed Registry publication workflow.
 
 ## Release Notes Strategy
 
@@ -42,6 +42,6 @@
 - `.github/workflows/npm-publish.yml`
 - `.github/workflows/hol-plugin-scanner.yml`
 
-## First-Time Setup Gaps
+## Current publication gaps
 
-- Official MCP Registry publication is not configured; published npm `0.1.1` does not contain the required `mcpName` ownership metadata.
+- No blocking gap remains for GitHub Release, npm, OpenUPM, or official MCP Registry publication. Curated third-party listings remain separately owned distribution channels.
