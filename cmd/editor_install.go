@@ -74,7 +74,7 @@ func resolveUnityExecutable(version, hubRoot string) (string, error) {
 	}
 	info, err := os.Stat(executable)
 	if err != nil || info.IsDir() {
-		return "", fmt.Errorf("Unity %s is not installed at %s; pass --hub-root or set UNITY_HUB_EDITOR", version, executable)
+		return "", fmt.Errorf("unity %s is not installed at %s; pass --hub-root or set UNITY_HUB_EDITOR", version, executable)
 	}
 	return filepath.Clean(executable), nil
 }
