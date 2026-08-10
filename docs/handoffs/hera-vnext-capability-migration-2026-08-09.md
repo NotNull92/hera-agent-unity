@@ -1,6 +1,6 @@
 ﻿# Hera vNext Capability Migration Handoff
 
-Status: **READY FOR M5**
+Status: **READY FOR M6**
 
 Date: 2026-08-09
 
@@ -616,7 +616,7 @@ Requirements:
 - coordinate-space naming is explicit,
 - no duplicate EventSystem inspection logic if existing `InputQaResolver` can be reused cleanly.
 
-Status: **PENDING M4**
+Status: **PASS**
 
 ### M6: 3D physics/raycast evidence
 
@@ -1261,12 +1261,103 @@ Preservation:
   exact temporary project command line were verified. The separate no-Input-
   System fixture had already been stopped; both fixture directories remain in
   system temp for recoverable evidence inspection.
-- No M5-M8 work was started out of order.
+- No M6-M8 work was started out of order.
 
 Next exact step:
-- M5: add per-call execution budgeting and cancellation across router, exec,
-  batch, long-running editor waits, tests, and input without weakening existing
-  operation-ledger/no-blind-retry behavior.
+- M6: add bounded 3D physics/raycast evidence through the existing input/evidence
+  architecture, using the live camera plus layer/culling constraints and stable
+  collider identity.
+```
+
+### 2026-08-10 - M5 screenshot UI annotation and annotation-only mode complete
+
+```text
+Status: PASS
+
+Implemented contract:
+- Extended the existing strict `screenshot` tool; no new top-level tool or
+  action was added. `annotate_ui` enriches Game View captures and
+  `annotations_only` returns the same metadata without resolving an output
+  path, rendering pixels, encoding PNG, or writing a file.
+- Annotation candidates are active uGUI `Selectable` objects, ordered by stable
+  hierarchy path then instance ID and bounded to 1..100 entries (default 32).
+- Each entry is identity-first: instance_id, hierarchy_path, name, type,
+  interactable state, non-interactable reason, blocked_by identity, raycast
+  target state, and point/bounds coordinates.
+- Input coordinates are named `unity_screen_bottom_left_pixels`; image
+  coordinates are named `game_view_top_left_pixels`. The response reports both
+  spaces and dimensions separately from captured PNG dimensions/editor chrome.
+- Existing `InputQaEventSystem.BuildInspection` performs reachability/blocker
+  inspection and `InputQaResolver` now owns the shared world/RectTransform to
+  screen conversion. No second EventSystem raycast implementation was added.
+- Annotation-only rejects PNG output/overwrite flags before any file policy or
+  capture work. UI annotations reject Scene View and isolated-render modes.
+- Connector source version advanced from 0.0.82 to 0.0.83.
+
+Primary implementation:
+- AgentConnector/Editor/Core/InputQaResolver.cs
+- AgentConnector/Editor/Tools/EditorScreenshot.cs
+- AgentConnector/Editor/Tools/EditorScreenshot.UiAnnotations.cs
+- AgentConnector/Editor/Tests/ScreenshotAnnotationTests.cs
+- AgentConnector/Editor/Tests/ReleaseGateTests.cs
+
+Live Unity evidence:
+- Marked disposable source-injected Unity 6000.5.6f1 fixture compiled the exact
+  current Connector sources with `-noUpm`.
+- Actual CLI `screenshot --annotations_only --max_annotations 10` returned the
+  target instance ID/path, explicit 1080x1920 input/image spaces, bounds, and
+  `pixels_requested=false` with no path or captured PNG.
+- In Play Mode the same actual CLI call reported target_hit=true and identified
+  `/HeraM5Canvas/BlockingGraphic` as blocked_by. The preceding Edit Mode call
+  accurately retained identity/coordinates while its inactive raycast stack
+  reported target_hit=false and no blocker.
+- Actual CLI `screenshot --view game --annotate_ui --width 640 --height 360`
+  wrote the requested disposable PNG and returned the same identity/blocker
+  metadata while keeping 1080x1920 Game View coordinates distinct from the
+  640x360 captured PNG/editor window.
+- Fresh fixture console error reads after live annotation/capture returned zero
+  matched errors. The user's Inventoria Editor was never selected for mutation.
+
+Contract and regression evidence:
+- Direct source-injected annotation suite executed through Unity
+  `-executeMethod`: PASS. It covers metadata-only no-PNG behavior, identity,
+  interactability, Edit Mode raycast shape, points/bounds, explicit coordinate
+  names, output conflict, and strict 1..100 bounds.
+- The no-UPM fixture does not expose package-gated `run_tests`; the reviewed M4
+  catalog's unchanged run_tests entry was combined with the live M5 screenshot
+  entry for a complete 31-tool baseline. Tool count remains 31, actions remain
+  80, normalized catalog growth is 536 bytes, and the reviewed catalog hash is
+  sha256:e1ecc397f0b7ed5a6249c4a50ad5851b309409a92bf4a96d4cc28c34ed5432cb.
+  Regenerated baseline comparison passed with contract_changed=false,
+  growth=false, and review_required=false.
+- Exact current Connector/TestRunner sources passed all five representative
+  compile buckets: Unity 2022.3.62f2, 2023.2.22f1, 6000.0.35f1, 6000.3.5f2,
+  and 6000.5.0f1; failed 0, blocked 0.
+- go test ./...: PASS.
+- go vet ./...: PASS.
+- go run ./tools/sync-agent-guides --check: PASS.
+- go run ./tools/validate-connector-package: PASS.
+- git diff --check: PASS (line-ending conversion warnings only).
+- C# LSP remained unavailable because installation was previously declined;
+  exact-source five-bucket compilation and live Unity execution covered the
+  changed C# files instead.
+
+Preservation:
+- The user's Inventoria Editor (Unity 6000.3.5f2, PID 56188), all existing user
+  commits, and the 120-second router lock invariant were left untouched.
+- Every M5 fixture Editor process was stopped by exact PID. Recoverable M5 QA
+  scene/helper/PNG/catalog/log artifacts remain only inside the already marked
+  disposable system-temp fixture; cleanup commands were not escalated after the
+  environment rejected removal.
+- The approval-gated Editor menu test was not auto-approved. Equivalent direct
+  Unity executeMethod coverage and actual screenshot CLI calls supplied the
+  evidence without consuming an approval token.
+- M6-M8 implementation was not started.
+
+Next exact step:
+- M6: enrich the existing evidence/input surface with bounded 3D physics raycast
+  results using live camera/layer/culling state, stable collider identity, and
+  explicit screen/input coordinates.
 ```
 
 ## 18. First prompt for a new Codex session
