@@ -238,7 +238,7 @@ Hera는 "AI니까 알아서 잘합니다" 같은 모호한 표현 대신 저장�
 
 ### 여러 Unity 세대에서 패키지 컴파일을 확인합니다
 
-현재 Connector 소스는 **0.0.86**, CLI 릴리스는 **v0.1.4**입니다. Connector의 동일 소스가 다음 대표 Editor에서 릴리스 컴파일 게이트를 통과했습니다.
+현재 Connector 소스는 **0.0.86**, CLI 릴리스는 **v0.2.0**입니다. Connector의 동일 소스가 다음 대표 Editor에서 릴리스 컴파일 게이트를 통과했습니다.
 
 | Unity Editor | 결과 |
 |:---|:---:|
@@ -706,13 +706,13 @@ MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
 
 ## 현재 릴리스
 
-- CLI: **v0.1.4**
+- CLI: **v0.2.0**
 - Unity Connector 소스: **0.0.86**
 - License: **Apache-2.0**
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
 
-v0.1.4의 핵심은 안전한 다중 Editor 대상 선택, 작은 상시 AI 규칙, Tool catalog 성장 검토, 반복 가능한 릴리스/패키지 검증입니다.
+v0.2.0의 핵심은 정확한 프로젝트 Editor launch/restart, 제한된 Input System sequence/record/replay, UI와 3D physics 스크린샷 근거, opt-in restricted exec입니다. CLI-first 기본값과 최상위 Tool 31개는 그대로 유지합니다.
 
 릴리스별 기술 변경을 모두 보고 싶다면 메인 README보다 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
 

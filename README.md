@@ -236,7 +236,7 @@ Measured low-token baselines for `list --compact` are **about 93 estimated token
 
 ### Compatibility is checked across Unity generations
 
-The current Connector source is **0.0.86** and the current CLI release is **v0.1.4**. The Connector's exact source passed the release compile gate in these representative Editors:
+The current Connector source is **0.0.86** and the current CLI release is **v0.2.0**. The Connector's exact source passed the release compile gate in these representative Editors:
 
 | Unity Editor | Result |
 |:---|:---:|
@@ -702,13 +702,13 @@ MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
 
 ## Current release
 
-- CLI: **v0.1.4**
+- CLI: **v0.2.0**
 - Unity Connector source: **0.0.86**
 - License: **Apache-2.0**
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
 
-v0.1.4 focuses on safer multi-Editor targeting, a bounded always-loaded agent context, catalog growth review, and reproducible release/package evidence.
+v0.2.0 expands Hera's live verification loop with exact-project Editor launch/restart, bounded Input System sequence/record/replay, UI and 3D physics screenshot evidence, and opt-in restricted exec while keeping the CLI-first default and 31 top-level tools.
 
 For release-by-release engineering detail, read [CHANGELOG.md](CHANGELOG.md) instead of treating the main README as a migration log.
 
