@@ -268,7 +268,7 @@ namespace HeraAgent.Tests
                 ["input"] = new[]
                 {
                     "click", "drag", "inspect", "keyboard", "mouse", "pointer_down",
-                    "pointer_up", "scroll", "sequence", "state", "submit",
+                    "pointer_up", "record", "replay", "scroll", "sequence", "state", "submit",
                 },
                 ["manage_animation"] = new[]
                 {
@@ -318,7 +318,7 @@ namespace HeraAgent.Tests
                 $"declared action contracts complete = true ({actionCount}); " +
                 $"built-in strict contracts complete = {allBuiltInsStrict.ToString().ToLowerInvariant()}");
             return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged),
-                expectedTools.Length == 31 && actionCount == 78 && allBuiltInsStrict);
+                expectedTools.Length == 31 && actionCount == 80 && allBuiltInsStrict);
         }
 
         private static bool ContainsBaselineToolNames(

@@ -221,7 +221,7 @@ Hera는 "AI니까 알아서 잘합니다" 같은 모호한 표현 대신 저장�
 
 ### 여러 Unity 세대에서 패키지 컴파일을 확인합니다
 
-현재 Connector 소스는 **0.0.81**, CLI 릴리스는 **v0.1.4**입니다. Connector의 동일 소스가 다음 대표 Editor에서 릴리스 컴파일 게이트를 통과했습니다.
+현재 Connector 소스는 **0.0.82**, CLI 릴리스는 **v0.1.4**입니다. Connector의 동일 소스가 다음 대표 Editor에서 릴리스 컴파일 게이트를 통과했습니다.
 
 | Unity Editor | 결과 |
 |:---|:---:|
@@ -431,9 +431,12 @@ hera-agent-unity input state --backend inputsystem
 hera-agent-unity input keyboard --key space --mode press
 hera-agent-unity input mouse --mode click --button left --position 640,360
 hera-agent-unity call input --json '{"action":"sequence","steps":[{"action":"keyboard","key":"space","mode":"down"},{"action":"keyboard","key":"space","mode":"up"}]}'
+hera-agent-unity call input --json '{"action":"record","mode":"start"}'
+hera-agent-unity call input --json '{"action":"record","mode":"stop"}'
+hera-agent-unity call input --json '{"action":"replay","path":"Library/HeraAgent/Recordings/input.json"}'
 ```
 
-키보드·마우스·bounded sequence mutation은 Play Mode에서만 동작합니다. sequence는 strict Input System step 1..32개를 mutation 전에 검증하고 Unity 요청 한 번으로 실행하며, 자신이 잡은 control을 종료 시 정리합니다. Hera는 런타임에 패키지를 확인하고, 장치를 생성하지 않으며, Play Mode가 끝나면 잡고 있던 control을 해제합니다.
+키보드·마우스·bounded sequence·입력 녹화 capture·replay는 Play Mode에서 동작합니다. 녹화는 프로젝트 또는 시스템 임시 폴더의 bounded `hera.input-recording/1` JSON을 사용하고, replay는 mutation 전에 파일 전체를 검증한 뒤 sequence 소유권·정리 로직을 재사용합니다. Hera는 런타임에 패키지를 확인하고, 장치를 생성하지 않으며, Play Mode가 끝나면 잡고 있던 control을 해제합니다.
 
 ### 반복 Scene 작업 자동화
 
@@ -687,7 +690,7 @@ MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
 ## 현재 릴리스
 
 - CLI: **v0.1.4**
-- Unity Connector 소스: **0.0.81**
+- Unity Connector 소스: **0.0.82**
 - License: **Apache-2.0**
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.

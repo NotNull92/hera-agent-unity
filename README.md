@@ -219,7 +219,7 @@ Measured low-token baselines for `list --compact` are **about 93 estimated token
 
 ### Compatibility is checked across Unity generations
 
-The current Connector source is **0.0.81** and the current CLI release is **v0.1.4**. The Connector's exact source passed the release compile gate in these representative Editors:
+The current Connector source is **0.0.82** and the current CLI release is **v0.1.4**. The Connector's exact source passed the release compile gate in these representative Editors:
 
 | Unity Editor | Result |
 |:---|:---:|
@@ -427,9 +427,12 @@ hera-agent-unity input state --backend inputsystem
 hera-agent-unity input keyboard --key space --mode press
 hera-agent-unity input mouse --mode click --button left --position 640,360
 hera-agent-unity call input --json '{"action":"sequence","steps":[{"action":"keyboard","key":"space","mode":"down"},{"action":"keyboard","key":"space","mode":"up"}]}'
+hera-agent-unity call input --json '{"action":"record","mode":"start"}'
+hera-agent-unity call input --json '{"action":"record","mode":"stop"}'
+hera-agent-unity call input --json '{"action":"replay","path":"Library/HeraAgent/Recordings/input.json"}'
 ```
 
-Keyboard, mouse, and bounded sequence mutations require Play Mode. A sequence validates 1..32 strict Input System steps before mutation, runs them in one Unity request, and cleans up sequence-owned held controls. Hera resolves the package at runtime, never creates devices, and releases any held controls when Play Mode exits.
+Keyboard, mouse, bounded sequence, recording capture, and replay require Play Mode. Recordings use the bounded `hera.input-recording/1` JSON format under the project or system temp directory; replay validates the complete file before mutation and reuses sequence-owned cleanup. Hera resolves the package at runtime, never creates devices, and releases any held controls when Play Mode exits.
 
 ### Automate repetitive Scene work
 
@@ -573,7 +576,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `task` | Inspect durable test/package work without contacting Unity. |
 | `screenshot` | Capture Scene/Game views or isolated objects. |
 | `ui_doc` | Inspect, build, sample, and capture Unity UI. |
-| `input` | Test uGUI through EventSystem or optional Input System keyboard/mouse/sequence state. |
+| `input` | Test uGUI or optional Input System keyboard/mouse/sequence/record/replay state. |
 | `profiler` | Read profiler hierarchy snapshots. |
 | `game_feel` | Query game-feel guidance. |
 | `ui_slop` | Query UI cleanup guidance. |
@@ -683,7 +686,7 @@ MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
 ## Current release
 
 - CLI: **v0.1.4**
-- Unity Connector source: **0.0.81**
+- Unity Connector source: **0.0.82**
 - License: **Apache-2.0**
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.

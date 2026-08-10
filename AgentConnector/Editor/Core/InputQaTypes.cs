@@ -39,6 +39,17 @@ namespace HeraAgent
         public string[] errors;
     }
 
+    internal sealed class InputQaPhysicalSnapshot
+    {
+        public readonly Dictionary<string, bool> Keys =
+            new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
+        public readonly Dictionary<string, bool> MouseButtons =
+            new Dictionary<string, bool>(System.StringComparer.OrdinalIgnoreCase);
+        public Vector2 Position;
+        public Vector2 Delta;
+        public Vector2 Scroll;
+    }
+
     internal sealed class InputQaHit
     {
         public int rank;

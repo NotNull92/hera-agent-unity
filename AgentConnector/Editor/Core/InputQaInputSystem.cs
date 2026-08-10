@@ -42,6 +42,28 @@ namespace HeraAgent
             });
         }
 
+        internal static InputQaRecordingSource CreateRecordingSource(out ErrorResponse error)
+        {
+            var api = Api.TryCreate(out var reason);
+            if (api == null)
+            {
+                error = Unavailable(reason);
+                return null;
+            }
+            error = ValidatePlayMode();
+            if (error != null)
+                return null;
+            if (api.Keyboard == null || api.Mouse == null)
+            {
+                error = new ErrorResponse(
+                    "INPUTSYSTEM_DEVICE_UNAVAILABLE",
+                    "[Hera] I need current Input System Keyboard and Mouse devices to record input.");
+                return null;
+            }
+            error = null;
+            return new InputQaRecordingSource(api);
+        }
+
         internal static bool HasHeldControls()
         {
             return HeldKeys.Count != 0 || HeldMouseButtons.Count != 0;
@@ -509,7 +531,8 @@ namespace HeraAgent
         {
             return new ErrorResponse(
                 "INPUTSYSTEM_UNAVAILABLE",
-                reason ?? "The optional com.unity.inputsystem package is unavailable.");
+                "[Hera] I can't use the optional Input System: " +
+                (reason ?? "com.unity.inputsystem is unavailable."));
         }
 
         private static ErrorResponse MissingVector(string parameter, string action)
@@ -583,7 +606,71 @@ namespace HeraAgent
             return null;
         }
 
-        private sealed class Api
+        internal sealed class InputQaRecordingSource : IDisposable
+        {
+            private readonly Api api;
+            private readonly string[] keyNames;
+            private Action handler;
+
+            internal InputQaRecordingSource(Api api)
+            {
+                this.api = api;
+                var names = new List<string>();
+                foreach (var name in Enum.GetNames(api.KeyType))
+                {
+                    if (!string.Equals(name, "None", StringComparison.OrdinalIgnoreCase))
+                        names.Add(name);
+                }
+                keyNames = names.ToArray();
+            }
+
+            internal string PackageVersion => api.PackageVersion;
+            internal string UpdateType => api.ConfiguredUpdateTypeName;
+
+            internal InputQaPhysicalSnapshot Capture()
+            {
+                var snapshot = new InputQaPhysicalSnapshot();
+                foreach (var keyName in keyNames)
+                {
+                    var key = Enum.Parse(api.KeyType, keyName);
+                    var control = api.KeyboardIndexer.GetValue(api.Keyboard, new[] { key });
+                    if (control != null)
+                        snapshot.Keys[keyName] = api.IsPressed(control);
+                }
+                foreach (var buttonName in new[] { "left", "right", "middle" })
+                {
+                    var control = api.GetMouseControl(buttonName + "Button");
+                    if (control != null)
+                        snapshot.MouseButtons[buttonName] = api.IsPressed(control);
+                }
+                snapshot.Position = api.ReadVectorValue(api.GetMouseControl("position"));
+                snapshot.Delta = api.ReadVectorValue(api.GetMouseControl("delta"));
+                snapshot.Scroll = api.ReadVectorValue(api.GetMouseControl("scroll"));
+                return snapshot;
+            }
+
+            internal void Subscribe(Action callback)
+            {
+                if (handler != null)
+                    throw new InvalidOperationException("[Hera] I already subscribed this input recorder.");
+                handler = () =>
+                {
+                    if (api.IsConfiguredUpdate())
+                        callback();
+                };
+                api.AddAfterUpdate(handler);
+            }
+
+            public void Dispose()
+            {
+                if (handler == null)
+                    return;
+                api.RemoveAfterUpdate(handler);
+                handler = null;
+            }
+        }
+
+        internal sealed class Api
         {
             private const BindingFlags PublicStatic =
                 BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy;
@@ -604,12 +691,15 @@ namespace HeraAgent
             private MethodInfo ChangeDeviceState { get; set; }
             private MethodInfo UpdateInputSystem { get; set; }
             private EventInfo BeforeUpdate { get; set; }
+            private EventInfo AfterUpdate { get; set; }
             private PropertyInfo CurrentUpdateType { get; set; }
             private object TempAllocator { get; set; }
             private object ConfiguredUpdateType { get; set; }
             private object Settings { get; set; }
             private PropertyInfo UpdateMode { get; set; }
             private object ExplicitUpdateMode { get; set; }
+
+            internal string ConfiguredUpdateTypeName => ConfiguredUpdateType?.ToString()?.ToLowerInvariant();
 
             internal static Api TryCreate(out string reason)
             {
@@ -636,6 +726,7 @@ namespace HeraAgent
                 var change = FindChangeDeviceState(inputStateType);
                 var update = FindNoArgumentMethod(inputSystemType, "Update", PublicStatic);
                 var beforeUpdate = FindEvent(inputSystemType, "onBeforeUpdate");
+                var afterUpdate = FindEvent(inputSystemType, "onAfterUpdate");
                 var currentUpdateType = FindProperty(
                     inputStateType,
                     "currentUpdateType",
@@ -651,7 +742,8 @@ namespace HeraAgent
                 if (keyboardType == null || mouseType == null || keyType == null
                     || updateType == null || eventPtrType == null || allocatorType == null
                     || from == null || write == null || change == null
-                    || update == null || beforeUpdate == null || currentUpdateType == null
+                    || update == null || beforeUpdate == null || afterUpdate == null
+                    || currentUpdateType == null
                     || indexer == null || configuredUpdateType == null)
                 {
                     reason = "The loaded Input System API is missing a required keyboard, mouse, or event method.";
@@ -671,6 +763,7 @@ namespace HeraAgent
                     ChangeDeviceState = change,
                     UpdateInputSystem = update,
                     BeforeUpdate = beforeUpdate,
+                    AfterUpdate = afterUpdate,
                     CurrentUpdateType = currentUpdateType,
                     TempAllocator = Enum.Parse(allocatorType, "Temp"),
                     ConfiguredUpdateType = configuredUpdateType,
@@ -791,15 +884,7 @@ namespace HeraAgent
                 {
                     RunExplicitUpdate();
                     if (!source.Task.IsCompleted)
-                    {
-                        BeforeUpdate.RemoveEventHandler(null, callback);
-                        registration.Dispose();
-                        if (Interlocked.CompareExchange(ref completionState, 3, 0) == 0)
-                        {
-                            source.TrySetException(new InvalidOperationException(
-                                "[Hera] I couldn't enter the configured Input System update phase."));
-                        }
-                    }
+                        EditorApplication.QueuePlayerLoopUpdate();
                 }
                 catch (Exception ex)
                 {
@@ -841,17 +926,42 @@ namespace HeraAgent
                 return property != null && property.GetValue(control) is bool pressed && pressed;
             }
 
-            internal float[] ReadVector(object control)
+            internal bool IsConfiguredUpdate()
+            {
+                return UpdateTypeMatches(
+                    CurrentUpdateType.GetValue(null),
+                    ConfiguredUpdateType);
+            }
+
+            internal void AddAfterUpdate(Action callback)
+            {
+                AfterUpdate.AddEventHandler(null, callback);
+            }
+
+            internal void RemoveAfterUpdate(Action callback)
+            {
+                AfterUpdate.RemoveEventHandler(null, callback);
+            }
+
+            internal Vector2 ReadVectorValue(object control)
             {
                 if (control == null)
-                    return null;
+                    return Vector2.zero;
                 var read = FindNoArgumentMethod(
                     control.GetType(),
                     "ReadValue",
                     PublicInstance,
                     typeof(Vector2));
-                if (read == null || !(read.Invoke(control, null) is Vector2 value))
+                return read != null && read.Invoke(control, null) is Vector2 value
+                    ? value
+                    : Vector2.zero;
+            }
+
+            internal float[] ReadVector(object control)
+            {
+                if (control == null)
                     return null;
+                var value = ReadVectorValue(control);
                 return new[] { value.x, value.y };
             }
 

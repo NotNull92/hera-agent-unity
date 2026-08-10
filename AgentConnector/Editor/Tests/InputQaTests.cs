@@ -227,6 +227,7 @@ namespace HeraAgent.Tests
         internal static bool RunContractTests()
         {
             var allPassed = InputQaSequenceTests.RunContractTests();
+            allPassed &= InputQaRecordingTests.RunContractTests();
             var inputSystemState = InputTool.HandleCommand(new JObject
             {
                 ["action"] = "state",

@@ -529,7 +529,8 @@ namespace HeraAgent.Tests
                 if (entry.tool == "input"
                     && (entry.action == "keyboard"
                         || entry.action == "mouse"
-                        || entry.action == "sequence")
+                        || entry.action == "sequence"
+                        || entry.action == "replay")
                     && (!action.Safety.RequiresPlayMode
                         || action.Safety.RiskClass != HeraRiskClass.Write))
                 {
@@ -1800,6 +1801,16 @@ namespace HeraAgent.Tests
                     ["action"] = "keyboard",
                     ["key"] = "space",
                 }),
+            });
+            yield return ("input", "record", new JObject
+            {
+                ["action"] = "record",
+                ["mode"] = "status",
+            });
+            yield return ("input", "replay", new JObject
+            {
+                ["action"] = "replay",
+                ["path"] = "Library/HeraAgent/Recordings/input.json",
             });
             foreach (var action in new[]
             {

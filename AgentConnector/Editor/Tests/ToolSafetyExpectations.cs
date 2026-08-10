@@ -61,6 +61,8 @@ namespace HeraAgent.Tests
                 ["input/mouse"] = HeraRiskClass.Write,
                 ["input/pointer_down"] = HeraRiskClass.Write,
                 ["input/pointer_up"] = HeraRiskClass.Write,
+                ["input/record"] = HeraRiskClass.Write,
+                ["input/replay"] = HeraRiskClass.Write,
                 ["input/scroll"] = HeraRiskClass.Write,
                 ["input/sequence"] = HeraRiskClass.Write,
                 ["input/submit"] = HeraRiskClass.Write,

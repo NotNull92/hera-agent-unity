@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.82)
+
+- Added bounded Input System recording and replay through the existing `input`
+  tool. Recordings use the versioned `hera.input-recording/1` JSON format,
+  preserve configured-update frame timing, and remain reflection-only.
+- Added project/temp path confinement, no-overwrite output, full-file replay
+  preflight, event/frame/duration/byte limits, and sequence-owned replay cleanup.
+
 ### Added (Connector 0.0.81)
 
 - Added optional, reflection-only Input System keyboard and mouse synthesis for

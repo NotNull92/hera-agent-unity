@@ -30,16 +30,18 @@ namespace HeraAgent
                 "scroll_delta", "hold_ms", "settle_frames",
             };
 
-        internal static (InputQaSequencePlan plan, ErrorResponse error) Parse(JObject raw)
+        internal static (InputQaSequencePlan plan, ErrorResponse error) Parse(
+            JObject raw,
+            int maxSteps = MaxSequenceSteps)
         {
             if (!(raw?["steps"] is JArray rawSteps) || rawSteps.Count == 0)
                 return (null, new ErrorResponse(
                     "INPUT_SEQUENCE_INVALID_STEPS",
                     "[Hera] I need a non-empty 'steps' array for an input sequence."));
-            if (rawSteps.Count > MaxSequenceSteps)
+            if (rawSteps.Count > maxSteps)
                 return (null, new ErrorResponse(
                     "INPUT_SEQUENCE_LIMIT_EXCEEDED",
-                    $"[Hera] I can run at most {MaxSequenceSteps} input sequence steps."));
+                    $"[Hera] I can run at most {maxSteps} input sequence steps."));
 
             var plan = new InputQaSequencePlan();
             var heldKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

@@ -1,6 +1,6 @@
 ﻿# Hera vNext Capability Migration Handoff
 
-Status: **READY FOR M4**
+Status: **READY FOR M5**
 
 Date: 2026-08-09
 
@@ -1130,6 +1130,130 @@ Next exact step:
 - M4: add versioned `hera.input-recording/1` record/replay through the existing
   input tool, with bounded project-local/temp storage, explicit timing, replay
   cleanup, and live repeated-replay evidence.
+```
+
+### 2026-08-10 - M4 versioned input recording and replay complete
+
+```text
+Status: PASS
+
+Implemented contract:
+- Extended the existing strict `input` tool with `record` and `replay`; tools
+  remain 31 and no top-level surface was added.
+- `record` uses modes start/stop/status. Capture requires active, unpaused Play
+  Mode and samples real current Keyboard/Mouse state after the configured Input
+  System update. Stop/status remain available after Play Mode exits.
+- Added the explicit `hera.input-recording/1` JSON identity. The format records
+  keyboard/button transitions, changed mouse positions, and non-zero
+  delta/scroll with relative frame timing.
+- Bounds are 256 events, 600 relative frames, 30 seconds, and 512 KiB. Replay
+  requires monotonic frames starting at zero, strict event fields/actions,
+  finite vectors, and full sequence ownership/preflight before mutation.
+- Default output is a unique project-local
+  Library/HeraAgent/Recordings/*.json file. Explicit read/write paths must stay
+  under the project or system temp directory. Existing output is never
+  overwritten and writes use create-new semantics.
+- Replay reuses the M3 plan executor, one outer ledger record, fail-fast
+  execution, the 45-second wall deadline, pre-held rejection, and finally-based
+  held-control cleanup. Replay results remain compact and report cleanup plus
+  held_after.
+- Active capture stops on Play Mode exit and is saved before assembly reload.
+  Saved files remain plain versioned JSON and load after domain reload.
+- Connector source version advanced from 0.0.81 to 0.0.82.
+
+Primary implementation:
+- AgentConnector/Editor/Core/InputQaRecording.cs
+- AgentConnector/Editor/Core/InputQaReplay.cs
+- AgentConnector/Editor/Core/InputQaInputSystem.cs
+- AgentConnector/Editor/Core/InputQaSequence.cs
+- AgentConnector/Editor/Core/InputQaSequencePlan.cs
+- AgentConnector/Editor/Tools/Input.cs
+- AgentConnector/Editor/Tools/InputRecordingContract.cs
+- AgentConnector/Editor/Tests/InputQaRecordingTests.cs
+
+Live Unity evidence:
+- Marked disposable source-injected Unity 6000.5.6f1 fixture, Input System
+  1.19.0, current FastKeyboard/FastMouse, Play Mode: PASS.
+- Recorded a real three-step synthesized sequence while the recorder observed
+  configured dynamic updates. The saved recording contained five events over
+  frames 0..30 (586 bytes, metadata duration 713 ms): initial/current mouse
+  positions, Space down, mouse move, and Space up.
+- Replacing Connector source caused a domain reload after the file was saved.
+  The same file then replayed successfully twice: each replay completed 5/5,
+  cleanup succeeded, and held_after contained no keys or mouse buttons.
+- The first post-record replay exposed an M3 timing assumption: when the
+  explicit InputSystem.Update call did not synchronously enter the configured
+  phase, the callback failed before mutation. Evidence was completed_count=0,
+  cleanup succeeded, and held_after empty. The executor now keeps the guarded
+  callback, queues the player loop, and waits for the next matching update.
+  Standalone mouse input and both repeated replays passed after the fix.
+- A separate marked source-injected fixture without Input System reported
+  available=false and record start failed exactly with INPUTSYSTEM_UNAVAILABLE
+  plus a first-person [Hera] diagnostic. No compile-time Input System dependency
+  was added.
+
+Contract and regression evidence:
+- Targeted source-injected InputQa release gate: PASS 1/1 after final bounds,
+  finite-vector, path, contract, and player-loop changes.
+- Full source-injected Unity 6000.5.6f1 EditMode suite: 21/22. InputQa,
+  ToolCatalog, ToolContract, ToolDiscovery, ToolProfiles, and ToolSafety passed.
+  The only failure remains the pre-existing unrelated UiDocApply
+  TestRootCanvasCreatesEventSystem fixture assertion recorded in M3.
+- Strict catalog actions: 78 -> 80; tool count 31 unchanged. Normalized catalog
+  grew by 1,608 bytes. `record` and `replay` action describes are 1,575 and
+  1,493 bytes and save about 95.5%/95.8% versus full input describe.
+- Reviewed catalog hash:
+  sha256:1f68ec8dbb1af6b75590656c32c792a6ee9a72b119090f2b638a9ed2dcf6946c
+  Regenerated baseline then passed --fail-on-change with
+  contract_changed=false, review_required=false, growth=false.
+
+Compatibility and repository gates:
+- Current exact Connector/TestRunner sources passed representative Unity
+  2022.3.62f2, 2023.2.22f1, 6000.0.35f1, 6000.3.5f2, and 6000.5.0f1 compile
+  buckets. One alternate stale 6000.3 response fixture failed only because its
+  pre-existing EntityIdCompat obsolete warning is treated as a diagnostic;
+  the marked M17 6000.3.5f2 fixture passed the same current source.
+- go test ./...: PASS.
+- go vet ./...: PASS.
+- golangci-lint run ./...: 0 issues.
+- golangci-lint fmt --diff: clean.
+- go run ./tools/sync-agent-guides --check: PASS.
+- go run ./tools/validate-connector-package: PASS.
+- catalog baseline comparison --fail-on-change: PASS.
+- git diff --check: PASS (line-ending conversion warnings only).
+- C# LSP remained unavailable because installation was previously declined;
+  exact-source compilation and live Unity compilation/test gates covered the
+  changed C# files instead.
+
+UPM diagnosis update:
+- A brand-new Unity 6000.5.6f1 project with no Hera file/local package
+  dependency reproduced `The "path" argument must be of type string. Received
+  undefined` in 0.04 seconds when its manifest requested only registry Input
+  System. This disproves the earlier local Hera `file:` dependency as a required
+  trigger; the precise external/global UPM environment cause remains unknown
+  because Unity did not retain the originating Node stack.
+- M4 live/test work therefore used the marked `-noUpm` source-injected fixture,
+  with cached Input System/TestRunner sources or compiled assemblies confined
+  to that disposable project. This remains a verification-only workaround, not
+  a production Editor launch policy.
+- Enabling the copied Input System required activeInputHandler=1 only in the
+  disposable fixture. The TMP essential-resources warning in the no-Input-System
+  fixture likewise came from copied built-in uGUI/TMP sources and did not touch
+  the user's project.
+
+Preservation:
+- The user's Inventoria Editor (Unity 6000.3.5f2, PID 56188) and all pre-existing
+  user commits/changes were left untouched.
+- The marked M4 Unity 6000.5.6f1 fixture was stopped after its executable and
+  exact temporary project command line were verified. The separate no-Input-
+  System fixture had already been stopped; both fixture directories remain in
+  system temp for recoverable evidence inspection.
+- No M5-M8 work was started out of order.
+
+Next exact step:
+- M5: add per-call execution budgeting and cancellation across router, exec,
+  batch, long-running editor waits, tests, and input without weakening existing
+  operation-ledger/no-blind-retry behavior.
 ```
 
 ## 18. First prompt for a new Codex session

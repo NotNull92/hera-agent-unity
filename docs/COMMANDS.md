@@ -1102,6 +1102,8 @@ hera-agent-unity input <action> [flags]
 | `keyboard` | `--key <InputSystem Key>`; `[--mode press\|down\|up]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--backend inputsystem\|auto]` | Press/release a current Input System keyboard key in Play Mode. `down` remains held until the matching `up`; `press` releases automatically. |
 | `mouse` | `[--mode move\|click\|down\|up\|delta\|scroll]`; `[--button left\|right\|middle]`; `[--position x,y]`; `[--delta x,y]`; `[--scroll_delta x,y]`; `[--hold_ms N]`; `[--settle_frames N]`; `[--backend inputsystem\|auto]` | Move, click, hold/release, or set delta/scroll on the current Input System mouse in Play Mode. |
 | `sequence` | strict `steps` JSON array through `call input --json ...` | Execute 1..32 PlayMode Input System `keyboard`/`mouse` steps in one Unity request. Nested sequences, read actions, and EventSystem actions are rejected. |
+| `record` | `--mode start\|stop\|status`; start: `[--path <file.json>]` | Sample real current Input System keyboard/mouse state after configured Input System updates. Start and capture require Play Mode; stop/status remain available after Play Mode exits. |
+| `replay` | `--path <file.json>` | Validate and replay a `hera.input-recording/1` file in Play Mode with recorded frame timing and sequence-owned cleanup. |
 
 ```bash
 hera-agent-unity input state
@@ -1114,6 +1116,9 @@ hera-agent-unity input state --backend inputsystem
 hera-agent-unity input keyboard --key space --mode press
 hera-agent-unity input mouse --mode click --button left --position 640,360
 hera-agent-unity call input --json '{"action":"sequence","steps":[{"action":"keyboard","key":"space","mode":"down"},{"action":"keyboard","key":"space","mode":"up"}]}'
+hera-agent-unity call input --json '{"action":"record","mode":"start"}'
+hera-agent-unity call input --json '{"action":"record","mode":"stop"}'
+hera-agent-unity call input --json '{"action":"replay","path":"Library/HeraAgent/Recordings/input-20260810-120000-abcd1234.json"}'
 ```
 
 **Windows Git Bash** — MSYS path conversion treats a Unity hierarchy path that
@@ -1126,6 +1131,8 @@ MSYS_NO_PATHCONV=1 hera-agent-unity input inspect --path /Canvas/StartButton --d
 **Input limits** — numeric values are validated before dispatch: `hold_ms` is `0..5000`, `settle_frames` is `0..120`, drag `steps` is `1..120`, `click_count` is `1..3`, and `max_results` is `1..100` (default `50`). Oversized or malformed values return `INPUT_INVALID_PARAM`. `raycasters_total` / `raycasters_truncated` and detailed `hits_total` / `hits_truncated` make a capped EventSystem diagnostic explicit.
 
 **Input sequences** — `sequence` is PlayMode-only and accepts 1..32 strict Input System keyboard/mouse step objects. The Connector validates the complete JSON shape, action-specific requirements, device/control availability, aggregate hold time (`<=30000 ms`), aggregate awaited frames (`<=600`), and sequence-local down/up ownership before the first mutation. A sequence has a 45-second wall-clock deadline, fails at the first leaf error, rejects any pre-existing Hera-held control, and releases controls acquired by that sequence in `finally`. The compact result reports `completed_count`, `failed_step_index`, `cause_code`, cleanup details, and `held_after`. A response-loss outcome remains operation-ledger protected and is never blindly retried.
+
+**Input recordings** — `record start` samples after the project's configured Input System update (`dynamic`, `fixed`, or `manual`) and stores only keyboard/button transitions plus changed mouse position and non-zero delta/scroll. The `hera.input-recording/1` JSON format is capped at 256 events, 600 relative frames, 30 seconds, and 512 KiB. A default output is a unique file under `Library/HeraAgent/Recordings/`; an explicit path must be a new `.json` file under the project or system temp directory. Existing files are never overwritten. Play Mode exit stops capture, while `record stop` writes the pending file; an active recording is also saved before script reload. `replay` reads and validates the entire bounded file before mutation, preserves captured frame gaps, uses the sequence preflight/ownership rules, and always reports cleanup plus `held_after`. Replaying the same balanced file repeatedly does not retain Hera-held state. Unsupported or unloaded Input System packages fail with `INPUTSYSTEM_UNAVAILABLE`; Hera does not add the package as a dependency.
 
 **Optional Input System** — the Connector resolves `Unity.InputSystem` through reflection and does not add `com.unity.inputsystem` to the package manifest or asmdef. `input state --backend inputsystem` remains queryable without the package and reports `available:false`; keyboard/mouse/sequence mutations return `INPUTSYSTEM_UNAVAILABLE`. Mutations require active, unpaused Play Mode and an existing current device. Hera never creates a device. Held keys/buttons are owned across commands, reject duplicate down or unowned up, and are released when Play Mode exits or scripts reload.
 
@@ -1142,7 +1149,7 @@ Current backend status:
 | Backend | Status |
 |:---|:---|
 | `eventsystem` | Implemented for `state`, `inspect`, `click`, `pointer_down`, `pointer_up`, `submit`, `scroll`, and `drag`. |
-| `inputsystem` | Implemented for `state`, `keyboard`, `mouse`, and bounded `sequence`. Keyboard/mouse/sequence select it by default; EventSystem actions do not auto-switch to it. |
+| `inputsystem` | Implemented for `state`, `keyboard`, `mouse`, bounded `sequence`, `record`, and `replay`. Keyboard/mouse/sequence/record/replay select it by default; EventSystem actions do not auto-switch to it. |
 | `native-win32` | Planned optional fallback; never a default backend. |
 
 ---

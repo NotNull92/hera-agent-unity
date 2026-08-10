@@ -29,6 +29,15 @@ namespace HeraAgent
             var (plan, parseError) = Parse(raw);
             if (parseError != null)
                 return parseError;
+            return await ExecutePlan(plan, "sequence", null, true);
+        }
+
+        internal static async Task<object> ExecutePlan(
+            InputQaSequencePlan plan,
+            string action,
+            object sourceDetails,
+            bool includeStepSummaries)
+        {
             if (activeSource != null)
                 return new ErrorResponse(
                     "INPUT_SEQUENCE_BUSY",
@@ -88,7 +97,8 @@ namespace HeraAgent
                         break;
                     }
 
-                    summaries.Add(StepSummary(index, step));
+                    if (includeStepSummaries)
+                        summaries.Add(StepSummary(index, step));
                     completed++;
                 }
             }
@@ -118,7 +128,8 @@ namespace HeraAgent
             {
                 backend = "inputsystem",
                 evidence_level = "inputsystem",
-                action = "sequence",
+                action,
+                source = sourceDetails,
                 steps_total = plan.Steps.Count,
                 completed_count = completed,
                 failed_step_index = failedIndex < 0 ? (int?)null : failedIndex,
@@ -127,7 +138,7 @@ namespace HeraAgent
                 elapsed_ms = stopwatch.ElapsedMilliseconds,
                 cleanup,
                 held_after = InputQaInputSystem.InjectedState(),
-                steps = summaries,
+                steps = includeStepSummaries ? summaries : null,
                 cause_code = failure?.code,
             };
 
@@ -147,7 +158,9 @@ namespace HeraAgent
                       failure.message;
                 return new ErrorResponse(code, message, result);
             }
-            return new SuccessResponse("Input sequence", result);
+            return new SuccessResponse(
+                action == "replay" ? "Input replay" : "Input sequence",
+                result);
         }
 
         private static Task<object> ExecuteStep(InputQaOptions step)

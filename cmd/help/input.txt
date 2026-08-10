@@ -26,6 +26,10 @@ Input QA:
                                       Set Input System scroll delta
   call input --json '{"action":"sequence","steps":[...]}'
                                       Run bounded keyboard/mouse steps in one request
+  call input --json '{"action":"record","mode":"start"}'
+                                      Record bounded Input System state changes
+  call input --json '{"action":"replay","path":"Library/HeraAgent/Recordings/input.json"}'
+                                      Replay a hera.input-recording/1 file
 
   Target:
     --path </Canvas/Button>           Target by hierarchy path
@@ -72,6 +76,13 @@ Input QA:
     wall-clock deadline               45 seconds
     ownership                         Rejects pre-held controls; cleans sequence holds
 
+  Recording contract (strict call input JSON only):
+    record mode                       start|stop|status
+    record path                       New .json under project/temp; unique default
+    replay path                       Existing hera.input-recording/1 .json
+    bounds                            256 events, 600 frames, 30 seconds, 512 KiB
+    cleanup                           Replay uses sequence-owned cleanup
+
   Examples:
     input state
     input inspect --path /Canvas/StartButton --details true
@@ -83,6 +94,9 @@ Input QA:
     input keyboard --key space --mode press
     input mouse --mode click --button left --position 640,360
     call input --json '{"action":"sequence","steps":[{"action":"keyboard","key":"space","mode":"press"}]}'
+    call input --json '{"action":"record","mode":"start"}'
+    call input --json '{"action":"record","mode":"stop"}'
+    call input --json '{"action":"replay","path":"Library/HeraAgent/Recordings/input.json"}'
 
   Windows Git Bash:
     MSYS rewrites arguments that begin with "/" as filesystem paths. Prefix

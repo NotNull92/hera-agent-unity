@@ -26,6 +26,8 @@ namespace HeraAgent.Tools
             "Press and release an Input System keyboard key in Play Mode",
             "Move the current Input System mouse in Play Mode",
             "Execute bounded Input System keyboard/mouse steps in one request",
+            "Record bounded Input System state changes to a project-local JSON file",
+            "Replay a validated input recording with its captured frame timing",
             "Drive begin/drag/end handlers from the target point to a target-local point",
             "Select the target and execute its submit handler"
         },
@@ -77,6 +79,15 @@ namespace HeraAgent.Tools
     [HeraActionContract(
         "sequence",
         typeof(InputTool.SequenceParameters),
+        RiskClass = HeraRiskClass.Write,
+        RequiresPlayMode = true)]
+    [HeraActionContract(
+        "record",
+        typeof(InputTool.RecordParameters),
+        RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract(
+        "replay",
+        typeof(InputTool.ReplayParameters),
         RiskClass = HeraRiskClass.Write,
         RequiresPlayMode = true)]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "inspect")]
@@ -246,9 +257,9 @@ namespace HeraAgent.Tools
         public class Parameters
         {
             [ToolParameter(
-                "Action: state, inspect, click, pointer_down, pointer_up, drag, scroll, submit, keyboard, mouse, sequence.",
+                "Action: state, inspect, click, pointer_down, pointer_up, drag, scroll, submit, keyboard, mouse, sequence, record, replay.",
                 Required = true,
-                SchemaJson = "{\"type\":\"string\",\"enum\":[\"state\",\"inspect\",\"click\",\"pointer_down\",\"pointer_up\",\"drag\",\"scroll\",\"submit\",\"keyboard\",\"mouse\",\"sequence\"]}")]
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"state\",\"inspect\",\"click\",\"pointer_down\",\"pointer_up\",\"drag\",\"scroll\",\"submit\",\"keyboard\",\"mouse\",\"sequence\",\"record\",\"replay\"]}")]
             public string Action { get; set; }
 
             [ToolParameter("Backend: eventsystem, inputsystem, or auto.")]
@@ -317,13 +328,18 @@ namespace HeraAgent.Tools
 
         public static async Task<object> HandleCommand(JObject raw)
         {
+            var action = raw?["action"]?.ToString();
             if (string.Equals(
-                    raw?["action"]?.ToString(),
+                    action,
                     "sequence",
                     System.StringComparison.OrdinalIgnoreCase))
             {
                 return await InputQaSequence.Execute(raw);
             }
+            if (string.Equals(action, "record", System.StringComparison.OrdinalIgnoreCase))
+                return InputQaRecording.Handle(raw);
+            if (string.Equals(action, "replay", System.StringComparison.OrdinalIgnoreCase))
+                return await InputQaReplay.Execute(raw);
 
             var (options, err) = InputQaResolver.Parse(raw);
             if (err != null) return err;
@@ -369,7 +385,7 @@ namespace HeraAgent.Tools
                     if (options.Backend == "eventsystem") return BackendMismatch(options);
                     return await InputQaInputSystem.Mouse(options);
                 default:
-                    return new ErrorResponse("INPUT_UNKNOWN_ACTION", $"Unknown input action: '{options.Action}'. Use state, inspect, click, pointer_down, pointer_up, submit, scroll, drag, keyboard, mouse, or sequence.");
+                    return new ErrorResponse("INPUT_UNKNOWN_ACTION", $"Unknown input action: '{options.Action}'. Use state, inspect, click, pointer_down, pointer_up, submit, scroll, drag, keyboard, mouse, sequence, record, or replay.");
             }
         }
 
