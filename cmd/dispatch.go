@@ -55,6 +55,22 @@ func (runner standaloneRunner) Run(
 		return true, statusErr
 	case "ping":
 		return true, pingCmd(runner.config.Project, runner.config.Port)
+	case "editor":
+		if !isEditorBootstrapAction(subArgs) {
+			return false, nil
+		}
+		resp, bootstrapErr := runEditorBootstrap(ctx, subArgs, runner.config, defaultEditorBootstrapRuntime())
+		if bootstrapErr != nil {
+			return true, bootstrapErr
+		}
+		(&ResponsePrinter{
+			Quiet:       runner.config.Quiet,
+			CompactJSON: runner.config.CompactJSON,
+		}).Print(resp, category)
+		if !resp.Success {
+			return true, ErrCommandFailed
+		}
+		return true, nil
 	case "task":
 		return true, taskCmd(runner.config, subArgs)
 	case "asset-config":

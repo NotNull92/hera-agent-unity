@@ -100,6 +100,21 @@ hera-agent-unity editor play --wait
 hera-agent-unity test --mode PlayMode
 ```
 
+선택한 Editor가 실행 중이 아니면 Connector 탐색 전에 정확한 프로젝트를 시작할
+수 있습니다.
+
+```bash
+hera-agent-unity --project C:/Projects/Game editor launch
+hera-agent-unity --project C:/Projects/Game editor restart
+```
+
+프로젝트 버전은 `ProjectSettings/ProjectVersion.txt`에서 읽고, 해당 Unity Hub
+설치는 `UNITY_HUB_EDITOR` 또는 플랫폼 기본 경로(Windows는
+`%ProgramFiles%\Unity\Hub\Editor`)에서 찾습니다. Hub 위치가 다르면
+`--hub-root`를 사용합니다. 시작 시 Package Manager를 정상 사용하며 `-noUpm`을
+전달하지 않습니다. 새 프로세스가 정확한 프로젝트 heartbeat를 게시하면
+명령이 반환됩니다.
+
 중요한 것은 명령어 이름이 아닙니다. 핵심은 AI가 사람 대신 **확인 → 수정 → 실행 → 검증 → 재수정**을 반복할 수 있다는 점입니다.
 
 ---

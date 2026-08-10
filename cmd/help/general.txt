@@ -17,6 +17,7 @@ Experimental MCP:
                                       Start compact search/describe/call exposure.
 
 Editor Control:
+  editor launch|restart          Start or restart an exact --project path
   editor play [--wait]          Enter play mode (--wait blocks until fully entered)
   editor stop                   Exit play mode
   editor pause                  Toggle pause/resume (play mode only)
@@ -272,4 +273,3 @@ Notes:
   - Using --project with --port requires both to identify the same Editor
   - Custom tools: any [HeraTool] class is auto-discovered
   - Run 'list' to see all available tools
-

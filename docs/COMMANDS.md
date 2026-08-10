@@ -84,11 +84,38 @@ or operation ID invalidates the single-use token.
 
 ## editor
 
-Control Unity Editor play mode and asset database.
+Start or restart an exact Unity project, control play mode, and refresh the
+asset database.
 
 ```bash
 hera-agent-unity editor <action> [flags]
 ```
+
+### launch / restart
+
+Start the exact project selected by `--project`, or stop only that project's
+heartbeat PID and start it again. Both actions read
+`ProjectSettings/ProjectVersion.txt`, resolve the matching Unity Hub Editor,
+launch Unity with normal Package Manager behavior, and return after the new PID
+publishes the selected project's heartbeat.
+
+| Flag | Description | Default |
+|:---|:---|:---|
+| `--project PATH` | Exact Unity project path; required global flag | none |
+| `--hub-root PATH` | Unity Hub Editor root | `UNITY_HUB_EDITOR`, then the platform Hub default |
+| `--timeout MS` | Total stop/start/heartbeat deadline | `60000` |
+
+```bash
+hera-agent-unity --project C:/Projects/Game editor launch
+hera-agent-unity --project C:/Projects/Game editor restart
+hera-agent-unity --project C:/Projects/Game editor launch --hub-root D:/Unity/Hub/Editor
+```
+
+`--port` is rejected because ports do not identify an Editor before startup.
+`restart` terminates the selected process, so save pending work first. These
+commands do not pass `-noUpm` and do not repair a Package Manager resolution
+failure; after the heartbeat appears, use the normal `status`, `console`, and
+other Connector commands.
 
 ### play
 

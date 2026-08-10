@@ -1,6 +1,13 @@
-Usage: hera-agent-unity editor <play|stop|pause|refresh> [options]
+Usage: hera-agent-unity editor <launch|restart|play|stop|pause|refresh> [options]
 
 Subcommands:
+  launch              Start the exact Unity project selected by --project.
+  restart             Stop only that project's heartbeat PID, then start it.
+    --hub-root PATH   Unity Hub Editor root. Defaults to UNITY_HUB_EDITOR,
+                      then the platform's standard Unity Hub install root.
+                      Both commands read ProjectSettings/ProjectVersion.txt,
+                      launch normal Unity with UPM enabled, and wait for the
+                      new process heartbeat. --port is not accepted.
   play [--wait]       Enter play mode
                       --wait blocks until Unity fully enters play mode.
                       Without --wait, returns immediately after requesting.
@@ -15,6 +22,9 @@ Subcommands:
     --force           Allow refresh during play mode and force asset update.
 
 Examples:
+  hera-agent-unity --project C:/Projects/Game editor launch
+  hera-agent-unity --project C:/Projects/Game editor restart
+  hera-agent-unity --project C:/Projects/Game editor launch --hub-root D:/Unity/Hub/Editor
   hera-agent-unity editor play --wait
   hera-agent-unity editor stop --wait
   hera-agent-unity editor refresh --compile

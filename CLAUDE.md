@@ -85,7 +85,9 @@ cmd/                  # Go CLI — thin passthrough layer
   call.go             # Strict typed-tool validation/explain/dispatch
   call_input.go       # JSON/file/stdin source parsing and conflict checks
   config.go           # Immutable per-execution global CLI configuration
-  editor.go           # editor command (waitForReady polling)
+  editor.go           # Connector-backed play/stop/pause/refresh commands
+  editor_bootstrap.go # pre-discovery exact-project launch/restart + heartbeat wait
+  editor_install.go   # project Unity version + Hub Editor resolution
   test.go             # test command (EditMode/PlayMode result polling via pollResultFile)
   internal/poll/      # (extracted from cmd/) shared pollResultFile file-bus poller
                       # w/ exponential backoff (100ms→1.5s) + state/PID liveness (test + packages)

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI)
+
+- Added `editor launch` and `editor restart` as a discovery-independent Unity
+  bootstrap path. Both require an exact project path, resolve the project's
+  recorded Unity version from installed Hub Editors, use normal Package Manager
+  startup, and wait for the new process heartbeat before returning.
+
 ### Added (Connector 0.0.84)
 
 - Extended `screenshot` with bounded 3D physics evidence sampled through the

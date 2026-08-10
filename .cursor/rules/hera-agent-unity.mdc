@@ -585,7 +585,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `exec <code>` | Run C# in Editor | `--usings`, `--check`, `--depth N`, `--stacktrace {none\|user\|full}`, `--strict`, `--no-cache` |
 | `console` | Read/clear log entries | `--type error,warning,log`, `--lines N`, `--stacktrace`, `--clear`, `--since N` |
 | `scene info` / `load` / `save` / `close` / `list` | Scene management | `--mode single\|additive\|additive_without_loading` (load) |
-| `editor play \| stop \| pause \| refresh` | Editor lifecycle | `--wait` (play), `--compile`, `--force` (refresh) |
+| `editor launch \| restart \| play \| stop \| pause \| refresh` | Editor lifecycle | exact `--project`, `--hub-root` (bootstrap); `--wait` (play); `--compile`, `--force` (refresh) |
 | `menu "<path>"` | Execute menu item | (none) |
 | `screenshot` | Capture view/isolated target or inspect bounded Game View UI/3D physics metadata | `--view scene\|game`, `--annotate_ui`, `--annotations_only`, `--annotate_physics`, `--physics_only`, `--physics_grid_size`, `--max_physics_hits`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
 | `test` | Run tests or resume an existing run | `--mode EditMode\|PlayMode`, `--filter <ns.class>`, `--resume <run_id>` |

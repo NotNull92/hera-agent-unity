@@ -100,6 +100,20 @@ hera-agent-unity editor play --wait
 hera-agent-unity test --mode PlayMode
 ```
 
+If the selected Editor is not running, Hera can bootstrap the exact project
+before Connector discovery:
+
+```bash
+hera-agent-unity --project C:/Projects/Game editor launch
+hera-agent-unity --project C:/Projects/Game editor restart
+```
+
+The project version comes from `ProjectSettings/ProjectVersion.txt`; the
+matching Unity Hub install comes from `UNITY_HUB_EDITOR` or the platform default
+(`%ProgramFiles%\Unity\Hub\Editor` on Windows). Pass `--hub-root` for a custom
+Hub location. Startup uses normal Package Manager behavior, not `-noUpm`, and
+returns when the new process publishes that exact project's heartbeat.
+
 The important part is not the command names. The important part is that the agent can **observe → change → run → verify → repair** without making you act as the courier between the AI and Unity.
 
 ---
