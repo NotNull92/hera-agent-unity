@@ -1,6 +1,6 @@
 ﻿# Hera vNext Capability Migration Handoff
 
-Status: **READY FOR M6**
+Status: **READY FOR M7**
 
 Date: 2026-08-09
 
@@ -632,11 +632,11 @@ Requirements:
 - integrate with screenshot evidence contract,
 - do not add an unbounded scene scan.
 
-Status: **PENDING M5**
+Status: **PASS**
 
 ### M7: Unity launch/restart
 
-Status: **APPROVED FOR M7; PENDING M6**
+Status: **APPROVED FOR M7**
 
 Implement the approved narrow Go-side bootstrap exception after the preceding
 milestones.
@@ -1358,6 +1358,112 @@ Next exact step:
 - M6: enrich the existing evidence/input surface with bounded 3D physics raycast
   results using live camera/layer/culling state, stable collider identity, and
   explicit screen/input coordinates.
+```
+
+### 2026-08-10 - M6 bounded 3D physics/raycast evidence complete
+
+```text
+Status: PASS
+
+Implemented contract:
+- Extended the existing strict screenshot tool; no new top-level tool or action
+  was added. annotate_physics enriches Game View captures and physics_only
+  returns the same 3D evidence without resolving an output path, rendering,
+  encoding, or writing PNG pixels.
+- Physics evidence requires an active Camera tagged MainCamera. Every ray uses
+  the intersection of Camera.main.cullingMask and the optional signed 32-bit
+  physics_layer_mask, with bounded positive distance and explicit trigger
+  handling (use_global, ignore, or collide).
+- The square grid defaults to 9x9 and is strictly bounded to 1..16 per axis, so
+  one request issues at most 256 nearest-hit Physics.Raycast queries. Results
+  are clustered by 3D Collider, sorted by sample count then stable path/ID, and
+  bounded to 1..100 entries (default 32) after clustering. No collider/scene
+  object scan or Physics2D query was added.
+- Each result identifies the GameObject and Collider separately, then reports
+  layer, sample_count, representative hit distance/point/normal, Unity input
+  point/bounds, and top-left Game View image point/bounds. The response also
+  reports camera identity, requested/camera/effective masks, grid/ray counts,
+  distance, trigger policy, truncation, and explicit coordinate spaces.
+- UI and physics evidence share one coordinate-space response builder and can
+  coexist on the same screenshot request. Scene View and isolated rendering
+  remain rejected for either Game View evidence mode.
+- Connector source version advanced from 0.0.83 to 0.0.84.
+
+Primary implementation:
+- AgentConnector/Editor/Tools/EditorScreenshot.cs
+- AgentConnector/Editor/Tools/EditorScreenshot.PhysicsAnnotations.cs
+- AgentConnector/Editor/Tools/EditorScreenshot.UiAnnotations.cs
+- AgentConnector/Editor/Tests/ScreenshotPhysicsTests.cs
+- AgentConnector/Editor/Tests/ReleaseGateTests.cs
+
+Reference comparison:
+- Compared against unity-cli-loop baseline
+  6e5e90097eb14df242055bd3f694603d70f26227. Its raycast path also uses
+  Camera.main, intersects the requested layer mask with camera culling, and
+  clusters samples by collider. Hera retained those behavioral lessons but
+  reimplemented them in the existing screenshot contract with configurable
+  strict bounds instead of the reference's fixed dense 40x40 grid.
+
+Live Unity evidence:
+- Used only the marked disposable source-injected Unity 6000.5.6f1 fixture
+  under system temp with -noUpm. The user's Inventoria Editor was never selected
+  for mutation.
+- Actual CLI screenshot --physics_only --physics_grid_size 3 returned 9/9 ray
+  hits clustered into one BoxCollider with distinct GameObject/collider IDs,
+  stable /HeraM6Target path, representative world hit data, explicit 640x480
+  input/image coordinates, effective layer mask 1073741824, and no PNG path.
+- Actual CLI screenshot --view game --annotate_physics --width 320 --height 240
+  wrote a non-empty disposable PNG and returned the same physics identity while
+  keeping the 640x480 Game View coordinate spaces distinct from the 320x240
+  captured PNG dimensions.
+- The fixture console error read after both live calls returned zero matched
+  errors. The initial setup exec was correctly stopped by APPROVAL_REQUIRED and
+  was not auto-approved; a disposable executeMethod helper created the QA scene
+  instead.
+
+Contract and regression evidence:
+- Targeted source-injected ReleaseGateTests.ScreenshotPhysics: PASS 1/1. Its
+  direct suite logged 10/10 checks PASS: no-PNG mode, 3x3/9-ray bound,
+  clustering, GameObject/collider identity, camera/layer intersection,
+  coordinates/world hit data, post-cluster truncation, empty culling
+  intersection, output conflict, and strict schema bounds.
+- A full no-UPM ReleaseGateTests wrapper run produced 12/17 PASS and five
+  catalog/discovery/profile/safety failures because this fixture does not expose
+  the package-gated run_tests tool. That known fixture limitation is the same
+  reason M5 combined the unchanged reviewed run_tests entry with its live
+  catalog; it is not a new M6 runtime failure.
+- The reviewed M5 full catalog's unchanged run_tests entry was combined with
+  the live M6 screenshot entry. Tools remain 31, actions remain 80, normalized
+  catalog bytes are 194404 (+1217), and the reviewed catalog hash is
+  sha256:d1216b934d5fc1783665904dd0128d0d840f558dab6600963c2f6292a175f269.
+  Regenerated baseline comparison passed with contract_changed=false,
+  growth=false, and review_required=false.
+- Exact final Connector/TestRunner sources passed all five representative
+  compile buckets: Unity 2022.3.62f2, 2023.2.22f1, 6000.0.35f1, 6000.3.5f2,
+  and 6000.5.0f1; failed 0, blocked 0.
+- go test ./...: PASS.
+- go vet ./...: PASS.
+- go run ./tools/sync-agent-guides --check: PASS.
+- go run ./tools/validate-connector-package: PASS.
+- git diff --check: PASS (line-ending conversion warnings only).
+- C# LSP remained unavailable because installation was previously declined;
+  exact-source five-bucket compilation plus targeted/live Unity execution
+  covered the changed C# files.
+
+Preservation:
+- The user's Inventoria Editor remained running at its original PID 56188 and
+  was not selected for mutation. Existing commits and the 120-second router lock
+  invariant were preserved.
+- Every M6 disposable fixture Editor was stopped by its exact verified PID.
+  Recoverable logs, XML, scene/helper, PNG, and catalog artifacts remain only in
+  the already marked system-temp fixture.
+- No M7 or M8 implementation was started. M7's prior user approval and M8 option
+  2 approval remain recorded above.
+
+Next exact step:
+- M7: implement the approved narrow Go-side Unity launch/restart bootstrap,
+  preserving project-safe exact targeting and avoiding the external UPM path
+  failure assumptions documented in this handoff.
 ```
 
 ## 18. First prompt for a new Codex session
