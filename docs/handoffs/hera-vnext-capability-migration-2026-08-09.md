@@ -1554,6 +1554,39 @@ Next exact step:
   and M8 option 2 begin.
 ```
 
+### 2026-08-10 - M7 live restart closure and remaining UPM console failure
+
+```text
+Status: M7 LIVE PROCESS ACCEPTANCE PASS; EXTERNAL UPM FAILURE REMAINS OPEN
+
+Live evidence:
+- After the user manually updated the Inventoria Connector package to 0.0.84,
+  the implemented exact-project restart path completed two real heartbeat
+  handoffs: PID 56188 -> 51580, then PID 51580 -> 47212. Each new process
+  published the exact Inventoria project path on port 8090 and reached ready.
+- The second restart was also repeated with the two inherited NODE_REPL_*
+  variables removed for that launch only. The same UPM error remained, so
+  those inherited variables are not the cause.
+- The latest compact console read returned two errors and no compiler stack:
+  `[Package Manager Window] The "path" argument must be of type string.
+  Received undefined` and its offline package-list variant. Both terminate at
+  `UnityEditor.EditorApplication:Internal_CallUpdateFunctions()`.
+- Connector 0.0.84 being loaded and the M7 heartbeat/PID transition succeeding
+  do not resolve this separate Package Manager Window failure. The current
+  project does have Packages/manifest.json, and an earlier valid-empty-manifest
+  disposable reproduction failed identically, so a missing manifest is not an
+  established cause.
+
+Preservation:
+- No project assets, package manifest, package lock, or scene state were
+  modified while reading the console. M8 option 2 has not started.
+
+Next exact step:
+- Diagnose the local Package Manager Window/List failure from Unity Hub launch
+  context or Package Manager state without changing Inventoria's manifest.
+  Once that environment issue is isolated, continue with approved M8 option 2.
+```
+
 ## 18. First prompt for a new Codex session
 
 Use this from the repository root:
