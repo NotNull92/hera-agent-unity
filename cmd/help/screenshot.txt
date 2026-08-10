@@ -1,6 +1,7 @@
 Usage: hera-agent-unity screenshot [options]
 
-Capture a screenshot of the Unity editor, or an isolated GameObject.
+Capture a screenshot of the Unity editor, an isolated GameObject, or bounded
+identity-first metadata for active uGUI Selectables.
 
 Options:
   --view <mode>      scene (default), game
@@ -19,10 +20,20 @@ Options:
                      (default: iso). Multiple angles are saved as one contact sheet.
   --background <c>   #RRGGBB, #RRGGBBAA, or transparent (default: #2B2B2BFF)
   --padding <N>      Camera padding fraction for isolated capture (default: 0.15)
+  --annotate_ui      Add bounded uGUI identity, interaction, blocking, and
+                     coordinate metadata to a Game View screenshot
+  --annotations_only Return the same UI metadata without rendering or writing PNG pixels
+  --max_annotations <N>  Maximum UI elements returned, 1..100 (default: 32)
+
+UI annotations require an active EventSystem and Game View coordinates. Input
+coordinates use bottom-left origin with Y up; image coordinates use top-left
+origin with Y down. Annotation-only mode rejects PNG output/overwrite options.
 
 Examples:
   hera-agent-unity screenshot
   hera-agent-unity screenshot --view game
+  hera-agent-unity screenshot --view game --annotate_ui --max_annotations 50
+  hera-agent-unity screenshot --annotations_only
   hera-agent-unity screenshot --view scene --width 3840 --height 2160
   hera-agent-unity screenshot --output_path captures/my_scene.png
   hera-agent-unity screenshot --isolated --target /Player --output_path captures/player.png

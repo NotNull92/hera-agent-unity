@@ -916,7 +916,9 @@ hera-agent-unity menu list --filter "Tools/" --limit 50
 
 ## screenshot
 
-Capture a screenshot of the Unity editor or an isolated GameObject.
+Capture a screenshot of the Unity editor or an isolated GameObject. Game View
+captures can also return bounded, identity-first uGUI metadata, or return that
+metadata alone without rendering or writing PNG pixels.
 
 ```bash
 hera-agent-unity screenshot [flags]
@@ -935,15 +937,32 @@ hera-agent-unity screenshot [flags]
 | `--angles` | Comma-separated `iso`, `front`, `back`, `left`, `right`, `top`, `bottom`; multiple angles become one contact sheet | `iso` |
 | `--background` | `#RRGGBB`, `#RRGGBBAA`, or `transparent` | `#2B2B2BFF` |
 | `--padding` | Isolated camera padding fraction | `0.15` |
+| `--annotate_ui` | Add active uGUI Selectable identity, interaction, blocking, and coordinate metadata to a Game View capture | `false` |
+| `--annotations_only` | Return UI metadata without rendering or writing PNG pixels; implies Game View annotation and rejects PNG output/overwrite flags | `false` |
+| `--max_annotations` | Maximum number of UI elements returned (`1..100`) | `32` |
 
 ```bash
 hera-agent-unity screenshot
 hera-agent-unity screenshot --view game
+hera-agent-unity screenshot --view game --annotate_ui --max_annotations 50
+hera-agent-unity screenshot --annotations_only
 hera-agent-unity screenshot --width 3840 --height 2160
 hera-agent-unity screenshot --output_path captures/my_scene.png
 hera-agent-unity screenshot --isolated --target /Player --output_path captures/player.png
 hera-agent-unity screenshot --isolated --target /Player --angles front,right,top --background transparent
 ```
+
+UI annotation entries identify each target with `instance_id` and
+`hierarchy_path`, then report `interactable`, `blocked_by`, target raycast state,
+and point/bounds coordinates. `input_point` / `input_bounds` use Unity screen
+pixels with a bottom-left origin and Y increasing upward. `image_point` /
+`image_bounds` use Game View pixels with a top-left origin and Y increasing
+downward. The response repeats these names and dimensions under
+`coordinate_spaces`; PNG editor-window dimensions are kept separate because a
+captured Game View window can include editor chrome. Results are path-sorted,
+bounded by `max_annotations`, and report total/skipped/truncated counts. An
+active `EventSystem` is required. Isolated capture cannot be combined with UI
+annotation.
 
 ---
 

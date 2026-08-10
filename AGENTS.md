@@ -292,7 +292,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Enter / exit play mode | `editor play [--wait]` / `editor stop` | `--wait` blocks until fully entered. |
 | Force recompile | `editor refresh --compile` | Waits until compile finishes or `--timeout` (60s default) elapses — raise `--timeout` for big projects, or use `refresh_unity --compile request` to fire-and-forget. |
 | Trigger a menu item | `menu "Window/General/Console"` | `File/Quit` is blocked for safety. |
-| Capture screenshot | `screenshot [--view game]` / `screenshot --isolated --target /Player` | Default scene view, 1920×1080; isolated mode renders one GameObject. |
+| Capture screenshot | `screenshot [--view game]` / `screenshot --view game --annotate_ui` / `screenshot --annotations_only` / `screenshot --isolated --target /Player` | Default scene view, 1920×1080. Game View annotation returns bounded uGUI identities, blocking, and explicit input/image coordinates; metadata-only mode skips PNG work. |
 | Drive Unity input for QA | `input inspect --path ...` / `input click --path ...` / `input keyboard --key space` / `call input --json '{"action":"sequence",...}'` / bounded `record` + `replay` | Sends uGUI EventSystem events or optional Input System device state inside Unity. Neither is a physical OS click. |
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
@@ -581,7 +581,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `scene info` / `load` / `save` / `close` / `list` | Scene management | `--mode single\|additive\|additive_without_loading` (load) |
 | `editor play \| stop \| pause \| refresh` | Editor lifecycle | `--wait` (play), `--compile`, `--force` (refresh) |
 | `menu "<path>"` | Execute menu item | (none) |
-| `screenshot` | Capture view or isolated target | `--view scene\|game`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
+| `screenshot` | Capture view/isolated target or inspect bounded Game View UI metadata | `--view scene\|game`, `--annotate_ui`, `--annotations_only`, `--max_annotations`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
 | `test` | Run tests or resume an existing run | `--mode EditMode\|PlayMode`, `--filter <ns.class>`, `--resume <run_id>` |
 | `task list` / `task status <task_id>` | Inspect durable test/package work without contacting Unity | `--project <full-path>` or `--port N` |
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |

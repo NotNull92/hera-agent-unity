@@ -25,6 +25,7 @@ namespace HeraAgent.Tests
             nameof(OperationLedger),
             nameof(OutputFilePolicy),
             nameof(ProjectIdentity),
+            nameof(ScreenshotAnnotations),
             nameof(ToolCatalog),
             nameof(ToolContract),
             nameof(ToolDiscovery),
@@ -56,6 +57,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void ProjectIdentity() => ProjectIdentityTests.RunTests();
+
+        [Test]
+        public void ScreenshotAnnotations() => ScreenshotAnnotationTests.RunTests();
 
         [Test]
         public void ToolCatalog() => ToolCatalogTests.RunTests();

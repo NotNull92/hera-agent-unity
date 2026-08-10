@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.83)
+
+- Extended `screenshot` with bounded uGUI identity, reachability, blocking, and
+  explicit Game View image/Unity input coordinate annotations.
+- Added `annotations_only` so agents can inspect active UI without resolving an
+  output path, rendering pixels, encoding PNG data, or writing a screenshot.
+
 ### Added (Connector 0.0.82)
 
 - Added bounded Input System recording and replay through the existing `input`

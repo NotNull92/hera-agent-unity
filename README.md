@@ -574,7 +574,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `editor` | Play, stop, pause, refresh, and compile. |
 | `test` | Run or resume Unity tests. |
 | `task` | Inspect durable test/package work without contacting Unity. |
-| `screenshot` | Capture Scene/Game views or isolated objects. |
+| `screenshot` | Capture Scene/Game views or isolated objects; optionally return bounded uGUI identity/blocking coordinates, including metadata-only mode. |
 | `ui_doc` | Inspect, build, sample, and capture Unity UI. |
 | `input` | Test uGUI or optional Input System keyboard/mouse/sequence/record/replay state. |
 | `profiler` | Read profiler hierarchy snapshots. |

@@ -578,7 +578,7 @@ hera-agent-unity ui_slop box-in-box
 | `editor` | Play, Stop, Pause, Refresh, Compile |
 | `test` | Unity 테스트 실행/재개 |
 | `task` | Unity에 다시 명령하지 않고 장기 작업 상태 확인 |
-| `screenshot` | Scene/Game View 또는 단일 오브젝트 캡처 |
+| `screenshot` | Scene/Game View 또는 단일 오브젝트 캡처; 제한된 uGUI 식별자/차단/좌표 메타데이터와 메타데이터 전용 모드 지원 |
 | `ui_doc` | Unity UI 조회, 생성, 측정, 캡처 |
 | `input` | EventSystem uGUI 또는 선택적 Input System 키보드/마우스 상태 검증 |
 | `profiler` | Profiler hierarchy snapshot 읽기 |

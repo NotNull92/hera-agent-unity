@@ -131,9 +131,6 @@ namespace HeraAgent
             if (rect == null)
                 return (default, new ErrorResponse("INPUT_TARGET_NOT_UI", "EventSystem input requires a RectTransform target."));
 
-            var canvas = rect.GetComponentInParent<Canvas>();
-            Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-
             Vector3 worldPoint;
             if (options.Normalized.HasValue)
             {
@@ -149,19 +146,29 @@ namespace HeraAgent
                 worldPoint = rect.TransformPoint(local);
             }
 
-            if (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceOverlay &&
-                canvas.transform is RectTransform canvasRect &&
-                canvasRect.rect.width > 0f && canvasRect.rect.height > 0f)
-            {
-                var local = (Vector2)canvasRect.InverseTransformPoint(worldPoint);
-                var canvasLocal = canvasRect.rect;
-                var pixelRect = canvas.pixelRect;
-                var x = pixelRect.x + ((local.x - canvasLocal.xMin) / canvasLocal.width) * pixelRect.width;
-                var y = pixelRect.y + ((local.y - canvasLocal.yMin) / canvasLocal.height) * pixelRect.height;
-                return (new Vector2(x, y), null);
-            }
+            return (WorldToScreenPoint(rect, worldPoint), null);
+        }
 
-            return (RectTransformUtility.WorldToScreenPoint(camera, worldPoint), null);
+        internal static (Rect bounds, ErrorResponse err) ResolveScreenBounds(GameObject target)
+        {
+            var rect = target == null ? null : target.GetComponent<RectTransform>();
+            if (rect == null)
+                return (default, new ErrorResponse(
+                    "INPUT_TARGET_NOT_UI",
+                    "EventSystem input requires a RectTransform target."));
+
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            var first = WorldToScreenPoint(rect, corners[0]);
+            var min = first;
+            var max = first;
+            for (var index = 1; index < corners.Length; index++)
+            {
+                var point = WorldToScreenPoint(rect, corners[index]);
+                min = Vector2.Min(min, point);
+                max = Vector2.Max(max, point);
+            }
+            return (Rect.MinMaxRect(min.x, min.y, max.x, max.y), null);
         }
 
         public static (Vector2 point, ErrorResponse err) ResolveDragEndPoint(InputQaOptions options)
@@ -174,6 +181,27 @@ namespace HeraAgent
             var result = ResolvePoint(options);
             options.Normalized = original;
             return result;
+        }
+
+        private static Vector2 WorldToScreenPoint(RectTransform rect, Vector3 worldPoint)
+        {
+            var canvas = rect.GetComponentInParent<Canvas>();
+            if (canvas != null && canvas.renderMode == RenderMode.ScreenSpaceOverlay &&
+                canvas.transform is RectTransform canvasRect &&
+                canvasRect.rect.width > 0f && canvasRect.rect.height > 0f)
+            {
+                var local = (Vector2)canvasRect.InverseTransformPoint(worldPoint);
+                var canvasLocal = canvasRect.rect;
+                var pixelRect = canvas.pixelRect;
+                var x = pixelRect.x + ((local.x - canvasLocal.xMin) / canvasLocal.width) * pixelRect.width;
+                var y = pixelRect.y + ((local.y - canvasLocal.yMin) / canvasLocal.height) * pixelRect.height;
+                return new Vector2(x, y);
+            }
+
+            Camera camera = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? canvas.worldCamera
+                : null;
+            return RectTransformUtility.WorldToScreenPoint(camera, worldPoint);
         }
 
         public static object State(int maxResults)

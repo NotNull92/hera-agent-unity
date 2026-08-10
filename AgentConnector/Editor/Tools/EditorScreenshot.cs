@@ -10,7 +10,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "screenshot",
-        Description = "Capture a screenshot of the Unity editor. Views: scene, game, or isolated target.",
+        Description = "Capture a Scene/Game view or isolated target, with optional bounded uGUI identity and input-coordinate annotations.",
         Profiles = new[] { "core", "scene", "ui", "diagnostics", "testing" },
         RiskClass = HeraRiskClass.Write,
         Reversible = true,
@@ -90,6 +90,22 @@ namespace HeraAgent.Tools
                 Required = false,
                 SchemaJson = "{\"type\":\"number\",\"minimum\":0,\"maximum\":2}")]
             public float Padding { get; set; }
+
+            [ToolParameter(
+                "Attach bounded active uGUI Selectable identity, reachability, and coordinate metadata. Game view only.",
+                Required = false)]
+            public bool AnnotateUi { get; set; }
+
+            [ToolParameter(
+                "Return uGUI annotations without resolving an output path, rendering pixels, encoding PNG, or writing a file. Implies annotate_ui and defaults view to game.",
+                Required = false)]
+            public bool AnnotationsOnly { get; set; }
+
+            [ToolParameter(
+                "Maximum uGUI annotations returned (default 32, maximum 100).",
+                Required = false,
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":100}")]
+            public int MaxAnnotations { get; set; }
         }
 
         public static object HandleCommand(JObject @params)
@@ -98,7 +114,9 @@ namespace HeraAgent.Tools
                 @params = new JObject();
 
             var p = new ToolParams(@params);
-            var view = p.Get("view", "scene").ToLowerInvariant();
+            var annotationsOnly = p.GetBool("annotations_only");
+            var annotateUi = p.GetBool("annotate_ui") || annotationsOnly;
+            var view = p.Get("view", annotateUi ? "game" : "scene").ToLowerInvariant();
             var width = p.GetInt("width", DefaultWidth).Value;
             var height = p.GetInt("height", DefaultHeight).Value;
             var wantsIsolated = p.GetBool("isolated")
@@ -108,6 +126,34 @@ namespace HeraAgent.Tools
 
             try
             {
+                if (annotateUi && view != "game")
+                    return new ErrorResponse(
+                        "SCREENSHOT_UI_ANNOTATION_REQUIRES_GAME_VIEW",
+                        "[Hera] I can annotate uGUI only in the game view coordinate space.");
+                if (annotateUi && wantsIsolated)
+                    return new ErrorResponse(
+                        "SCREENSHOT_UI_ANNOTATION_ISOLATED_CONFLICT",
+                        "[Hera] I can't combine uGUI annotations with isolated GameObject rendering.");
+                if (annotationsOnly &&
+                    (p.GetRaw("output_path") != null || p.GetBool("overwrite")))
+                {
+                    return new ErrorResponse(
+                        "SCREENSHOT_ANNOTATIONS_ONLY_OUTPUT_CONFLICT",
+                        "[Hera] I don't accept output_path or overwrite when annotations_only skips all PNG work.");
+                }
+
+                var (maxAnnotations, maxError) = ParseMaxAnnotations(p);
+                if (maxError != null) return maxError;
+                ScreenshotUiAnnotationCollection annotations = null;
+                if (annotateUi)
+                {
+                    var collected = CollectUiAnnotations(maxAnnotations);
+                    if (collected.error != null) return collected.error;
+                    annotations = collected.annotations;
+                }
+                if (annotationsOnly)
+                    return BuildAnnotationsOnlyResponse(annotations);
+
                 var overwrite = p.GetBool("overwrite");
                 if (!OutputFilePolicy.TryResolvePng(
                     p.Get("output_path"),
@@ -121,15 +167,21 @@ namespace HeraAgent.Tools
                 if (wantsIsolated)
                     return CaptureIsolated(p, width, height, outputPath, overwrite);
 
+                object response;
                 switch (view)
                 {
                     case "scene":
-                        return CaptureSceneView(width, height, outputPath, overwrite);
+                        response = CaptureSceneView(width, height, outputPath, overwrite);
+                        break;
                     case "game":
-                        return CaptureGameView(width, height, outputPath, overwrite);
+                        response = CaptureGameView(width, height, outputPath, overwrite);
+                        break;
                     default:
                         return new ErrorResponse("INVALID_PARAM", $"Unknown view '{view}'. Valid: scene, game.");
                 }
+                return annotations == null
+                    ? response
+                    : AttachUiAnnotations(response, annotations, width, height);
             }
             catch (Exception e)
             {
