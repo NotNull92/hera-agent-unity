@@ -1,6 +1,6 @@
 ﻿# Hera vNext Capability Migration Handoff
 
-Status: **M7 IMPLEMENTED; LIVE SUCCESS BLOCKED BY EXTERNAL UPM FAILURE**
+Status: **M8 PASS; M9 EXEC PERFORMANCE A/B IS NEXT**
 
 Date: 2026-08-09
 
@@ -643,7 +643,7 @@ milestones.
 
 ### M8: Restricted dynamic-code security
 
-Status: **OPTION 2 APPROVED; PENDING M7**
+Status: **PASS**
 
 Preserve Full Access as the default and add Restricted as an explicit opt-in.
 
@@ -1638,7 +1638,133 @@ Next exact step:
 - Begin the already approved M8 option 2 milestone from its handoff contract.
 ```
 
-## 18. First prompt for a new Codex session
+### 2026-08-10 - M8 opt-in Restricted exec complete
+
+```text
+Status: PASS
+
+Implemented contract:
+- Connector source version advanced from 0.0.84 to 0.0.85.
+- Extended the existing strict `exec` contract with
+  `security_mode: full|restricted` and legacy `--security-mode` alias. `full`
+  remains the default with unchanged arbitrary C# semantics; no top-level tool
+  or action was added.
+- Restricted mode performs three fail-closed layers before invocation:
+  source validation after masking comments/literals, pre-load DLL metadata
+  validation through Unity's already loaded Unity.Cecil, and post-load IL
+  validation of every generated method and resolved call/member target.
+- The source layer rejects unsafe/native/dynamic/reflection and external-I/O
+  constructs early. The metadata layer rejects P/Invoke and any referenced
+  assembly that is not a trusted System/UnityEngine assembly from the running
+  Editor installation. The IL layer rejects indirect/native pointer opcodes and
+  file, network, process, reflection, native, threading, dynamic-loading,
+  UnityEditor, hardware, and user/third-party assembly access.
+- Restricted cache identities are separate from Full Access. Fresh or disk-hit
+  DLLs pass metadata validation before persistence/load, and loaded assemblies
+  pass IL validation before cache insertion or Execute(). Restricted Unity
+  object results are capped at the existing shallow depth-2 projection.
+- Stable failures are EXEC_RESTRICTED_SOURCE_DENIED,
+  EXEC_RESTRICTED_METADATA_DENIED, and EXEC_RESTRICTED_IL_DENIED with bounded
+  stage/violation data. Existing arbitrary-code permission, approval, operation
+  ledger, strict contract, and response-loss rules remain in front of the same
+  exec tool.
+
+Automated and live evidence:
+- Targeted normal-UPM Unity 6000.3 release gate
+  `HeraAgent.Tests.ReleaseGateTests.ExecRestricted`: PASS 1/1. The package-test
+  script restored manifest.json byte-for-byte and completed its post-restore
+  production compile.
+- Marked source-injected Unity 6000.5.6f1 execution: PASS for the strict enum
+  contract, unchanged Full Access default, benign Restricted UnityEngine read,
+  and each source/metadata/IL denial stage (6/6 checks).
+- The normal CLI path returned APPROVAL_REQUIRED for Full and Restricted exec
+  requests before handler execution. No token was auto-approved. Independent
+  ApprovalPolicyTests and OperationLedgerTests menu suites both reported ALL
+  PASSED.
+- Exact-source compatibility matrix: PASS 5/5 for 2022.3.62f2,
+  2023.2.22f1, 6000.0.35f1, 6000.3.5f2, and 6000.5.0f1; zero failed or blocked
+  buckets.
+- Full Go/package gates: go clean -testcache, gofmt, golangci-lint run/fmt,
+  go vet, go test ./..., validate-connector-package,
+  sync-agent-guides --check, and git diff --check: PASS.
+- Reviewed normal-UPM catalog remains 31 tools / 80 actions. Only Advanced grew
+  by 294 normalized bytes for the new enum parameter; the reviewed baseline is
+  194,698 normalized bytes with hash
+  sha256:feb2b2eac7fb5fef74c9c280e80bded419a669c3d09ecda964f3a78417b5140f.
+  Post-update --fail-on-change comparison reported no change and no review.
+
+Preservation and cleanup:
+- Inventoria remained on PID 34236, port 8090, ready, with zero matched console
+  errors. Its scene, assets, manifest, lock file, and installed Connector 0.0.84
+  were not modified.
+- Every disposable source-injected or normal-UPM QA Editor was verified against
+  its exact project command line and stopped by exact PID. Existing user commits
+  were preserved. No commit, tag, push, or release was performed.
+
+Next exact step:
+- M9: run the exec performance A/B benchmark defined above before considering
+  any persistent compiler worker or fast-path architecture.
+```
+
+## 18. Next-session continuation snapshot
+
+### Goal
+
+Continue with M9's exec performance A/B measurements. Do not begin a
+persistent compiler worker or fast-path implementation until the benchmark
+evidence justifies a separate decision.
+
+### Current state
+
+- M0 through M8 are complete and verified. M8's implementation is commit
+  `d1a1ae99ab48bcf5cbc81030b87fccae7f6841d0`
+  (`feat(exec): add restricted dynamic-code mode`). See the M8 progress entry
+  above for the full verification ledger instead of repeating it here.
+- `exec` defaults to Full Access; Restricted is an explicit opt-in and keeps
+  the same approval, operation-ledger, and strict-contract boundary.
+- The canonical catalog is 31 tools / 80 actions. Connector source is 0.0.85.
+- Inventoria was deliberately left on its installed Connector 0.0.84 and is
+  not M8 source-validation evidence.
+
+### Decisions and open questions
+
+- There is no user decision blocking the start of M9: measure only.
+- Any persistent worker, compiler-process lifetime change, or new fast path
+  remains unapproved architecture work until M9 establishes a measured need
+  and the handoff records the resulting decision.
+
+### Next steps
+
+1. Read `docs/handoffs/ACTIVE.md`, this handoff, `AGENTS.md`, and `CLAUDE.md`;
+   then verify branch, status, current code, and exact selected Unity project.
+2. Run the M9 matrix already defined above: cold unique snippet, warm unique
+   snippet, exact cache hit, first call after domain reload, and multiple unique
+   snippets. Record wall time plus compile/load/execute/serialize timings.
+3. Compare the measured cost and document the result in this handoff. Stop at
+   evidence unless a later explicit user decision authorizes architecture work.
+
+### References and environment gotchas
+
+- Primary code: `AgentConnector/Editor/Tools/ExecuteCsharp.cs` and
+  `AgentConnector/Editor/Tools/ExecuteCsharp.Restricted.cs`.
+- Contract/docs: `docs/COMMANDS.md` and
+  `docs/metrics/catalog-payload-baseline.json`.
+- The installed PATH CLI may lag repository source; use `go run .` when M9
+  needs the current CLI implementation.
+- A source-injected `-noUpm` fixture exposes 30 tools because
+  `manage_packages` is unavailable. Use a normal-UPM fixture for canonical
+  31-tool catalog evidence.
+- The Windows restart launcher already contains the ALLUSERSPROFILE repair.
+  Do not regress it, and never auto-approve arbitrary-code tokens.
+
+### Suggested skills
+
+- `hyper-mode` for repository implementation/verification discipline.
+- `hera-agent-unity` for live Editor bootstrap and performance evidence.
+- `omo:programming` only if M9 requires Go changes; `omo:debugging` for a real
+  runtime anomaly; `omo:git-master` when committing.
+
+## 19. First prompt for a new Codex session
 
 Use this from the repository root:
 
