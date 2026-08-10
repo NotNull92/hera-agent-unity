@@ -1,6 +1,6 @@
 ﻿# Hera vNext Capability Migration Handoff
 
-Status: **READY FOR M3**
+Status: **READY FOR M4**
 
 Date: 2026-08-09
 
@@ -321,11 +321,12 @@ Benchmark first.
 
 The reference project exposes screenshot simulation coordinates heavily. Hera should return path/instance identity where possible and include coordinate mappings as evidence for physical game input, not make coordinates the primary identity contract.
 
-## 8. User-decision gates
+## 8. User decisions
 
-These are intentionally blocked. Do not silently resolve them.
+Both decisions were explicitly resolved by the user on 2026-08-10. Preserve
+the approved scope below when their milestones are reached.
 
-### BLOCKED A: Unity launch/restart before Connector discovery
+### APPROVED A: Unity launch/restart before Connector discovery
 
 Problem:
 
@@ -333,7 +334,7 @@ Unity cannot execute C# Connector logic while the Editor is not running. True `e
 
 This is a narrow exception to the general rule that Unity business logic belongs in the C# Connector.
 
-Recommended implementation if user approves:
+Approved implementation contract:
 
 - expose as existing `editor launch` / `editor restart`, not a new top-level tool,
 - handle only process/bootstrap concerns in Go,
@@ -345,12 +346,13 @@ Recommended implementation if user approves:
 Status:
 
 ```text
-BLOCKED: USER DECISION
+APPROVED: USER DECISION (2026-08-10)
 ```
 
-When M7 is reached, stop and ask the user whether this narrow Go-side exception is approved unless the user has already answered it in a later commit/handoff update.
+When M7 is reached, implement this narrow Go-side exception without expanding
+it into Unity business logic or adding a Node / `launch-unity` dependency.
 
-### BLOCKED B: make `exec` Restricted by default
+### DECIDED B: preserve Full Access default and add opt-in Restricted mode
 
 Current public Hera contract:
 
@@ -358,34 +360,31 @@ Current public Hera contract:
 exec = approved arbitrary C# with full Unity / loaded-assembly access
 ```
 
-Candidate vNext contract:
+Approved vNext contract:
 
 ```text
-exec default = Restricted dynamic code
-  source validation
-  pre-load metadata validation
-  post-load IL validation
-
-explicit Full Access
+exec default = Full Access (unchanged)
   existing arbitrary-code permission
   existing approval
   existing operation ledger
+
+explicit opt-in Restricted mode
+  source validation
+  pre-load metadata validation
+  post-load IL validation
 ```
 
-This would be a breaking behavior change even though it improves defense in depth.
+This preserves the current public default and adds Restricted mode as defense in
+depth for callers that explicitly select it.
 
 Status:
 
 ```text
-BLOCKED: USER DECISION
+DECIDED: OPTION 2 (2026-08-10)
 ```
 
-When M8 is reached, stop and ask whether to:
-
-1. make Restricted the new default in a breaking release, or
-2. preserve Full Access default and add opt-in Restricted mode.
-
-Do not choose on the user's behalf.
+When M8 is reached, implement opt-in Restricted mode without changing existing
+`exec` default semantics.
 
 ## 9. Target action design
 
@@ -560,7 +559,7 @@ Measure:
 - HTTP call count,
 - output bytes.
 
-Status: **READY**
+Status: **PASS**
 
 ### M4: versioned input record/replay
 
@@ -591,7 +590,7 @@ Exit criteria:
 - verify repeated replay does not leave stuck input state,
 - verify file compatibility after domain reload where relevant.
 
-Status: **PENDING M3**
+Status: **READY**
 
 ### M5: screenshot UI annotation and annotation-only mode
 
@@ -637,15 +636,16 @@ Status: **PENDING M5**
 
 ### M7: Unity launch/restart
 
-Status: **BLOCKED: USER DECISION A**
+Status: **APPROVED FOR M7; PENDING M6**
 
-Do not implement until approved.
+Implement the approved narrow Go-side bootstrap exception after the preceding
+milestones.
 
 ### M8: Restricted dynamic-code security
 
-Status: **BLOCKED: USER DECISION B**
+Status: **OPTION 2 APPROVED; PENDING M7**
 
-Do not change `exec` default semantics until approved.
+Preserve Full Access as the default and add Restricted as an explicit opt-in.
 
 If Restricted mode is approved in any form, design it to complement, not replace:
 
@@ -954,6 +954,182 @@ Next exact step:
 User decisions still blocked:
 - Decision A: Unity launch/restart Go-side bootstrap exception.
 - Decision B: exec Restricted-default semantics.
+```
+
+### 2026-08-10 - Editor restart / UPM path comparison (diagnosis only)
+
+```text
+Scope:
+- Investigated the user's report that agent-driven Editor restarts correlate
+  with Unity Package Manager `path` failures.
+- No launcher or blocked milestone was implemented. Decision A remains blocked.
+
+Current live evidence:
+- The user-restarted Inventoria Editor is healthy on Unity 6000.3.5f2, PID
+  56188, Hera port 8090, state ready, with 31 exposed tools.
+- The current Editor log shows UPM IPC connected, 70 packages registered, and
+  the Hera Git package resolved from `?path=AgentConnector` into PackageCache.
+- The current Hera error-console read contains no matching errors, and retained
+  current logs contain no `path argument` / `undefined` occurrence.
+
+Reference implementation evidence:
+- Audited hatayama/unity-cli-loop at pinned commit
+  6e5e90097eb14df242055bd3f694603d70f26227 and its launch-unity dependency at
+  LaunchUnityCommand commit 098caa583c03af9655b7fb92c132f98b81e817ec.
+- `uloop launch -r` passes `restart: true` and `unityArgs: []`; it does not use
+  `-noUpm`. LaunchUnityCommand resolves the exact project, stops its matching
+  process, handles stale lock state, launches with separate argv and inherited
+  environment, sets `MSYS_NO_PATHCONV=1`, and waits briefly for UnityLockfile.
+  unity-cli-loop separately waits for Editor/dynamic-code readiness and prewarms.
+- The reference is itself a normal UPM package (Git URL or OpenUPM). Its
+  post-import resolver checks local `Packages/src`, fixed `Library/uLoopMCP`,
+  `PackageInfo.resolvedPath`, then `Library/PackageCache`. Because that code runs
+  only after package import, it cannot repair a UPM failure that occurs before
+  the package loads.
+
+Conclusion and limits:
+- The reference does not avoid UPM or contain a workaround for the observed
+  pre-import UPM `path` exception; it assumes an already prepared, UPM-healthy
+  project and hardens process/argument/readiness orchestration around it.
+- The retained failure still belongs to the earlier normal blank-project UPM
+  package-test attempt, before Hera import. The original failing stack is not
+  retained. The local `file:` package / Unity 6000.5 fixture state is only a
+  correlated candidate condition, not a proven root cause.
+- Hera's `-noUpm` path remains appropriate only for disposable, source-injected
+  benchmark/test fixtures. It is not evidence for disabling UPM in a real user
+  project restart.
+
+Repository state:
+- HEAD e725b66bddf68542b06aca48774f312d25168e86; main remains ahead of origin/main
+  by four user commits. Only this handoff evidence was added in this diagnosis.
+```
+
+### 2026-08-10 - User decisions A and B resolved
+
+```text
+Explicit user decisions:
+- Decision A APPROVED: Hera may own Unity Editor launch/restart through the
+  narrow Go-side process/bootstrap exception documented in section 8.
+- Decision B OPTION 2 SELECTED: preserve Full Access as the `exec` default and
+  add Restricted mode as an explicit opt-in.
+
+Milestone effect:
+- M7 is no longer user-blocked; it remains pending behind M3-M6.
+- M8 is no longer user-blocked; it remains pending behind M7.
+- No M7/M8 implementation was started out of sequence in this decision-record
+  update. The next exact implementation milestone remains M3.
+```
+
+### 2026-08-10 - M3 bounded input sequence complete
+
+```text
+Status: PASS
+
+Implemented contract:
+- Extended the existing strict `input` tool with `action: "sequence"`; no new
+  top-level tool was added.
+- Sequence execution is PlayMode-only and deliberately limited to Input System
+  keyboard/mouse steps. EventSystem pointer actions remain excluded because
+  their current standalone down/up calls do not share a transaction-local
+  pointer lifecycle that can be rolled back safely.
+- Accepts 1..32 strict nested steps, validates the complete JSON shape,
+  action/mode fields, device/control availability, ownership transitions, and
+  aggregate budgets before the first mutation.
+- Caps aggregate press/click holds at 30,000 ms, aggregate awaited frames at
+  600, and execution wall time at 45 seconds. Nested sequence/read actions and
+  unknown fields fail closed.
+- Rejects sequence start when any standalone Hera-held key/button exists, so a
+  sequence cannot release state it does not own. Sequence-acquired controls are
+  released in `finally`; cleanup success/failure and final held state are
+  reported structurally.
+- Uses one outer command/operation-ledger record, fail-fast step execution, and
+  compact summaries. Existing outcome-unknown/no-blind-retry behavior remains
+  unchanged.
+- Input System changes now execute deterministically in the configured update
+  phase, and Editor frame waits queue the player loop. This removed the observed
+  background-Editor stall without adding an Input System package dependency.
+
+Primary implementation:
+- AgentConnector/Editor/Core/InputQaSequence.cs
+- AgentConnector/Editor/Core/InputQaSequencePlan.cs
+- AgentConnector/Editor/Core/InputQaInputSystem.cs
+- AgentConnector/Editor/Core/EditorUpdate.cs
+- AgentConnector/Editor/Tools/Input.cs
+- AgentConnector/Editor/Tools/InputSequenceContract.cs
+- AgentConnector/Editor/Tests/InputQaSequenceTests.cs
+- Connector source version: 0.0.81
+
+Contract and live evidence:
+- RED against the previously installed Connector: `sequence` was outside the
+  input action enum and nested `steps` collided with the drag integer contract.
+- Strict validation against the source-injected Connector: PASS.
+- InputQa release gate: PASS 1/1.
+- Full source-injected Unity 6000.5.6f1 EditMode suite: 21/22. Every InputQa,
+  ToolCatalog, ToolContract, ToolDiscovery, and ToolSafety test passed. The only
+  failure was the pre-existing unrelated UiDocApply
+  `TestRootCanvasCreatesEventSystem` fixture assertion.
+- Live PlayMode pre-held test: standalone B remained held and sequence returned
+  INPUT_SEQUENCE_PREEXISTING_HOLD; explicit standalone up then released B.
+- Live unbalanced Space-down sequence: completed successfully and final cleanup
+  released Space with an empty `held_after` state.
+- Live eight-step keyboard/mouse sequence: 8/8 completed, total_hold_ms 20,
+  total_awaited_frames 9, cleanup succeeded, and held_after was empty.
+- Final post-review background-Editor smoke: a two-step sequence completed in
+  17 ms, cleanup succeeded, held_after was empty, and Unity console errors were
+  zero. The targeted InputQa release gate also passed 1/1 after the review fix.
+
+Performance and catalog evidence:
+- Eight equivalent single calls: 8 HTTP calls, 1,367 ms wall time, 1,500 output
+  bytes.
+- One eight-step sequence: 1 HTTP call, 191 ms wall time, 871 output bytes.
+- Measured wall-time speedup: 7.16x.
+- Tools 31 -> 31; actions 77 -> 78; normalized catalog bytes 188,751 ->
+  191,043 (+2,292); sequence describe payload 2,838 bytes.
+- Catalog hash:
+  sha256:0b1e13bb595df72d57c3fc2939be3c13a789cbd4fce16f5ef177be97101626bc
+- Reviewed baseline regeneration then passed `--fail-on-change` with
+  contract_changed=false, review_required=false, and growth=false.
+
+Final gates:
+- Exact-source Connector compile matrix: PASS 5/5, failed 0, blocked 0 for
+  Unity 2022.3, 2023.2, 6000.0-6000.2, 6000.3-6000.4, and 6000.5+.
+- gofmt -l: clean.
+- golangci-lint run ./...: 0 issues.
+- golangci-lint fmt --diff: clean.
+- go test ./...: PASS.
+- go vet ./...: PASS.
+- go run ./tools/sync-agent-guides --check: PASS.
+- go run ./tools/validate-connector-package: PASS.
+- git diff --check: PASS (line-ending conversion warnings only).
+- Independent review initially found that timeout cancellation callbacks could
+  unsubscribe Unity events from a ThreadPool thread. Cancellation callbacks now
+  change only atomic completion/Task state; main-thread update/failure paths own
+  Unity event removal. Re-review verdict: RESOLVED, no blocking findings.
+
+UPM diagnosis update:
+- Fresh normal-UPM disposable Editor launches reproduced the exact
+  `The "path" argument must be of type string. Received undefined` package
+  resolution popup across more than one installed Unity version. Removing the
+  local Hera dependency/cache and adding Hub-style launch flags did not remove
+  it, so the local `file:` dependency is not established as the cause.
+- The retained artifacts still do not include the originating UPM/Node stack;
+  the precise external/global UPM environment cause remains unknown.
+- The reference unity-cli-loop/launch-unity flow neither disables UPM nor repairs
+  this pre-import exception. It launches a prepared UPM project and waits for
+  process/Editor readiness. Hera's `-noUpm` source-injected path remains limited
+  to disposable verification fixtures.
+
+Cleanup:
+- The disposable test6.5 Editor was stopped after verifying its exact project
+  command line. Injected M3 connector/dependency directories and Unity-created
+  recovery directories were moved, not deleted, into unique system temporary
+  recovery folders.
+- The user's Inventoria Editor and its user commits were preserved.
+
+Next exact step:
+- M4: add versioned `hera.input-recording/1` record/replay through the existing
+  input tool, with bounded project-local/temp storage, explicit timing, replay
+  cleanup, and live repeated-replay evidence.
 ```
 
 ## 18. First prompt for a new Codex session
