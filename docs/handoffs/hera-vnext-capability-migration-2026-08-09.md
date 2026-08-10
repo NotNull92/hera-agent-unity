@@ -1587,6 +1587,57 @@ Next exact step:
   Once that environment issue is isolated, continue with approved M8 option 2.
 ```
 
+### 2026-08-10 - M7 Windows UPM restart failure fixed
+
+```text
+Status: M7 PASS; APPROVED M8 OPTION 2 IS NEXT
+
+Confirmed root cause:
+- Hera inherited the invoking agent shell environment when starting Unity. In
+  the affected Windows Git Bash/Codex shell, ALLUSERSPROFILE was absent while
+  ProgramData was present. Unity registered all 70 packages, then its bundled
+  Package Manager failed GetRegistries/List path initialization with an
+  undefined common-profile value.
+- This was isolated by a one-variable A/B restart. Without ALLUSERSPROFILE,
+  the console contained two Package Manager Window undefined-path errors and
+  manage_packages list returned PACKAGE_LIST_FAILED. Supplying only
+  ALLUSERSPROFILE from ProgramData changed PID 47212 -> 69284, produced zero
+  console errors, and returned all 70 packages including Connector 0.0.84.
+
+Implementation:
+- Implementation commit: 33cdfc9 fix(editor): restore Windows UPM profile environment
+- The Windows Unity child-process setup now restores a missing or blank
+  ALLUSERSPROFILE from the already inherited ProgramData value. Existing
+  nonblank values are preserved, no Hub credentials or IPC values are copied,
+  and Unity arguments remain exactly `-projectPath <exact-project>`.
+- Added a Windows-only regression test that failed before the fix because the
+  child environment was empty, then passed after the minimal environment
+  repair. README English/Korean, COMMANDS, and CHANGELOG are synchronized.
+- This is CLI-only. Connector package 0.0.84 and project package metadata were
+  not changed.
+
+Verification:
+- Targeted red: TestConfigureUnityEditorProcessRestoresAllUsersProfileFromProgramData
+  failed with `Unity child environment does not restore ALLUSERSPROFILE: []`.
+- Targeted green: the same test passed.
+- go clean -testcache, gofmt -w ., golangci-lint run ./...,
+  golangci-lint fmt --diff, go vet ./..., go test ./...,
+  validate-connector-package, sync-agent-guides --check, and git diff --check:
+  PASS.
+- Exact original live scenario with the parent shell variable still absent:
+  patched `editor restart` changed PID 69284 -> 34236, returned a ready exact
+  project heartbeat on port 8090, console errors were 0, and manage_packages
+  returned 70 packages with Hera Connector 0.0.84.
+
+Preservation:
+- Inventoria's active GameScene was clean before both controlled restarts.
+  No scene, asset, Packages/manifest.json, or packages-lock.json change was
+  made. The final Editor remains ready at PID 34236.
+
+Next exact step:
+- Begin the already approved M8 option 2 milestone from its handoff contract.
+```
+
 ## 18. First prompt for a new Codex session
 
 Use this from the repository root:
