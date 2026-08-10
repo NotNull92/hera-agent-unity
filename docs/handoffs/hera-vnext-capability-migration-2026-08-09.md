@@ -1195,10 +1195,13 @@ Live Unity evidence:
 Contract and regression evidence:
 - Targeted source-injected InputQa release gate: PASS 1/1 after final bounds,
   finite-vector, path, contract, and player-loop changes.
-- Full source-injected Unity 6000.5.6f1 EditMode suite: 21/22. InputQa,
-  ToolCatalog, ToolContract, ToolDiscovery, ToolProfiles, and ToolSafety passed.
-  The only failure remains the pre-existing unrelated UiDocApply
-  TestRootCanvasCreatesEventSystem fixture assertion recorded in M3.
+- Full source-injected Unity 6000.5.6f1 EditMode suite: PASS 22/22 after the
+  residual UiDocApply fixture expectation was corrected. The `-noUpm` fixture
+  compiles copied Input System sources without the package-derived
+  `UNITY_INPUT_SYSTEM_ENABLE_UI` symbol, so `InputSystemUIInputModule` is
+  legitimately absent and production falls back to `StandaloneInputModule`.
+  UiDocApply tests now mirror that existing fallback instead of requiring the
+  optional type unconditionally.
 - Strict catalog actions: 78 -> 80; tool count 31 unchanged. Normalized catalog
   grew by 1,608 bytes. `record` and `replay` action describes are 1,575 and
   1,493 bytes and save about 95.5%/95.8% versus full input describe.
@@ -1210,9 +1213,7 @@ Contract and regression evidence:
 Compatibility and repository gates:
 - Current exact Connector/TestRunner sources passed representative Unity
   2022.3.62f2, 2023.2.22f1, 6000.0.35f1, 6000.3.5f2, and 6000.5.0f1 compile
-  buckets. One alternate stale 6000.3 response fixture failed only because its
-  pre-existing EntityIdCompat obsolete warning is treated as a diagnostic;
-  the marked M17 6000.3.5f2 fixture passed the same current source.
+  buckets with failed 0 and blocked 0 after the UiDocApply correction.
 - go test ./...: PASS.
 - go vet ./...: PASS.
 - golangci-lint run ./...: 0 issues.
@@ -1224,6 +1225,18 @@ Compatibility and repository gates:
 - C# LSP remained unavailable because installation was previously declined;
   exact-source compilation and live Unity compilation/test gates covered the
   changed C# files instead.
+
+Residual UiDocApply diagnosis:
+- RED was reproducible in the original source-injected fixture: targeted
+  UiDocApply 0/1, with both root creation and shared EventSystem checks logging
+  failure. The shared test stopped at its null expected-module guard.
+- Cause toggle: temporarily defining `UNITY_INPUT_SYSTEM_ENABLE_UI` in only the
+  disposable fixture compiled `InputSystemUIInputModule` and changed the
+  unchanged target to PASS 1/1. Removing that toggle and applying only the test
+  expectation correction also produced PASS 1/1, confirming the product
+  fallback was already correct.
+- Final source-injected full EditMode suite: PASS 22/22. No Connector runtime or
+  public contract changed, so the Connector version remains 0.0.82.
 
 UPM diagnosis update:
 - A brand-new Unity 6000.5.6f1 project with no Hera file/local package

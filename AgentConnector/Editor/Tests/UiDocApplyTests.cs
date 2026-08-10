@@ -48,7 +48,8 @@ namespace HeraAgent.Tests
                     return Expect(nameof(TestRootCanvasCreatesEventSystem), false);
 
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-                var expectedModule = ComponentTypeResolver.Resolve("InputSystemUIInputModule");
+                var expectedModule = ComponentTypeResolver.Resolve("InputSystemUIInputModule")
+                    ?? ComponentTypeResolver.Resolve("StandaloneInputModule");
 #else
                 var expectedModule = ComponentTypeResolver.Resolve("StandaloneInputModule");
 #endif
@@ -100,13 +101,18 @@ namespace HeraAgent.Tests
         {
             var eventSystemType = ComponentTypeResolver.Resolve("EventSystem");
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-            var expectedModule = ComponentTypeResolver.Resolve("InputSystemUIInputModule");
-            var incompatibleModule = ComponentTypeResolver.Resolve("StandaloneInputModule");
+            var inputSystemModule = ComponentTypeResolver.Resolve("InputSystemUIInputModule");
+            var standaloneModule = ComponentTypeResolver.Resolve("StandaloneInputModule");
+            var expectedModule = inputSystemModule ?? standaloneModule;
+            var incompatibleModule = inputSystemModule == null ? null : standaloneModule;
 #elif ENABLE_LEGACY_INPUT_MANAGER && !ENABLE_INPUT_SYSTEM
-            var expectedModule = ComponentTypeResolver.Resolve("StandaloneInputModule");
-            var incompatibleModule = ComponentTypeResolver.Resolve("InputSystemUIInputModule");
+            var standaloneModule = ComponentTypeResolver.Resolve("StandaloneInputModule");
+            var inputSystemModule = ComponentTypeResolver.Resolve("InputSystemUIInputModule");
+            var expectedModule = standaloneModule ?? inputSystemModule;
+            var incompatibleModule = standaloneModule == null ? null : inputSystemModule;
 #else
-            var expectedModule = ComponentTypeResolver.Resolve("StandaloneInputModule");
+            var expectedModule = ComponentTypeResolver.Resolve("StandaloneInputModule")
+                ?? ComponentTypeResolver.Resolve("InputSystemUIInputModule");
             var incompatibleModule = (Type)null;
 #endif
             if (eventSystemType == null || expectedModule == null)
