@@ -128,6 +128,7 @@ You can use Hera for tiny one-line checks or for a full AI-assisted Unity workfl
 | What you want the AI to do | What Hera gives it |
 |:---|:---|
 | Check whether Unity is healthy | Live Editor status, version, project, compile state, Console errors |
+| Start or restart the right Editor | Launch or restart the exact project from its recorded Unity version and wait for that project's heartbeat |
 | Understand the current Scene | Scene info, GameObject search, Component and Inspector reads |
 | Change the Scene | Create, duplicate, rename, parent, move, or delete GameObjects |
 | Edit Components | Add, remove, inspect, and change serialized Component values |
@@ -136,8 +137,8 @@ You can use Hera for tiny one-line checks or for a full AI-assisted Unity workfl
 | Make animations | Author AnimationClips and AnimatorController state machines |
 | Test a feature | Run EditMode and PlayMode tests and keep the result across domain reloads |
 | Play the game | Enter Play Mode, wait for the real state change, inspect, then stop |
-| See what Unity rendered | Capture Scene/Game views, isolated objects, or live uGUI overlays |
-| Test Unity input | Inspect uGUI raycasts through EventSystem, or synthesize optional Input System keyboard/mouse state in Play Mode |
+| See what Unity rendered | Capture Scene/Game views or isolated objects, plus bounded uGUI identity/coordinate and Camera.main 3D physics evidence |
+| Test Unity input | Inspect uGUI raycasts, or synthesize Input System keyboard/mouse sequences, record them, and replay them in Play Mode |
 | Build UI | Author uGUI or UI Toolkit layouts and verify the generated result |
 | Recreate a reference UI | Measure a reference, build the real Unity UI, capture it, compare, and iterate |
 | Improve game feel | Give the agent recipes for shake, hit stop, feedback, camera, sound, rewards, and accessibility |
@@ -248,6 +249,21 @@ The current Connector source is **0.0.86** and the current CLI release is **v0.2
 
 CLI and Connector versions are intentionally separate.
 
+### v0.2.0 was exercised in a live Editor, not only compile-tested
+
+The final release candidate was loaded as **Connector 0.0.86** in Unity **6000.5.6f1** with Input System **1.20.0** and driven through real Play Mode before release. The retained smoke evidence recorded:
+
+- **31 tools / 80 actions** from the live catalog;
+- keyboard down/up and mouse position synthesis in Play Mode;
+- a bounded input sequence completing successfully;
+- an input recording with **5 events / 588 bytes**, then two successful replays of the same file;
+- zero Hera-owned controls left held after replay;
+- Connector `ReleaseGateTests`: **18/18 PASS**;
+- Unity Console errors after the run: **0**;
+- graceful Editor shutdown with **0** new scene-recovery backups, while the disposable fixture manifest and lock file were restored.
+
+This complements the five-version compile matrix with an end-to-end Editor regression on the released capability set.
+
 ### A real game-creation run reached a verified playable result
 
 The retained Crystal Forge scenario asked an AI to author code and tests, build UI, compile, drive Unity EventSystem input, run tests, capture the rendered result, and leave the Editor clean.
@@ -345,6 +361,12 @@ To pin an existing Connector tag:
 
 ```json
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-<version>"
+```
+
+The current released Connector pin is:
+
+```text
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.86
 ```
 
 ### Step 3. Open Unity and check the connection
@@ -588,12 +610,12 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `manage_assets` | Work with project assets under `Assets/`. |
 | `manage_animation` | Author AnimationClips and AnimatorController state machines. |
 | `exec` | Run arbitrary project-aware C# inside the Editor. |
-| `editor` | Play, stop, pause, refresh, and compile. |
+| `editor` | Launch/restart the exact project, or play, stop, pause, refresh, and compile. |
 | `test` | Run or resume Unity tests. |
 | `task` | Inspect durable test/package work without contacting Unity. |
 | `screenshot` | Capture Scene/Game views or isolated objects; optionally return bounded uGUI or Camera.main-constrained 3D collider identity/coordinates, including metadata-only modes. |
 | `ui_doc` | Inspect, build, sample, and capture Unity UI. |
-| `input` | Test uGUI or optional Input System keyboard/mouse/sequence/record/replay state. |
+| `input` | Test uGUI, or synthesize optional Input System keyboard/mouse/sequence input and record/replay it in Play Mode. |
 | `profiler` | Read profiler hierarchy snapshots. |
 | `game_feel` | Query game-feel guidance. |
 | `ui_slop` | Query UI cleanup guidance. |
@@ -702,13 +724,15 @@ MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
 
 ## Current release
 
-- CLI: **v0.2.0**
-- Unity Connector source: **0.0.86**
+- CLI / GitHub Release: **v0.2.0** with five native binaries
+- npm: **0.2.0** (`latest`)
+- Unity Connector / OpenUPM: **0.0.86** (`latest`)
+- Official MCP Registry: **0.2.0** (`active`, latest)
 - License: **Apache-2.0**
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
 
-v0.2.0 expands Hera's live verification loop with exact-project Editor launch/restart, bounded Input System sequence/record/replay, UI and 3D physics screenshot evidence, and opt-in restricted exec while keeping the CLI-first default and 31 top-level tools.
+v0.2.0 expands Hera's live verification loop with exact-project Editor launch/restart, bounded Input System sequence/record/replay, UI and 3D physics screenshot evidence, and opt-in restricted exec while keeping the CLI-first default and 31 top-level tools. The released Connector exposes **80 actions**, passed the five Unity compile buckets, and completed the live 6000.5.6f1 regression above with **18/18** Connector release gates and **0** Console errors.
 
 For release-by-release engineering detail, read [CHANGELOG.md](CHANGELOG.md) instead of treating the main README as a migration log.
 

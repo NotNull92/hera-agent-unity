@@ -128,6 +128,7 @@ UPM 경로 해석을 시작합니다.
 | AI에게 시키고 싶은 일 | Hera가 제공하는 것 |
 |:---|:---|
 | Unity가 정상인지 확인 | 실제 Editor 상태, 버전, 프로젝트, 컴파일 상태, Console 에러 확인 |
+| 올바른 Editor 시작/재시작 | 프로젝트에 기록된 Unity 버전으로 정확한 프로젝트를 실행·재시작하고 해당 heartbeat까지 대기 |
 | 현재 Scene 이해 | Scene 정보, GameObject 검색, Component와 Inspector 값 조회 |
 | Scene 수정 | GameObject 생성, 복제, 이름 변경, 부모 변경, 이동, 삭제 |
 | Component 편집 | Component 추가, 제거, 조회, 직렬화 값 수정 |
@@ -136,8 +137,8 @@ UPM 경로 해석을 시작합니다.
 | 애니메이션 제작 | AnimationClip과 AnimatorController 상태머신 저작 |
 | 기능 테스트 | EditMode/PlayMode 테스트 실행, Domain Reload를 넘어 결과 추적 |
 | 게임 실행 | 실제 Play Mode 진입을 기다리고 상태를 확인한 뒤 Stop |
-| Unity가 그린 화면 확인 | Scene/Game View, 단일 오브젝트, live uGUI overlay 캡처 |
-| Unity 입력 검증 | EventSystem으로 uGUI raycast를 검증하거나 Play Mode에서 선택적 Input System 키보드/마우스 상태 합성 |
+| Unity가 그린 화면 확인 | Scene/Game View나 단일 오브젝트 캡처, 제한된 uGUI 식별자/좌표와 Camera.main 기준 3D physics 근거 수집 |
+| Unity 입력 검증 | uGUI raycast 검증 또는 Play Mode Input System 키보드/마우스 sequence 합성, 녹화와 replay |
 | UI 제작 | uGUI 또는 UI Toolkit 레이아웃 제작과 결과 검증 |
 | 참고 이미지로 UI 재현 | 색과 레이아웃 측정 → Unity UI 생성 → 캡처 → 비교 → 반복 수정 |
 | 게임 감각 개선 | shake, hit stop, 카메라, 사운드, 보상, 접근성 레시피 제공 |
@@ -250,6 +251,21 @@ Hera는 "AI니까 알아서 잘합니다" 같은 모호한 표현 대신 저장�
 
 CLI 버전과 Connector 버전은 의도적으로 따로 관리합니다.
 
+### v0.2.0은 컴파일만 본 것이 아니라 실제 Editor에서도 돌렸습니다
+
+최종 릴리스 후보인 **Connector 0.0.86**을 Unity **6000.5.6f1**, Input System **1.20.0** 환경에 실제로 로드하고 Play Mode에서 직접 회귀 검증했습니다. 남긴 결과는 다음과 같습니다.
+
+- live catalog **31 tools / 80 actions**;
+- Play Mode 키보드 down/up과 마우스 위치 합성 성공;
+- bounded input sequence 정상 완료;
+- 입력 **5 events / 588 bytes** 녹화 후 같은 파일을 연속 두 번 replay 성공;
+- replay 종료 뒤 Hera가 잡고 있는 control **0개**;
+- Connector `ReleaseGateTests` **18/18 PASS**;
+- 최종 Unity Console error **0건**;
+- Editor 정상 종료 후 새 Scene Recovery backup **0개**, disposable fixture의 manifest/lock도 원복 확인.
+
+즉 5개 Unity 버전의 컴파일 호환성뿐 아니라, 이번 릴리스에서 추가한 실제 기능 묶음도 Editor 안에서 끝까지 확인했습니다.
+
 ### 실제 작은 게임 제작 실험도 끝까지 통과했습니다
 
 보존된 Crystal Forge 실험에서는 AI에게 코드와 테스트 작성, UI 생성, 컴파일, Unity EventSystem 입력, 테스트, 화면 캡처, 마지막 깨끗한 Editor 상태까지 요구했습니다.
@@ -349,6 +365,12 @@ Editor가 열리면 Connector가 자동으로 시작합니다.
 
 ```json
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-<version>"
+```
+
+현재 릴리스 Connector를 고정하려면:
+
+```text
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.86
 ```
 
 ### 3단계. Unity를 열고 연결 확인
@@ -592,12 +614,12 @@ hera-agent-unity ui_slop box-in-box
 | `manage_assets` | `Assets/` 아래 에셋 작업 |
 | `manage_animation` | AnimationClip/AnimatorController 저작 |
 | `exec` | Editor 안에서 프로젝트를 아는 C# 실행 |
-| `editor` | Play, Stop, Pause, Refresh, Compile |
+| `editor` | 정확한 프로젝트 launch/restart 또는 Play, Stop, Pause, Refresh, Compile |
 | `test` | Unity 테스트 실행/재개 |
 | `task` | Unity에 다시 명령하지 않고 장기 작업 상태 확인 |
 | `screenshot` | Scene/Game View 또는 단일 오브젝트 캡처; 제한된 uGUI 또는 Camera.main 기준 3D Collider 식별자/좌표 메타데이터와 메타데이터 전용 모드 지원 |
 | `ui_doc` | Unity UI 조회, 생성, 측정, 캡처 |
-| `input` | EventSystem uGUI 또는 선택적 Input System 키보드/마우스 상태 검증 |
+| `input` | EventSystem uGUI 검증 또는 Play Mode Input System 키보드/마우스/sequence 합성 및 record/replay |
 | `profiler` | Profiler hierarchy snapshot 읽기 |
 | `game_feel` | Game Feel 가이드 조회 |
 | `ui_slop` | UI 정리 가이드 조회 |
@@ -706,13 +728,15 @@ MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
 
 ## 현재 릴리스
 
-- CLI: **v0.2.0**
-- Unity Connector 소스: **0.0.86**
+- CLI / GitHub Release: **v0.2.0**, native binary 5종
+- npm: **0.2.0** (`latest`)
+- Unity Connector / OpenUPM: **0.0.86** (`latest`)
+- Official MCP Registry: **0.2.0** (`active`, latest)
 - License: **Apache-2.0**
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
 
-v0.2.0의 핵심은 정확한 프로젝트 Editor launch/restart, 제한된 Input System sequence/record/replay, UI와 3D physics 스크린샷 근거, opt-in restricted exec입니다. CLI-first 기본값과 최상위 Tool 31개는 그대로 유지합니다.
+v0.2.0의 핵심은 정확한 프로젝트 Editor launch/restart, 제한된 Input System sequence/record/replay, UI와 3D physics 스크린샷 근거, opt-in restricted exec입니다. CLI-first 기본값과 최상위 Tool 31개는 그대로 유지합니다. 릴리스 Connector는 **80 actions**를 제공하고, Unity 5개 compile bucket과 위의 6000.5.6f1 실에디터 회귀에서 `ReleaseGateTests` **18/18 PASS**, Console error **0건**을 확인했습니다.
 
 릴리스별 기술 변경을 모두 보고 싶다면 메인 README보다 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
 
