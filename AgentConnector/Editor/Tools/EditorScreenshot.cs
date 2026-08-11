@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -42,6 +43,11 @@ namespace HeraAgent.Tools
                 Required = false,
                 SchemaJson = "{\"type\":\"string\",\"enum\":[\"scene\",\"game\"]}")]
             public string View { get; set; }
+
+            [ToolParameter(
+                "Render active ScreenSpaceOverlay canvases to a PNG instead of a Scene or Game view.",
+                Required = false)]
+            public bool Overlay { get; set; }
 
             [ToolParameter(
                 "Override width (default 1920).",
@@ -154,6 +160,7 @@ namespace HeraAgent.Tools
                 @params = new JObject();
 
             var p = new ToolParams(@params);
+            var overlay = p.GetBool("overlay");
             var annotationsOnly = p.GetBool("annotations_only");
             var annotateUi = p.GetBool("annotate_ui") || annotationsOnly;
             var physicsOnly = p.GetBool("physics_only");
@@ -169,6 +176,14 @@ namespace HeraAgent.Tools
 
             try
             {
+                if (overlay && wantsEvidence)
+                    return new ErrorResponse(
+                        "SCREENSHOT_OVERLAY_EVIDENCE_CONFLICT",
+                        "[Hera] I can't combine overlay rendering with uGUI or physics annotations.");
+                if (overlay && wantsIsolated)
+                    return new ErrorResponse(
+                        "SCREENSHOT_OVERLAY_ISOLATED_CONFLICT",
+                        "[Hera] I can't combine overlay rendering with isolated GameObject rendering.");
                 if (annotateUi && view != "game")
                     return new ErrorResponse(
                         "SCREENSHOT_UI_ANNOTATION_REQUIRES_GAME_VIEW",
@@ -237,6 +252,18 @@ namespace HeraAgent.Tools
                     out var pathErrorCode,
                     out var pathError))
                     return new ErrorResponse(pathErrorCode, pathError);
+
+                if (overlay)
+                {
+                    var overlayWidth = p.GetInt("width", 0) ?? 0;
+                    var overlayHeight = p.GetInt("height", 0) ?? 0;
+                    return CaptureOverlayCanvases(
+                        overlayWidth,
+                        overlayHeight,
+                        p.Get("background"),
+                        outputPath,
+                        overwrite);
+                }
 
                 if (wantsIsolated)
                     return CaptureIsolated(p, width, height, outputPath, overwrite);
@@ -309,6 +336,109 @@ namespace HeraAgent.Tools
                 return DirectCameraRenderUnavailable("GameView");
 
             return CaptureCamera(camera, width, height, outputPath, overwrite);
+        }
+
+        private static object CaptureOverlayCanvases(
+            int width,
+            int height,
+            string backgroundValue,
+            string outputPath,
+            bool overwrite)
+        {
+#if UNITY_6000_5_OR_NEWER
+            var allCanvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude);
+#else
+            var allCanvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+#endif
+            var targets = new List<Canvas>();
+            foreach (var canvas in allCanvases)
+            {
+                if (canvas.isRootCanvas && canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                    targets.Add(canvas);
+            }
+
+            if (targets.Count > 0)
+            {
+                var pixelRect = targets[0].pixelRect;
+                if (width <= 0) width = Mathf.RoundToInt(pixelRect.width);
+                if (height <= 0) height = Mathf.RoundToInt(pixelRect.height);
+            }
+            if (width <= 0) width = DefaultWidth;
+            if (height <= 0) height = DefaultHeight;
+
+            var background = new Color(0.10f, 0.10f, 0.12f, 1f);
+            if (string.Equals(backgroundValue, "transparent", StringComparison.OrdinalIgnoreCase))
+                background = Color.clear;
+            else if (!string.IsNullOrEmpty(backgroundValue)
+                && SerializedPropertyValue.TryParseColor(new JValue(backgroundValue), out var parsed, out _))
+                background = parsed;
+
+            var saved = new (Canvas canvas, RenderMode mode, Camera camera, float planeDistance)[targets.Count];
+            GameObject cameraObject = null;
+            RenderTexture renderTexture = null;
+            Texture2D texture = null;
+            try
+            {
+                cameraObject = new GameObject("HeraShotCam") { hideFlags = HideFlags.HideAndDontSave };
+                var camera = cameraObject.AddComponent<Camera>();
+                camera.clearFlags = CameraClearFlags.SolidColor;
+                camera.backgroundColor = background;
+                camera.orthographic = true;
+                cameraObject.transform.position = new Vector3(0, 0, -100);
+
+                renderTexture = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
+                camera.targetTexture = renderTexture;
+                for (var index = 0; index < targets.Count; index++)
+                {
+                    var canvas = targets[index];
+                    saved[index] = (canvas, canvas.renderMode, canvas.worldCamera, canvas.planeDistance);
+                    canvas.renderMode = RenderMode.ScreenSpaceCamera;
+                    canvas.worldCamera = camera;
+                    canvas.planeDistance = 50f;
+                }
+
+                Canvas.ForceUpdateCanvases();
+                camera.Render();
+
+                var previousActive = RenderTexture.active;
+                RenderTexture.active = renderTexture;
+                texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                texture.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                texture.Apply();
+                RenderTexture.active = previousActive;
+
+                var bytes = texture.EncodeToPNG();
+                OutputFilePolicy.WriteAllBytes(outputPath, bytes, overwrite);
+                return new SuccessResponse($"Captured {targets.Count} overlay canvas(es) -> {outputPath}", new
+                {
+                    path = outputPath,
+                    width,
+                    height,
+                    bytes = bytes.Length,
+                    canvases = targets.Count,
+                });
+            }
+            catch (Exception exception)
+            {
+                return new ErrorResponse("SCREENSHOT_OVERLAY_FAILED", $"[Hera] I couldn't capture overlay UI: {exception.Message}");
+            }
+            finally
+            {
+                foreach (var state in saved)
+                {
+                    if (state.canvas == null) continue;
+                    state.canvas.renderMode = state.mode;
+                    state.canvas.worldCamera = state.camera;
+                    state.canvas.planeDistance = state.planeDistance;
+                }
+                if (cameraObject != null) UnityEngine.Object.DestroyImmediate(cameraObject);
+                if (renderTexture != null)
+                {
+                    renderTexture.Release();
+                    UnityEngine.Object.DestroyImmediate(renderTexture);
+                }
+                if (texture != null) UnityEngine.Object.DestroyImmediate(texture);
+            }
         }
 
         private static object CaptureSceneViewWindow(SceneView sceneView, int width, int height, string outputPath, bool overwrite)

@@ -31,7 +31,7 @@ namespace HeraAgent.Tests
                 ["ui"] = new[]
                 {
                     "game_feel", "input", "manage_components", "manage_gameobject", "manage_ui",
-                    "screenshot", "ui_doc", "ui_slop",
+                    "screenshot", "ui_slop",
                 },
                 ["diagnostics"] = new[]
                 {

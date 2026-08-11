@@ -80,8 +80,6 @@ func (runner standaloneRunner) Run(
 		return true, assetConfigCmd(subArgs)
 	case "doctor":
 		return true, doctorCmd(subArgs)
-	case "html-to-uidoc":
-		return true, htmlToUIDocCmd(subArgs)
 	}
 	return false, nil
 }
@@ -215,8 +213,6 @@ func (runner unityCommandRunner) Run(
 		})
 	case "unity_docs":
 		resp, err = unityDocsCmd(subArgs, send)
-	case "ui_doc":
-		resp, err = uiDocCmd(subArgs, send)
 	case "asset-config":
 		if len(subArgs) == 0 || subArgs[0] != "detect" {
 			return nil, fmt.Errorf("unsupported Unity-backed asset-config command")

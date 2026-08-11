@@ -43,11 +43,8 @@ namespace HeraAgent.Tests
             allPassed &= ExpectTrue("replacement tell has borrow", UiSlopStore.Lookup("low-contrast-text")?.borrow != null);
             allPassed &= ExpectTrue("deletion tell has no borrow", UiSlopStore.Lookup("box-in-box")?.borrow == null);
 
-            // ui_system slice returns the version-appropriate predicate.
-            var ugui = UiSlopStore.CheckFor("tmp-italic", "ugui");
-            var uitk = UiSlopStore.CheckFor("tmp-italic", "uitk");
-            allPassed &= ExpectTrue("ugui check present", !string.IsNullOrEmpty(ugui) && ugui.Contains("m_fontStyle"));
-            allPassed &= ExpectTrue("uitk check present", !string.IsNullOrEmpty(uitk) && uitk.Contains("-unity-font-style"));
+            var ugui = UiSlopStore.CheckFor("tmp-italic");
+            allPassed &= ExpectTrue("uGUI check present", !string.IsNullOrEmpty(ugui) && ugui.Contains("m_fontStyle"));
 
             allPassed &= ExpectTrue("suggestions available", UiSlopStore.SuggestSimilar("boxinbox").Count > 0);
             allPassed &= ExpectTrue("index has five areas", UiSlopStore.BuildIndex().Count == 5);

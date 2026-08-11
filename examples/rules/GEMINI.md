@@ -26,7 +26,7 @@ The saved mode is `asset-config.json` → `loopEngineeringMode`:
 
 Light loop: confirm the goal, read only needed state, change code/scene/Inspector, verify compile or state, read recent console errors, re-read only the changed target, retry 1-2 times if needed, and report short evidence.
 
-Ultra loop: split success criteria, snapshot before changing, apply the change, compile, confirm console errors are 0, re-read Inspector/GameObject/asset state, run PlayMode or Unity tests, capture screenshot or `ui_doc` output if needed, then report evidence and remaining risk.
+Ultra loop: split success criteria, snapshot before changing, apply the change, compile, confirm console errors are 0, re-read Inspector/GameObject/asset state, run PlayMode or Unity tests, capture a screenshot if needed, then report evidence and remaining risk.
 
 ## AntiGravity-specific notes
 

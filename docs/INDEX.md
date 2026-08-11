@@ -47,8 +47,6 @@ the measured benefit gates did not justify MCP promotion.
 | [`GO_CLI.md`](GO_CLI.md) | Go CLI code structure, entry point, command dispatch | Modifying Go code |
 | [`CSHARP_CONNECTOR.md`](CSHARP_CONNECTOR.md) | C# Unity side — HttpServer, CommandRouter, ToolDiscovery | Modifying C# code |
 | [`COMMANDS.md`](COMMANDS.md) | All CLI commands, flags, parameters | Adding/changing commands |
-| [`UGUI_VERSION_RULES.md`](UGUI_VERSION_RULES.md) | Official Unity uGUI version rules for UI diagnostics/fixer behavior | Changing `ui_doc`, `manage_ui`, or UI generation/fixer behavior |
-| [`UITK_VERSION_RULES.md`](UITK_VERSION_RULES.md) | Reflection-backed UI Toolkit runtime rules for UXML/USS generation | Changing `ui_system`, UITK emission, or `UiToolkitFixer` behavior |
 | [`UNITY_EDITOR_VERSION_INVENTORY.md`](UNITY_EDITOR_VERSION_INVENTORY.md) | Local Unity Editor layout inventory for Hera compatibility work | Updating Unity version buckets, compiler discovery, or version-specific probes |
 | [`INPUT_QA_DESIGN.md`](INPUT_QA_DESIGN.md) | Design for Hera-driven Unity input QA when external physical clicks are blocked | Adding or reviewing the `input` tool |
 | [`CUSTOM_TOOLS.md`](CUSTOM_TOOLS.md) | How to write new C# tools that the CLI can call | Extending functionality |
@@ -71,7 +69,6 @@ hera-agent-unity/
 │   ├── version_check.go          # periodic update notice
 │   ├── asset_config.go           # asset-config subcommand
 │   ├── batch.go                  # batch command execution
-│   ├── ui_doc.go                 # ui_doc dispatch + CLI-side sample/catalog
 │   ├── manage_packages.go        # async package job polling
 │   ├── unity_docs.go             # unity_docs passthrough
 │   ├── doctor.go                 # self-diagnostic

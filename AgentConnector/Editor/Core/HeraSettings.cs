@@ -15,9 +15,6 @@ namespace HeraAgent
     /// </summary>
     public static class HeraSettings
     {
-        public const string UiSystemUGUI = "ugui";
-        public const string UiSystemUITK = "uitk";
-
         private static readonly object s_lock = new object();
         private static readonly TimeSpan FailureRetryDelay = TimeSpan.FromMilliseconds(250);
         private static long s_successStampTicks = long.MinValue;
@@ -28,7 +25,6 @@ namespace HeraAgent
         private static bool s_gameFeelMode;
         private static bool s_uiSlopMode;
         private static bool s_dotweenPreferred;
-        private static string s_uiSystem = UiSystemUGUI;
         private static string s_defaultCscPath;
         private static string s_defaultDotnetPath;
 
@@ -66,14 +62,6 @@ namespace HeraAgent
         {
             get { Refresh(); return s_dotweenPreferred; }
         }
-
-        /// <summary>Selected UI authoring system. Defaults to uGUI when unset.</summary>
-        public static string UiSystem
-        {
-            get { Refresh(); return s_uiSystem; }
-        }
-
-        public static bool UsesUiToolkit => UiSystem == UiSystemUITK;
 
         /// <summary>User-configured csc path, or null when unset.</summary>
         public static string DefaultCscPath
@@ -196,7 +184,6 @@ namespace HeraAgent
                 root.Value<bool?>("game_feel_mode") ?? false,
                 root.Value<bool?>("ui_slop_mode") ?? false,
                 dotween,
-                NormalizeUiSystem(root.Value<string>("ui_system")),
                 root.Value<string>("defaultCscPath"),
                 root.Value<string>("defaultDotnetPath"));
         }
@@ -207,7 +194,6 @@ namespace HeraAgent
             s_gameFeelMode = snapshot.GameFeelMode;
             s_uiSlopMode = snapshot.UiSlopMode;
             s_dotweenPreferred = snapshot.DotweenPreferred;
-            s_uiSystem = snapshot.UiSystem;
             s_defaultCscPath = snapshot.DefaultCscPath;
             s_defaultDotnetPath = snapshot.DefaultDotnetPath;
         }
@@ -219,7 +205,6 @@ namespace HeraAgent
                 s_gameFeelMode,
                 s_uiSlopMode,
                 s_dotweenPreferred,
-                s_uiSystem,
                 s_defaultCscPath,
                 s_defaultDotnetPath);
         }
@@ -231,7 +216,6 @@ namespace HeraAgent
                 false,
                 false,
                 false,
-                UiSystemUGUI,
                 null,
                 null));
         }
@@ -253,12 +237,6 @@ namespace HeraAgent
                 $"[Hera] I couldn't refresh asset-config.json; keeping the last good settings and retrying: {exception.Message}");
         }
 
-        private static string NormalizeUiSystem(string value)
-        {
-            return string.Equals(value?.Trim(), UiSystemUITK, StringComparison.OrdinalIgnoreCase)
-                ? UiSystemUITK
-                : UiSystemUGUI;
-        }
     }
 
     internal readonly struct HeraSettingsSnapshot
@@ -268,7 +246,6 @@ namespace HeraAgent
             bool gameFeelMode,
             bool uiSlopMode,
             bool dotweenPreferred,
-            string uiSystem,
             string defaultCscPath,
             string defaultDotnetPath)
         {
@@ -276,7 +253,6 @@ namespace HeraAgent
             GameFeelMode = gameFeelMode;
             UiSlopMode = uiSlopMode;
             DotweenPreferred = dotweenPreferred;
-            UiSystem = uiSystem;
             DefaultCscPath = defaultCscPath;
             DefaultDotnetPath = defaultDotnetPath;
         }
@@ -285,7 +261,6 @@ namespace HeraAgent
         internal bool GameFeelMode { get; }
         internal bool UiSlopMode { get; }
         internal bool DotweenPreferred { get; }
-        internal string UiSystem { get; }
         internal string DefaultCscPath { get; }
         internal string DefaultDotnetPath { get; }
     }

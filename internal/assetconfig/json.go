@@ -71,7 +71,6 @@ func (cfg *AssetConfig) UnmarshalJSON(data []byte) error {
 		Version             string              `json:"version"`
 		Assets              []AssetEntry        `json:"assets"`
 		LoopEngineeringMode LoopEngineeringMode `json:"loopEngineeringMode"`
-		UISystem            UISystem            `json:"ui_system"`
 		GameFeelUIMode      bool                `json:"game_feel_ui_mode"`
 		GameFeelMode        bool                `json:"game_feel_mode"`
 		UISlopMode          bool                `json:"ui_slop_mode"`
@@ -92,7 +91,6 @@ func (cfg *AssetConfig) UnmarshalJSON(data []byte) error {
 		Version:             fields.Version,
 		Assets:              fields.Assets,
 		LoopEngineeringMode: fields.LoopEngineeringMode,
-		UISystem:            fields.UISystem,
 		GameFeelUIMode:      fields.GameFeelUIMode,
 		GameFeelMode:        fields.GameFeelMode,
 		UISlopMode:          fields.UISlopMode,
@@ -112,9 +110,6 @@ func (cfg AssetConfig) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	if err := addRawMessage(root, "loopEngineeringMode", cfg.LoopEngineeringMode); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "ui_system", cfg.UISystem); err != nil {
 		return nil, err
 	}
 	if err := addRawMessage(root, "game_feel_ui_mode", cfg.GameFeelUIMode); err != nil {

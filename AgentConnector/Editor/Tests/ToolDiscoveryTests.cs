@@ -250,7 +250,7 @@ namespace HeraAgent.Tests
                 "manage_components", "manage_editor", "manage_gameobject", "manage_material",
                 "manage_packages", "manage_prefab", "manage_ui", "menu", "profiler",
                 "refresh_unity", "reserialize", "run_tests", "scene", "screenshot",
-                "ui_doc", "ui_slop", "unity_docs",
+                "ui_slop", "unity_docs",
             };
             var expectedActions = new Dictionary<string, string[]>
             {
@@ -284,7 +284,6 @@ namespace HeraAgent.Tests
                 ["menu"] = new[] { "list" },
                 ["profiler"] = new[] { "clear", "disable", "enable", "hierarchy", "status" },
                 ["scene"] = new[] { "close", "info", "list", "load", "save" },
-                ["ui_doc"] = new[] { "apply", "capture", "export", "gen_sprite", "import" },
             };
 
             var actualTools = ToolDiscovery.GetToolNames().Cast<string>().ToArray();
@@ -293,7 +292,8 @@ namespace HeraAgent.Tests
                 .OrderBy(name => name, StringComparer.Ordinal)
                 .ToArray();
             if (!ContainsBaselineToolNames(compatibilityFixture, expectedTools)
-                || !ContainsBaselineToolNames(actualTools, expectedTools))
+                || !ContainsBaselineToolNames(actualTools, expectedTools)
+                || !actualTools.SequenceEqual(expectedTools))
                 return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged), false);
 
             var actionCount = 0;
@@ -318,7 +318,7 @@ namespace HeraAgent.Tests
                 $"declared action contracts complete = true ({actionCount}); " +
                 $"built-in strict contracts complete = {allBuiltInsStrict.ToString().ToLowerInvariant()}");
             return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged),
-                expectedTools.Length == 31 && actionCount == 80 && allBuiltInsStrict);
+                expectedTools.Length == 30 && actionCount == 75 && allBuiltInsStrict);
         }
 
         private static bool ContainsBaselineToolNames(

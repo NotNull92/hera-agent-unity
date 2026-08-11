@@ -29,7 +29,7 @@ namespace HeraAgent.Tools
         Action = "set_rect")]
     [HeraTool(
         Name = "manage_ui",
-        Description = "UI authoring selected by ui_system. uGUI: create with Canvas/EventSystem scaffolding plus get_rect, set_anchor, and set_rect. UI Toolkit: create emits validated runtime UXML + USS + PanelSettings + UIDocument scaffolding; RectTransform actions are unavailable because UITK uses Flexbox. Element property edits stay in manage_components.",
+        Description = "uGUI authoring with Canvas/EventSystem scaffolding plus get_rect, set_anchor, and set_rect. Element property edits stay in manage_components.",
         Examples = new[]
         {
             "manage_ui create --element button --name PlayBtn --content Play",
@@ -58,7 +58,7 @@ namespace HeraAgent.Tools
 
         public sealed class CreateParameters
         {
-            [ToolParameter("Element kind or supported UI Toolkit runtime element.", Required = true)]
+            [ToolParameter("Element kind: canvas, panel, image, button, text, or empty.", Required = true)]
             public string Element { get; set; }
 
             [ToolParameter("Name for the new element.")]
@@ -218,9 +218,6 @@ namespace HeraAgent.Tools
             RiskClass = HeraRiskClass.Write)]
         public static object Create(JObject raw)
         {
-            if (HeraSettings.UsesUiToolkit)
-                return CreateUiToolkit(raw);
-
             var p = new ToolParams(raw);
             string element = (p.Get("element")
                 ?? ((p.GetRaw("args") as JArray)?.Count >= 2 ? ((JArray)p.GetRaw("args"))[1].ToString() : null))
@@ -290,35 +287,6 @@ namespace HeraAgent.Tools
 
             Finalize(go, created);
             return WithJuice(element, new SuccessResponse($"Created {element}: {go.name}", BuildCreateShape(go, created)));
-        }
-
-        private static object CreateUiToolkit(JObject raw)
-        {
-            var p = new ToolParams(raw);
-            var requested = p.Get("element")
-                ?? ((p.GetRaw("args") as JArray)?.Count >= 2 ? ((JArray)p.GetRaw("args"))[1].ToString() : null);
-            if (!UiToolkitDocument.TryMapManageUiElement(requested, out var element))
-                return new ErrorResponse("UNKNOWN_ELEMENT", $"'{requested}' is not a reflected runtime UI Toolkit element. Use an exact element name or canvas, panel, image, button, text, empty.");
-
-            var attributes = new JObject();
-            var content = p.Get("content");
-            if (!string.IsNullOrEmpty(content) && (element == "Button" || element == "Label"))
-                attributes["text"] = content;
-            var name = p.Get("name");
-            var root = new JObject
-            {
-                ["name"] = string.IsNullOrEmpty(name) ? element : name,
-                ["element"] = element,
-            };
-            if (attributes.Count > 0) root["attributes"] = attributes;
-            var document = new JObject
-            {
-                ["schema"] = UiDocSchema.SchemaId,
-                ["backend"] = "uitk",
-                ["name"] = root["name"],
-                ["root"] = root,
-            };
-            return UiDoc.ApplyUiToolkitDocument(document, raw);
         }
 
         // When Game Feel UI Mode (Beta) is on (Hera Settings), attach the element's juice
@@ -510,9 +478,6 @@ namespace HeraAgent.Tools
             RiskClass = HeraRiskClass.ReadOnly)]
         public static object GetRect(JObject raw)
         {
-            if (HeraSettings.UsesUiToolkit)
-                return new ErrorResponse("UITK_ACTION_UNSUPPORTED", "get_rect is a RectTransform action; use ui_doc apply with backend=uitk style instead.");
-
             var p = new ToolParams(raw);
             var (rt, err) = TargetResolver.ResolveComponent<RectTransform>(p);
             if (err != null) return err;
@@ -527,9 +492,6 @@ namespace HeraAgent.Tools
             RiskClass = HeraRiskClass.Write)]
         public static object SetAnchor(JObject raw)
         {
-            if (HeraSettings.UsesUiToolkit)
-                return new ErrorResponse("UITK_ACTION_UNSUPPORTED", "set_anchor is a RectTransform action; UI Toolkit layout uses validated USS Flexbox properties.");
-
             var p = new ToolParams(raw);
             var (rt, err) = TargetResolver.ResolveComponent<RectTransform>(p);
             if (err != null) return err;
@@ -605,9 +567,6 @@ namespace HeraAgent.Tools
             RiskClass = HeraRiskClass.Write)]
         public static object SetRect(JObject raw)
         {
-            if (HeraSettings.UsesUiToolkit)
-                return new ErrorResponse("UITK_ACTION_UNSUPPORTED", "set_rect is a RectTransform action; UI Toolkit layout uses validated USS Flexbox properties.");
-
             var p = new ToolParams(raw);
             var (rt, err) = TargetResolver.ResolveComponent<RectTransform>(p);
             if (err != null) return err;

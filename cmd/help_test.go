@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"io/fs"
 	"strings"
 	"testing"
@@ -15,7 +16,6 @@ func TestHelpTopicsExistForRoutedCommands(t *testing.T) {
 		"editor",
 		"exec",
 		"find_gameobjects",
-		"html-to-uidoc",
 		"input",
 		"install",
 		"list",
@@ -33,7 +33,6 @@ func TestHelpTopicsExistForRoutedCommands(t *testing.T) {
 		"screenshot",
 		"status",
 		"test",
-		"ui_doc",
 		"unity_docs",
 		"uninstall",
 		"update",
@@ -63,7 +62,6 @@ func TestHelpFilesAreReachableTopics(t *testing.T) {
 		"exec":              true,
 		"find_gameobjects":  true,
 		"general":           true,
-		"html-to-uidoc":     true,
 		"input":             true,
 		"install":           true,
 		"list":              true,
@@ -83,7 +81,6 @@ func TestHelpFilesAreReachableTopics(t *testing.T) {
 		"status":            true,
 		"task":              true,
 		"test":              true,
-		"ui_doc":            true,
 		"unity_docs":        true,
 		"uninstall":         true,
 		"update":            true,
@@ -101,6 +98,17 @@ func TestHelpFilesAreReachableTopics(t *testing.T) {
 		if !routed[topic] {
 			t.Fatalf("help topic %q is not covered by the routed topic allowlist", topic)
 		}
+	}
+}
+
+func TestRetiredHelpTopicsAreAbsent(t *testing.T) {
+	for _, topic := range []string{"html-to-uidoc", "ui_doc"} {
+		t.Run(topic, func(t *testing.T) {
+			_, err := helpFS.ReadFile("help/" + topic + ".txt")
+			if !errors.Is(err, fs.ErrNotExist) {
+				t.Fatalf("retired help topic %q is still embedded", topic)
+			}
+		})
 	}
 }
 

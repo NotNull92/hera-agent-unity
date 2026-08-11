@@ -24,7 +24,7 @@ Modes are saved in `asset-config.json` as `loopEngineeringMode`:
 
 Light loop: confirm the goal, observe only needed state, change code/scene/Inspector, verify compile or state, check console errors, re-read only the changed target, retry 1-2 times if needed, and report short evidence.
 
-Ultra loop: compile, confirm console errors are 0, re-read Inspector/GameObject/asset state, run PlayMode or Unity tests, capture screenshot or `ui_doc` output if needed, and report evidence plus remaining risk.
+Ultra loop: compile, confirm console errors are 0, re-read Inspector/GameObject/asset state, run PlayMode or Unity tests, capture a screenshot if needed, and report evidence plus remaining risk.
 
 ## When to use it
 

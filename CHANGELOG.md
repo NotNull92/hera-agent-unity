@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-12
+
+### Removed (CLI and Connector 0.0.87)
+
+- Removed the `ui_doc` authoring command, its document IR, procedural-sprite
+  helpers, the `html-to-uidoc` converter, and their dedicated tests and help.
+- Removed the `ui_system=uitk` authoring branch, generated UXML/USS scaffold,
+  version-specific UI Toolkit schema bundles, and retired benchmark runner.
+
+### Added (Connector 0.0.87)
+
+- Added `screenshot --overlay` as the neutral ScreenSpaceOverlay uGUI capture
+  path retained for visual verification.
+
 ## [0.2.0] - 2026-08-10
 
 ### Added (CLI)

@@ -30,7 +30,7 @@ If any step fails, surface the failure and stop.
 
 ## Exec Rules
 
-- Prefer dedicated commands (`scene info`, `console`, `editor play`, `test`, `describe_type`, `unity_docs`, `ui_doc`) before custom `exec`.
+- Prefer dedicated commands (`scene info`, `console`, `editor play`, `test`, `describe_type`, `unity_docs`, `screenshot`) before custom `exec`.
 - In side-effecting `exec`, return `null` or omit the return.
 - Never return `UnityEngine.Object`, `GameObject`, `Transform`, `Component`, `Material`, or `Scene` directly.
 - Branch on response `code`, not human message text.

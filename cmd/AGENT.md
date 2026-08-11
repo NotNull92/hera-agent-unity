@@ -260,7 +260,7 @@ Ultra loop:
 5. Confirm console errors are 0.
 6. Re-read Inspector, GameObject, or asset state.
 7. Run PlayMode or Unity tests.
-8. If needed, capture a screenshot or `ui_doc` capture.
+8. If needed, capture a screenshot; use `--overlay` for ScreenSpaceOverlay canvases.
 9. Classify the failure cause and repeat.
 10. Report final evidence and remaining risk.
 
@@ -273,7 +273,7 @@ hera-agent-unity test --mode EditMode
 hera-agent-unity test --mode PlayMode
 hera-agent-unity editor play --wait
 hera-agent-unity screenshot --view game
-hera-agent-unity ui_doc capture --out ...
+hera-agent-unity screenshot --overlay --output_path built.png
 ```
 
 Use Ultra when the user asks for strict verification, for example `정확히 검증해줘`, `플레이해서 확인해줘`, `UI 맞춰줘`, or `인스펙터까지 확실히 봐줘`.
@@ -307,11 +307,8 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Inspect a type's signature + known Unity pitfalls | `describe_type <name> [--members methods] [--limit N]` | Cheaper than `exec` reflection. |
 | Search methods across assemblies by name | `find_method <pattern> [--namespace ns] [--limit N]` | Pattern is a substring; `--limit` defaults to 50. |
 | Find / create / move project assets | `manage_assets find --type Texture2D --filter icon` / `manage_assets create --type GameConfig --path Assets/Config/Game.asset` | Compact `AssetDatabase` operations constrained to `Assets/`; `create` authors a ScriptableObject `.asset` (optional `--params '{"properties":{...}}'`). Use before falling back to `exec` for basic asset work. |
-| Ground an HTML→uGUI design on the real UI | `ui_doc export --path </path>` | Returns the compact uGUI `ui_doc/2` IR (defaults omitted). UI Toolkit v1 emits from an input document instead. |
-| Build a UI from a JSON design | `ui_doc apply --file design.json [--parent ...] [--mode upsert]` | `ui_system=ugui` builds the existing GameObject tree; `ui_system=uitk` requires `backend:"uitk"` and emits validated UXML/USS/PanelSettings/UIDocument scaffolding. |
-| Bake a procedural sprite | `ui_doc gen_sprite --spec '{...}' --out Assets/...` | Tier-1: `solid` / `rounded_rect` / `gradient` / `nine_slice` (border for 9-slice). No external dependency. |
-| Measure colors off a reference image | `ui_doc sample --image ref.png --at "x,y" [--region "x,y,w,h"]` | Normalized [0,1] top-left coords (`;`-separate many). Returns measured `hex`/`rgba`. Measure colors — don't eyeball them. CLI-side, no Unity needed. |
-| See what you built (verify) | `ui_doc capture --out /tmp/built.png` | Renders live uGUI overlays to PNG (a normal `screenshot` misses overlay canvases). UITK v1 verifies generated assets/UIDocument through state reads or game screenshots. |
+| Build a uGUI layout | `manage_ui create --element panel --parent /Canvas` | Creates Canvas/EventSystem scaffolding and uGUI elements; use `manage_components` for properties. |
+| See overlay UI | `screenshot --overlay --output_path built.png` | Renders active ScreenSpaceOverlay canvases to PNG. |
 | Anything else (read prop, custom C#) | `exec "<code>"` | Falls back here when no dedicated command exists. |
 
 **Compile-check only** (validate syntax/types without executing):
@@ -327,33 +324,7 @@ Useful when you're not sure a refactor compiles before issuing a destructive cal
 - **Unity Input System QA:** PASS/FAIL based on keyboard/mouse command output and observed gameplay device state in Play Mode.
 - **Physical OS click QA:** BLOCKED if Computer Use still cannot capture Unity screenshot state and Hera has no native OS/window input backend for that action.
 
-**ui_doc IR (`ui_doc/2`)** — `ui_system` chooses one fully separate backend per build. The default `ugui` contract below uses live export plus RectTransform anchors. `uitk` requires `asset-config ui-system uitk` and a `backend:"uitk"` document with exact runtime element names, reflected UXML attributes, and reflected USS properties. Full reference: `docs/UI_DOC_IR.md`:
-
-```jsonc
-{ "schema": "ui_doc/2", "backend": "ugui",
-  "root": { "name": "Panel", "element": "panel",   // canvas|panel|image|button|text|empty
-    "rect": { "anchor": "stretch", "size": [400, 600] },
-    "image": { "color": "#1A1A2EFF", "sprite": { "gen": { "kind": "rounded_rect", "radius": 12 } } },
-    "children": [ { "name": "PlayBtn", "element": "button",
-      "rect": { "anchor": "top-center", "pos": [0, -40], "size": [240, 64] },
-      "text": { "value": "Play", "engine": "auto" } } ] } }
-```
-
-`image.sprite` = `{ "asset": "Assets/..." }` or `{ "gen": {<spec>} }` (baked on apply; `nine_slice` auto-sets Image type Sliced). `text` takes `value` + optional `engine` (auto/tmp/legacy), `color` (#hex), `align` (center/left/right/top-left), `font` (asset path to a TMP/legacy font — also the icon-font-glyph path). `auto` uses TMP only when it has a usable default or requested font, otherwise it falls back to legacy Text with `LegacyRuntime.ttf`. Both uGUI authoring paths (`manage_ui create` and `ui_doc apply`) share one EventSystem policy: ensure the active input backend and disable an incompatible built-in module in an exclusive input mode. Root-level `ui_doc` upsert reuses a same-named scene root. With Game Feel UI Mode (Beta) on, `apply` returns per-element-type juice recipes as an `agent_hint`.
-
-**UI Toolkit v1** — `ui_doc apply` emits `.uxml` + shared `.hera-*` `.uss` + a screen-space `PanelSettings` and wired `UIDocument` into `Assets/HeraGenerated/UI`. It rejects unknown runtime elements/UXML attributes, warns and omits unsupported USS properties, and keeps MVVM data binding out of scope. World-space is allowed only when the **live runtime** is Unity `6000.2+`; never infer that from the docs bucket. `manage_ui create` follows the same backend choice; `get_rect`, `set_anchor`, and `set_rect` are uGUI-only.
-
-`asset-config.json`의 `ui_system` (`ugui` 또는 `uitk`)이 프로젝트 UI 개발 방식을 고르는 단일 기준이다. 씬 내용이나 입력 문서를 보고 백엔드를 추측하거나 자동 전환하지 않는다. `ui_doc`가 명시한 `backend`가 현재 설정과 다르면 생성·파일 쓰기 전에 `UI_SYSTEM_MISMATCH`로 중단한다.
-
-**Icons** (no SVG gen): reference an existing sprite via `image.sprite.asset`, or use an icon-font glyph — a `text` element whose `value` is the glyph char, then assign the icon TMP font with `manage_components set --property m_fontAsset --value <font.asset>`. See COMMANDS.md → ui_doc → Icons.
-
-**Reproducing a reference image faithfully** — rules that matter for a close match:
-- **Run the verify loop.** `ui_doc sample` the reference for exact colors → author the IR → `apply` → `ui_doc capture` → Read the PNG and compare it to the reference → fix the largest discrepancy → repeat until it stops improving. The tools exist so you measure and correct instead of eyeballing and rationalizing.
-- **Measure, don't guess.** Derive each element's position/size/color from the reference (the canvas is a known px space, e.g. 1080×1920). Use `ui_doc sample` for colors rather than guessing hex. Never eyeball a position and then rationalize it. If you can't place a detail accurately, omit it — a wrong/misplaced element is worse than a missing one.
-- **Progress bars / fills:** anchor the fill to the track's *start edge* (not centered) and size it = `fraction × track length`, kept inside the track. A center-anchored fill overflows the track.
-- **Text inside a container** (button / chip / pill): give the text the *same rect* as the container + `align: center`. A smaller or offset text rect clips (e.g. "x1") or de-centers.
-- **Sub-icon rows** (runes / gems / stars under a slider): place them under their owning element as an evenly-spaced row, and match the count from the reference.
-- **Bespoke art** (coins, weapons, trophies, stat icons) can't be procedurally generated — use real sprite assets or an icon font; only fall back to a clearly-stylized placeholder, and state that it is one. Don't fabricate detail you can't match.
+**Building a uGUI reference layout** — use `manage_ui create`, `manage_ui set_anchor`, `manage_ui set_rect`, and `manage_components` in small verified batches. Use `screenshot --overlay` after each material layout pass. Keep fill bars start-anchored, center text within its container, and use real project art or an explicitly labeled placeholder for bespoke visuals.
 
 ---
 
@@ -583,7 +554,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `scene info` / `load` / `save` / `close` / `list` | Scene management | `--mode single\|additive\|additive_without_loading` (load) |
 | `editor launch \| restart \| play \| stop \| pause \| refresh` | Editor lifecycle | exact `--project`, `--hub-root` (bootstrap); `--wait` (play); `--compile`, `--force` (refresh) |
 | `menu "<path>"` | Execute menu item | (none) |
-| `screenshot` | Capture view/isolated target or inspect bounded Game View UI/3D physics metadata | `--view scene\|game`, `--annotate_ui`, `--annotations_only`, `--annotate_physics`, `--physics_only`, `--physics_grid_size`, `--max_physics_hits`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
+| `screenshot` | Capture view, overlay canvases, isolated target, or inspect bounded Game View UI/3D physics metadata | `--view scene\|game`, `--overlay`, `--annotate_ui`, `--annotations_only`, `--annotate_physics`, `--physics_only`, `--physics_grid_size`, `--max_physics_hits`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
 | `test` | Run tests or resume an existing run | `--mode EditMode\|PlayMode`, `--filter <ns.class>`, `--resume <run_id>` |
 | `task list` / `task status <task_id>` | Inspect durable test/package work without contacting Unity | `--project <full-path>` or `--port N` |
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
@@ -595,7 +566,6 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `manage_assets` | AssetDatabase file/folder operations + ScriptableObject authoring | `find`, `mkdir`, `create`, `copy`, `move`, `delete` |
 | `describe_type <name>` | Type info + Unity-pitfalls | `--members fields\|properties\|methods\|all`, `--limit N` |
 | `find_method <pat>` | Search methods across assemblies | `--namespace`, `--limit` (default 50) |
-| `asset-config ui-system [ugui\|uitk]` | Select the top-level UI backend (default `ugui`) | `--json` includes `ui_system` |
 | `asset-config set-csc <path>` / `set-dotnet <path>` | Persist a default csc / dotnet path | (no flags) |
 | `status` / `ping` | Editor state / liveness | (none) |
 | `doctor` | Self-diagnostic | `--json`, `--agent-rules` (this guide's TL;DR subset) |

@@ -60,7 +60,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
 - **다중 에디터 발견 + 단일 선택 모델** 🔒: 한 머신의 여러 Unity heartbeat를 발견할 수 있지만 각 CLI 명령과 MCP 프로세스는 한 에디터만 선택한다. 프로젝트의 정규화된 절대경로가 안정적인 정체성이고 `port`는 `8090`–`8099`에서 재시작/domain reload 때 바뀔 수 있는 임시 연결 정보다. `--project`는 exact match 우선, legacy substring은 유일할 때만 허용하며 모호하면 실패한다. `--project`와 `--port`를 함께 주면 같은 heartbeat를 가리켜야 한다. 전송 실패/timeout 때는 fresh heartbeat로 port 재사용·PID 변경·target 소실을 다시 확인하고, idempotent 또는 operation-ledger-backed 작업만 재시도한다. 여러 에디터 broadcast/fan-out은 모델 밖이다.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
-  - **표준 envelope tool 명령** (`call`, `exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, `ui_doc`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
+  - **표준 envelope tool 명령** (`call`, `exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
   - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
   - **자체 출력 경로 명령** (`asset-config`, `ping`): `printResponse` 를 거치지 않고 직접 출력. `asset-config` 는 기본 styled + `--json` 로 AI 모드. `ping` 은 단일 라인 `port=N alive=N state=... age_ms=N`. `doctor` 도 human 카테고리지만 `--json` / `--agent-rules` 분기 별도.
   - "tool 에러도 인간이 읽는다"는 가정은 audience reality와 어긋남 (실제로 tool 호출 = AI). 새 명령 추가 시 `humanCategories` 등재 여부가 출력 모드를 결정한다.
@@ -100,10 +100,6 @@ cmd/                  # Go CLI — thin passthrough layer
   batch.go            # batch (multi-command) dispatch + --dry-run preview
   manage_packages.go  # async job_id dispatch + pollResultFile (file-bus, like test)
   unity_docs.go       # thin passthrough — connector ships its own data set
-  ui_doc.go           # ui_doc tool: CLI-side sample (color measure) + catalog
-                      # (folder scan → manifest, image decode, no Unity);
-                      # apply/import inject --file→doc param
-  html_to_uidoc.go    # HTML mockup → ui_doc/2 JSON (CLI-side, no Unity)
   install.go          # self-install onto PATH + legacy scrub
   uninstall.go        # self-uninstall (+ uninstall_{unix,windows}.go variants)
   doctor.go           # self-diagnostic; embeds AGENT.md for --agent-rules
@@ -119,12 +115,10 @@ internal/policy/      # Typed policy projection skeleton (M6: descriptive only)
 internal/mcpserver/   # Official Go SDK server identity/discovery + stdio lifecycle
                       # Profile/Full native registration + Compact search/describe/call
 internal/assetconfig/ # Asset plugin configuration persistence
-                      # (assets + ui_system + game_feel_mode + game_feel_ui_mode + loopEngineeringMode)
+                      # (assets + game_feel_mode + game_feel_ui_mode + loopEngineeringMode)
 internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
 tools/build-unity-docs/ # One-shot maintainer Go script: Documentation/en/ScriptReference
                         # → unity_docs_<ver>.jsonl(.gz)(.bytes). Run per Unity version.
-tools/build-uitk-schema/ # One-shot maintainer Go reflection extractor: Editor UI Toolkit
-                         # binaries → uitk_schema_<bucket>.jsonl.gz.bytes. Run per Unity version.
 tools/build-game-feel-docs/ # game_feel.jsonl (checked-in source of truth, curated from
                             # Game Feel & Juice Bible + Ethical Engagement Framework)
                             # → validate + gzip → Data/game_feel_1.0.jsonl.gz.bytes.
@@ -167,16 +161,16 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # GameFeelStore (BundleStore<Entry> over game_feel bundle
                       # + category-grouped BuildIndex, ethics first; corpus 54),
                       # UiSlopStore (BundleStore<Entry> over ui_slop bundle
-                      # + area-grouped BuildIndex + CheckFor(ui_system slice);
+                      # + area-grouped BuildIndex + CheckFor;
                       # corpus 49),
                       # Levenshtein (shared edit-distance helper),
                       # HeraSettings (reads shared asset-config.json at dispatch
-                      # time — UiSystem + GameFeelMode + GameFeelUiMode + UiSlopMode
+                      # time — GameFeelMode + GameFeelUiMode + UiSlopMode
                       # + DotweenPreferred, mtime-cached),
                       # UIJuiceGuide (per-UI-element juice recipes from Juice
                       # Bible + UI Feedback Guide + UIUX Theory + Ethical
-                      # Framework; uGUI DOTween-aware / UITK USS-first,
-                      # pointer — manage_ui/ui_doc agent_hint source),
+                      # Framework; uGUI DOTween-aware,
+                      # pointer — manage_ui agent_hint source),
                       # TargetResolver (GameObject/component lookup from
                       # ToolParams — instance_id > path; shared target helper),
                       # EntityIdCompat (instanceID→EntityId rename shim,
@@ -186,18 +180,6 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # safety metadata flags on [HeraTool] and per-action
                       # [HeraActionSafety] (shown only by list --tool, not
                       # list --compact),
-                      # ProceduralSprite (Tier-1 sprite bake+import:
-                      # solid/rounded_rect/gradient/nine_slice — ui_doc
-                      # gen_sprite/apply; Assets/HeraGenerated default),
-                      # UiDocSchema (ui_doc/2 IR: uGUI subtree ↔ compact JSON,
-                      # ExportNode/ApplyNode + anchor presets/layout),
-                      # UiDocFixer (official uGUI docs bucket selection +
-                      # deterministic fixes/diagnostics for ui_doc apply),
-                      # UiToolkitStore (bundled reflection schema loader),
-                      # UiToolkitFixer (runtime element/UXML/USS validation +
-                      # runtime world-space gate),
-                      # UiToolkitDocument (UXML/USS/PanelSettings/UIDocument
-                      # emitter, reflected UI Toolkit types only)
     Tools/            # Tool implementations (auto-registered via [HeraTool]).
                       # 30 [HeraTool] classes. Name= explicit unless noted
                       # (no Name= → filename snake_case). ExecCompileCache.cs is
@@ -228,11 +210,6 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # uGUI queue v0.0.15 (shipped): manage_ui ManageUI
                       #   (RectTransform anchor/pivot/preset + UI-aware create;
                       #   UI/TMP types via TypeCache → no com.unity.ugui compile dep).
-                      # HTML→UI pipeline: ui_doc UiDoc — export/apply (ui_doc/2
-                      #   uGUI IR via UiDocSchema or UITK UXML/USS via
-                      #   UiToolkitDocument) / gen_sprite (ProceduralSprite) /
-                      #   capture (overlay-canvas render) / import (external
-                      #   sprites → Sprite assets) / sample + catalog (CLI-side).
                       # Animation authoring v0.0.59: manage_animation ManageAnimation
                       #   (create_clip/set_curve → AnimationClip float curves;
                       #   create_controller/add_parameter/add_state/add_transition
@@ -242,10 +219,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # unity_docs_<bucket>.jsonl.gz.bytes bundles for
                       # 2022.3 / 2023.2 / 6000.0 / 6000.3 / 6000.5 plus
                       # legacy unity_docs_6.0 fallback, regenerated by
-                      # tools/build-unity-docs; reflected runtime-only
-                      # uitk_schema_<bucket>.jsonl.gz.bytes bundles for the same
-                      # five buckets, regenerated by tools/build-uitk-schema;
-                      # game_feel_1.0.jsonl.gz.bytes
+                      # tools/build-unity-docs; game_feel_1.0.jsonl.gz.bytes
                       # (Game Feel Mode knowledge base, ~30 KiB) regenerated by
                       # tools/build-game-feel-docs; ui_slop_1.0.jsonl.gz.bytes
                       # (Unity De-slop Mode taxonomy, 49 tells, ~10 KiB) regenerated
@@ -366,11 +340,11 @@ Light Mode의 목표는 "틀린 상태로 끝내지 않기"다. PlayMode, screen
 5. console error 0건 확인
 6. Inspector/GameObject/asset 상태 재조회
 7. PlayMode 또는 Unity Test 실행
-8. 필요하면 screenshot/ui_doc capture
+8. 필요하면 screenshot --overlay
 9. 실패 원인 분류 후 반복
 10. 최종 증거와 남은 리스크 보고
 
-대표 명령: `hera-agent-unity editor refresh --compile`, `hera-agent-unity console --type error --lines 50`, `hera-agent-unity test --mode EditMode`, `hera-agent-unity test --mode PlayMode`, `hera-agent-unity editor play --wait`, `hera-agent-unity screenshot --view game`, `hera-agent-unity ui_doc capture --out ...`.
+대표 명령: `hera-agent-unity editor refresh --compile`, `hera-agent-unity console --type error --lines 50`, `hera-agent-unity test --mode EditMode`, `hera-agent-unity test --mode PlayMode`, `hera-agent-unity editor play --wait`, `hera-agent-unity screenshot --view game`, `hera-agent-unity screenshot --overlay --output_path ...`.
 
 ### Why Additional Unit Tests Are Not Added
 

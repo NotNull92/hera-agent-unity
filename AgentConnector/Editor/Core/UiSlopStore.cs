@@ -9,7 +9,7 @@ namespace HeraAgent
     /// dictionary on first access. Powers the `ui_slop` tool and the Unity
     /// De-slop Mode (Beta) hints. The loading machinery lives in
     /// <see cref="BundleStore{TEntry}"/>; what stays here is the entry shape, the
-    /// fixed A-E area index, and the ui_system-aware check selector.
+    /// fixed A-E area index, and the uGUI check selector.
     /// </summary>
     public static class UiSlopStore
     {
@@ -59,17 +59,12 @@ namespace HeraAgent
             => s_data.SuggestSimilar(query, maxDistance, max);
 
         /// <summary>
-        /// The version-appropriate check predicate for a tell: the UI Toolkit
-        /// variant when uiSystem is "uitk", the uGUI variant otherwise (the
-        /// default). Returns null on miss.
+        /// The uGUI check predicate for a tell. Returns null on miss.
         /// </summary>
-        public static string CheckFor(string id, string uiSystem)
+        public static string CheckFor(string id)
         {
             var entry = Lookup(id);
-            if (entry == null) return null;
-            return string.Equals(uiSystem, "uitk", StringComparison.OrdinalIgnoreCase)
-                ? entry.check_uitk
-                : entry.check_ugui;
+            return entry?.check_ugui;
         }
 
         /// <summary>

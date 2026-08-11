@@ -62,7 +62,7 @@ namespace HeraAgent.Tests
             {
                 File.WriteAllText(path,
                     "{\"game_feel_ui_mode\":true,\"game_feel_mode\":true,"
-                    + "\"ui_slop_mode\":true,\"ui_system\":\"uitk\","
+                    + "\"ui_slop_mode\":true,"
                     + "\"defaultCscPath\":\"csc-one\",\"defaultDotnetPath\":\"dotnet-one\","
                     + "\"assets\":[{\"id\":\"dotween\",\"enabled\":true}]}");
                 File.SetLastWriteTimeUtc(path, initialStamp);
@@ -73,7 +73,6 @@ namespace HeraAgent.Tests
                     && initial.GameFeelMode
                     && initial.UiSlopMode
                     && initial.DotweenPreferred
-                    && initial.UiSystem == HeraSettings.UiSystemUITK
                     && initial.DefaultCscPath == "csc-one"
                     && initial.DefaultDotnetPath == "dotnet-one";
 
@@ -82,12 +81,11 @@ namespace HeraAgent.Tests
                 HeraSettings.RefreshForTests(path, now.AddSeconds(1));
                 var afterFailure = HeraSettings.SnapshotForTests();
                 var preserved = afterFailure.GameFeelUiMode
-                    && afterFailure.UiSystem == HeraSettings.UiSystemUITK
                     && afterFailure.DefaultCscPath == "csc-one";
 
                 File.WriteAllText(path,
                     "{\"game_feel_ui_mode\":false,\"game_feel_mode\":false,"
-                    + "\"ui_slop_mode\":false,\"ui_system\":\"ugui\","
+                    + "\"ui_slop_mode\":false,"
                     + "\"defaultCscPath\":\"csc-two\",\"defaultDotnetPath\":\"dotnet-two\","
                     + "\"assets\":[]}");
                 File.SetLastWriteTimeUtc(path, failingStamp);
@@ -101,7 +99,6 @@ namespace HeraAgent.Tests
                     && !recovered.GameFeelMode
                     && !recovered.UiSlopMode
                     && !recovered.DotweenPreferred
-                    && recovered.UiSystem == HeraSettings.UiSystemUGUI
                     && recovered.DefaultCscPath == "csc-two"
                     && recovered.DefaultDotnetPath == "dotnet-two";
 
@@ -109,7 +106,6 @@ namespace HeraAgent.Tests
                 HeraSettings.RefreshForTests(path, now.AddSeconds(2));
                 var missing = HeraSettings.SnapshotForTests();
                 var missingDefaults = !missing.GameFeelUiMode
-                    && missing.UiSystem == HeraSettings.UiSystemUGUI
                     && missing.DefaultCscPath == null
                     && missing.DefaultDotnetPath == null;
 

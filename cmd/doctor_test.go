@@ -287,7 +287,7 @@ func TestBuildUltraHeraAgentRules(t *testing.T) {
 			"hera-agent-unity test --mode EditMode",
 			"hera-agent-unity test --mode PlayMode",
 			"hera-agent-unity screenshot --view game",
-			"hera-agent-unity ui_doc capture --out ...",
+			"hera-agent-unity screenshot --overlay",
 		} {
 			if !strings.Contains(got, want) {
 				t.Errorf("ultra rules missing %q", want)

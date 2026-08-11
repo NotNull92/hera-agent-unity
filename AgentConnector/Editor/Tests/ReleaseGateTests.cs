@@ -33,7 +33,6 @@ namespace HeraAgent.Tests
             nameof(ToolDiscovery),
             nameof(ToolProfiles),
             nameof(ToolSafety),
-            nameof(UiDocApply),
         };
 
         [Test]
@@ -83,9 +82,6 @@ namespace HeraAgent.Tests
 
         [Test]
         public void ToolSafety() => ToolSafetyTests.RunTests();
-
-        [Test]
-        public void UiDocApply() => UiDocApplyTests.RunTests();
 
         [Test]
         public void CanonicalManifestMatchesNUnitWrappers()

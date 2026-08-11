@@ -139,7 +139,7 @@ You can use Hera for tiny one-line checks or for a full AI-assisted Unity workfl
 | Play the game | Enter Play Mode, wait for the real state change, inspect, then stop |
 | See what Unity rendered | Capture Scene/Game views or isolated objects, plus bounded uGUI identity/coordinate and Camera.main 3D physics evidence |
 | Test Unity input | Inspect uGUI raycasts, or synthesize Input System keyboard/mouse sequences, record them, and replay them in Play Mode |
-| Build UI | Author uGUI or UI Toolkit layouts and verify the generated result |
+| Build UI | Author uGUI layouts and verify the generated result |
 | Recreate a reference UI | Measure a reference, build the real Unity UI, capture it, compare, and iterate |
 | Improve game feel | Give the agent recipes for shake, hit stop, feedback, camera, sound, rewards, and accessibility |
 | Clean up generated-looking UI | Detect common spacing, hierarchy, typography, color, and decoration problems |
@@ -441,13 +441,13 @@ capture again
 Example commands:
 
 ```bash
-hera-agent-unity ui_doc export --path /Canvas/HUD
-hera-agent-unity ui_doc sample --image hud_ref.png --region "0,0,1,0.2"
-hera-agent-unity ui_doc apply --file hud.json --parent /Canvas --mode upsert
-hera-agent-unity ui_doc capture --out hud_built.png
+hera-agent-unity manage_ui create --element panel --name HUD
+hera-agent-unity manage_ui set_anchor --path /Canvas/HUD --preset stretch --snap true
+hera-agent-unity manage_components set --path /Canvas/HUD --property m_Color --value '#1A1A2E'
+hera-agent-unity screenshot --overlay --output_path hud_built.png
 ```
 
-Hera supports both **uGUI** and **runtime UI Toolkit**. The selected UI system is explicit, so the agent does not silently mix the two.
+Use `manage_ui`, `manage_components`, and `screenshot --overlay` in small verified batches.
 
 ### Verify buttons without guessing screen coordinates
 
@@ -525,7 +525,7 @@ HeraAgent -> Hera Settings -> Ultra Hera
 |:---|:---|
 | `Off` | No extra verification rule. |
 | `Light` | Default. Compile/check state, read errors, and re-read the changed target before finishing. |
-| `Ultra` | For important work. Add stronger evidence such as tests, Play Mode, Inspector reads, screenshots, or `ui_doc` capture. |
+| `Ultra` | For important work. Add stronger evidence such as tests, Play Mode, Inspector reads, and screenshots. |
 
 Think of `Light` as a seatbelt check and `Ultra` as a pre-flight inspection.
 
@@ -544,21 +544,6 @@ The goal is simple: **the agent should not close the task while Unity is still b
 ## More than Editor control
 
 Hera includes optional guidance and authoring systems that help the agent do more than change raw objects.
-
-### UI systems
-
-| Backend | Best for | Hera creates |
-|:---|:---|:---|
-| `ugui` | Canvas-based UI | GameObjects, RectTransforms, Components |
-| `uitk` | Runtime UI Toolkit | validated UXML, USS, `PanelSettings`, `UIDocument` |
-
-Choose explicitly:
-
-```bash
-hera-agent-unity asset-config ui-system uitk
-```
-
-Hera validates the selected backend instead of guessing from the Scene.
 
 ### Game Feel Mode (Beta)
 
@@ -613,8 +598,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `editor` | Launch/restart the exact project, or play, stop, pause, refresh, and compile. |
 | `test` | Run or resume Unity tests. |
 | `task` | Inspect durable test/package work without contacting Unity. |
-| `screenshot` | Capture Scene/Game views or isolated objects; optionally return bounded uGUI or Camera.main-constrained 3D collider identity/coordinates, including metadata-only modes. |
-| `ui_doc` | Inspect, build, sample, and capture Unity UI. |
+| `screenshot` | Capture Scene/Game views, ScreenSpaceOverlay canvases, or isolated objects; optionally return bounded uGUI or Camera.main-constrained 3D collider identity/coordinates, including metadata-only modes. |
 | `input` | Test uGUI, or synthesize optional Input System keyboard/mouse/sequence input and record/replay it in Play Mode. |
 | `profiler` | Read profiler hierarchy snapshots. |
 | `game_feel` | Query game-feel guidance. |
@@ -805,10 +789,6 @@ Each command targets one Editor. If several are open, use the full `--project` p
 
 The `input` command sends Unity EventSystem events for uGUI QA and can synthesize optional Input System keyboard/mouse state in Play Mode. Both prove Unity-level behavior, not a physical operating-system click. Physical click evidence must be reported separately.
 
-### Can it build UI Toolkit as well as uGUI?
-
-Yes. Hera has separate uGUI and runtime UI Toolkit backends. Select the backend explicitly instead of mixing them.
-
 ### What should I do if it cannot connect?
 
 ```bash
@@ -824,7 +804,6 @@ Also check that the Unity package is installed and the Editor has finished compi
 - [Architecture](docs/ARCHITECTURE.md)
 - [C# Connector](docs/CSHARP_CONNECTOR.md)
 - [MCP adapter](docs/MCP.md)
-- [UI document contract](docs/UI_DOC_IR.md)
 - [Agent operating guide](AGENTS.md)
 
 ---

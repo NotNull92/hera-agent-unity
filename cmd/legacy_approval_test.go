@@ -32,7 +32,7 @@ func TestLegacyApprovalReturnsContinuablePreflightWhenNonInteractive(t *testing.
 	)
 
 	// When
-	response, err := send("ui_doc", map[string]any{"action": "capture", "overwrite": true})
+	response, err := send("screenshot", map[string]any{"overlay": true, "overwrite": true})
 
 	// Then
 	if err != nil {
@@ -57,7 +57,7 @@ func TestResolveLegacyActionDistinguishesDefaultArgumentFromNamedAction(t *testi
 
 	// When
 	menuAction := resolveLegacyAction(menu, map[string]any{
-		"args": []string{"HeraAgent/Tests/UiDocApply"},
+		"args": []string{"HeraAgent/Tests/ToolContract"},
 	})
 	sceneAction := resolveLegacyAction(scene, map[string]any{
 		"args": []string{"info"},

@@ -139,7 +139,7 @@ UPM 경로 해석을 시작합니다.
 | 게임 실행 | 실제 Play Mode 진입을 기다리고 상태를 확인한 뒤 Stop |
 | Unity가 그린 화면 확인 | Scene/Game View나 단일 오브젝트 캡처, 제한된 uGUI 식별자/좌표와 Camera.main 기준 3D physics 근거 수집 |
 | Unity 입력 검증 | uGUI raycast 검증 또는 Play Mode Input System 키보드/마우스 sequence 합성, 녹화와 replay |
-| UI 제작 | uGUI 또는 UI Toolkit 레이아웃 제작과 결과 검증 |
+| UI 제작 | uGUI 레이아웃 제작과 결과 검증 |
 | 참고 이미지로 UI 재현 | 색과 레이아웃 측정 → Unity UI 생성 → 캡처 → 비교 → 반복 수정 |
 | 게임 감각 개선 | shake, hit stop, 카메라, 사운드, 보상, 접근성 레시피 제공 |
 | 생성형 티가 나는 UI 정리 | 장식, 계층, 간격, 타이포, 색상 문제와 수정법 제공 |
@@ -445,13 +445,13 @@ Unity UI 생성
 예시:
 
 ```bash
-hera-agent-unity ui_doc export --path /Canvas/HUD
-hera-agent-unity ui_doc sample --image hud_ref.png --region "0,0,1,0.2"
-hera-agent-unity ui_doc apply --file hud.json --parent /Canvas --mode upsert
-hera-agent-unity ui_doc capture --out hud_built.png
+hera-agent-unity manage_ui create --element panel --name HUD
+hera-agent-unity manage_ui set_anchor --path /Canvas/HUD --preset stretch --snap true
+hera-agent-unity manage_components set --path /Canvas/HUD --property m_Color --value '#1A1A2E'
+hera-agent-unity screenshot --overlay --output_path hud_built.png
 ```
 
-Hera는 **uGUI**와 **런타임 UI Toolkit**을 모두 지원합니다. 어떤 UI 시스템을 사용할지 명시적으로 선택하므로 둘을 몰래 섞지 않습니다.
+`manage_ui`, `manage_components`, `screenshot --overlay`를 작은 검증 단위로 사용합니다.
 
 ### 화면 좌표를 찍지 않고 버튼 검증
 
@@ -529,7 +529,7 @@ HeraAgent -> Hera Settings -> Ultra Hera
 |:---|:---|
 | `Off` | 추가 확인 규칙 없음 |
 | `Light` | 기본값. 컴파일/상태, Console 에러, 바꾼 대상을 다시 확인하고 종료 |
-| `Ultra` | 중요한 작업. 테스트, Play Mode, Inspector, screenshot, `ui_doc` capture 같은 강한 증거까지 추가 |
+| `Ultra` | 중요한 작업. 테스트, Play Mode, Inspector, screenshot 같은 강한 증거까지 추가 |
 
 `Light`가 안전벨트 확인이라면 `Ultra`는 비행 전 점검에 가깝습니다.
 
@@ -548,21 +548,6 @@ HeraAgent -> Hera Settings -> Ultra Hera
 ## 단순한 Editor 리모컨보다 더 많은 것
 
 Hera에는 오브젝트를 수정하는 기능 외에도 AI가 더 좋은 결과를 만들게 돕는 선택형 제작 시스템이 있습니다.
-
-### UI 시스템
-
-| Backend | 잘 맞는 용도 | Hera가 만드는 것 |
-|:---|:---|:---|
-| `ugui` | Canvas 기반 UI | GameObject, RectTransform, Component |
-| `uitk` | 런타임 UI Toolkit | 검증된 UXML, USS, `PanelSettings`, `UIDocument` |
-
-명시적으로 선택합니다.
-
-```bash
-hera-agent-unity asset-config ui-system uitk
-```
-
-Hera는 Scene을 보고 UI 방식을 추측하지 않습니다.
 
 ### Game Feel Mode (Beta)
 
@@ -617,8 +602,7 @@ hera-agent-unity ui_slop box-in-box
 | `editor` | 정확한 프로젝트 launch/restart 또는 Play, Stop, Pause, Refresh, Compile |
 | `test` | Unity 테스트 실행/재개 |
 | `task` | Unity에 다시 명령하지 않고 장기 작업 상태 확인 |
-| `screenshot` | Scene/Game View 또는 단일 오브젝트 캡처; 제한된 uGUI 또는 Camera.main 기준 3D Collider 식별자/좌표 메타데이터와 메타데이터 전용 모드 지원 |
-| `ui_doc` | Unity UI 조회, 생성, 측정, 캡처 |
+| `screenshot` | Scene/Game View, ScreenSpaceOverlay Canvas 또는 단일 오브젝트 캡처; 제한된 uGUI 또는 Camera.main 기준 3D Collider 식별자/좌표 메타데이터와 메타데이터 전용 모드 지원 |
 | `input` | EventSystem uGUI 검증 또는 Play Mode Input System 키보드/마우스/sequence 합성 및 record/replay |
 | `profiler` | Profiler hierarchy snapshot 읽기 |
 | `game_feel` | Game Feel 가이드 조회 |
@@ -809,10 +793,6 @@ Domain Reload와 장기 작업은 파일시스템 상태를 사용해 HTTP liste
 
 `input`은 uGUI QA용 Unity EventSystem 이벤트를 보내며, Play Mode에서 선택적 Input System 키보드/마우스 상태도 합성할 수 있습니다. 둘 다 Unity 수준 동작의 증거이지 운영체제의 물리 클릭 증거는 아닙니다. 물리 클릭 결과는 따로 보고해야 합니다.
 
-### uGUI뿐 아니라 UI Toolkit도 만들 수 있나요?
-
-네. uGUI와 런타임 UI Toolkit backend가 분리되어 있습니다. 둘을 섞지 않고 명시적으로 선택합니다.
-
 ### 연결이 안 되면 무엇을 하나요?
 
 ```bash
@@ -828,7 +808,6 @@ Unity 패키지가 설치되어 있고 Editor 컴파일이 끝났는지도 확�
 - [아키텍처](docs/ARCHITECTURE.md)
 - [C# Connector](docs/CSHARP_CONNECTOR.md)
 - [MCP adapter](docs/MCP.md)
-- [UI document contract](docs/UI_DOC_IR.md)
 - [Agent 운영 가이드](AGENTS.md)
 
 ---

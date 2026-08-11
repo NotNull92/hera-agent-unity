@@ -41,9 +41,6 @@ AgentConnector/
     │   ├── AssetRefresh.cs              # AssetDatabase.Refresh + script compile request
     │   ├── AssetDetector.cs             # third-party asset detection + config sync
     │   ├── AssetReserializer.cs         # ForceReserializeAssets helper
-    │   ├── ProceduralSprite.cs          # solid/rounded/gradient/nine_slice sprite baking
-    │   ├── UiDocSchema.cs               # ui_doc/2 IR export/apply/layout engine
-    │   └── UiDocFixer.cs                # official uGUI docs fixes/diagnostics
     ├── Data/
     │   ├── unity_docs_*.jsonl.gz.bytes   # bundled Unity ScriptReference indexes
     │   ├── game_feel_1.0.jsonl.gz.bytes  # Game Feel Mode knowledge base
@@ -77,7 +74,6 @@ AgentConnector/
     │   ├── DescribeType.cs              # loaded type introspection + pitfalls
     │   ├── DescribeShader.cs            # shader property inspection/search
     │   ├── UnityDocs.cs                 # offline ScriptReference lookup
-    │   ├── UiDoc.cs                     # HTML→Unity UI pipeline dispatch
     │   └── LogToConsole.cs              # write to Unity console
     └── TestRunner/
         ├── RunTests.cs                  # Unity Test Framework execution
@@ -270,8 +266,6 @@ All tools now return stable `code` values. Branch on these rather than parsing `
 | `INVALID_LAYER_INDEX` | `layer` integer is outside 0..31 |
 | `UNKNOWN_LAYER_NAME` | `layer` string is not a defined layer |
 | `INVALID_PATH_GLOB` | `path_glob` regex conversion failed |
-| `INVALID_DEST` / `DEST_CREATE_FAILED` | `ui_doc import` destination invalid or not creatable |
-| `SPRITE_GEN_FAILED` / `CAPTURE_FAILED` | Procedural sprite / UI capture failed |
 | `TYPE_NOT_FOUND` | `describe_type` could not resolve the type |
 | `TESTS_FAILED` | One or more tests failed |
 | `PLAYMODE_REFRESH_BLOCKED` | `refresh_unity` refused because Unity is entering/ in play mode |
@@ -292,7 +286,6 @@ Finds `[HeraTool]` handlers via reflection. Result is cached per assembly-reload
 | `ExecuteCsharp` | `exec` (explicit `Name =`) |
 | `EditorScreenshot` | `screenshot` (explicit `Name =`) |
 | `ManageUI` | `manage_ui` |
-| `UiDoc` | `ui_doc` |
 | Custom: `[HeraTool(Name = "my_tool")]` | `my_tool` (explicit) |
 
 No explicit `Name=` → `StringCaseUtility.ToSnakeCase(ClassName)`.
@@ -467,7 +460,7 @@ Owns a `BundleStore<Entry>` over `game_feel_1.0.jsonl.gz.bytes` (Game Feel & Jui
 
 ### UiSlopStore.cs
 
-Owns a `BundleStore<Entry>` over `ui_slop_1.0.jsonl.gz.bytes` (49 Unity UI-slop tells), keyed by tell id. Adds the area-grouped index (A→E, the fixed fix order) and `CheckFor(id, uiSystem)`, which returns the uGUI or UI Toolkit predicate for the active `ui_system`.
+Owns a `BundleStore<Entry>` over `ui_slop_1.0.jsonl.gz.bytes` (49 Unity UI-slop tells), keyed by tell id. Adds the area-grouped index (A→E, the fixed fix order) and `CheckFor(id)`, which returns the uGUI predicate.
 
 ### UnityPitfalls.cs
 
@@ -476,7 +469,7 @@ Curated catalog of Unity API pitfalls attached to `describe_type` responses. Ent
 ### HeraSettings.cs
 
 Reads `~/.hera-agent-unity/asset-config.json` by last-write-time cache. Exposes:
-- `GameFeelUiMode` → drives `manage_ui` / `ui_doc` juice hints (legacy `ui_juicy_mode` key read as fallback)
+- `GameFeelUiMode` → drives `manage_ui` juice hints (legacy `ui_juicy_mode` key read as fallback)
 - `GameFeelMode` → drives `manage_components add` game-feel topic hints
 - `UiSlopMode` → drives `manage_components add` UI-slop tell hints and the `doctor --agent-rules` de-slop section
 - `DotweenPreferred` → tween backend hint
@@ -507,27 +500,6 @@ are last-writer-wins; the format has no revision-based merge protocol.
 
 Thin wrapper around `AssetDatabase.ForceReserializeAssets`. Handles the "whole project" vs "specific paths" branching and logging. Used by `reserialize`.
 
-### ProceduralSprite.cs
-
-Tier-1 procedural sprite baking: `solid`, `rounded_rect`, `gradient`, `nine_slice`. Writes PNGs under `Assets/HeraGenerated/` and imports them as Sprites. Zero external dependency.
-
-### UiDocSchema.cs
-
-The `ui_doc/2` IR engine:
-- `ExportNode` — serializes a uGUI subtree to compact IR
-- `ApplyNode` — realizes IR under a parent (create or upsert)
-- Layout group / layout element / content size fitter support
-- Anchor preset grid (replicated from `ManageUI` pending Core extraction)
-
-### UiDocFixer.cs
-
-Version-aware official uGUI manual fixer for `ui_doc apply`. It selects the
-current docs bucket through `UnityVersionCompat`, applies deterministic IR
-corrections before realization, and reports non-deterministic uGUI structure
-issues through diagnostics.
-
----
-
 ## Built-in Tools Summary
 
 | Tool | Class | Key Actions |
@@ -557,8 +529,7 @@ issues through diagnostics.
 | `describe_shader` | `DescribeShader.cs` | shader property inspection/search |
 | `unity_docs` | `UnityDocs.cs` | offline ScriptReference lookup |
 | `game_feel` | `GameFeel.cs` | offline game-feel/juice recipe lookup (ethics built in) |
-| `ui_slop` | `UiSlop.cs` | offline UI-slop tell lookup (uGUI + UI Toolkit checks, fixes, exceptions) |
-| `ui_doc` | `UiDoc.cs` | export, apply, import, gen_sprite, capture (sample/catalog are CLI-side) |
+| `ui_slop` | `UiSlop.cs` | offline UI-slop tell lookup (uGUI checks, fixes, exceptions) |
 | `log` | `LogToConsole.cs` | write to Unity console |
 
 ---

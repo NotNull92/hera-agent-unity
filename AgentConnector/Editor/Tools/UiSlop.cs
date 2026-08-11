@@ -5,7 +5,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "ui_slop",
-        Description = "Look up a Unity UI-slop tell from the connector-bundled taxonomy (areas A-E: decorative sweep, layout/RectTransform/containers, spacing, typography, color). Most tells are predicates you measure from the live scene; a few say plainly that they need visual or semantic judgement instead, and the UI Toolkit variants are written against the USS vocabulary that actually exists per Unity version. Returns { id, area, severity, tell, check_ugui, check_uitk, check, exception, fix, borrow, deep_topic } — `check` is the predicate for the active ui_system (uGUI or UI Toolkit); `fix` is the mechanical repair; `exception` lists the functional cases that must NOT be treated as slop (inventory slots, interactive surfaces); `borrow` carries a quantitative target when the tell owns one, and is null otherwise. No id (or 'list') returns the area-grouped index with the live count. Always available; Unity De-slop Mode (Beta) additionally makes other tools point at these tells via agent_hint.",
+        Description = "Look up a Unity UI-slop tell from the connector-bundled taxonomy (areas A-E: decorative sweep, layout/RectTransform/containers, spacing, typography, color). Most tells are predicates you measure from the live scene; a few say plainly that they need visual or semantic judgement instead. Returns { id, area, severity, tell, check, exception, fix, borrow, deep_topic }. `check` is the uGUI predicate; `fix` is the mechanical repair; `exception` lists the functional cases that must NOT be treated as slop (inventory slots, interactive surfaces); `borrow` carries a quantitative target when the tell owns one, and is null otherwise. No id (or 'list') returns the area-grouped index with the live count. Always available; Unity De-slop Mode (Beta) additionally makes other tools point at these tells via agent_hint.",
         Profiles = new[] { "ui" },
         RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict,
@@ -22,7 +22,7 @@ namespace HeraAgent.Tools
             "Taxonomy index grouped by area (A decorative, B layout, C spacing, D typography, E color)",
             "Surface-in-surface flatten rule + the game-UI exception gate (inventory slots are not flattened)",
             "Spacing ladder: 4 px base x fixed multiples, snap to the nearest rung",
-            "Decorative italics: fontStyle & Italic == 0 (uGUI) / -unity-font-style resolves to normal or bold, never italic (UITK)",
+            "Decorative italics: fontStyle & Italic == 0",
             "WCAG contrast: foreground vs background >= 4.5:1, measured live",
         })]
     public static class UiSlop
@@ -67,9 +67,7 @@ namespace HeraAgent.Tools
             var entry = UiSlopStore.Lookup(id);
             if (entry != null)
             {
-                // Lead with the check for the active UI system so the agent
-                // measures the right predicate without re-deriving ui_system.
-                var check = UiSlopStore.CheckFor(id, HeraSettings.UiSystem);
+                var check = UiSlopStore.CheckFor(id);
                 return new SuccessResponse(
                     $"ui_slop {entry.area}: {entry.id}",
                     new
@@ -79,8 +77,6 @@ namespace HeraAgent.Tools
                         severity = entry.severity,
                         tell = entry.tell,
                         check,
-                        check_ugui = entry.check_ugui,
-                        check_uitk = entry.check_uitk,
                         exception = entry.exception,
                         fix = entry.fix,
                         borrow = entry.borrow,

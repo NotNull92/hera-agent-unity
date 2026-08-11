@@ -16,9 +16,8 @@ cmd/                  # Cobra-free command implementation
   status.go           # status, waitForAlive, waitForReady, ping
   update.go           # self-update from GitHub releases
   version_check.go    # periodic update notice (12h interval)
-  asset_config.go     # local asset-config subcommands, including ui_system and Ultra Hera JSON
+  asset_config.go     # local asset-config subcommands and Ultra Hera JSON
   batch.go            # batch command execution
-  ui_doc.go           # ui_doc dispatch + CLI-side sample/catalog
   manage_packages.go  # async package job polling
   unity_docs.go       # unity_docs passthrough
   doctor.go           # self-diagnostic
@@ -92,7 +91,7 @@ func Execute(ctx context.Context) error {
     // 5. Wait for Unity to be alive
     inst, _ = waitForAlive(ctx, freshResolve, flagTimeout, category)
 
-    // 6. Send command via HTTP (or special-case batch/editor/test/manage_packages/unity_docs/ui_doc)
+    // 6. Send command via HTTP (or special-case batch/editor/test/manage_packages/unity_docs)
     resp, err := runUnityCommand(ctx, category, subArgs, send, inst, freshResolve)
 
     // 7. Print response + update notice
@@ -109,7 +108,7 @@ func Execute(ctx context.Context) error {
 |:---|:---|
 | `Execute()` | Entry point. Parses flags → discovers instance → dispatches command → prints response. |
 | `runStandaloneCommand()` | Handles commands that don't need a live Unity connection. `asset-config detect` deliberately falls through to Unity-backed dispatch. Lives in `dispatch.go`. |
-| `runUnityCommand()` | Handles commands that require a live Unity connection (including batch and file-injection for exec/ui_doc). Lives in `dispatch.go`. |
+| `runUnityCommand()` | Handles commands that require a live Unity connection (including batch and file-injection for exec). Lives in `dispatch.go`. |
 | `ResponsePrinter.Print()` | Formats Unity JSON response for terminal. Plain strings print raw. Objects print indented or compact JSON depending on command category. |
 | `printTimings()` | Prints per-phase timings to stderr when `--verbose` is set. |
 | `buildParams()` | Converts `--key value` pairs into a map. Supports `--params '{"k":"v"}'` for raw JSON. |
@@ -190,10 +189,6 @@ Dispatches to `manage_packages` on the connector. `list` is synchronous; `add` /
 ### batch.go
 
 Reads batch JSON from `--file` or stdin, unmarshals into `client.BatchCommandRequest`, and sends it to `POST /commands`. Results are printed per step; `fail_fast` stops at the first failure. A structured non-200 ingress rejection is printed as compact JSON and returned as a CLI failure while preserving its `HTTP_*` code and `data`.
-
-### ui_doc.go
-
-`export` / `apply` / `import` / `gen_sprite` / `capture` are simple passthroughs to the connector. `apply` and `import` read their document from `--file` so the potentially large doc never rides inline in the agent's context. `sample` and `catalog` are handled entirely CLI-side: they decode reference images and scan UI-asset folders with no Unity round-trip.
 
 ### unity_docs.go
 

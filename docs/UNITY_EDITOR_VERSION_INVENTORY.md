@@ -199,12 +199,6 @@ remained loaded.
   compiler/runtime kind. Verified on `6000.0.35f1` with local CLI output:
   `Docs: 6000.0` and `Compiler: csc=external dotnet=external` for the current
   project override configuration.
-- `UiDocFixer` has a menu smoke test that locks the uGUI package profile for
-  every checked docs bucket: `2022.3 -> com.unity.ugui@1.0`,
-  `2023.2`/`6000.0`/`6000.3 -> com.unity.ugui@2.0`, and
-  `6000.5 -> com.unity.ugui@2.5`.
-- Runtime `ui_doc apply` on `6000.0.35f1` returned `docs_version: 6000.0`
-  and `ugui_package: com.unity.ugui@2.0`.
 - `EntityIdCompat` now has a menu smoke test that verifies the int
   `instance_id` contract round-trips through the compatibility shim. Direct
   legacy ID API usage is isolated to `EntityIdCompat`; `manage_gameobject

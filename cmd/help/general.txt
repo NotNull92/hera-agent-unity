@@ -98,25 +98,11 @@ Documentation:
                                                   Data ships inside the UPM package — no
                                                   docs folder on your machine required.
 
-UI Doc (uGUI or UI Toolkit):
-  ui_doc export --path /Canvas/HUD                 Serialize a live uGUI subtree
-                                                  to ui_doc/2 JSON.
-  ui_doc apply --file design.json --parent /Canvas
-                                                  Build the selected UI backend from IR.
-  ui_doc import --src <abs.png> --into Assets/UI  Copy external sprites into
-                                                  the project as Sprite assets.
-  ui_doc gen_sprite --spec '{...}' --out Assets/UI/bg.png
-                                                  Bake CSS-shape sprites.
-  ui_doc capture --out built.png                  Render overlay UI to PNG.
-  ui_doc sample --image ref.png --at "x,y"        Measure reference colors.
-  ui_doc catalog --dir <folder>                   Scan a UI sprite folder.
-  html-to-uidoc --file design.html                Convert an HTML mobile layout to
-                                                  ui_doc/2 JSON for Unity uGUI.
-  html-to-uidoc --file design.html --out doc.json
-  html-to-uidoc --file design.html --width 1920 --height 1080
-                                                  Design canvas size (default 1080x1920).
-                                                  Reference Resolution is set to this size,
-                                                  so HTML px values map 1:1 to uGUI units.
+UI (uGUI):
+  manage_ui create --element panel --parent /Canvas
+                                                  Create and position UI through generic tools.
+  manage_components set --path /Canvas/Panel ...  Edit UI component properties.
+  screenshot --overlay --output_path built.png    Render ScreenSpaceOverlay UI to PNG.
 
 Input QA:
   input state                                      Report EventSystem/raycaster availability

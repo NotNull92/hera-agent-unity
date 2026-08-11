@@ -9,7 +9,7 @@ This document defines a precise input-event QA surface for Hera. The goal is to 
 
 ## Problem
 
-Current QA can observe Unity through Hera (`status`, `console`, `screenshot`, `ui_doc capture`, Play Mode, tests), but it cannot perform real interaction through a dedicated Hera input tool.
+Current QA can observe Unity through Hera (`status`, `console`, `screenshot`, Play Mode, tests), but it cannot perform real interaction through a dedicated Hera input tool.
 
 When Codex Computer Use cannot acquire screenshot state for the Unity Editor window, it refuses coordinate clicks. In that environment:
 
@@ -67,11 +67,10 @@ The missing product surface is an internal Unity input tool that can drive:
   - Creates Canvas, GraphicRaycaster, Button, Text, and EventSystem.
   - Uses `ComponentTypeResolver` to avoid compile-time package assumptions.
   - Picks `InputSystemUIInputModule` or `StandaloneInputModule` by compile defines.
-- `AgentConnector/Editor/Tools/UiDoc.cs`
-  - `capture` renders overlay uGUI canvases to PNG by temporarily routing canvases through a camera.
-  - This is the correct visual verification companion for input QA.
 - `AgentConnector/Editor/Tools/EditorScreenshot.cs`
   - Captures scene/game/editor windows and has internal editor-capture fallback.
+  - `overlay` renders ScreenSpaceOverlay uGUI canvases to PNG and is the visual
+    verification companion for input QA.
 
 ### Runtime API availability confirmed in Unity
 
@@ -158,7 +157,7 @@ Directly calling `Button.onClick.Invoke()` or a custom method. This is explicitl
    - `input inspect`
    - `input click`
    - `console --type error`
-   - `ui_doc capture` or `screenshot --view game`
+   - `screenshot --overlay` or `screenshot --view game`
 6. Preserve existing no-boilerplate tool discovery pattern.
 7. Avoid hard dependency on optional packages where possible.
 8. Support Windows native click only as an opt-in fallback, not as the primary path.
@@ -725,7 +724,7 @@ Use this language:
 Physical OS click QA: BLOCKED, because Computer Use could not acquire Unity screenshot state.
 Unity EventSystem input QA: PASS, target was hit through EventSystem.RaycastAll and pointer handlers executed.
 InputSystem gameplay QA: PASS, queued device events were processed by InputSystem.
-Visual result QA: PASS, ui_doc capture/screenshot showed expected state.
+Visual result QA: PASS, screenshot showed expected state.
 ```
 
 The input tool should return an `evidence_level` field:
@@ -965,7 +964,7 @@ QA:
 - Minimized Unity returns `INPUT_WINDOW_MINIMIZED`.
 - Restored Unity can locate GameView HWND.
 - Native click returns `native_os` evidence with hwnd and screen point.
-- Manual visual verification through `screenshot --view game` or `ui_doc capture`.
+- Manual visual verification through `screenshot --view game` or `screenshot --overlay`.
 
 ### Phase 6: Integrate QA recipes into agent rules
 
@@ -1032,7 +1031,7 @@ The feature is complete only when all applicable criteria pass:
 6. Missing EventSystem returns `INPUT_NO_EVENT_SYSTEM`.
 7. Non-interactable Selectable returns `INPUT_TARGET_NOT_INTERACTABLE`.
 8. Console has no errors after the command.
-9. Visual state can be checked with `ui_doc capture` or `screenshot --view game`.
+9. Visual state can be checked with `screenshot --overlay` or `screenshot --view game`.
 10. Documentation tells agents how to classify physical vs Unity-level QA.
 11. No UnityEngine.Object is returned directly in data.
 12. Default payload remains compact.
@@ -1074,7 +1073,7 @@ hera-agent-unity editor play --wait
 hera-agent-unity input inspect --path /Canvas/StartButton --details true
 hera-agent-unity input click --path /Canvas/StartButton --settle_frames 2
 hera-agent-unity console --type error --lines 20
-hera-agent-unity ui_doc capture --out captures/after-click.png
+hera-agent-unity screenshot --overlay --output_path captures/after-click.png
 hera-agent-unity editor stop
 ```
 

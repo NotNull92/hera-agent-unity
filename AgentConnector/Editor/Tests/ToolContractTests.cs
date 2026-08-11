@@ -494,8 +494,12 @@ namespace HeraAgent.Tests
             var screenshotMinimum = ToolContractValidator.Validate(
                 ToolContractRegistry.Get("screenshot"),
                 new JObject());
+            var screenshotOverlay = ToolContractValidator.Validate(
+                ToolContractRegistry.Get("screenshot"),
+                new JObject { ["overlay"] = true });
             return Expect(nameof(TestM22StrictToolCoverage),
                 screenshotMinimum.IsValid
+                && screenshotOverlay.IsValid
                 && tools.All(tool =>
             {
                 var contract = ToolContractRegistry.Get(tool);
@@ -900,7 +904,6 @@ namespace HeraAgent.Tests
                 "manage_prefab",
                 "manage_animation",
                 "manage_ui",
-                "ui_doc",
             };
             var defaultTools = new[] { "reserialize", "refresh_unity", "detect_assets" };
             return Expect(nameof(TestM23StrictToolCoverage),
@@ -938,7 +941,7 @@ namespace HeraAgent.Tests
                 }
             }
 
-            return Expect(nameof(TestEveryM23ActionContract), count == 31);
+            return Expect(nameof(TestEveryM23ActionContract), count == 26);
         }
 
         private static bool TestM23ValidationFailures()
@@ -964,7 +967,6 @@ namespace HeraAgent.Tests
                     ["path"] = "Assets/Test.anim",
                 }),
                 ("manage_ui", "create", new JObject { ["action"] = "create" }),
-                ("ui_doc", "apply", new JObject { ["action"] = "apply" }),
             };
             if (missingCases.Any(entry =>
                 ToolContractValidator.Validate(
@@ -1007,11 +1009,6 @@ namespace HeraAgent.Tests
                 {
                     ["action"] = "create",
                     ["element"] = new JObject(),
-                }),
-                ("ui_doc", "capture", new JObject
-                {
-                    ["action"] = "capture",
-                    ["width"] = new JObject(),
                 }),
             };
             if (wrongTypeCases.Any(entry =>
@@ -1056,7 +1053,6 @@ namespace HeraAgent.Tests
                 "manage_prefab",
                 "manage_animation",
                 "manage_ui",
-                "ui_doc",
             })
             {
                 var unknownAction = CommandRouter.Dispatch(
@@ -1073,31 +1069,6 @@ namespace HeraAgent.Tests
 
         private static bool TestM23AliasesNormalize()
         {
-            var action = ToolContractRegistry.Get("ui_doc").Actions["gen_sprite"];
-            var validation = ToolContractValidator.Validate(
-                ToolContractRegistry.Get("ui_doc"),
-                new JObject
-                {
-                    ["action"] = "gen_sprite",
-                    ["spec"] = new JObject { ["kind"] = "solid" },
-                },
-                "gen_sprite");
-            var jsonSpec = ToolContractValidator.Validate(
-                ToolContractRegistry.Get("ui_doc"),
-                new JObject
-                {
-                    ["action"] = "gen_sprite",
-                    ["spec"] = "{\"kind\":\"solid\"}",
-                },
-                "gen_sprite");
-            var importPositional = ToolContractValidator.Validate(
-                ToolContractRegistry.Get("ui_doc"),
-                new JObject
-                {
-                    ["action"] = "import",
-                    ["args"] = new JArray("import", "reference.png"),
-                },
-                "import");
             var reserializePositionals = ToolContractValidator.Validate(
                 ToolContractRegistry.Get("reserialize"),
                 new JObject
@@ -1110,24 +1081,13 @@ namespace HeraAgent.Tests
             var reserializePathAlias = ToolContractValidator.Validate(
                 ToolContractRegistry.Get("reserialize"),
                 new JObject { ["path"] = "Assets/One.asset" });
-            var dispatchedActionAlias = CommandRouter.Dispatch(
-                    "ui_doc",
-                    new JObject { ["action"] = "gensprite" })
-                .GetAwaiter()
-                .GetResult() as ErrorResponse;
             return Expect(nameof(TestM23AliasesNormalize),
-                action.Aliases.Contains("gensprite")
-                && validation.IsValid
-                && jsonSpec.IsValid
-                && importPositional.IsValid
-                && importPositional.Normalized.Value<string>("src") == "reference.png"
-                && reserializePositionals.IsValid
+                reserializePositionals.IsValid
                 && reserializePositionals.Normalized["paths"] is JArray paths
                 && paths.Count == 3
                 && reserializePathAlias.IsValid
                 && reserializePathAlias.Normalized["paths"] is JArray aliasPaths
-                && aliasPaths.Count == 1
-                && dispatchedActionAlias?.code == "MISSING_ARGUMENT");
+                && aliasPaths.Count == 1);
         }
 
         private static bool TestM23MutuallyExclusiveTargets()
@@ -1144,12 +1104,6 @@ namespace HeraAgent.Tests
                 ("manage_ui", "get_rect", new JObject
                 {
                     ["action"] = "get_rect",
-                    ["path"] = "/Canvas",
-                    ["instance_id"] = 1,
-                }),
-                ("ui_doc", "export", new JObject
-                {
-                    ["action"] = "export",
                     ["path"] = "/Canvas",
                     ["instance_id"] = 1,
                 }),
@@ -1239,29 +1193,13 @@ namespace HeraAgent.Tests
                     ["size_delta"] = "not-a-vector",
                 },
                 "set_rect");
-            var importDoc = ToolContractValidator.Validate(
-                ToolContractRegistry.Get("ui_doc"),
-                new JObject
-                {
-                    ["action"] = "import",
-                    ["doc"] = new JObject
-                    {
-                        ["items"] = new JArray(new JObject
-                        {
-                            ["src"] = "reference.png",
-                            ["name"] = "reference",
-                        }),
-                    },
-                },
-                "import");
             return Expect(nameof(TestM23ComplexSchemaValues),
                 assetProperties.IsValid
                 && animationKeys.IsValid
                 && invalidKeys.Error?.code == "ARGUMENT_TYPE_MISMATCH"
                 && uiVector.IsValid
                 && uiScientificVector.IsValid
-                && !invalidUiVector.IsValid
-                && importDoc.IsValid);
+                && !invalidUiVector.IsValid);
         }
 
         private static bool TestM23OutputSchemas()
@@ -1274,7 +1212,6 @@ namespace HeraAgent.Tests
                 "manage_prefab",
                 "manage_animation",
                 "manage_ui",
-                "ui_doc",
             })
             {
                 var contract = ToolContractRegistry.Get(toolName);
@@ -1286,10 +1223,7 @@ namespace HeraAgent.Tests
             var assets = ToolContractRegistry.Get("manage_assets");
             var animation = ToolContractRegistry.Get("manage_animation");
             var ui = ToolContractRegistry.Get("manage_ui");
-            var uiDoc = ToolContractRegistry.Get("ui_doc");
             var createAssetData = assets.Actions["create"].OutputSchema["properties"]?["data"];
-            var importData = uiDoc.Actions["import"].OutputSchema["properties"]?["data"];
-            var applyData = uiDoc.Actions["apply"].OutputSchema["properties"]?["data"];
             var assetSchemasValid =
                 defaultTools.All(tool => HasOutputEnvelope(ToolContractRegistry.Get(tool).OutputSchema))
                 && assets.Actions["find"].OutputSchema["properties"]?["data"]?["properties"]?["assets"] != null
@@ -1297,11 +1231,7 @@ namespace HeraAgent.Tests
                 && createAssetData?["properties"]?["applied"]?["items"]?["type"]?.Value<string>() == "string";
             var uiSchemasValid =
                 animation.Actions["set_curve"].OutputSchema["properties"]?["data"]?["properties"]?["keys"] != null
-                && ui.Actions["get_rect"].OutputSchema["properties"]?["data"]?["properties"]?["rect"]?["properties"]?["anchor_min"] != null
-                && importData?["properties"]?["imported"]?["type"]?.Value<string>() == "array"
-                && importData?["properties"]?["skipped"]?["type"]?.Value<string>() == "array"
-                && applyData?["properties"] is JObject applyProperties
-                && applyProperties.Count == 0;
+                && ui.Actions["get_rect"].OutputSchema["properties"]?["data"]?["properties"]?["rect"]?["properties"]?["anchor_min"] != null;
             return Expect(nameof(TestM23OutputSchemas), assetSchemasValid && uiSchemasValid);
         }
 
@@ -2017,34 +1947,6 @@ namespace HeraAgent.Tests
                 ["size_delta"] = "100,50",
             });
 
-            yield return ("ui_doc", "export", new JObject
-            {
-                ["action"] = "export",
-                ["path"] = "/Canvas",
-            });
-            yield return ("ui_doc", "apply", new JObject
-            {
-                ["action"] = "apply",
-                ["doc"] = new JObject
-                {
-                    ["root"] = new JObject
-                    {
-                        ["name"] = "Root",
-                        ["element"] = "empty",
-                    },
-                },
-            });
-            yield return ("ui_doc", "import", new JObject
-            {
-                ["action"] = "import",
-                ["src"] = "reference.png",
-            });
-            yield return ("ui_doc", "gen_sprite", new JObject
-            {
-                ["action"] = "gen_sprite",
-                ["spec"] = new JObject { ["kind"] = "solid" },
-            });
-            yield return ("ui_doc", "capture", new JObject { ["action"] = "capture" });
         }
 
         private static IEnumerable<(string tool, string action, JObject input)> StrictM24Actions()

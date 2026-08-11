@@ -98,9 +98,6 @@ func TestLoadConfig_NoFile_ReturnsDefaultsAndCreatesFile(t *testing.T) {
 	if cfg.LoopEngineeringMode != LoopEngineeringLight {
 		t.Errorf("expected loop mode %q, got %q", LoopEngineeringLight, cfg.LoopEngineeringMode)
 	}
-	if cfg.UISystem != UISystemUGUI {
-		t.Errorf("expected UI system %q, got %q", UISystemUGUI, cfg.UISystem)
-	}
 
 	// File should have been created.
 	if _, err := os.Stat(ConfigFilePath()); err != nil {
@@ -149,8 +146,15 @@ func TestLoadConfig_ValidJSON(t *testing.T) {
 	if cfg.LoopEngineeringMode != LoopEngineeringUltra {
 		t.Errorf("expected loop mode %q, got %q", LoopEngineeringUltra, cfg.LoopEngineeringMode)
 	}
-	if cfg.UISystem != UISystemUITK {
-		t.Errorf("expected UI system %q, got %q", UISystemUITK, cfg.UISystem)
+	if err := Save(cfg); err != nil {
+		t.Fatalf("Save error: %v", err)
+	}
+	persisted, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read saved config: %v", err)
+	}
+	if strings.Contains(string(persisted), "ui_system") {
+		t.Errorf("expected retired ui_system key to be removed after save, got: %s", persisted)
 	}
 
 	// Merged with defaults: dotween should preserve enabled/installed, but metadata refreshed.
@@ -437,39 +441,6 @@ func TestSetGameFeelUIMode(t *testing.T) {
 	}
 	if !loaded.GameFeelUIMode {
 		t.Error("expected GameFeelUIMode true after reload")
-	}
-}
-
-func TestSetUISystem(t *testing.T) {
-	withTempHome(t)
-
-	cfg, err := SetUISystem(UISystemUITK)
-	if err != nil {
-		t.Fatalf("SetUISystem error: %v", err)
-	}
-	if cfg.UISystem != UISystemUITK {
-		t.Errorf("expected UI system %q, got %q", UISystemUITK, cfg.UISystem)
-	}
-
-	loaded, err := Load()
-	if err != nil {
-		t.Fatalf("Load error: %v", err)
-	}
-	if loaded.UISystem != UISystemUITK {
-		t.Errorf("expected UI system %q after reload, got %q", UISystemUITK, loaded.UISystem)
-	}
-
-	if _, err := SetUISystem(UISystem("unknown")); err == nil {
-		t.Error("expected invalid UI system to fail")
-	}
-}
-
-func TestNormalizeUISystem(t *testing.T) {
-	if got := NormalizeUISystem(" UITK "); got != UISystemUITK {
-		t.Errorf("expected UITK normalization, got %q", got)
-	}
-	if got := NormalizeUISystem("invalid"); got != UISystemUGUI {
-		t.Errorf("expected invalid UI system to default to %q, got %q", UISystemUGUI, got)
 	}
 }
 

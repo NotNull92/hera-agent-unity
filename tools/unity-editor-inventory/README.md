@@ -27,5 +27,4 @@ The output is intentionally focused on paths consumed by Hera code:
 
 - `ExecCompileCache` and the settings window compiler path detection.
 - `UnityVersionCompat`, `UnityDocsStore`, and docs bucket selection.
-- `UiDocFixer`, `UiDocSchema`, and uGUI package rule selection.
 - `describe_type`, `find_method`, and `list_assemblies` ground-truth probes.
