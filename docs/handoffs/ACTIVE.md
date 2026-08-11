@@ -56,5 +56,29 @@ Sweep evidence:
 - All 23 assertions in `HeraAgent/Tests/UiSlopStore` were replayed against the new
   bundle and passed.
 
-Live Editor confirmation of the new bundle was not possible before publishing: the
-connected project resolves the Connector from the git URL, not from local sources.
+## Publication and live confirmation
+
+Both commits were pushed to `main` and the sweep commit carries the
+`connector-0.0.88` tag. The `main` CI run passed every step, including generated
+runtime contract drift, agent guide drift, and Connector package integrity.
+
+The connected `6000.3.5f2` project resolves the Connector from the git URL, so live
+confirmation required re-resolving it there; it moved from `0.0.86` (commit
+`a28c98a`) to `0.0.88` at commit `6c7916f`, which matches `main` HEAD. Its unpinned
+git-URL dependency style was preserved. On the upgraded Editor:
+
+- `editor refresh --compile` completed and the Editor returned to `ready`;
+  `console --type error` matched 0 of 2 console entries.
+- The catalog discovered 30 tools, and `ui_doc` is absent — `ui_slop` is the only
+  remaining `ui_`-prefixed tool.
+- `ui_slop tmp-italic` returned a single `check` field; the previously emitted
+  `check_ugui` and `check_uitk` fields are gone.
+- `ui_slop` indexed 49 tells across areas A–E.
+
+Unrelated to this work, that project's `Packages/manifest.json` already carried an
+uncommitted `com.unity.pipeline` entry (file mtime predates the re-resolve by over
+two hours). The resolve materialized it into `packages-lock.json`; it is the
+project owner's pending change, not part of this workstream.
+
+No CLI release was cut. The only Go change is the maintainer-only
+`tools/build-ui-slop-docs` builder, so no `v*` tag was pushed.
