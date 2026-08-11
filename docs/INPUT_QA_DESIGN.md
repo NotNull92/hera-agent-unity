@@ -695,6 +695,10 @@ Therefore `backend=auto` must not select native backend in phase 1.
 
 UI Toolkit is not phase 1.
 
+This section covers *replaying input events* against an existing panel, which is a
+separate axis from UI *authoring*: the `ui_doc` authoring surface and its UXML/USS
+emitter were retired in `v0.2.1`, and nothing here reopens them.
+
 Confirmed APIs exist:
 
 - `IPanel.Pick(Vector2)`
