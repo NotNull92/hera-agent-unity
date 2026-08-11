@@ -1,0 +1,7 @@
+- Neutral 1280×720 capture verified: [precision HUD capture](</C:/Users/PC/AppData/Local/Temp/hera_ui_capture-03458157c110463abc3e2382d36f7704.png>).
+- Exactly one root Canvas: `BenchmarkCanvas`; scaler confirmed at `1280×720`, match `0.5`.
+- All required names, hierarchy, anchors, sizes, colors, legacy Text settings, and 292/400 px (73%) bar fill confirmed.
+- `DeployButton` is interactable; its Image is raycast-enabled while its label and all decorative graphics are raycast-disabled. EventSystem and one enabled `StandaloneInputModule` exist; submit selected and executed on the button.
+- Final Console errors: `0`.
+
+Remaining uncertainty: the edit-mode raycast probe returned no hits because its EventSystem input module is inactive until Play Mode; Play Mode verification was prohibited by the benchmark arm. No structural raycast blocker remains.

@@ -1,0 +1,82 @@
+2026-08-11T06:07:12.341611Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+HERA_AB_FORBIDDEN: ui_doc --help is not allowed in arm uidoc
+
+2026-08-11T06:07:21.610072Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.4 seconds
+Output:
+{"success":false,"message":"Validation failed at '/'.","code":"MISSING_ARGUMENT","data":{"path":"/","expected":"path or instance_id","actual":null},"timings":{"total_ms":0}}
+
+2026-08-11T06:07:31.954056Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.7 seconds
+Output:
+{"success":false,"message":"Validation failed at '/doc'.","code":"MISSING_ARGUMENT","data":{"path":"/doc","expected":["object","string"],"actual":null},"timings":{"total_ms":1}}
+
+2026-08-11T06:07:47.774734Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.2 seconds
+Output:
+{"success":false,"message":"doc has no 'root' node (expected {schema, root:{...}} or a bare node).","code":"INVALID_DOC","timings":{"total_ms":26}}
+
+2026-08-11T06:07:56.288764Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"doc has no 'root' node (expected {schema, root:{...}} or a bare node).","code":"INVALID_DOC","timings":{"total_ms":18}}
+
+2026-08-11T06:08:13.546701Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.4 seconds
+Output:
+{"success":false,"message":"apply needs 'doc' (the ui_doc IR; pass --file design.json).","code":"MISSING_PARAM","timings":{"total_ms":30}}
+
+2026-08-11T06:10:39.892726Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"Validation failed at '/replace'.","code":"UNKNOWN_ARGUMENT","data":{"path":"/replace","expected":"action, doc, mode, parent","actual":"Boolean"},"timings":{"total_ms":16}}
+
+2026-08-11T06:10:50.204756Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.4 seconds
+Output:
+{"success":false,"message":"Unknown action: foo","code":"UNKNOWN_ACTION","data":{"path":"/action","expected":["apply","capture","export","gen_sprite","import"],"actual":"foo"},"timings":{"total_ms":1}}
+
+2026-08-11T06:11:02.187310Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.4 seconds
+Output:
+{"success":false,"message":"Validation failed at '/mode'.","code":"INVALID_ARGUMENT","data":{"path":"/mode","expected":"[\"create\",\"upsert\"]","actual":"foo"},"timings":{"total_ms":2}}
+
+2026-08-11T06:11:36.339890Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.6 seconds
+Output:
+{"success":false,"message":"Validation failed at '/output'.","code":"UNKNOWN_ARGUMENT","data":{"path":"/output","expected":"action, bg, canvas, height, out, overwrite, width","actual":"String"},"timings":{"total_ms":0}}
+
+2026-08-11T06:11:41.495098Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.9 seconds
+Output:
+hera-arm.ps1: Parameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.
+
+2026-08-11T06:11:50.609682Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.6 seconds
+Output:
+{"success":false,"message":"Validation failed at '/out=inventory_capture_01.png'.","code":"UNKNOWN_ARGUMENT","data":{"path":"/out=inventory_capture_01.png","expected":"action, bg, canvas, height, out, overwrite, width","actual":"Boolean"},"timings":{"total_ms":0}}
+
+2026-08-11T06:12:01.406089Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+hera-arm.ps1: Parameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.
+
+2026-08-11T06:12:12.111763Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+hera-arm.ps1: Parameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.
+
+2026-08-11T06:12:39.400166Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.6 seconds
+Output:
+{"success":false,"message":"No object for instance_id=-708268559.","code":"OBJECT_NOT_FOUND","timings":{"total_ms":0}}
+
+2026-08-11T06:14:19.636083Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.7 seconds
+Output:
+{"success":false,"message":"No GameObject at path: '/'.","code":"TARGET_NOT_FOUND","timings":{"total_ms":40}}
+
+2026-08-11T06:19:53.044285Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in C:\Users\PC\AppData\Local\Temp\hera-ui-ab-wave-7f75550e34f5470cb2b3f5e3f2890580\project\ui_grid.json:
+"text":{"value":"01","color":"#D9E2ECFF"}}]},

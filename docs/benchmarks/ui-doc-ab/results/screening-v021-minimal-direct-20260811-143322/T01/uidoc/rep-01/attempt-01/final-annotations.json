@@ -1,0 +1,16 @@
+{
+  "schema": "hera.ui-authoring-ab-annotations/1",
+  "root_canvas_count": 2,
+  "event_system_count": 1,
+  "raycasts": [
+    {
+      "path": "/BenchmarkCanvas/DeployButton",
+      "reachable": false,
+      "top_path": null,
+      "screen_point": {
+        "x": 540.0,
+        "y": 693.0
+      }
+    }
+  ]
+}

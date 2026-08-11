@@ -1,0 +1,6 @@
+- Verified 1280×720 render matches the requested HUD, including exact 73% bar fill.
+- Exactly one root Canvas: `BenchmarkCanvas`.
+- EventSystem and enabled `StandaloneInputModule` present.
+- `DeployButton` is interactable; its Image is the sole center raycast target.
+- Final Console: 0 errors.
+- Remaining uncertainty: none.

@@ -1,0 +1,22 @@
+=== build source CLI ===
+=== create disposable fixture ===
+=== cold fixture warmup ===
+=== T01 uidoc rep 1/3 attempt 1 ===
+result: valid=True score=87.067 strict=False agent_ms=857436.616 calls=69
+=== T01 primitives rep 1/3 attempt 1 ===
+result: valid=True score=94 strict=False agent_ms=546472.679 calls=101
+=== T01 primitives_batch rep 1/3 attempt 1 ===
+result: valid=True score=94 strict=False agent_ms=541710.719 calls=106
+=== T02 uidoc rep 1/3 attempt 1 ===
+result: valid=True score=80.95 strict=False agent_ms=900079.283 calls=37
+=== T02 primitives rep 1/3 attempt 1 ===
+result: valid=True score=94 strict=False agent_ms=763664.127 calls=189
+=== T02 primitives_batch rep 1/3 attempt 1 ===
+result: valid=True score=94 strict=False agent_ms=657228.11 calls=48
+=== T03 uidoc rep 1/3 attempt 1 ===
+result: valid=False score=10 strict=False agent_ms=90.211 calls=0
+=== T03 uidoc rep 1/3 attempt 2 ===
+result: valid=False score=10 strict=False agent_ms=86.844 calls=0
+=== T03 uidoc rep 1/3 attempt 3 ===
+result: valid=False score=10 strict=False agent_ms=86.892 calls=0
+WARNING: Benchmark work directory retained for inspection: C:\Users\PC\AppData\Local\Temp\hera-ui-ab-wave-7f75550e34f5470cb2b3f5e3f2890580

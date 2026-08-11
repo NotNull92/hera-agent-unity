@@ -1,0 +1,619 @@
+{
+  "scene": "SampleScene",
+  "scene_path": "Assets/Scenes/SampleScene.unity",
+  "root_names": [
+    "Canvas",
+    "EventSystem",
+    "BenchmarkCanvas"
+  ],
+  "root_canvas_count": 2,
+  "event_system_count": 1,
+  "nodes": [
+    {
+      "name": "Label",
+      "path": "/BenchmarkCanvas/DeployButton/Label",
+      "parent": "/BenchmarkCanvas/DeployButton",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "anchor_max": {
+          "x": 1.0,
+          "y": 1.0
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "size_delta": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "size": {
+          "width": 240.0,
+          "height": 64.0
+        }
+      },
+      "image": null,
+      "text": {
+        "value": "DEPLOY",
+        "font_size": 14,
+        "color": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0,
+          "a": 1.0
+        },
+        "alignment": "MiddleCenter",
+        "enabled": true,
+        "font": "LegacyRuntime",
+        "visibly_configured": true,
+        "raycast_target": true
+      },
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "DeployButton",
+      "path": "/BenchmarkCanvas/DeployButton",
+      "parent": "/BenchmarkCanvas",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchor_max": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": -178.0
+        },
+        "size_delta": {
+          "x": 240.0,
+          "y": 64.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "size": {
+          "width": 240.0,
+          "height": 64.0
+        }
+      },
+      "image": {
+        "color": {
+          "r": 0.141176477,
+          "g": 0.3529412,
+          "b": 0.5529412,
+          "a": 1.0
+        },
+        "enabled": true,
+        "raycast_target": true,
+        "image_type": "Simple"
+      },
+      "text": null,
+      "button": {
+        "interactable": true,
+        "label": "DEPLOY",
+        "label_font_size": 14,
+        "label_color": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 1.0,
+          "a": 1.0
+        },
+        "label_visible": true
+      },
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "BarFill",
+      "path": "/BenchmarkCanvas/StatusPanel/BarBackground/BarFill",
+      "parent": "/BenchmarkCanvas/StatusPanel/BarBackground",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.0,
+          "y": 0.5
+        },
+        "anchor_max": {
+          "x": 0.0,
+          "y": 0.5
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "size_delta": {
+          "x": 292.0,
+          "y": 24.0
+        },
+        "pivot": {
+          "x": 0.0,
+          "y": 0.5
+        },
+        "size": {
+          "width": 292.0,
+          "height": 24.0
+        }
+      },
+      "image": {
+        "color": {
+          "r": 0.3019608,
+          "g": 0.831372559,
+          "b": 0.6745098,
+          "a": 1.0
+        },
+        "enabled": true,
+        "raycast_target": true,
+        "image_type": "Simple"
+      },
+      "text": null,
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "BarBackground",
+      "path": "/BenchmarkCanvas/StatusPanel/BarBackground",
+      "parent": "/BenchmarkCanvas/StatusPanel",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchor_max": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": -18.0
+        },
+        "size_delta": {
+          "x": 400.0,
+          "y": 24.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "size": {
+          "width": 400.0,
+          "height": 24.0
+        }
+      },
+      "image": {
+        "color": {
+          "r": 0.164705887,
+          "g": 0.203921571,
+          "b": 0.2901961,
+          "a": 1.0
+        },
+        "enabled": true,
+        "raycast_target": true,
+        "image_type": "Simple"
+      },
+      "text": null,
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "PowerLabel",
+      "path": "/BenchmarkCanvas/StatusPanel/PowerLabel",
+      "parent": "/BenchmarkCanvas/StatusPanel",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchor_max": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": 42.0
+        },
+        "size_delta": {
+          "x": 420.0,
+          "y": 48.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "size": {
+          "width": 420.0,
+          "height": 48.0
+        }
+      },
+      "image": null,
+      "text": {
+        "value": "POWER  73%",
+        "font_size": 14,
+        "color": {
+          "r": 0.956862748,
+          "g": 0.945098042,
+          "b": 0.9098039,
+          "a": 1.0
+        },
+        "alignment": "MiddleCenter",
+        "enabled": true,
+        "font": "LegacyRuntime",
+        "visibly_configured": true,
+        "raycast_target": true
+      },
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "StatusPanel",
+      "path": "/BenchmarkCanvas/StatusPanel",
+      "parent": "/BenchmarkCanvas",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchor_max": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": -10.0
+        },
+        "size_delta": {
+          "x": 560.0,
+          "y": 220.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "size": {
+          "width": 560.0,
+          "height": 220.0
+        }
+      },
+      "image": {
+        "color": {
+          "r": 0.105882354,
+          "g": 0.149019614,
+          "b": 0.23137255,
+          "a": 1.0
+        },
+        "enabled": true,
+        "raycast_target": true,
+        "image_type": "Simple"
+      },
+      "text": null,
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "Subtitle",
+      "path": "/BenchmarkCanvas/Subtitle",
+      "parent": "/BenchmarkCanvas",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.5,
+          "y": 1.0
+        },
+        "anchor_max": {
+          "x": 0.5,
+          "y": 1.0
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": -118.0
+        },
+        "size_delta": {
+          "x": 500.0,
+          "y": 48.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 1.0
+        },
+        "size": {
+          "width": 500.0,
+          "height": 48.0
+        }
+      },
+      "image": null,
+      "text": {
+        "value": "SYSTEM READY",
+        "font_size": 14,
+        "color": {
+          "r": 0.435294122,
+          "g": 0.8392157,
+          "b": 1.0,
+          "a": 1.0
+        },
+        "alignment": "MiddleCenter",
+        "enabled": true,
+        "font": "LegacyRuntime",
+        "visibly_configured": true,
+        "raycast_target": true
+      },
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "Title",
+      "path": "/BenchmarkCanvas/Title",
+      "parent": "/BenchmarkCanvas",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.5,
+          "y": 1.0
+        },
+        "anchor_max": {
+          "x": 0.5,
+          "y": 1.0
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": -56.0
+        },
+        "size_delta": {
+          "x": 600.0,
+          "y": 72.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 1.0
+        },
+        "size": {
+          "width": 600.0,
+          "height": 72.0
+        }
+      },
+      "image": null,
+      "text": {
+        "value": "MISSION CONTROL",
+        "font_size": 14,
+        "color": {
+          "r": 0.956862748,
+          "g": 0.945098042,
+          "b": 0.9098039,
+          "a": 1.0
+        },
+        "alignment": "MiddleCenter",
+        "enabled": true,
+        "font": "LegacyRuntime",
+        "visibly_configured": true,
+        "raycast_target": true
+      },
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "Background",
+      "path": "/BenchmarkCanvas/Background",
+      "parent": "/BenchmarkCanvas",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "anchor_max": {
+          "x": 1.0,
+          "y": 1.0
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "size_delta": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "size": {
+          "width": 1080.0,
+          "height": 1920.0
+        }
+      },
+      "image": {
+        "color": {
+          "r": 0.0627451,
+          "g": 0.08235294,
+          "b": 0.13333334,
+          "a": 1.0
+        },
+        "enabled": true,
+        "raycast_target": true,
+        "image_type": "Simple"
+      },
+      "text": null,
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "BenchmarkCanvas",
+      "path": "/BenchmarkCanvas",
+      "parent": null,
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "anchor_max": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "anchored_position": {
+          "x": 540.0,
+          "y": 960.0
+        },
+        "size_delta": {
+          "x": 1080.0,
+          "y": 1920.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "size": {
+          "width": 1080.0,
+          "height": 1920.0
+        }
+      },
+      "image": null,
+      "text": null,
+      "button": null,
+      "canvas": {
+        "render_mode": "ScreenSpaceOverlay",
+        "is_root": true,
+        "enabled": true
+      },
+      "scaler": {
+        "scale_mode": "ConstantPixelSize",
+        "reference_resolution": {
+          "x": 800.0,
+          "y": 600.0
+        },
+        "match": 0.0
+      }
+    },
+    {
+      "name": "BenchmarkCanvas",
+      "path": "/Canvas/BenchmarkCanvas",
+      "parent": "/Canvas",
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchor_max": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "anchored_position": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "size_delta": {
+          "x": 100.0,
+          "y": 100.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "size": {
+          "width": 100.0,
+          "height": 100.0
+        }
+      },
+      "image": null,
+      "text": null,
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "EventSystem",
+      "path": "/EventSystem",
+      "parent": null,
+      "active": true,
+      "rect": null,
+      "image": null,
+      "text": null,
+      "button": null,
+      "canvas": null,
+      "scaler": null
+    },
+    {
+      "name": "Canvas",
+      "path": "/Canvas",
+      "parent": null,
+      "active": true,
+      "rect": {
+        "anchor_min": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "anchor_max": {
+          "x": 0.0,
+          "y": 0.0
+        },
+        "anchored_position": {
+          "x": 540.0,
+          "y": 960.0
+        },
+        "size_delta": {
+          "x": 1080.0,
+          "y": 1920.0
+        },
+        "pivot": {
+          "x": 0.5,
+          "y": 0.5
+        },
+        "size": {
+          "width": 1080.0,
+          "height": 1920.0
+        }
+      },
+      "image": null,
+      "text": null,
+      "button": null,
+      "canvas": {
+        "render_mode": "ScreenSpaceOverlay",
+        "is_root": true,
+        "enabled": true
+      },
+      "scaler": {
+        "scale_mode": "ConstantPixelSize",
+        "reference_resolution": {
+          "x": 800.0,
+          "y": 600.0
+        },
+        "match": 0.0
+      }
+    }
+  ],
+  "raycasts": [
+    {
+      "path": "/BenchmarkCanvas/DeployButton",
+      "reachable": false,
+      "top_path": null,
+      "screen_point": {
+        "x": 540.0,
+        "y": 782.0
+      }
+    }
+  ]
+}

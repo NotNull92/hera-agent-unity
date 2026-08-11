@@ -1,0 +1,62 @@
+{
+  "schema": "hera.ui-authoring-ab-oracle/1",
+  "task": "T02",
+  "name": "Inventory Grid",
+  "game_view": [1280, 720],
+  "score_total": 100,
+  "category_totals": {
+    "structure": 30,
+    "geometry": 30,
+    "visual": 20,
+    "interaction": 10,
+    "cleanliness": 10
+  },
+  "tolerances": {
+    "position_px": 2,
+    "size_px": 2,
+    "color_channel_8bit": 3,
+    "font_size": 0
+  },
+  "critical": [
+    "single_root_canvas",
+    "twelve_slots",
+    "slot_visuals",
+    "close_raycast",
+    "console_zero"
+  ],
+  "slot_centers": [
+    [-204,102],[-68,102],[68,102],[204,102],
+    [-204,0],[-68,0],[68,0],[204,0],
+    [-204,-102],[-68,-102],[68,-102],[204,-102]
+  ],
+  "checks": [
+    {"id":"canvas","category":"structure","points":3,"kind":"object_component","path":"/BenchmarkCanvas","component":"Canvas"},
+    {"id":"background","category":"structure","points":2,"kind":"object_component","path":"/BenchmarkCanvas/Background","component":"Image"},
+    {"id":"panel","category":"structure","points":3,"kind":"object_component","path":"/BenchmarkCanvas/InventoryPanel","component":"Image"},
+    {"id":"title","category":"structure","points":3,"kind":"object_component","path":"/BenchmarkCanvas/InventoryPanel/InventoryTitle","component":"Text"},
+    {"id":"grid","category":"structure","points":3,"kind":"object_exists","path":"/BenchmarkCanvas/InventoryPanel/GridRoot"},
+    {"id":"twelve_slots","category":"structure","points":12,"kind":"numbered_children","parent":"/BenchmarkCanvas/InventoryPanel/GridRoot","prefix":"Slot_","first":1,"last":12,"component":"Image"},
+    {"id":"slot_labels","category":"structure","points":2,"kind":"numbered_child_labels","parent":"/BenchmarkCanvas/InventoryPanel/GridRoot","slot_prefix":"Slot_","label_name":"Label","first":1,"last":12,"component":"Text"},
+    {"id":"close","category":"structure","points":2,"kind":"object_component","path":"/BenchmarkCanvas/InventoryPanel/CloseButton","component":"Button"},
+
+    {"id":"canvas_scaler","category":"geometry","points":3,"kind":"canvas_scaler","path":"/BenchmarkCanvas","scale_mode":"ScaleWithScreenSize","reference_resolution":[1280,720],"match":0.5},
+    {"id":"panel_rect","category":"geometry","points":4,"kind":"rect","path":"/BenchmarkCanvas/InventoryPanel","anchored_position":[0,0],"size":[760,500]},
+    {"id":"title_rect","category":"geometry","points":3,"kind":"rect","path":"/BenchmarkCanvas/InventoryPanel/InventoryTitle","anchored_position":[0,205],"size":[420,56]},
+    {"id":"grid_rect","category":"geometry","points":4,"kind":"rect","path":"/BenchmarkCanvas/InventoryPanel/GridRoot","anchored_position":[0,-20],"size":[528,292]},
+    {"id":"slot_rects","category":"geometry","points":12,"kind":"numbered_rects","parent":"/BenchmarkCanvas/InventoryPanel/GridRoot","prefix":"Slot_","first":1,"last":12,"size":[120,88],"centers":[[-204,102],[-68,102],[68,102],[204,102],[-204,0],[-68,0],[68,0],[204,0],[-204,-102],[-68,-102],[68,-102],[204,-102]]},
+    {"id":"close_rect","category":"geometry","points":4,"kind":"rect","path":"/BenchmarkCanvas/InventoryPanel/CloseButton","anchored_position":[320,205],"size":[64,44]},
+
+    {"id":"background_visual","category":"visual","points":2,"kind":"image_color","path":"/BenchmarkCanvas/Background","rgba":"#0E1320FF"},
+    {"id":"panel_visual","category":"visual","points":2,"kind":"image_color","path":"/BenchmarkCanvas/InventoryPanel","rgba":"#1A2435FF"},
+    {"id":"title_visual","category":"visual","points":3,"kind":"text","path":"/BenchmarkCanvas/InventoryPanel/InventoryTitle","value":"INVENTORY","font_size":32,"color":"#F2F5F8FF","alignment":"center"},
+    {"id":"slot_visuals","category":"visual","points":8,"kind":"numbered_slot_visuals","parent":"/BenchmarkCanvas/InventoryPanel/GridRoot","prefix":"Slot_","first":1,"last":12,"image_rgba":"#26364DFF","label_name":"Label","label_values":["01","02","03","04","05","06","07","08","09","10","11","12"],"label_font_size":20,"label_rgba":"#D9E2ECFF"},
+    {"id":"close_visual","category":"visual","points":5,"kind":"button_visual","path":"/BenchmarkCanvas/InventoryPanel/CloseButton","image_rgba":"#7A4651FF","label":"X","label_font_size":24,"label_rgba":"#FFFFFFFF"},
+
+    {"id":"event_system","category":"interaction","points":4,"kind":"event_system","required":true},
+    {"id":"close_raycast","category":"interaction","points":6,"kind":"raycast_top","path":"/BenchmarkCanvas/InventoryPanel/CloseButton","sample":"center"},
+
+    {"id":"single_root_canvas","category":"cleanliness","points":4,"kind":"root_canvas_count","expected":1},
+    {"id":"slot_count_exact","category":"cleanliness","points":3,"kind":"child_name_count","parent":"/BenchmarkCanvas/InventoryPanel/GridRoot","prefix":"Slot_","expected":12,"unique":true},
+    {"id":"console_zero","category":"cleanliness","points":3,"kind":"console_errors","expected":0}
+  ]
+}

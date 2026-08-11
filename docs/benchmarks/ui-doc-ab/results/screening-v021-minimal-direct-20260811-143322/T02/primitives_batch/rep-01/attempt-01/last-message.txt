@@ -1,0 +1,8 @@
+- 1280×720 visual capture: [inventory-grid-final.png](</C:/Users/PC/AppData/Local/Temp/hera-ui-ab-wave-7f75550e34f5470cb2b3f5e3f2890580/project/inventory-grid-final.png>)
+- Exactly one root Canvas: `BenchmarkCanvas`
+- Exactly 12 uniquely named slots and 12 legacy `Label` children
+- EventSystem enabled with one `StandaloneInputModule`
+- `CloseButton` is interactable; its Image is raycast-enabled and its overlaid Text is raycast-disabled
+- Unity Console errors: `0`
+
+Remaining uncertainty: edit-mode raycast diagnostics returned no graphic hits at all; runtime-mode verification was blocked by the benchmark shim. Structural raycast configuration is correct.

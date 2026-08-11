@@ -1,0 +1,8 @@
+- Verified 1280×720 capture: requested layout, colors, text, and 73% bar fill render correctly.
+- Exactly one Canvas: `BenchmarkCanvas`, Screen Space Overlay, scaler set to 1280×720 with 0.5 match.
+- Enabled EventSystem, StandaloneInputModule, GraphicRaycaster, and interactable `DeployButton`.
+- Button Image is the only raycast-enabled graphic at its center.
+- Exact text values and 292×24 `BarFill` verified.
+- Unity Console: 0 errors.
+
+Uncertainty: edit-mode raycast inspection returned no hits because the EventSystem had no active current input module outside Play Mode; serialized raycast configuration is correct.

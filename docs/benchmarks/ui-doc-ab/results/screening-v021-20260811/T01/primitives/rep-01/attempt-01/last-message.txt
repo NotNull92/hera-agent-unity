@@ -1,0 +1,9 @@
+- Final 1280×720 capture: [hera_ui_capture.png](C:/Users/PC/AppData/Local/Temp/hera_ui_capture-a0d5f4a7120c4e60820daa93938e8692.png)
+- Verified all specified names, hierarchy, dimensions, anchors, text, font sizes, and colors.
+- `BarFill`: `292×24`, exactly 73% of the `400×24` bar.
+- Exactly one root Canvas: `BenchmarkCanvas`.
+- `DeployButton`: interactable, Image raycast enabled; label raycast disabled.
+- EventSystem exists with enabled `InputSystemUIInputModule`.
+- Final Unity Console errors: `0`.
+
+Remaining uncertainty: edit-mode raycast inspection returned no hits because the benchmark-owned Editor session reported no current input module outside Play Mode; Play Mode verification was blocked by the benchmark runner.

@@ -1,0 +1,70 @@
+2026-08-11T05:09:45.208133Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+HERA_AB_FORBIDDEN: benchmark batch arm requires --file so the shim can inspect the complete plan
+
+2026-08-11T05:10:29.744615Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.4 seconds
+Output:
+{"success":false,"message":"No object for instance_id=1460747997.","code":"OBJECT_NOT_FOUND","timings":{"total_ms":0}}
+
+2026-08-11T05:10:43.563296Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.7 seconds
+Output:
+{"success":false,"message":"No object for instance_id=1582477901.","code":"OBJECT_NOT_FOUND","timings":{"total_ms":0}}
+
+2026-08-11T05:11:21.377400Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+HERA_AB_FORBIDDEN: batch JSON needs commands[]
+
+2026-08-11T05:11:35.956897Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+HERA_AB_FORBIDDEN: batch command '' is outside the frozen generic UI authoring surface
+
+2026-08-11T05:12:51.909023Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+HERA_AB_FORBIDDEN: scene lifecycle mutations are owned by the benchmark runner
+
+2026-08-11T05:12:56.221357Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+[31;1mhera-arm.ps1: [31;1mParameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.[0m
+
+2026-08-11T05:14:20.615899Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.8 seconds
+Output:
+{"success":false,"message":"operation requires approval","code":"APPROVAL_REQUIRED","data":{"token":"eyJ2ZXJzaW9uIjoxLCJvcGVyYXRpb25faWQiOiJvcF9kYWY5MmY0ZWMwYWI0ODQ4ZDdkYjAyNjc1OGMwNDI2YSIsInRvb2wiOiJtYW5hZ2VfY29tcG9uZW50cyIsImFjdGlvbiI6InJlbW92ZSIsImFyZ3VtZW50c19oYXNoIjoic2hhMjU2OjcyNDQ5NDI3NTIzMWQ2Mzk3N2Q1OGQ0ZmI5YzUzMGNjMGE3ZjQ4NzI3NmViN2I0MjVhN2Y4ZDNiMDgwYTk4NmEiLCJyaXNrX2NsYXNzIjoiZGVzdHJ1Y3RpdmUiLCJwcm9qZWN0X2lkIjoic2hhMjU2OjY0YzI5Yzk3MDI4MGQ1NzRhMWJjMjYwN2U0NjA5MjRlZWU3OTUzN2RmMGYzMTc0MGE5MzBiYThlNWE4ZTYyZTMiLCJleHBpcmVzX2F0X21zIjoxNzg2NDI1NTYwMjU2LCJzaW5nbGVfdXNlIjp0cnVlfQ.D6TXmH5fF3Q8VkVix9Q1fcmIe8t30KSd-_gjxkEAohQ","operation_id":"op_daf92f4ec0ab4848d7db026758c0426a","expires_at_ms":1786425560256,"summary":{"tool":"manage_components","action":"remove","target":"parameters: args,component_id","side_effect":"unity_project","reversible":false,"may_reload_domain":false,"external_impact":false,"operation_id":"op_daf92f4ec0ab4848d7db026758c0426a"}}}
+
+2026-08-11T05:14:33.622891Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+HERA_AB_FORBIDDEN: typed call manage_components is disabled; use the established command so the shim can enforce the arm
+
+2026-08-11T05:14:44.318640Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.4 seconds
+Output:
+{"success":false,"message":"Unknown command: manage_components","code":"UNKNOWN_COMMAND","suggestions":["Did you mean 'manage_components'?","Run 'hera-agent-unity list --names' to see all tools"],"data":{"did_you_mean":["manage_components"]},"timings":{"total_ms":5}}
+
+2026-08-11T05:14:55.953488Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"No object for component_id=1161888645.","code":"OBJECT_NOT_FOUND","timings":{"total_ms":17}}
+
+2026-08-11T05:15:11.006418Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2 seconds
+Output:
+{"success":false,"message":"operation requires approval","code":"APPROVAL_REQUIRED","data":{"token":"eyJ2ZXJzaW9uIjoxLCJvcGVyYXRpb25faWQiOiJvcF9lMjE4MjRiNjUxOGQ1ZmRjNzk4Y2FmNDNmMjI2NzY1NSIsInRvb2wiOiJtYW5hZ2VfY29tcG9uZW50cyIsImFjdGlvbiI6InJlbW92ZSIsImFyZ3VtZW50c19oYXNoIjoic2hhMjU2Ojc1MTc1NDYzM2I2MDMwZjkxMzNmNjRhYzBlMGNhMGI1YTE4ZmE0ZTQ0NzcwMjgyYzMxNzA2OGU1OWQyYTkzMzciLCJyaXNrX2NsYXNzIjoiZGVzdHJ1Y3RpdmUiLCJwcm9qZWN0X2lkIjoic2hhMjU2OjY0YzI5Yzk3MDI4MGQ1NzRhMWJjMjYwN2U0NjA5MjRlZWU3OTUzN2RmMGYzMTc0MGE5MzBiYThlNWE4ZTYyZTMiLCJleHBpcmVzX2F0X21zIjoxNzg2NDI1NjEwNjY4LCJzaW5nbGVfdXNlIjp0cnVlfQ.O5R6pt2U7cFjF1esX7ktUnX0jGqAZe2rnPiGYLH7Elg","operation_id":"op_e21824b6518d5fdc798caf43f2267655","expires_at_ms":1786425610668,"summary":{"tool":"manage_components","action":"remove","target":"\"/EventSystem\"","side_effect":"unity_project","reversible":false,"may_reload_domain":false,"external_impact":false,"operation_id":"op_e21824b6518d5fdc798caf43f2267655"}}}
+
+2026-08-11T05:15:29.745123Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+HERA_AB_FORBIDDEN: manage_editor is outside the frozen UI authoring surface
+
+2026-08-11T05:16:20.098383Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"Unknown field in --fields: 'layer'. Allowed: instance_id, name, path, scene, active, all.","code":"INVALID_FIELDS","timings":{"total_ms":0}}
+

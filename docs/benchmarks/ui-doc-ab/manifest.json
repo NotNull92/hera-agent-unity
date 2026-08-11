@@ -1,0 +1,81 @@
+{
+  "schema": "hera.ui-authoring-ab-manifest/1",
+  "benchmark": "ui-doc-authoring-accuracy-ab",
+  "target_release": "v0.2.1",
+  "unity_version": "6000.3.5f2",
+  "game_view": [1280, 720],
+  "ui_system": "ugui",
+  "screening_repetitions": 3,
+  "confirmation_repetitions": 5,
+  "codex_timeout_minutes": 15,
+  "arms": [
+    {
+      "id": "uidoc",
+      "authoring": ["ui_doc:apply", "ui_doc:export"],
+      "batch": false,
+      "generic_ui_mutation": false,
+      "common_capture": "ui_doc:capture"
+    },
+    {
+      "id": "primitives",
+      "authoring": ["manage_ui", "manage_components", "manage_gameobject"],
+      "batch": false,
+      "ui_doc_authoring": false,
+      "common_capture": "ui_doc:capture"
+    },
+    {
+      "id": "primitives_batch",
+      "authoring": ["manage_ui", "manage_components", "manage_gameobject"],
+      "batch": true,
+      "ui_doc_authoring": false,
+      "common_capture": "ui_doc:capture"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "T01",
+      "name": "Precision Mission HUD",
+      "initial_state": "blank_scene",
+      "prompt": "tasks/T01-precision-mission-hud.md",
+      "oracle": "oracles/T01.json",
+      "reference": null
+    },
+    {
+      "id": "T02",
+      "name": "Inventory Grid",
+      "initial_state": "blank_scene",
+      "prompt": "tasks/T02-inventory-grid.md",
+      "oracle": "oracles/T02.json",
+      "reference": null
+    },
+    {
+      "id": "T03",
+      "name": "Crystal Forge Static Reference Recreation",
+      "initial_state": "blank_scene",
+      "prompt": "tasks/T03-crystal-forge-reference.md",
+      "oracle": "oracles/T03.json",
+      "reference": {
+        "path": "../user-scenario/assets/crystal-forge-win-6000.3.5f2.png",
+        "sha256": "1383b9d1175c4777ee866be24617287e5728fc5fec92503cf4c19fa78f5742f7"
+      }
+    }
+  ],
+  "screening_order": [
+    ["uidoc", "primitives", "primitives_batch"],
+    ["primitives", "primitives_batch", "uidoc"],
+    ["primitives_batch", "uidoc", "primitives"]
+  ],
+  "decision": {
+    "removal_candidate": {
+      "same_strict_pass_count": true,
+      "overall_mean_abs_delta_max": 3,
+      "per_task_generic_deficit_max": 5,
+      "generic_unique_critical_failures": 0
+    },
+    "retention_candidate": {
+      "overall_uidoc_advantage_min": 8,
+      "single_task_uidoc_advantage_min": 10,
+      "extra_uidoc_strict_passes_min": 2
+    }
+  }
+}

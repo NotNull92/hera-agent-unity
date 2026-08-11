@@ -1,0 +1,73 @@
+2026-08-11T05:58:13.584953Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+HERA_AB_FORBIDDEN: benchmark batch arm requires --file so the shim can inspect the complete plan
+
+2026-08-11T05:58:19.304979Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.2 seconds
+Output:
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+
+2026-08-11T05:58:52.411747Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 5.5 seconds
+Output:
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+
+2026-08-11T05:59:05.877901Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 6.9 seconds
+Output:
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+
+2026-08-11T05:59:34.635111Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.7 seconds
+Output:
+{"success":false,"message":"No object for instance_id=1526063445.","code":"OBJECT_NOT_FOUND","timings":{"total_ms":0}}
+
+2026-08-11T06:00:27.258594Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.6 seconds
+Output:
+{"success":false,"message":"Failed to apply value to Image.m_Color (Color): expected 3 or 4 comma-separated values or #hex, got 'True'","code":"VALUE_COERCION_FAILED","timings":{"total_ms":26}}
+
+2026-08-11T06:02:39.731947Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.2 seconds
+Output:
+HERA_AB_FORBIDDEN: scene lifecycle mutations are owned by the benchmark runner
+HERA_AB_FORBIDDEN: console clear would erase benchmark evidence
+hera-arm.ps1: Parameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.
+
+2026-08-11T06:04:09.697978Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.1 seconds
+Output:
+{"success":false,"message":"operation requires approval","code":"APPROVAL_REQUIRED","data":{"token":"eyJ2ZXJzaW9uIjoxLCJvcGVyYXRpb25faWQiOiJvcF85MmQ5MTdiMjdkYjZmNmNhODJlYjhhNDI4MzIyYTZkZiIsInRvb2wiOiJtYW5hZ2VfY29tcG9uZW50cyIsImFjdGlvbiI6InJlbW92ZSIsImFyZ3VtZW50c19oYXNoIjoic2hhMjU2OjlhMTcyODY2NmI2MjIyMGNmNDBkNDU1NWY4ODA0ZmFjNDljZWEyZDZiMTI1MDczMmNlODBmZjI0ZGI5N2IyZDIiLCJyaXNrX2NsYXNzIjoiZGVzdHJ1Y3RpdmUiLCJwcm9qZWN0X2lkIjoic2hhMjU2OmNkYWYxYWEyNTA1YjQ0MTgxYmY2NTZiNmFjYWFjYjQ4YzRjOTVhMTZlZjBjNTMyMzQ4NjYzMDEwMjgxNmY3Y2EiLCJleHBpcmVzX2F0X21zIjoxNzg2NDI4NTQ5MzA4LCJzaW5nbGVfdXNlIjp0cnVlfQ.6ECMGtk66uotp04lgHU5ayuVl-seRx2JgSW0acSFEjA","operation_id":"op_92d917b27db6f6ca82eb8a428322a6df","expires_at_ms":1786428549308,"summary":{"tool":"manage_components","action":"remove","target":"parameters: args,component_id","side_effect":"unity_project","reversible":false,"may_reload_domain":false,"external_impact":false,"operation_id":"op_92d917b27db6f6ca82eb8a428322a6df"}}}
+
+2026-08-11T06:04:28.799573Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.7 seconds
+Output:
+{"success":false,"message":"No object for component_id=1314624907.","code":"OBJECT_NOT_FOUND","timings":{"total_ms":26}}
+
+2026-08-11T06:04:46.183323Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.1 seconds
+Output:
+{"success":false,"message":"operation requires approval","code":"APPROVAL_REQUIRED","data":{"token":"eyJ2ZXJzaW9uIjoxLCJvcGVyYXRpb25faWQiOiJvcF9jZmVhYjNmYmU0MmRmNTg2MmVjNGM3M2IxMGY4ZmMxOSIsInRvb2wiOiJtYW5hZ2VfY29tcG9uZW50cyIsImFjdGlvbiI6InJlbW92ZSIsImFyZ3VtZW50c19oYXNoIjoic2hhMjU2Ojc1MTc1NDYzM2I2MDMwZjkxMzNmNjRhYzBlMGNhMGI1YTE4ZmE0ZTQ0NzcwMjgyYzMxNzA2OGU1OWQyYTkzMzciLCJyaXNrX2NsYXNzIjoiZGVzdHJ1Y3RpdmUiLCJwcm9qZWN0X2lkIjoic2hhMjU2OmNkYWYxYWEyNTA1YjQ0MTgxYmY2NTZiNmFjYWFjYjQ4YzRjOTVhMTZlZjBjNTMyMzQ4NjYzMDEwMjgxNmY3Y2EiLCJleHBpcmVzX2F0X21zIjoxNzg2NDI4NTg1ODE4LCJzaW5nbGVfdXNlIjp0cnVlfQ.5bz51XX6k49tlgyE8H5Tvx8Rb8W71NKtorIb8DtGXQM","operation_id":"op_cfeab3fbe42df5862ec4c73b10f8fc19","expires_at_ms":1786428585818,"summary":{"tool":"manage_components","action":"remove","target":"\"/EventSystem\"","side_effect":"unity_project","reversible":false,"may_reload_domain":false,"external_impact":false,"operation_id":"op_cfeab3fbe42df5862ec4c73b10f8fc19"}}}
+
+2026-08-11T06:05:09.774740Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+HERA_AB_FORBIDDEN: editor lifecycle commands are owned by the benchmark runner
+

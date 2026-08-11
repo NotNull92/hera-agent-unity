@@ -1,0 +1,11 @@
+Final evidence:
+
+- 1280×720 capture: [mission_hud_final_capture.png](C:/Users/PC/AppData/Local/Temp/hera-ui-ab-wave-7f75550e34f5470cb2b3f5e3f2890580/project/mission_hud_final_capture.png)
+- Required hierarchy, layout, colors, and 73% bar are visible.
+- Unity Console errors: `0`.
+
+Remaining issues:
+
+- Two root Canvases remain: `/BenchmarkCanvas` and `/Canvas`.
+- Legacy Text font sizes remained `14` despite the requested `ui_doc` size values.
+- EventSystem exists but has no input module; `DeployButton` raycast verification failed.

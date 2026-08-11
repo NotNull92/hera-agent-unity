@@ -1,0 +1,3 @@
+- Visual capture: [1280×720 PNG](C:/Users/PC/AppData/Local/Temp/hera_ui_capture-89ee1966adff48b781f716f206bda8d2.png)
+- Console errors: **0**
+- Remaining issues: two root Canvases exist; legacy Text sizes remain 14; EventSystem lacks an input module, so `DeployButton` raycast verification failed. The permitted `ui_doc` surface could not correct these limitations.

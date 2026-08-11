@@ -1,0 +1,21 @@
+{
+  "schema": "hera.ui-authoring-ab-wave/1",
+  "wave": "screening-v021-20260811",
+  "created_at": "2026-08-11T03:37:12.3001285+00:00",
+  "repo_commit": "4ed01eb64bc1851bb18c77bedb1cc614ccbb2a20",
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "medium",
+  "asset_config_sha256": "dd468637e1bc07c3ec24ac7024e278a0f1be0b9b68b89f6961711ec7258bc888",
+  "repetitions": 3,
+  "max_attempts_per_cell": 3,
+  "template_project": "C:\\Users\\PC\\Desktop\\Cowork\\test6000.3.5f2",
+  "fixture_path": "C:\\Users\\PC\\AppData\\Local\\Temp\\hera-ui-ab-wave-22f219233113440283a27927d2dc4d12\\project",
+  "source_cli": "C:\\Users\\PC\\AppData\\Local\\Temp\\hera-ui-ab-wave-22f219233113440283a27927d2dc4d12\\bin\\hera-agent-unity.exe",
+  "status": "running",
+  "cli_sha256": "0ea29afb54c3b7bb1db8c9e638db2cb052683c23984e11210be6aa154ad3d346",
+  "cli_bytes": 16784896,
+  "connector_version": "0.0.86",
+  "baseline_scene_sha256": "387d8216a517be775b6ecc2ab55b97ece687c3372322da2ba027a96908014912",
+  "warmup_unity_pid": 29432,
+  "warmup_wall_ms": 171404.394
+}

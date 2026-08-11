@@ -1,0 +1,76 @@
+2026-08-11T05:04:16.362613Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 6.4 seconds
+Output:
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+
+2026-08-11T05:04:39.442540Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.3 seconds
+Output:
+{"success":false,"message":"No object for instance_id=-1484166066.","code":"OBJECT_NOT_FOUND","timings":{"total_ms":0}}
+
+2026-08-11T05:04:50.453774Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.4 seconds
+Output:
+{"total":1,"returned":1,"offset":0,"limit":10,"has_more":false,"results":[{"instance_id":-1484166066,"name":"BenchmarkCanvas","path":"/BenchmarkCanvas"}]}
+{"success":false,"message":"No object for instance_id=-98145705.","code":"OBJECT_NOT_FOUND","timings":{"total_ms":0}}
+
+2026-08-11T05:06:37.410896Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 10.7 seconds
+Output:
+{"instance_id":-1009916109,"component_id":-997663810,"type":"UnityEngine.UI.Image","property":"m_Color","property_type":"Color","value":{"r":0.164705887,"g":0.203921571,"b":0.2901961,"a":1.0}}
+{"instance_id":-1009916109,"component_id":-997663810,"type":"UnityEngine.UI.Image","property":"m_RaycastTarget","property_type":"Boolean","value":false}
+{"instance_id":-349061025,"component_id":-1774339173,"type":"UnityEngine.UI.Image","property":"m_Color","property_type":"Color","value":{"r":0.3019608,"g":0.831372559,"b":0.6745098,"a":1.0}}
+{"instance_id":-349061025,"component_id":-1774339173,"type":"UnityEngine.UI.Image","property":"m_RaycastTarget","property_type":"Boolean","value":false}
+{"instance_id":-715479420,"component_id":2130515179,"type":"UnityEngine.UI.Image","property":"m_Color","property_type":"Color","value":{"r":0.141176477,"g":0.3529412,"b":0.5529412,"a":1.0}}
+{"instance_id":-715479420,"component_id":2130515179,"type":"UnityEngine.UI.Image","property":"m_RaycastTarget","property_type":"Boolean","value":true}
+{"instance_id":-500964199,"component_id":-2074929471,"type":"UnityEngine.UI.Text","property":"m_FontData.m_FontSize","property_type":"Integer","value":24}
+{"instance_id":-500964199,"component_id":-2074929471,"type":"UnityEngine.UI.Text","property":"m_FontData.m_Alignment","property_type":"Enum","value":{"value":4,"name":"Middle Center"}}
+{"instance_id":-500964199,"component_id":-2074929471,"type":"UnityEngine.UI.Text","property":"m_Color","property_type":"Color","value":{"r":1.0,"g":1.0,"b":1.0,"a":1.0}}
+{"instance_id":-500964199,"component_id":-2074929471,"type":"UnityEngine.UI.Text","property":"m_RaycastTarget","property_type":"Boolean","value":false}
+HERA_AB_FORBIDDEN: scene lifecycle mutations are owned by the benchmark runner
+
+2026-08-11T05:06:43.034938Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+[31;1mhera-arm.ps1: [31;1mParameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.[0m
+
+2026-08-11T05:06:53.889431Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.9 seconds
+Output:
+[31;1mhera-arm.ps1: [31;1mParameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.[0m
+
+2026-08-11T05:07:01.130629Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+[31;1mhera-arm.ps1: [31;1mParameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.[0m
+
+2026-08-11T05:07:11.522595Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+HERA_AB_FORBIDDEN: typed call ui_doc is allowed only for neutral action=capture
+
+2026-08-11T05:07:18.964472Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"Validation failed at '/height=720'.","code":"UNKNOWN_ARGUMENT","data":{"path":"/height=720","expected":"action, bg, canvas, height, out, overwrite, width","actual":"Boolean"},"timings":{"total_ms":0}}
+
+2026-08-11T05:07:24.632448Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"Validation failed at '/out=T01_precision_mission_hud_03.png'.","code":"UNKNOWN_ARGUMENT","data":{"path":"/out=T01_precision_mission_hud_03.png","expected":"action, bg, canvas, height, out, overwrite, width","actual":"Boolean"},"timings":{"total_ms":0}}
+
+2026-08-11T05:08:26.441794Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.8 seconds
+Output:
+{"total":0,"returned":0,"offset":0,"limit":30,"has_more":false,"results":[]}
+{"backend":"eventsystem","evidence_level":"eventsystem","target":{"instance_id":-715479420,"name":"DeployButton","path":"/BenchmarkCanvas/DeployButton","active":true},"point":{"screen":[540.0,693.0],"source":"rect_center"},"event_system":{"present":true,"instance_id":1542731843,"path":"/EventSystem","input_module":null},"raycast":{"top_hit_path":null,"target_hit":false,"target_top_hit":false,"blocked_by":null,"hits":[],"hits_total":0,"hits_truncated":false},"interactable":true,"not_interactable_reason":null,"handlers":{"press":null,"click":null}}
+{"success":false,"message":"Validation failed at '/'.","code":"MISSING_ARGUMENT","data":{"path":"/","expected":"instance_id or path or target","actual":null},"timings":{"total_ms":0}}
+

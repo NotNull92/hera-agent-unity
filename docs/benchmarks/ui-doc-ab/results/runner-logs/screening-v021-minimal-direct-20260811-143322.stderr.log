@@ -1,0 +1,5 @@
+Exception: C:\Users\PC\Desktop\Cowork\hera-agent-unity\tools\benchmark-ui-authoring\Run-Screening.ps1:242
+Line |
+ 242 |  ¡¦             throw "No valid run after $MaxAttemptsPerCell attempt(s): ¡¦
+     |                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     | No valid run after 3 attempt(s): task=T03 arm=uidoc rep=1

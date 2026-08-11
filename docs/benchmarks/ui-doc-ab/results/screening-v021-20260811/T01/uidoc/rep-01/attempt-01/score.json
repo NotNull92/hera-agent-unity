@@ -1,0 +1,305 @@
+{
+  "schema": "hera.ui-authoring-ab-score/1",
+  "task": "T01",
+  "strict_pass": false,
+  "accuracy_score": 82.267,
+  "categories": {
+    "structure": 30.0,
+    "geometry": 27.0,
+    "visual": 15.6,
+    "interaction": 4.0,
+    "cleanliness": 5.667
+  },
+  "critical_failures": [
+    "single_root_canvas",
+    "title_visual",
+    "subtitle_visual",
+    "power_visual",
+    "deploy_visual",
+    "deploy_raycast"
+  ],
+  "console_error_count": 0,
+  "capture_path": "final-capture.png",
+  "checks": [
+    {
+      "id": "canvas",
+      "category": "structure",
+      "kind": "object_component",
+      "points": 4.0,
+      "fraction": 1.0,
+      "earned": 4.0,
+      "evidence": null
+    },
+    {
+      "id": "background",
+      "category": "structure",
+      "kind": "object_component",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "title",
+      "category": "structure",
+      "kind": "object_component",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "subtitle",
+      "category": "structure",
+      "kind": "object_component",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "status_panel",
+      "category": "structure",
+      "kind": "object_component",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "power_label",
+      "category": "structure",
+      "kind": "object_component",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "bar_background",
+      "category": "structure",
+      "kind": "object_component",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "bar_fill",
+      "category": "structure",
+      "kind": "object_component",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "deploy_button",
+      "category": "structure",
+      "kind": "object_component",
+      "points": 5.0,
+      "fraction": 1.0,
+      "earned": 5.0,
+      "evidence": null
+    },
+    {
+      "id": "canvas_scaler",
+      "category": "geometry",
+      "kind": "canvas_scaler",
+      "points": 4.0,
+      "fraction": 0.25,
+      "earned": 1.0,
+      "evidence": null
+    },
+    {
+      "id": "background_rect",
+      "category": "geometry",
+      "kind": "rect",
+      "points": 2.0,
+      "fraction": 1.0,
+      "earned": 2.0,
+      "evidence": null
+    },
+    {
+      "id": "title_rect",
+      "category": "geometry",
+      "kind": "rect",
+      "points": 4.0,
+      "fraction": 1.0,
+      "earned": 4.0,
+      "evidence": null
+    },
+    {
+      "id": "subtitle_rect",
+      "category": "geometry",
+      "kind": "rect",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "status_rect",
+      "category": "geometry",
+      "kind": "rect",
+      "points": 4.0,
+      "fraction": 1.0,
+      "earned": 4.0,
+      "evidence": null
+    },
+    {
+      "id": "power_rect",
+      "category": "geometry",
+      "kind": "rect",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "bar_bg_rect",
+      "category": "geometry",
+      "kind": "rect",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "bar_fill_rect",
+      "category": "geometry",
+      "kind": "rect",
+      "points": 4.0,
+      "fraction": 1.0,
+      "earned": 4.0,
+      "evidence": null
+    },
+    {
+      "id": "deploy_rect",
+      "category": "geometry",
+      "kind": "rect",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "background_visual",
+      "category": "visual",
+      "kind": "image_color",
+      "points": 2.0,
+      "fraction": 1.0,
+      "earned": 2.0,
+      "evidence": null
+    },
+    {
+      "id": "title_visual",
+      "category": "visual",
+      "kind": "text",
+      "points": 3.0,
+      "fraction": 0.6,
+      "earned": 1.8,
+      "evidence": null
+    },
+    {
+      "id": "subtitle_visual",
+      "category": "visual",
+      "kind": "text",
+      "points": 3.0,
+      "fraction": 0.6,
+      "earned": 1.8,
+      "evidence": null
+    },
+    {
+      "id": "status_visual",
+      "category": "visual",
+      "kind": "image_color",
+      "points": 2.0,
+      "fraction": 1.0,
+      "earned": 2.0,
+      "evidence": null
+    },
+    {
+      "id": "power_visual",
+      "category": "visual",
+      "kind": "text",
+      "points": 3.0,
+      "fraction": 0.6,
+      "earned": 1.8,
+      "evidence": null
+    },
+    {
+      "id": "bars_visual",
+      "category": "visual",
+      "kind": "multi_image_color",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": null
+    },
+    {
+      "id": "deploy_visual",
+      "category": "visual",
+      "kind": "button_visual",
+      "points": 4.0,
+      "fraction": 0.8,
+      "earned": 3.2,
+      "evidence": null
+    },
+    {
+      "id": "event_system",
+      "category": "interaction",
+      "kind": "event_system",
+      "points": 4.0,
+      "fraction": 1.0,
+      "earned": 4.0,
+      "evidence": null
+    },
+    {
+      "id": "deploy_raycast",
+      "category": "interaction",
+      "kind": "raycast_top",
+      "points": 6.0,
+      "fraction": 0.0,
+      "earned": 0.0,
+      "evidence": {
+        "path": "/BenchmarkCanvas/DeployButton",
+        "reachable": false,
+        "top_path": null,
+        "screen_point": {
+          "x": 540.0,
+          "y": 782.0
+        }
+      }
+    },
+    {
+      "id": "single_root_canvas",
+      "category": "cleanliness",
+      "kind": "root_canvas_count",
+      "points": 4.0,
+      "fraction": 0.0,
+      "earned": 0.0,
+      "evidence": 2
+    },
+    {
+      "id": "no_duplicates",
+      "category": "cleanliness",
+      "kind": "unique_names",
+      "points": 3.0,
+      "fraction": 0.8889,
+      "earned": 2.667,
+      "evidence": null
+    },
+    {
+      "id": "console_zero",
+      "category": "cleanliness",
+      "kind": "console_errors",
+      "points": 3.0,
+      "fraction": 1.0,
+      "earned": 3.0,
+      "evidence": 0
+    }
+  ],
+  "probe_approval_used": true,
+  "capture_approval_used": false
+}

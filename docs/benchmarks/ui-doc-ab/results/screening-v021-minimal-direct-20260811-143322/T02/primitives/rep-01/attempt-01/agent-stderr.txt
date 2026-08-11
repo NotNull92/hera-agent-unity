@@ -1,0 +1,76 @@
+2026-08-11T06:22:49.647665Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 4.7 seconds
+Output:
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+
+2026-08-11T06:22:55.856612Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+Error: invalid JSON in --params: invalid character 'a' looking for beginning of object key string
+
+2026-08-11T06:23:06.926389Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+HERA_AB_FORBIDDEN: typed call manage_ui is disabled; use the established command so the shim can enforce the arm
+
+2026-08-11T06:30:04.036914Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.8 seconds
+Output:
+{"instance_id":958106929,"component":{"component_id":-1911252407,"type":"UnityEngine.EventSystems.StandaloneInputModule","type_short":"StandaloneInputModule","enabled":true}}
+hera-arm.ps1: Parameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.
+
+2026-08-11T06:30:14.192179Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+hera-arm.ps1: Parameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.
+
+2026-08-11T06:30:22.583760Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+hera-arm.ps1: Parameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.
+
+2026-08-11T06:30:30.346377Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"Validation failed at '/height=720'.","code":"UNKNOWN_ARGUMENT","data":{"path":"/height=720","expected":"action, bg, canvas, height, out, overwrite, width","actual":"Boolean"},"timings":{"total_ms":0}}
+
+2026-08-11T06:30:39.494306Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"Validation failed at '/out=inventory_grid_final_1280x720.png'.","code":"UNKNOWN_ARGUMENT","data":{"path":"/out=inventory_grid_final_1280x720.png","expected":"action, bg, canvas, height, out, overwrite, width","actual":"Boolean"},"timings":{"total_ms":0}}
+
+2026-08-11T06:30:49.112082Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+HERA_AB_FORBIDDEN: ui_doc --params is not allowed in arm primitives
+
+2026-08-11T06:30:55.311785Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+hera-arm.ps1: Parameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.
+
+2026-08-11T06:32:05.624058Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.4 seconds
+Output:
+{"success":false,"message":"Unknown command: manage_components","code":"UNKNOWN_COMMAND","suggestions":["Did you mean 'manage_components'?","Run 'hera-agent-unity list --names' to see all tools"],"data":{"did_you_mean":["manage_components"]},"timings":{"total_ms":4}}
+
+2026-08-11T06:32:19.927182Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.4 seconds
+Output:
+{"success":false,"message":"No object for component_id=-1911252407.","code":"OBJECT_NOT_FOUND","timings":{"total_ms":21}}
+
+2026-08-11T06:33:24.237781Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.8 seconds
+Output:
+{"success":false,"message":"operation requires approval","code":"APPROVAL_REQUIRED","data":{"token":"eyJ2ZXJzaW9uIjoxLCJvcGVyYXRpb25faWQiOiJvcF80N2FiOTBjZjYwZDVjYjRhZDQ3NTQ4YmQxODg4ZGZjZiIsInRvb2wiOiJtYW5hZ2VfY29tcG9uZW50cyIsImFjdGlvbiI6InJlbW92ZSIsImFyZ3VtZW50c19oYXNoIjoic2hhMjU2Ojg1OWRkY2E0YWYyMWRmOTRhMzdlYzJjZThmNTUzODk4NTZlNmJmYWM2YWNjNmFkOWMzYmQxZTJjOTAzNDIyNmIiLCJyaXNrX2NsYXNzIjoiZGVzdHJ1Y3RpdmUiLCJwcm9qZWN0X2lkIjoic2hhMjU2OmNkYWYxYWEyNTA1YjQ0MTgxYmY2NTZiNmFjYWFjYjQ4YzRjOTVhMTZlZjBjNTMyMzQ4NjYzMDEwMjgxNmY3Y2EiLCJleHBpcmVzX2F0X21zIjoxNzg2NDMwMzAzOTQzLCJzaW5nbGVfdXNlIjp0cnVlfQ.M--Vw6g6Ax_xkAP_1xrXzuVeBUxtzUT0tyOOfv3_GsM","operation_id":"op_47ab90cf60d5cb4ad47548bd1888dfcf","expires_at_ms":1786430303943,"summary":{"tool":"manage_components","action":"remove","target":"parameters: args,component_id","side_effect":"unity_project","reversible":false,"may_reload_domain":false,"external_impact":false,"operation_id":"op_47ab90cf60d5cb4ad47548bd1888dfcf"}}}
+
+2026-08-11T06:33:34.677242Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+HERA_AB_FORBIDDEN: typed call manage_components is disabled; use the established command so the shim can enforce the arm
+

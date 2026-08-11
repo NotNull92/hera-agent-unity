@@ -1,0 +1,7 @@
+- Built the complete requested uGUI hierarchy under exactly one root `BenchmarkCanvas`.
+- Verified all specified anchors, dimensions, positions, colors, text, and 292/400 px (73%) bar fill.
+- 1280×720 capture visually matches the requested HUD.
+- One EventSystem exists; `DeployButton` is interactable and EventSystem submit successfully selected/executed it.
+- Unity Console: **0 errors**.
+
+Remaining uncertainty: edit-mode raycast inspection returned no registered graphic hits despite the button Image being the sole raycast-enabled graphic at its center and EventSystem submission succeeding.

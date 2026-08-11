@@ -1,0 +1,6 @@
+- 1280×720 neutral capture visually confirms the centered inventory panel, 4×3 grid, labels `01`–`12`, title, and close button: [capture](C:/Users/PC/AppData/Local/Temp/hera_ui_capture-b9187456a461455bac2a57c895e9ffe6.png)
+- Exactly one root Canvas and 12 uniquely named slot objects verified.
+- CanvasScaler verified at `1280×720`, Scale With Screen Size, match `0.5`.
+- EventSystem and enabled StandaloneInputModule exist. `CloseButton` is interactable and its Image is raycast-enabled; overlapping background, panel, and button-label graphics are raycast-disabled.
+- Final Unity Console: `0` errors.
+- Remaining uncertainty: the edit-mode raycast probe returned no hits because Unity reported no current input module outside Play Mode; raycast eligibility was verified structurally instead.
