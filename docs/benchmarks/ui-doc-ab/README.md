@@ -4,6 +4,29 @@ Status: M0/M1 frozen. Execution begins at M2.
 
 Handoff: [`../../handoffs/ui-doc-ab-reduction-2026-08-11.md`](../../handoffs/ui-doc-ab-reduction-2026-08-11.md)
 
+## Approved fast execution
+
+The approved fast protocol is defined in
+[`../../superpowers/specs/2026-08-11-ui-doc-fast-ab-design.md`](../../superpowers/specs/2026-08-11-ui-doc-fast-ab-design.md).
+Run it only with:
+
+```powershell
+pwsh -NoProfile -File tools/benchmark-ui-authoring/Run-Screening.ps1 `
+  -Protocol fast `
+  -Wave screening-v021-fast-<timestamp> `
+  -Model gpt-5.6-sol `
+  -ReasoningEffort medium
+```
+
+`fast` is fixed to `uidoc` versus `primitives_batch`, two repetitions, 12
+cells, four minutes per Codex session, a 53-minute cell-admission cutoff, and
+a 60-minute wave deadline. The former default formal matrix remains a
+15-minute, 27-cell protocol and must not be used for this approved wave.
+
+Only a `wave.json` with `protocol: "fast"` and `status: "fast_complete"` is
+eligible for `Compare-Results.ps1`. `incomplete` and `invalid` waves preserve
+raw artifacts but are never M5 evidence.
+
 ## Question
 
 Does `ui_doc` authoring materially improve final uGUI implementation accuracy compared with Hera's generic UI authoring primitives?

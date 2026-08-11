@@ -1,0 +1,14 @@
+=== build source CLI ===
+=== create disposable fixture ===
+=== cold fixture warmup ===
+=== T01 uidoc rep 1/2 attempt 1 ===
+result: valid=True score=22.533 strict=False agent_ms=240298.349 calls=17
+=== T01 primitives_batch rep 1/2 attempt 1 ===
+result: valid=True score=89.6 strict=False agent_ms=240369.85 calls=13
+=== T02 uidoc rep 1/2 attempt 1 ===
+result: valid=True score=83.95 strict=False agent_ms=240711.017 calls=16
+=== T02 primitives_batch rep 1/2 attempt 1 ===
+result: valid=True score=54.8 strict=False agent_ms=240161.156 calls=56
+=== T03 uidoc rep 1/2 attempt 1 ===
+[33;1mWARNING: Could not parse run.json: Fast run is missing required artifact(s): hera-calls.jsonl[0m
+[33;1mWARNING: Benchmark work directory retained for inspection: C:\Users\PC\AppData\Local\Temp\hera-ui-ab-wave-9dbb64330b334909b104312be63893d0[0m

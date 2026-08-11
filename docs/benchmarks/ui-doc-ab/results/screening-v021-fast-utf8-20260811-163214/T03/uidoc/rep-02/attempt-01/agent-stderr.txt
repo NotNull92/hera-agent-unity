@@ -1,0 +1,20 @@
+Reading prompt from stdin...
+2026-08-11T08:19:31.469662Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.5 seconds
+Output:
+
+2026-08-11T08:20:33.354736Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+[31;1mhera-arm.ps1: [31;1mParameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.[0m
+
+2026-08-11T08:20:40.667102Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+[31;1mhera-arm.ps1: [31;1mParameter cannot be processed because the parameter name 'out' is ambiguous. Possible matches include: -OutVariable -OutBuffer.[0m
+
+2026-08-11T08:20:48.273624Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+HERA_AB_FORBIDDEN: typed call ui_doc is allowed only for neutral action=capture
+

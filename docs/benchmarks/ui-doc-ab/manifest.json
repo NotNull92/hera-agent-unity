@@ -65,6 +65,31 @@
     ["primitives", "primitives_batch", "uidoc"],
     ["primitives_batch", "uidoc", "primitives"]
   ],
+  "fast": {
+    "arms": ["uidoc", "primitives_batch"],
+    "repetitions": 2,
+    "codex_timeout_minutes": 4,
+    "max_attempts_per_cell": 1,
+    "admission_cutoff_minutes": 53,
+    "wave_deadline_minutes": 60,
+    "order": [
+      ["uidoc", "primitives_batch"],
+      ["primitives_batch", "uidoc"]
+    ],
+    "decision": {
+      "reduction_candidate": {
+        "same_strict_pass_count": true,
+        "overall_mean_abs_delta_max": 2,
+        "per_task_mean_abs_delta_max": 4,
+        "generic_only_critical_failures": 0
+      },
+      "retention_candidate": {
+        "overall_uidoc_advantage_min": 12,
+        "single_task_uidoc_advantage_min": 15,
+        "extra_uidoc_strict_passes_min": 2
+      }
+    }
+  },
   "decision": {
     "removal_candidate": {
       "same_strict_pass_count": true,

@@ -1,0 +1,5 @@
+[31;1mException: [0mC:\Users\PC\Desktop\Cowork\hera-agent-unity\tools\benchmark-ui-authoring\Run-Screening.ps1:349[0m
+[31;1m[0m[36;1mLine |[0m
+[31;1m[0m[36;1m[36;1m 349 | [0m ¡¦             [36;1mthrow "No valid run after $MaxAttemptsPerCell attempt(s):[0m ¡¦[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[0m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mNo valid run after 1 attempt(s): task=T03 arm=uidoc rep=1[0m

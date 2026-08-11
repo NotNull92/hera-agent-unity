@@ -1,0 +1,28 @@
+=== build source CLI ===
+=== create disposable fixture ===
+=== cold fixture warmup ===
+=== T01 uidoc rep 1/2 attempt 1 ===
+result: valid=True score=76 strict=False agent_ms=240166.557 calls=15
+=== T01 primitives_batch rep 1/2 attempt 1 ===
+result: valid=True score=94 strict=False agent_ms=240162.137 calls=17
+=== T02 uidoc rep 1/2 attempt 1 ===
+result: valid=True score=14.75 strict=False agent_ms=240170.062 calls=15
+=== T02 primitives_batch rep 1/2 attempt 1 ===
+result: valid=True score=14.75 strict=False agent_ms=240181.855 calls=16
+=== T03 uidoc rep 1/2 attempt 1 ===
+result: valid=True score=16 strict=False agent_ms=240154.536 calls=12
+=== T03 primitives_batch rep 1/2 attempt 1 ===
+result: valid=True score=92 strict=False agent_ms=240168.629 calls=18
+=== T01 primitives_batch rep 2/2 attempt 1 ===
+result: valid=True score=94 strict=False agent_ms=240303.621 calls=62
+=== T01 uidoc rep 2/2 attempt 1 ===
+result: valid=True score=12.333 strict=False agent_ms=240185.664 calls=19
+=== T02 primitives_batch rep 2/2 attempt 1 ===
+result: valid=True score=57.35 strict=False agent_ms=240178.477 calls=27
+=== T02 uidoc rep 2/2 attempt 1 ===
+result: valid=True score=14.75 strict=False agent_ms=240179.794 calls=34
+=== T03 primitives_batch rep 2/2 attempt 1 ===
+result: valid=True score=92 strict=False agent_ms=240183.072 calls=18
+=== T03 uidoc rep 2/2 attempt 1 ===
+result: valid=True score=18.6 strict=False agent_ms=240165.17 calls=12
+SCREENING_PASS C:\Users\PC\Desktop\Cowork\hera-agent-unity\docs\benchmarks\ui-doc-ab\results\screening-v021-fast-utf8-20260811-163214

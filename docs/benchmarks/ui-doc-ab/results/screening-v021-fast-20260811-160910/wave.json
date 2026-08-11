@@ -1,0 +1,49 @@
+{
+  "schema": "hera.ui-authoring-ab-wave/1",
+  "wave": "screening-v021-fast-20260811-160910",
+  "protocol": "fast",
+  "created_at": "2026-08-11T07:09:11.6057247+00:00",
+  "repo_commit": "24eb9234e5db5cfd620dc00ff85f6270e5b569bd",
+  "model": "gpt-5.6-sol",
+  "reasoning_effort": "medium",
+  "asset_config_sha256": "dd468637e1bc07c3ec24ac7024e278a0f1be0b9b68b89f6961711ec7258bc888",
+  "repetitions": 2,
+  "max_attempts_per_cell": 1,
+  "expected_cells": 12,
+  "arms": [
+    "uidoc",
+    "primitives_batch"
+  ],
+  "arm_order": [
+    [
+      "uidoc",
+      "primitives_batch"
+    ],
+    [
+      "primitives_batch",
+      "uidoc"
+    ]
+  ],
+  "codex_timeout_minutes": 4,
+  "admission_cutoff_minutes": 53,
+  "wave_deadline_minutes": 60,
+  "admission_deadline_at": "2026-08-11T08:02:11.6057247+00:00",
+  "hard_deadline_at": "2026-08-11T08:09:11.6057247+00:00",
+  "template_project": "C:\\Users\\PC\\Desktop\\Cowork\\test6000.3.5f2",
+  "fixture_path": "C:\\Users\\PC\\AppData\\Local\\Temp\\hera-ui-ab-wave-9dbb64330b334909b104312be63893d0\\project",
+  "source_cli": "C:\\Users\\PC\\AppData\\Local\\Temp\\hera-ui-ab-wave-9dbb64330b334909b104312be63893d0\\bin\\hera-agent-unity.exe",
+  "status": "invalid",
+  "cli_sha256": "6d035acd721d09070261bf3e8bd9992ece569ca38aa17894d1a408052e55409f",
+  "cli_bytes": 16784896,
+  "fixture_profile": "minimal-ugui",
+  "manifest_dependency_count": 36,
+  "connector_version": "0.0.86",
+  "baseline_scene_sha256": "9ff1d0b3cbbbf451987285a4e1604909de2e5caa257dd88b53ffaff54c5090e7",
+  "warmup_unity_pid": 16172,
+  "warmup_wall_ms": 16672.662,
+  "editor_reused_across_cells": true,
+  "terminal_reason": "No valid run after 1 attempt(s): task=T03 arm=uidoc rep=1",
+  "invalidation_diagnosis": "T03 contains non-ASCII prompt characters. Run-One passed redirected stdin using the host ks_c_5601-1987 default, which Codex rejected as invalid UTF-8 before any model or shim call. The subsequent harness revision pins redirected stdin to UTF-8; this wave remains invalid.",
+  "finished_at": "2026-08-11T07:26:20.6424230+00:00",
+  "wave_wall_ms": 1029037.993
+}

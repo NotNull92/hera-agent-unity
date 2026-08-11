@@ -73,6 +73,7 @@ function Invoke-External {
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
     $psi.RedirectStandardInput = $null -ne $StandardInput
+    if ($psi.RedirectStandardInput) { $psi.StandardInputEncoding = [Text.UTF8Encoding]::new($false) }
     $psi.CreateNoWindow = $true
     foreach ($argument in $Arguments) { [void]$psi.ArgumentList.Add($argument) }
     foreach ($key in $Environment.Keys) { $psi.Environment[$key] = [string]$Environment[$key] }

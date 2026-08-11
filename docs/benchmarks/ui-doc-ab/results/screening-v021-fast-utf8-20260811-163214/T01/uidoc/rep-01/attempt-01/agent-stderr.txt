@@ -1,0 +1,26 @@
+2026-08-11T07:33:20.041009Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.1 seconds
+Output:
+HERA_AB_FORBIDDEN: ui_doc --help is not allowed in arm uidoc
+
+2026-08-11T07:33:38.450350Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"Tool not found: ui_doc_apply","code":"UNKNOWN_TOOL","suggestions":["Run 'hera-agent-unity list --names' to see all tools"],"timings":{"total_ms":0}}
+
+2026-08-11T07:34:36.780918Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.5 seconds
+Output:
+{"success":false,"message":"doc has no 'root' node (expected {schema, root:{...}} or a bare node).","code":"INVALID_DOC","timings":{"total_ms":41}}
+
+2026-08-11T07:34:55.762186Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.7 seconds
+Output:
+{"success":false,"message":"No GameObject at path: '/BenchmarkCanvas'.","code":"TARGET_NOT_FOUND","timings":{"total_ms":2}}
+
+2026-08-11T07:35:59.646126Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.4 seconds
+Output:
+HERA_AB_FORBIDDEN: scene lifecycle mutations are owned by the benchmark runner
+{"success":false,"message":"ui_doc:apply failed: Cannot access child value on Newtonsoft.Json.Linq.JValue.","code":"TOOL_ACTION_FAILED","timings":{"total_ms":42}}
+

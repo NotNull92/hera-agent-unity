@@ -59,4 +59,27 @@ M2 requires a one-run orchestrator that:
 6. scores the final Unity state out-of-band against the task oracle;
 7. saves capture, annotations, Console errors, and `run.json`.
 
-Do not start the 27-run screening matrix until reset, policy enforcement, logging, and scoring each have an independent smoke PASS.
+The 27-run formal matrix remains historical protocol only. The approved
+execution path is the fast profile below, after its reset, policy, logging, and
+scoring smokes pass.
+
+## Approved fast wave
+
+For the approved one-hour protocol, use the existing runner with the locked
+profile:
+
+```powershell
+pwsh -NoProfile -File tools/benchmark-ui-authoring/Run-Screening.ps1 `
+  -Protocol fast `
+  -Wave screening-v021-fast-<timestamp> `
+  -Model gpt-5.6-sol `
+  -ReasoningEffort medium
+```
+
+`-Protocol fast` rejects attempts to override its two arms, two repetitions,
+four-minute session timeout, single attempt, 53-minute admission cutoff, or
+60-minute deadline. Check the schedule without creating a fixture or opening
+Unity via `Run-Screening.ps1 -Protocol fast -PlanOnly`.
+
+Only a `fast_complete` result is comparable. An `invalid` or `incomplete`
+result is raw forensic evidence only and cannot select a product branch.
