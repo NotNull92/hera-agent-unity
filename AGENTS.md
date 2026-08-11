@@ -710,9 +710,9 @@ agents collaborate to build one polished tool — one catches what the other mis
     State Unity facts directly — if the source domain has to be named to explain
     the rule, the rule has not been naturalized yet.
   - re-derive, do not translate. Predicates, thresholds, and vocabulary are
-    re-authored against real Unity APIs (`manage_components` properties, USS
-    vocabulary per version bucket) and verified live, so the result is correct for
-    Unity rather than merely converted.
+    re-authored against real Unity APIs (`manage_components` properties,
+    `unity_docs` entries per version bucket) and verified live, so the result is
+    correct for Unity rather than merely converted.
   - carry no foreign code or verbatim text. Ideas and methods are free to learn
     from; source files, data files, and copied prose are not — keep the repo clean
     of them so no third-party license terms attach to what hera ships.

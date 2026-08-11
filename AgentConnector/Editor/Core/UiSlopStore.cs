@@ -20,7 +20,6 @@ namespace HeraAgent
             public string severity;  // strong | weak
             public string tell;
             public string check_ugui;
-            public string check_uitk;
             public string exception; // null when none
             public string fix;
             public object borrow;    // { src, ... } for replacement tells; null for deletion tells

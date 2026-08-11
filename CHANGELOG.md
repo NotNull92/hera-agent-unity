@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed (Connector 0.0.88)
+
+- Removed the UI Toolkit check predicate from the `ui_slop` taxonomy. Each tell
+  now carries the single uGUI check the tool actually serves, so the shipped
+  bundle drops from 11434 to 9789 bytes.
+
 ## [0.2.1] - 2026-08-12
 
 ### Removed (CLI and Connector 0.0.87)

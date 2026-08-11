@@ -8,7 +8,7 @@
 //
 // Line shape (see AgentConnector/Editor/Core/UiSlopStore.cs):
 //
-//	{"id":"box-in-box","area":"B","severity":"strong","tell":"...","check_ugui":"...","check_uitk":"...","exception":"...|null","fix":"...","borrow":{...}|null,"deep_topic":"layout"}
+//	{"id":"box-in-box","area":"B","severity":"strong","tell":"...","check_ugui":"...","exception":"...|null","fix":"...","borrow":{...}|null,"deep_topic":"layout"}
 package main
 
 import (
@@ -27,7 +27,6 @@ type Entry struct {
 	Severity  string          `json:"severity"`
 	Tell      string          `json:"tell"`
 	CheckUGUI string          `json:"check_ugui"`
-	CheckUITK string          `json:"check_uitk"`
 	Exception json.RawMessage `json:"exception"`
 	Fix       string          `json:"fix"`
 	Borrow    json.RawMessage `json:"borrow"`
@@ -86,8 +85,6 @@ func main() {
 			log.Fatalf("%s:%d (%s): missing tell", *in, lineNo, e.ID)
 		case e.CheckUGUI == "":
 			log.Fatalf("%s:%d (%s): missing check_ugui", *in, lineNo, e.ID)
-		case e.CheckUITK == "":
-			log.Fatalf("%s:%d (%s): missing check_uitk", *in, lineNo, e.ID)
 		case e.Fix == "":
 			log.Fatalf("%s:%d (%s): missing fix", *in, lineNo, e.ID)
 		case !knownDeepTopics[e.DeepTopic]:
