@@ -4,9 +4,19 @@ Current workstream: **editor-workflow surface queue, wave 1a.**
 
 Planned wave 1a items, absorbed as actions on existing tools, one at a time:
 selection round trip (shipped in Connector `0.0.90`), scene-tree single-call
-dump, lightweight performance stats, animation read-back actions. Each item
-passes the feature admission gate, regenerates the catalog payload baseline in
-the same review, and is live-verified before release.
+dump (shipped in Connector `0.0.92` + CLI `v0.2.3`), lightweight performance
+stats, animation read-back actions. Each item passes the feature admission
+gate, regenerates the catalog payload baseline in the same review, and is
+live-verified before release.
+
+Shipped in Connector `0.0.92` + CLI `v0.2.3` (tags `connector-0.0.92`,
+`v0.2.3`, commit `8a9fe8a`):
+
+- `scene hierarchy` — bounded GameObject tree dump of the loaded scenes or one
+  subtree (`--root`), with `--depth`, `--max_nodes` budget + `truncated` flag,
+  and optional `--components`. Live-verified on `6000.3.5f2`; the three-bucket
+  gate has not yet run for `0.0.92` (changes are version-agnostic C# plus
+  embedded help text).
 
 Shipped in Connector `0.0.90` (tag `connector-0.0.90`, commit `5a2f923`):
 
