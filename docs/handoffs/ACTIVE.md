@@ -24,9 +24,11 @@ Shipped in Connector `0.0.91` (tag `connector-0.0.91`, commit `db59ad0`):
   (~3.5 MB smaller), pre-Unity 6 version branches collapsed, and the release
   gate reduced to three buckets (`6000.0`–`6000.2`, `6000.3`–`6000.4`,
   `6000.5+`). Live-verified on `6000.3.5f2`.
-- The three-bucket compatibility gate has NOT run for `0.0.90`/`0.0.91`; only
-  `6000.3.5f2` is live-verified so far. Bucket verification remains open and
-  should cover both releases in one pass.
+- The three-bucket compatibility gate PASSED for `0.0.90`+`0.0.91` in one pass
+  (2026-08-12): `6000.0.35f1` and `6000.5.6f1` in Library-reset disposable
+  fixtures, `6000.3.5f2` live. Full evidence, including the per-bucket
+  instance-id round trip and the 6000.5 conversion-operator probe, is in
+  `docs/UNITY_EDITOR_VERSION_INVENTORY.md`.
 
 The retired UI-document authoring surface is fully removed. `ui_doc`,
 `html-to-uidoc`, UI Toolkit authoring/version adapters, their benchmark runner,
