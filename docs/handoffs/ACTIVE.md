@@ -1,6 +1,23 @@
 # Active Development Handoff
 
-Current workstream: **editor-workflow surface queue, wave 1a.**
+Current workstream: **editor-workflow surface queue.** Wave 1a and wave 1b are
+complete.
+
+Shipped in Connector `0.0.95` + CLI `v0.2.5` (tags `connector-0.0.95`,
+`v0.2.5`) — wave 1b, design locked in `docs/TARGET_RESOLUTION_DESIGN.md`:
+
+- Durable object handles accepted everywhere targets resolve:
+  `guid:<32hex>[:<fileId>]` (main and sub-assets) and `GlobalObjectId_V1-…`
+  (assets and scene objects, survives domain reloads), via the new shared
+  `Core/ObjectIdentity` helper. Opt-in durable output on
+  `find_gameobjects --fields global_id` and `get_selection --durable`;
+  `data.tried` strategy reporting on multi-form failures.
+- D6 validation matrix passed live on `6000.3.5f2` (guid==path equivalence,
+  sub-sprite assignment by fileId, GlobalObjectId through --root/--path,
+  mixed-form selection, tried[] shape). Pre-release three-bucket gate PASSED:
+  `6000.0.35f1` (compile/tools/no-Tests; the unsaved-scene null-guid guard
+  observed working) and `6000.5.6f1` (full gid + guid round trips on a saved
+  scene) in Library-reset fixtures, `6000.3.5f2` live.
 
 Wave 1a is COMPLETE. All four items shipped as actions on existing tools:
 selection round trip (Connector `0.0.90`), scene-tree single-call dump
