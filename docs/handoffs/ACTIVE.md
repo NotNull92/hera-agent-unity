@@ -1,7 +1,22 @@
 # Active Development Handoff
 
-Current workstream: **editor-workflow surface queue.** Waves 1a, 1b, and 2 are
-complete.
+Current workstream: **editor-workflow surface queue.** Waves 1a, 1b, 2, and 3
+are complete.
+
+Shipped in Connector `0.0.97` + CLI `v0.2.7` (tags `connector-0.0.97`,
+`v0.2.7`) — wave 3, design locked in `docs/BAKE_SURFACE_DESIGN.md`:
+
+- New `bake` tool: `start`/`status`/`cancel`/`clear` × lighting / built-in
+  scene NavMesh / occlusion. Stateless status from live Editor APIs (no job
+  machinery); `SCENE_NOT_SAVED` and `ALREADY_BAKING` guards; approval-gated
+  `clear`. Catalog 32 tools / 96 actions.
+- D6 matrix passed on a Library-reset disposable `6000.3.5f2` fixture (all
+  three area cycles, mid-bake cancel, guards, approval, cleanup); pre-release
+  three-bucket gate PASSED with a lighting start/status/clear cycle on
+  `6000.0.35f1` and `6000.5.6f1` fixtures.
+
+Remaining queue candidates: Q4 build (design gate needed), Q9–Q11 small
+items, deferred settings areas, NavMeshSurface package baking.
 
 Shipped in Connector `0.0.96` + CLI `v0.2.6` (tags `connector-0.0.96`,
 `v0.2.6`) — wave 2, design locked in `docs/SETTINGS_SURFACE_DESIGN.md`:
