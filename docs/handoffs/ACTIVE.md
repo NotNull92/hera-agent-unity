@@ -5,9 +5,20 @@ Current workstream: **editor-workflow surface queue, wave 1a.**
 Planned wave 1a items, absorbed as actions on existing tools, one at a time:
 selection round trip (shipped in Connector `0.0.90`), scene-tree single-call
 dump (shipped in Connector `0.0.92` + CLI `v0.2.3`), lightweight performance
-stats, animation read-back actions. Each item passes the feature admission
-gate, regenerates the catalog payload baseline in the same review, and is
-live-verified before release.
+stats (shipped in Connector `0.0.93` + CLI `v0.2.4`), animation read-back
+actions (remaining). Each item passes the feature admission gate, regenerates
+the catalog payload baseline in the same review, and is live-verified before
+release.
+
+Shipped in Connector `0.0.93` + CLI `v0.2.4` (tags `connector-0.0.93`,
+`v0.2.4`):
+
+- `profiler stats` — one-call render/memory/frame snapshot without a capture;
+  reflection-backed render statistics with an explicit `render_available`
+  flag, times converted to ms. Live-verified on `6000.3.5f2` in edit and play
+  mode. The three-bucket gate has not run for `0.0.92`/`0.0.93`; both changes
+  are version-agnostic C# plus embedded help, and the reflection path
+  degrades to `render_available=false` rather than failing.
 
 Shipped in Connector `0.0.92` + CLI `v0.2.3` (tags `connector-0.0.92`,
 `v0.2.3`, commit `8a9fe8a`):
