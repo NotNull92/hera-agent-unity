@@ -297,6 +297,33 @@ hera-agent-unity scene hierarchy --root /GameCanvas --components
 
 ---
 
+## bake
+
+Scene bakes by area. `start` triggers the async bake and returns immediately; poll `status` until it reports `idle`. Status is computed from live Editor state, so it survives reconnects and domain reloads.
+
+```bash
+hera-agent-unity bake <action> --area <lighting|navmesh|occlusion>
+```
+
+### Actions
+
+| Action | Description |
+|:---|:---|
+| `start` | Trigger the async bake. Refuses on an untitled scene (`SCENE_NOT_SAVED`) and while that area is already baking (`ALREADY_BAKING`). Lighting reports the GI workflow mode. |
+| `status` | `idle` \| `baking`, plus `has_baked_data`; lighting adds `progress` while baking, occlusion adds `data_size_bytes`. |
+| `cancel` | Cancel an in-progress bake (no-op success when idle). |
+| `clear` | Delete the area's baked data. Requires the approval-token flow. |
+
+`--area navmesh` bakes the built-in scene NavMesh; AI Navigation package `NavMeshSurface` components are not baked by this.
+
+### Examples
+
+```bash
+hera-agent-unity bake start --area lighting
+hera-agent-unity bake status --area lighting
+hera-agent-unity bake clear --area navmesh
+```
+
 ## manage_settings
 
 Read and change project settings by area. `set_*` applies only the fields you pass, previews with `"dry_run": true` (approval-free), reports `{applied, skipped}` with per-field reasons, and otherwise requires the approval-token flow because settings changes are project-wide and not undoable.

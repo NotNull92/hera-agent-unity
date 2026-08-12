@@ -8,6 +8,7 @@ namespace HeraAgent.Tests
         internal static readonly IReadOnlyDictionary<string, HeraRiskClass> ExpectedRisk
             = new Dictionary<string, HeraRiskClass>(StringComparer.Ordinal)
             {
+                ["bake"] = HeraRiskClass.Destructive,
                 ["console"] = HeraRiskClass.ReadOnly,
                 ["describe_shader"] = HeraRiskClass.ReadOnly,
                 ["describe_type"] = HeraRiskClass.ReadOnly,
@@ -39,6 +40,7 @@ namespace HeraAgent.Tests
                 ["screenshot"] = HeraRiskClass.Write,
                 ["ui_slop"] = HeraRiskClass.ReadOnly,
                 ["unity_docs"] = HeraRiskClass.ReadOnly,
+                ["bake/status"] = HeraRiskClass.ReadOnly,
                 ["input/inspect"] = HeraRiskClass.ReadOnly,
                 ["input/state"] = HeraRiskClass.ReadOnly,
                 ["manage_asset_import/get"] = HeraRiskClass.ReadOnly,
@@ -65,6 +67,8 @@ namespace HeraAgent.Tests
                 ["scene/hierarchy"] = HeraRiskClass.ReadOnly,
                 ["scene/info"] = HeraRiskClass.ReadOnly,
                 ["scene/list"] = HeraRiskClass.ReadOnly,
+                ["bake/cancel"] = HeraRiskClass.Write,
+                ["bake/start"] = HeraRiskClass.Write,
                 ["input/click"] = HeraRiskClass.Write,
                 ["input/drag"] = HeraRiskClass.Write,
                 ["input/keyboard"] = HeraRiskClass.Write,
@@ -114,6 +118,7 @@ namespace HeraAgent.Tests
                 ["profiler/enable"] = HeraRiskClass.Write,
                 ["scene/load"] = HeraRiskClass.Write,
                 ["scene/save"] = HeraRiskClass.Write,
+                ["bake/clear"] = HeraRiskClass.Destructive,
                 ["manage_assets/delete"] = HeraRiskClass.Destructive,
                 ["manage_assets/move"] = HeraRiskClass.Destructive,
                 ["manage_components/remove"] = HeraRiskClass.Destructive,

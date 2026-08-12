@@ -593,6 +593,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `manage_assets` | Work with project assets under `Assets/`. |
 | `manage_animation` | Author AnimationClips and AnimatorController state machines, and read them back. |
 | `manage_settings` | Read and change project settings (physics, time, quality, player, audio) with previews and approval. |
+| `bake` | Trigger, poll, cancel, or clear lighting / NavMesh / occlusion bakes. |
 | `exec` | Run arbitrary project-aware C# inside the Editor. |
 | `editor` | Launch/restart the exact project, or play, stop, pause, refresh, and compile. |
 | `test` | Run or resume Unity tests. |

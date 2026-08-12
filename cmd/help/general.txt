@@ -66,6 +66,12 @@ Scene:
     scene save
     scene close Lobby
 
+Bakes:
+  bake start --area lighting|navmesh|occlusion      Trigger the async bake
+  bake status --area <area>                         idle | baking (+ progress / data size)
+  bake cancel --area <area>                         Cancel an in-progress bake
+  bake clear --area <area>                          Delete baked data (approval-gated)
+
 Project settings:
   manage_settings get_physics|get_time|get_quality|get_player|get_audio
                                                     Read an area's full snapshot

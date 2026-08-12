@@ -1,0 +1,30 @@
+Usage: hera-agent-unity bake <action> --area <lighting|navmesh|occlusion>
+
+Scene bakes by area. start triggers the async bake and returns immediately;
+poll status until it reports idle. Status is computed from live Editor state,
+so it survives reconnects and domain reloads.
+
+Actions:
+  start                 Trigger the async bake for the area.
+                        Refuses on an untitled scene (SCENE_NOT_SAVED) and
+                        while that area is already baking (ALREADY_BAKING).
+                        For lighting, the response reports the GI workflow
+                        mode (an iterative mode may make explicit bakes
+                        redundant).
+  status                idle | baking, plus has_baked_data; lighting adds
+                        progress while baking, occlusion adds data_size_bytes.
+  cancel                Cancel an in-progress bake (no-op success when idle).
+  clear                 Delete the area's baked data. Requires the
+                        approval-token flow (not undoable).
+
+Areas:
+  lighting              Lightmap bake of the open scene(s)
+  navmesh               Built-in scene NavMesh (AI Navigation package
+                        NavMeshSurface components are not baked by this)
+  occlusion             Occlusion-culling data
+
+Examples:
+  hera-agent-unity bake start --area lighting
+  hera-agent-unity bake status --area lighting
+  hera-agent-unity bake cancel --area lighting
+  hera-agent-unity bake clear --area navmesh

@@ -53,6 +53,7 @@ func TestHelpTopicsExistForRoutedCommands(t *testing.T) {
 
 func TestHelpFilesAreReachableTopics(t *testing.T) {
 	routed := map[string]bool{
+		"bake":              true,
 		"batch":             true,
 		"call":              true,
 		"console":           true,

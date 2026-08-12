@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI and Connector 0.0.97 — scene bakes)
+
+- New `bake` tool: `start` / `status` / `cancel` / `clear` across three
+  areas — lighting, the built-in scene NavMesh, and occlusion culling.
+  `start` triggers the async bake and returns immediately; `status` is
+  computed from live Editor state on every call (idle | baking, with
+  lighting progress and occlusion data size), so it needs no job machinery
+  and survives reconnects and domain reloads. `start` refuses on an
+  untitled scene (`SCENE_NOT_SAVED`) and while already baking
+  (`ALREADY_BAKING`); `clear` deletes baked data behind the approval-token
+  flow. Previously no bake could be triggered, observed, cancelled, or
+  cleared without hand-written `exec`. Ships in the scene and full
+  profiles. Design: `docs/BAKE_SURFACE_DESIGN.md`.
+
 ### Added (CLI and Connector 0.0.96 — project settings surface)
 
 - New `manage_settings` tool with typed get/set pairs for five areas —
