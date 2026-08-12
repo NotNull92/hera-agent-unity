@@ -72,7 +72,7 @@ namespace HeraAgent.Tools
             [ToolParameter("Skip the first N matches (default 0). Pair with limit for pagination.")]
             public int? Offset { get; set; }
 
-            [ToolParameter("Comma-separated output fields: instance_id, name, path, scene, active, or all. Default: instance_id,name.")]
+            [ToolParameter("Comma-separated output fields: instance_id, name, path, scene, active, global_id (durable handle that survives domain reloads), or all (all except global_id). Default: instance_id,name.")]
             public string Fields { get; set; }
 
             [ToolParameter("Return results as bare instance IDs. Lowest-token projection; mutually exclusive with names/fields.")]
@@ -265,7 +265,7 @@ namespace HeraAgent.Tools
                             IsSuccess = false,
                             Error = new ErrorResponse(
                                 "INVALID_FIELDS",
-                                $"Unknown field in --fields: '{raw.Trim()}'. Allowed: instance_id, name, path, scene, active, all.")
+                                $"Unknown field in --fields: '{raw.Trim()}'. Allowed: instance_id, name, path, scene, active, global_id, all.")
                         };
                     }
                     if (!fields.Contains(field))
@@ -288,6 +288,7 @@ namespace HeraAgent.Tools
                 case "path":
                 case "scene":
                 case "active":
+                case "global_id":
                     return field;
                 default:
                     return null;
@@ -320,6 +321,9 @@ namespace HeraAgent.Tools
                         break;
                     case "active":
                         result["active"] = go.activeInHierarchy;
+                        break;
+                    case "global_id":
+                        result["global_id"] = ObjectIdentity.DurableIdOf(go);
                         break;
                 }
             }

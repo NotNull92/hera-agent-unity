@@ -666,7 +666,7 @@ The builder validates ids, areas, severities, `deep_topic` values, and the prese
 
 ## manage_components
 
-Component CRUD on a target GameObject. Property paths are raw `SerializedProperty` paths (`m_Name`, `m_LocalScale.x`, `m_Materials.Array.data[0]`) — no friendly-name mapping. Reference fields accept an InstanceID, an asset path, or a `{instance_id|asset_path}` envelope.
+Component CRUD on a target GameObject. Property paths are raw `SerializedProperty` paths (`m_Name`, `m_LocalScale.x`, `m_Materials.Array.data[0]`) — no friendly-name mapping. Reference fields accept an InstanceID, an asset path, a `guid:<32hex>[:<fileId>]` handle (the `:fileId` form addresses a sub-asset such as a sprite inside a sliced sheet), a `GlobalObjectId_V1-…` string, or a `{instance_id|asset_path}` envelope.
 
 This tool establishes the property-set pattern reused by every future `manage_*` (material / animation / vfx / scriptable objects / prefab properties).
 
@@ -790,7 +790,7 @@ hera-agent-unity find_gameobjects [filters] [pagination]
 |:---|:---|
 | `--ids` | Return `results` as bare instance IDs. Lowest-token handoff to `manage_*` tools. |
 | `--names` | Return `results` as bare names. |
-| `--fields <csv>` | Return only selected object fields: `instance_id`, `name`, `path`, `scene`, `active`, or `all`. Default: `instance_id,name`. |
+| `--fields <csv>` | Return only selected object fields: `instance_id`, `name`, `path`, `scene`, `active`, `global_id` (durable handle that survives domain reloads), or `all` (all except `global_id`). Default: `instance_id,name`. |
 
 ### Return shape
 

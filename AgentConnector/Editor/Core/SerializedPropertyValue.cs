@@ -193,7 +193,9 @@ namespace HeraAgent
         /// <list type="bullet">
         /// <item>JSON null → unset reference</item>
         /// <item>integer → InstanceID</item>
-        /// <item>string of digits → InstanceID; otherwise treated as an asset path (Assets/...)</item>
+        /// <item>string of digits → InstanceID; <c>guid:&lt;32hex&gt;[:&lt;fileId&gt;]</c> or a
+        /// GlobalObjectId string → durable handle (see <see cref="ObjectIdentity"/>);
+        /// otherwise treated as an asset path (Assets/...)</item>
         /// <item>object {"instance_id": N} or {"asset_path": "..."}</item>
         /// </list>
         /// </summary>
@@ -211,6 +213,12 @@ namespace HeraAgent
             {
                 var s = token.ToString();
                 if (string.IsNullOrEmpty(s)) return (null, null);
+                if (ObjectIdentity.IsDurableForm(s))
+                {
+                    return ObjectIdentity.TryResolve(s, out var durable, out var durableErr)
+                        ? (durable, null)
+                        : (null, durableErr);
+                }
                 if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedId))
                 {
                     var obj = EntityIdCompat.ToObject(parsedId);

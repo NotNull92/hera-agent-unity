@@ -43,6 +43,11 @@ namespace HeraAgent
 
             if (!string.IsNullOrEmpty(path))
             {
+                if (ObjectIdentity.IsDurableForm(path))
+                {
+                    var (durableGo, durableErr) = ResolveDurableGameObject(path);
+                    return durableGo != null ? (durableGo, null) : (null, durableErr);
+                }
                 var go = HierarchyPath.Find(path);
                 if (go == null)
                     return (null, new ErrorResponse("TARGET_NOT_FOUND", $"No GameObject at path: '{path}'."));
@@ -50,6 +55,18 @@ namespace HeraAgent
             }
 
             return (null, new ErrorResponse("MISSING_TARGET", "Target required: pass 'instance_id' or 'path'."));
+        }
+
+        static (GameObject go, ErrorResponse err) ResolveDurableGameObject(string s)
+        {
+            if (s.StartsWith("guid:", System.StringComparison.Ordinal))
+                return (null, new ErrorResponse("NOT_A_GAMEOBJECT", "A guid: handle names an asset; this tool targets scene GameObjects. Use a hierarchy path, instance_id, or GlobalObjectId."));
+            if (!ObjectIdentity.TryResolve(s, out var obj, out var err))
+                return (null, new ErrorResponse("TARGET_NOT_FOUND", err));
+            var go = obj as GameObject ?? (obj as Component)?.gameObject;
+            if (go == null)
+                return (null, new ErrorResponse("NOT_A_GAMEOBJECT", $"'{s}' resolved to {obj.GetType().Name}, not a GameObject."));
+            return (go, null);
         }
 
         /// <summary>
@@ -82,9 +99,29 @@ namespace HeraAgent
             {
                 var obj = EntityIdCompat.ToObject(id);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;
-                if (go == null)
-                    return (null, new ErrorResponse("OBJECT_NOT_FOUND", $"No GameObject for instance_id={id}."));
-                return (go.transform, null);
+                if (go != null) return (go.transform, null);
+                // A stale id is the common case here (ids die on domain
+                // reload), but a GameObject literally named "104194" is still
+                // reachable — fall through to a hierarchy lookup and report
+                // both strategies when neither lands.
+                var byName = HierarchyPath.Find(s);
+                if (byName != null) return (byName.transform, null);
+                return (null, new ErrorResponse(
+                    "OBJECT_NOT_FOUND",
+                    $"No GameObject for instance_id={id} (and no GameObject at path '{s}').",
+                    new
+                    {
+                        tried = new object[]
+                        {
+                            new { form = "instance_id", error = $"no object for instance_id={id}" },
+                            new { form = "hierarchy_path", error = $"no GameObject at path '{s}'" },
+                        },
+                    }));
+            }
+            if (ObjectIdentity.IsDurableForm(s))
+            {
+                var (durableGo, durableErr) = ResolveDurableGameObject(s);
+                return durableGo != null ? (durableGo.transform, null) : (null, durableErr);
             }
             var found = HierarchyPath.Find(s);
             if (found == null)

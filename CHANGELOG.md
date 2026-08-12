@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI and Connector 0.0.95 — durable object handles)
+
+- Target and ObjectReference strings now accept two durable, self-describing
+  forms alongside instance ids and paths: `guid:<32hex>` for a main asset,
+  `guid:<32hex>:<fileId>` for a **sub-asset** (a sprite inside a sliced
+  sheet, a material inside an FBX — previously unaddressable without
+  `exec`), and Unity's `GlobalObjectId_V1-…` string for assets and scene
+  objects uniformly. GlobalObjectId handles survive domain reloads, closing
+  the gap where every emitted instance_id silently died on reload, compile,
+  or package resolve. Design: `docs/TARGET_RESOLUTION_DESIGN.md`.
+- `find_gameobjects --fields` gains a selectable `global_id` field and
+  `manage_editor get_selection` a `durable` parameter, both opt-in so default
+  payloads do not grow.
+- When a bare numeric target fails as an instance id, resolution now falls
+  through to a hierarchy lookup and the error carries a `data.tried` array
+  naming each strategy and its individual failure, instead of reporting only
+  the last interpretation.
+
 ### Added (Connector 0.0.94 — animation read-back)
 
 - `manage_animation get_clip` reads an AnimationClip's metadata (frame rate,

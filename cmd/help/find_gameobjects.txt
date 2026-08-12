@@ -25,7 +25,11 @@ Output projection:
   --ids                      Return results as bare instance IDs (lowest tokens).
   --names                    Return results as bare names.
   --fields <csv>             Comma-separated fields: instance_id, name, path,
-                             scene, active, or all. Default: instance_id,name.
+                             scene, active, global_id, or all (all except
+                             global_id). Default: instance_id,name.
+                             global_id is a durable handle that survives
+                             domain reloads; every tool that takes a path
+                             target also accepts it.
 
 Results are sorted by hierarchy path for stable pagination across calls.
 

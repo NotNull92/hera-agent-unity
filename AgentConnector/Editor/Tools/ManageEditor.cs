@@ -19,7 +19,7 @@ namespace HeraAgent.Tools
     [HeraActionContract("remove_tag", typeof(ManageEditor.TagParameters), RiskClass = HeraRiskClass.Destructive)]
     [HeraActionContract("add_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("remove_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Destructive)]
-    [HeraActionContract("get_selection", typeof(ManageEditor.EmptyParameters), ResultType = typeof(ManageEditor.SelectionResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("get_selection", typeof(ManageEditor.GetSelectionParameters), ResultType = typeof(ManageEditor.SelectionResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("set_selection", typeof(ManageEditor.SetSelectionParameters), ResultType = typeof(ManageEditor.SetSelectionResult), RiskClass = HeraRiskClass.Write)]
     public static class ManageEditor
     {
@@ -51,10 +51,16 @@ namespace HeraAgent.Tools
             public string LayerName { get; set; }
         }
 
+        public sealed class GetSelectionParameters
+        {
+            [ToolParameter("Include each entry's global_id — a durable handle that survives domain reloads. Off by default to keep the payload small.")]
+            public bool? Durable { get; set; }
+        }
+
         public sealed class SetSelectionParameters
         {
             [ToolParameter(
-                "Objects to select. Each entry is an instance_id integer, a scene hierarchy path, or an Assets/ asset path. An empty array clears the selection.",
+                "Objects to select. Each entry is an instance_id integer, a scene hierarchy path, an Assets/ asset path, a guid:<32hex>[:<fileId>] asset handle, or a GlobalObjectId string. An empty array clears the selection.",
                 Required = true,
                 SchemaJson = "{\"type\":\"array\",\"items\":{\"type\":\"string\"}}")]
             public string[] Targets { get; set; }
@@ -67,6 +73,9 @@ namespace HeraAgent.Tools
             public string Kind { get; set; }
             public string Path { get; set; }
             public string Type { get; set; }
+
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public string GlobalId { get; set; }
         }
 
         public sealed class SelectionResult
@@ -178,7 +187,7 @@ namespace HeraAgent.Tools
                     return ManageLayer(action, p);
 
                 case "get_selection":
-                    return GetSelection();
+                    return GetSelection(p.GetBool("durable"));
 
                 case "set_selection":
                     return SetSelection(p);
@@ -188,7 +197,7 @@ namespace HeraAgent.Tools
             }
         }
 
-        private static object GetSelection()
+        private static object GetSelection(bool durable)
         {
             var objects = Selection.objects;
             var entries = new SelectionEntry[objects.Length];
@@ -213,6 +222,7 @@ namespace HeraAgent.Tools
                     Kind = isAsset ? "asset" : "scene",
                     Path = path,
                     Type = obj.GetType().Name,
+                    GlobalId = durable ? ObjectIdentity.DurableIdOf(obj) : null,
                 };
             }
             return new SuccessResponse(
@@ -240,7 +250,12 @@ namespace HeraAgent.Tools
                     return new ErrorResponse("INVALID_PARAM", $"targets[{i}] is empty.");
 
                 UnityEngine.Object obj;
-                if (int.TryParse(target, out var id))
+                if (ObjectIdentity.IsDurableForm(target))
+                {
+                    if (!ObjectIdentity.TryResolve(target, out obj, out var durableErr))
+                        return new ErrorResponse("OBJECT_NOT_FOUND", $"targets[{i}]: {durableErr}");
+                }
+                else if (int.TryParse(target, out var id))
                 {
                     obj = EntityIdCompat.ToObject(id);
                     if (obj == null)
