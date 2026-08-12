@@ -19,9 +19,11 @@ namespace HeraAgent.Tools
     [HeraActionContract("add_parameter", typeof(ManageAnimation.AddParameterParameters), ResultType = typeof(ManageAnimation.ParameterResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("add_state", typeof(ManageAnimation.AddStateParameters), ResultType = typeof(ManageAnimation.StateResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("add_transition", typeof(ManageAnimation.AddTransitionParameters), ResultType = typeof(ManageAnimation.TransitionResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("get_clip", typeof(ManageAnimation.GetClipParameters), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("get_controller", typeof(ManageAnimation.PathParameters), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraTool(
         Name = "manage_animation",
-        Description = "Author animation assets without exec boilerplate: create_clip / set_curve build an AnimationClip (.anim) and its float curves; create_controller / add_parameter / add_state / add_transition build an AnimatorController (.controller) state machine on its base layer. Paths are constrained to Assets/.",
+        Description = "Author animation assets without exec boilerplate: create_clip / set_curve build an AnimationClip (.anim) and its float curves; create_controller / add_parameter / add_state / add_transition build an AnimatorController (.controller) state machine on its base layer; get_clip / get_controller read the authored structure back for verification. Paths are constrained to Assets/.",
         Destructive = true,
         MayReloadDomain = true,
         Examples = new[]
@@ -32,6 +34,8 @@ namespace HeraAgent.Tools
             "manage_animation add_parameter --path Assets/Anim/Player.controller --name Speed --type float",
             "manage_animation add_state --path Assets/Anim/Player.controller --name Run --motion Assets/Anim/Bob.anim --default true",
             "manage_animation add_transition --path Assets/Anim/Player.controller --from Idle --to Run --params '{\"conditions\":[{\"parameter\":\"Speed\",\"mode\":\"Greater\",\"threshold\":0.1}]}'",
+            "manage_animation get_clip --path Assets/Anim/Bob.anim --include_keys true",
+            "manage_animation get_controller --path Assets/Anim/Player.controller",
         },
         ExampleDescriptions = new[]
         {
@@ -41,6 +45,8 @@ namespace HeraAgent.Tools
             "Add a typed parameter (float/int/bool/trigger)",
             "Add a state with a motion clip and make it the layer default",
             "Add a transition between states with a condition",
+            "Read a clip's metadata and curve bindings (keyframes included)",
+            "Read a controller's parameters, layers, states, and transitions",
         },
         Profiles = new[] { "scene" },
         RiskClass = HeraRiskClass.Write,
@@ -58,6 +64,12 @@ namespace HeraAgent.Tools
         {
             [ToolParameter("Animation asset path under Assets/.", Required = true)]
             public string Path { get; set; }
+        }
+
+        public sealed class GetClipParameters : PathParameters
+        {
+            [ToolParameter("Include per-binding keyframes (time/value/tangents). Off by default to keep the payload small.")]
+            public bool? IncludeKeys { get; set; }
         }
 
         public sealed class CreateClipParameters : PathParameters
@@ -192,7 +204,7 @@ namespace HeraAgent.Tools
 
         public class Parameters
         {
-            [ToolParameter("Action: create_clip, set_curve, create_controller, add_parameter, add_state, add_transition.", Required = true)]
+            [ToolParameter("Action: create_clip, set_curve, create_controller, add_parameter, add_state, add_transition, get_clip, get_controller.", Required = true)]
             public string Action { get; set; }
 
             [ToolParameter("Asset path under Assets/. create_clip -> .anim, create_controller -> .controller (appended if omitted); the other actions target an existing asset by path.", Required = false)]
@@ -247,8 +259,10 @@ namespace HeraAgent.Tools
                 case "add_parameter": return AddParameter(p);
                 case "add_state": return AddState(p);
                 case "add_transition": return AddTransition(p);
+                case "get_clip": return GetClip(p);
+                case "get_controller": return GetController(p);
                 default:
-                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: create_clip, set_curve, create_controller, add_parameter, add_state, add_transition.");
+                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: create_clip, set_curve, create_controller, add_parameter, add_state, add_transition, get_clip, get_controller.");
             }
         }
 
@@ -475,6 +489,148 @@ namespace HeraAgent.Tools
         }
 
         // ---- helpers ----
+
+        // ---- Read-back ----
+
+        private static object GetClip(ToolParams p)
+        {
+            var clip = LoadClip(
+                p.Get("path"), "ASSET_NOT_FOUND",
+                "No AnimationClip at that path (expects an existing .anim).", out var err);
+            if (clip == null) return err;
+
+            bool includeKeys = p.GetBool("include_keys");
+            var settings = AnimationUtility.GetAnimationClipSettings(clip);
+            var bindings = new List<object>();
+            foreach (var binding in AnimationUtility.GetCurveBindings(clip))
+            {
+                var curve = AnimationUtility.GetEditorCurve(clip, binding);
+                if (curve == null) continue;
+                List<object> keyframes = null;
+                if (includeKeys)
+                {
+                    keyframes = new List<object>(curve.length);
+                    foreach (var key in curve.keys)
+                    {
+                        keyframes.Add(new
+                        {
+                            time = key.time,
+                            value = key.value,
+                            in_tangent = key.inTangent,
+                            out_tangent = key.outTangent,
+                        });
+                    }
+                }
+                bindings.Add(includeKeys
+                    ? (object)new
+                    {
+                        relative_path = binding.path,
+                        type = binding.type?.Name,
+                        property = binding.propertyName,
+                        keys = curve.length,
+                        keyframes,
+                    }
+                    : new
+                    {
+                        relative_path = binding.path,
+                        type = binding.type?.Name,
+                        property = binding.propertyName,
+                        keys = curve.length,
+                    });
+            }
+
+            return new SuccessResponse(
+                $"{clip.name}: {bindings.Count} binding(s), {clip.length:0.###}s.",
+                new
+                {
+                    path = AssetDatabase.GetAssetPath(clip),
+                    guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(clip)),
+                    frame_rate = clip.frameRate,
+                    loop = settings.loopTime,
+                    length = clip.length,
+                    bindings,
+                });
+        }
+
+        private static object GetController(ToolParams p)
+        {
+            var ctrl = LoadController(p.Get("path"), out var err);
+            if (ctrl == null) return err;
+
+            var parameters = new List<object>();
+            foreach (var parameter in ctrl.parameters)
+            {
+                object defaultValue;
+                switch (parameter.type)
+                {
+                    case AnimatorControllerParameterType.Float: defaultValue = parameter.defaultFloat; break;
+                    case AnimatorControllerParameterType.Int: defaultValue = parameter.defaultInt; break;
+                    case AnimatorControllerParameterType.Bool: defaultValue = parameter.defaultBool; break;
+                    default: defaultValue = null; break;
+                }
+                parameters.Add(new
+                {
+                    name = parameter.name,
+                    type = parameter.type.ToString().ToLowerInvariant(),
+                    @default = defaultValue,
+                });
+            }
+
+            var layers = new List<object>();
+            foreach (var layer in ctrl.layers)
+            {
+                var sm = layer.stateMachine;
+                var states = new List<object>();
+                if (sm != null)
+                {
+                    foreach (var child in sm.states)
+                    {
+                        var state = child.state;
+                        var transitions = new List<object>();
+                        foreach (var transition in state.transitions)
+                        {
+                            var conditions = new List<object>();
+                            foreach (var condition in transition.conditions)
+                            {
+                                conditions.Add(new
+                                {
+                                    parameter = condition.parameter,
+                                    mode = condition.mode.ToString(),
+                                    threshold = condition.threshold,
+                                });
+                            }
+                            transitions.Add(new
+                            {
+                                to = transition.destinationState != null
+                                    ? transition.destinationState.name
+                                    : (transition.isExit ? "(exit)" : null),
+                                has_exit_time = transition.hasExitTime,
+                                duration = transition.duration,
+                                conditions,
+                            });
+                        }
+                        states.Add(new
+                        {
+                            name = state.name,
+                            motion = state.motion != null ? AssetDatabase.GetAssetPath(state.motion) : null,
+                            is_default = sm.defaultState == state,
+                            transitions,
+                        });
+                    }
+                }
+                layers.Add(new { name = layer.name, states });
+            }
+
+            return new SuccessResponse(
+                $"{ctrl.name}: {parameters.Count} parameter(s), {layers.Count} layer(s).",
+                new
+                {
+                    path = AssetDatabase.GetAssetPath(ctrl),
+                    guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(ctrl)),
+                    parameters,
+                    layers,
+                });
+        }
 
         private static AnimatorController LoadController(string rawPath, out ErrorResponse err)
         {

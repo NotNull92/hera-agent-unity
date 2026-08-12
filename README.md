@@ -591,7 +591,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `manage_gameobject` | Create and edit GameObjects. |
 | `manage_components` | Read, add, remove, or modify Components. |
 | `manage_assets` | Work with project assets under `Assets/`. |
-| `manage_animation` | Author AnimationClips and AnimatorController state machines. |
+| `manage_animation` | Author AnimationClips and AnimatorController state machines, and read them back. |
 | `exec` | Run arbitrary project-aware C# inside the Editor. |
 | `editor` | Launch/restart the exact project, or play, stop, pause, refresh, and compile. |
 | `test` | Run or resume Unity tests. |

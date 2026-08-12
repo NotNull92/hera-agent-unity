@@ -1935,6 +1935,17 @@ namespace HeraAgent.Tests
                 ["from"] = "Idle",
                 ["to"] = "Run",
             });
+            yield return ("manage_animation", "get_clip", new JObject
+            {
+                ["action"] = "get_clip",
+                ["path"] = "Assets/Test.anim",
+                ["include_keys"] = true,
+            });
+            yield return ("manage_animation", "get_controller", new JObject
+            {
+                ["action"] = "get_controller",
+                ["path"] = "Assets/Test.controller",
+            });
 
             yield return ("manage_ui", "create", new JObject
             {

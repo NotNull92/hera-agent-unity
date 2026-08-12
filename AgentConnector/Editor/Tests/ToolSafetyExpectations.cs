@@ -44,6 +44,8 @@ namespace HeraAgent.Tests
                 ["manage_assets/find"] = HeraRiskClass.ReadOnly,
                 ["manage_components/get"] = HeraRiskClass.ReadOnly,
                 ["manage_components/list"] = HeraRiskClass.ReadOnly,
+                ["manage_animation/get_clip"] = HeraRiskClass.ReadOnly,
+                ["manage_animation/get_controller"] = HeraRiskClass.ReadOnly,
                 ["manage_editor/get_selection"] = HeraRiskClass.ReadOnly,
                 ["manage_gameobject/get_transform"] = HeraRiskClass.ReadOnly,
                 ["manage_material/get"] = HeraRiskClass.ReadOnly,

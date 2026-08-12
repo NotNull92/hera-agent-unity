@@ -440,6 +440,8 @@ hera-agent-unity manage_animation <action> [flags]
 | `add_parameter` | `--path`, `--name`, `--type` | Add a `float`/`int`/`bool`/`trigger` parameter (optional `--params '{"default":...}'`). |
 | `add_state` | `--path`, `--name` | Add a base-layer state. `--motion <clip path>`, `--default`. |
 | `add_transition` | `--path`, `--from`, `--to` | Add a transition. Conditions via `--params`. |
+| `get_clip` | `--path` | Read a clip's metadata and every curve binding; `--include_keys` adds keyframes (time/value/tangents). |
+| `get_controller` | `--path` | Read a controller's parameters, layers, states (motion, default), and transitions with conditions. |
 
 | Flag | Description | Default |
 |:---|:---|:---|

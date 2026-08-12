@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.94 — animation read-back)
+
+- `manage_animation get_clip` reads an AnimationClip's metadata (frame rate,
+  loop, length) and every float curve binding, with `--include_keys` adding
+  keyframe time/value/tangents. `manage_animation get_controller` reads an
+  AnimatorController's parameters (with defaults), layers, states (motion
+  path, default flag), and transitions with their conditions. The authoring
+  actions shipped write-only, so verifying authored animation previously
+  required `exec`; the read-back completes the observe step of the loop.
+
 ### Added (CLI and Connector 0.0.93 — performance snapshot in one call)
 
 - `profiler stats` reads render, memory, and frame statistics in a single
