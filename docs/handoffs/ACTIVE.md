@@ -1,7 +1,28 @@
 # Active Development Handoff
 
-Current workstream: **editor-workflow surface queue.** Wave 1a and wave 1b are
+Current workstream: **editor-workflow surface queue.** Waves 1a, 1b, and 2 are
 complete.
+
+Shipped in Connector `0.0.96` + CLI `v0.2.6` (tags `connector-0.0.96`,
+`v0.2.6`) — wave 2, design locked in `docs/SETTINGS_SURFACE_DESIGN.md`:
+
+- New `manage_settings` tool: typed get/set pairs for physics, time, quality,
+  player identity, and the persisted audio configuration. Omitted fields
+  untouched; `dry_run` previews run approval-free via a safety-rule
+  downgrade; other `set_*` calls ride the existing approval-token flow;
+  responses report `{applied, skipped}` with per-field reasons. Ships in
+  diagnostics/full profiles (+1 tool, +11 actions, catalog 31 tools /
+  92 actions).
+- `manage_editor get_tags_layers` — the missing read next to the tag/layer
+  writes.
+- D6 matrix passed live on `6000.3.5f2` (per-area set/verify/restore,
+  dry_run no-mutation, APPROVAL_REQUIRED gating, mixed applied+skipped,
+  tags round trip); pre-release three-bucket gate PASSED with a settings
+  round trip on `6000.0.35f1` and `6000.5.6f1` in Library-reset fixtures.
+
+Remaining queue candidates (survey doc): Q3 baking, Q4 build, Q9–Q11 small
+items, deferred settings areas (graphics pipeline asset, input axes, player
+scripting-backend writes).
 
 Shipped in Connector `0.0.95` + CLI `v0.2.5` (tags `connector-0.0.95`,
 `v0.2.5`) — wave 1b, design locked in `docs/TARGET_RESOLUTION_DESIGN.md`:
