@@ -17,9 +17,16 @@ Shipped in Connector `0.0.90` (tag `connector-0.0.90`, commit `5a2f923`):
   `EntityId.GetHashCode()` is not the id value there, so every emitted
   instance_id was unresolvable. Ids now go through Unity's EntityId → int
   conversion operator bound once per domain via reflection.
-- The five-bucket UPM compatibility gate has NOT run for `0.0.90`; only
-  `6000.3.5f2` is live-verified. The 6000.3+ code path is version-gated and
-  pre-6000.3 branches are unchanged, but bucket verification remains open.
+Shipped in Connector `0.0.91` (tag `connector-0.0.91`, commit `db59ad0`):
+
+- Hera now targets Unity 6+ only: package `"unity"` floor `6000.0`, the
+  `2022.3`/`2023.2` docs bundles and legacy `unity_docs_6.0` alias removed
+  (~3.5 MB smaller), pre-Unity 6 version branches collapsed, and the release
+  gate reduced to three buckets (`6000.0`–`6000.2`, `6000.3`–`6000.4`,
+  `6000.5+`). Live-verified on `6000.3.5f2`.
+- The three-bucket compatibility gate has NOT run for `0.0.90`/`0.0.91`; only
+  `6000.3.5f2` is live-verified so far. Bucket verification remains open and
+  should cover both releases in one pass.
 
 The retired UI-document authoring surface is fully removed. `ui_doc`,
 `html-to-uidoc`, UI Toolkit authoring/version adapters, their benchmark runner,
