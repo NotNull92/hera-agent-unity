@@ -15,6 +15,7 @@ namespace HeraAgent.Tests
             allPassed &= ExpectTrue("spacing tell present", UiSlopStore.Lookup("unscaled-spacing-ladder") != null);
             allPassed &= ExpectTrue("hangul tell present", UiSlopStore.Lookup("hangul-font-fallback-jump") != null);
             allPassed &= ExpectTrue("unity-native tell present", UiSlopStore.Lookup("missing-canvasscaler") != null);
+            allPassed &= ExpectTrue("retired UITK tell absent", UiSlopStore.Lookup("uss-not-modularized") == null);
 
             // box-in-box carries the game-UI exception gate (functional surfaces
             // like inventory slots are not flattened).

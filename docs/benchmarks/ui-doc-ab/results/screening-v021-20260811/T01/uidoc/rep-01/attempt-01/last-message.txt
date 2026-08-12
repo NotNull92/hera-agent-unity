@@ -1,3 +1,0 @@
-- 1280×720 capture produced; layout, colors, hierarchy, and 73% bar are visible.
-- Unity Console errors: **0**.
-- Remaining uncertainty: an extra Canvas remains; legacy text sizing/alignment did not apply; EventSystem has no input module, and `DeployButton` failed the top-raycast check.

@@ -993,7 +993,7 @@ namespace HeraAgent.Editor
             header.Add(headerLbl);
 
             var toggle = new Toggle { value = _config?.ui_slop_mode ?? false };
-            toggle.tooltip = "When on, AI agents clean statistical UI-slop (layout, spacing, typography, color) using the bundled ui_slop taxonomy while building uGUI/UI Toolkit screens.";
+            toggle.tooltip = "When on, AI agents clean statistical UI-slop (layout, spacing, typography, color) using the bundled ui_slop taxonomy while building uGUI screens.";
             header.Add(toggle);
 
             section.Add(header);

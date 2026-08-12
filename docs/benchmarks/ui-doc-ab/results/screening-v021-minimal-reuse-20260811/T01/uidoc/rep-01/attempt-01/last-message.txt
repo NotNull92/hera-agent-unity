@@ -1,5 +1,0 @@
-- Final 1280×720 capture: [precision-hud-verify-02.png](C:\Users\PC\AppData\Local\Temp\hera-ui-ab-wave-4bb40e2e20be4974a286a62aa2680960\project\precision-hud-verify-02.png)
-- Export confirms the requested hierarchy, geometry, colors, and 292/400 px bar fill.
-- Unity Console: 0 errors.
-
-Remaining deviations: two root Canvases remain; the text font sizes, CanvasScaler configuration, EventSystem input module, and `DeployButton` top-raycast verification did not reach the requested state.

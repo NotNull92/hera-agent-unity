@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed (CLI source and Connector 0.0.89)
+
+- Removed the last UI Toolkit-only `ui_slop` tell and all UITK repair text from
+  the uGUI taxonomy, compact agent guidance, and Hera Settings tooltip. The
+  shipped taxonomy now contains 48 uGUI tells.
+- Removed the retired UI-authoring A/B artifacts, runner-era plans, checkpoint
+  handoffs, and the obsolete smoke benchmark with a dead evidence link.
+
 ### Removed (Connector 0.0.88)
 
 - Removed the UI Toolkit check predicate from the `ui_slop` taxonomy. Each tell

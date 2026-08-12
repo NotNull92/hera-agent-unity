@@ -1,7 +1,6 @@
 // build-ui-slop-docs validates and compresses the curated Unity UI-slop
-// taxonomy (ui_slop.jsonl in this directory — the checked-in source of truth,
-// authored against live hera measurement and per-version editor-binary
-// reflection) into the bundle the connector ships.
+// taxonomy (ui_slop.jsonl in this directory, the checked-in source of truth)
+// into the bundle the connector ships.
 // Run after editing ui_slop.jsonl, commit both files.
 //
 //	go run ./tools/build-ui-slop-docs

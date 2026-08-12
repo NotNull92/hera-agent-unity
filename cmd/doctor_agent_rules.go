@@ -66,7 +66,7 @@ func extractCompactAgentRules(format string) string {
 			out.WriteString("- Game Feel Mode is ON. Query `game_feel` for measured parameters and ethics constraints before implementing player-facing feedback.\n")
 		}
 		if uiSlop {
-			out.WriteString("- Unity De-slop Mode is ON. Query `ui_slop` and re-measure the live uGUI or UI Toolkit target before and after each fix.\n")
+			out.WriteString("- Unity De-slop Mode is ON. Query `ui_slop` and re-measure the live uGUI target before and after each fix.\n")
 		}
 	}
 	return out.String()

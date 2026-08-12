@@ -3,6 +3,14 @@
 This file is the historical record of completed investigations, rejected refactors, locked implementation decisions, and their evidence. It is intentionally separated from `CLAUDE.md` so ordinary coding sessions load current rules instead of the full history.
 
 Read this ledger only when a proposed change overlaps an existing decision or when verifying why a specific design is locked. Current architecture and collaboration rules remain authoritative in `CLAUDE.md`; cross-tool downstream usage rules remain authoritative in `AGENTS.md`.
+
+> **Retirement override (2026-08-12):** rows below that describe `ui_doc`,
+> `html-to-uidoc`, `ui_system`, UI Toolkit authoring, `check_uitk`, or
+> `uitk_schema_*` are historical records only. They were superseded by the
+> v0.2.1 / Connector 0.0.87 removal and the Connector 0.0.89 residue cleanup.
+> Current authoring is generic uGUI tooling; `ui_slop` exposes one `check_ugui`
+> predicate across 48 tells.
+
 ### 이미 처리된 항목 (다른 세션에서 중복 제안 금지)
 
 | 항목 | 상태 | 비고 |
