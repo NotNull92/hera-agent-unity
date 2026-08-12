@@ -2,13 +2,23 @@
 
 Current workstream: **editor-workflow surface queue, wave 1a.**
 
-Planned wave 1a items, absorbed as actions on existing tools, one at a time:
-selection round trip (shipped in Connector `0.0.90`), scene-tree single-call
-dump (shipped in Connector `0.0.92` + CLI `v0.2.3`), lightweight performance
-stats (shipped in Connector `0.0.93` + CLI `v0.2.4`), animation read-back
-actions (remaining). Each item passes the feature admission gate, regenerates
-the catalog payload baseline in the same review, and is live-verified before
-release.
+Wave 1a is COMPLETE. All four items shipped as actions on existing tools:
+selection round trip (Connector `0.0.90`), scene-tree single-call dump
+(Connector `0.0.92` + CLI `v0.2.3`), lightweight performance stats (Connector
+`0.0.93` + CLI `v0.2.4`), and animation read-back (Connector `0.0.94`). Each
+item passed the feature admission gate, regenerated the catalog payload
+baseline in the same review, and was live-verified before release.
+
+Shipped in Connector `0.0.94` (tag `connector-0.0.94`):
+
+- `manage_animation get_clip` / `get_controller` — read back authored clips
+  (metadata + curve bindings, optional keyframes) and controllers
+  (parameters, layers, states, transitions with conditions). Live-verified on
+  `6000.3.5f2` with a full authoring round trip on disposable assets.
+
+Open before wave 1b: run the three-bucket gate once covering
+`0.0.92`–`0.0.94` (all three are version-agnostic C#; `0.0.93` reads render
+statistics via reflection that degrades to `render_available=false`).
 
 Shipped in Connector `0.0.93` + CLI `v0.2.4` (tags `connector-0.0.93`,
 `v0.2.4`):
