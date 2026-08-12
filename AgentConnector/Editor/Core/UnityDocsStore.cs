@@ -321,8 +321,6 @@ namespace HeraAgent
         static IEnumerable<string> DocsFileNames(string docsVersion)
         {
             yield return "unity_docs_" + docsVersion + ".jsonl.gz.bytes";
-            if (docsVersion == UnityVersionCompat.Docs6000_0)
-                yield return "unity_docs_6.0.jsonl.gz.bytes";
         }
 
         static string DocsAssetSearch(string fileName)

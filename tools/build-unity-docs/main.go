@@ -49,7 +49,7 @@ func main() {
 	out := flag.String("out", "",
 		"Output JSONL path (e.g. AgentConnector/Editor/Data/unity_docs_6.0.jsonl).")
 	unityVersion := flag.String("unity-version", "",
-		"Unity version label to write into every entry (e.g. 2022.3, 2023.2, 6000.5). If empty, parse per page.")
+		"Unity version label to write into every entry (e.g. 6000.0, 6000.3, 6000.5). If empty, parse per page.")
 	flag.Parse()
 
 	if *in == "" || *out == "" {

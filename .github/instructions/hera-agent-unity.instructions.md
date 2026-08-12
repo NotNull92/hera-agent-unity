@@ -39,6 +39,6 @@ Use Ultra for requests like "play it and confirm", "match the UI", "check the In
 
 - Add `.meta` files with new Unity assets or scripts under `AgentConnector`.
 - Watch for C# name conflicts: `Object`, `PackageInfo`, `Random`, `Debug`.
-- Keep connector code compatible with Unity 2022.3+, 2023.2, 6000.0, 6000.3, and 6000.5+.
+- Keep connector code compatible with Unity 6+ (6000.0, 6000.3, and 6000.5+ buckets).
 - Use `UnityVersionCompat` for version-specific docs and API behavior.
 - Do not return Unity objects directly from `exec`; return primitive fields or IDs.

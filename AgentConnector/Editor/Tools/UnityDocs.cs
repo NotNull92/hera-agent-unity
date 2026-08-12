@@ -69,8 +69,6 @@ namespace HeraAgent.Tools
                 var entryUnityVersion = string.IsNullOrEmpty(entry.unity_version)
                     ? loadedDocsVersion
                     : entry.unity_version;
-                if (entryUnityVersion == "6.0" && loadedDocsVersion == UnityVersionCompat.Docs6000_0)
-                    entryUnityVersion = loadedDocsVersion;
 
                 return new SuccessResponse(
                     $"unity_docs: {entry.title ?? key}",

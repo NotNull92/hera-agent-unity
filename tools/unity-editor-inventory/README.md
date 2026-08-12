@@ -20,7 +20,7 @@ Scan a custom version list:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools/unity-editor-inventory/inventory-unity-editors.ps1 `
-  -Versions 2022.3.62f2,2023.2.22f1,6000.0.35f1,6000.3.5f2,6000.5.6f1
+  -Versions 6000.0.35f1,6000.3.5f2,6000.5.6f1
 ```
 
 The output is intentionally focused on paths consumed by Hera code:

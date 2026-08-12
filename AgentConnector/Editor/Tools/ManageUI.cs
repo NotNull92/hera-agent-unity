@@ -355,10 +355,8 @@ namespace HeraAgent.Tools
         {
 #if UNITY_6000_5_OR_NEWER
             var existing = Object.FindAnyObjectByType<Canvas>();
-#elif UNITY_2023_1_OR_NEWER
-            var existing = Object.FindFirstObjectByType<Canvas>();
 #else
-            var existing = Object.FindObjectOfType<Canvas>();
+            var existing = Object.FindFirstObjectByType<Canvas>();
 #endif
             if (existing != null) return (existing.gameObject, null);
             return CreateCanvas("Canvas", created);

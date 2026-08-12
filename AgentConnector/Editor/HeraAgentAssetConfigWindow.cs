@@ -430,13 +430,12 @@ namespace HeraAgent.Editor
 
         /// <summary>
         /// Returns the minimum recommended .NET SDK version for the current Unity Editor.
-        /// Unity 6 (6000.x) recommends .NET 8+; Unity 2022+ recommends .NET 6+.
+        /// Unity 6 (6000.x) recommends .NET 8+.
         /// </summary>
         private static Version GetMinimumRecommendedSdkVersion()
         {
             var uv = Application.unityVersion ?? "";
             if (uv.StartsWith("6000.")) return new Version(8, 0);
-            if (uv.StartsWith("2022.") || uv.StartsWith("2023.")) return new Version(6, 0);
             return new Version(0, 0);
         }
 

@@ -152,19 +152,16 @@ namespace HeraAgent
                     "Coroutines"),
                 new PitfallEntry(
                     "Unity 6 exposes MonoBehaviour.destroyCancellationToken. Pass it to async methods so they cancel automatically when the component is destroyed — prefer this over manual CancellationTokenSource bookkeeping.",
-                    "class-Awaitable",
-                    UnityVersionCompat.Docs6000_0),
+                    "class-Awaitable"),
             },
             ["UnityEngine.Awaitable"] = new[]
             {
                 new PitfallEntry(
                     "Awaitable is Unity 6's main-thread-aware async primitive — Awaitable.NextFrameAsync(), Awaitable.WaitForSecondsAsync(), Awaitable.MainThreadAsync(). Composes with destroyCancellationToken for auto-cancel on destruction.",
-                    "class-Awaitable",
-                    UnityVersionCompat.Docs6000_0),
+                    "class-Awaitable"),
                 new PitfallEntry(
                     "Awaitable.FromAsyncOperation wraps an AsyncOperation (e.g. SceneManager.LoadSceneAsync) into an awaitable. The recommended pattern for await-based scene/asset loading in Unity 6.",
-                    "class-Awaitable",
-                    UnityVersionCompat.Docs6000_0),
+                    "class-Awaitable"),
             },
             ["UnityEngine.WaitForSeconds"] = new[]
             {

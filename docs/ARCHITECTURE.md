@@ -128,8 +128,8 @@ Unity's script compilation / domain reload resets static variables and instances
   "projectPath": "/Users/admin/Unity/MyProject",
   "port": 8090,
   "pid": 12345,
-  "unityVersion": "2022.3.45f1",
-  "docsVersion": "2022.3",
+  "unityVersion": "6000.3.5f2",
+  "docsVersion": "6000.3",
   "compiler": {
     "cscPath": "/Unity/Editor/Data/DotNetSdkRoslyn/csc.dll",
     "cscKind": "unity_dotnet_sdk_roslyn",

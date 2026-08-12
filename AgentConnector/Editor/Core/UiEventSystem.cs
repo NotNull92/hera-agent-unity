@@ -86,10 +86,8 @@ namespace HeraAgent
         {
 #if UNITY_6000_5_OR_NEWER
             return Object.FindAnyObjectByType(eventSystemType) as Component;
-#elif UNITY_2023_1_OR_NEWER
-            return Object.FindFirstObjectByType(eventSystemType) as Component;
 #else
-            return Object.FindObjectOfType(eventSystemType) as Component;
+            return Object.FindFirstObjectByType(eventSystemType) as Component;
 #endif
         }
 

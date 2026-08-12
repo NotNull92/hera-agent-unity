@@ -323,10 +323,8 @@ namespace HeraAgent.Tools
             {
 #if UNITY_6000_5_OR_NEWER
                 camera = UnityEngine.Object.FindAnyObjectByType<Camera>();
-#elif UNITY_2023_1_OR_NEWER
-                camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
 #else
-                camera = UnityEngine.Object.FindObjectOfType<Camera>();
+                camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
 #endif
                 if (!camera)
                     return new ErrorResponse("CAMERA_NOT_FOUND", "No camera found in scene.");

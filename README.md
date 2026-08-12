@@ -8,7 +8,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/NotNull92/hera-agent-unity?style=flat-square&logo=github&label=stars&color=181717)](https://github.com/NotNull92/hera-agent-unity/stargazers)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go](https://img.shields.io/badge/go-%5E1.25-00ADD8?style=flat-square&logo=go)](https://go.dev)
-[![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
+[![Unity](https://img.shields.io/badge/unity-6000.0%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
 # hera-agent-unity
@@ -237,15 +237,13 @@ Measured low-token baselines for `list --compact` are **about 93 estimated token
 
 ### Compatibility is checked across Unity generations
 
-The current Connector source is **0.0.86** and the current CLI release is **v0.2.0**. The Connector's exact source passed the release compile gate in these representative Editors:
+Supported Unity versions are Unity 6+ (`6000.0` minimum), split into three compatibility buckets by compiler/API boundary. The release compile gate runs the Connector's exact source in a representative Editor per bucket:
 
-| Unity Editor | Result |
-|:---|:---:|
-| 2022.3.62f2 | PASS |
-| 2023.2.22f1 | PASS |
-| 6000.0.35f1 | PASS |
-| 6000.3.5f2 | PASS |
-| 6000.5.6f1 | PASS |
+| Bucket | Representative Editor | Last full-gate result |
+|:---|:---|:---:|
+| 6000.0 - 6000.2 | 6000.0.35f1 | PASS |
+| 6000.3 - 6000.4 | 6000.3.5f2 | PASS |
+| 6000.5+ | 6000.5.6f1 | PASS |
 
 CLI and Connector versions are intentionally separate.
 
@@ -674,11 +672,10 @@ A long Test Runner job can outlive a normal request window. Hera stores durable 
 
 | Unity version | Status | Representative verification |
 |:---|:---|:---|
-| 2022.3 LTS | Supported | `2022.3.62f2` |
-| 2023.2 | Supported | `2023.2.22f1` |
-| 6000.0 - 6000.4 | Supported | Unity 6 compatibility buckets |
+| 6000.0 - 6000.2 | Supported | `6000.0.35f1` |
+| 6000.3 - 6000.4 | Supported | `6000.3.5f2` |
 | 6000.5+ | Supported | `6000.5.6f1` release gate |
-| Older than 2022.3 | Not supported | Minimum is Unity 2022.3 |
+| Older than 6000.0 | Not supported | Minimum is Unity 6 (6000.0) |
 
 Version-specific behavior is checked against live Editors rather than assumed from one Unity version.
 

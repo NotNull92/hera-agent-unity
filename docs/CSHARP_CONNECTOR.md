@@ -383,8 +383,8 @@ Certain operations force a temporary state to prevent the CLI from seeing premat
   "projectPath": "/Users/admin/Unity/MyProject",
   "port": 8090,
   "pid": 12345,
-  "unityVersion": "2022.3.45f1",
-  "docsVersion": "2022.3",
+  "unityVersion": "6000.3.5f2",
+  "docsVersion": "6000.3",
   "compiler": { "cscKind": "unity_dotnet_sdk_roslyn", "dotnetKind": "unity_netcore_runtime" },
   "timestamp": 1714372800000,
   "compileErrors": false

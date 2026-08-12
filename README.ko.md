@@ -8,7 +8,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/NotNull92/hera-agent-unity?style=flat-square&logo=github&label=stars&color=181717)](https://github.com/NotNull92/hera-agent-unity/stargazers)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go](https://img.shields.io/badge/go-%5E1.25-00ADD8?style=flat-square&logo=go)](https://go.dev)
-[![Unity](https://img.shields.io/badge/unity-2022.3%2B-000000?style=flat-square&logo=unity)](https://unity.com)
+[![Unity](https://img.shields.io/badge/unity-6000.0%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
 # hera-agent-unity
@@ -239,15 +239,13 @@ Hera는 "AI니까 알아서 잘합니다" 같은 모호한 표현 대신 저장�
 
 ### 여러 Unity 세대에서 패키지 컴파일을 확인합니다
 
-현재 Connector 소스는 **0.0.86**, CLI 릴리스는 **v0.2.0**입니다. Connector의 동일 소스가 다음 대표 Editor에서 릴리스 컴파일 게이트를 통과했습니다.
+지원 Unity 버전은 Unity 6+ (최소 `6000.0`)이며, 컴파일러/API 경계 기준 세 개의 호환 bucket으로 나눕니다. 릴리스 컴파일 게이트는 bucket별 대표 Editor에서 Connector의 동일 소스를 실행합니다.
 
-| Unity Editor | 결과 |
-|:---|:---:|
-| 2022.3.62f2 | PASS |
-| 2023.2.22f1 | PASS |
-| 6000.0.35f1 | PASS |
-| 6000.3.5f2 | PASS |
-| 6000.5.6f1 | PASS |
+| Bucket | 대표 Editor | 최근 전체 게이트 결과 |
+|:---|:---|:---:|
+| 6000.0 - 6000.2 | 6000.0.35f1 | PASS |
+| 6000.3 - 6000.4 | 6000.3.5f2 | PASS |
+| 6000.5+ | 6000.5.6f1 | PASS |
 
 CLI 버전과 Connector 버전은 의도적으로 따로 관리합니다.
 
@@ -678,11 +676,10 @@ Test Runner가 오래 걸리면 실행 상태를 파일에 남기므로 AI가 �
 
 | Unity 버전 | 상태 | 대표 검증 |
 |:---|:---|:---|
-| 2022.3 LTS | 지원 | `2022.3.62f2` |
-| 2023.2 | 지원 | `2023.2.22f1` |
-| 6000.0 - 6000.4 | 지원 | Unity 6 호환 bucket |
+| 6000.0 - 6000.2 | 지원 | `6000.0.35f1` |
+| 6000.3 - 6000.4 | 지원 | `6000.3.5f2` |
 | 6000.5+ | 지원 | `6000.5.6f1` 릴리스 게이트 |
-| 2022.3 미만 | 미지원 | 최소 Unity 2022.3 |
+| 6000.0 미만 | 미지원 | 최소 Unity 6 (6000.0) |
 
 버전별 동작은 Unity 한 버전을 보고 추측하지 않고 실제 대표 Editor에서 확인합니다.
 

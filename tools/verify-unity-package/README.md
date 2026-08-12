@@ -40,8 +40,6 @@ as `PASS`:
 
 ```powershell
 pwsh tools/verify-unity-package/run-compatibility-matrix.ps1 `
-  -Project2022_3 $env:HERA_UNITY_2022_3 `
-  -Project2023_2 $env:HERA_UNITY_2023_2 `
   -Project6000_0_2 $env:HERA_UNITY_6000_0_2 `
   -Project6000_3_4 $env:HERA_UNITY_6000_3_4 `
   -Project6000_5Plus $env:HERA_UNITY_6000_5_PLUS

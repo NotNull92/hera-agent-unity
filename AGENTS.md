@@ -738,11 +738,9 @@ Any change to Connector C# code, asmdefs, package dependencies, test sources, or
 supported compatibility buckets**, not only the Unity version where the bug was
 reported:
 
-1. `2022.3`
-2. `2023.2`
-3. `6000.0`–`6000.2`
-4. `6000.3`–`6000.4`
-5. `6000.5+`
+1. `6000.0`–`6000.2`
+2. `6000.3`–`6000.4`
+3. `6000.5+`
 
 Use the exact representative Editor installations recorded in
 `docs/UNITY_EDITOR_VERSION_INVENTORY.md`; update that inventory first when the

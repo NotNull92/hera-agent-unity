@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Connector 0.0.91 — Unity 6+ only)
+
+- Raised the minimum supported Unity version from `2022.3` to `6000.0`
+  (`AgentConnector/package.json` `"unity"` field). The release gate now covers
+  three buckets: `6000.0`–`6000.2`, `6000.3`–`6000.4`, and `6000.5+`.
+- Removed the `2022.3` and `2023.2` `unity_docs` bundles and the redundant
+  legacy `unity_docs_6.0` alias bundle, shrinking the shipped package by
+  about 3.5 MB. Version compatibility now selects only among the three
+  Unity 6 docs buckets, and pre-Unity 6 compile branches were collapsed.
+
 ### Added (Connector 0.0.90 — Editor selection round trip)
 
 - `manage_editor get_selection` reads the current Editor selection as

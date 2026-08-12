@@ -5,8 +5,6 @@ namespace HeraAgent
 {
     internal static class UnityVersionCompat
     {
-        public const string Docs2022_3 = "2022.3";
-        public const string Docs2023_2 = "2023.2";
         public const string Docs6000_0 = "6000.0";
         public const string Docs6000_3 = "6000.3";
         public const string Docs6000_5 = "6000.5";
@@ -22,8 +20,6 @@ namespace HeraAgent
             if (!parsed.HasValue) return Docs6000_0;
 
             var v = parsed.Value;
-            if (v.Major == 2022) return Docs2022_3;
-            if (v.Major == 2023) return Docs2023_2;
             if (v.Major == 6000)
             {
                 if (v.Minor >= 5) return Docs6000_5;
@@ -41,8 +37,6 @@ namespace HeraAgent
 
         private static int DocsVersionRank(string docsVersion)
         {
-            if (docsVersion == Docs2022_3) return 202203;
-            if (docsVersion == Docs2023_2) return 202302;
             if (docsVersion == Docs6000_0) return 600000;
             if (docsVersion == Docs6000_3) return 600003;
             if (docsVersion == Docs6000_5) return 600005;

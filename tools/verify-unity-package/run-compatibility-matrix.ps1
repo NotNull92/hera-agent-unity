@@ -1,6 +1,4 @@
 param(
-    [string]$Project2022_3,
-    [string]$Project2023_2,
     [string]$Project6000_0_2,
     [string]$Project6000_3_4,
     [string]$Project6000_5Plus,
@@ -23,8 +21,6 @@ $runtimeScript = Join-Path $PSScriptRoot "run-package-tests.ps1"
 $pwsh = (Get-Command pwsh -ErrorAction Stop).Source
 
 $buckets = [ordered]@{
-    "2022.3" = $Project2022_3
-    "2023.2" = $Project2023_2
     "6000.0-6000.2" = $Project6000_0_2
     "6000.3-6000.4" = $Project6000_3_4
     "6000.5+" = $Project6000_5Plus

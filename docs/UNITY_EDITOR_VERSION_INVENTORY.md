@@ -7,6 +7,19 @@ version-specific accuracy. Regenerate the table with:
 powershell -ExecutionPolicy Bypass -File tools/unity-editor-inventory/inventory-unity-editors.ps1
 ```
 
+## Supported release-gate buckets
+
+Hera targets Unity 6+ (`6000.0` minimum). The release gate covers three
+buckets; representative Editors below. `2022.3.62f2` and `2023.2.22f1` remain
+in the inventory as historical rows only — they are outside the supported
+range.
+
+| Bucket | Representative |
+|---|---|
+| `6000.0`–`6000.2` | `6000.0.35f1` |
+| `6000.3`–`6000.4` | `6000.3.5f2` |
+| `6000.5+` | `6000.5.6f1` |
+
 ## Current Inventory
 
 Path token: `%UNITY_HUB_EDITOR%`
