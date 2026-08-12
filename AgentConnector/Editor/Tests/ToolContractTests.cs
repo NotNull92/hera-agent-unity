@@ -1665,6 +1665,12 @@ namespace HeraAgent.Tests
                 ["action"] = "close",
                 ["path"] = "Assets/Test.unity",
             });
+            yield return ("scene", "hierarchy", new JObject
+            {
+                ["action"] = "hierarchy",
+                ["depth"] = 2,
+                ["max_nodes"] = 50,
+            });
 
             yield return ("manage_gameobject", "create", new JObject { ["action"] = "create" });
             foreach (var action in new[] { "destroy", "duplicate", "set_parent", "get_transform" })

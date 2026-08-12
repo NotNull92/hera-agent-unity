@@ -265,12 +265,17 @@ hera-agent-unity scene <action> [target] [flags]
 | `save [<path\|name>]` | Save the active scene, or a named loaded scene if specified. |
 | `list` | List scenes registered in Build Settings. |
 | `close <path\|name>` | Unload a loaded scene. Cannot close the only loaded scene. |
+| `hierarchy` | Dump the GameObject tree of every loaded scene (or one subtree) as nested nodes with instance_id, name, and active state. |
 
 ### Flags
 
 | Flag | Description | Default | Applies to |
 |:---|:---|:---|:---|
 | `--mode` | `single`, `additive`, or `additive_without_loading` | `single` | `load` |
+| `--root` | Scope the dump to one subtree (instance_id or hierarchy path) | all loaded scenes | `hierarchy` |
+| `--depth` | Limit tree depth; `0` = unlimited | `0` | `hierarchy` |
+| `--max_nodes` | Node budget; the result reports `truncated=true` when hit | `500` (cap 5000) | `hierarchy` |
+| `--components` | Include short component type names per node | off | `hierarchy` |
 
 ### Examples
 
@@ -281,6 +286,8 @@ hera-agent-unity scene load Main --mode additive
 hera-agent-unity scene save
 hera-agent-unity scene close Lobby
 hera-agent-unity scene list
+hera-agent-unity scene hierarchy --depth 2
+hera-agent-unity scene hierarchy --root /GameCanvas --components
 ```
 
 **Notes**:

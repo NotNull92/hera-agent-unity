@@ -10,7 +10,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "scene",
-        Description = "Scene operations: info, load, save, list, close.",
+        Description = "Scene operations: info, load, save, list, close, hierarchy (bounded GameObject tree dump).",
         Profiles = new[] { "core", "scene" },
         RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
@@ -53,6 +53,25 @@ namespace HeraAgent.Tools
                 Required = true,
                 Aliases = new[] { "name", "target" })]
             public string Path { get; set; }
+        }
+
+        public sealed class HierarchyParameters
+        {
+            [ToolParameter("Root to scope the dump: instance_id integer or hierarchy path. Omit for every loaded scene.")]
+            public string Root { get; set; }
+
+            [ToolParameter(
+                "Maximum tree depth below each root. 0 (default) = unlimited.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":0}")]
+            public int Depth { get; set; }
+
+            [ToolParameter(
+                "Maximum nodes in the result (default 500, cap 5000). The result reports truncated=true when hit.",
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":5000}")]
+            public int MaxNodes { get; set; }
+
+            [ToolParameter("Include each node's short component type names.")]
+            public bool Components { get; set; }
         }
 
         public sealed class InfoResult
@@ -106,7 +125,7 @@ namespace HeraAgent.Tools
 
         public class Parameters
         {
-            [ToolParameter("Action: info, load, save, list, close", Required = true)]
+            [ToolParameter("Action: info, load, save, list, close, hierarchy", Required = true)]
             public string Action { get; set; }
 
             [ToolParameter("Scene path or name (used by load, save, close)")]
@@ -141,6 +160,110 @@ namespace HeraAgent.Tools
                 active = new { name = active.name, path = active.path, isDirty = active.isDirty },
                 loaded = loaded,
             });
+        }
+
+        // Tree nodes self-reference (children), which the compiled-schema
+        // generator cannot express, so this action keeps a generic output.
+        [HeraAction(
+            ParametersType = typeof(HierarchyParameters),
+            RiskClass = HeraRiskClass.ReadOnly)]
+        public static object Hierarchy(JObject raw)
+        {
+            var p = new ToolParams(raw);
+            int depth = p.GetInt("depth") ?? 0;
+            int maxNodes = Math.Min(Math.Max(p.GetInt("max_nodes") ?? 500, 1), 5000);
+            bool includeComponents = p.GetBool("components");
+            var budget = new NodeBudget { Remaining = maxNodes };
+
+            string root = p.Get("root");
+            if (!string.IsNullOrEmpty(root))
+            {
+                var (t, err) = TargetResolver.ResolveTransform(root);
+                if (t == null)
+                    return err ?? new ErrorResponse("TARGET_NOT_FOUND", $"No GameObject for root '{root}'.");
+                var node = BuildNode(t, depth, 1, includeComponents, budget);
+                return new SuccessResponse(
+                    $"{maxNodes - budget.Remaining} node(s){(budget.Truncated ? " (truncated)" : "")}.",
+                    new { root = node, node_count = maxNodes - budget.Remaining, truncated = budget.Truncated });
+            }
+
+            var scenes = new List<object>();
+            var active = SceneManager.GetActiveScene();
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                var s = SceneManager.GetSceneAt(i);
+                if (!s.isLoaded) continue;
+                var roots = new List<object>();
+                foreach (var go in s.GetRootGameObjects())
+                {
+                    if (budget.Remaining <= 0) { budget.Truncated = true; break; }
+                    roots.Add(BuildNode(go.transform, depth, 1, includeComponents, budget));
+                }
+                scenes.Add(new
+                {
+                    name = s.name,
+                    path = s.path,
+                    is_active = s == active,
+                    is_dirty = s.isDirty,
+                    roots,
+                });
+            }
+            return new SuccessResponse(
+                $"{maxNodes - budget.Remaining} node(s) across {scenes.Count} scene(s){(budget.Truncated ? " (truncated)" : "")}.",
+                new { scenes, node_count = maxNodes - budget.Remaining, truncated = budget.Truncated });
+        }
+
+        private sealed class NodeBudget
+        {
+            public int Remaining;
+            public bool Truncated;
+        }
+
+        private static object BuildNode(
+            UnityEngine.Transform t, int maxDepth, int currentDepth, bool includeComponents, NodeBudget budget)
+        {
+            budget.Remaining--;
+            var go = t.gameObject;
+
+            string[] componentNames = null;
+            if (includeComponents)
+            {
+                var comps = go.GetComponents<UnityEngine.Component>();
+                componentNames = new string[comps.Length];
+                for (int i = 0; i < comps.Length; i++)
+                    componentNames[i] = comps[i] == null ? "(missing)" : comps[i].GetType().Name;
+            }
+
+            // A depth cut is the caller's request, not truncation; only the
+            // node budget sets the truncated flag.
+            var children = new List<object>();
+            if (maxDepth == 0 || currentDepth < maxDepth)
+            {
+                for (int i = 0; i < t.childCount; i++)
+                {
+                    if (budget.Remaining <= 0) { budget.Truncated = true; break; }
+                    children.Add(BuildNode(t.GetChild(i), maxDepth, currentDepth + 1, includeComponents, budget));
+                }
+            }
+
+            if (includeComponents)
+            {
+                return new
+                {
+                    instance_id = EntityIdCompat.IdOf(go),
+                    name = go.name,
+                    active = go.activeSelf,
+                    components = componentNames,
+                    children,
+                };
+            }
+            return new
+            {
+                instance_id = EntityIdCompat.IdOf(go),
+                name = go.name,
+                active = go.activeSelf,
+                children,
+            };
         }
 
         [HeraAction(

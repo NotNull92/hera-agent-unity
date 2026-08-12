@@ -6,6 +6,11 @@ Actions:
   save [<path|name>]            Save the active scene, or a named loaded scene
   list                          List scenes registered in Build Settings
   close <path|name>             Unload a loaded scene (cannot close the only one)
+  hierarchy [options]           Dump the GameObject tree of the loaded scenes
+    --root <id|path>            Scope to one subtree (instance_id or hierarchy path)
+    --depth N                   Limit tree depth (0 = unlimited)
+    --max_nodes N               Node budget, default 500, cap 5000 (truncated=true when hit)
+    --components                Include short component type names per node
 
 Target resolution:
   Accepts an asset path (Assets/.../Foo.unity) or a bare scene name.
@@ -17,6 +22,8 @@ Examples:
   hera-agent-unity scene load Main --mode additive
   hera-agent-unity scene save
   hera-agent-unity scene close Lobby
+  hera-agent-unity scene hierarchy --depth 2
+  hera-agent-unity scene hierarchy --root /GameCanvas --components
 
 Notes:
   - load --mode single fails if the active scene has unsaved changes.

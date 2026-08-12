@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI and Connector 0.0.92 — scene tree in one call)
+
+- `scene hierarchy` dumps the GameObject tree of every loaded scene — or one
+  subtree via `--root <instance_id|path>` — as nested nodes carrying
+  instance_id, name, and active state, with optional `--components` short
+  type names. `--depth` limits levels and `--max_nodes` (default 500, cap
+  5000) bounds the payload, reporting `truncated=true` when the budget is
+  hit. Replaces the multi-query round trips previously needed to reconstruct
+  scene structure from `find_gameobjects`.
+
 ### Changed (Connector 0.0.91 — Unity 6+ only)
 
 - Raised the minimum supported Unity version from `2022.3` to `6000.0`

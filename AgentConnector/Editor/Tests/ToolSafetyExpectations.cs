@@ -52,6 +52,7 @@ namespace HeraAgent.Tests
                 ["menu/list"] = HeraRiskClass.ReadOnly,
                 ["profiler/hierarchy"] = HeraRiskClass.ReadOnly,
                 ["profiler/status"] = HeraRiskClass.ReadOnly,
+                ["scene/hierarchy"] = HeraRiskClass.ReadOnly,
                 ["scene/info"] = HeraRiskClass.ReadOnly,
                 ["scene/list"] = HeraRiskClass.ReadOnly,
                 ["input/click"] = HeraRiskClass.Write,

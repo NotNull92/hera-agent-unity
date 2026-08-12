@@ -590,7 +590,7 @@ hera-agent-unity ui_slop box-in-box
 | `list --compact` | 기본/프로젝트 전용 Tool을 작은 응답으로 발견 |
 | `call <tool>` | 현재 Tool 규격을 검증하고 안전하게 호출 |
 | `console` | 실제 Unity Console 읽기/초기화 |
-| `scene` | Scene 조회, 열기, 저장, 목록, 닫기 |
+| `scene` | Scene 조회, 열기, 저장, 목록, 닫기, GameObject 트리 덤프 |
 | `find_gameobjects` | 열린 Scene의 GameObject 검색 |
 | `manage_gameobject` | GameObject 생성과 편집 |
 | `manage_components` | Component 조회, 추가, 제거, 수정 |

@@ -586,7 +586,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `list --compact` | Discover available built-in and project-specific tools cheaply. |
 | `call <tool>` | Validate a strict live tool contract, then call it. |
 | `console` | Read or clear the real Unity Console. |
-| `scene` | Inspect, load, save, list, or close Scenes. |
+| `scene` | Inspect, load, save, list, or close Scenes; dump the GameObject tree. |
 | `find_gameobjects` | Search the loaded Scene hierarchy. |
 | `manage_gameobject` | Create and edit GameObjects. |
 | `manage_components` | Read, add, remove, or modify Components. |
