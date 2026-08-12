@@ -16,9 +16,13 @@ Shipped in Connector `0.0.94` (tag `connector-0.0.94`):
   (parameters, layers, states, transitions with conditions). Live-verified on
   `6000.3.5f2` with a full authoring round trip on disposable assets.
 
-Open before wave 1b: run the three-bucket gate once covering
-`0.0.92`–`0.0.94` (all three are version-agnostic C#; `0.0.93` reads render
-statistics via reflection that degrades to `render_available=false`).
+The three-bucket gate PASSED for `0.0.92`–`0.0.94` in one pass (2026-08-12):
+`6000.0.35f1` and `6000.5.6f1` in Library-reset disposable fixtures with
+functional smokes (hierarchy, stats with `render_available=true` in every
+bucket, animation round trip), `6000.3.5f2` covered by per-item live
+verification. Evidence in `docs/UNITY_EDITOR_VERSION_INVENTORY.md`. No
+verification debt remains; wave 1b (ObjectRef multi-strategy resolution) is
+unblocked.
 
 Shipped in Connector `0.0.93` + CLI `v0.2.4` (tags `connector-0.0.93`,
 `v0.2.4`):

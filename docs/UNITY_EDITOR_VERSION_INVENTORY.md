@@ -55,6 +55,27 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 
 ## Completed Checks
 
+### Connector 0.0.94 three-bucket gate (covers 0.0.92–0.0.94, 2026-08-12)
+
+Exact working-tree source at `connector-0.0.94` installed as a `file:` UPM
+dependency into Library-reset disposable fixtures; the `6000.3`–`6000.4`
+bucket was covered by per-item live verification on the connected project.
+Each bucket reached `ready`, reported zero console errors, discovered 30
+tools, produced no `HeraAgent.Editor.Tests` assembly, and kept zero
+`Editor/Tests` sources in the `HeraAgent.Editor` response file. Functional
+smokes per bucket: `scene hierarchy --components` returned the fixture tree,
+`profiler stats` read render statistics (`render_available=true` in every
+bucket, so the reflected render surface exists on 6000.0 and 6000.5 too), and
+a `manage_animation` create → `get_clip` → delete round trip preserved frame
+rate and loop. On `6000.5.6f1` the `manage_editor` selection round trip was
+re-exercised.
+
+| Bucket | Representative | Fixture | Status |
+|---|---|---|---|
+| `6000.0`–`6000.2` | `6000.0.35f1` | `Test6.0.35f1` | PASS |
+| `6000.3`–`6000.4` | `6000.3.5f2` | live project (per-item) | PASS |
+| `6000.5+` | `6000.5.6f1` | `test6.5` | PASS |
+
 ### Connector 0.0.91 three-bucket gate (covers 0.0.90 + 0.0.91, 2026-08-12)
 
 Exact working-tree source at `connector-0.0.91` installed as a `file:` UPM
