@@ -7,7 +7,7 @@ using UnityEditorInternal;
 namespace HeraAgent.Tools
 {
     [HeraTool(
-        Description = "Controls Unity editor state. Actions: play, stop, pause, set_active_tool, add_tag, remove_tag, add_layer, remove_layer.",
+        Description = "Controls Unity editor state. Actions: play, stop, pause, set_active_tool, add_tag, remove_tag, add_layer, remove_layer, get_selection, set_selection.",
         Profiles = new[] { "core", "testing" },
         RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
@@ -19,6 +19,8 @@ namespace HeraAgent.Tools
     [HeraActionContract("remove_tag", typeof(ManageEditor.TagParameters), RiskClass = HeraRiskClass.Destructive)]
     [HeraActionContract("add_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("remove_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Destructive)]
+    [HeraActionContract("get_selection", typeof(ManageEditor.EmptyParameters), ResultType = typeof(ManageEditor.SelectionResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("set_selection", typeof(ManageEditor.SetSelectionParameters), ResultType = typeof(ManageEditor.SetSelectionResult), RiskClass = HeraRiskClass.Write)]
     public static class ManageEditor
     {
         private const int FirstUserLayerIndex = 8;
@@ -49,12 +51,42 @@ namespace HeraAgent.Tools
             public string LayerName { get; set; }
         }
 
+        public sealed class SetSelectionParameters
+        {
+            [ToolParameter(
+                "Objects to select. Each entry is an instance_id integer, a scene hierarchy path, or an Assets/ asset path. An empty array clears the selection.",
+                Required = true,
+                SchemaJson = "{\"type\":\"array\",\"items\":{\"type\":\"string\"}}")]
+            public string[] Targets { get; set; }
+        }
+
+        public sealed class SelectionEntry
+        {
+            public int InstanceId { get; set; }
+            public string Name { get; set; }
+            public string Kind { get; set; }
+            public string Path { get; set; }
+            public string Type { get; set; }
+        }
+
+        public sealed class SelectionResult
+        {
+            public int Count { get; set; }
+            public int ActiveInstanceId { get; set; }
+            public SelectionEntry[] Objects { get; set; }
+        }
+
+        public sealed class SetSelectionResult
+        {
+            public int Count { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter(
                 "Action to perform.",
                 Required = true,
-                SchemaJson = "{\"type\":\"string\",\"enum\":[\"play\",\"stop\",\"pause\",\"set_active_tool\",\"add_tag\",\"remove_tag\",\"add_layer\",\"remove_layer\"]}")]
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"play\",\"stop\",\"pause\",\"set_active_tool\",\"add_tag\",\"remove_tag\",\"add_layer\",\"remove_layer\",\"get_selection\",\"set_selection\"]}")]
             public string Action { get; set; }
 
             [ToolParameter("Tool name (required for set_active_tool action)")]
@@ -65,6 +97,9 @@ namespace HeraAgent.Tools
 
             [ToolParameter("Layer name (required for add_layer/remove_layer actions)")]
             public string LayerName { get; set; }
+
+            [ToolParameter("Selection targets (required for set_selection action)")]
+            public string[] Targets { get; set; }
         }
 
         // Play/stop transitions trigger a domain reload that stops the HTTP
@@ -142,9 +177,94 @@ namespace HeraAgent.Tools
                 case "remove_layer":
                     return ManageLayer(action, p);
 
+                case "get_selection":
+                    return GetSelection();
+
+                case "set_selection":
+                    return SetSelection(p);
+
                 default:
                     return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action: '{action}'.");
             }
+        }
+
+        private static object GetSelection()
+        {
+            var objects = Selection.objects;
+            var entries = new SelectionEntry[objects.Length];
+            for (int i = 0; i < objects.Length; i++)
+            {
+                var obj = objects[i];
+                bool isAsset = EditorUtility.IsPersistent(obj);
+                string path = null;
+                if (isAsset)
+                {
+                    path = AssetDatabase.GetAssetPath(obj);
+                }
+                else
+                {
+                    var t = (obj as UnityEngine.GameObject)?.transform ?? (obj as UnityEngine.Component)?.transform;
+                    if (t != null) path = HierarchyPath.Build(t);
+                }
+                entries[i] = new SelectionEntry
+                {
+                    InstanceId = EntityIdCompat.IdOf(obj),
+                    Name = obj.name,
+                    Kind = isAsset ? "asset" : "scene",
+                    Path = path,
+                    Type = obj.GetType().Name,
+                };
+            }
+            return new SuccessResponse(
+                $"{entries.Length} object(s) selected.",
+                new SelectionResult
+                {
+                    Count = entries.Length,
+                    ActiveInstanceId = Selection.activeObject == null ? 0 : EntityIdCompat.IdOf(Selection.activeObject),
+                    Objects = entries,
+                });
+        }
+
+        private static object SetSelection(ToolParams p)
+        {
+            var raw = p.GetRaw("targets");
+            if (raw == null || raw.Type != JTokenType.Array)
+                return new ErrorResponse("MISSING_PARAM", "'targets' parameter required (array; empty clears the selection).");
+
+            var targets = (JArray)raw;
+            var resolved = new UnityEngine.Object[targets.Count];
+            for (int i = 0; i < targets.Count; i++)
+            {
+                string target = targets[i]?.ToString();
+                if (string.IsNullOrEmpty(target))
+                    return new ErrorResponse("INVALID_PARAM", $"targets[{i}] is empty.");
+
+                UnityEngine.Object obj;
+                if (int.TryParse(target, out var id))
+                {
+                    obj = EntityIdCompat.ToObject(id);
+                    if (obj == null)
+                        return new ErrorResponse("OBJECT_NOT_FOUND", $"targets[{i}]: no object for instance_id={id}.");
+                }
+                else if (target.StartsWith("Assets/", StringComparison.Ordinal))
+                {
+                    obj = AssetDatabase.LoadMainAssetAtPath(target);
+                    if (obj == null)
+                        return new ErrorResponse("OBJECT_NOT_FOUND", $"targets[{i}]: no asset at '{target}'.");
+                }
+                else
+                {
+                    obj = HierarchyPath.Find(target);
+                    if (obj == null)
+                        return new ErrorResponse("TARGET_NOT_FOUND", $"targets[{i}]: no GameObject at path '{target}'.");
+                }
+                resolved[i] = obj;
+            }
+
+            Selection.objects = resolved;
+            return new SuccessResponse(
+                resolved.Length == 0 ? "Selection cleared." : $"Selected {resolved.Length} object(s).",
+                new SetSelectionResult { Count = resolved.Length });
         }
 
         private static object ManageLayer(string action, ToolParams p)

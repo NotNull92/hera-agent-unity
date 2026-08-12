@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.90 — Editor selection round trip)
+
+- `manage_editor get_selection` reads the current Editor selection as
+  structured identities (instance_id, name, scene/asset kind, hierarchy or
+  asset path, type) plus the active object, so an agent can act on "what I
+  have selected" without asking for names. `manage_editor set_selection`
+  selects a mixed list of instance ids, hierarchy paths, and Assets/ paths
+  (all-or-nothing resolution); an empty list clears the selection so
+  captures are free of selection outlines.
+
+### Fixed (Connector 0.0.90 — instance_id round trip on Unity 6000.3+)
+
+- `EntityIdCompat.IdOf` returned a value that `ToObject` could not resolve on
+  Unity 6000.3.5f2: `EntityId.GetHashCode()` is not the id value there
+  (measured live: entity id 104194 hashed to 65781870), which broke every
+  instance_id-based flow — `find_gameobjects` ids, `manage_components`
+  lookups, and target resolution. The id is now read through Unity's own
+  EntityId → int conversion operator, bound once per domain via reflection so
+  no compiler on any supported version sees a deprecated conversion.
+
 ### Removed (CLI source and Connector 0.0.89)
 
 - Removed the last UI Toolkit-only `ui_slop` tell and all UITK repair text from

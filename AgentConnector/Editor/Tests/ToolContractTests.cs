@@ -1744,6 +1744,12 @@ namespace HeraAgent.Tests
                     ["layer_name"] = "HeraTest",
                 });
             }
+            yield return ("manage_editor", "get_selection", new JObject { ["action"] = "get_selection" });
+            yield return ("manage_editor", "set_selection", new JObject
+            {
+                ["action"] = "set_selection",
+                ["targets"] = new JArray("/HeraTest"),
+            });
 
             yield return ("input", "state", new JObject { ["action"] = "state" });
             yield return ("input", "keyboard", new JObject
