@@ -13,13 +13,14 @@ namespace HeraAgent
     /// <remarks>
     /// On the 6000.3+ path the <see langword="int"/> ↔ <c>EntityId</c> conversions are
     /// themselves deprecated: <c>int → EntityId</c> is a warning (CS0618), but
-    /// <c>EntityId → int</c> is a hard error (CS0619) that cannot be suppressed.
-    /// We keep the existing int-based <c>instance_id</c> contract by reading the id via
-    /// <c>EntityId.GetHashCode()</c>, whose IL (<c>(uint32)m_rawData</c>) is bit-for-bit
-    /// identical to the forbidden <c>EntityId → int</c> operator, so the round-trip with
-    /// <see cref="ToObject"/> is exactly Unity's own (deprecated) operator round-trip — no
-    /// new correctness risk. The lone surviving <c>int → EntityId</c> warning is localized
-    /// and suppressed here.
+    /// <c>EntityId → int</c> cannot be written directly on every patch line.
+    /// <c>EntityId.GetHashCode()</c> is NOT a substitute: on 6000.3.5f2 it returns a
+    /// value unrelated to the id (measured live: entity id 104194 hashed to 65781870,
+    /// which <see cref="ToObject"/> then failed to resolve). We therefore invoke Unity's
+    /// own <c>EntityId → int</c> implicit operator through a cached reflected delegate —
+    /// exact operator semantics with no compile-time obsolete exposure on any version —
+    /// and fall back to <c>GetHashCode()</c> only if the operator ever disappears.
+    /// The lone surviving <c>int → EntityId</c> warning is localized and suppressed here.
     /// </remarks>
     internal static class EntityIdCompat
     {
@@ -39,11 +40,32 @@ namespace HeraAgent
         public static int IdOf(Object o)
         {
 #if UNITY_6000_3_OR_NEWER
-            // GetHashCode() == low 32 bits of the EntityId == the forbidden (int)EntityId cast.
-            return o.GetEntityId().GetHashCode();
+            var entityId = o.GetEntityId();
+            return s_EntityIdToInt != null ? s_EntityIdToInt(entityId) : entityId.GetHashCode();
 #else
             return o.GetInstanceID();
 #endif
         }
+
+#if UNITY_6000_3_OR_NEWER
+        // Unity's EntityId → int implicit operator, bound once per domain via reflection so
+        // no compiler on any 6000.x patch line sees a deprecated conversion in source.
+        private static readonly System.Func<UnityEngine.EntityId, int> s_EntityIdToInt = BindEntityIdToInt();
+
+        private static System.Func<UnityEngine.EntityId, int> BindEntityIdToInt()
+        {
+            foreach (var method in typeof(UnityEngine.EntityId).GetMethods(
+                         System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+            {
+                if (method.Name != "op_Implicit" || method.ReturnType != typeof(int))
+                    continue;
+                var parameters = method.GetParameters();
+                if (parameters.Length == 1 && parameters[0].ParameterType == typeof(UnityEngine.EntityId))
+                    return (System.Func<UnityEngine.EntityId, int>)System.Delegate.CreateDelegate(
+                        typeof(System.Func<UnityEngine.EntityId, int>), method);
+            }
+            return null;
+        }
+#endif
     }
 }
