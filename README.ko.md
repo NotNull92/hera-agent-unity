@@ -602,7 +602,7 @@ hera-agent-unity ui_slop box-in-box
 | `task` | Unity에 다시 명령하지 않고 장기 작업 상태 확인 |
 | `screenshot` | Scene/Game View, ScreenSpaceOverlay Canvas 또는 단일 오브젝트 캡처; 제한된 uGUI 또는 Camera.main 기준 3D Collider 식별자/좌표 메타데이터와 메타데이터 전용 모드 지원 |
 | `input` | EventSystem uGUI 검증 또는 Play Mode Input System 키보드/마우스/sequence 합성 및 record/replay |
-| `profiler` | Profiler hierarchy snapshot 읽기 |
+| `profiler` | Profiler hierarchy snapshot·성능 스탯 1호출 읽기 |
 | `game_feel` | Game Feel 가이드 조회 |
 | `ui_slop` | UI 정리 가이드 조회 |
 | `batch` | 여러 작업을 한 요청으로 실행 |

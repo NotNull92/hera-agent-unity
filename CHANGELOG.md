@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI and Connector 0.0.93 — performance snapshot in one call)
+
+- `profiler stats` reads render, memory, and frame statistics in a single
+  call with no profiler capture: draw calls, setPass calls, batches,
+  triangles/vertices, shadow casters, frame/render time in ms, screen
+  resolution, and allocated/reserved/mono/graphics-driver memory.
+  `render_available` reports whether render statistics could be read, so a
+  PlayMode frame-budget check is one command instead of a profiler
+  enable/capture/extract cycle.
+
 ### Added (CLI and Connector 0.0.92 — scene tree in one call)
 
 - `scene hierarchy` dumps the GameObject tree of every loaded scene — or one

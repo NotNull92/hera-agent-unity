@@ -1251,7 +1251,7 @@ namespace HeraAgent.Tests
                     == ToolContractMode.Strict)
                 && ToolContractRegistry.Get("manage_packages").Actions.Values
                     .All(action => action.IsStrict)
-                && ToolContractRegistry.Get("profiler").Actions.Count == 5
+                && ToolContractRegistry.Get("profiler").Actions.Count == 6
                 && ToolContractRegistry.Get("profiler").Actions.Values
                     .All(action => action.IsStrict));
         }

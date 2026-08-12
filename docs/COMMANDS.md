@@ -1335,6 +1335,7 @@ hera-agent-unity profiler <action> [flags]
 | `disable` | Stop profiler recording |
 | `status` | Show profiler state |
 | `clear` | Clear all captured frames |
+| `stats` | One-call render/memory/frame snapshot without a capture: draw calls, setPass calls, batches, triangles/vertices, frame/render ms, and allocated/reserved/mono/graphics memory. `render_available` reports whether render statistics could be read. |
 
 **Hierarchy flags**:
 

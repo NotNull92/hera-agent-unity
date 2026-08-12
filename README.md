@@ -598,7 +598,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `task` | Inspect durable test/package work without contacting Unity. |
 | `screenshot` | Capture Scene/Game views, ScreenSpaceOverlay canvases, or isolated objects; optionally return bounded uGUI or Camera.main-constrained 3D collider identity/coordinates, including metadata-only modes. |
 | `input` | Test uGUI, or synthesize optional Input System keyboard/mouse/sequence input and record/replay it in Play Mode. |
-| `profiler` | Read profiler hierarchy snapshots. |
+| `profiler` | Read profiler hierarchy snapshots and one-call performance stats. |
 | `game_feel` | Query game-feel guidance. |
 | `ui_slop` | Query UI cleanup guidance. |
 | `batch` | Run several operations in one request. |

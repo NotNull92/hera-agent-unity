@@ -17,8 +17,13 @@ Subcommands:
   disable               Stop profiler recording
   status                Show profiler state
   clear                 Clear all captured frames
+  stats                 One-call render/memory/frame snapshot (no capture needed):
+                        draw calls, setPass, batches, tris/verts, frame/render ms,
+                        allocated/reserved/mono/graphics memory. render_available
+                        reports whether render statistics could be read.
 
 Examples:
+  hera-agent-unity profiler stats
   hera-agent-unity profiler hierarchy --depth 3
   hera-agent-unity profiler hierarchy --root SimulationSystem --depth 3
   hera-agent-unity profiler hierarchy --frames 30 --min 0.5 --sort self

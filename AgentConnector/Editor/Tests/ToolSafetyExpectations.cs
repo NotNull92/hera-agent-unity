@@ -51,6 +51,7 @@ namespace HeraAgent.Tests
                 ["manage_ui/get_rect"] = HeraRiskClass.ReadOnly,
                 ["menu/list"] = HeraRiskClass.ReadOnly,
                 ["profiler/hierarchy"] = HeraRiskClass.ReadOnly,
+                ["profiler/stats"] = HeraRiskClass.ReadOnly,
                 ["profiler/status"] = HeraRiskClass.ReadOnly,
                 ["scene/hierarchy"] = HeraRiskClass.ReadOnly,
                 ["scene/info"] = HeraRiskClass.ReadOnly,

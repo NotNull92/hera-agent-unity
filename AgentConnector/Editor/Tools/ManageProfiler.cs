@@ -11,7 +11,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "profiler",
-        Description = "Control Unity Profiler. Actions: hierarchy, enable, disable, status, clear.",
+        Description = "Control Unity Profiler. Actions: hierarchy, enable, disable, status, clear, stats (one-call render/memory/frame snapshot, no capture needed).",
         Profiles = new[] { "diagnostics", "testing" },
         RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
@@ -28,6 +28,11 @@ namespace HeraAgent.Tools
         ResultType = typeof(ManageProfiler.StatusResult),
         RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("clear", typeof(ManageProfiler.EmptyParameters), RiskClass = HeraRiskClass.Destructive)]
+    [HeraActionContract(
+        "stats",
+        typeof(ManageProfiler.EmptyParameters),
+        ResultType = typeof(ManageProfiler.StatsResult),
+        RiskClass = HeraRiskClass.ReadOnly)]
     [HeraArgumentGroup(
         ToolArgumentGroupMode.AtMostOne,
         "frame",
@@ -123,9 +128,40 @@ namespace HeraAgent.Tools
         public sealed class Parameters : HierarchyParameters
         {
             [ToolParameter(
-                "Action: hierarchy, enable, disable, status, or clear.",
-                SchemaJson = "{\"type\":\"string\",\"enum\":[\"hierarchy\",\"enable\",\"disable\",\"status\",\"clear\"]}")]
+                "Action: hierarchy, enable, disable, status, clear, or stats.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"hierarchy\",\"enable\",\"disable\",\"status\",\"clear\",\"stats\"]}")]
             public string Action { get; set; }
+        }
+
+        public sealed class StatsRender
+        {
+            [JsonProperty("draw_calls")] public int DrawCalls { get; set; }
+            [JsonProperty("set_pass_calls")] public int SetPassCalls { get; set; }
+            [JsonProperty("batches")] public int Batches { get; set; }
+            [JsonProperty("triangles")] public long Triangles { get; set; }
+            [JsonProperty("vertices")] public long Vertices { get; set; }
+            [JsonProperty("shadow_casters")] public int ShadowCasters { get; set; }
+            [JsonProperty("frame_time_ms")] public float FrameTimeMs { get; set; }
+            [JsonProperty("render_time_ms")] public float RenderTimeMs { get; set; }
+            [JsonProperty("screen_res")] public string ScreenRes { get; set; }
+        }
+
+        public sealed class StatsMemory
+        {
+            [JsonProperty("total_allocated_bytes")] public long TotalAllocatedBytes { get; set; }
+            [JsonProperty("total_reserved_bytes")] public long TotalReservedBytes { get; set; }
+            [JsonProperty("mono_used_bytes")] public long MonoUsedBytes { get; set; }
+            [JsonProperty("mono_heap_bytes")] public long MonoHeapBytes { get; set; }
+            [JsonProperty("graphics_driver_bytes")] public long GraphicsDriverBytes { get; set; }
+        }
+
+        public sealed class StatsResult
+        {
+            [JsonProperty("is_playing")] public bool IsPlaying { get; set; }
+            [JsonProperty("render_available")] public bool RenderAvailable { get; set; }
+            [JsonProperty("render", NullValueHandling = NullValueHandling.Ignore)]
+            public StatsRender Render { get; set; }
+            [JsonProperty("memory")] public StatsMemory Memory { get; set; }
         }
 
         public sealed class StatusResult
@@ -198,9 +234,69 @@ namespace HeraAgent.Tools
                 case "clear":
                     ProfilerDriver.ClearAllFrames();
                     return new SuccessResponse("All profiler frames cleared.");
+                case "stats":
+                    return Stats();
                 default:
-                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action: '{action}'. Valid: hierarchy, enable, disable, status, clear.");
+                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action: '{action}'. Valid: hierarchy, enable, disable, status, clear, stats.");
             }
+        }
+
+        // Editor render statistics live on an internal type, so they are read
+        // through reflection bound once per domain; when that surface is absent
+        // the render section is omitted and render_available reports false.
+        // Frame/render times arrive in seconds and are converted to ms.
+        static readonly Type s_UnityStats =
+            typeof(UnityEditor.EditorApplication).Assembly.GetType("UnityEditor.UnityStats");
+
+        static object ReadStat(string property)
+        {
+            var p = s_UnityStats?.GetProperty(
+                property,
+                System.Reflection.BindingFlags.Static
+                | System.Reflection.BindingFlags.Public
+                | System.Reflection.BindingFlags.NonPublic);
+            return p?.GetValue(null);
+        }
+
+        static object Stats()
+        {
+            var memory = new StatsMemory
+            {
+                TotalAllocatedBytes = UnityEngine.Profiling.Profiler.GetTotalAllocatedMemoryLong(),
+                TotalReservedBytes = UnityEngine.Profiling.Profiler.GetTotalReservedMemoryLong(),
+                MonoUsedBytes = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong(),
+                MonoHeapBytes = UnityEngine.Profiling.Profiler.GetMonoHeapSizeLong(),
+                GraphicsDriverBytes = UnityEngine.Profiling.Profiler.GetAllocatedMemoryForGraphicsDriver(),
+            };
+
+            StatsRender render = null;
+            if (s_UnityStats != null && ReadStat("drawCalls") is int drawCalls)
+            {
+                render = new StatsRender
+                {
+                    DrawCalls = drawCalls,
+                    SetPassCalls = ReadStat("setPassCalls") as int? ?? 0,
+                    Batches = ReadStat("batches") as int? ?? 0,
+                    Triangles = ReadStat("trianglesLong") as long? ?? 0,
+                    Vertices = ReadStat("verticesLong") as long? ?? 0,
+                    ShadowCasters = ReadStat("shadowCasters") as int? ?? 0,
+                    FrameTimeMs = (ReadStat("frameTime") as float? ?? 0f) * 1000f,
+                    RenderTimeMs = (ReadStat("renderTime") as float? ?? 0f) * 1000f,
+                    ScreenRes = ReadStat("screenRes") as string,
+                };
+            }
+
+            return new SuccessResponse(
+                render == null
+                    ? "Memory stats (render statistics unavailable)."
+                    : $"{render.DrawCalls} draw calls, {render.FrameTimeMs:0.0} ms frame.",
+                new StatsResult
+                {
+                    IsPlaying = Application.isPlaying,
+                    RenderAvailable = render != null,
+                    Render = render,
+                    Memory = memory,
+                });
         }
 
         private static object Hierarchy(ToolParams p)
