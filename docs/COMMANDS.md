@@ -297,6 +297,35 @@ hera-agent-unity scene hierarchy --root /GameCanvas --components
 
 ---
 
+## manage_settings
+
+Read and change project settings by area. `set_*` applies only the fields you pass, previews with `"dry_run": true` (approval-free), reports `{applied, skipped}` with per-field reasons, and otherwise requires the approval-token flow because settings changes are project-wide and not undoable.
+
+```bash
+hera-agent-unity manage_settings <action> [--params '{...}']
+```
+
+### Actions
+
+| Action | Fields |
+|:---|:---|
+| `get_physics` / `set_physics` | `gravity` `[x,y,z]`, `default_solver_iterations`, `default_solver_velocity_iterations`, `bounce_threshold`, `default_contact_offset`, `sleep_threshold` |
+| `get_time` / `set_time` | `fixed_delta_time`, `maximum_delta_time`, `time_scale` |
+| `get_quality` / `set_quality` | `level` or `level_name` (one of the two), `vsync_count` (0-4), `anti_aliasing` (0\|2\|4\|8); `get` also lists the project's level names |
+| `get_player` / `set_player` | `company_name`, `product_name`, `bundle_version`; `get` also reports the scripting backend and API level (read-only) |
+| `get_audio` / `set_audio` | `volume` (0-1), `doppler_factor`, `rolloff_scale` — the persisted project audio configuration |
+
+### Examples
+
+```bash
+hera-agent-unity manage_settings get_physics
+hera-agent-unity manage_settings set_physics --params '{"gravity":[0,-19.62,0]}'
+hera-agent-unity manage_settings set_time --params '{"fixed_delta_time":0.01,"dry_run":true}'
+hera-agent-unity manage_settings set_quality --params '{"level_name":"High"}'
+```
+
+Related: `manage_editor get_tags_layers` lists tags and named layers before `add_tag` / `add_layer` / `manage_gameobject set_tag`.
+
 ## manage_packages
 
 Drive `UnityEditor.PackageManager.Client` from the CLI. Replaces hand-editing `Packages/manifest.json` — the Package Manager API owns the project lock and validates git URLs that a manual edit would mishandle.

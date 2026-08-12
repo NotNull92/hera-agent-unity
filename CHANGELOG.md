@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI and Connector 0.0.96 — project settings surface)
+
+- New `manage_settings` tool with typed get/set pairs for five areas —
+  physics (gravity, solver iterations, thresholds), time (fixed/maximum
+  delta, time scale), quality (active level by index or name, vSync, MSAA),
+  player identity (company/product/version; scripting backend and API level
+  read-only), and the persisted audio configuration (volume, doppler,
+  rolloff). `set_*` applies only the fields passed, previews with
+  `dry_run: true` (which runs approval-free via a safety-rule downgrade),
+  reports `{applied, skipped}` with per-field reasons, and is
+  approval-gated because settings changes are project-wide and not undoable.
+  Previously all of this required ungated `exec`. Ships in the diagnostics
+  and full profiles. Design: `docs/SETTINGS_SURFACE_DESIGN.md`.
+- `manage_editor get_tags_layers` lists tags and named layers next to the
+  existing tag/layer writes, so `add_tag` and `manage_gameobject set_tag`
+  can be preceded by a read instead of failing blind.
+
 ### Added (CLI and Connector 0.0.95 — durable object handles)
 
 - Target and ObjectReference strings now accept two durable, self-describing

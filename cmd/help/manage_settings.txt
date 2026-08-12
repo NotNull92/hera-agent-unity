@@ -1,0 +1,37 @@
+Usage: hera-agent-unity manage_settings <action> [--params '{...}']
+
+Read and change project settings by area. get_<area> returns the full
+snapshot; set_<area> applies only the fields you pass (omitted fields stay
+untouched) and reports {applied, skipped, dry_run}.
+
+Actions:
+  get_physics / set_physics     gravity [x,y,z], default_solver_iterations,
+                                default_solver_velocity_iterations,
+                                bounce_threshold, default_contact_offset,
+                                sleep_threshold
+  get_time / set_time           fixed_delta_time, maximum_delta_time, time_scale
+  get_quality / set_quality     level | level_name (one of the two),
+                                vsync_count (0-4), anti_aliasing (0|2|4|8);
+                                get also lists the project's level names
+  get_player / set_player       company_name, product_name, bundle_version;
+                                get also reports the scripting backend and API
+                                level (read-only here)
+  get_audio / set_audio         volume (0-1), doppler_factor, rolloff_scale
+                                (persisted project audio configuration)
+
+Safety:
+  Settings changes are project-wide and not undoable via Ctrl+Z, so every
+  set_* requires the approval-token flow: the first call returns
+  APPROVAL_REQUIRED with a token; repeat the identical call with
+  --approve <token>. Passing "dry_run": true previews the change without
+  approval and without touching anything.
+
+Examples:
+  hera-agent-unity manage_settings get_physics
+  hera-agent-unity manage_settings set_physics --params '{"gravity":[0,-19.62,0]}'
+  hera-agent-unity manage_settings set_time --params '{"fixed_delta_time":0.01,"dry_run":true}'
+  hera-agent-unity manage_settings set_quality --params '{"level_name":"High"}'
+
+Related:
+  manage_editor get_tags_layers   List tags and named layers before add_tag /
+                                  add_layer / manage_gameobject set_tag.

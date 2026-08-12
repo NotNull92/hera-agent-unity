@@ -70,6 +70,7 @@ func TestHelpFilesAreReachableTopics(t *testing.T) {
 		"manage_components": true,
 		"manage_gameobject": true,
 		"manage_packages":   true,
+		"manage_settings":   true,
 		"menu":              true,
 		"mcp":               true,
 		"ping":              true,

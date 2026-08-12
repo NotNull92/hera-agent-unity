@@ -1751,6 +1751,21 @@ namespace HeraAgent.Tests
                 });
             }
             yield return ("manage_editor", "get_selection", new JObject { ["action"] = "get_selection" });
+            yield return ("manage_editor", "get_tags_layers", new JObject { ["action"] = "get_tags_layers" });
+            foreach (var area in new[] { "physics", "time", "quality", "player", "audio" })
+                yield return ("manage_settings", "get_" + area, new JObject { ["action"] = "get_" + area });
+            yield return ("manage_settings", "set_time", new JObject
+            {
+                ["action"] = "set_time",
+                ["fixed_delta_time"] = 0.02,
+                ["dry_run"] = true,
+            });
+            yield return ("manage_settings", "set_physics", new JObject
+            {
+                ["action"] = "set_physics",
+                ["gravity"] = new JArray(0, -9.81, 0),
+                ["dry_run"] = true,
+            });
             yield return ("manage_editor", "get_selection", new JObject
             {
                 ["action"] = "get_selection",

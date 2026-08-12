@@ -596,6 +596,7 @@ hera-agent-unity ui_slop box-in-box
 | `manage_components` | Component 조회, 추가, 제거, 수정 |
 | `manage_assets` | `Assets/` 아래 에셋 작업 |
 | `manage_animation` | AnimationClip/AnimatorController 저작·읽기 |
+| `manage_settings` | 프로젝트 설정(physics·time·quality·player·audio) 조회·변경 — dry_run 프리뷰 + 승인 게이트 |
 | `exec` | Editor 안에서 프로젝트를 아는 C# 실행 |
 | `editor` | 정확한 프로젝트 launch/restart 또는 Play, Stop, Pause, Refresh, Compile |
 | `test` | Unity 테스트 실행/재개 |

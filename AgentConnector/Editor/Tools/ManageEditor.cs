@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -7,7 +8,7 @@ using UnityEditorInternal;
 namespace HeraAgent.Tools
 {
     [HeraTool(
-        Description = "Controls Unity editor state. Actions: play, stop, pause, set_active_tool, add_tag, remove_tag, add_layer, remove_layer, get_selection, set_selection.",
+        Description = "Controls Unity editor state. Actions: play, stop, pause, set_active_tool, add_tag, remove_tag, add_layer, remove_layer, get_tags_layers, get_selection, set_selection.",
         Profiles = new[] { "core", "testing" },
         RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
@@ -20,6 +21,7 @@ namespace HeraAgent.Tools
     [HeraActionContract("add_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("remove_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Destructive)]
     [HeraActionContract("get_selection", typeof(ManageEditor.GetSelectionParameters), ResultType = typeof(ManageEditor.SelectionResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("get_tags_layers", typeof(ManageEditor.EmptyParameters), ResultType = typeof(ManageEditor.TagsLayersResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("set_selection", typeof(ManageEditor.SetSelectionParameters), ResultType = typeof(ManageEditor.SetSelectionResult), RiskClass = HeraRiskClass.Write)]
     public static class ManageEditor
     {
@@ -90,12 +92,24 @@ namespace HeraAgent.Tools
             public int Count { get; set; }
         }
 
+        public sealed class LayerEntry
+        {
+            public int Index { get; set; }
+            public string Name { get; set; }
+        }
+
+        public sealed class TagsLayersResult
+        {
+            public string[] Tags { get; set; }
+            public LayerEntry[] Layers { get; set; }
+        }
+
         public class Parameters
         {
             [ToolParameter(
                 "Action to perform.",
                 Required = true,
-                SchemaJson = "{\"type\":\"string\",\"enum\":[\"play\",\"stop\",\"pause\",\"set_active_tool\",\"add_tag\",\"remove_tag\",\"add_layer\",\"remove_layer\",\"get_selection\",\"set_selection\"]}")]
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"play\",\"stop\",\"pause\",\"set_active_tool\",\"add_tag\",\"remove_tag\",\"add_layer\",\"remove_layer\",\"get_tags_layers\",\"get_selection\",\"set_selection\"]}")]
             public string Action { get; set; }
 
             [ToolParameter("Tool name (required for set_active_tool action)")]
@@ -186,6 +200,9 @@ namespace HeraAgent.Tools
                 case "remove_layer":
                     return ManageLayer(action, p);
 
+                case "get_tags_layers":
+                    return GetTagsLayers();
+
                 case "get_selection":
                     return GetSelection(p.GetBool("durable"));
 
@@ -195,6 +212,21 @@ namespace HeraAgent.Tools
                 default:
                     return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action: '{action}'.");
             }
+        }
+
+        private static object GetTagsLayers()
+        {
+            var layers = new List<LayerEntry>();
+            for (int i = 0; i < TotalLayerCount; i++)
+            {
+                var name = UnityEngine.LayerMask.LayerToName(i);
+                if (!string.IsNullOrEmpty(name))
+                    layers.Add(new LayerEntry { Index = i, Name = name });
+            }
+            var tags = InternalEditorUtility.tags;
+            return new SuccessResponse(
+                $"{tags.Length} tag(s), {layers.Count} named layer(s).",
+                new TagsLayersResult { Tags = tags, Layers = layers.ToArray() });
         }
 
         private static object GetSelection(bool durable)

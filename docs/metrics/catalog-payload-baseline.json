@@ -1,11 +1,11 @@
 {
   "schema": "hera.catalog-payload-report/1",
-  "catalog_hash": "sha256:4ff5e17c369b6cb648fd9bb6ba673fa05ea88308a6f6c25ab8ac6cf976d76dc0",
-  "input_bytes": 186624,
-  "normalized_catalog_bytes": 186684,
-  "tool_count": 30,
-  "action_count": 81,
-  "description_characters": 7416,
+  "catalog_hash": "sha256:358b96077b3d7aadc06fe066819052647e426c1e226515e71347e0eb77ca9478",
+  "input_bytes": 200481,
+  "normalized_catalog_bytes": 200601,
+  "tool_count": 31,
+  "action_count": 92,
+  "description_characters": 7793,
   "profiles": [
     {
       "name": "advanced",
@@ -20,17 +20,17 @@
     {
       "name": "core",
       "tool_count": 8,
-      "normalized_contract_bytes": 56851
+      "normalized_contract_bytes": 57671
     },
     {
       "name": "diagnostics",
-      "tool_count": 10,
-      "normalized_contract_bytes": 30467
+      "tool_count": 11,
+      "normalized_contract_bytes": 43564
     },
     {
       "name": "full",
-      "tool_count": 28,
-      "normalized_contract_bytes": 181576
+      "tool_count": 29,
+      "normalized_contract_bytes": 195493
     },
     {
       "name": "scene",
@@ -40,7 +40,7 @@
     {
       "name": "testing",
       "tool_count": 6,
-      "normalized_contract_bytes": 63253
+      "normalized_contract_bytes": 64073
     },
     {
       "name": "ui",
@@ -68,6 +68,12 @@
       "description_characters": 141
     },
     {
+      "name": "manage_settings",
+      "bytes": 13096,
+      "action_count": 10,
+      "description_characters": 360
+    },
+    {
       "name": "manage_animation",
       "bytes": 12880,
       "action_count": 8,
@@ -87,9 +93,9 @@
     },
     {
       "name": "manage_editor",
-      "bytes": 8894,
-      "action_count": 10,
-      "description_characters": 149
+      "bytes": 9714,
+      "action_count": 11,
+      "description_characters": 166
     },
     {
       "name": "manage_assets",
@@ -102,12 +108,6 @@
       "bytes": 6793,
       "action_count": 4,
       "description_characters": 421
-    },
-    {
-      "name": "manage_prefab",
-      "bytes": 6440,
-      "action_count": 4,
-      "description_characters": 308
     }
   ],
   "largest_actions": [
@@ -256,17 +256,17 @@
   ],
   "rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-    "low_4_bytes_per_token": 46671,
-    "central_3_2_bytes_per_token": 58339,
-    "high_2_5_bytes_per_token": 74674
+    "low_4_bytes_per_token": 50151,
+    "central_3_2_bytes_per_token": 62688,
+    "high_2_5_bytes_per_token": 80241
   },
   "warnings": [
     "profile assets uses 37068 normalized bytes (warning budget 24000)",
-    "profile core uses 56851 normalized bytes (warning budget 24000)",
-    "profile diagnostics uses 30467 normalized bytes (warning budget 24000)",
-    "profile full uses 181576 normalized bytes (warning budget 24000)",
+    "profile core uses 57671 normalized bytes (warning budget 24000)",
+    "profile diagnostics uses 43564 normalized bytes (warning budget 24000)",
+    "profile full uses 195493 normalized bytes (warning budget 24000)",
     "profile scene uses 72194 normalized bytes (warning budget 24000)",
-    "profile testing uses 63253 normalized bytes (warning budget 24000)",
+    "profile testing uses 64073 normalized bytes (warning budget 24000)",
     "profile ui uses 89692 normalized bytes (warning budget 24000)",
     "tool input uses 35429 normalized bytes (warning budget 20000)"
   ]

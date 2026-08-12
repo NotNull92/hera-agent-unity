@@ -66,6 +66,13 @@ Scene:
     scene save
     scene close Lobby
 
+Project settings:
+  manage_settings get_physics|get_time|get_quality|get_player|get_audio
+                                                    Read an area's full snapshot
+  manage_settings set_<area> --params '{...}'       Change only the passed fields
+                                                    (approval-gated; "dry_run":true previews)
+  manage_editor get_tags_layers                     List tags and named layers
+
 Packages (Package Manager):
   manage_packages list                              List every resolved package (sync)
   manage_packages add <id>                          Install — registry / git URL / file:.. (async, job_id)
