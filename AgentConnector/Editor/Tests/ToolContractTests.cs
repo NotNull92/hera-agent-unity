@@ -1760,6 +1760,24 @@ namespace HeraAgent.Tests
                     ["area"] = "lighting",
                 });
             }
+            foreach (var buildAction in new[] { "start", "status", "get_settings", "list_targets" })
+                yield return ("build", buildAction, new JObject { ["action"] = buildAction });
+            yield return ("build", "set_settings", new JObject
+            {
+                ["action"] = "set_settings",
+                ["development"] = true,
+                ["dry_run"] = true,
+            });
+            yield return ("build", "add_scene", new JObject
+            {
+                ["action"] = "add_scene",
+                ["path"] = "Assets/Test.unity",
+            });
+            yield return ("build", "remove_scene", new JObject
+            {
+                ["action"] = "remove_scene",
+                ["path"] = "Assets/Test.unity",
+            });
             foreach (var area in new[] { "physics", "time", "quality", "player", "audio" })
                 yield return ("manage_settings", "get_" + area, new JObject { ["action"] = "get_" + area });
             yield return ("manage_settings", "set_time", new JObject

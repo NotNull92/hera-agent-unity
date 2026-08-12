@@ -297,6 +297,36 @@ hera-agent-unity scene hierarchy --root /GameCanvas --components
 
 ---
 
+## build
+
+Player builds for the active build target. The Editor blocks for the whole build, so `start` queues it and returns immediately; the compact report lands on the file bus. `build start --wait` polls that file (floor 15 minutes; a larger `--timeout` extends it).
+
+```bash
+hera-agent-unity build <action> [options]
+```
+
+### Actions
+
+| Action | Description |
+|:---|:---|
+| `start [--wait] [--output_path P]` | Queue the build (approval-token flow). Default output `Builds/<target>/<product><ext>`; refuses paths inside `Assets/`, play mode, an already-running build, and an empty enabled-scene list. |
+| `status` | `idle` \| `queued` \| `building`, plus the last report. |
+| `get_settings` | Active target/group, development flags, scene list. |
+| `set_settings` | `development` / `allow_debugging` / `build_scripts_only` via `--params`; `"dry_run": true` previews. |
+| `add_scene --path P [--enabled false]` | Add or update a Build Settings scene (idempotent). |
+| `remove_scene --path P` | Remove a scene from the list (idempotent). |
+| `list_targets` | BuildTarget values with group and installed build support. |
+
+Report shape: `{result, output_path, target, size_bytes, total_seconds, error_count, warning_count, errors[<=20]}`.
+
+### Examples
+
+```bash
+hera-agent-unity build get_settings
+hera-agent-unity build add_scene --path Assets/Scenes/Main.unity
+hera-agent-unity build start --wait
+```
+
 ## bake
 
 Scene bakes by area. `start` triggers the async bake and returns immediately; poll `status` until it reports `idle`. Status is computed from live Editor state, so it survives reconnects and domain reloads.

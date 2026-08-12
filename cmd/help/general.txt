@@ -66,6 +66,12 @@ Scene:
     scene save
     scene close Lobby
 
+Builds:
+  build start [--wait]                              Queue the Player build (approval-gated)
+  build status                                      idle | queued | building + last report
+  build get_settings / add_scene / remove_scene     Build Settings flags and scene list
+  build list_targets                                Installed build targets
+
 Bakes:
   bake start --area lighting|navmesh|occlusion      Trigger the async bake
   bake status --area <area>                         idle | baking (+ progress / data size)

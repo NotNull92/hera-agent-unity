@@ -1,0 +1,41 @@
+Usage: hera-agent-unity build <action> [options]
+
+Player builds for the active build target. The Editor blocks (and stops
+answering HTTP) for the whole build, so `start` queues the build and returns
+immediately; the compact report lands on the file bus when the build ends.
+
+Actions:
+  start [--wait]        Queue the Player build (requires the approval-token
+                        flow: repeat the identical call with --approve <token>).
+    --output_path P     Output location. Default: Builds/<target>/<product><ext>
+                        under the project root. Must resolve outside Assets/.
+    --wait              After queuing, poll the report file until the build
+                        finishes (floor 15 minutes; a larger --timeout
+                        extends it). Without --wait, poll `build status`
+                        after the Editor becomes responsive again.
+  status                idle | queued | building, plus the last report.
+  get_settings          Active target/group, development flags, and the
+                        Build Settings scene list with enabled state.
+  set_settings          Change development / allow_debugging /
+                        build_scripts_only via --params; "dry_run": true
+                        previews without applying.
+  add_scene --path P    Add or update a scene in the Build Settings list
+                        (--enabled false to add disabled). Idempotent.
+  remove_scene --path P Remove a scene from the list. Idempotent.
+  list_targets          BuildTarget values with group and whether build
+                        support is installed.
+
+Report shape (start --wait / status last_report):
+  { result, output_path, target, size_bytes, total_seconds,
+    error_count, warning_count, errors: [<= 20 deduplicated messages] }
+
+Guards:
+  - start refuses in play mode (IN_PLAY_MODE), while building
+    (ALREADY_BUILDING), with an empty enabled-scene list (NO_SCENES), and
+    for output paths inside Assets/ (INVALID_OUTPUT_PATH).
+
+Examples:
+  hera-agent-unity build get_settings
+  hera-agent-unity build add_scene --path Assets/Scenes/Main.unity
+  hera-agent-unity build start --wait
+  hera-agent-unity build status

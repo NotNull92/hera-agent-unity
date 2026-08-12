@@ -28,6 +28,10 @@ func TestPendingPath(port int, runID string) string {
 	return filepath.Join(baseDir(), "status", fmt.Sprintf("test-pending-%d-%s.json", port, runID))
 }
 
+func BuildResultPath(port int) string {
+	return filepath.Join(baseDir(), "status", fmt.Sprintf("build-result-%d.json", port))
+}
+
 func LegacyTestResultPath(port int) string {
 	return filepath.Join(baseDir(), "status", fmt.Sprintf("test-results-%d.json", port))
 }

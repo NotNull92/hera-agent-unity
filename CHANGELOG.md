@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI and Connector 0.0.98 — Player builds)
+
+- New `build` tool: `start` queues a Player build for the active target and
+  returns immediately, because `BuildPipeline.BuildPlayer` blocks the Editor
+  main thread for the whole build — the Connector cannot answer HTTP while it
+  runs. The compact report lands on the file bus, and the CLI's
+  `build start --wait` polls it with the shared backoff (15-minute floor),
+  riding out the unresponsive window. Report:
+  `{result, output_path, target, size_bytes, total_seconds, error_count,
+  warning_count, errors}` with at most 20 deduplicated messages.
+  `get_settings` / `set_settings` / `add_scene` / `remove_scene` /
+  `list_targets` manage the Build Settings flags and scene list. `start` is
+  approval-gated and refuses in play mode, while building, with no enabled
+  scenes, and for output paths inside `Assets/`. Ships in the full profile.
+  Design: `docs/BUILD_SURFACE_DESIGN.md`.
+
+### Fixed (Connector 0.0.98 — bake compiles warning-free)
+
+- The scene-bake calls introduced in `0.0.97` used deprecated editor APIs
+  without suppression, which the repository's exact-source compile gate
+  rejects. The editor-side NavMesh bake and `Lightmapping.giWorkflowMode`
+  have no non-deprecated equivalents — the suggested
+  `UnityEngine.AI.NavMeshBuilder` only builds runtime NavMeshData and cannot
+  bake or clear a scene's built-in NavMesh — so the calls now route through
+  one suppressed helper block that records why, and the connector compiles
+  clean on all three buckets.
+
 ### Added (CLI and Connector 0.0.97 — scene bakes)
 
 - New `bake` tool: `start` / `status` / `cancel` / `clear` across three

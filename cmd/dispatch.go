@@ -197,6 +197,8 @@ func (runner unityCommandRunner) Run(
 			Send:    send,
 			Resolve: runner.resolve,
 		})
+	case "build":
+		resp, err = buildCmd(ctx, subArgs, send, runner.config.Timeout)
 	case "test":
 		resp, err = testCmd(
 			ctx,

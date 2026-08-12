@@ -115,12 +115,33 @@ namespace HeraAgent.Tools
             }
         }
 
+        // Unity marks the editor-side scene NavMesh bake obsolete and points at
+        // UnityEngine.AI.NavMeshBuilder, but that replacement only builds
+        // NavMeshData objects at runtime (CollectSources / BuildNavMeshData /
+        // UpdateNavMeshData / Cancel — measured on 6000.3.5f2); it has no
+        // equivalent for baking or clearing the scene's built-in NavMesh. The
+        // deprecated editor API is therefore the only path, suppressed here in
+        // one place rather than at every call site. Likewise
+        // Lightmapping.giWorkflowMode is deprecated with no non-obsolete
+        // replacement — Lightmapping.lightingSettings throws when unassigned.
+#pragma warning disable 618
+        static bool SceneNavMeshIsBaking() => UnityEditor.AI.NavMeshBuilder.isRunning;
+
+        static void SceneNavMeshBuildAsync() => UnityEditor.AI.NavMeshBuilder.BuildNavMeshAsync();
+
+        static void SceneNavMeshCancel() => UnityEditor.AI.NavMeshBuilder.Cancel();
+
+        static void SceneNavMeshClear() => UnityEditor.AI.NavMeshBuilder.ClearAllNavMeshes();
+
+        static string LightingWorkflowModeName() => Lightmapping.giWorkflowMode.ToString();
+#pragma warning restore 618
+
         static bool IsBaking(string area)
         {
             switch (area)
             {
                 case "lighting": return Lightmapping.isRunning;
-                case "navmesh": return UnityEditor.AI.NavMeshBuilder.isRunning;
+                case "navmesh": return SceneNavMeshIsBaking();
                 default: return StaticOcclusionCulling.isRunning;
             }
         }
@@ -152,11 +173,11 @@ namespace HeraAgent.Tools
             switch (area)
             {
                 case "lighting":
-                    workflowMode = Lightmapping.giWorkflowMode.ToString();
+                    workflowMode = LightingWorkflowModeName();
                     started = Lightmapping.BakeAsync();
                     break;
                 case "navmesh":
-                    UnityEditor.AI.NavMeshBuilder.BuildNavMeshAsync();
+                    SceneNavMeshBuildAsync();
                     started = true;
                     break;
                 default:
@@ -195,7 +216,7 @@ namespace HeraAgent.Tools
                 switch (area)
                 {
                     case "lighting": Lightmapping.Cancel(); break;
-                    case "navmesh": UnityEditor.AI.NavMeshBuilder.Cancel(); break;
+                    case "navmesh": SceneNavMeshCancel(); break;
                     default: StaticOcclusionCulling.Cancel(); break;
                 }
             }
@@ -213,7 +234,7 @@ namespace HeraAgent.Tools
                     Lightmapping.ClearLightingDataAsset();
                     break;
                 case "navmesh":
-                    UnityEditor.AI.NavMeshBuilder.ClearAllNavMeshes();
+                    SceneNavMeshClear();
                     break;
                 default:
                     StaticOcclusionCulling.Clear();

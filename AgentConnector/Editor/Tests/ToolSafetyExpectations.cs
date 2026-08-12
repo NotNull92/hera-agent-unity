@@ -9,6 +9,7 @@ namespace HeraAgent.Tests
             = new Dictionary<string, HeraRiskClass>(StringComparer.Ordinal)
             {
                 ["bake"] = HeraRiskClass.Destructive,
+                ["build"] = HeraRiskClass.Write,
                 ["console"] = HeraRiskClass.ReadOnly,
                 ["describe_shader"] = HeraRiskClass.ReadOnly,
                 ["describe_type"] = HeraRiskClass.ReadOnly,
@@ -41,6 +42,9 @@ namespace HeraAgent.Tests
                 ["ui_slop"] = HeraRiskClass.ReadOnly,
                 ["unity_docs"] = HeraRiskClass.ReadOnly,
                 ["bake/status"] = HeraRiskClass.ReadOnly,
+                ["build/get_settings"] = HeraRiskClass.ReadOnly,
+                ["build/list_targets"] = HeraRiskClass.ReadOnly,
+                ["build/status"] = HeraRiskClass.ReadOnly,
                 ["input/inspect"] = HeraRiskClass.ReadOnly,
                 ["input/state"] = HeraRiskClass.ReadOnly,
                 ["manage_asset_import/get"] = HeraRiskClass.ReadOnly,
@@ -69,6 +73,10 @@ namespace HeraAgent.Tests
                 ["scene/list"] = HeraRiskClass.ReadOnly,
                 ["bake/cancel"] = HeraRiskClass.Write,
                 ["bake/start"] = HeraRiskClass.Write,
+                ["build/add_scene"] = HeraRiskClass.Write,
+                ["build/remove_scene"] = HeraRiskClass.Write,
+                ["build/set_settings"] = HeraRiskClass.Write,
+                ["build/start"] = HeraRiskClass.Write,
                 ["input/click"] = HeraRiskClass.Write,
                 ["input/drag"] = HeraRiskClass.Write,
                 ["input/keyboard"] = HeraRiskClass.Write,
