@@ -1972,8 +1972,29 @@ namespace HeraAgent.Tests
                     ["action"] = action,
                     ["path"] = "Assets/Test.prefab",
                     ["component"] = "Rigidbody",
+                    ["child"] = "/Root/Arm",
                 });
             }
+            yield return ("manage_prefab", "list_overrides", new JObject
+            {
+                ["action"] = "list_overrides",
+                ["target"] = "/Root",
+                ["include_default"] = true,
+            });
+            foreach (var action in new[] { "apply", "revert" })
+            {
+                yield return ("manage_prefab", action, new JObject
+                {
+                    ["action"] = action,
+                    ["target"] = "/Root",
+                });
+            }
+            yield return ("manage_prefab", "unpack", new JObject
+            {
+                ["action"] = "unpack",
+                ["target"] = "/Root",
+                ["mode"] = "outermost",
+            });
 
             yield return ("manage_animation", "create_clip", new JObject
             {

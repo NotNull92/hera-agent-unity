@@ -39,28 +39,26 @@ namespace HeraAgent.TestRunner
         }
 
         /// <summary>
-        /// Returns and does not clear the first pending run this Editor owns on
-        /// the port. Hera allows one active run per port, so the first match is
-        /// the run.
+        /// Every pending run this Editor owns on the port, as
+        /// (run_id, nunit_guid) pairs. HasPending blocks on *any* record, so a
+        /// cancel that cleared only one would leave the lock in place — an
+        /// interrupted run can leave a record behind without an active run.
         /// </summary>
-        internal static bool TryTakePending(int port, out string runId, out string nunitGuid)
+        internal static List<KeyValuePair<string, string>> ListPending(int port)
         {
-            runId = null;
-            nunitGuid = null;
+            var found = new List<KeyValuePair<string, string>>();
             try
             {
-                if (!Directory.Exists(RunTests.StatusDir)) return false;
+                if (!Directory.Exists(RunTests.StatusDir)) return found;
                 foreach (var file in Directory.GetFiles(RunTests.StatusDir, $"test-pending-{port}-*.json"))
                 {
                     if (!TryReadPending(file, out var pending)) continue;
                     if (!OwnsCurrentProject(pending)) continue;
-                    runId = pending.RunId;
-                    nunitGuid = pending.NunitGuid;
-                    return true;
+                    found.Add(new KeyValuePair<string, string>(pending.RunId, pending.NunitGuid));
                 }
             }
             catch { }
-            return false;
+            return found;
         }
 
         static void WritePending(int port, string runId, string filter, string mode, bool selective, string nunitGuid)

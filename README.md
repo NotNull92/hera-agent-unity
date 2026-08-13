@@ -591,6 +591,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `manage_gameobject` | Create and edit GameObjects. |
 | `manage_components` | Read, add, remove, or modify Components. |
 | `manage_assets` | Work with project assets under `Assets/`. |
+| `manage_prefab` | Create, instantiate, and edit prefab assets, and apply, revert, or unpack an instance's overrides. |
 | `manage_animation` | Author AnimationClips and AnimatorController state machines, and read them back. |
 | `manage_settings` | Read and change project settings (physics, time, quality, player, audio) with previews and approval. |
 | `bake` | Trigger, poll, cancel, or clear lighting / NavMesh / occlusion bakes. |

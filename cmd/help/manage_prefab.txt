@@ -1,0 +1,56 @@
+Usage: hera-agent-unity manage_prefab <action> [flags]
+
+Prefab asset and instance operations.
+
+Asset actions (take --path, the prefab asset under Assets/):
+  create                        Save a scene GameObject as a prefab.
+    --source <path>             Source GameObject by hierarchy path.
+    --instance_id <id>          Source GameObject by InstanceID.
+                                Saving from a prefab instance produces a
+                                Variant; the result reports asset_type.
+  instantiate                   Drop the prefab into the active scene.
+    --parent <path|id>          Optional parent for the new instance.
+  add_component                 Add a component to the prefab asset.
+  remove_component              Remove a component from the prefab asset.
+    --component <Type>          Component type name (Rigidbody, BoxCollider).
+    --child <path>              Descendant inside the prefab, as a hierarchy
+                                path. Defaults to the prefab root.
+
+Instance actions (take --target, a scene prefab instance):
+  list_overrides                How the instance differs from its asset.
+    --include_default           Also report the instance root's own Transform
+                                and name, which Unity treats as default
+                                overrides and hides by default.
+  apply                         Write the instance's overrides into the asset.
+  revert                        Discard the instance's overrides.
+  unpack                        Break the prefab link.
+    --mode <outermost|completely>   Required. outermost keeps nested prefab
+                                instances connected; completely unpacks them
+                                too. There is no safe default.
+
+Component edits are headless: the prefab is loaded via
+PrefabUtility.LoadPrefabContents, mutated, saved, and unloaded within the one
+call. No prefab stage is opened and the active scene is untouched.
+
+--target accepts a hierarchy path, an InstanceID, or a durable handle, and is
+resolved to its outermost prefab instance root because Unity's apply/revert/
+unpack APIs reject a child. Every response reports the instance_root it acted
+on, so a destructive call is never silently retargeted without saying so.
+
+`apply` rewrites an asset that every other instance in the project inherits
+from, and `revert` discards instance work that has no other copy. Both are
+approval-gated. Run `list_overrides` first to see what is at stake — and note
+that without --include_default an empty list does not mean the instance
+matches its asset.
+
+Examples:
+  hera-agent-unity manage_prefab create --source /Player --path Assets/Prefabs/Player.prefab
+  hera-agent-unity manage_prefab instantiate --path Assets/Prefabs/Player.prefab --parent /Spawns
+  hera-agent-unity manage_prefab add_component --path Assets/Prefabs/Player.prefab --component Rigidbody
+  hera-agent-unity manage_prefab add_component --path Assets/Prefabs/Player.prefab --child /Player/Arm --component BoxCollider
+  hera-agent-unity manage_prefab list_overrides --target /Player
+  hera-agent-unity manage_prefab list_overrides --target /Player --include_default
+  hera-agent-unity manage_prefab apply --target /Player
+  hera-agent-unity manage_prefab revert --target /Player
+  hera-agent-unity manage_prefab unpack --target /Player --mode outermost
+

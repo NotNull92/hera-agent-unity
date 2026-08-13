@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.100 — the prefab instance-to-asset loop)
+
+- `manage_prefab list_overrides --target <instance>` reports how a scene
+  prefab instance differs from its asset: object overrides, added and removed
+  components, added and removed GameObjects, each with the hierarchy path it
+  belongs to. `--include_default` adds the instance root's own Transform and
+  name, which Unity classifies as default overrides and hides — measured on
+  `6000.3.5f2`, an instance whose root had been moved reported no overrides
+  at all without the flag, so the response says so in an `agent_hint`.
+- `manage_prefab apply` and `manage_prefab revert` push those differences into
+  the asset or discard them. Both are approval-gated: `apply` rewrites an
+  asset every other instance inherits from, and `revert` destroys instance
+  work that has no other copy.
+- `manage_prefab unpack --mode <outermost|completely>` breaks the prefab link.
+  `mode` is required — the two differ only in whether nested prefab instances
+  survive, which is invisible in a flat project and destructive in a nested
+  one.
+- All instance actions resolve `--target` (hierarchy path, instance_id, or
+  durable handle) to its outermost prefab instance root, because Unity's
+  apply/revert/unpack APIs reject a child, and every response reports the
+  `instance_root` it acted on so a destructive call is never silently
+  retargeted.
+- `manage_prefab add_component` / `remove_component` gained `--child`, a
+  hierarchy path selecting a descendant inside the prefab. A component on a
+  prefab child previously had no edit path at all: those actions reached only
+  the root, and `manage_components` only reaches scene objects.
+
+### Fixed (Connector 0.0.100)
+
+- `manage_prefab create --source` used `GameObject.Find`, which cannot see
+  inactive objects, so creating a prefab from a disabled GameObject failed for
+  no reason the caller could see. Both local resolvers now route through the
+  shared inactive-aware `TargetResolver`, which also makes `--source` and
+  `--parent` accept durable handles like the rest of Hera.
+- `create`'s result now reports `asset_type`. Saving from a prefab instance
+  produces a Variant (measured), so `create --source <an instance>` was
+  already creating variants without saying so.
+- `test cancel` cleared only the first pending-run record, but the
+  already-running check blocks on *any* record, so a cancel could report
+  success and leave the lockout in place. It now clears every record the
+  Editor owns on the port.
+
 ### Fixed (Connector 0.0.99 — a filtered test run that matched nothing reported success)
 
 - `test --filter <typo>` ran zero tests and returned a success envelope with

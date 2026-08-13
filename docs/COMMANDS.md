@@ -1171,23 +1171,40 @@ hera-agent-unity manage_material set --path Assets/Mats/Player.mat --property _M
 
 ## manage_prefab
 
-Prefab asset operations. Paths must be under `Assets/`; `create` requires a new `.prefab` destination with an existing parent folder. `add_component` / `remove_component` edit the prefab asset **headlessly** (`PrefabUtility.LoadPrefabContents` → edit → save → unload — no prefab stage, no open-scene side effects) and target the prefab root.
+Prefab asset and instance operations. Asset actions take `--path` (under `Assets/`; `create` requires a new `.prefab` destination with an existing parent folder). Instance actions take `--target`, a scene prefab instance.
+
+`add_component` / `remove_component` edit the prefab asset **headlessly** (`PrefabUtility.LoadPrefabContents` → edit → save → unload — no prefab stage, no open-scene side effects).
 
 ```bash
-hera-agent-unity manage_prefab <action> --path <Assets/...prefab> [flags]
+hera-agent-unity manage_prefab <action> [--path <Assets/...prefab> | --target <instance>] [flags]
 ```
 
 | Action | Flags | Description |
 |:---|:---|:---|
-| `create` | `--source </Root/Child>` or `--instance_id <id>` | Save a scene GameObject as a new prefab asset. |
+| `create` | `--source </Root/Child>` or `--instance_id <id>` | Save a scene GameObject as a new prefab asset. Saving from a prefab instance produces a Variant; the result reports `asset_type`. |
 | `instantiate` | `[--parent </path> or <id>]` | Drop the prefab into the active scene. |
-| `add_component` | `--component <Type>` | Add a component to the prefab root. |
-| `remove_component` | `--component <Type>` | Remove a component from the prefab root. |
+| `add_component` | `--component <Type> [--child </Root/Child>]` | Add a component to the prefab root, or to a descendant. |
+| `remove_component` | `--component <Type> [--child </Root/Child>]` | Remove a component from the prefab root, or from a descendant. |
+| `list_overrides` | `--target <instance> [--include_default]` | How the instance differs from its asset. |
+| `apply` | `--target <instance>` | Write the instance's overrides into the asset. Approval-gated. |
+| `revert` | `--target <instance>` | Discard the instance's overrides. Approval-gated. |
+| `unpack` | `--target <instance> --mode <outermost\|completely>` | Break the prefab link. Approval-gated. |
+
+**Overrides**: `list_overrides` returns `{instance_root, asset_path, asset_type, status, has_overrides, include_default, object_overrides, added_components, removed_components, added_gameobjects, removed_gameobjects}`. Unity classifies the instance root's own Transform and name as *default overrides* and hides them, so without `--include_default` an empty list does **not** mean the instance matches its asset — a moved root reports nothing until the flag is passed.
+
+**Targets**: `--target` accepts a hierarchy path, an InstanceID, or a durable handle, and resolves to the outermost prefab instance root because Unity's apply/revert/unpack APIs reject a child. Every response reports the `instance_root` it acted on. A target outside any prefab instance returns `NOT_A_PREFAB_INSTANCE`.
+
+**unpack --mode** is required. `outermost` keeps nested prefab instances connected; `completely` unpacks them too. The difference is invisible in a flat project and destructive in a nested one, so there is no default.
 
 ```bash
 hera-agent-unity manage_prefab create --source /Player --path Assets/Prefabs/Player.prefab
 hera-agent-unity manage_prefab add_component --path Assets/Prefabs/Player.prefab --component Rigidbody
+hera-agent-unity manage_prefab add_component --path Assets/Prefabs/Player.prefab --child /Player/Arm --component BoxCollider
 hera-agent-unity manage_prefab instantiate --path Assets/Prefabs/Player.prefab --parent /Spawns
+hera-agent-unity manage_prefab list_overrides --target /Player
+hera-agent-unity manage_prefab apply --target /Player
+hera-agent-unity manage_prefab revert --target /Player
+hera-agent-unity manage_prefab unpack --target /Player --mode outermost
 ```
 
 ---

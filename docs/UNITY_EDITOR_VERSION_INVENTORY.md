@@ -55,6 +55,40 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 
 ## Completed Checks
 
+### Connector 0.0.100 three-bucket gate (2026-08-13)
+
+`compile-exact-source.ps1` passed with zero errors and zero warnings in all
+three buckets, then each bucket enabled `testables`, ran the Connector's
+release-gate suite, exercised the prefab surface, and had its manifest
+restored byte-for-byte.
+
+| Bucket | Representative | Fixture | Release-gate tests | Status |
+|---|---|---|---|---|
+| `6000.0`–`6000.2` | `6000.0.35f1` | `Test6.0.35f1` | 17/17 | PASS |
+| `6000.3`–`6000.4` | `6000.3.5f2` | `test6000.3.5f2` | 17/17 | PASS |
+| `6000.5+` | `6000.5.6f1` | `test6.5` | 17/17 | PASS |
+
+Per-bucket prefab matrix: `create` reported `asset_type: Regular`; `create`
+from an **inactive** GameObject succeeded (it failed before, because
+`GameObject.Find` cannot see inactive objects); `list_overrides` on an edited
+instance reported the Rigidbody override, and `--include_default` added the
+instance root's own GameObject and Transform — the difference between one
+entry and three, and on a root-only edit the difference between "no
+overrides" and the truth; targeting a child returned `instance_root: /P`;
+`apply` cleared the overrides and a fresh instantiate read the applied value;
+`add_component --child` landed on the descendant; `create` from an instance
+reported `asset_type: Variant`; `unpack` without `--mode` was refused by the
+strict schema; `unpack --mode outermost` succeeded and the object then
+reported `NOT_A_PREFAB_INSTANCE`.
+
+On `6000.3.5f2` the full round trip was additionally verified end to end:
+edit → `list_overrides` → `apply` → destroy → re-instantiate read the applied
+mass, and a further edit followed by `revert` restored the applied value.
+
+All gate results were taken from clean Editor sessions. See the wave-6 entry
+in `docs/handoffs/ACTIVE.md` for an unresolved Test Runner condition observed
+in a long-running session.
+
 ### Connector 0.0.99 three-bucket gate (2026-08-13)
 
 The working-tree Connector installed as a `file:` UPM dependency in each

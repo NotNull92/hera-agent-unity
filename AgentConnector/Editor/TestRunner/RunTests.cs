@@ -122,7 +122,7 @@ namespace HeraAgent.TestRunner
         public sealed class CancelResult
         {
             public bool WasRunning { get; set; }
-            public string RunId { get; set; }
+            public string[] RunIds { get; set; }
             public bool NunitCancelRequested { get; set; }
         }
 
@@ -511,33 +511,41 @@ namespace HeraAgent.TestRunner
         public static object Cancel(JObject raw)
         {
             var port = HttpServer.Port;
-            if (!TestRunnerState.TryTakePending(port, out var runId, out var nunitGuid))
+            var pending = TestRunnerState.ListPending(port);
+            if (pending.Count == 0)
                 return new SuccessResponse("No test run was active.", new { was_running = false });
 
+            var runIds = new List<string>();
             var cancelRequested = false;
-            if (!string.IsNullOrEmpty(nunitGuid))
+            foreach (var entry in pending)
             {
-                try
+                var runId = entry.Key;
+                var nunitGuid = entry.Value;
+                if (!string.IsNullOrEmpty(nunitGuid))
                 {
-                    cancelRequested = TestRunnerApi.CancelTestRun(nunitGuid);
+                    try
+                    {
+                        cancelRequested |= TestRunnerApi.CancelTestRun(nunitGuid);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[Hera] I could not ask the test framework to cancel run {nunitGuid}: {ex.Message}");
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Debug.LogWarning($"[Hera] I could not ask the test framework to cancel run {nunitGuid}: {ex.Message}");
-                }
-            }
 
-            if (WriteErrorResultsFile(port, runId, "TEST_RUN_CANCELLED", "The test run was cancelled."))
-                TestRunnerState.ClearPending(port, runId);
+                if (WriteErrorResultsFile(port, runId, "TEST_RUN_CANCELLED", "The test run was cancelled."))
+                    TestRunnerState.ClearPending(port, runId);
+                runIds.Add(runId);
+            }
 
             return new SuccessResponse(
                 cancelRequested
-                    ? $"Cancelled test run {runId}."
-                    : $"Released test run {runId}; the test framework did not accept a cancel request.",
+                    ? $"Cancelled {runIds.Count} test run(s)."
+                    : $"Released {runIds.Count} test run record(s); the test framework did not accept a cancel request.",
                 new
                 {
                     was_running = true,
-                    run_id = runId,
+                    run_ids = runIds,
                     nunit_cancel_requested = cancelRequested,
                 });
         }

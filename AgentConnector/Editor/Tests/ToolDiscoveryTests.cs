@@ -286,7 +286,11 @@ namespace HeraAgent.Tests
                 },
                 ["manage_material"] = new[] { "create", "get", "set", "set_shader" },
                 ["manage_packages"] = new[] { "add", "embed", "list", "remove", "search" },
-                ["manage_prefab"] = new[] { "add_component", "create", "instantiate", "remove_component" },
+                ["manage_prefab"] = new[]
+                {
+                    "add_component", "apply", "create", "instantiate", "list_overrides",
+                    "remove_component", "revert", "unpack",
+                },
                 ["manage_settings"] = new[]
                 {
                     "get_audio", "get_physics", "get_player", "get_quality", "get_time",
@@ -331,7 +335,7 @@ namespace HeraAgent.Tests
                 $"declared action contracts complete = true ({actionCount}); " +
                 $"built-in strict contracts complete = {allBuiltInsStrict.ToString().ToLowerInvariant()}");
             return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged),
-                expectedTools.Length == 33 && actionCount == 106 && allBuiltInsStrict);
+                expectedTools.Length == 33 && actionCount == 110 && allBuiltInsStrict);
         }
 
         private static bool ContainsBaselineToolNames(
