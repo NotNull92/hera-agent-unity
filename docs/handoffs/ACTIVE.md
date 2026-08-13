@@ -19,6 +19,8 @@ records only current state and what is open.
 
 | 8 | `0.0.104` | Asset tools accept durable handles on existing-asset `--path` parameters, including sub-asset `guid:<guid>:<fileId>` (`docs/ASSET_HANDLE_DESIGN.md`) |
 
+| 9 | `0.0.105` | Ten actions declare their output schema; eleven message-only actions recorded as needing none (`docs/OUTPUT_SCHEMA_DESIGN.md`) |
+
 Alongside the queue: `0.0.91` moved the support floor to Unity 6+ (three
 compatibility buckets), and `0.0.90` fixed the `EntityIdCompat` round trip that
 had made every emitted `instance_id` unresolvable on Unity 6000.3+.
@@ -85,9 +87,11 @@ shipped a defect:**
   declared, so a schema-driven consumer saw an empty result. Fixed in `0.0.103`
   with a naming strategy on the result classes, which regenerates the catalog
   byte-for-byte, plus a release-gate test over all 60 declared result types.
-- Under-specified output schemas, pre-existing: roughly 30 actions declare no
-  `ResultType`, so their `data` schema is an open `{}` object. Returning fields
-  is permitted rather than a contract breach — `build status` is the clearest
-  example — but the declared surface tells an agent nothing. Closing this means
-  authoring ~30 result types and accepting the catalog-payload growth, so it
-  needs its own review rather than a drive-by fix.
+- Output schemas: **partly closed in wave 9** (`docs/OUTPUT_SCHEMA_DESIGN.md`).
+  81 → 91 declared. Eleven message-only actions are recorded as needing none.
+  33 remain undeclared, led by `describe_type` and `scene hierarchy`, which
+  wave 9 cut for exceeding its payload budget and which the next slice must
+  take first. `scene hierarchy` also needs a decision on recursive shapes —
+  `SchemaUtility` refuses recursive DTO graphs by design, so it is either open
+  `object[]` children or `$ref` support. `exec` stays undeclared on purpose:
+  its payload is user-code-shaped and an open schema is the truthful one.

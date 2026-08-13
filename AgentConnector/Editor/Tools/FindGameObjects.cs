@@ -46,6 +46,42 @@ namespace HeraAgent.Tools
         Expected = "at most one of ids, names, fields")]
     public static class FindGameObjects
     {
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class Entry
+        {
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public int? InstanceId { get; set; }
+
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public string Name { get; set; }
+
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public string Path { get; set; }
+
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public string Scene { get; set; }
+
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public bool? Active { get; set; }
+
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public string GlobalId { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class Result
+        {
+            public int Total { get; set; }
+            public int Returned { get; set; }
+            public int Offset { get; set; }
+            public int Limit { get; set; }
+            public bool HasMore { get; set; }
+
+            /// Entries by default; bare ids or names under --ids / --names.
+            public object[] Results { get; set; }
+        }
+
+
         public class Parameters
         {
             [ToolParameter("Name substring filter (case-insensitive)")]

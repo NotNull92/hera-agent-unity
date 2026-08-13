@@ -22,6 +22,19 @@ namespace HeraAgent.Tools
         Idempotent = true)]
     public static class ReadConsole
     {
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class Result
+        {
+            public string[] Entries { get; set; }
+            public int TotalInConsole { get; set; }
+            public int Matched { get; set; }
+            public int Returned { get; set; }
+            public int Since { get; set; }
+            public int LastCursor { get; set; }
+            public bool Truncated { get; set; }
+        }
+
+
         private static MethodInfo _startGettingEntriesMethod, _endGettingEntriesMethod, _clearMethod, _getCountMethod, _getEntryMethod;
         private static FieldInfo _modeField, _messageField, _fileField, _lineField;
         private static Type _logEntryType;

@@ -27,6 +27,14 @@ namespace HeraAgent.Tools
         })]
     public static class ListAssemblies
     {
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class Result
+        {
+            public int Count { get; set; }
+            public string[] Assemblies { get; set; }
+        }
+
+
         public class Parameters
         {
             [ToolParameter("Case-insensitive substring filter on assembly name.")]

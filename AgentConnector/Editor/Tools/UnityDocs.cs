@@ -27,6 +27,20 @@ namespace HeraAgent.Tools
         })]
     public static class UnityDocs
     {
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class Result
+        {
+            public string Title { get; set; }
+
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public string Signature { get; set; }
+
+            public string Summary { get; set; }
+            public string UnityVersion { get; set; }
+            public string DocsVersion { get; set; }
+        }
+
+
         public class Parameters
         {
             [ToolParameter("Unity type, property, or method (Rigidbody, Rigidbody.mass, GameObject.AddComponent, Vector3.zero, UnityEditor.AssetDatabase.Refresh).", Required = true)]

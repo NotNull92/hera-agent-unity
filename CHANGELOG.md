@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.105 — ten actions now declare what they return)
+
+- An agent could read every tool's input schema and know exactly what to send,
+  but 45 of 126 actions published an empty `{}` for `data`, so the only way to
+  learn a return shape was to call it. Ten now declare theirs: `console`,
+  `find_gameobjects`, `find_method`, `list_assemblies`, `describe_shader`,
+  `unity_docs`, `build status` / `list_targets` / `set_settings`, and
+  `manage_animation get_clip`. Declared schemas went 81 → 91.
+- Nothing about any response changed. Each shape was derived from a captured
+  live response rather than from reading the handler, and a before/after
+  capture of all thirteen candidate endpoints showed identical top-level
+  shapes.
+- Eleven of the 45 need no declaration and are recorded as deliberately left
+  alone: `manage_editor play / stop / pause / set_active_tool / add_tag /
+  remove_tag / add_layer / remove_layer` and `profiler enable / disable /
+  clear` return a message with no `data` at all, so an empty schema is the
+  honest description.
+- Two planned declarations were cut by the payload budget the design set:
+  `describe_type` (1299 bytes) and `scene hierarchy` (859) pushed `full` to
+  +3996 and `diagnostics` to +2082, over the 1930-byte precedent from the
+  previous wave. Without them the growth is `full` +1904, `diagnostics` +816,
+  `scene` +738, `core` +478, `testing` +240, `assets` +110. They lead the next
+  slice; `scene hierarchy` additionally needs a decision about recursive
+  shapes, which `SchemaUtility` refuses by design.
+
 ### Added (Connector 0.0.104 — asset tools accept the handles Hera emits)
 
 - `manage_assets find` and `deps` report a `guid` for every result, and no

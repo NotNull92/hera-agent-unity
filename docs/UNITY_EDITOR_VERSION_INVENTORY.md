@@ -55,6 +55,25 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 
 ## Completed Checks
 
+### Connector 0.0.105 three-bucket gate (2026-08-13)
+
+Declaration-only release. `compile-exact-source.ps1` passed with zero warnings
+in all three buckets and the release-gate suite was green in each (17/17); the
+result-type conformance check rose from 60 to 65 types.
+
+| Bucket | Representative | Fixture | Release-gate tests |
+|---|---|---|---|
+| `6000.0`–`6000.2` | `6000.0.35f1` | `Test6.0.35f1` | 17/17 |
+| `6000.3`–`6000.4` | `6000.3.5f2` | `test6000.3.5f2` | 17/17 |
+| `6000.5+` | `6000.5.6f1` | `test6.5` | 17/17 |
+
+On `6000.3.5f2`, thirteen endpoints were captured before and after the change
+and compared: zero differing response shapes. Declared output schemas went
+81 → 91 with catalog growth of `full` +1904, `diagnostics` +816, `scene` +738,
+`core` +478, `testing` +240, `assets` +110 — every profile inside the
+1930-byte precedent after two declarations were cut for exceeding it.
+
+
 ### Connector 0.0.104 three-bucket gate (2026-08-13)
 
 `compile-exact-source.ps1` passed with zero warnings in all three buckets; each

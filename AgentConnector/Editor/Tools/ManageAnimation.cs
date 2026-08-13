@@ -19,7 +19,7 @@ namespace HeraAgent.Tools
     [HeraActionContract("add_parameter", typeof(ManageAnimation.AddParameterParameters), ResultType = typeof(ManageAnimation.ParameterResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("add_state", typeof(ManageAnimation.AddStateParameters), ResultType = typeof(ManageAnimation.StateResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("add_transition", typeof(ManageAnimation.AddTransitionParameters), ResultType = typeof(ManageAnimation.TransitionResult), RiskClass = HeraRiskClass.Write)]
-    [HeraActionContract("get_clip", typeof(ManageAnimation.GetClipParameters), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("get_clip", typeof(ManageAnimation.GetClipParameters), ResultType = typeof(ManageAnimation.ClipInfoResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("get_controller", typeof(ManageAnimation.PathParameters), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraTool(
         Name = "manage_animation",
@@ -157,6 +157,38 @@ namespace HeraAgent.Tools
             public string Guid { get; set; }
             public float FrameRate { get; set; }
             public bool Loop { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class KeyframeInfo
+        {
+            public float Time { get; set; }
+            public float Value { get; set; }
+            public float InTangent { get; set; }
+            public float OutTangent { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class BindingInfo
+        {
+            public string RelativePath { get; set; }
+            public string Type { get; set; }
+            public string Property { get; set; }
+            public int Keys { get; set; }
+
+            /// Present only with --include_keys.
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public KeyframeInfo[] Keyframes { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class ClipInfoResult : AssetResult
+        {
+            public string Guid { get; set; }
+            public float FrameRate { get; set; }
+            public bool Loop { get; set; }
+            public float Length { get; set; }
+            public BindingInfo[] Bindings { get; set; }
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]

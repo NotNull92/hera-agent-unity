@@ -9,12 +9,12 @@ using UnityEditor.Build.Reporting;
 namespace HeraAgent.Tools
 {
     [HeraActionContract("start", typeof(Build.StartParameters), ResultType = typeof(Build.StartResult), RiskClass = HeraRiskClass.Write)]
-    [HeraActionContract("status", typeof(Build.EmptyParameters), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("status", typeof(Build.EmptyParameters), ResultType = typeof(Build.StatusResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("get_settings", typeof(Build.EmptyParameters), ResultType = typeof(Build.SettingsResult), RiskClass = HeraRiskClass.ReadOnly)]
-    [HeraActionContract("set_settings", typeof(Build.SetSettingsParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("set_settings", typeof(Build.SetSettingsParameters), ResultType = typeof(Build.SetSettingsResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("add_scene", typeof(Build.AddSceneParameters), ResultType = typeof(Build.SceneListResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("remove_scene", typeof(Build.ScenePathParameters), ResultType = typeof(Build.SceneListResult), RiskClass = HeraRiskClass.Write)]
-    [HeraActionContract("list_targets", typeof(Build.EmptyParameters), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("list_targets", typeof(Build.EmptyParameters), ResultType = typeof(Build.TargetsResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionSafety("start", RequiresConfirmation = true)]
     [HeraTool(
         Name = "build",
@@ -111,6 +111,39 @@ namespace HeraAgent.Tools
             public bool AllowDebugging { get; set; }
             public bool BuildScriptsOnly { get; set; }
             public SceneEntry[] Scenes { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class StatusResult
+        {
+            public string State { get; set; }
+
+            /// The last build report, or absent until one has run in this session.
+            [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+            public object LastReport { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class SetSettingsResult
+        {
+            /// Setting name to the value that was (or would be) written.
+            public object Applied { get; set; }
+
+            public bool DryRun { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class TargetEntry
+        {
+            public string Name { get; set; }
+            public string Group { get; set; }
+            public bool Installed { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class TargetsResult
+        {
+            public TargetEntry[] Targets { get; set; }
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]

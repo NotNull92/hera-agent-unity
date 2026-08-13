@@ -35,6 +35,15 @@ namespace HeraAgent.Tools
         Expected = "name or list=true")]
     public static class DescribeShader
     {
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class Result
+        {
+            public int Total { get; set; }
+            public bool Truncated { get; set; }
+            public string[] Shaders { get; set; }
+        }
+
+
         public class Parameters
         {
             [ToolParameter("Shader name to describe (e.g. 'Universal Render Pipeline/Lit', 'Standard'). Omit and pass --list to search names instead.")]

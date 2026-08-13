@@ -28,6 +28,24 @@ namespace HeraAgent.Tools
         })]
     public static class FindMethod
     {
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class Match
+        {
+            public string Type { get; set; }
+            public string Assembly { get; set; }
+            public string Name { get; set; }
+            public string Signature { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class Result
+        {
+            public int Total { get; set; }
+            public bool Truncated { get; set; }
+            public Match[] Results { get; set; }
+        }
+
+
         public class Parameters
         {
             [ToolParameter("Case-insensitive substring of the method name.", Required = true)]
