@@ -2,6 +2,12 @@ Usage: hera-agent-unity manage_packages <action> [identifier] [flags]
 
 Actions:
   list                            List every package the project resolves to (synchronous).
+  search --filter <text>          Find registry packages whose name, display name,
+                                  description, or keywords contain the text, and
+                                  report the versions this Editor accepts
+                                  (synchronous, ~4s). Use before add to confirm an
+                                  identifier instead of paying a failed job for it.
+                                    --limit <n>  maximum hits (default 25)
   add <identifier>                Install a package. identifier accepts any
                                   Client.Add string:
                                     com.unity.x            Latest from registry
@@ -19,6 +25,10 @@ Actions:
 Output:
   list — { packages:[{ name, version, source, resolved_path,
                        is_direct_dependency, display_name }] }
+  search — { filter, total, returned, truncated,
+             packages:[{ name, version, display_name, description,
+                         compatible_versions, recommended, deprecated }] }
+           compatible_versions is newest-first and capped at 10.
   add / remove / embed start — { job_id, port, action, identifier } + message "running"
   add / remove / embed complete (after polling) —
       success: { action, identifier, package:{...} } (no package on remove)
@@ -37,6 +47,7 @@ Safety:
 
 Examples:
   hera-agent-unity manage_packages list
+  hera-agent-unity manage_packages search --filter navigation
   hera-agent-unity manage_packages add com.unity.ai.navigation
   hera-agent-unity manage_packages add com.unity.cinemachine@2.9.7
   hera-agent-unity manage_packages add https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask

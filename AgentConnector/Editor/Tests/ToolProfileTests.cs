@@ -18,7 +18,7 @@ namespace HeraAgent.Tests
                 },
                 ["scene"] = new[]
                 {
-                    "find_gameobjects", "manage_animation", "manage_components",
+                    "bake", "find_gameobjects", "manage_animation", "manage_components",
                     "manage_gameobject", "manage_material", "manage_prefab", "refresh_unity",
                     "scene", "screenshot",
                 },
@@ -36,8 +36,8 @@ namespace HeraAgent.Tests
                 ["diagnostics"] = new[]
                 {
                     "console", "describe_shader", "describe_type", "find_method",
-                    "list_assemblies", "log", "profiler", "run_tests", "screenshot",
-                    "unity_docs",
+                    "list_assemblies", "log", "manage_settings", "profiler", "run_tests",
+                    "screenshot", "unity_docs",
                 },
                 ["testing"] = new[]
                 {

@@ -53,9 +53,25 @@ func testCmd(ctx context.Context, args []string, send SendFunc, resolve instance
 	if err != nil {
 		return nil, err
 	}
-	parsedParams, _, err := buildParams(args, nil)
+	parsedParams, positional, err := buildParams(args, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	// `test list` / `test cancel` answer directly — neither starts a run, so
+	// neither has a result file to poll for.
+	if len(positional) > 0 {
+		action := positional[0]
+		if action != "list" && action != "cancel" {
+			return nil, fmt.Errorf("unknown test subcommand %q (expected list or cancel)", action)
+		}
+		params := map[string]interface{}{"action": action}
+		for _, key := range []string{"mode", "filter", "category", "assembly", "limit"} {
+			if v, ok := parsedParams[key]; ok {
+				params[key] = v
+			}
+		}
+		return sendRunTests(send, params)
 	}
 
 	if resume {
@@ -83,20 +99,15 @@ func testCmd(ctx context.Context, args []string, send SendFunc, resolve instance
 		"mode":          mode,
 		"async_results": true,
 	}
-	if filter, ok := parsedParams["filter"].(string); ok {
-		params["filter"] = filter
+	for _, key := range []string{"filter", "category", "assembly"} {
+		if v, ok := parsedParams[key].(string); ok {
+			params[key] = v
+		}
 	}
 
-	resp, err := send("run_tests", params)
+	resp, err := sendRunTests(send, params)
 	if err != nil {
 		return nil, err
-	}
-
-	if !resp.Success && resp.Code == "UNKNOWN_COMMAND" {
-		return nil, fmt.Errorf(
-			"'run_tests' is not available.\n" +
-				"Install the Unity Test Framework package:\n" +
-				"  Window > Package Manager > search 'Test Framework' > Install")
 	}
 
 	if resp.Message != "running" {
@@ -114,6 +125,23 @@ func testCmd(ctx context.Context, args []string, send SendFunc, resolve instance
 	fmt.Fprintf(os.Stderr, "%s tests running, waiting for results...\n", mode)
 
 	return pollTestResults(ctx, meta.Port, meta.RunID, timeout)
+}
+
+// The connector only registers run_tests when the Unity Test Framework package
+// is present (asmdef define constraint), so a missing tool means a missing
+// package rather than an outdated connector.
+func sendRunTests(send SendFunc, params map[string]interface{}) (*client.CommandResponse, error) {
+	resp, err := send("run_tests", params)
+	if err != nil {
+		return nil, err
+	}
+	if !resp.Success && resp.Code == "UNKNOWN_COMMAND" {
+		return nil, fmt.Errorf(
+			"'run_tests' is not available.\n" +
+				"Install the Unity Test Framework package:\n" +
+				"  Window > Package Manager > search 'Test Framework' > Install")
+	}
+	return resp, nil
 }
 
 func pollTestResults(ctx context.Context, port int, runID string, timeout time.Duration) (*client.CommandResponse, error) {

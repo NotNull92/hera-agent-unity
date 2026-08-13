@@ -922,12 +922,15 @@ namespace HeraAgent.Tests
                 }));
         }
 
+        // Coverage is asserted against the live registry rather than a literal
+        // count: once a tool appears in the sample table, every one of its
+        // actions must have a sample. A hardcoded total silently goes stale the
+        // moment an action is added, which is how this check drifted before.
         private static bool TestEveryM23ActionContract()
         {
-            var count = 0;
+            var covered = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in StrictM23Actions())
             {
-                count++;
                 var contract = ToolContractRegistry.Get(entry.tool);
                 if (contract == null
                     || !contract.Actions.TryGetValue(entry.action, out var action)
@@ -937,11 +940,26 @@ namespace HeraAgent.Tests
                         != entry.action
                     || !ToolContractValidator.Validate(contract, entry.input, entry.action).IsValid)
                 {
+                    Debug.LogError($"[ToolContractTests] invalid M23 sample: {entry.tool}/{entry.action}");
                     return Expect(nameof(TestEveryM23ActionContract), false);
                 }
+                covered.Add(entry.tool + "/" + entry.action);
             }
 
-            return Expect(nameof(TestEveryM23ActionContract), count == 26);
+            var sampledTools = covered
+                .Select(key => key.Substring(0, key.IndexOf('/')))
+                .Distinct(StringComparer.Ordinal);
+            var missing = sampledTools
+                .SelectMany(tool => ToolContractRegistry.Get(tool).Actions.Keys
+                    .Select(action => tool + "/" + action))
+                .Where(key => !covered.Contains(key))
+                .OrderBy(key => key, StringComparer.Ordinal)
+                .ToArray();
+            if (missing.Length != 0)
+                Debug.LogError("[ToolContractTests] M23 actions without a sample: " + string.Join(", ", missing));
+
+            Debug.Log($"[ToolContractTests] M23 action samples = {covered.Count}");
+            return Expect(nameof(TestEveryM23ActionContract), missing.Length == 0);
         }
 
         private static bool TestM23ValidationFailures()
@@ -1256,12 +1274,12 @@ namespace HeraAgent.Tests
                     .All(action => action.IsStrict));
         }
 
+        // Same registry-derived coverage rule as TestEveryM23ActionContract.
         private static bool TestEveryM24ActionContract()
         {
-            var count = 0;
+            var covered = new HashSet<string>(StringComparer.Ordinal);
             foreach (var entry in StrictM24Actions())
             {
-                count++;
                 var contract = ToolContractRegistry.Get(entry.tool);
                 if (contract == null
                     || !contract.Actions.TryGetValue(entry.action, out var action)
@@ -1274,11 +1292,25 @@ namespace HeraAgent.Tests
                         entry.input,
                         entry.action).IsValid)
                 {
+                    Debug.LogError($"[ToolContractTests] invalid M24 sample: {entry.tool}/{entry.action}");
                     return Expect(nameof(TestEveryM24ActionContract), false);
                 }
+                covered.Add(entry.tool + "/" + entry.action);
             }
 
-            return Expect(nameof(TestEveryM24ActionContract), count == 9);
+            var missing = covered
+                .Select(key => key.Substring(0, key.IndexOf('/')))
+                .Distinct(StringComparer.Ordinal)
+                .SelectMany(tool => ToolContractRegistry.Get(tool).Actions.Keys
+                    .Select(action => tool + "/" + action))
+                .Where(key => !covered.Contains(key))
+                .OrderBy(key => key, StringComparer.Ordinal)
+                .ToArray();
+            if (missing.Length != 0)
+                Debug.LogError("[ToolContractTests] M24 actions without a sample: " + string.Join(", ", missing));
+
+            Debug.Log($"[ToolContractTests] M24 action samples = {covered.Count}");
+            return Expect(nameof(TestEveryM24ActionContract), missing.Length == 0);
         }
 
         private static bool TestM24ValidationFailures()
@@ -2021,6 +2053,11 @@ namespace HeraAgent.Tests
         private static IEnumerable<(string tool, string action, JObject input)> StrictM24Actions()
         {
             yield return ("manage_packages", "list", new JObject { ["action"] = "list" });
+            yield return ("manage_packages", "search", new JObject
+            {
+                ["action"] = "search",
+                ["filter"] = "navigation",
+            });
             foreach (var action in new[] { "add", "remove", "embed" })
             {
                 yield return ("manage_packages", action, new JObject
@@ -2031,8 +2068,15 @@ namespace HeraAgent.Tests
             }
 
             yield return ("profiler", "hierarchy", new JObject { ["action"] = "hierarchy" });
-            foreach (var action in new[] { "enable", "disable", "status", "clear" })
+            foreach (var action in new[] { "enable", "disable", "status", "clear", "stats" })
                 yield return ("profiler", action, new JObject { ["action"] = action });
+
+            yield return ("run_tests", "list", new JObject
+            {
+                ["action"] = "list",
+                ["mode"] = "EditMode",
+            });
+            yield return ("run_tests", "cancel", new JObject { ["action"] = "cancel" });
         }
 
         private static IEnumerable<(string tool, JObject input)> M24DefaultInputs()

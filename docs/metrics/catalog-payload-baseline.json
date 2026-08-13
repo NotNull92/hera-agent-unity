@@ -1,11 +1,11 @@
 {
   "schema": "hera.catalog-payload-report/1",
-  "catalog_hash": "sha256:ea29a11c983bb14c27eb0c77db9aeeb79326835c0f28b5bb55ebcef075b26f6f",
-  "input_bytes": 212854,
-  "normalized_catalog_bytes": 213004,
+  "catalog_hash": "sha256:abc3961fef8fb54962054c6b82e90b27ee3578e83c454141891a3488cedd19f7",
+  "input_bytes": 218042,
+  "normalized_catalog_bytes": 218192,
   "tool_count": 33,
-  "action_count": 103,
-  "description_characters": 8521,
+  "action_count": 106,
+  "description_characters": 8913,
   "profiles": [
     {
       "name": "advanced",
@@ -15,7 +15,7 @@
     {
       "name": "assets",
       "tool_count": 9,
-      "normalized_contract_bytes": 37068
+      "normalized_contract_bytes": 38907
     },
     {
       "name": "core",
@@ -25,12 +25,12 @@
     {
       "name": "diagnostics",
       "tool_count": 11,
-      "normalized_contract_bytes": 43564
+      "normalized_contract_bytes": 46913
     },
     {
       "name": "full",
       "tool_count": 31,
-      "normalized_contract_bytes": 207896
+      "normalized_contract_bytes": 213084
     },
     {
       "name": "scene",
@@ -40,7 +40,7 @@
     {
       "name": "testing",
       "tool_count": 6,
-      "normalized_contract_bytes": 64073
+      "normalized_contract_bytes": 67422
     },
     {
       "name": "ui",
@@ -256,17 +256,17 @@
   ],
   "rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-    "low_4_bytes_per_token": 53251,
-    "central_3_2_bytes_per_token": 66564,
-    "high_2_5_bytes_per_token": 85202
+    "low_4_bytes_per_token": 54548,
+    "central_3_2_bytes_per_token": 68185,
+    "high_2_5_bytes_per_token": 87277
   },
   "warnings": [
-    "profile assets uses 37068 normalized bytes (warning budget 24000)",
+    "profile assets uses 38907 normalized bytes (warning budget 24000)",
     "profile core uses 57671 normalized bytes (warning budget 24000)",
-    "profile diagnostics uses 43564 normalized bytes (warning budget 24000)",
-    "profile full uses 207896 normalized bytes (warning budget 24000)",
+    "profile diagnostics uses 46913 normalized bytes (warning budget 24000)",
+    "profile full uses 213084 normalized bytes (warning budget 24000)",
     "profile scene uses 77067 normalized bytes (warning budget 24000)",
-    "profile testing uses 64073 normalized bytes (warning budget 24000)",
+    "profile testing uses 67422 normalized bytes (warning budget 24000)",
     "profile ui uses 89692 normalized bytes (warning budget 24000)",
     "tool input uses 35429 normalized bytes (warning budget 20000)"
   ]

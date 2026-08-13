@@ -1,8 +1,8 @@
 # Active Development Handoff
 
-Current workstream: **editor-workflow surface queue.** Waves 1a, 1b, 2, 3, and
-4 are complete and released. Per-release detail lives in `CHANGELOG.md`; this
-file records only current state and what is open.
+Current workstream: **editor-workflow surface queue.** Waves 1a, 1b, 2, 3, 4,
+and 5 are complete. Per-release detail lives in `CHANGELOG.md`; this file
+records only current state and what is open.
 
 ## Shipped in this queue
 
@@ -13,12 +13,13 @@ file records only current state and what is open.
 | 2 | `0.0.96` + CLI `v0.2.6` | `manage_settings` (physics/time/quality/player/audio get+set, `dry_run` previews, approval-gated writes) and `manage_editor get_tags_layers` |
 | 3 | `0.0.97` + CLI `v0.2.7` | `bake` (lighting / built-in scene NavMesh / occlusion × start/status/cancel/clear) |
 | 4 | `0.0.98` + CLI `v0.2.8` | `build` (Player build over the file bus + Build Settings management) |
+| 5 | `0.0.99` + CLI `v0.2.9` | `test list` / `test cancel` / `--category` / `--assembly`, honest `NO_TESTS_MATCHED`, `manage_packages search` (`docs/DISCOVERY_SURFACE_DESIGN.md`) |
 
 Alongside the queue: `0.0.91` moved the support floor to Unity 6+ (three
 compatibility buckets), and `0.0.90` fixed the `EntityIdCompat` round trip that
 had made every emitted `instance_id` unresolvable on Unity 6000.3+.
 
-Catalog now: **33 tools / 103 actions**. Every wave passed the feature
+Catalog now: **33 tools / 106 actions**. Every wave passed the feature
 admission gate, regenerated `docs/metrics/catalog-payload-baseline.json` in the
 same review, and was live-verified before release.
 
@@ -28,11 +29,17 @@ No verification debt. Each release ran its design's live matrix plus the
 three-bucket gate (`6000.0.35f1`, `6000.3.5f2`, `6000.5.6f1`); evidence is in
 `docs/UNITY_EDITOR_VERSION_INVENTORY.md` and the per-wave design documents.
 
-**Process correction from wave 4:** `tools/verify-unity-package/compile-exact-source.ps1`
-fails on warnings as well as errors, and it had not been run during wave 3 —
-`0.0.97` shipped with unsuppressed deprecated-API warnings, fixed in `0.0.98`.
-Run that script for all three buckets before every Connector release; it needs
-no Editor launch and takes seconds.
+**The release gate now has three steps, and skipping any of them has already
+shipped a defect:**
+
+1. `tools/verify-unity-package/compile-exact-source.ps1` for all three
+   buckets. It fails on warnings as well as errors and needs no Editor launch.
+   Skipped in wave 3 → `0.0.97` shipped unsuppressed deprecated-API warnings.
+2. **Run `HeraAgent.Editor.Tests` in each bucket** (`testables` on for the run,
+   manifest restored afterwards). Never run before wave 5 → seven stale
+   expectations shipped red from `0.0.92` through `0.0.98`. Compiling the
+   package and reading the console does not exercise them.
+3. The wave's own live matrix on a disposable fixture.
 
 ## Open items
 
@@ -43,6 +50,13 @@ no Editor launch and takes seconds.
   (`docs/SETTINGS_SURFACE_DESIGN.md`), asset-tool path parameters accepting
   durable handles (`docs/TARGET_RESOLUTION_DESIGN.md`).
 - Survey candidates not yet designed: Q9 Unity Search exposure, Q10 prefab
-  overrides/unpack, Q11 assorted small gaps (`package_search`/`resolve`,
-  `list_tests` + category filter, menu listing, `set_autotick`,
-  `import_asset`).
+  overrides/unpack. Q11 closed in wave 5; four of its five candidates were
+  dropped with reasons recorded in `docs/DISCOVERY_SURFACE_DESIGN.md` §D6
+  (menu listing already shipped; `set_autotick` prevents no measured failure;
+  `Client.Resolve()` cannot report its own outcome; external-file import is
+  already covered by the agent's own filesystem tools plus `editor refresh`).
+- Output-casing inconsistency, pre-existing and not addressed: tool payloads
+  built from anonymous objects serialize snake_case, but the handful returned
+  as typed result classes (`bake` all actions, `manage_editor get_tags_layers`)
+  serialize PascalCase. Changing them breaks consumers of `0.0.94`–`0.0.99`,
+  so it needs its own decision rather than a drive-by fix.

@@ -396,6 +396,7 @@ hera-agent-unity manage_packages <action> [identifier]
 | Action | Sync? | Description |
 |:---|:---:|:---|
 | `list` | ✅ | Every package the project currently resolves to (incl. indirect dependencies). |
+| `search --filter <text>` | ✅ | Registry packages whose name, display name, description, or keywords contain the text, with the versions this Editor accepts. `--limit` defaults to 25. |
 | `add <identifier>` | ❌ | Install. `identifier` accepts any `Client.Add` form: `com.x.y`, `com.x.y@1.2.3`, `https://.../repo.git`, `https://.../repo.git?path=Sub`, `file:..`. |
 | `remove <name>` | ❌ | Uninstall by package name. |
 | `embed <name>` | ❌ | Copy a cached package out of `Library/PackageCache` into `Packages/` so it becomes locally editable. |
@@ -1345,10 +1346,19 @@ Run Unity Test Framework tests.
 hera-agent-unity test [flags]
 ```
 
+| Subcommand | Description |
+|:---|:---|
+| *(none)* | Run the selected tests and wait for results |
+| `list` | List the tests that exist; runs nothing |
+| `cancel` | End the active run and release its pending-run lock |
+
 | Flag | Description | Default |
 |:---|:---|:---|
 | `--mode` | `EditMode` or `PlayMode` | `EditMode` |
-| `--filter` | Filter by namespace, class, or full test name | `""` |
+| `--filter` | Run: NUnit test/group name. List: substring matched against each full test name | `""` |
+| `--category` | Comma-separated NUnit `[Category]` names | `""` |
+| `--assembly` | Comma-separated test assembly names (no `.dll`) | `""` |
+| `--limit` | `list` only: maximum tests returned | `200` |
 | `--resume` | Continue waiting for an existing `run_id` without starting tests again | `""` |
 
 ```bash
@@ -1358,12 +1368,40 @@ hera-agent-unity test
 # PlayMode tests
 hera-agent-unity test --mode PlayMode
 
-# Filtered tests
+# What exists, without running anything
+hera-agent-unity test list
+hera-agent-unity test list --category Smoke
+
+# Selected tests
 hera-agent-unity test --filter MyNamespace.MyClass
+hera-agent-unity test --category Smoke
+hera-agent-unity test --assembly MyGame.Tests
+
+# Release a hung run
+hera-agent-unity test cancel
 
 # Resume a slow existing run; no second run_tests request is sent
 hera-agent-unity --port 8094 test --resume <run_id> --timeout 300000
 ```
+
+**Selectors**: `--filter`, `--category`, and `--assembly` intersect. A run
+narrowed by any of them that matches nothing returns `NO_TESTS_MATCHED`
+rather than reporting a pass, because a selector typo is not a green build.
+An unfiltered run of a project with no tests remains a success. Run
+`test list` first to see the exact full names, assemblies, and categories
+that exist.
+
+**Discovery payload**: without a selector, `test list` returns per-assembly
+and per-category counts so a large project cannot flood the response; with a
+selector it returns `{mode, total, returned, truncated, tests:[{full_name,
+assembly, categories}]}`. `Uncategorized` never appears — it is the test
+framework's placeholder, not a selectable category.
+
+**Cancellation**: `test cancel` asks the test framework to stop the run using
+the guid `TestRunnerApi.Execute` returned (persisted in the pending-run
+record, so it survives the PlayMode domain reload) and always clears that
+record. Clearing it is what releases `TEST_RUN_ALREADY_RUNNING`; a client
+already waiting on the run receives `TEST_RUN_CANCELLED`.
 
 **Test-run behavior**: Both modes start asynchronously and persist their final
 result to `~/.hera-agent-unity/status/test-results-<port>-<run_id>.json`. The CLI polls

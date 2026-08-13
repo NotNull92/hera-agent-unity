@@ -55,6 +55,37 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 
 ## Completed Checks
 
+### Connector 0.0.99 three-bucket gate (2026-08-13)
+
+The working-tree Connector installed as a `file:` UPM dependency in each
+bucket's fixture. `tools/verify-unity-package/compile-exact-source.ps1` passed
+with zero errors and zero warnings in all three buckets before any Editor
+launch.
+
+**This gate ran the Connector's own release-gate tests for the first time.**
+Earlier gates compiled the package and read the console but never executed
+`HeraAgent.Editor.Tests`, which is why seven stale expectations shipped red
+from `0.0.92` onward. Each bucket enabled `testables` for the run and had its
+manifest restored byte-for-byte afterwards.
+
+| Bucket | Representative | Fixture | Release-gate tests | Status |
+|---|---|---|---|---|
+| `6000.0`–`6000.2` | `6000.0.35f1` | `Test6.0.35f1` | 17/17 | PASS |
+| `6000.3`–`6000.4` | `6000.3.5f2` | `test6000.3.5f2` | 17/17 | PASS |
+| `6000.5+` | `6000.5.6f1` | `test6.5` | 17/17 | PASS |
+
+Per-bucket functional smokes: `test list` returned the assembly/category
+summary, `test cancel` on an idle port reported `was_running: false`, a run
+narrowed by a nonexistent category returned `NO_TESTS_MATCHED`, and
+`manage_packages search` resolved a package with its compatible-version list.
+That last check also demonstrates why the field exists: `com.unity.ai.navigation`
+reported six compatible versions on `6000.3.5f2` and one on `6000.5.6f1`.
+
+On `6000.3.5f2` the cancel path was exercised against a live 30-second
+PlayMode test: a second run was refused with `TEST_RUN_ALREADY_RUNNING`,
+`test cancel` reported `nunit_cancel_requested: true`, the waiting client was
+released with `TEST_RUN_CANCELLED`, and the next run started normally.
+
 ### Connector 0.0.94 three-bucket gate (covers 0.0.92–0.0.94, 2026-08-12)
 
 Exact working-tree source at `connector-0.0.94` installed as a `file:` UPM

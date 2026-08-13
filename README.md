@@ -597,7 +597,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `build` | Queue a Player build for the active target and read the compact report. |
 | `exec` | Run arbitrary project-aware C# inside the Editor. |
 | `editor` | Launch/restart the exact project, or play, stop, pause, refresh, and compile. |
-| `test` | Run or resume Unity tests. |
+| `test` | Run, list, resume, or cancel Unity tests, selecting by name, category, or assembly. |
 | `task` | Inspect durable test/package work without contacting Unity. |
 | `screenshot` | Capture Scene/Game views, ScreenSpaceOverlay canvases, or isolated objects; optionally return bounded uGUI or Camera.main-constrained 3D collider identity/coordinates, including metadata-only modes. |
 | `input` | Test uGUI, or synthesize optional Input System keyboard/mouse/sequence input and record/replay it in Play Mode. |

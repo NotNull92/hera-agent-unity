@@ -46,7 +46,7 @@ namespace HeraAgent.Tests
             var actions = sceneSchema["actions"]?.Values<string>("name").ToArray() ?? Array.Empty<string>();
             allPassed &= Expect("scene action descriptors are ordinal-sorted",
                 actions.SequenceEqual(actions.OrderBy(name => name, StringComparer.Ordinal))
-                && actions.SequenceEqual(new[] { "close", "info", "list", "load", "save" }));
+                && actions.SequenceEqual(new[] { "close", "hierarchy", "info", "list", "load", "save" }));
             allPassed &= Expect("unsupported schema capabilities stay false",
                 sceneSchema["metadata"]?.Value<bool>("enum_support") == false
                 && sceneSchema["metadata"]?.Value<bool>("default_support") == false
@@ -244,26 +244,21 @@ namespace HeraAgent.Tests
         {
             var expectedTools = new[]
             {
-                "console", "describe_shader", "describe_type", "detect_assets", "exec",
-                "find_gameobjects", "find_method", "game_feel", "input", "list_assemblies",
-                "log", "manage_animation", "manage_asset_import", "manage_assets",
-                "manage_components", "manage_editor", "manage_gameobject", "manage_material",
-                "manage_packages", "manage_prefab", "manage_ui", "menu", "profiler",
-                "refresh_unity", "reserialize", "run_tests", "scene", "screenshot",
-                "ui_slop", "unity_docs",
+                "bake", "build", "console", "describe_shader", "describe_type",
+                "detect_assets", "exec", "find_gameobjects", "find_method", "game_feel",
+                "input", "list_assemblies", "log", "manage_animation", "manage_asset_import",
+                "manage_assets", "manage_components", "manage_editor", "manage_gameobject",
+                "manage_material", "manage_packages", "manage_prefab", "manage_settings",
+                "manage_ui", "menu", "profiler", "refresh_unity", "reserialize", "run_tests",
+                "scene", "screenshot", "ui_slop", "unity_docs",
             };
             var expectedActions = new Dictionary<string, string[]>
             {
-                ["manage_components"] = new[] { "add", "get", "list", "remove", "set" },
-                ["manage_gameobject"] = new[]
+                ["bake"] = new[] { "cancel", "clear", "start", "status" },
+                ["build"] = new[]
                 {
-                    "create", "destroy", "duplicate", "get_transform", "move",
-                    "set_active", "set_name", "set_parent",
-                },
-                ["manage_editor"] = new[]
-                {
-                    "add_layer", "add_tag", "pause", "play", "remove_layer", "remove_tag",
-                    "set_active_tool", "stop",
+                    "add_scene", "get_settings", "list_targets", "remove_scene",
+                    "set_settings", "start", "status",
                 },
                 ["input"] = new[]
                 {
@@ -273,17 +268,35 @@ namespace HeraAgent.Tests
                 ["manage_animation"] = new[]
                 {
                     "add_parameter", "add_state", "add_transition", "create_clip",
-                    "create_controller", "set_curve",
+                    "create_controller", "get_clip", "get_controller", "set_curve",
                 },
                 ["manage_asset_import"] = new[] { "get", "set" },
                 ["manage_assets"] = new[] { "copy", "create", "delete", "find", "mkdir", "move" },
+                ["manage_components"] = new[] { "add", "get", "list", "remove", "set" },
+                ["manage_editor"] = new[]
+                {
+                    "add_layer", "add_tag", "get_selection", "get_tags_layers", "pause",
+                    "play", "remove_layer", "remove_tag", "set_active_tool", "set_selection",
+                    "stop",
+                },
+                ["manage_gameobject"] = new[]
+                {
+                    "create", "destroy", "duplicate", "get_transform", "move",
+                    "set_active", "set_name", "set_parent",
+                },
                 ["manage_material"] = new[] { "create", "get", "set", "set_shader" },
-                ["manage_packages"] = new[] { "add", "embed", "list", "remove" },
+                ["manage_packages"] = new[] { "add", "embed", "list", "remove", "search" },
                 ["manage_prefab"] = new[] { "add_component", "create", "instantiate", "remove_component" },
+                ["manage_settings"] = new[]
+                {
+                    "get_audio", "get_physics", "get_player", "get_quality", "get_time",
+                    "set_audio", "set_physics", "set_player", "set_quality", "set_time",
+                },
                 ["manage_ui"] = new[] { "create", "get_rect", "set_anchor", "set_rect" },
                 ["menu"] = new[] { "list" },
-                ["profiler"] = new[] { "clear", "disable", "enable", "hierarchy", "status" },
-                ["scene"] = new[] { "close", "info", "list", "load", "save" },
+                ["profiler"] = new[] { "clear", "disable", "enable", "hierarchy", "stats", "status" },
+                ["run_tests"] = new[] { "cancel", "list" },
+                ["scene"] = new[] { "close", "hierarchy", "info", "list", "load", "save" },
             };
 
             var actualTools = ToolDiscovery.GetToolNames().Cast<string>().ToArray();
@@ -318,7 +331,7 @@ namespace HeraAgent.Tests
                 $"declared action contracts complete = true ({actionCount}); " +
                 $"built-in strict contracts complete = {allBuiltInsStrict.ToString().ToLowerInvariant()}");
             return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged),
-                expectedTools.Length == 30 && actionCount == 75 && allBuiltInsStrict);
+                expectedTools.Length == 33 && actionCount == 106 && allBuiltInsStrict);
         }
 
         private static bool ContainsBaselineToolNames(

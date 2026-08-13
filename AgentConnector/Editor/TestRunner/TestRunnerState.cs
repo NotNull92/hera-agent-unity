@@ -21,14 +21,58 @@ namespace HeraAgent.TestRunner
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
 
-        public static void MarkPending(int port, string runId, string filter, TestMode mode)
+        public static void MarkPending(int port, string runId, string filter, TestMode mode, bool selective)
+        {
+            WritePending(port, runId, filter, mode == TestMode.EditMode ? "EditMode" : "PlayMode", selective, null);
+        }
+
+        /// <summary>
+        /// NUnit's run guid only exists once TestRunnerApi.Execute returns, but
+        /// the pending record has to be on disk before that so a concurrent run
+        /// is refused. This fills the guid in afterwards.
+        /// </summary>
+        public static void AttachRunGuid(int port, string runId, string nunitGuid)
+        {
+            if (string.IsNullOrEmpty(nunitGuid)) return;
+            if (!TryReadPending(PendingFilePath(port, runId), out var pending)) return;
+            WritePending(port, runId, pending.Filter, pending.Mode, pending.Selective, nunitGuid);
+        }
+
+        /// <summary>
+        /// Returns and does not clear the first pending run this Editor owns on
+        /// the port. Hera allows one active run per port, so the first match is
+        /// the run.
+        /// </summary>
+        internal static bool TryTakePending(int port, out string runId, out string nunitGuid)
+        {
+            runId = null;
+            nunitGuid = null;
+            try
+            {
+                if (!Directory.Exists(RunTests.StatusDir)) return false;
+                foreach (var file in Directory.GetFiles(RunTests.StatusDir, $"test-pending-{port}-*.json"))
+                {
+                    if (!TryReadPending(file, out var pending)) continue;
+                    if (!OwnsCurrentProject(pending)) continue;
+                    runId = pending.RunId;
+                    nunitGuid = pending.NunitGuid;
+                    return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        static void WritePending(int port, string runId, string filter, string mode, bool selective, string nunitGuid)
         {
             var pending = new
             {
                 port,
                 run_id = runId,
                 filter = filter ?? "",
-                mode = mode == TestMode.EditMode ? "EditMode" : "PlayMode",
+                mode,
+                selective,
+                nunit_guid = nunitGuid ?? "",
                 owner_pid = HeraAgent.ProjectIdentity.CurrentProcessId,
                 project_id = HeraAgent.ProjectIdentity.CurrentId
             };
@@ -121,13 +165,13 @@ namespace HeraAgent.TestRunner
                         continue;
                     }
 
-                    ReattachCallbacks(pending.Port, pending.RunId, pending.Filter);
+                    ReattachCallbacks(pending.Port, pending.RunId, pending.Selective);
                 }
             }
             catch { }
         }
 
-        static void ReattachCallbacks(int port, string runId, string filter)
+        static void ReattachCallbacks(int port, string runId, bool selective)
         {
             var passed  = new List<string>();
             var failed  = new List<string>();
@@ -149,7 +193,7 @@ namespace HeraAgent.TestRunner
                 {
                     if (completed) return;
                     completed = true;
-                    if (RunTests.WriteResultsFile(port, runId, passed, failed, skipped))
+                    if (RunTests.WriteResultsFile(port, runId, passed, failed, skipped, selective))
                         ClearPending(port, runId);
                     cleanup();
                 }
@@ -191,6 +235,12 @@ namespace HeraAgent.TestRunner
                     RunId = runId,
                     Filter = data["filter"]?.Value<string>(),
                     Mode = data["mode"]?.Value<string>(),
+                    // Records written before this field existed carry a filter
+                    // string only; treat a non-empty filter as selective so a
+                    // run in flight across an upgrade still reports honestly.
+                    Selective = data["selective"]?.Value<bool>()
+                        ?? !string.IsNullOrEmpty(data["filter"]?.Value<string>()),
+                    NunitGuid = data["nunit_guid"]?.Value<string>(),
                     OwnerPid = ownerPid,
                     State = data
                 };
@@ -230,6 +280,8 @@ namespace HeraAgent.TestRunner
             public string RunId { get; set; }
             public string Filter { get; set; }
             public string Mode { get; set; }
+            public bool Selective { get; set; }
+            public string NunitGuid { get; set; }
             public int OwnerPid { get; set; }
             public JObject State { get; set; }
         }

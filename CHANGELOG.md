@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.99 — a filtered test run that matched nothing reported success)
+
+- `test --filter <typo>` ran zero tests and returned a success envelope with
+  `total: 0`, so a mistyped selector — or one naming an assembly that had not
+  compiled — told the agent its work was verified. A run narrowed by
+  `--filter`, `--category`, or `--assembly` that matches nothing now returns
+  `NO_TESTS_MATCHED`. An unfiltered run of a project with no tests is still a
+  success, because that is a true statement about the project.
+- The Connector's own release-gate test suite had been failing since the
+  selection/hierarchy wave: `TestCatalogSnapshotIsComplete`,
+  `TestEveryM23ActionContract`, `TestEveryM24ActionContract`,
+  `TestRuntimeToolAndActionNamesUnchanged`, `TestEveryBuiltInOperationClassified`,
+  `TestHandlerDerivedRiskAudit`, and `TestExpectedProfiles/scene` all carried
+  stale tool/action expectations. The release gate compiled the package and
+  read the console but never ran those tests, so the failures shipped. All
+  expectations are refreshed, and the two action-contract coverage checks now
+  derive their expectation from the live registry — once a tool appears in a
+  sample table, every one of its actions must have a sample — instead of
+  comparing against a hardcoded total that goes stale on the next action.
+
+### Added (Connector 0.0.99 and CLI — knowing what exists before running it)
+
+- `test list` enumerates tests without running them. Without a selector it
+  reports per-assembly and per-category counts, so a large project cannot
+  flood the response; with `--filter`, `--category`, or `--assembly` it
+  returns a bounded flat list of exact full names to copy back into a run.
+  `Uncategorized` is dropped from the output because it is the test
+  framework's placeholder, not a name `--category` can select.
+- `test --category` and `test --assembly` select by NUnit category and test
+  assembly. `--filter` keeps its existing meaning, and all three intersect.
+- `test cancel` ends an active run. It asks the test framework to cancel via
+  the run guid returned by `TestRunnerApi.Execute` (now persisted in the
+  pending-run record, so it survives the PlayMode domain reload) and always
+  clears that record, which is the only way out of a permanent
+  `TEST_RUN_ALREADY_RUNNING` lockout when a run hangs. A client already
+  waiting on the run is released with `TEST_RUN_CANCELLED`.
+- `manage_packages search --filter <text>` finds registry packages by
+  substring across name, display name, description, and keywords, and reports
+  `compatible_versions` — the versions this Editor accepts — so an identifier
+  can be confirmed before `add` spends an asynchronous job and a domain
+  reload on a guess.
+
 ### Added (CLI and Connector 0.0.98 — Player builds)
 
 - New `build` tool: `start` queues a Player build for the active target and

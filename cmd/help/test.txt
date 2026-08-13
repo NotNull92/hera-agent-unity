@@ -1,13 +1,30 @@
-Usage: hera-agent-unity test [options]
+Usage: hera-agent-unity test [list|cancel] [options]
 
-Run Unity tests via the Test Runner API.
+Run Unity tests via the Test Runner API, or enumerate them without running.
+
+Subcommands:
+  (none)                        Run the selected tests and wait for results
+  list                          List the tests that exist; runs nothing
+  cancel                        End the active run and release its pending lock
 
 Options:
   --mode <EditMode|PlayMode>    Test mode (default: EditMode)
-  --filter <name>               Filter by namespace, class, or full test name
-                                Must be the full path (e.g. MyNamespace.MyClass)
+  --filter <name>               Run: NUnit test/group name — must be a full path
+                                (e.g. MyNamespace.MyClass). List: case-insensitive
+                                substring matched against each full test name.
+  --category <a,b>              Comma-separated NUnit [Category] names
+  --assembly <a,b>              Comma-separated test assembly names (no .dll)
+  --limit <n>                   list only: maximum tests returned (default 200)
   --resume <run_id>             Keep waiting for an existing test run without
                                 starting the tests again
+
+--filter, --category, and --assembly intersect. A run narrowed by any of them
+that matches nothing returns NO_TESTS_MATCHED instead of reporting a pass — a
+selector typo is not a green build. Run `test list` first to see the exact full
+names, assemblies, and categories that exist, then copy one back into --filter.
+
+Without a selector, `test list` reports per-assembly and per-category counts
+rather than every name, so a large project cannot flood the response.
 
 Both EditMode and PlayMode tests start asynchronously. Their final results are
 written to ~/.hera-agent-unity/status/test-results-<port>-<run_id>.json; the CLI polls
@@ -17,6 +34,9 @@ still exists, the CLI returns code TEST_RUN_PENDING. This means the result is
 late, not that the Editor is unresponsive. Resume that exact run with a longer
 timeout; this does not send run_tests again:
   hera-agent-unity --port <port> test --resume <run_id> --timeout 300000
+
+`test cancel` asks the test framework to stop the run and always clears the
+pending record, which is what releases TEST_RUN_ALREADY_RUNNING.
 
 For an older connector response without run_id, the CLI falls back to
 test-results-<port>.json. Current connectors also write that legacy file for
@@ -28,7 +48,11 @@ Requires the Unity Test Framework package (com.unity.test-framework).
 Examples:
   hera-agent-unity test
   hera-agent-unity test --mode PlayMode
+  hera-agent-unity test list
+  hera-agent-unity test list --mode EditMode --category Smoke
+  hera-agent-unity test --category Smoke
+  hera-agent-unity test --assembly MyGame.Tests
   hera-agent-unity test --filter MyNamespace.MyTests
-  hera-agent-unity test --mode EditMode --filter MyNamespace.MyTests.SpecificTest
+  hera-agent-unity test cancel
   hera-agent-unity --port 8094 test --resume <run_id> --timeout 300000
 

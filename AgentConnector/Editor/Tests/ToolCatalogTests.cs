@@ -195,8 +195,8 @@ namespace HeraAgent.Tests
                 catalog.SchemaVersion == SchemaVersion
                 && ToolCatalogTestSupport.IsSha256(hash)
                 && ToolCatalogTestSupport.IsSha256(projectId)
-                && catalog.Tools.Count == 30
-                && actionCount == 75
+                && catalog.Tools.Count == 33
+                && actionCount == 106
                 && fieldsComplete);
         }
 
@@ -253,7 +253,7 @@ namespace HeraAgent.Tests
                 && projectId?.StartsWith("sha256:", StringComparison.Ordinal) == true
                 && projectId.Length == 71
                 && !string.IsNullOrEmpty(data?.Value<string>("domain_epoch"))
-                && builtIns.Length == 30
+                && builtIns.Length == 33
                 && serialized.IndexOf("projectPath", StringComparison.Ordinal) < 0
                 && serialized.IndexOf(Application.dataPath, StringComparison.OrdinalIgnoreCase) < 0
                 && serialized.IndexOf(projectPath, StringComparison.OrdinalIgnoreCase) < 0);
