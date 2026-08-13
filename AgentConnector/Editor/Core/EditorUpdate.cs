@@ -1,11 +1,37 @@
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEditor;
+using UnityEngine;
 
 namespace HeraAgent
 {
     internal static class EditorUpdate
     {
+        /// <summary>
+        /// Runs the action once on the next editor update, after the current command has
+        /// answered. Use this rather than EditorApplication.delayCall for work a command
+        /// starts and leaves behind: delayCall does not run in an unfocused Editor, so the
+        /// work waits indefinitely while the caller has already been told it started.
+        /// </summary>
+        internal static void Once(Action action)
+        {
+            void Tick()
+            {
+                EditorApplication.update -= Tick;
+                try
+                {
+                    action();
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[Hera] I failed running deferred editor work: {ex}");
+                }
+            }
+
+            EditorApplication.update += Tick;
+        }
+
         internal static Task Next(CancellationToken cancellationToken = default)
         {
             if (cancellationToken.IsCancellationRequested)

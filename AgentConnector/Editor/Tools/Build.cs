@@ -226,7 +226,9 @@ namespace HeraAgent.Tools
 
             s_Queued = true;
             var scenes = enabledScenes.ToArray();
-            EditorApplication.delayCall += () => RunBuild(scenes, target, outputPath, port);
+            // Not delayCall: it does not run in an unfocused Editor, so the build would
+            // stay queued forever while the caller was told it started.
+            EditorUpdate.Once(() => RunBuild(scenes, target, outputPath, port));
 
             return new SuccessResponse(
                 "Build queued. The Editor blocks while building; poll `build status` or use `build start --wait`.",

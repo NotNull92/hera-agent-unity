@@ -128,8 +128,9 @@ namespace HeraAgent
 
                     Debug.Log($"[Hera] HTTP server started on port {port}");
                     // Defer compiler pre-warm so editor startup is not blocked by a
-                    // potentially slow csc invocation.
-                    EditorApplication.delayCall += () => ExecuteCsharp.PreWarmCompiler();
+                    // potentially slow csc invocation. Not delayCall: it does not run in an
+                    // unfocused Editor, which is exactly where Hera usually starts.
+                    EditorUpdate.Once(() => ExecuteCsharp.PreWarmCompiler());
                     return;
                 }
                 catch (HttpListenerException)

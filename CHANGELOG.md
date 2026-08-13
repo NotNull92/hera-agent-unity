@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.108 — queued builds actually start)
+
+- `build start` queued the build and then never ran it while the Editor was
+  unfocused, which is how Hera is normally driven. The caller was told
+  `queued: true`, `build status` kept answering `queued`, and nothing happened —
+  measured: 30 seconds with no follow-up command, then a `build status` call,
+  and still no build. `EditorApplication.delayCall` does not run in an unfocused
+  Editor even though `EditorApplication.update` does, which the heartbeat proves
+  every second.
+- Deferred work started by a command now runs on the update loop through
+  `EditorUpdate.Once`. `build start` begins immediately with zero follow-up
+  commands, and the compiler pre-warm at server start, which had the same
+  problem, now happens instead of never.
+
 ### Added (Connector 0.0.107 — the player toolchain is writable)
 
 - `manage_settings set_player` now writes `scripting_backend` and

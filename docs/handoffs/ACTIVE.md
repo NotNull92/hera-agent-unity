@@ -22,6 +22,8 @@ records only current state and what is open.
 | 9 | `0.0.105` | Ten actions declare their output schema; eleven message-only actions recorded as needing none (`docs/OUTPUT_SCHEMA_DESIGN.md`) |
 
 | 10 | `0.0.106` | `bake --area navmesh_surfaces` for the AI Navigation package, reflection-only and fail-closed (`docs/NAVMESH_SURFACE_DESIGN.md`) |
+| 11 | `0.0.107` | `manage_settings set_player` writes `scripting_backend` and `api_compatibility_level` from a curated value set, reporting `recompile_triggered` and `build_target` (`docs/PLAYER_TOOLCHAIN_DESIGN.md`) |
+| — | `0.0.108` | Fix: deferred command work runs on the editor update loop, so `build start` no longer queues a build that never begins in an unfocused Editor |
 
 Alongside the queue: `0.0.91` moved the support floor to Unity 6+ (three
 compatibility buckets), and `0.0.90` fixed the `EntityIdCompat` round trip that
@@ -50,10 +52,28 @@ shipped a defect:**
    package and reading the console does not exercise them.
 3. The wave's own live matrix on a disposable fixture.
 
+`run-package-tests.ps1` restores the manifest bytes it captured at startup, so a
+run killed before its `finally` block leaks its `testables` entry and every later
+run preserves it silently — which also contaminates the catalog baseline the gate
+measures, since test fixtures declare `[HeraTool]` classes that never ship. One
+fixture was found in that state; the script now refuses to start instead.
+
+**Do not use `EditorApplication.delayCall` for work a command starts and leaves
+behind.** It does not run in an unfocused Editor, which is how Hera is normally
+driven, so the work waits indefinitely after the caller was told it started.
+Use `EditorUpdate.Once`; `EditorApplication.update` runs either way, as the
+heartbeat demonstrates every second.
+
 ## Open items
 
-- Deferred by locked designs: active build-target switching and Unity 6 build
-  profiles (`docs/BUILD_SURFACE_DESIGN.md`), AI Navigation package
+- **Active build-target switching and Unity 6 build profiles are rejected, not
+  pending** (2026-08-13, `docs/DECISION_LEDGER.md`). No failure evidence exists,
+  a switch costs a full project reimport that no agent loop can usefully drive,
+  `exec` covers the rare scripted case, and automated cross-platform builds
+  belong to batch-mode `-buildTarget` rather than an in-place switch of a
+  running Editor. `build list_targets` already lets an agent report the active
+  target and which platform support is installed.
+- Deferred by locked designs: AI Navigation package
   `NavMeshSurface` baking — **done in wave 10**
   (`docs/NAVMESH_SURFACE_DESIGN.md`), lighting/navmesh
   settings areas and graphics-pipeline/input-axes settings
