@@ -512,6 +512,8 @@ Commit all unstaged changes before finishing. Unrelated changes should be commit
 > Release notes는 release.yml이 compare 링크만 자동 생성한다. 의미 있는 변경 요약이 필요하면 push 후 `gh release edit <tag> --notes "..."`로 보강.
 
 > 배포 채널은 셋이다: GitHub Release(태그 push), npm(`npm-publish.yml`, Release 성공에 반응), MCP Registry(`mcp-publish.yml`, npm 성공에 반응). 사슬이라 앞이 실패하면 뒤는 skipped 된다 — `v0.2.1`~`v0.2.11` 구간에서 실제로 그렇게 11회 연속 누락됐다.
+>
+> **사슬에서 태그를 보는 건 첫 hop 뿐이다.** `workflow_run`으로 시작된 실행은 자신의 `head_branch`를 기본 브랜치(`main`)로 보고하므로, 두 번째 hop이 이전 실행의 `head_branch`를 태그로 믿으면 `main`을 받는다. commit SHA는 정확하니 `git tag --points-at`으로 태그를 역인출한다. 또한 각 publish job은 `npm/package.json`·`npm/package-lock.json`·`server.json`을 **모두** 태그 버전으로 핀해야 한다 — 패키지 테스트가 이 값들의 일치를 검사한다.
 
 ### 수동 release (fallback)
 
