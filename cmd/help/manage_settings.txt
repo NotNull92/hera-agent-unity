@@ -13,9 +13,19 @@ Actions:
   get_quality / set_quality     level | level_name (one of the two),
                                 vsync_count (0-4), anti_aliasing (0|2|4|8);
                                 get also lists the project's level names
-  get_player / set_player       company_name, product_name, bundle_version;
-                                get also reports the scripting backend and API
-                                level (read-only here)
+  get_player / set_player       company_name, product_name, bundle_version,
+                                scripting_backend (mono2x|il2cpp),
+                                api_compatibility_level (net_standard|
+                                net_framework). Both apply to the active build
+                                target, named as build_target in the response.
+                                get reports what Unity stores, which can be a
+                                name the write side does not accept.
+                                api_compatibility_level recompiles editor
+                                scripts: Hera answers first, then the Editor is
+                                unreachable for a few seconds. The response
+                                reports recompile_triggered, and dry_run
+                                reports it before anything changes.
+                                scripting_backend never recompiles.
   get_audio / set_audio         volume (0-1), doppler_factor, rolloff_scale
                                 (persisted project audio configuration)
 

@@ -13,7 +13,9 @@ namespace HeraAgent.Tools
     [HeraActionContract("get_quality", typeof(ManageSettings.EmptyParameters), ResultType = typeof(ManageSettings.QualityResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("set_quality", typeof(ManageSettings.SetQualityParameters), ResultType = typeof(ManageSettings.SetResult), RiskClass = HeraRiskClass.Destructive)]
     [HeraActionContract("get_player", typeof(ManageSettings.EmptyParameters), ResultType = typeof(ManageSettings.PlayerResult), RiskClass = HeraRiskClass.ReadOnly)]
-    [HeraActionContract("set_player", typeof(ManageSettings.SetPlayerParameters), ResultType = typeof(ManageSettings.SetResult), RiskClass = HeraRiskClass.Destructive)]
+    // set_player carries MayReloadDomain because api_compatibility_level recompiles editor
+    // scripts; the per-call recompile_triggered in the response is the exact answer.
+    [HeraActionContract("set_player", typeof(ManageSettings.SetPlayerParameters), ResultType = typeof(ManageSettings.SetPlayerResult), RiskClass = HeraRiskClass.Destructive, MayReloadDomain = true)]
     [HeraActionContract("get_audio", typeof(ManageSettings.EmptyParameters), ResultType = typeof(ManageSettings.AudioResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("set_audio", typeof(ManageSettings.SetAudioParameters), ResultType = typeof(ManageSettings.SetResult), RiskClass = HeraRiskClass.Destructive)]
     [HeraSafetyRule(
@@ -113,6 +115,16 @@ namespace HeraAgent.Tools
 
             [ToolParameter("Application bundle version string.")]
             public string BundleVersion { get; set; }
+
+            [ToolParameter(
+                "Scripting backend for the active build target. Changes what a player build produces; the Editor keeps running Mono, so nothing recompiles.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"mono2x\",\"il2cpp\"]}")]
+            public string ScriptingBackend { get; set; }
+
+            [ToolParameter(
+                "API compatibility level for the active build target. This swaps the assemblies editor scripts compile against, so Unity recompiles them and the Editor is briefly unreachable after the response.",
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"net_standard\",\"net_framework\"]}")]
+            public string ApiCompatibilityLevel { get; set; }
         }
 
         public sealed class SetAudioParameters : DryRunParameters
@@ -175,11 +187,21 @@ namespace HeraAgent.Tools
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
-        public sealed class SetResult
+        public class SetResult
         {
             public Dictionary<string, object> Applied { get; set; }
             public Dictionary<string, string> Skipped { get; set; }
             public bool DryRun { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class SetPlayerResult : SetResult
+        {
+            /// <summary>Named build target the toolchain fields were written for.</summary>
+            public string BuildTarget { get; set; }
+
+            /// <summary>Whether the change recompiles editor scripts, leaving the Editor briefly unreachable.</summary>
+            public bool RecompileTriggered { get; set; }
         }
 
         public class Parameters
@@ -243,17 +265,21 @@ namespace HeraAgent.Tools
                 m_Appliers.Add(apply);
             }
 
-            public object Commit(string area)
+            public object Commit(string area, SetResult result = null)
             {
                 if (Applied.Count == 0 && Skipped.Count == 0)
                     return new ErrorResponse("NO_FIELDS", $"No {area} fields were provided; pass at least one field to change.");
                 if (!DryRun)
                     foreach (var apply in m_Appliers)
                         apply();
+                result = result ?? new SetResult();
+                result.Applied = Applied;
+                result.Skipped = Skipped;
+                result.DryRun = DryRun;
                 var verb = DryRun ? "Would change" : "Changed";
                 return new SuccessResponse(
                     $"{verb} {Applied.Count} {area} field(s){(Skipped.Count > 0 ? $", skipped {Skipped.Count}" : "")}.",
-                    new SetResult { Applied = Applied, Skipped = Skipped, DryRun = DryRun });
+                    result);
             }
         }
 
@@ -378,13 +404,42 @@ namespace HeraAgent.Tools
             });
         }
 
+        // Unity publishes no "which values are valid" API for either enum, and only
+        // ScriptingImplementation.CoreCLR carries [Obsolete], so the accepted set is
+        // written out here rather than taken from Enum.GetNames.
+        private static readonly Dictionary<string, ScriptingImplementation> k_ScriptingBackends =
+            new Dictionary<string, ScriptingImplementation>
+            {
+                { "mono2x", ScriptingImplementation.Mono2x },
+                { "il2cpp", ScriptingImplementation.IL2CPP },
+            };
+
+        private static readonly Dictionary<string, ApiCompatibilityLevel> k_ApiCompatibilityLevels =
+            new Dictionary<string, ApiCompatibilityLevel>
+            {
+                { "net_standard", ApiCompatibilityLevel.NET_Standard },
+                { "net_framework", ApiCompatibilityLevel.NET_Unity_4_8 },
+            };
+
         private static object SetPlayer(ToolParams p)
         {
+            var buildTarget = UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(
+                BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget));
             var changes = new ChangeSet(p);
             StageString(p, changes, "company_name", v => PlayerSettings.companyName = v);
             StageString(p, changes, "product_name", v => PlayerSettings.productName = v);
             StageString(p, changes, "bundle_version", v => PlayerSettings.bundleVersion = v);
-            var result = changes.Commit("player");
+            StageChoice(p, changes, "scripting_backend", k_ScriptingBackends,
+                v => PlayerSettings.SetScriptingBackend(buildTarget, v));
+            // Applied inline: Unity starts the rebuild after the current editor tick, so the
+            // response is already on its way out before the Editor goes unreachable.
+            StageChoice(p, changes, "api_compatibility_level", k_ApiCompatibilityLevels,
+                v => PlayerSettings.SetApiCompatibilityLevel(buildTarget, v));
+            var result = changes.Commit("player", new SetPlayerResult
+            {
+                BuildTarget = buildTarget.TargetName,
+                RecompileTriggered = changes.Applied.ContainsKey("api_compatibility_level"),
+            });
             if (!changes.DryRun && changes.Applied.Count > 0)
                 AssetDatabase.SaveAssets();
             return result;
@@ -477,6 +532,22 @@ namespace HeraAgent.Tools
             if (value == null) { changes.Stage(field, null, null, "must be an integer"); return; }
             if (!valid(value.Value)) { changes.Stage(field, null, null, reason); return; }
             changes.Stage(field, value.Value, () => apply(value.Value));
+        }
+
+        private static void StageChoice<T>(
+            ToolParams p, ChangeSet changes, string field,
+            Dictionary<string, T> accepted, Action<T> apply)
+        {
+            var raw = p.GetRaw(field);
+            if (raw == null || raw.Type == JTokenType.Null) return;
+            var value = (p.Get(field) ?? string.Empty).Trim().ToLowerInvariant();
+            T mapped;
+            if (!accepted.TryGetValue(value, out mapped))
+            {
+                changes.Stage(field, null, null, $"must be one of: {string.Join(", ", accepted.Keys)}");
+                return;
+            }
+            changes.Stage(field, value, () => apply(mapped));
         }
 
         private static void StageString(ToolParams p, ChangeSet changes, string field, Action<string> apply)

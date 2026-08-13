@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.107 — the player toolchain is writable)
+
+- `manage_settings set_player` now writes `scripting_backend` and
+  `api_compatibility_level`. Both were reported by `get_player` and refused by
+  `set_player`, so moving a project to IL2CPP or off a dead .NET profile meant
+  hand-written `exec` with nothing validating the value.
+- The accepted values are curated, not the raw Unity enums: `mono2x`/`il2cpp`
+  and `net_standard`/`net_framework`. Unity publishes no API for which values
+  are valid and marks only `CoreCLR` obsolete, so the enums still carry
+  UWP-legacy and dead .NET profiles that produce a project which no longer
+  builds. `get_player` keeps reporting the stored value verbatim, which means a
+  project can read back a name the write side does not accept.
+- Changing `api_compatibility_level` recompiles editor scripts and takes the
+  Editor unreachable for a few seconds; changing `scripting_backend` does
+  neither, since it only affects what a player build produces. The response
+  reports `recompile_triggered` per call, `dry_run` reports it before anything
+  changes, and `set_player` now declares `may_reload_domain` so the approval
+  summary stops claiming the operation cannot reload the domain.
+- Both settings apply to the active build target, named as `build_target` in
+  the response. Switching the active target remains out of scope.
+
 ### Added (Connector 0.0.106 — baking the AI Navigation surface model)
 
 - `bake --area navmesh_surfaces` bakes, inspects, and clears the

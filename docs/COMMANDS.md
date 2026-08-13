@@ -369,7 +369,7 @@ hera-agent-unity manage_settings <action> [--params '{...}']
 | `get_physics` / `set_physics` | `gravity` `[x,y,z]`, `default_solver_iterations`, `default_solver_velocity_iterations`, `bounce_threshold`, `default_contact_offset`, `sleep_threshold` |
 | `get_time` / `set_time` | `fixed_delta_time`, `maximum_delta_time`, `time_scale` |
 | `get_quality` / `set_quality` | `level` or `level_name` (one of the two), `vsync_count` (0-4), `anti_aliasing` (0\|2\|4\|8); `get` also lists the project's level names |
-| `get_player` / `set_player` | `company_name`, `product_name`, `bundle_version`; `get` also reports the scripting backend and API level (read-only) |
+| `get_player` / `set_player` | `company_name`, `product_name`, `bundle_version`, `scripting_backend` (`mono2x`\|`il2cpp`), `api_compatibility_level` (`net_standard`\|`net_framework`) |
 | `get_audio` / `set_audio` | `volume` (0-1), `doppler_factor`, `rolloff_scale` — the persisted project audio configuration |
 
 ### Examples
@@ -379,7 +379,21 @@ hera-agent-unity manage_settings get_physics
 hera-agent-unity manage_settings set_physics --params '{"gravity":[0,-19.62,0]}'
 hera-agent-unity manage_settings set_time --params '{"fixed_delta_time":0.01,"dry_run":true}'
 hera-agent-unity manage_settings set_quality --params '{"level_name":"High"}'
+hera-agent-unity manage_settings set_player --params '{"scripting_backend":"il2cpp"}'
 ```
+
+`get_player` reports the backend and API level exactly as Unity stores them, so a
+project can read back a name the write side does not accept — `NET_Standard` and
+`NET_Standard_2_0` are the same value under two names, and older projects may hold
+a .NET profile that no longer builds. The write side takes only the values Unity 6
+actually supports.
+
+Changing `api_compatibility_level` swaps the assemblies editor scripts compile
+against: Hera answers first, then Unity recompiles and the Editor is unreachable
+for a few seconds. `set_player` reports `recompile_triggered` so you know which
+calls do this, and `dry_run` reports it before anything changes. Changing
+`scripting_backend` only affects what a player build produces and never recompiles.
+Both apply to the active build target, named in the response as `build_target`.
 
 Related: `manage_editor get_tags_layers` lists tags and named layers before `add_tag` / `add_layer` / `manage_gameobject set_tag`.
 
