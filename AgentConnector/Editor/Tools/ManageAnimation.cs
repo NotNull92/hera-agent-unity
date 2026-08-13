@@ -145,11 +145,13 @@ namespace HeraAgent.Tools
             public float? Duration { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public class AssetResult
         {
             public string Path { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ClipResult : AssetResult
         {
             public string Guid { get; set; }
@@ -157,6 +159,7 @@ namespace HeraAgent.Tools
             public bool Loop { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class CurveResult : AssetResult
         {
             public string RelativePath { get; set; }
@@ -166,12 +169,14 @@ namespace HeraAgent.Tools
             public int TotalBindings { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ControllerResult : AssetResult
         {
             public string Guid { get; set; }
             public int Layers { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ParameterResult : AssetResult
         {
             public string Name { get; set; }
@@ -179,6 +184,7 @@ namespace HeraAgent.Tools
             public int Parameters { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class StateResult : AssetResult
         {
             public string Name { get; set; }
@@ -187,6 +193,7 @@ namespace HeraAgent.Tools
             public int States { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class TransitionConditionResult
         {
             public string Parameter { get; set; }
@@ -194,6 +201,7 @@ namespace HeraAgent.Tools
             public float Threshold { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class TransitionResult : AssetResult
         {
             public string From { get; set; }

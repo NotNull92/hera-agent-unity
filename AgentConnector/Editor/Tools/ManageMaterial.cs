@@ -69,6 +69,7 @@ namespace HeraAgent.Tools
             public JToken Value { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public class MaterialResult
         {
             public string Path { get; set; }
@@ -83,6 +84,7 @@ namespace HeraAgent.Tools
             public object Value { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class GetResult : MaterialResult
         {
             public string Name { get; set; }
@@ -92,6 +94,7 @@ namespace HeraAgent.Tools
             public MaterialProperty[] Properties { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class PropertyResult : MaterialProperty
         {
             public string Path { get; set; }

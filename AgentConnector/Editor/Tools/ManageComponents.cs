@@ -118,6 +118,7 @@ namespace HeraAgent.Tools
             public JToken Value { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ComponentResult
         {
             public int ComponentId { get; set; }
@@ -127,24 +128,28 @@ namespace HeraAgent.Tools
             public Dictionary<string, object> Properties { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class AddResult
         {
             public int InstanceId { get; set; }
             public ComponentResult Component { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class RemoveResult
         {
             public int InstanceId { get; set; }
             public ComponentResult Removed { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ListResult
         {
             public int InstanceId { get; set; }
             public ComponentResult[] Components { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class GetResult
         {
             public int InstanceId { get; set; }

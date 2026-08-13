@@ -74,12 +74,14 @@ namespace HeraAgent.Tools
             public bool Components { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class InfoResult
         {
             public ActiveSceneSummary Active { get; set; }
             public LoadedSceneSummary[] Loaded { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ActiveSceneSummary
         {
             public string Name { get; set; }
@@ -87,6 +89,7 @@ namespace HeraAgent.Tools
             public bool IsDirty { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class LoadedSceneSummary
         {
             public string Name { get; set; }
@@ -96,6 +99,7 @@ namespace HeraAgent.Tools
             public int RootCount { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SceneListEntry
         {
             public int Index { get; set; }
@@ -103,6 +107,7 @@ namespace HeraAgent.Tools
             public bool Enabled { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class LoadResult
         {
             public string Name { get; set; }
@@ -110,6 +115,7 @@ namespace HeraAgent.Tools
             public string Mode { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SaveResult
         {
             public string Name { get; set; }
@@ -117,6 +123,7 @@ namespace HeraAgent.Tools
             public bool Saved { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class CloseResult
         {
             public string Name { get; set; }

@@ -155,6 +155,7 @@ namespace HeraAgent.Tools
             [JsonProperty("graphics_driver_bytes")] public long GraphicsDriverBytes { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class StatsResult
         {
             [JsonProperty("is_playing")] public bool IsPlaying { get; set; }
@@ -164,6 +165,7 @@ namespace HeraAgent.Tools
             [JsonProperty("memory")] public StatsMemory Memory { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class StatusResult
         {
             public bool Enabled { get; set; }
@@ -181,6 +183,7 @@ namespace HeraAgent.Tools
             public bool IsPlaying { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class Result
         {
             public int Frame { get; set; }

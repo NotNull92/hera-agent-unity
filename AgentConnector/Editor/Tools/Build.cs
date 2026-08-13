@@ -86,6 +86,7 @@ namespace HeraAgent.Tools
             public bool? Enabled { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class StartResult
         {
             public bool Queued { get; set; }
@@ -94,12 +95,14 @@ namespace HeraAgent.Tools
             public int Port { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SceneEntry
         {
             public string Path { get; set; }
             public bool Enabled { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SettingsResult
         {
             public string ActiveTarget { get; set; }
@@ -110,6 +113,7 @@ namespace HeraAgent.Tools
             public SceneEntry[] Scenes { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SceneListResult
         {
             public SceneEntry[] Scenes { get; set; }

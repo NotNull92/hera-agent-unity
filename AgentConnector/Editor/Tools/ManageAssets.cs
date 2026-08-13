@@ -125,6 +125,7 @@ namespace HeraAgent.Tools
             public string NewPath { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class AssetSummary
         {
             public string Path { get; set; }
@@ -133,6 +134,7 @@ namespace HeraAgent.Tools
             public string Type { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class FindResult
         {
             public string Query { get; set; }
@@ -142,11 +144,13 @@ namespace HeraAgent.Tools
             public AssetSummary[] Assets { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public class PathResult
         {
             public string Path { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class DepsResult
         {
             public string Path { get; set; }
@@ -169,11 +173,13 @@ namespace HeraAgent.Tools
             public long? ElapsedMs { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class MkdirResult : PathResult
         {
             public bool Created { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class CreateResult : PathResult
         {
             public string Type { get; set; }
@@ -181,6 +187,7 @@ namespace HeraAgent.Tools
             public string[] Applied { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class TransferResult : PathResult
         {
             public string NewPath { get; set; }

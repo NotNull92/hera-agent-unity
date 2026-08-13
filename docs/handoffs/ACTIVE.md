@@ -77,8 +77,15 @@ shipped a defect:**
   but addressing "the Rigidbody override on /Player/Arm" needs an identifier
   that survives a reload, and none exists yet. `list_overrides` already returns
   the paths that would key it (`docs/PREFAB_OVERRIDE_DESIGN.md` D2).
-- Output-casing inconsistency, pre-existing and not addressed: tool payloads
-  built from anonymous objects serialize snake_case, but the handful returned
-  as typed result classes (`bake` all actions, `manage_editor get_tags_layers`)
-  serialize PascalCase. Changing them breaks consumers of `0.0.94`–`0.0.99`,
-  so it needs its own decision rather than a drive-by fix.
+- **Resolved.** The output-casing item was not a style preference: `bake`,
+  `manage_editor`, and `manage_settings` returned typed result objects whose
+  PascalCase names matched none of the snake_case properties their own schema
+  declared, so a schema-driven consumer saw an empty result. Fixed in `0.0.103`
+  with a naming strategy on the result classes, which regenerates the catalog
+  byte-for-byte, plus a release-gate test over all 60 declared result types.
+- Under-specified output schemas, pre-existing: roughly 30 actions declare no
+  `ResultType`, so their `data` schema is an open `{}` object. Returning fields
+  is permitted rather than a contract breach — `build status` is the clearest
+  example — but the declared surface tells an agent nothing. Closing this means
+  authoring ~30 result types and accepting the catalog-payload growth, so it
+  needs its own review rather than a drive-by fix.

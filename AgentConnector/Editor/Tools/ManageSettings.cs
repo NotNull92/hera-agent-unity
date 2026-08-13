@@ -127,6 +127,7 @@ namespace HeraAgent.Tools
             public float? RolloffScale { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class PhysicsResult
         {
             public float[] Gravity { get; set; }
@@ -137,6 +138,7 @@ namespace HeraAgent.Tools
             public float SleepThreshold { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class TimeResult
         {
             public float FixedDeltaTime { get; set; }
@@ -144,6 +146,7 @@ namespace HeraAgent.Tools
             public float TimeScale { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class QualityResult
         {
             public int Level { get; set; }
@@ -153,6 +156,7 @@ namespace HeraAgent.Tools
             public int AntiAliasing { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class PlayerResult
         {
             public string CompanyName { get; set; }
@@ -162,6 +166,7 @@ namespace HeraAgent.Tools
             public string ApiCompatibilityLevel { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class AudioResult
         {
             public float Volume { get; set; }
@@ -169,6 +174,7 @@ namespace HeraAgent.Tools
             public float RolloffScale { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SetResult
         {
             public Dictionary<string, object> Applied { get; set; }

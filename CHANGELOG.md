@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.103 — three tools contradicted their own output schema)
+
+- `bake` (all four actions), `manage_editor get_selection` / `get_tags_layers`,
+  and every `manage_settings` get/set returned their typed result object
+  directly. Newtonsoft writes the C# property names, so the payload arrived as
+  `{"Area":"occlusion","State":"idle"}` while the catalog declared
+  `area` / `state` — **not one declared property was present**. A consumer
+  reading the strict output schema saw an empty result. `build` had the right
+  shape all along, which is what the fix restores everywhere: the result
+  classes now carry `[JsonObject(NamingStrategyType = SnakeCaseNamingStrategy)]`
+  so serialization and the schema derive their names from the same property by
+  the same rule.
+- The naming rules were verified to agree before relying on them: Hera's
+  `StringCaseUtility.ToSnakeCase` and Newtonsoft's `SnakeCaseNamingStrategy`
+  produce identical output for all 26 affected property names. The fix
+  regenerates the catalog byte-for-byte — zero payload drift — because the
+  schema was already correct and only the wire format was wrong.
+- Every other declared result class received the same attribute. Those handlers
+  return anonymous snake_case objects today, so nothing changes for them; the
+  annotation makes the whole class of bug impossible if one is ever returned
+  directly.
+- A new release-gate test walks all 60 declared result types and compares what
+  Newtonsoft would emit against what the schema declares, honouring explicit
+  `[JsonProperty]` names so tools that publish camelCase on purpose (`profiler`)
+  stay valid. Writing it caught its own bug first — reflecting over an array
+  result type inspected `Array.Length` and `Array.Rank` instead of the element.
+
 ### Fixed (Connector 0.0.102 — every test run leaked a callback registration)
 
 - `DisposeApi` guarded the unregister on `api != null`. `TestRunnerApi` is a

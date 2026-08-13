@@ -135,6 +135,7 @@ namespace HeraAgent.Tools
         {
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class Vector3Result
         {
             public float X { get; set; }
@@ -142,6 +143,7 @@ namespace HeraAgent.Tools
             public float Z { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class TransformResult
         {
             public Vector3Result Position { get; set; }
@@ -149,6 +151,7 @@ namespace HeraAgent.Tools
             public Vector3Result Scale { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class GameObjectResult
         {
             public int InstanceId { get; set; }
@@ -160,6 +163,7 @@ namespace HeraAgent.Tools
             public TransformResult Transform { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class DuplicateItemResult
         {
             public int InstanceId { get; set; }
@@ -167,12 +171,14 @@ namespace HeraAgent.Tools
             public string Path { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class DuplicateSourceResult
         {
             public int InstanceId { get; set; }
             public string Name { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class DuplicateResult
         {
             public DuplicateSourceResult Source { get; set; }

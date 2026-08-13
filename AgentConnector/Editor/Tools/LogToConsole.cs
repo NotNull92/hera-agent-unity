@@ -23,6 +23,7 @@ namespace HeraAgent.Tools
             public string Level { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class Result
         {
             public string Message { get; set; }

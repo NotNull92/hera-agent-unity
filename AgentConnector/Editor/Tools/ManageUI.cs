@@ -123,18 +123,21 @@ namespace HeraAgent.Tools
             public JToken OffsetMax { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class Vector2Result
         {
             public float X { get; set; }
             public float Y { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SizeResult
         {
             public float Width { get; set; }
             public float Height { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class RectValuesResult
         {
             public Vector2Result AnchorMin { get; set; }
@@ -147,6 +150,7 @@ namespace HeraAgent.Tools
             public SizeResult Size { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public class RectResult
         {
             public int InstanceId { get; set; }

@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using UnityEditor;
 using UnityEngine;
 
@@ -68,6 +71,7 @@ namespace HeraAgent.Tests
             allPassed &= TestM24AliasesNormalize();
             allPassed &= TestM24MutuallyExclusiveTargets();
             allPassed &= TestM24OutputSchemas();
+            allPassed &= TestDeclaredResultTypesSerializeAsDeclared();
             allPassed &= TestM8RestrictedExecContract();
 
             if (allPassed)
@@ -1576,6 +1580,78 @@ namespace HeraAgent.Tests
                         ["to"] = 10,
                     },
                     "hierarchy").IsValid);
+        }
+
+        // A declared ResultType feeds the action's output schema, whose property
+        // names are snake_cased from the C# names. Newtonsoft, left alone, writes
+        // the C# names instead — so a handler that returns one of these objects
+        // directly emits PascalCase and none of the declared properties appear.
+        // bake, manage_editor, and manage_settings shipped that way. Asserting the
+        // serialized names here catches the next one at build time rather than in
+        // an agent that reads an empty result.
+        private static bool TestDeclaredResultTypesSerializeAsDeclared()
+        {
+            var offenders = new List<string>();
+            var seen = new HashSet<Type>();
+
+            void Check(string owner, Type resultType)
+            {
+                if (resultType == null) return;
+                // A declared ResultType is often an array; reflecting over the
+                // array itself would inspect Length and Rank instead of the
+                // element's fields.
+                while (resultType.IsArray) resultType = resultType.GetElementType();
+                if (resultType == null || resultType.IsPrimitive || resultType == typeof(string)) return;
+                if (!seen.Add(resultType)) return;
+                foreach (var property in resultType.GetProperties(
+                             BindingFlags.Public | BindingFlags.Instance))
+                {
+                    var serialized = SerializedNameOf(resultType, property);
+                    var declared = DeclaredNameOf(property);
+                    if (serialized != declared)
+                        offenders.Add($"{owner}:{resultType.Name}.{property.Name} serializes as '{serialized}', schema declares '{declared}'");
+                }
+            }
+
+            foreach (var name in ToolDiscovery.GetToolNames().Cast<string>())
+            {
+                var contract = ToolContractRegistry.Get(name);
+                if (contract == null || !ToolContractSafety.IsBuiltIn(contract.ToolType)) continue;
+                foreach (var action in contract.Actions.Values)
+                    Check(name + "/" + action.Name, action.ResultType);
+            }
+
+            if (offenders.Count != 0)
+                Debug.LogError("[ToolContractTests] result types that do not serialize as declared: "
+                    + string.Join("; ", offenders.OrderBy(o => o, StringComparer.Ordinal)));
+
+            Debug.Log($"[ToolContractTests] declared result types checked = {seen.Count}");
+            return Expect(nameof(TestDeclaredResultTypesSerializeAsDeclared), offenders.Count == 0);
+        }
+
+        // Mirrors SchemaUtility.GetSerializedPropertyName: an explicit
+        // [JsonProperty] name wins, otherwise the C# name is snake_cased. Tools
+        // that deliberately publish camelCase (profiler) declare it explicitly
+        // and stay consistent on both sides.
+        private static string DeclaredNameOf(PropertyInfo property)
+        {
+            var explicitName = property.GetCustomAttribute<JsonPropertyAttribute>()?.PropertyName;
+            return string.IsNullOrWhiteSpace(explicitName)
+                ? StringCaseUtility.ToSnakeCase(property.Name)
+                : explicitName;
+        }
+
+        private static string SerializedNameOf(Type owner, PropertyInfo property)
+        {
+            var explicitName = property.GetCustomAttribute<JsonPropertyAttribute>()?.PropertyName;
+            if (!string.IsNullOrWhiteSpace(explicitName)) return explicitName;
+
+            var strategyType = owner.GetCustomAttribute<JsonObjectAttribute>()?.NamingStrategyType;
+            if (strategyType != null
+                && Activator.CreateInstance(strategyType) is NamingStrategy strategy)
+                return strategy.GetPropertyName(property.Name, false);
+
+            return property.Name;
         }
 
         private static bool TestM24OutputSchemas()

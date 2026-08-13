@@ -75,6 +75,7 @@ namespace HeraAgent.Tools
             public int Limit { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class PackageResult
         {
             public string Name { get; set; }
@@ -85,6 +86,7 @@ namespace HeraAgent.Tools
             public string DisplayName { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ListResult
         {
             public PackageResult[] Packages { get; set; }
@@ -101,6 +103,7 @@ namespace HeraAgent.Tools
             public bool Deprecated { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SearchResult
         {
             public string Filter { get; set; }
@@ -110,6 +113,7 @@ namespace HeraAgent.Tools
             public SearchHit[] Packages { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class JobResult
         {
             public string JobId { get; set; }

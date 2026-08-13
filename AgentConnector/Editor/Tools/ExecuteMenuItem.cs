@@ -31,12 +31,14 @@ namespace HeraAgent.Tools
             public int? Limit { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class MenuGroupResult
         {
             public string Name { get; set; }
             public int Count { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ListResult
         {
             public string Filter { get; set; }

@@ -41,6 +41,7 @@ namespace HeraAgent.Tools
             public string Area { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class StartResult
         {
             public string Area { get; set; }
@@ -50,6 +51,7 @@ namespace HeraAgent.Tools
             public string LightingWorkflowMode { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class StatusResult
         {
             public string Area { get; set; }
@@ -63,12 +65,14 @@ namespace HeraAgent.Tools
             public int? DataSizeBytes { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class CancelResult
         {
             public string Area { get; set; }
             public bool WasBaking { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ClearResult
         {
             public string Area { get; set; }

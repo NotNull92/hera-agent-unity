@@ -105,6 +105,7 @@ namespace HeraAgent.Tools
             public string Mode { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public class PrefabResult
         {
             public string Path { get; set; }
@@ -116,6 +117,7 @@ namespace HeraAgent.Tools
             public string AssetType { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class InstanceResult
         {
             public int InstanceId { get; set; }
@@ -123,24 +125,28 @@ namespace HeraAgent.Tools
             public string Path { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class OverrideEntry
         {
             public string Path { get; set; }
             public string Type { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class AddedGameObjectEntry
         {
             public string Path { get; set; }
             public int SiblingIndex { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class RemovedGameObjectEntry
         {
             public string ParentPath { get; set; }
             public string Name { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class OverridesResult
         {
             public string InstanceRoot { get; set; }
@@ -156,6 +162,7 @@ namespace HeraAgent.Tools
             public RemovedGameObjectEntry[] RemovedGameobjects { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class InstanceActionResult
         {
             public string InstanceRoot { get; set; }
@@ -163,6 +170,7 @@ namespace HeraAgent.Tools
             public bool HasOverrides { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class UnpackResult
         {
             public string InstanceRoot { get; set; }

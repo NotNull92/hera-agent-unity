@@ -68,6 +68,7 @@ namespace HeraAgent.Tools
             public string[] Targets { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SelectionEntry
         {
             public int InstanceId { get; set; }
@@ -80,6 +81,7 @@ namespace HeraAgent.Tools
             public string GlobalId { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SelectionResult
         {
             public int Count { get; set; }
@@ -87,17 +89,20 @@ namespace HeraAgent.Tools
             public SelectionEntry[] Objects { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SetSelectionResult
         {
             public int Count { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class LayerEntry
         {
             public int Index { get; set; }
             public string Name { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class TagsLayersResult
         {
             public string[] Tags { get; set; }

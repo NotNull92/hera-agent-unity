@@ -83,6 +83,7 @@ namespace HeraAgent.TestRunner
         {
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class Result
         {
             public int Port { get; set; }
@@ -95,6 +96,7 @@ namespace HeraAgent.TestRunner
             public string[] Passes { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class TestEntry
         {
             public string FullName { get; set; }
@@ -102,12 +104,14 @@ namespace HeraAgent.TestRunner
             public string[] Categories { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class CountEntry
         {
             public string Name { get; set; }
             public int Tests { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ListResult
         {
             public string Mode { get; set; }
@@ -119,6 +123,7 @@ namespace HeraAgent.TestRunner
             public TestEntry[] Tests { get; set; }
         }
 
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class CancelResult
         {
             public bool WasRunning { get; set; }
