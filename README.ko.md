@@ -368,7 +368,7 @@ Editor가 열리면 Connector가 자동으로 시작합니다.
 현재 릴리스 Connector를 고정하려면:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.86
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.102
 ```
 
 ### 3단계. Unity를 열고 연결 확인
@@ -713,15 +713,18 @@ MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.2.0**, native binary 5종
+- CLI / GitHub Release: **v0.2.11**, native binary 5종
 - npm: **0.2.0** (`latest`)
-- Unity Connector / OpenUPM: **0.0.86** (`latest`)
-- Official MCP Registry: **0.2.0** (`active`, latest)
+- Unity Connector / OpenUPM: **0.0.102** (`latest`)
+- Official MCP Registry: **0.2.0** (`active`)
 - License: **Apache-2.0**
+
+npm과 MCP Registry는 현재 GitHub Release보다 뒤처져 있습니다. `v0.2.11`을 쓰려면 GitHub Release에서
+받거나 소스에서 빌드하세요.
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
 
-v0.2.0의 핵심은 정확한 프로젝트 Editor launch/restart, 제한된 Input System sequence/record/replay, UI와 3D physics 스크린샷 근거, opt-in restricted exec입니다. CLI-first 기본값과 최상위 Tool 31개는 그대로 유지합니다. 릴리스 Connector는 **80 actions**를 제공하고, Unity 5개 compile bucket과 위의 6000.5.6f1 실에디터 회귀에서 `ReleaseGateTests` **18/18 PASS**, Console error **0건**을 확인했습니다.
+`v0.2.11`은 `v0.2.0` 이후 쌓아온 editor-workflow 표면을 이어갑니다. 프로젝트 설정, 씬 베이크, Player 빌드, 테스트 열거와 취소, 프리팹 override apply/revert/unpack, 에셋 의존성 양방향 추적입니다. 릴리스 Connector는 **33 tools / 111 actions**를 제공하고, Unity 3개 compile bucket을 경고 0건으로 통과하며, 각 bucket에서 Connector 자체 `ReleaseGateTests` **17/17 PASS**, Console error **0건**을 확인했습니다.
 
 릴리스별 기술 변경을 모두 보고 싶다면 메인 README보다 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
 

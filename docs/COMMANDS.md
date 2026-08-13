@@ -1631,6 +1631,94 @@ write wins.
 
 ---
 
+## batch
+
+Execute several commands in one HTTP round trip to Unity. The batch travels and
+returns together, so the response stays atomic and ordered.
+
+```bash
+hera-agent-unity batch [--file <path.json>] [--dry-run]
+```
+
+| Flag | Description | Default |
+|:---|:---|:---|
+| `--file` | JSON file describing the commands; stdin when omitted | |
+| `--dry-run` | Print the parsed plan without sending it to Unity | `false` |
+
+`batch` is for straight sequential execution. Conditional branching, passing
+data between steps, or anything resembling a workflow belongs in individual
+calls driven by a shell script or the agent itself.
+
+---
+
+## log
+
+Write a message to the Unity console. Cheaper than `exec "Debug.Log(...)"`
+because there is no C# compile step.
+
+```bash
+hera-agent-unity log "<message>" [--level <log|warning|error>]
+```
+
+| Flag | Description | Default |
+|:---|:---|:---|
+| `--level` | `log`, `warning`, or `error` | `log` |
+
+---
+
+## ping
+
+Token-cheap liveness probe. Reads the heartbeat file only — no Unity HTTP round
+trip and no instance discovery beyond a filesystem scan.
+
+```bash
+hera-agent-unity ping
+```
+
+Output is a single line, e.g. `port=8090 alive=1 state=ready age_ms=42`. Exit
+code is `0` when alive within 3s and `1` otherwise. Use `status` for the richer
+human-readable view.
+
+---
+
+## doctor
+
+Self-diagnostic. Reports the running binary path, what `hera-agent-unity`
+resolves to on PATH, duplicate installs, shell-specific gotchas, and any Unity
+instances visible to the Connector.
+
+```bash
+hera-agent-unity doctor [--json] [--agent-rules]
+```
+
+| Flag | Description |
+|:---|:---|
+| `--json` | Structured envelope (binary, shell, unity) |
+| `--agent-rules` | Print the embedded agent guide, including the Ultra Hera verification loop at the configured level |
+
+Does not require Unity to be running. Reach for this first when the binary is
+not found, resolves to the wrong copy, or cannot see your Editor.
+
+---
+
+## install / uninstall
+
+```bash
+hera-agent-unity install
+hera-agent-unity uninstall
+```
+
+`install` copies the running binary to the canonical install directory for the
+platform and makes it reachable on PATH — `~/.local/bin` on Linux and macOS,
+`%LOCALAPPDATA%\Microsoft\WindowsApps` on Windows. Install locations left by
+earlier `hera-agent` / `hera-agent-pro` versions are scrubbed automatically.
+
+`uninstall` removes the installed binary and the CLI configuration files. On
+Windows, files still locked by the running process are cleaned up on the next
+run. Neither command touches the Unity UPM package in your projects.
+
+---
+
 ## Custom Tool Invocation
 
 Any `[HeraTool]` class can be called directly by its snake_case name:

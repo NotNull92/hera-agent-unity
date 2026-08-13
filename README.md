@@ -364,7 +364,7 @@ To pin an existing Connector tag:
 The current released Connector pin is:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.86
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.102
 ```
 
 ### Step 3. Open Unity and check the connection
@@ -709,15 +709,18 @@ MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
 
 ## Current release
 
-- CLI / GitHub Release: **v0.2.0** with five native binaries
+- CLI / GitHub Release: **v0.2.11** with five native binaries
 - npm: **0.2.0** (`latest`)
-- Unity Connector / OpenUPM: **0.0.86** (`latest`)
-- Official MCP Registry: **0.2.0** (`active`, latest)
+- Unity Connector / OpenUPM: **0.0.102** (`latest`)
+- Official MCP Registry: **0.2.0** (`active`)
 - License: **Apache-2.0**
+
+npm and the MCP Registry currently trail the GitHub Release. Install from the
+GitHub Release or build from source to get `v0.2.11`.
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
 
-v0.2.0 expands Hera's live verification loop with exact-project Editor launch/restart, bounded Input System sequence/record/replay, UI and 3D physics screenshot evidence, and opt-in restricted exec while keeping the CLI-first default and 31 top-level tools. The released Connector exposes **80 actions**, passed the five Unity compile buckets, and completed the live 6000.5.6f1 regression above with **18/18** Connector release gates and **0** Console errors.
+`v0.2.11` continues the editor-workflow surface built since `v0.2.0`: project settings, scene bakes, Player builds, test enumeration and cancellation, prefab override apply/revert/unpack, and asset dependency tracing in both directions. The released Connector exposes **33 tools / 111 actions**, passes the three Unity compile buckets with zero warnings, and runs the Connector's own `ReleaseGateTests` at **17/17** in every bucket with **0** Console errors.
 
 For release-by-release engineering detail, read [CHANGELOG.md](CHANGELOG.md) instead of treating the main README as a migration log.
 

@@ -60,7 +60,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
 - **다중 에디터 발견 + 단일 선택 모델** 🔒: 한 머신의 여러 Unity heartbeat를 발견할 수 있지만 각 CLI 명령과 MCP 프로세스는 한 에디터만 선택한다. 프로젝트의 정규화된 절대경로가 안정적인 정체성이고 `port`는 `8090`–`8099`에서 재시작/domain reload 때 바뀔 수 있는 임시 연결 정보다. `--project`는 exact match 우선, legacy substring은 유일할 때만 허용하며 모호하면 실패한다. `--project`와 `--port`를 함께 주면 같은 heartbeat를 가리켜야 한다. 전송 실패/timeout 때는 fresh heartbeat로 port 재사용·PID 변경·target 소실을 다시 확인하고, idempotent 또는 operation-ledger-backed 작업만 재시도한다. 여러 에디터 broadcast/fan-out은 모델 밖이다.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
-  - **표준 envelope tool 명령** (`call`, `exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
+  - **표준 envelope tool 명령** (`call`, `exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, `manage_animation`, `manage_settings`, `bake`, `build`, `input`, `task`, `game_feel`, `ui_slop`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
   - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
   - **자체 출력 경로 명령** (`asset-config`, `ping`): `printResponse` 를 거치지 않고 직접 출력. `asset-config` 는 기본 styled + `--json` 로 AI 모드. `ping` 은 단일 라인 `port=N alive=N state=... age_ms=N`. `doctor` 도 human 카테고리지만 `--json` / `--agent-rules` 분기 별도.
   - "tool 에러도 인간이 읽는다"는 가정은 audience reality와 어긋남 (실제로 tool 호출 = AI). 새 명령 추가 시 `humanCategories` 등재 여부가 출력 모드를 결정한다.
@@ -99,9 +99,22 @@ cmd/                  # Go CLI — thin passthrough layer
                       # includes Ultra Hera loopEngineeringMode for agent rules)
   batch.go            # batch (multi-command) dispatch + --dry-run preview
   manage_packages.go  # async job_id dispatch + pollResultFile (file-bus, like test)
+  build.go            # build start --wait: file-bus poll with a 15-minute floor,
+                      # because BuildPipeline.BuildPlayer blocks the main thread
+  task.go             # durable test/package job inspection without contacting Unity
+  send.go             # command send path shared by dispatch and call
+  discovery.go        # instance selection from heartbeats (--project / --port)
+  help.go             # go:embed help/*.txt topic printer
+  call_approval.go    # approval-token preflight and --approve replay
+  call_safety.go      # risk-class projection for call
+  call_tty.go         # interactive confirmation when stdin is a TTY
+  legacy_approval.go  # approval handling on the legacy passthrough path
+  doctor_agent_rules.go # --agent-rules sections (Ultra Hera loop text lives here)
+  editor_process.go   # PID liveness + stop helpers (+ _unix/_windows variants)
   unity_docs.go       # thin passthrough — connector ships its own data set
   install.go          # self-install onto PATH + legacy scrub
   uninstall.go        # self-uninstall (+ uninstall_{unix,windows}.go variants)
+  help/*.txt          # per-command help topics, embedded via go:embed
   doctor.go           # self-diagnostic; embeds AGENT.md for --agent-rules
   paths.go            # install path resolution (+ paths_windows.go)
   path_check.go       # per-command PATH-mismatch warning (HERA_AGENT_NO_PATH_CHECK)
@@ -117,6 +130,12 @@ internal/mcpserver/   # Official Go SDK server identity/discovery + stdio lifecy
 internal/assetconfig/ # Asset plugin configuration persistence
                       # (assets + game_feel_mode + game_feel_ui_mode + loopEngineeringMode)
 internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
+internal/paths/       # Single source of truth for ~/.hera-agent-unity/** file-bus paths
+internal/resultstore/ # Durable async job results behind `task`
+internal/taskbridge/  # MCP Tasks bridge over the same durable results
+internal/unitystate/  # Heartbeat parsing and editor-state predicates
+internal/telemetry/   # Opt-in local counters
+internal/logutil/     # Shared log helpers
 tools/build-unity-docs/ # One-shot maintainer Go script: Documentation/en/ScriptReference
                         # → unity_docs_<ver>.jsonl(.gz)(.bytes). Run per Unity version.
 tools/build-game-feel-docs/ # game_feel.jsonl (checked-in source of truth, curated from
@@ -181,7 +200,8 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # [HeraActionSafety] (shown only by list --tool, not
                       # list --compact),
     Tools/            # Tool implementations (auto-registered via [HeraTool]).
-                      # 30 [HeraTool] classes. Name= explicit unless noted
+                      # 33 [HeraTool] classes (32 here + RunTests in TestRunner/).
+                      # Name= explicit unless noted
                       # (no Name= → filename snake_case). ExecCompileCache.cs is
                       # NOT a tool — internal helper for exec compile caching.
                       #   exec        ExecuteCsharp (Full Access default + opt-in
@@ -215,6 +235,23 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       #   create_controller/add_parameter/add_state/add_transition
                       #   → AnimatorController state machine on base layer;
                       #   animation types = built-in engine module → no asmdef ref).
+                      # Editor-workflow queue (all shipped):
+                      #   manage_settings ManageSettings v0.0.96 (physics/time/
+                      #     quality/player/audio get+set; dry_run previews are
+                      #     downgraded to ReadOnly by a HeraSafetyRule, writes are
+                      #     approval-gated; omitted fields stay unchanged).
+                      #   bake Bake v0.0.97 (lighting / built-in scene NavMesh /
+                      #     occlusion × start/status/cancel/clear; status is derived
+                      #     live, so no job ledger — deprecated editor NavMesh and
+                      #     giWorkflowMode APIs are suppressed in one pragma block
+                      #     because no non-obsolete replacement exists).
+                      #   build Build v0.0.98 (Player build + Build Settings;
+                      #     BuildPipeline.BuildPlayer blocks the main thread, so the
+                      #     report goes over the file bus like test — see cmd/build.go).
+                      # Later action additions on existing tools: run_tests list/cancel
+                      #   and --category/--assembly (v0.0.99), manage_prefab
+                      #   list_overrides/apply/revert/unpack + --child (v0.0.100),
+                      #   manage_assets deps forward|reverse (v0.0.101).
     Data/             # Bundled data (UPM-shipped, immutable). Versioned
                       # unity_docs_<bucket>.jsonl.gz.bytes bundles for
                       # 6000.0 / 6000.3 / 6000.5, regenerated by
