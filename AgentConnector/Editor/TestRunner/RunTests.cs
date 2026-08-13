@@ -602,28 +602,48 @@ namespace HeraAgent.TestRunner
         internal static string LegacyResultsFilePath(int port) =>
             Path.Combine(StatusDir, $"test-results-{port}.json");
 
+        // TestRunnerApi is a ScriptableObject and Unity destroys it before
+        // RunFinished reaches us — measured on 6000.3.5f2, DisposeApi runs on
+        // every EditMode run with the api already destroyed. Guarding the
+        // unregister on `api != null` (Unity's overloaded comparison, true for a
+        // destroyed object) therefore skipped it every time, leaking one
+        // registration per run into the framework's callbacks holder where it
+        // kept collecting later runs' results and rewriting the earlier run's
+        // result file. The holder is a singleton, so any live TestRunnerApi can
+        // remove the registration; a throwaway instance is enough.
         internal static void DisposeApi(TestRunnerApi api, TestCallbacks callbacks)
         {
-            try
+            if (callbacks != null)
             {
-                if (api != null && callbacks != null)
-                    api.UnregisterCallbacks(callbacks);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[Hera] Failed to unregister test callbacks: {ex.Message}");
-            }
-            finally
-            {
+                var unregisterVia = api != null ? api : ScriptableObject.CreateInstance<TestRunnerApi>();
                 try
                 {
-                    if (api != null)
-                        Object.DestroyImmediate(api);
+                    unregisterVia.UnregisterCallbacks(callbacks);
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogWarning($"[Hera] Failed to destroy TestRunnerApi: {ex.Message}");
+                    Debug.LogWarning($"[Hera] I couldn't unregister the test callbacks: {ex.Message}");
                 }
+                finally
+                {
+                    if (!ReferenceEquals(unregisterVia, api))
+                        TryDestroy(unregisterVia);
+                }
+            }
+
+            TryDestroy(api);
+        }
+
+        static void TryDestroy(TestRunnerApi api)
+        {
+            try
+            {
+                if (api != null)
+                    Object.DestroyImmediate(api);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Hera] I couldn't destroy the TestRunnerApi instance: {ex.Message}");
             }
         }
 

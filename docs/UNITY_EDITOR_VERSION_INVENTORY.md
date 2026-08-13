@@ -55,6 +55,26 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 
 ## Completed Checks
 
+### Connector 0.0.102 three-bucket gate (2026-08-13)
+
+Fix-only release: the test-callback registration leak. `compile-exact-source.ps1`
+passed with zero errors and zero warnings in all three buckets; each bucket
+then ran the release-gate suite three times in one session while counting
+`RunTests+TestCallbacks` registrations in the framework's callbacks holder.
+
+| Bucket | Representative | Fixture | Leaked callbacks after 3 runs | Release-gate tests | Status |
+|---|---|---|---|---|---|
+| `6000.0`–`6000.2` | `6000.0.35f1` | `Test6.0.35f1` | 0 | 17/17 ×3 | PASS |
+| `6000.3`–`6000.4` | `6000.3.5f2` | `test6000.3.5f2` | 0 | 17/17 ×4 | PASS |
+| `6000.5+` | `6000.5.6f1` | `test6.5` | 0 | 17/17 ×3 | PASS |
+
+Before the fix, the same measurement on `6000.3.5f2` from a clean Editor read
+0 → 1 → 2 over two EditMode runs, and file-based instrumentation inside
+`DisposeApi` reported `apiAlive=False` on every run. The abandoned-client
+reproduction (killing the CLI 200/600/1500 ms into a run) grew the count
+1→2→3→4→5→6 before the fix and stayed flat at 1 — Unity's own
+`PerformanceTestRunSaver`, the only non-Hera registration — after it.
+
 ### Connector 0.0.101 three-bucket gate (2026-08-13)
 
 `compile-exact-source.ps1` passed with zero errors and zero warnings in all

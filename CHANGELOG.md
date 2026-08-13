@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.0.102 — every test run leaked a callback registration)
+
+- `DisposeApi` guarded the unregister on `api != null`. `TestRunnerApi` is a
+  `ScriptableObject`, Unity destroys it before `RunFinished` reaches Hera, and
+  Unity's overloaded comparison reports a destroyed object as null — so the
+  unregister was skipped on **every** run and the callback stayed registered
+  in the test framework's callbacks holder. Measured on `6000.3.5f2`: one
+  leaked `RunTests+TestCallbacks` per EditMode run, from a clean Editor, with
+  `DisposeApi` reporting `apiAlive=False` each time.
+- A leaked registration is not inert. It keeps receiving later runs' per-test
+  results into the finished run's lists, and on the next `RunFinished` it
+  rewrites that earlier run's result file and the legacy
+  `test-results-<port>.json`, and clears the earlier pending record — so runs
+  contaminate each other's results the longer an Editor session lives. Only a
+  domain reload cleared the accumulation, which is why the symptom looked
+  session-dependent.
+- The callbacks holder is a singleton, so the unregister no longer depends on
+  the original instance being alive: a throwaway `TestRunnerApi` removes the
+  registration when the original is already destroyed. Verified on all three
+  buckets — the leak count stays at zero across repeated runs, and the
+  abandoned-client reproduction that previously grew 1→2→3→4→5→6 now stays
+  flat.
+
 ### Added (Connector 0.0.101 — asset dependencies in both directions)
 
 - `manage_assets deps --path <asset> --direction <forward|reverse>`.

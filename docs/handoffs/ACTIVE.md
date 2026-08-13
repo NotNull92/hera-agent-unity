@@ -15,7 +15,7 @@ records only current state and what is open.
 | 4 | `0.0.98` + CLI `v0.2.8` | `build` (Player build over the file bus + Build Settings management) |
 | 5 | `0.0.99` + CLI `v0.2.9` | `test list` / `test cancel` / `--category` / `--assembly`, honest `NO_TESTS_MATCHED`, `manage_packages search` (`docs/DISCOVERY_SURFACE_DESIGN.md`) |
 | 6 | `0.0.100` + CLI `v0.2.10` | `manage_prefab list_overrides` / `apply` / `revert` / `unpack`, `--child` component edits, `asset_type` on `create`, inactive-source fix (`docs/PREFAB_OVERRIDE_DESIGN.md`) |
-| 7 | `0.0.101` | `manage_assets deps` — forward and reverse asset dependencies; closes survey candidate Q9 by measurement (`docs/ASSET_DEPENDENCY_DESIGN.md`) |
+| 7 | `0.0.101` + CLI `v0.2.11` | `manage_assets deps` — forward and reverse asset dependencies; closes survey candidate Q9 by measurement (`docs/ASSET_DEPENDENCY_DESIGN.md`) |
 
 Alongside the queue: `0.0.91` moved the support floor to Unity 6+ (three
 compatibility buckets), and `0.0.90` fixed the `EntityIdCompat` round trip that
@@ -27,7 +27,8 @@ same review, and was live-verified before release.
 
 ## Verification state
 
-No verification debt. Each release ran its design's live matrix plus the
+No verification debt. `0.0.102` is a fix-only release with no catalog
+change. Each release ran its design's live matrix plus the
 three-bucket gate (`6000.0.35f1`, `6000.3.5f2`, `6000.5.6f1`); evidence is in
 `docs/UNITY_EDITOR_VERSION_INVENTORY.md` and the per-wave design documents.
 
@@ -60,16 +61,18 @@ shipped a defect:**
   intermittent, so only the reverse-dependency question survived and it is
   answered from `AssetDatabase` instead (`docs/ASSET_DEPENDENCY_DESIGN.md`).
   Any further work needs a new source of evidence, not another queue item.
-- **Unresolved observation, wave 6:** after a long Editor session mixing
-  interrupted CLI polls, repeated `test cancel` calls, and `editor refresh
-  --compile` cycles, the Test Runner stopped completing runs entirely — every
-  start returned a run guid, callbacks never fired, and `CancelTestRun`
-  reported the guid as unknown. An Editor restart always cleared it, and the
-  condition never reproduced from a clean session: a fresh session ran the
-  gate suite green repeatedly, and an explicit cancel of a live 30-second
-  PlayMode run followed by a full EditMode run was also green. The trigger was
-  not isolated, so it is recorded rather than claimed fixed. Every three-bucket
-  gate result was taken from a clean session.
+- **Resolved (was an unresolved wave-6 observation).** The Test Runner
+  condition seen in long Editor sessions traced to a callback-registration
+  leak: `DisposeApi` guarded its unregister on `api != null`, but Unity
+  destroys the `TestRunnerApi` ScriptableObject before `RunFinished` reaches
+  Hera, and a destroyed object compares equal to null — so every run leaked one
+  registration, and each leaked callback kept collecting later runs' results
+  and rewriting the earlier run's result file. Only a domain reload cleared the
+  accumulation, which is what made the symptom look session-dependent. Fixed in
+  `0.0.102`; the leak count now stays at zero across repeated runs on all three
+  buckets. Two earlier hypotheses were falsified by measurement first
+  (`test cancel` over three cancel cycles, and a compile-reload racing a test
+  start over four cycles).
 - Per-record prefab apply/revert is deferred: the record objects support it,
   but addressing "the Rigidbody override on /Player/Arm" needs an identifier
   that survives a reload, and none exists yet. `list_overrides` already returns
