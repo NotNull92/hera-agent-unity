@@ -597,7 +597,7 @@ hera-agent-unity ui_slop box-in-box
 | `manage_assets` | `Assets/` 아래 에셋 작업 + 의존성 추적(무엇을 쓰는지 / 무엇이 쓰는지) |
 | `manage_prefab` | 프리팹 에셋 생성·인스턴스화·편집 + 인스턴스 override의 apply/revert/unpack |
 | `manage_animation` | AnimationClip/AnimatorController 저작·읽기 |
-| `manage_settings` | 프로젝트 설정(physics·time·quality·player·audio) 조회·변경 — dry_run 프리뷰 + 승인 게이트 |
+| `manage_settings` | 프로젝트 설정(physics·time·quality·player·audio) 조회·변경 — 스크립팅 백엔드·API 호환성 레벨 포함, dry_run 프리뷰 + 승인 게이트 |
 | `bake` | lighting/NavMesh/occlusion 베이크 트리거·상태 폴링·취소·삭제 |
 | `build` | 활성 타겟 Player 빌드 큐잉 + compact 리포트 |
 | `exec` | Editor 안에서 프로젝트를 아는 C# 실행 |
