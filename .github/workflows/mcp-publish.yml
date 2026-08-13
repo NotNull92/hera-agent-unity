@@ -26,31 +26,46 @@ jobs:
       MCP_PUBLISHER_SHA256: "ab128162b0616090b47cf245afe0a23f3ef08936fdce19074f5ba0a4469281ac"
     steps:
       - name: Resolve release ref
-        id: release
+        id: ref
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
           MANUAL_TAG: ${{ inputs.release_tag }}
           COMPLETED_SHA: ${{ github.event.workflow_run.head_sha }}
-          TRIGGER_REF: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "ref=$MANUAL_TAG" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=$COMPLETED_SHA" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.ref.outputs.ref }}
+          fetch-depth: 0
+
+      # The npm run that triggers this reports head_branch main rather than the
+      # release tag, because it was itself started by a workflow_run and GitHub
+      # resolves that ref to the default branch. Only the first hop of the chain
+      # sees the tag. The commit is exact either way, so read the tag off it.
+      - name: Resolve release tag
+        id: release
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          MANUAL_TAG: ${{ inputs.release_tag }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             tag="$MANUAL_TAG"
-            ref="$MANUAL_TAG"
           else
-            tag="$TRIGGER_REF"
-            ref="$COMPLETED_SHA"
+            tag="$(git tag --points-at HEAD --list 'v*' \
+              | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)"
           fi
           if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "release tag must be a stable vX.Y.Z tag, got '$tag'" >&2
             exit 1
           fi
-          echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/checkout@v6
-        with:
-          ref: ${{ steps.release.outputs.ref }}
 
       - uses: actions/setup-node@v6
         with:
