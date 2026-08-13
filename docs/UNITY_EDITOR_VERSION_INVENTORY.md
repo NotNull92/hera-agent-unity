@@ -55,6 +55,36 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 
 ## Completed Checks
 
+### Connector 0.0.106 three-bucket gate (2026-08-13)
+
+`compile-exact-source.ps1` passed with zero warnings in all three buckets and
+the release-gate suite was green in each (17/17). Two of the three buckets do
+**not** have `com.unity.ai.navigation`, which is what proves the
+reflection-only boundary: the Connector compiles and runs there, and
+`--area navmesh_surfaces` returns `PACKAGE_NOT_INSTALLED` while `--area
+navmesh` keeps working.
+
+| Bucket | Representative | Fixture | AI Navigation | Release-gate tests |
+|---|---|---|---|---|
+| `6000.0`–`6000.2` | `6000.0.35f1` | `Test6.0.35f1` | absent | 17/17 |
+| `6000.3`–`6000.4` | `6000.3.5f2` | `test6000.3.5f2` | **2.0.14 installed** | 17/17 |
+| `6000.5+` | `6000.5.6f1` | `test6.5` | absent | 17/17 |
+
+`test6000.3.5f2` now carries `com.unity.ai.navigation` 2.0.14 on purpose — it
+is the package-present bucket the surface matrix needs.
+
+Live matrix on that bucket, from a clean scene with two surfaces in separate
+groups: `status` read `with_data: 0`; `--target /GroupA` narrowed to one
+surface; `start --target /GroupA` returned immediately and polling reached
+`idle` with `with_data: 1`; `Assets/HeraW10/W10/NavMesh-GroupA.asset` existed;
+`clear` returned `with_data` to 0; `cancel` returned `CANCEL_UNSUPPORTED`; and
+`--area navmesh` still answered alongside.
+
+`6000.5` needed the non-deprecated `FindObjectsByType(Type, FindObjectsInactive)`
+overload behind `UNITY_6000_5_OR_NEWER`, the same split `InputQaResolver` and
+`EditorScreenshot` already use.
+
+
 ### Connector 0.0.105 three-bucket gate (2026-08-13)
 
 Declaration-only release. `compile-exact-source.ps1` passed with zero warnings

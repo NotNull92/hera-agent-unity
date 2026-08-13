@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.106 — baking the AI Navigation surface model)
+
+- `bake --area navmesh_surfaces` bakes, inspects, and clears the
+  `NavMeshSurface` components the AI Navigation package uses. Projects built on
+  that package have no built-in scene NavMesh, so `--area navmesh` answered
+  honestly and uselessly about a mesh they do not use while the bake they
+  actually needed had no Hera surface at all.
+- It is a separate `area` value, never auto-detection. The two produce
+  different artifacts — one mutates the scene's built-in NavMesh, the other
+  writes `NavMeshData` assets — and `bake` is approval-gated precisely so an
+  agent knows what it is about to change.
+- The package is optional and its absence fails closed. The integration is
+  reflection-only against two public types (`NavMeshSurface` and the
+  `NavMeshAssetManager` singleton the package's own Bake button drives), so the
+  Connector compiles and runs without it; a project that lacks it gets
+  `PACKAGE_NOT_INSTALLED` naming the one command that fixes it, never a silent
+  fallback to the built-in mesh.
+- `--target` restricts `start`, `status`, and `clear` to the surfaces under one
+  object; the default is every surface in the loaded scenes.
+- `cancel --area navmesh_surfaces` returns `CANCEL_UNSUPPORTED`. The package
+  exposes no cancellation for surface bakes (measured on 2.0.14), and
+  cancelling the built-in bake instead would stop something the caller never
+  started.
+- `status` reports `{state, surfaces, baking, with_data}`, derived live like
+  the other areas — no job ledger, because the Editor is the source of truth
+  across reconnects.
+
 ### Added (Connector 0.0.105 — ten actions now declare what they return)
 
 - An agent could read every tool's input schema and know exactly what to send,

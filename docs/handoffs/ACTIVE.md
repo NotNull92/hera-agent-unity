@@ -21,6 +21,8 @@ records only current state and what is open.
 
 | 9 | `0.0.105` | Ten actions declare their output schema; eleven message-only actions recorded as needing none (`docs/OUTPUT_SCHEMA_DESIGN.md`) |
 
+| 10 | `0.0.106` | `bake --area navmesh_surfaces` for the AI Navigation package, reflection-only and fail-closed (`docs/NAVMESH_SURFACE_DESIGN.md`) |
+
 Alongside the queue: `0.0.91` moved the support floor to Unity 6+ (three
 compatibility buckets), and `0.0.90` fixed the `EntityIdCompat` round trip that
 had made every emitted `instance_id` unresolvable on Unity 6000.3+.
@@ -52,7 +54,8 @@ shipped a defect:**
 
 - Deferred by locked designs: active build-target switching and Unity 6 build
   profiles (`docs/BUILD_SURFACE_DESIGN.md`), AI Navigation package
-  `NavMeshSurface` baking (`docs/BAKE_SURFACE_DESIGN.md`), lighting/navmesh
+  `NavMeshSurface` baking — **done in wave 10**
+  (`docs/NAVMESH_SURFACE_DESIGN.md`), lighting/navmesh
   settings areas and graphics-pipeline/input-axes settings
   (`docs/SETTINGS_SURFACE_DESIGN.md`), asset-tool path parameters accepting
   durable handles — **done in wave 8** (`docs/ASSET_HANDLE_DESIGN.md`).

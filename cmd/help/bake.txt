@@ -1,4 +1,4 @@
-Usage: hera-agent-unity bake <action> --area <lighting|navmesh|occlusion>
+Usage: hera-agent-unity bake <action> --area <lighting|navmesh|navmesh_surfaces|occlusion>
 
 Scene bakes by area. start triggers the async bake and returns immediately;
 poll status until it reports idle. Status is computed from live Editor state,

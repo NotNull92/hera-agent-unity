@@ -332,7 +332,7 @@ hera-agent-unity build start --wait
 Scene bakes by area. `start` triggers the async bake and returns immediately; poll `status` until it reports `idle`. Status is computed from live Editor state, so it survives reconnects and domain reloads.
 
 ```bash
-hera-agent-unity bake <action> --area <lighting|navmesh|occlusion>
+hera-agent-unity bake <action> --area <lighting|navmesh|navmesh_surfaces|occlusion>
 ```
 
 ### Actions
@@ -344,7 +344,7 @@ hera-agent-unity bake <action> --area <lighting|navmesh|occlusion>
 | `cancel` | Cancel an in-progress bake (no-op success when idle). |
 | `clear` | Delete the area's baked data. Requires the approval-token flow. |
 
-`--area navmesh` bakes the built-in scene NavMesh; AI Navigation package `NavMeshSurface` components are not baked by this.
+`--area navmesh` bakes the built-in scene NavMesh. `--area navmesh_surfaces` bakes the `NavMeshSurface` components of the AI Navigation package, which write their own `NavMeshData` assets. They are separate values on purpose: the artifacts differ, and `bake` is approval-gated so an agent should know which one it is changing. `navmesh_surfaces` needs `com.unity.ai.navigation`; without it every call returns `PACKAGE_NOT_INSTALLED` rather than falling back to the built-in mesh. `--target <path|instance_id|handle>` restricts `start`, `status`, and `clear` to the surfaces under one object. `cancel --area navmesh_surfaces` returns `CANCEL_UNSUPPORTED` — the package offers no cancellation for surface bakes.
 
 ### Examples
 
