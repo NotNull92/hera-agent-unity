@@ -32,17 +32,21 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           MANUAL_TAG: ${{ inputs.release_tag }}
           COMPLETED_SHA: ${{ github.event.workflow_run.head_sha }}
+          TRIGGER_REF: ${{ github.event.workflow_run.head_branch }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            if [[ ! "$MANUAL_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "release_tag must be a stable vX.Y.Z tag" >&2
-              exit 1
-            fi
+            tag="$MANUAL_TAG"
             ref="$MANUAL_TAG"
           else
+            tag="$TRIGGER_REF"
             ref="$COMPLETED_SHA"
           fi
+          if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "release tag must be a stable vX.Y.Z tag, got '$tag'" >&2
+            exit 1
+          fi
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       - uses: actions/checkout@v6
         with:
@@ -52,6 +56,25 @@ jobs:
         with:
           node-version: "24"
           package-manager-cache: false
+
+      # server.json is what mcp-publisher reads, so it follows the release tag
+      # for the same reason npm/package.json does.
+      - name: Pin server metadata to the release tag
+        shell: bash
+        env:
+          HERA_AGENT_UNITY_RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          version="${HERA_AGENT_UNITY_RELEASE_TAG#v}"
+          node -e '
+            const fs = require("fs");
+            const version = process.argv[1];
+            const newline = String.fromCharCode(10);
+            const server = JSON.parse(fs.readFileSync("server.json", "utf8"));
+            server.version = version;
+            for (const entry of server.packages || []) entry.version = version;
+            fs.writeFileSync("server.json", JSON.stringify(server, null, 2) + newline);
+          ' "$version"
+          echo "pinned to $(node -p "require('./server.json').version")"
 
       - name: Verify registry metadata and npm publication
         shell: bash

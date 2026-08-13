@@ -505,10 +505,13 @@ Commit all unstaged changes before finishing. Unrelated changes should be commit
 4. main CI 통과 확인 (`gh run watch --exit-status`).
 5. CLI 변경 있으면 새 tag push — `release.yml`이 cross-build 5종(linux/darwin × amd64+arm64, windows amd64) + GitHub Release를 자동 생성.
 6. release workflow 통과 확인 (`gh run watch --exit-status`).
-7. `go clean -cache -testcache`로 빌드/테스트 캐시 전부 정리.
-8. 둘 다 성공하면 `hera-agent-unity update`로 설치된 CLI 업데이트.
+7. `npm-publish.yml`과 그 뒤를 잇는 `mcp-publish.yml` 통과 확인. 두 워크플로는 릴리스 태그에서 버전을 유도해 `npm/package.json`·`npm/package-lock.json`·`server.json`에 써 넣으므로 손으로 bump할 필요가 없다. 실패하면 npm과 MCP Registry만 조용히 뒤처지고 GitHub Release는 정상으로 보이므로 반드시 확인한다.
+8. `go clean -cache -testcache`로 빌드/테스트 캐시 전부 정리.
+9. 전부 성공하면 `hera-agent-unity update`로 설치된 CLI 업데이트.
 
 > Release notes는 release.yml이 compare 링크만 자동 생성한다. 의미 있는 변경 요약이 필요하면 push 후 `gh release edit <tag> --notes "..."`로 보강.
+
+> 배포 채널은 셋이다: GitHub Release(태그 push), npm(`npm-publish.yml`, Release 성공에 반응), MCP Registry(`mcp-publish.yml`, npm 성공에 반응). 사슬이라 앞이 실패하면 뒤는 skipped 된다 — `v0.2.1`~`v0.2.11` 구간에서 실제로 그렇게 11회 연속 누락됐다.
 
 ### 수동 release (fallback)
 

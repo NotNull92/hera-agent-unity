@@ -47,23 +47,62 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           package-manager-cache: false
 
+      # The tag comes from the release that triggered this run. Deriving it from
+      # npm/package.json instead made every automatic run re-publish whatever
+      # version that file happened to carry, so once the file stopped being
+      # bumped the job failed with "already published" on every release and npm
+      # silently stopped tracking the CLI.
       - name: Resolve release tag
         id: release
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
           MANUAL_TAG: ${{ inputs.release_tag }}
+          TRIGGER_REF: ${{ github.event.workflow_run.head_branch }}
         run: |
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             tag="$MANUAL_TAG"
           else
-            tag="v$(node -p "require('./npm/package.json').version")"
+            tag="$TRIGGER_REF"
           fi
           if [[ ! "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "release tag must be a stable vX.Y.Z tag" >&2
+            echo "release tag must be a stable vX.Y.Z tag, got '$tag'" >&2
             exit 1
           fi
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      # The published version follows the tag rather than a hand-maintained
+      # field, so a forgotten bump can no longer stall the pipeline. The lock
+      # file carries the version too, and `npm ci` refuses to run when the two
+      # disagree, so both are rewritten together.
+      - name: Pin package version to the release tag
+        shell: bash
+        env:
+          HERA_AGENT_UNITY_RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          version="${HERA_AGENT_UNITY_RELEASE_TAG#v}"
+          node -e '
+            const fs = require("fs");
+            const version = process.argv[1];
+            const newline = String.fromCharCode(10);
+            const write = (file, data) =>
+              fs.writeFileSync(file, JSON.stringify(data, null, 2) + newline);
+
+            const pkg = JSON.parse(fs.readFileSync("npm/package.json", "utf8"));
+            pkg.version = version;
+            write("npm/package.json", pkg);
+
+            const lock = JSON.parse(fs.readFileSync("npm/package-lock.json", "utf8"));
+            lock.version = version;
+            if (lock.packages && lock.packages[""]) lock.packages[""].version = version;
+            write("npm/package-lock.json", lock);
+
+            const server = JSON.parse(fs.readFileSync("server.json", "utf8"));
+            server.version = version;
+            for (const entry of server.packages || []) entry.version = version;
+            write("server.json", server);
+          ' "$version"
+          echo "pinned to $(node -p "require('./npm/package.json').version")"
 
       - name: Install package metadata without postinstall download
         working-directory: npm
