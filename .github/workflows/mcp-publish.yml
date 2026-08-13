@@ -73,7 +73,10 @@ jobs:
           package-manager-cache: false
 
       # server.json is what mcp-publisher reads, so it follows the release tag
-      # for the same reason npm/package.json does.
+      # for the same reason npm/package.json does. Both files are pinned here,
+      # not just server.json: the package test below asserts the two versions
+      # match, and the checked-out tree still carries whatever version was last
+      # committed by hand.
       - name: Pin server metadata to the release tag
         shell: bash
         env:
@@ -84,10 +87,19 @@ jobs:
             const fs = require("fs");
             const version = process.argv[1];
             const newline = String.fromCharCode(10);
+            const write = (path, value) =>
+              fs.writeFileSync(path, JSON.stringify(value, null, 2) + newline);
+            const pkg = JSON.parse(fs.readFileSync("npm/package.json", "utf8"));
+            pkg.version = version;
+            write("npm/package.json", pkg);
+            const lock = JSON.parse(fs.readFileSync("npm/package-lock.json", "utf8"));
+            lock.version = version;
+            if (lock.packages && lock.packages[""]) lock.packages[""].version = version;
+            write("npm/package-lock.json", lock);
             const server = JSON.parse(fs.readFileSync("server.json", "utf8"));
             server.version = version;
             for (const entry of server.packages || []) entry.version = version;
-            fs.writeFileSync("server.json", JSON.stringify(server, null, 2) + newline);
+            write("server.json", server);
           ' "$version"
           echo "pinned to $(node -p "require('./server.json').version")"
 
