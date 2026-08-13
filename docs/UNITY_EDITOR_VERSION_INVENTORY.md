@@ -55,6 +55,47 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 
 ## Completed Checks
 
+### Connector 0.0.101 three-bucket gate (2026-08-13)
+
+`compile-exact-source.ps1` passed with zero errors and zero warnings in all
+three buckets; each bucket then enabled `testables`, ran the release-gate
+suite, exercised `manage_assets deps`, and had its manifest restored
+byte-for-byte.
+
+| Bucket | Representative | Fixture | Release-gate tests | Status |
+|---|---|---|---|---|
+| `6000.0`–`6000.2` | `6000.0.35f1` | `Test6.0.35f1` | 17/17 | PASS |
+| `6000.3`–`6000.4` | `6000.3.5f2` | `test6000.3.5f2` | 17/17 | PASS |
+| `6000.5+` | `6000.5.6f1` | `test6.5` | 17/17 | PASS |
+
+Per bucket, against a material referenced by one prefab: forward listed the
+material and excluded the prefab itself; reverse listed exactly the prefab;
+reverse on an unreferenced material returned an empty list; `--scope all`
+returned the same hit over the whole project; a missing `--direction` was
+refused by the strict schema; and a nonexistent path returned
+`ASSET_NOT_FOUND` rather than an empty list.
+
+Reverse-scan cost, reported by the action itself:
+
+| Bucket | `Assets/` scope | `all` scope |
+|---|---|---|
+| `6000.0.35f1` | 11 scanned, 17 ms | 10180 scanned, 2227 ms |
+| `6000.3.5f2` | 11 scanned, 24 ms | 10332 scanned, 1555 ms |
+| `6000.5.6f1` | 47 scanned, 166 ms | 10846 scanned, 3667 ms |
+
+The same run carried a create-then-query-in-one-call probe comparing Unity
+Search's `ref:` against the AssetDatabase scan, for a reference that had just
+been written:
+
+| Bucket | Unity Search `ref:` | AssetDatabase scan | Truth |
+|---|---|---|---|
+| `6000.0.35f1` | 1 | 1 | 1 |
+| `6000.3.5f2` | **0** | 1 | 1 |
+| `6000.5.6f1` | **0** | 1 | 1 |
+
+That intermittency is why `deps` does not use Unity Search
+(`docs/ASSET_DEPENDENCY_DESIGN.md`).
+
 ### Connector 0.0.100 three-bucket gate (2026-08-13)
 
 `compile-exact-source.ps1` passed with zero errors and zero warnings in all

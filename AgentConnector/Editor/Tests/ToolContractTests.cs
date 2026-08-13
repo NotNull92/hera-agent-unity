@@ -1887,6 +1887,13 @@ namespace HeraAgent.Tests
 
         private static IEnumerable<(string tool, string action, JObject input)> StrictM23Actions()
         {
+            yield return ("manage_assets", "deps", new JObject
+            {
+                ["action"] = "deps",
+                ["path"] = "Assets/Test.prefab",
+                ["direction"] = "reverse",
+                ["scope"] = "assets",
+            });
             yield return ("manage_assets", "find", new JObject
             {
                 ["action"] = "find",

@@ -7,6 +7,10 @@ Actions:
   find                            Search assets with AssetDatabase.FindAssets.
                                   Requires --filter, --type, or both so a
                                   command does not dump the whole project.
+  deps --path <asset> --direction <forward|reverse>
+                                  forward: what this asset uses.
+                                  reverse: what uses this asset — the question
+                                  to ask before delete or move.
   mkdir --path <Assets/folder>     Create a folder recursively. Existing folders
                                   return success with created=false.
   copy --path <src> --new_path <dst>
@@ -15,6 +19,16 @@ Actions:
                                   Move or rename one asset file.
   delete --path <asset-or-folder>  Delete one asset file or folder.
                                   Refuses to delete Assets itself.
+
+Deps flags:
+  --direction <forward|reverse>   Required. The two answer opposite questions,
+                                  so there is no default.
+  --recursive true                forward only: follow dependencies transitively.
+  --scope <assets|all>            reverse only: 'assets' (default) scans Assets/;
+                                  'all' also scans Packages/. Package contents
+                                  are immutable, so scanning them is usually
+                                  paid for nothing.
+  --limit <N>                     Max results (default 100, max 1000).
 
 Find flags:
   --filter <text>                 AssetDatabase filter text.
@@ -25,12 +39,18 @@ Find flags:
 Output:
   find — { query, total, returned, truncated,
            assets:[{ path, guid, name, type }] }
+  deps forward — { path, direction, recursive, total, returned, truncated,
+                   assets:[...] }
+  deps reverse — { path, direction, scope, total, returned, truncated,
+                   scanned, elapsed_ms, assets:[...] }
   mkdir — { path, created }
   copy / move — { path, new_path }
   delete — { path }
 
 Examples:
   hera-agent-unity manage_assets find --type Texture2D --filter icon --limit 20
+  hera-agent-unity manage_assets deps --path Assets/Prefabs/Player.prefab --direction forward
+  hera-agent-unity manage_assets deps --path Assets/Art/Hero.mat --direction reverse
   hera-agent-unity manage_assets mkdir --path Assets/Generated/UI
   hera-agent-unity manage_assets copy --path Assets/A.prefab --new_path Assets/B.prefab
   hera-agent-unity manage_assets move --path Assets/Old.asset --new_path Assets/New.asset
@@ -40,3 +60,12 @@ Safety:
   Use manage_assets instead of exec for basic AssetDatabase work. It returns a
   compact payload, validates paths through AssetPathGuard, and keeps destructive
   actions explicit.
+
+Dependencies:
+  Both directions come from AssetDatabase, not Unity Search. Search answers the
+  reverse question faster, but its index lags the asset database — queried right
+  after an asset is written it returns nothing, and an empty reverse result is
+  exactly what reads as "safe to delete". The reverse scan's cost is reported
+  in scanned and elapsed_ms rather than hidden; a measured project-wide scan
+  over 10,330 assets took 1.5s, and scoping to Assets/ is far cheaper.
+  A truncated reverse list is flagged — treat it as "at least N", not "N".

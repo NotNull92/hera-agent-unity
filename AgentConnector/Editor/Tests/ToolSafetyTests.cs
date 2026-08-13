@@ -45,7 +45,7 @@ namespace HeraAgent.Tests
                 $"actions = {actionCount}; " +
                 $"unclassified built-in tools/actions = {unclassified}");
             return Expect(nameof(TestEveryBuiltInOperationClassified),
-                contracts.Length == 33 && actionCount == 110 && unclassified == 0);
+                contracts.Length == 33 && actionCount == 111 && unclassified == 0);
         }
 
         private static bool TestHandlerDerivedRiskAudit()

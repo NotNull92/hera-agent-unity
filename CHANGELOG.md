@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.101 — asset dependencies in both directions)
+
+- `manage_assets deps --path <asset> --direction <forward|reverse>`.
+  **forward** lists what an asset uses (`--recursive` for the transitive set);
+  **reverse** lists what uses it — the question that belongs in front of
+  `delete` and `move`, and one Hera could not answer at all. `direction` is
+  required: the two answer opposite questions and guessing would let "is
+  anything still using this?" be answered with "here is what it uses".
+- The reverse scan is scoped to `Assets/` by default and reports `scanned` and
+  `elapsed_ms`, because its cost grows with the project and must not be
+  hidden. `--scope all` also scans `Packages/`; measured on the release-gate
+  fixtures, that is the difference between ~20 ms and 1.5–3.7 s, for results
+  that cannot change since package contents are immutable.
+- A truncated reverse list is flagged in the response and in an `agent_hint`,
+  since "three things reference this" and "at least three" lead to different
+  decisions about deleting.
+- A `--path` with no asset returns `ASSET_NOT_FOUND` rather than an empty
+  list, so an empty reverse result always means "nothing references this" and
+  never "that path was a typo".
+
+  Both directions come from `AssetDatabase`, not Unity Search. Survey
+  candidate Q9 ("expose Unity Search") is closed by measurement rather than
+  implemented: Search's asset, scene, and menu query spaces are subsets of
+  `manage_assets find`, `find_gameobjects`, and `menu list`; its `dep:` and
+  `#property` queries returned nothing even with a settled index; and its
+  index lags the asset database *intermittently* — a create-then-query probe
+  returned the correct reference on `6000.0.35f1` and zero on `6000.3.5f2`
+  and `6000.5.6f1`, where the AssetDatabase scan was correct in all three.
+  Rationale and measurements: `docs/ASSET_DEPENDENCY_DESIGN.md`.
+
 ### Added (Connector 0.0.100 — the prefab instance-to-asset loop)
 
 - `manage_prefab list_overrides --target <instance>` reports how a scene

@@ -1,7 +1,7 @@
 # Active Development Handoff
 
 Current workstream: **editor-workflow surface queue.** Waves 1a, 1b, 2, 3, 4,
-5, and 6 are complete. Per-release detail lives in `CHANGELOG.md`; this file
+5, 6, and 7 are complete, and the survey queue is closed. Per-release detail lives in `CHANGELOG.md`; this file
 records only current state and what is open.
 
 ## Shipped in this queue
@@ -14,13 +14,14 @@ records only current state and what is open.
 | 3 | `0.0.97` + CLI `v0.2.7` | `bake` (lighting / built-in scene NavMesh / occlusion × start/status/cancel/clear) |
 | 4 | `0.0.98` + CLI `v0.2.8` | `build` (Player build over the file bus + Build Settings management) |
 | 5 | `0.0.99` + CLI `v0.2.9` | `test list` / `test cancel` / `--category` / `--assembly`, honest `NO_TESTS_MATCHED`, `manage_packages search` (`docs/DISCOVERY_SURFACE_DESIGN.md`) |
-| 6 | `0.0.100` | `manage_prefab list_overrides` / `apply` / `revert` / `unpack`, `--child` component edits, `asset_type` on `create`, inactive-source fix (`docs/PREFAB_OVERRIDE_DESIGN.md`) |
+| 6 | `0.0.100` + CLI `v0.2.10` | `manage_prefab list_overrides` / `apply` / `revert` / `unpack`, `--child` component edits, `asset_type` on `create`, inactive-source fix (`docs/PREFAB_OVERRIDE_DESIGN.md`) |
+| 7 | `0.0.101` | `manage_assets deps` — forward and reverse asset dependencies; closes survey candidate Q9 by measurement (`docs/ASSET_DEPENDENCY_DESIGN.md`) |
 
 Alongside the queue: `0.0.91` moved the support floor to Unity 6+ (three
 compatibility buckets), and `0.0.90` fixed the `EntityIdCompat` round trip that
 had made every emitted `instance_id` unresolvable on Unity 6000.3+.
 
-Catalog now: **33 tools / 110 actions**. Every wave passed the feature
+Catalog now: **33 tools / 111 actions**. Every wave passed the feature
 admission gate, regenerated `docs/metrics/catalog-payload-baseline.json` in the
 same review, and was live-verified before release.
 
@@ -50,13 +51,15 @@ shipped a defect:**
   settings areas and graphics-pipeline/input-axes settings
   (`docs/SETTINGS_SURFACE_DESIGN.md`), asset-tool path parameters accepting
   durable handles (`docs/TARGET_RESOLUTION_DESIGN.md`).
-- Survey candidates not yet designed: Q9 Unity Search exposure. Its overlap
-  with `find_gameobjects` and `manage_assets find` has to be measured before a
-  design gate opens. Q10 closed in wave 6; Q11 closed in wave 5; four of its five candidates were
-  dropped with reasons recorded in `docs/DISCOVERY_SURFACE_DESIGN.md` §D6
-  (menu listing already shipped; `set_autotick` prevents no measured failure;
-  `Client.Resolve()` cannot report its own outcome; external-file import is
-  already covered by the agent's own filesystem tools plus `editor refresh`).
+- **The survey ingestion queue (Q1–Q11) is closed.** Q1–Q8 and Q10 shipped;
+  Q11 closed in wave 5 with four of its five candidates dropped
+  (`docs/DISCOVERY_SURFACE_DESIGN.md` D6); Q9 closed in wave 7 by measurement
+  rather than implementation — Unity Search's query space proved to be a
+  subset of `manage_assets find` + `find_gameobjects` + `menu list`, its
+  `dep:` and `#property` queries returned nothing, and its index lag is
+  intermittent, so only the reverse-dependency question survived and it is
+  answered from `AssetDatabase` instead (`docs/ASSET_DEPENDENCY_DESIGN.md`).
+  Any further work needs a new source of evidence, not another queue item.
 - **Unresolved observation, wave 6:** after a long Editor session mixing
   interrupted CLI polls, repeated `test cancel` calls, and `editor refresh
   --compile` cycles, the Test Runner stopped completing runs entirely — every

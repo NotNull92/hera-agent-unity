@@ -485,6 +485,7 @@ hera-agent-unity manage_assets <action> [flags]
 | Action | Required flags | Description |
 |:---|:---|:---|
 | `find` | `--filter`, `--type`, or both | Search assets and return compact `{path,guid,name,type}` entries. |
+| `deps` | `--path`, `--direction` | `forward` lists what the asset uses; `reverse` lists what uses it. |
 | `mkdir` | `--path Assets/...` | Create an `Assets/` folder recursively. Existing folders succeed with `created:false`. |
 | `create` | `--type`, `--path Assets/....asset` | Instantiate a ScriptableObject subclass as a new `.asset` (`.asset` is appended if omitted). Optional initial serialized fields via `--params '{"properties":{...}}'`. |
 | `copy` | `--path`, `--new_path` | Copy one asset file. |
@@ -497,10 +498,16 @@ hera-agent-unity manage_assets <action> [flags]
 | `--type` | `find`: asset type filter (`Texture2D`, `Material`, `Prefab`). `create`: the ScriptableObject subclass to instantiate — short name (`GameConfig`) or fully-qualified (`My.Namespace.GameConfig`). | |
 | `--limit` | Maximum `find` results | `50` (max `500`) |
 | `--include_folders` | Include folders in `find` output | `false` |
+| `--direction` | `deps`: `forward` (what this uses) or `reverse` (what uses this). Required — the two answer opposite questions. | |
+| `--recursive` | `deps forward`: follow dependencies transitively | `false` |
+| `--scope` | `deps reverse`: `assets` scans `Assets/`; `all` also scans `Packages/` | `assets` |
 | `--params '{"properties":{...}}'` | `create` only: raw SerializedProperty name → value map applied to the new asset. All fields are validated before creation; an invalid field returns `INVALID_INITIAL_PROPERTIES` and creates no asset. | |
 
 ```bash
 hera-agent-unity manage_assets find --type Texture2D --filter icon --limit 20
+hera-agent-unity manage_assets deps --path Assets/Prefabs/Player.prefab --direction forward
+hera-agent-unity manage_assets deps --path Assets/Prefabs/Player.prefab --direction forward --recursive true
+hera-agent-unity manage_assets deps --path Assets/Art/Hero.mat --direction reverse
 hera-agent-unity manage_assets mkdir --path Assets/Generated/UI
 hera-agent-unity manage_assets create --type GameConfig --path Assets/Config/Game.asset
 hera-agent-unity manage_assets create --type EnemyStats --path Assets/Data/Goblin.asset --params '{"properties":{"m_MaxHealth":30}}'
@@ -508,6 +515,12 @@ hera-agent-unity manage_assets copy --path Assets/A.prefab --new_path Assets/B.p
 hera-agent-unity manage_assets move --path Assets/Old.asset --new_path Assets/New.asset
 hera-agent-unity manage_assets delete --path Assets/Generated/Temp.asset
 ```
+
+**Dependencies**: `deps forward` returns `{path, direction, recursive, total, returned, truncated, assets}`; `deps reverse` adds `scope`, `scanned`, and `elapsed_ms`. The queried asset never appears in its own result.
+
+Both directions read `AssetDatabase`, not Unity Search. Search answers the reverse question in milliseconds, but its index lags the asset database *intermittently* — a create-then-query probe during the release gate returned the correct reference on `6000.0.35f1` and **zero** on `6000.3.5f2` and `6000.5.6f1`, while the AssetDatabase scan was correct in all three. An empty reverse result is what reads as "safe to delete", so it has to be trustworthy. The scan's cost is reported rather than hidden: scoped to `Assets/` it is tens of milliseconds on the gate fixtures, and `--scope all` ran 1.5–3.7 s over ~10,000 assets.
+
+A truncated reverse list is flagged and carries an `agent_hint` — treat it as "at least N", not "N". A `--path` with no asset returns `ASSET_NOT_FOUND` rather than an empty list.
 
 ---
 

@@ -48,6 +48,7 @@ namespace HeraAgent.Tests
                 ["input/inspect"] = HeraRiskClass.ReadOnly,
                 ["input/state"] = HeraRiskClass.ReadOnly,
                 ["manage_asset_import/get"] = HeraRiskClass.ReadOnly,
+                ["manage_assets/deps"] = HeraRiskClass.ReadOnly,
                 ["manage_assets/find"] = HeraRiskClass.ReadOnly,
                 ["manage_components/get"] = HeraRiskClass.ReadOnly,
                 ["manage_components/list"] = HeraRiskClass.ReadOnly,

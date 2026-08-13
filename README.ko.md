@@ -594,7 +594,7 @@ hera-agent-unity ui_slop box-in-box
 | `find_gameobjects` | 열린 Scene의 GameObject 검색 |
 | `manage_gameobject` | GameObject 생성과 편집 |
 | `manage_components` | Component 조회, 추가, 제거, 수정 |
-| `manage_assets` | `Assets/` 아래 에셋 작업 |
+| `manage_assets` | `Assets/` 아래 에셋 작업 + 의존성 추적(무엇을 쓰는지 / 무엇이 쓰는지) |
 | `manage_prefab` | 프리팹 에셋 생성·인스턴스화·편집 + 인스턴스 override의 apply/revert/unpack |
 | `manage_animation` | AnimationClip/AnimatorController 저작·읽기 |
 | `manage_settings` | 프로젝트 설정(physics·time·quality·player·audio) 조회·변경 — dry_run 프리뷰 + 승인 게이트 |

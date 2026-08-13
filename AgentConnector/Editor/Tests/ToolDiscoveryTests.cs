@@ -271,7 +271,7 @@ namespace HeraAgent.Tests
                     "create_controller", "get_clip", "get_controller", "set_curve",
                 },
                 ["manage_asset_import"] = new[] { "get", "set" },
-                ["manage_assets"] = new[] { "copy", "create", "delete", "find", "mkdir", "move" },
+                ["manage_assets"] = new[] { "copy", "create", "delete", "deps", "find", "mkdir", "move" },
                 ["manage_components"] = new[] { "add", "get", "list", "remove", "set" },
                 ["manage_editor"] = new[]
                 {
@@ -335,7 +335,7 @@ namespace HeraAgent.Tests
                 $"declared action contracts complete = true ({actionCount}); " +
                 $"built-in strict contracts complete = {allBuiltInsStrict.ToString().ToLowerInvariant()}");
             return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged),
-                expectedTools.Length == 33 && actionCount == 110 && allBuiltInsStrict);
+                expectedTools.Length == 33 && actionCount == 111 && allBuiltInsStrict);
         }
 
         private static bool ContainsBaselineToolNames(
