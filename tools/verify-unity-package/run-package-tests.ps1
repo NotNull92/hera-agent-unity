@@ -23,6 +23,22 @@ if (-not (Test-Path -LiteralPath $manifest)) {
 
 $original = [IO.File]::ReadAllBytes($manifest)
 $beforeHash = (Get-FileHash -LiteralPath $manifest -Algorithm SHA256).Hash.ToLowerInvariant()
+
+# A run that dies before its finally block leaves the package enabled as a
+# testable. Every later run then restores that leaked state byte-for-byte and
+# stays silent, while the catalog payload below is measured against a package
+# whose test fixtures declare [HeraTool] classes. Refuse to start instead: the
+# baseline this gate defends would be contaminated by tools that never ship.
+$startingTestables = @()
+$startingProperty = (Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json).PSObject.Properties["testables"]
+if ($null -ne $startingProperty) {
+    $startingTestables = @($startingProperty.Value)
+}
+if ($startingTestables -contains "com.notnull92.hera-agent-unity") {
+    throw ("Package tests are already enabled in $manifest before this run started. " +
+        "A previous run leaked its testables entry, so the production catalog cannot be " +
+        "measured here. Remove `"com.notnull92.hera-agent-unity`" from testables and re-run.")
+}
 $primaryError = $null
 $testExit = 0
 $restoreExit = 0

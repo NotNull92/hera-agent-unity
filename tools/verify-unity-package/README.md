@@ -32,6 +32,13 @@ Before EditMode tests, the script exports the live built-in tool catalog and com
 The script always attempts restoration in `finally`. A missing test count,
 failed test, restore hash mismatch, or post-restore compile failure is an error.
 Never use a production project as the verification fixture.
+
+It also refuses to start if the fixture already lists the package under
+`testables`. Restoration writes back the bytes captured at startup, so a run
+killed before its `finally` block leaks that entry and every later run then
+preserves it silently — while the catalog above gets measured against a package
+whose test fixtures declare `[HeraTool]` classes that never ship. Clear the
+entry and re-run.
 ## Run the compatibility matrix
 
 Run exact-source compilation across the five supported Unity buckets with one
