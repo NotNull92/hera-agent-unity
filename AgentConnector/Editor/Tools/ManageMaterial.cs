@@ -36,7 +36,7 @@ namespace HeraAgent.Tools
     {
         public class PathParameters
         {
-            [ToolParameter("Material asset path under Assets/.", Required = true)]
+            [ToolParameter("Material asset path under Assets/, or a durable handle for an existing material (guid:<32hex>[:<fileId>] reaches a material embedded in another asset).", Required = true)]
             public string Path { get; set; }
         }
 
@@ -105,7 +105,7 @@ namespace HeraAgent.Tools
             [ToolParameter("Action: create, get, set, set_shader.", Required = true)]
             public string Action { get; set; }
 
-            [ToolParameter("Material asset path (Assets/.../Name.mat).", Required = true)]
+            [ToolParameter("Material asset path (Assets/.../Name.mat), or a durable handle for an existing material. create needs a plain path.", Required = true)]
             public string Path { get; set; }
 
             [ToolParameter("Shader name. Required for create and set_shader (e.g. 'Universal Render Pipeline/Lit').")]
@@ -131,15 +131,39 @@ namespace HeraAgent.Tools
             var path = p.Get("path");
             if (string.IsNullOrWhiteSpace(path))
                 return new ErrorResponse("MISSING_PARAM", "'path' required (the material asset path, e.g. Assets/Mats/X.mat).");
-            if (!AssetPathGuard.TryNormalizeAssetFile(path, out path, out var pathErr))
-                return new ErrorResponse("INVALID_PATH", pathErr);
+            // create names a file that does not exist yet, so it keeps the plain
+            // path rule; every other action names an existing asset and accepts
+            // a durable handle for it.
+            Material resolvedMaterial = null;
+            if (action.Equals("create", System.StringComparison.OrdinalIgnoreCase))
+            {
+                if (ObjectIdentity.IsDurableForm(path))
+                    return new ErrorResponse("INVALID_PATH",
+                        $"'{path}' is a handle for an existing asset; create needs an Assets/ path for the new material.");
+                if (!AssetPathGuard.TryNormalizeAssetFile(path, out path, out var createErr))
+                    return new ErrorResponse("INVALID_PATH", createErr);
+            }
+            else
+            {
+                if (!AssetPathGuard.TryNormalizeExistingAssetFile(
+                        path, out path, out var resolved, out var pathCode, out var pathErr))
+                    return new ErrorResponse(pathCode, pathErr);
+                // A sub-asset handle names one material inside a container. The
+                // path alone cannot: LoadAssetAtPath returns whichever comes
+                // first, so three embedded materials would all read as the same
+                // one. Carry the resolved object through.
+                resolvedMaterial = resolved as Material;
+                if (resolved != null && resolvedMaterial == null)
+                    return new ErrorResponse("NOT_A_MATERIAL",
+                        $"'{p.Get("path")}' resolves to {resolved.GetType().Name}, not a Material.");
+            }
 
             switch (action.ToLowerInvariant())
             {
                 case "create": return Create(path, p.Get("shader"));
-                case "get": return Get(path, p.Get("property"), p.GetInt("limit") ?? 60);
-                case "set": return Set(path, p.Get("property"), p.GetRaw("value"));
-                case "set_shader": return SetShader(path, p.Get("shader"));
+                case "get": return Get(path, resolvedMaterial, p.Get("property"), p.GetInt("limit") ?? 60);
+                case "set": return Set(path, resolvedMaterial, p.Get("property"), p.GetRaw("value"));
+                case "set_shader": return SetShader(path, resolvedMaterial, p.Get("shader"));
                 default:
                     return new ErrorResponse("UNKNOWN_ACTION",
                         $"Unknown action '{action}'. Valid: create, get, set, set_shader.");
@@ -172,10 +196,10 @@ namespace HeraAgent.Tools
             });
         }
 
-        private static object Get(string path, string property, int limit)
+        private static object Get(string path, Material resolved, string property, int limit)
         {
             if (limit <= 0) limit = 60;
-            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            var mat = resolved ?? AssetDatabase.LoadAssetAtPath<Material>(path);
             if (mat == null)
                 return new ErrorResponse("MATERIAL_NOT_FOUND", $"No material asset at '{path}'.");
             var shader = mat.shader;
@@ -219,13 +243,13 @@ namespace HeraAgent.Tools
             });
         }
 
-        private static object Set(string path, string property, JToken value)
+        private static object Set(string path, Material resolved, string property, JToken value)
         {
             if (string.IsNullOrWhiteSpace(property))
                 return new ErrorResponse("MISSING_PARAM", "'property' required for set (e.g. _BaseColor).");
             if (value == null)
                 return new ErrorResponse("MISSING_PARAM", "'value' required for set.");
-            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            var mat = resolved ?? AssetDatabase.LoadAssetAtPath<Material>(path);
             if (mat == null)
                 return new ErrorResponse("MATERIAL_NOT_FOUND", $"No material asset at '{path}'.");
             if (!mat.HasProperty(property))
@@ -248,11 +272,11 @@ namespace HeraAgent.Tools
             });
         }
 
-        private static object SetShader(string path, string shaderName)
+        private static object SetShader(string path, Material resolved, string shaderName)
         {
             if (string.IsNullOrWhiteSpace(shaderName))
                 return new ErrorResponse("MISSING_PARAM", "'shader' required for set_shader.");
-            var mat = AssetDatabase.LoadAssetAtPath<Material>(path);
+            var mat = resolved ?? AssetDatabase.LoadAssetAtPath<Material>(path);
             if (mat == null)
                 return new ErrorResponse("MATERIAL_NOT_FOUND", $"No material asset at '{path}'.");
             var shader = Shader.Find(shaderName);

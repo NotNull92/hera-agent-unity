@@ -79,13 +79,13 @@ namespace HeraAgent.Tools
 
         public class PathParameters
         {
-            [ToolParameter("Asset path under Assets/.", Required = true)]
+            [ToolParameter("Asset path under Assets/, or a durable handle for an existing asset (guid:<32hex>[:<fileId>] or a GlobalObjectId).", Required = true)]
             public string Path { get; set; }
         }
 
         public sealed class DepsParameters
         {
-            [ToolParameter("Asset path to inspect.", Required = true)]
+            [ToolParameter("Asset path to inspect, or a durable handle (guid:<32hex>[:<fileId>] or a GlobalObjectId).", Required = true)]
             public string Path { get; set; }
 
             [ToolParameter(
@@ -121,7 +121,7 @@ namespace HeraAgent.Tools
 
         public sealed class TransferParameters : PathParameters
         {
-            [ToolParameter("Destination asset path under Assets/.", Required = true)]
+            [ToolParameter("Destination asset path under Assets/. A handle names an existing asset, so it is not accepted here.", Required = true)]
             public string NewPath { get; set; }
         }
 
@@ -267,6 +267,10 @@ namespace HeraAgent.Tools
             if (direction != "forward" && direction != "reverse")
                 return new ErrorResponse("MISSING_PARAM",
                     "'direction' required: 'forward' lists what this asset uses, 'reverse' lists what uses it. They answer opposite questions, so there is no safe default.");
+
+            if (!AssetPathGuard.TryResolveAssetHandle(
+                    path, out path, out _, out var handleCode, out var handleError))
+                return new ErrorResponse(handleCode, handleError);
 
             if (string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(path)))
                 return new ErrorResponse("ASSET_NOT_FOUND", $"No asset at '{path}'.");
@@ -569,8 +573,9 @@ namespace HeraAgent.Tools
 
         private static object Delete(string rawPath)
         {
-            if (!AssetPathGuard.TryNormalizeAssetPath(rawPath, out var path, out var error))
-                return new ErrorResponse("INVALID_PATH", error);
+            if (!AssetPathGuard.TryNormalizeExistingAssetPath(
+                    rawPath, out var path, out _, out var code, out var error))
+                return new ErrorResponse(code, error);
             if (path == "Assets")
                 return new ErrorResponse("INVALID_PATH", "Refusing to delete the Assets root.");
             if (AssetDatabase.LoadMainAssetAtPath(path) == null && !AssetDatabase.IsValidFolder(path))
@@ -602,9 +607,19 @@ namespace HeraAgent.Tools
             path = null;
             newPath = null;
             response = null;
-            if (!AssetPathGuard.TryNormalizeAssetFile(rawPath, out path, out var error))
+            // The source names an asset that exists, so a durable handle is a
+            // valid way to name it. The destination does not exist yet, so it
+            // never is.
+            if (!AssetPathGuard.TryNormalizeExistingAssetFile(
+                    rawPath, out path, out _, out var code, out var error))
             {
-                response = new ErrorResponse("INVALID_PATH", error);
+                response = new ErrorResponse(code, error);
+                return false;
+            }
+            if (ObjectIdentity.IsDurableForm(rawNewPath))
+            {
+                response = new ErrorResponse("INVALID_PATH",
+                    $"'{rawNewPath}' is a handle for an existing asset; a destination needs an Assets/ path.");
                 return false;
             }
             if (!AssetPathGuard.TryNormalizeAssetFile(rawNewPath, out newPath, out error))

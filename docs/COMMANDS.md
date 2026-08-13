@@ -476,6 +476,18 @@ hera-agent-unity manage_packages embed com.unity.test-framework
 
 ## manage_assets
 
+**Durable handles** (all asset tools): any `--path` that names an asset which
+already exists also accepts `guid:<32hex>`, `guid:<32hex>:<fileId>` for one
+object inside a container, or a `GlobalObjectId_V1-…` string — the same grammar
+`find` and `deps` already report back. A handle survives moves and renames that
+break a recorded path, and `guid:<guid>:<fileId>` reaches sub-assets a path
+cannot name at all when a container holds several of the same type. Resolution
+is addressing only: the action's usual containment rule then runs on the
+resolved path, so a `Packages/` handle stays refused wherever a `Packages/`
+path was, and the refusal names what the handle resolved to. Parameters that
+name a **new** file — `create --path`, `copy`/`move --new_path`, `mkdir` —
+reject handles, because a handle names something that already exists.
+
 Compact `AssetDatabase` operations for common file, folder, and asset-authoring work. Paths are constrained to `Assets/`.
 
 ```bash

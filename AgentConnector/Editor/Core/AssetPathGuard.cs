@@ -24,6 +24,102 @@ namespace HeraAgent
             return TryNormalizeAssetFolder(raw, out assetPath, out error);
         }
 
+        /// <summary>
+        /// Turn a parameter that may be a durable handle (<c>guid:&lt;32hex&gt;</c>,
+        /// <c>guid:&lt;32hex&gt;:&lt;fileId&gt;</c>, or a GlobalObjectId) into a
+        /// concrete asset path. A plain path passes through untouched.
+        /// <paramref name="resolved"/> carries the specific object a sub-asset
+        /// handle named, so an action that operates on a typed object can use it
+        /// while an action that operates on the asset file uses the path.
+        /// Resolution is addressing only — every containment rule still runs
+        /// afterwards on the resolved path.
+        /// </summary>
+        public static bool TryResolveAssetHandle(
+            string raw,
+            out string assetPath,
+            out UnityEngine.Object resolved,
+            out string errorCode,
+            out string error)
+        {
+            assetPath = raw;
+            resolved = null;
+            errorCode = null;
+            error = null;
+
+            if (!ObjectIdentity.IsDurableForm(raw))
+                return true;
+
+            if (!ObjectIdentity.TryResolve(raw, out var obj, out var resolveError))
+            {
+                errorCode = "ASSET_NOT_FOUND";
+                error = resolveError;
+                return false;
+            }
+
+            var path = AssetDatabase.GetAssetPath(obj);
+            if (string.IsNullOrEmpty(path))
+            {
+                errorCode = "NOT_AN_ASSET";
+                error = $"'{raw}' resolves to a scene object, not a project asset.";
+                return false;
+            }
+
+            assetPath = path;
+            resolved = obj;
+            return true;
+        }
+
+        /// <summary>
+        /// Resolve a durable handle if present, then apply the ordinary
+        /// existing-file containment rule. When a handle resolves outside
+        /// <c>Assets/</c>, the failure names the resolved path — a bare
+        /// "must be under Assets/" against an opaque guid is unreadable.
+        /// </summary>
+        public static bool TryNormalizeExistingAssetFile(
+            string raw,
+            out string assetPath,
+            out UnityEngine.Object resolved,
+            out string errorCode,
+            out string error)
+        {
+            if (!TryResolveAssetHandle(raw, out var candidate, out resolved, out errorCode, out error))
+            {
+                assetPath = null;
+                return false;
+            }
+
+            if (TryNormalizeAssetFile(candidate, out assetPath, out error))
+                return true;
+
+            errorCode = "INVALID_PATH";
+            if (!ReferenceEquals(candidate, raw))
+                error = $"'{raw}' resolves to '{candidate}', which is outside Assets/.";
+            return false;
+        }
+
+        /// <summary>File-or-folder variant of <see cref="TryNormalizeExistingAssetFile"/>.</summary>
+        public static bool TryNormalizeExistingAssetPath(
+            string raw,
+            out string assetPath,
+            out UnityEngine.Object resolved,
+            out string errorCode,
+            out string error)
+        {
+            if (!TryResolveAssetHandle(raw, out var candidate, out resolved, out errorCode, out error))
+            {
+                assetPath = null;
+                return false;
+            }
+
+            if (TryNormalizeAssetPath(candidate, out assetPath, out error))
+                return true;
+
+            errorCode = "INVALID_PATH";
+            if (!ReferenceEquals(candidate, raw))
+                error = $"'{raw}' resolves to '{candidate}', which is outside Assets/.";
+            return false;
+        }
+
         public static bool TryPrepareNewAssetFile(
             string raw,
             string extension,
@@ -35,6 +131,15 @@ namespace HeraAgent
             assetPath = null;
             errorCode = null;
             error = null;
+
+            // A durable handle names an asset that already exists, so it can
+            // never name the file this call is about to create.
+            if (ObjectIdentity.IsDurableForm(raw))
+            {
+                errorCode = "INVALID_PATH";
+                error = $"'{raw}' is a handle for an existing asset; a new file needs an Assets/ path.";
+                return false;
+            }
 
             if (!TryNormalizeAssetFile(raw, out assetPath, out error))
             {

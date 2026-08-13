@@ -30,7 +30,7 @@ namespace HeraAgent.Tools
     {
         public class GetParameters
         {
-            [ToolParameter("Asset path under Assets/.", Required = true)]
+            [ToolParameter("Asset path under Assets/, or a durable handle. Import settings belong to the file, so a sub-asset handle widens to its containing asset.", Required = true)]
             public string Path { get; set; }
 
             [ToolParameter("SerializedProperty path. Omit to return all properties.")]
@@ -39,7 +39,7 @@ namespace HeraAgent.Tools
 
         public sealed class SetParameters
         {
-            [ToolParameter("Asset path under Assets/.", Required = true)]
+            [ToolParameter("Asset path under Assets/, or a durable handle. Import settings belong to the file, so a sub-asset handle widens to its containing asset.", Required = true)]
             public string Path { get; set; }
 
             [ToolParameter("SerializedProperty path.", Required = true)]
@@ -73,7 +73,7 @@ namespace HeraAgent.Tools
             [ToolParameter("Action: get, set.", Required = true)]
             public string Action { get; set; }
 
-            [ToolParameter("Asset path (Assets/.../file.ext).", Required = true)]
+            [ToolParameter("Asset path (Assets/.../file.ext), or a durable handle for an existing asset.", Required = true)]
             public string Path { get; set; }
 
             [ToolParameter("SerializedProperty path on the importer (m_TextureType, m_sRGBTexture, …). get: omit to dump all. set: required.")]
@@ -93,8 +93,12 @@ namespace HeraAgent.Tools
             var path = p.Get("path");
             if (string.IsNullOrWhiteSpace(path))
                 return new ErrorResponse("MISSING_PARAM", "'path' required (the asset path, e.g. Assets/Tex/icon.png).");
-            if (!AssetPathGuard.TryNormalizeAssetFile(path, out path, out var pathErr))
-                return new ErrorResponse("INVALID_PATH", pathErr);
+            // Import settings belong to the asset file, so a sub-asset handle
+            // widens to its containing file rather than pretending an importer
+            // can be scoped to one object inside it.
+            if (!AssetPathGuard.TryNormalizeExistingAssetFile(
+                    path, out path, out _, out var pathCode, out var pathErr))
+                return new ErrorResponse(pathCode, pathErr);
 
             var importer = AssetImporter.GetAtPath(path);
             if (importer == null)

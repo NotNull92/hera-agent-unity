@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.104 — asset tools accept the handles Hera emits)
+
+- `manage_assets find` and `deps` report a `guid` for every result, and no
+  asset tool accepted one back. Measured before the change: feeding that guid
+  to `manage_assets deps` returned `ASSET_NOT_FOUND`, and to `manage_material`
+  or `manage_asset_import` returned `INVALID_PATH: path must be under
+  Assets/`. Every `--path` that names an **existing** asset now also accepts
+  `guid:<32hex>[:<fileId>]` and `GlobalObjectId_V1-…` — the grammar wave 1b
+  shipped for scene targets — across `manage_assets`, `manage_material`,
+  `manage_prefab`, `manage_asset_import`, and `manage_animation`.
+- A GUID keeps working after the asset moves. Verified: `manage_assets move`,
+  then the old path fails with `MATERIAL_NOT_FOUND` while the same handle
+  resolves to the new location.
+- `guid:<guid>:<fileId>` addresses one specific object inside a container.
+  A path cannot: with three materials embedded in one asset,
+  `LoadAssetAtPath<Material>` returns whichever comes first, so all three read
+  as the same material. Verified per bucket that the three handles return red,
+  green, and blue respectively.
+- Handles are addressing, never permission. A handle resolves to a path and
+  then the action's existing containment rule runs unchanged, so a `Packages/`
+  handle is still refused by a mutating action — now with the resolved path
+  named, because "must be under Assets/" against an opaque guid is unreadable.
+  Read-only `manage_assets deps`, which already accepted any asset path,
+  accepts it.
+- Import settings belong to the asset file, so `manage_asset_import` widens a
+  sub-asset handle to its containing file rather than implying an importer can
+  be scoped to one object inside it.
+- A handle names an asset that already exists, so it is refused wherever a
+  parameter names a file to be created: `create --path`, `copy/move
+  --new_path`, `mkdir`. The refusal says so instead of falling through to the
+  containment message.
+- A scene-object GlobalObjectId given to an asset tool returns `NOT_AN_ASSET`.
+
 ### Fixed (Connector 0.0.103 — three tools contradicted their own output schema)
 
 - `bake` (all four actions), `manage_editor get_selection` / `get_tags_layers`,

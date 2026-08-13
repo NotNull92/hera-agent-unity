@@ -55,6 +55,34 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
 
 ## Completed Checks
 
+### Connector 0.0.104 three-bucket gate (2026-08-13)
+
+`compile-exact-source.ps1` passed with zero warnings in all three buckets; each
+bucket then ran the release-gate suite and the asset-handle matrix.
+
+| Bucket | Representative | Fixture | Release-gate tests | Handle matrix |
+|---|---|---|---|---|
+| `6000.0`–`6000.2` | `6000.0.35f1` | `Test6.0.35f1` | 17/17 | PASS |
+| `6000.3`–`6000.4` | `6000.3.5f2` | `test6000.3.5f2` | 17/17 | PASS |
+| `6000.5+` | `6000.5.6f1` | `test6.5` | 17/17 | PASS |
+
+Identical per bucket: a guid emitted by `manage_assets find` round-tripped into
+`deps`, `manage_material get`, and `manage_asset_import get`, each reporting the
+resolved path; three materials embedded in one container returned red, green,
+and blue through their own `guid:<guid>:<fileId>` handles; a `Packages/` handle
+was refused by a mutating action with the resolved path named; and a handle was
+refused as a create destination.
+
+On `6000.3.5f2` additionally: the GUID still resolved after `manage_assets
+move` while the recorded path failed, a scene-object GlobalObjectId returned
+`NOT_AN_ASSET`, and a main-asset handle passed to `manage_material` returned
+`NOT_A_MATERIAL` naming the resolved type.
+
+The catalog kept 33 tools / 111 actions — only parameter descriptions grew
+(assets and full profiles +1930 bytes, scene +909) — and the baseline was
+regenerated in the same review.
+
+
 ### Connector 0.0.103 three-bucket gate (2026-08-13)
 
 Fix-only release: three tools serialized their results in PascalCase while

@@ -643,12 +643,17 @@ namespace HeraAgent.Tools
         private static AnimatorController LoadController(string rawPath, out ErrorResponse err)
         {
             err = null;
-            if (!AssetPathGuard.TryNormalizeAssetFile(rawPath, out var path, out var pathErr))
+            // Both loaders name an existing asset, so a durable handle is a
+            // valid way to name it; a sub-asset handle resolves to the object
+            // itself, which the type check below then accepts or rejects.
+            if (!AssetPathGuard.TryNormalizeExistingAssetFile(
+                    rawPath, out var path, out var resolved, out var pathCode, out var pathErr))
             {
-                err = new ErrorResponse("INVALID_PATH", pathErr);
+                err = new ErrorResponse(pathCode, pathErr);
                 return null;
             }
-            var ctrl = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
+            var ctrl = resolved as AnimatorController
+                ?? AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
             if (ctrl == null)
                 err = new ErrorResponse("ASSET_NOT_FOUND", "No AnimatorController at that path (expects an existing .controller).");
             return ctrl;
@@ -657,12 +662,14 @@ namespace HeraAgent.Tools
         private static AnimationClip LoadClip(string rawPath, string missingCode, string missingMessage, out ErrorResponse err)
         {
             err = null;
-            if (!AssetPathGuard.TryNormalizeAssetFile(rawPath, out var path, out var pathErr))
+            if (!AssetPathGuard.TryNormalizeExistingAssetFile(
+                    rawPath, out var path, out var resolved, out var pathCode, out var pathErr))
             {
-                err = new ErrorResponse("INVALID_PATH", pathErr);
+                err = new ErrorResponse(pathCode, pathErr);
                 return null;
             }
-            var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
+            var clip = resolved as AnimationClip
+                ?? AssetDatabase.LoadAssetAtPath<AnimationClip>(path);
             if (clip == null)
                 err = new ErrorResponse(missingCode, missingMessage);
             return clip;

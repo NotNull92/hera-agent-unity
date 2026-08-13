@@ -52,7 +52,7 @@ namespace HeraAgent.Tools
     {
         public class PathParameters
         {
-            [ToolParameter("Prefab asset path under Assets/.", Required = true)]
+            [ToolParameter("Prefab asset path under Assets/, or a durable handle for an existing prefab (create needs a plain path).", Required = true)]
             public string Path { get; set; }
         }
 
@@ -232,8 +232,22 @@ namespace HeraAgent.Tools
             var path = p.Get("path");
             if (string.IsNullOrWhiteSpace(path))
                 return new ErrorResponse("MISSING_PARAM", "'path' required (the prefab asset path, e.g. Assets/Prefabs/X.prefab).");
-            if (!AssetPathGuard.TryNormalizeAssetFile(path, out path, out var pathErr))
-                return new ErrorResponse("INVALID_PATH", pathErr);
+            // create names a file that does not exist yet, so it keeps the plain
+            // path rule; every other action names an existing asset and accepts
+            // a durable handle for it.
+            if (action.Equals("create", System.StringComparison.OrdinalIgnoreCase))
+            {
+                if (ObjectIdentity.IsDurableForm(path))
+                    return new ErrorResponse("INVALID_PATH",
+                        $"'{path}' is a handle for an existing asset; create needs an Assets/ path for the new prefab.");
+                if (!AssetPathGuard.TryNormalizeAssetFile(path, out path, out var createErr))
+                    return new ErrorResponse("INVALID_PATH", createErr);
+            }
+            else if (!AssetPathGuard.TryNormalizeExistingAssetFile(
+                         path, out path, out _, out var pathCode, out var pathErr))
+            {
+                return new ErrorResponse(pathCode, pathErr);
+            }
 
             switch (action.ToLowerInvariant())
             {

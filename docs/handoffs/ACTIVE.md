@@ -1,7 +1,7 @@
 # Active Development Handoff
 
 Current workstream: **editor-workflow surface queue.** Waves 1a, 1b, 2, 3, 4,
-5, 6, and 7 are complete, and the survey queue is closed. Per-release detail lives in `CHANGELOG.md`; this file
+5, 6, 7, and 8 are complete, and the survey queue is closed. Per-release detail lives in `CHANGELOG.md`; this file
 records only current state and what is open.
 
 ## Shipped in this queue
@@ -16,6 +16,8 @@ records only current state and what is open.
 | 5 | `0.0.99` + CLI `v0.2.9` | `test list` / `test cancel` / `--category` / `--assembly`, honest `NO_TESTS_MATCHED`, `manage_packages search` (`docs/DISCOVERY_SURFACE_DESIGN.md`) |
 | 6 | `0.0.100` + CLI `v0.2.10` | `manage_prefab list_overrides` / `apply` / `revert` / `unpack`, `--child` component edits, `asset_type` on `create`, inactive-source fix (`docs/PREFAB_OVERRIDE_DESIGN.md`) |
 | 7 | `0.0.101` + CLI `v0.2.11` | `manage_assets deps` — forward and reverse asset dependencies; closes survey candidate Q9 by measurement (`docs/ASSET_DEPENDENCY_DESIGN.md`) |
+
+| 8 | `0.0.104` | Asset tools accept durable handles on existing-asset `--path` parameters, including sub-asset `guid:<guid>:<fileId>` (`docs/ASSET_HANDLE_DESIGN.md`) |
 
 Alongside the queue: `0.0.91` moved the support floor to Unity 6+ (three
 compatibility buckets), and `0.0.90` fixed the `EntityIdCompat` round trip that
@@ -51,7 +53,7 @@ shipped a defect:**
   `NavMeshSurface` baking (`docs/BAKE_SURFACE_DESIGN.md`), lighting/navmesh
   settings areas and graphics-pipeline/input-axes settings
   (`docs/SETTINGS_SURFACE_DESIGN.md`), asset-tool path parameters accepting
-  durable handles (`docs/TARGET_RESOLUTION_DESIGN.md`).
+  durable handles — **done in wave 8** (`docs/ASSET_HANDLE_DESIGN.md`).
 - **The survey ingestion queue (Q1–Q11) is closed.** Q1–Q8 and Q10 shipped;
   Q11 closed in wave 5 with four of its five candidates dropped
   (`docs/DISCOVERY_SURFACE_DESIGN.md` D6); Q9 closed in wave 7 by measurement

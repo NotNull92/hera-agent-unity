@@ -3,6 +3,12 @@ Usage: hera-agent-unity manage_assets <action> [flags]
 Compact AssetDatabase file and folder operations. Every path is normalized and
 kept under Assets/.
 
+Any --path naming an asset that already exists also accepts a durable handle:
+guid:<32hex>, guid:<32hex>:<fileId> for one object inside a container, or a
+GlobalObjectId string. Handles survive moves that break a recorded path.
+Parameters naming a new file (create --path, copy/move --new_path, mkdir)
+reject them.
+
 Actions:
   find                            Search assets with AssetDatabase.FindAssets.
                                   Requires --filter, --type, or both so a
