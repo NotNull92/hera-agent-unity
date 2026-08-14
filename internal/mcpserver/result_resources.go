@@ -19,16 +19,19 @@ func boundedCommandResult(runtime nativeRuntime, invocation toolInvocation, resp
 	if runtime.results == nil || runtime.maxInlineBytes <= 0 {
 		return commandResult(response)
 	}
-	full, err := json.Marshal(responseEnvelope(response))
+	result := commandResult(response)
+	full, err := json.Marshal(result.StructuredContent)
 	if err != nil {
 		return unavailableResult("encoding_failed", "The Unity result could not be encoded.", 0)
 	}
-	inline, err := json.Marshal(commandResult(response))
-	if err != nil {
-		return unavailableResult("encoding_failed", "The Unity result could not be encoded.", len(full))
-	}
-	if len(inline) <= runtime.maxInlineBytes {
-		return commandResult(response)
+	if len(full) <= runtime.maxInlineBytes {
+		inline, inlineErr := json.Marshal(result)
+		if inlineErr != nil {
+			return unavailableResult("encoding_failed", "The Unity result could not be encoded.", len(full))
+		}
+		if len(inline) <= runtime.maxInlineBytes {
+			return result
+		}
 	}
 	_, safety, safetyErr := policy.Resolve(invocation.tool, invocation.params)
 	if safetyErr != nil || safety.RiskClass == "arbitrary_code" || containsSensitiveResult(full) {

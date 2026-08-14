@@ -46,8 +46,8 @@ func TestInvokeToolPreservesProjectionControlsBeforeSpooling(t *testing.T) {
 
 func TestMaxInlineBytesDefaultsAndRejectsNegativeValues(t *testing.T) {
 	config := enabledTestConfig()
-	if got := config.maxInlineBytes(); got != DefaultMaxInlineBytes {
-		t.Fatalf("maxInlineBytes() = %d, want %d", got, DefaultMaxInlineBytes)
+	if got := config.maxInlineBytes(); got != 32*1024 {
+		t.Fatalf("maxInlineBytes() = %d, want %d", got, 32*1024)
 	}
 	config.MaxInlineBytes = -1
 	if err := config.Validate(); err == nil {
