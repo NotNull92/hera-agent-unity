@@ -119,20 +119,12 @@ namespace HeraAgent.Tools
                 if (s_RefLocations != null && s_RefRspPath != null && File.Exists(s_RefRspPath))
                     return;
 
-                if (TryLoadRefsMeta(out var locations, out var hash, out var rspPath))
-                {
-                    s_RefLocations = locations;
-                    s_RefHash = hash;
-                    s_RefRspPath = rspPath;
-                    return;
-                }
-
-                locations = CollectReferenceLocations();
+                var locations = CollectReferenceLocations();
                 s_RefLocations = locations;
                 s_RefHash = HashStrings(locations);
 
                 Directory.CreateDirectory(CacheDir);
-                rspPath = Path.Combine(CacheDir, $"refs-{s_RefHash}.rsp");
+                var rspPath = Path.Combine(CacheDir, $"refs-{s_RefHash}.rsp");
                 if (!File.Exists(rspPath))
                 {
                     var sb = new StringBuilder(locations.Count * 128);
@@ -141,57 +133,7 @@ namespace HeraAgent.Tools
                     File.WriteAllText(rspPath, sb.ToString(), new UTF8Encoding(false));
                 }
                 s_RefRspPath = rspPath;
-                SaveRefsMeta(locations, s_RefHash, s_RefRspPath);
             }
-        }
-
-        private static bool TryLoadRefsMeta(out List<string> locations, out string hash, out string rspPath)
-        {
-            locations = null;
-            hash = null;
-            rspPath = null;
-            try
-            {
-                var metaPath = Path.Combine(CacheDir, "refs-meta.json");
-                if (!File.Exists(metaPath)) return false;
-
-                var json = File.ReadAllText(metaPath);
-                var root = Newtonsoft.Json.Linq.JObject.Parse(json);
-                var savedHash = root.Value<string>("hash");
-                var savedRsp = root.Value<string>("rspPath");
-                var savedCount = root.Value<int?>("assemblyCount") ?? -1;
-                var savedLocations = root["locations"] as Newtonsoft.Json.Linq.JArray;
-                if (string.IsNullOrEmpty(savedHash) || string.IsNullOrEmpty(savedRsp) || savedLocations == null)
-                    return false;
-                if (!File.Exists(savedRsp)) return false;
-                if (savedCount != savedLocations.Count) return false;
-
-                locations = savedLocations.Select(t => t.ToString()).ToList();
-                hash = savedHash;
-                rspPath = savedRsp;
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private static void SaveRefsMeta(List<string> locations, string hash, string rspPath)
-        {
-            try
-            {
-                var metaPath = Path.Combine(CacheDir, "refs-meta.json");
-                var root = new Newtonsoft.Json.Linq.JObject
-                {
-                    ["hash"] = hash,
-                    ["rspPath"] = rspPath,
-                    ["assemblyCount"] = locations.Count,
-                    ["locations"] = new Newtonsoft.Json.Linq.JArray(locations)
-                };
-                File.WriteAllText(metaPath, root.ToString(Newtonsoft.Json.Formatting.None));
-            }
-            catch { }
         }
 
         public static string ResolveCsc(string overridePath)

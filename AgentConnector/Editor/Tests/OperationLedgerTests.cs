@@ -24,6 +24,7 @@ namespace HeraAgent.Tests
             passed &= Run(nameof(TestCleanupConvertsExpiredSameDomainRunning), TestCleanupConvertsExpiredSameDomainRunning);
             passed &= Run(nameof(TestCleanupKeepsActiveSameDomainRunning), TestCleanupKeepsActiveSameDomainRunning);
             passed &= Run(nameof(TestByteCapRemovesResponseLessStaleRecord), TestByteCapRemovesResponseLessStaleRecord);
+            passed &= Run(nameof(TestReceivedOperationRejectsChangedSafety), TestReceivedOperationRejectsChangedSafety);
             if (passed)
                 Debug.Log("[OperationLedgerTests] ALL PASSED");
             else
@@ -233,6 +234,31 @@ namespace HeraAgent.Tests
             {
                 try { Directory.Delete(root, true); } catch { }
             }
+        }
+
+        static bool TestReceivedOperationRejectsChangedSafety()
+        {
+            using var fixture = new LedgerFixture();
+            const string operationId = "op_received_safety";
+            var context = fixture.Context(operationId, new JObject());
+            if (!fixture.Ledger.Begin(context, "fixture", "mutate", fixture.Mutation).Execute)
+                return false;
+
+            var path = Path.Combine(fixture.Root, operationId + ".json");
+            var record = JObject.Parse(File.ReadAllText(path));
+            record["state"] = "received";
+            File.WriteAllText(path, record.ToString(Newtonsoft.Json.Formatting.None));
+
+            var changedSafety = new ToolSafetyContract
+            {
+                RiskClass = HeraRiskClass.Destructive,
+                Idempotent = true,
+                SideEffectScope = "test",
+            };
+            var decision = fixture.Ledger.Begin(context, "fixture", "mutate", changedSafety);
+            return !decision.Execute
+                && decision.Response is ErrorResponse error
+                && error.code == "OPERATION_CONFLICT";
         }
 
         static bool IsUnknown(OperationLedgerDecision decision) =>

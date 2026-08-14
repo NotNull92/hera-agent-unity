@@ -60,6 +60,7 @@ namespace HeraAgent
             string action,
             ToolSafetyContract safety)
         {
+            var riskClass = ToolCatalogBuilder.RiskName(safety.RiskClass);
             var existing = Read(context.OperationId);
             if (existing != null)
             {
@@ -68,7 +69,9 @@ namespace HeraAgent
                     || !string.Equals(
                     existing.ArgumentsHash,
                     context.ArgumentsHash,
-                    StringComparison.Ordinal))
+                    StringComparison.Ordinal)
+                    || !string.Equals(existing.RiskClass, riskClass, StringComparison.Ordinal)
+                    || existing.Idempotent != safety.Idempotent)
                 {
                     return OperationLedgerDecision.Replay(new ErrorResponse(
                         "OPERATION_CONFLICT",
@@ -100,7 +103,10 @@ namespace HeraAgent
                     return Unknown(context.OperationId);
             }
 
-            if (safety.RequiresConfirmation)
+            var approvalVerified = existing != null
+                && existing.State == "received"
+                && existing.ApprovalVerified;
+            if (safety.RequiresConfirmation && !approvalVerified)
             {
                 if (string.IsNullOrWhiteSpace(context.ApprovalToken))
                 {
@@ -113,6 +119,7 @@ namespace HeraAgent
                     ApprovalPolicy.Binding(context, tool, action, safety));
                 if (approvalError != null)
                     return OperationLedgerDecision.Replay(approvalError);
+                approvalVerified = true;
             }
 
             var record = existing ?? new OperationLedgerRecord
@@ -121,10 +128,11 @@ namespace HeraAgent
                 Tool = tool,
                 Action = action,
                 ArgumentsHash = context.ArgumentsHash,
-                RiskClass = ToolCatalogBuilder.RiskName(safety.RiskClass),
+                RiskClass = riskClass,
                 Idempotent = safety.Idempotent,
                 StartedAtMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
             };
+            record.ApprovalVerified = approvalVerified;
             record.State = "received";
             record.DomainEpoch = _domainEpoch;
             Write(record);

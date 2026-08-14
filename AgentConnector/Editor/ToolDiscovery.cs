@@ -59,91 +59,85 @@ namespace HeraAgent
                 var tools = new Dictionary<string, ToolEntry>(StringComparer.Ordinal);
                 var actions = new Dictionary<string, ActionEntry>(StringComparer.Ordinal);
 
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies()
-                    .OrderBy(a => a.GetName().Name, StringComparer.Ordinal)
-                    .ThenBy(a => a.FullName, StringComparer.Ordinal))
+                foreach (var type in GetToolTypes())
                 {
-                    foreach (var type in GetLoadableTypes(assembly)
-                        .OrderBy(t => t.FullName, StringComparer.Ordinal))
-                    {
-                        if (!type.IsClass) continue;
-                        var attr = type.GetCustomAttribute<HeraToolAttribute>();
-                        if (attr == null) continue;
-                        if (!attr.Enabled) continue;
+                    if (!type.IsClass) continue;
+                    var attr = type.GetCustomAttribute<HeraToolAttribute>();
+                    if (attr == null) continue;
+                    if (!attr.Enabled) continue;
 
-                        var name = string.IsNullOrWhiteSpace(attr.Name)
-                            ? StringCaseUtility.ToSnakeCase(type.Name)
-                            : attr.Name.Trim();
-                        if (tools.TryGetValue(name, out var existing))
+                    var name = string.IsNullOrWhiteSpace(attr.Name)
+                        ? StringCaseUtility.ToSnakeCase(type.Name)
+                        : attr.Name.Trim();
+                    if (tools.TryGetValue(name, out var existing))
+                    {
+                        UnityEngine.Debug.LogError(
+                            $"[Hera] Duplicate tool name '{name}': " +
+                            $"{existing.Type.FullName} and {type.FullName}. " +
+                            $"Rename one or remove the duplicate.");
+                        continue;
+                    }
+
+                    var staticMethod = type.GetMethod("HandleCommand",
+                        BindingFlags.Public | BindingFlags.Static, null,
+                        new[] { typeof(JObject) }, null);
+                    var instanceMethod = type.GetMethod("HandleCommand",
+                        BindingFlags.Public | BindingFlags.Instance, null,
+                        new[] { typeof(JObject) }, null);
+                    var defaultHandler = staticMethod ?? instanceMethod;
+
+                    tools[name] = new ToolEntry
+                    {
+                        Name = name,
+                        Type = type,
+                        Attr = attr,
+                        DefaultHandler = defaultHandler,
+                    };
+
+                    foreach (var method in type.GetMethods(
+                        BindingFlags.Public | BindingFlags.NonPublic |
+                        BindingFlags.Static | BindingFlags.Instance)
+                        .OrderBy(m => m.Name, StringComparer.Ordinal)
+                        .ThenBy(m => m.ToString(), StringComparer.Ordinal))
+                    {
+                        var actionAttr = method.GetCustomAttribute<HeraActionAttribute>();
+                        if (actionAttr != null && !IsSupportedActionHandler(method, out var diagnostic))
                         {
-                            UnityEngine.Debug.LogError(
-                                $"[Hera] Duplicate tool name '{name}': " +
-                                $"{existing.Type.FullName} and {type.FullName}. " +
-                                $"Rename one or remove the duplicate.");
+                            UnityEngine.Debug.LogWarning(
+                                $"[Hera] Ignored [HeraAction] '{type.FullName}.{method.Name}': {diagnostic}");
                             continue;
                         }
 
-                        var staticMethod = type.GetMethod("HandleCommand",
-                            BindingFlags.Public | BindingFlags.Static, null,
-                            new[] { typeof(JObject) }, null);
-                        var instanceMethod = type.GetMethod("HandleCommand",
-                            BindingFlags.Public | BindingFlags.Instance, null,
-                            new[] { typeof(JObject) }, null);
-                        var defaultHandler = staticMethod ?? instanceMethod;
+                        bool isLegacyAction = actionAttr == null
+                            && method.IsPublic
+                            && method.IsStatic
+                            && method.Name != "Handle"
+                            && method.Name != "HandleCommand"
+                            && IsSupportedActionHandler(method, out _);
 
-                        tools[name] = new ToolEntry
+                        if (actionAttr == null && !isLegacyAction)
+                            continue;
+
+                        var configuredName = actionAttr?.Name;
+                        var actionName = (string.IsNullOrWhiteSpace(configuredName)
+                            ? StringCaseUtility.ToSnakeCase(method.Name)
+                            : configuredName.Trim()).ToLowerInvariant();
+                        var key = $"{name}:{actionName}";
+                        if (actions.ContainsKey(key))
                         {
-                            Name = name,
-                            Type = type,
-                            Attr = attr,
-                            DefaultHandler = defaultHandler,
-                        };
-
-                        foreach (var method in type.GetMethods(
-                            BindingFlags.Public | BindingFlags.NonPublic |
-                            BindingFlags.Static | BindingFlags.Instance)
-                            .OrderBy(m => m.Name, StringComparer.Ordinal)
-                            .ThenBy(m => m.ToString(), StringComparer.Ordinal))
-                        {
-                            var actionAttr = method.GetCustomAttribute<HeraActionAttribute>();
-                            if (actionAttr != null && !IsSupportedActionHandler(method, out var diagnostic))
-                            {
-                                UnityEngine.Debug.LogWarning(
-                                    $"[Hera] Ignored [HeraAction] '{type.FullName}.{method.Name}': {diagnostic}");
-                                continue;
-                            }
-
-                            bool isLegacyAction = actionAttr == null
-                                && method.IsPublic
-                                && method.IsStatic
-                                && method.Name != "Handle"
-                                && method.Name != "HandleCommand"
-                                && IsSupportedActionHandler(method, out _);
-
-                            if (actionAttr == null && !isLegacyAction)
-                                continue;
-
-                            var configuredName = actionAttr?.Name;
-                            var actionName = (string.IsNullOrWhiteSpace(configuredName)
-                                ? StringCaseUtility.ToSnakeCase(method.Name)
-                                : configuredName.Trim()).ToLowerInvariant();
-                            var key = $"{name}:{actionName}";
-                            if (actions.ContainsKey(key))
-                            {
-                                UnityEngine.Debug.LogWarning(
-                                    $"[Hera] Duplicate action '{key}' in {type.FullName}; " +
-                                    $"later definition ignored.");
-                                continue;
-                            }
-
-                            actions[key] = new ActionEntry
-                            {
-                                ToolName = name,
-                                ActionName = actionName,
-                                Method = method,
-                                Attr = actionAttr,
-                            };
+                            UnityEngine.Debug.LogWarning(
+                                $"[Hera] Duplicate action '{key}' in {type.FullName}; " +
+                                $"later definition ignored.");
+                            continue;
                         }
+
+                        actions[key] = new ActionEntry
+                        {
+                            ToolName = name,
+                            ActionName = actionName,
+                            Method = method,
+                            Attr = actionAttr,
+                        };
                     }
                 }
 
@@ -177,6 +171,31 @@ namespace HeraAgent
 
             diagnostic = null;
             return true;
+        }
+
+        private static IEnumerable<Type> GetToolTypes()
+        {
+            try
+            {
+                return TypeCache.GetTypesWithAttribute<HeraToolAttribute>()
+                    .Where(type => type != null)
+                    .OrderBy(type => type.Assembly.GetName().Name, StringComparer.Ordinal)
+                    .ThenBy(type => type.Assembly.FullName, StringComparer.Ordinal)
+                    .ThenBy(type => type.FullName, StringComparer.Ordinal)
+                    .ToArray();
+            }
+            catch (Exception exception)
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"[Hera] Unity TypeCache lookup failed; falling back to assembly scan: " +
+                    $"{exception.GetType().Name}: {exception.Message}");
+                return AppDomain.CurrentDomain.GetAssemblies()
+                    .OrderBy(assembly => assembly.GetName().Name, StringComparer.Ordinal)
+                    .ThenBy(assembly => assembly.FullName, StringComparer.Ordinal)
+                    .SelectMany(assembly => GetLoadableTypes(assembly)
+                        .OrderBy(type => type.FullName, StringComparer.Ordinal))
+                    .ToArray();
+            }
         }
 
         private static IEnumerable<Type> GetLoadableTypes(Assembly assembly)

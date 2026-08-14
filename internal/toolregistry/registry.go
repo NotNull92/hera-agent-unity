@@ -2,7 +2,6 @@ package toolregistry
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"slices"
 
@@ -79,8 +78,6 @@ func (registry *Registry) Load(
 				FromCache: true,
 			}, nil
 		}
-	} else if !errors.Is(cacheErr, ErrCacheMiss) {
-		return nil, cacheErr
 	}
 
 	snapshot, err := registry.native.Load(ctx, instance)
@@ -114,9 +111,7 @@ func (registry *Registry) Load(
 		DomainEpoch: snapshot.Catalog.DomainEpoch,
 		CatalogHash: snapshot.Catalog.CatalogHash,
 	}
-	if err := registry.cache.Store(key, snapshot.Catalog); err != nil {
-		return nil, fmt.Errorf("store tool catalog cache: %w", err)
-	}
+	_ = registry.cache.Store(key, snapshot.Catalog)
 	snapshot.Schemas = compiled
 	return snapshot, nil
 }

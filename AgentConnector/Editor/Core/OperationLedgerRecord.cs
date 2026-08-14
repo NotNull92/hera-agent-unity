@@ -26,6 +26,9 @@ namespace HeraAgent
         [JsonProperty("idempotent")]
         public bool Idempotent;
 
+        [JsonProperty("approval_verified")]
+        public bool ApprovalVerified;
+
         [JsonProperty("state")]
         public string State;
 

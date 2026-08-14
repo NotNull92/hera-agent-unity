@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -77,10 +78,19 @@ namespace HeraAgent
 
         public static void AttachWatcher(int port, string jobId, string action, string identifier, Request request)
         {
+            var startedMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             EditorApplication.CallbackFunction watcher = null;
             watcher = () =>
             {
-                if (!request.IsCompleted) return;
+                if (!request.IsCompleted)
+                {
+                    if (!HasTimedOut(startedMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()))
+                        return;
+                    EditorApplication.update -= watcher;
+                    if (WriteTimeoutResult(port, jobId, action, identifier))
+                        ClearPending(port, jobId);
+                    return;
+                }
                 EditorApplication.update -= watcher;
                 if (WriteResult(port, jobId, action, identifier, request))
                     ClearPending(port, jobId);
@@ -93,56 +103,83 @@ namespace HeraAgent
             try
             {
                 if (!Directory.Exists(StatusDir)) return;
-
-                foreach (var file in Directory.GetFiles(StatusDir, "package-pending-*.json"))
-                {
-                    string json;
-                    try { json = File.ReadAllText(file); }
-                    catch { continue; }
-
-                    JObject pending;
-                    try { pending = JObject.Parse(json); }
-                    catch { continue; }
-
-                    if (!ProjectIdentity.OwnsState(pending, ProjectIdentity.CurrentProcessId))
-                        continue;
-
-                    int port = pending["port"]?.Value<int>() ?? 0;
-                    string jobId = pending["job_id"]?.Value<string>();
-                    string action = pending["action"]?.Value<string>();
-                    string identifier = pending["identifier"]?.Value<string>();
-                    long startedMs = pending["started_unix_ms"]?.Value<long>() ?? 0;
-
-                    if (port == 0 || string.IsNullOrEmpty(jobId) || string.IsNullOrEmpty(action) || string.IsNullOrEmpty(identifier))
-                    {
-                        TryDelete(file);
-                        continue;
-                    }
-
-                    var ageMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - startedMs;
-                    if (ageMs > StaleJobMs)
-                    {
-                        if (WriteTimeoutResult(port, jobId, action, identifier))
-                            ClearPending(port, jobId);
-                        continue;
-                    }
-
-                    ResumeJob(port, jobId, action, identifier);
-                }
+                RecoverPendingFiles(
+                    Directory.GetFiles(StatusDir, "package-pending-*.json"),
+                    RecoverPendingFile);
             }
             catch { }
         }
 
+        internal static void RecoverPendingFiles(
+            IEnumerable<string> files,
+            Action<string> recover)
+        {
+            foreach (var file in files)
+            {
+                try { recover(file); }
+                catch (Exception exception)
+                {
+                    Debug.LogWarning(
+                        $"[Hera] Failed to recover package job state " +
+                        $"'{Path.GetFileName(file)}': {exception.Message}");
+                }
+            }
+        }
+
+        static void RecoverPendingFile(string file)
+        {
+            var pending = JObject.Parse(File.ReadAllText(file));
+            if (!ProjectIdentity.OwnsState(pending, ProjectIdentity.CurrentProcessId))
+                return;
+
+            int port = pending["port"]?.Value<int>() ?? 0;
+            string jobId = pending["job_id"]?.Value<string>();
+            string action = pending["action"]?.Value<string>();
+            string identifier = pending["identifier"]?.Value<string>();
+            long startedMs = pending["started_unix_ms"]?.Value<long>() ?? 0;
+
+            if (port == 0 || string.IsNullOrEmpty(jobId) || string.IsNullOrEmpty(action) || string.IsNullOrEmpty(identifier))
+            {
+                TryDelete(file);
+                return;
+            }
+
+            if (HasTimedOut(startedMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()))
+            {
+                if (WriteTimeoutResult(port, jobId, action, identifier))
+                    ClearPending(port, jobId);
+                return;
+            }
+
+            ResumeJob(port, jobId, action, identifier, startedMs);
+        }
+
+        internal static bool HasTimedOut(long startedMs, long nowMs) =>
+            nowMs - startedMs > StaleJobMs;
+
         // After a domain reload the in-flight Request handle is gone. Read
         // the post-reload package set and infer success/failure from whether
         // the intended identifier is present (or absent, for remove).
-        static void ResumeJob(int port, string jobId, string action, string identifier)
+        static void ResumeJob(
+            int port,
+            string jobId,
+            string action,
+            string identifier,
+            long startedMs)
         {
             var listRequest = Client.List(offlineMode: true, includeIndirectDependencies: true);
             EditorApplication.CallbackFunction watcher = null;
             watcher = () =>
             {
-                if (!listRequest.IsCompleted) return;
+                if (!listRequest.IsCompleted)
+                {
+                    if (!HasTimedOut(startedMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()))
+                        return;
+                    EditorApplication.update -= watcher;
+                    if (WriteTimeoutResult(port, jobId, action, identifier))
+                        ClearPending(port, jobId);
+                    return;
+                }
                 EditorApplication.update -= watcher;
                 if (WriteResumedResult(port, jobId, action, identifier, listRequest))
                     ClearPending(port, jobId);

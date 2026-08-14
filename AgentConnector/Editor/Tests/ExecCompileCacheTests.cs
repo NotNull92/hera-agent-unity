@@ -1,6 +1,8 @@
 using System;
 using System.IO;
 using HeraAgent.Tools;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -72,6 +74,8 @@ namespace HeraAgent.Tests
                     configuredDotnetB,
                     ExecCompileCache.ResolveDotnetFromConfiguration(configuredDotnetB));
 
+                allPassed &= StaleReferenceMetadataIsIgnored(root);
+
                 var compiler = CreateFile(root, "Compiler", "csc.dll");
                 var dotnet = CreateFile(root, "Runtime", DotnetName());
                 File.WriteAllText(compiler, "compiler-v1");
@@ -99,6 +103,43 @@ namespace HeraAgent.Tests
                 Debug.Log("[ExecCompileCacheTests] ALL PASSED");
             else
                 Debug.LogError("[ExecCompileCacheTests] SOME TESTS FAILED");
+        }
+
+        private static bool StaleReferenceMetadataIsIgnored(string root)
+        {
+            var metaPath = Path.Combine(ExecCompileCache.CacheDir, "refs-meta.json");
+            var staleRsp = CreateFile(root, "stale-refs.rsp");
+            byte[] original = null;
+            var existed = File.Exists(metaPath);
+            try
+            {
+                if (existed)
+                    original = File.ReadAllBytes(metaPath);
+                Directory.CreateDirectory(ExecCompileCache.CacheDir);
+                File.WriteAllText(metaPath, new JObject
+                {
+                    ["hash"] = "stale-reference-hash",
+                    ["rspPath"] = staleRsp,
+                    ["assemblyCount"] = 1,
+                    ["locations"] = new JArray("stale-reference.dll"),
+                }.ToString(Formatting.None));
+
+                ExecCompileCache.Invalidate();
+                return ExpectFalse(
+                    "stale reference metadata ignored after invalidation",
+                    string.Equals(
+                        ExecCompileCache.GetRefHash(),
+                        "stale-reference-hash",
+                        StringComparison.Ordinal));
+            }
+            finally
+            {
+                if (existed)
+                    File.WriteAllBytes(metaPath, original);
+                else if (File.Exists(metaPath))
+                    File.Delete(metaPath);
+                ExecCompileCache.Invalidate();
+            }
         }
 
         private static string DotnetName()

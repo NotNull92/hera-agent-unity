@@ -21,6 +21,7 @@ namespace HeraAgent.Tests
             passed &= Run(nameof(TestBatchCannotBypassApproval), TestBatchCannotBypassApproval);
             passed &= Run(nameof(TestPreflightUsesAuthoritativeContract), TestPreflightUsesAuthoritativeContract);
             passed &= Run(nameof(TestApprovedRetryReplaysWithoutReusingToken), TestApprovedRetryReplaysWithoutReusingToken);
+            passed &= Run(nameof(TestApprovedReceivedRetryDoesNotConsumeTokenAgain), TestApprovedReceivedRetryDoesNotConsumeTokenAgain);
             if (passed)
                 Debug.Log("[ApprovalPolicyTests] ALL PASSED");
             else
@@ -143,6 +144,23 @@ namespace HeraAgent.Tests
             var replay = fixture.Ledger.Begin(approved, "fixture", "delete", fixture.Destructive);
 
             return !replay.Execute && replay.Response is JObject;
+        }
+
+        static bool TestApprovedReceivedRetryDoesNotConsumeTokenAgain()
+        {
+            using var fixture = new ApprovalFixture();
+            var unsigned = fixture.Context("op_received_approved", new JObject());
+            var grant = fixture.Authority.Issue(fixture.Binding(unsigned));
+            var approved = fixture.Context("op_received_approved", new JObject(), grant.Token);
+            if (!fixture.Ledger.Begin(approved, "fixture", "delete", fixture.Destructive).Execute)
+                return false;
+
+            var path = Path.Combine(fixture.LedgerRoot, "op_received_approved.json");
+            var record = JObject.Parse(File.ReadAllText(path));
+            record["state"] = "received";
+            File.WriteAllText(path, record.ToString(Newtonsoft.Json.Formatting.None));
+
+            return fixture.Ledger.Begin(approved, "fixture", "delete", fixture.Destructive).Execute;
         }
 
         static bool Run(string name, Func<bool> test)

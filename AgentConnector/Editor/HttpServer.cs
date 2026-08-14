@@ -71,12 +71,11 @@ namespace HeraAgent
         const int MAX_BATCH_COMMANDS = 50;
         const int MAX_PENDING_REQUESTS = 64;
 
-        static HttpListener s_Listener;
-        static CancellationTokenSource s_Cts;
-        static int s_Port;
+        static readonly ListenerState s_ListenerState = new();
 
         static readonly ConcurrentQueue<WorkItem> s_Queue = new();
         static int s_PendingRequests;
+        static int s_RestartRequested;
         static long s_LastLedgerCleanupMs;
 
         struct WorkItem
@@ -92,6 +91,59 @@ namespace HeraAgent
             public JObject ApprovalRequest;
         }
 
+        internal sealed class ListenerState
+        {
+            readonly object _gate = new();
+            HttpListener _listener;
+            CancellationTokenSource _cancellation;
+            int _port;
+
+            internal HttpListener Listener
+            {
+                get { lock (_gate) return _listener; }
+            }
+
+            internal int Port
+            {
+                get { lock (_gate) return _port; }
+            }
+
+            internal bool TryAttach(
+                HttpListener listener,
+                CancellationTokenSource cancellation,
+                int port)
+            {
+                lock (_gate)
+                {
+                    if (_listener != null)
+                        return false;
+                    _listener = listener;
+                    _cancellation = cancellation;
+                    _port = port;
+                    return true;
+                }
+            }
+
+            internal bool TryDetach(
+                HttpListener listener,
+                out CancellationTokenSource cancellation)
+            {
+                lock (_gate)
+                {
+                    if (!ReferenceEquals(_listener, listener))
+                    {
+                        cancellation = null;
+                        return false;
+                    }
+                    cancellation = _cancellation;
+                    _listener = null;
+                    _cancellation = null;
+                    _port = 0;
+                    return true;
+                }
+            }
+        }
+
         static HttpServer()
         {
             Start();
@@ -101,30 +153,33 @@ namespace HeraAgent
             EditorApplication.update += ProcessQueue;
         }
 
-        public static int Port => s_Port;
+        public static int Port => s_ListenerState.Port;
 
         static void Start()
         {
-            if (s_Listener != null) return;
+            if (s_ListenerState.Listener != null) return;
 
             for (var attempt = 0; attempt < MAX_PORT_ATTEMPTS; attempt++)
             {
                 var port = attempt == 0 ? DEFAULT_PORT : FALLBACK_PORT + attempt - 1;
+                HttpListener listener = null;
                 try
                 {
-                    var listener = new HttpListener();
+                    listener = new HttpListener();
                     listener.Prefixes.Add($"http://127.0.0.1:{port}/");
                     listener.Start();
 
-                    s_Listener = listener;
-                    s_Port = port;
-                    s_Cts = new CancellationTokenSource();
-
-                    _ = ListenLoop(s_Cts.Token).ContinueWith(t =>
+                    var cancellation = new CancellationTokenSource();
+                    if (!s_ListenerState.TryAttach(listener, cancellation, port))
                     {
-                        if (t.IsFaulted)
-                            Debug.LogError($"[Hera] ListenLoop faulted: {t.Exception?.InnerException ?? t.Exception}");
-                    }, TaskContinuationOptions.OnlyOnFaulted);
+                        cancellation.Dispose();
+                        CloseListener(listener);
+                        return;
+                    }
+                    var token = cancellation.Token;
+
+                    _ = ListenLoop(listener, token).ContinueWith(
+                        task => OnListenLoopEnded(listener, token, task));
 
                     Debug.Log($"[Hera] HTTP server started on port {port}");
                     // Defer compiler pre-warm so editor startup is not blocked by a
@@ -135,10 +190,12 @@ namespace HeraAgent
                 }
                 catch (HttpListenerException)
                 {
+                    CloseListener(listener);
                     // Port in use, try next
                 }
                 catch (System.Net.Sockets.SocketException)
                 {
+                    CloseListener(listener);
                     // Windows/Mono throws SocketException instead of HttpListenerException
                 }
             }
@@ -148,29 +205,52 @@ namespace HeraAgent
 
         static void StopListener()
         {
-            if (s_Listener == null) return;
-
-            s_Cts?.Cancel();
-            s_Cts?.Dispose();
-            s_Cts = null;
-
-            try
-            {
-                s_Listener.Stop();
-                s_Listener.Close();
-            }
-            catch
-            {
-            }
-
-            s_Listener = null;
+            var listener = s_ListenerState.Listener;
+            if (listener != null)
+                ReleaseListener(listener);
         }
 
         static void Stop()
         {
-            var port = s_Port;
+            var port = Port;
             StopListener();
             Debug.Log($"[Hera] HTTP server stopped (was port {port})");
+        }
+
+        static void OnListenLoopEnded(
+            HttpListener listener,
+            CancellationToken token,
+            Task task)
+        {
+            var restart = !token.IsCancellationRequested;
+            if (task.IsFaulted)
+                Debug.LogError($"[Hera] ListenLoop faulted: {task.Exception?.InnerException ?? task.Exception}");
+            if (ReleaseListener(listener) && restart)
+                Interlocked.Exchange(ref s_RestartRequested, 1);
+        }
+
+        static bool ReleaseListener(HttpListener listener)
+        {
+            if (!s_ListenerState.TryDetach(listener, out var cancellation))
+                return false;
+            try { cancellation?.Cancel(); }
+            catch (ObjectDisposedException) { }
+            cancellation?.Dispose();
+            CloseListener(listener);
+            return true;
+        }
+
+        static void CloseListener(HttpListener listener)
+        {
+            if (listener == null) return;
+            try
+            {
+                listener.Stop();
+                listener.Close();
+            }
+            catch
+            {
+            }
         }
 
         static void ForceEditorUpdate()
@@ -190,6 +270,8 @@ namespace HeraAgent
 
         static void ProcessQueue()
         {
+            if (Interlocked.Exchange(ref s_RestartRequested, 0) != 0)
+                Start();
             while (s_Queue.TryDequeue(out var item))
             {
                 _ = ProcessItem(item).ContinueWith(t =>
@@ -229,13 +311,13 @@ namespace HeraAgent
             }
         }
 
-        static async Task ListenLoop(CancellationToken ct)
+        static async Task ListenLoop(HttpListener listener, CancellationToken ct)
         {
-            while (ct.IsCancellationRequested == false && s_Listener?.IsListening == true)
+            while (ct.IsCancellationRequested == false && listener.IsListening)
             {
                 try
                 {
-                    var context = await s_Listener.GetContextAsync();
+                    var context = await listener.GetContextAsync();
                     _ = HandleRequest(context).ContinueWith(t =>
                     {
                         if (t.IsFaulted)

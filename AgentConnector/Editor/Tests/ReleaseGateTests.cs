@@ -26,9 +26,11 @@ namespace HeraAgent.Tests
             nameof(EditorUiCapture),
             nameof(ExecCompileCache),
             nameof(ExecRestricted),
+            nameof(HttpServerLifecycle),
             nameof(InputQa),
             nameof(OperationLedger),
             nameof(OutputFilePolicy),
+            nameof(PackageJobState),
             nameof(PipelineSettings),
             nameof(ProjectIdentity),
             nameof(ReadConsole),
@@ -70,6 +72,9 @@ namespace HeraAgent.Tests
         public void ExecRestricted() => ExecRestrictedTests.RunTests();
 
         [Test]
+        public void HttpServerLifecycle() => HttpServerLifecycleTests.RunTests();
+
+        [Test]
         public void InputQa() => Assert.IsTrue(InputQaTests.RunContractTests());
 
         [Test]
@@ -77,6 +82,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void OutputFilePolicy() => OutputFilePolicyTests.RunTests();
+
+        [Test]
+        public void PackageJobState() => PackageJobStateTests.RunTests();
 
         [Test]
         public void PipelineSettings() => PipelineSettingsToolTests.RunTests();

@@ -51,6 +51,15 @@ namespace HeraAgent
             public int Failed { get; set; }
         }
 
+        sealed class PreparedRequest
+        {
+            internal ToolContract Contract;
+            internal JObject Parameters;
+            internal string Action;
+            internal ToolValidationResult Validation;
+            internal ToolSafetyContract Safety;
+        }
+
         public static async Task<object> Dispatch(string command, JObject parameters)
         {
             return await Dispatch(command, parameters, null);
@@ -89,10 +98,12 @@ namespace HeraAgent
         /// </summary>
         public static async Task<object> DispatchBatch(List<BatchCommandItem> commands, BatchOptions options)
         {
+            var prepared = new List<PreparedRequest>(commands.Count);
             foreach (var item in commands)
             {
-                var safety = ResolveRequestSafety(item.Command, item.Params);
-                if (safety?.RequiresConfirmation == true)
+                var request = PrepareRequest(item.Command, item.Params);
+                prepared.Add(request);
+                if (request?.Safety?.RequiresConfirmation == true)
                 {
                     return new ErrorResponse(
                         "APPROVAL_REQUIRED",
@@ -122,10 +133,14 @@ namespace HeraAgent
 
             try
             {
-                foreach (var item in commands)
+                for (var index = 0; index < commands.Count; index++)
                 {
+                    var item = commands[index];
                     var sw = Stopwatch.StartNew();
-                    var result = await DispatchInternal(item.Command, item.Params);
+                    var result = await DispatchInternal(
+                        item.Command,
+                        item.Params,
+                        prepared: prepared[index]);
                     sw.Stop();
                     ResponseTimings.Set(result, "total_ms", sw.ElapsedMilliseconds);
                     results.Add(result);
@@ -178,7 +193,8 @@ namespace HeraAgent
         static async Task<object> DispatchInternal(
             string command,
             JObject parameters,
-            CommandRequestContext requestContext = null)
+            CommandRequestContext requestContext = null,
+            PreparedRequest prepared = null)
         {
             if (requestContext != null)
             {
@@ -197,9 +213,10 @@ namespace HeraAgent
             // Prefer an explicit action when one is supplied; fall back to the
             // tool's default HandleCommand so `manage_ui --element button` still
             // works even though `create` is the usual action.
-            var contract = ToolContractRegistry.Get(command);
-            parameters = parameters == null ? new JObject() : (JObject)parameters.DeepClone();
-            string action = NormalizeAction(contract, ExtractAction(parameters));
+            var contract = prepared?.Contract ?? ToolContractRegistry.Get(command);
+            parameters = prepared?.Parameters
+                ?? (parameters == null ? new JObject() : (JObject)parameters.DeepClone());
+            string action = prepared?.Action ?? NormalizeAction(contract, ExtractAction(parameters));
             bool usedAction = false;
             MethodInfo handler = null;
             var actionNames = contract?.Actions.Keys
@@ -241,17 +258,26 @@ namespace HeraAgent
                     suggestions: suggestionList);
             }
 
-            if (usedAction)
-                parameters["action"] = action;
-            var validation = ToolContractValidator.Validate(
-                contract,
-                parameters,
-                usedAction ? action : null);
+            ToolValidationResult validation;
+            if (prepared == null)
+            {
+                if (usedAction)
+                    parameters["action"] = action;
+                validation = ToolContractValidator.Validate(
+                    contract,
+                    parameters,
+                    usedAction ? action : null);
+            }
+            else
+            {
+                validation = prepared.Validation;
+            }
             if (!validation.IsValid)
                 return validation.Error;
             parameters = validation.Normalized;
 
-            var safety = ResolveSafety(contract, usedAction ? action : null, parameters);
+            var safety = prepared?.Safety
+                ?? ResolveSafety(contract, usedAction ? action : null, parameters);
             if (safety.RequiresConfirmation && requestContext == null)
             {
                 return new ErrorResponse(
@@ -341,7 +367,7 @@ namespace HeraAgent
                 && safety != null
                 && !(safety.ReadOnly && safety.Idempotent);
 
-        static ToolSafetyContract ResolveRequestSafety(string command, JObject parameters)
+        static PreparedRequest PrepareRequest(string command, JObject parameters)
         {
             var contract = ToolContractRegistry.Get(command);
             if (contract == null)
@@ -355,9 +381,19 @@ namespace HeraAgent
                 contract,
                 parameters,
                 usedAction ? action : null);
-            return validation.IsValid
-                ? ResolveSafety(contract, usedAction ? action : null, validation.Normalized)
-                : null;
+            return new PreparedRequest
+            {
+                Contract = contract,
+                Parameters = validation.Normalized,
+                Action = action,
+                Validation = validation,
+                Safety = validation.IsValid
+                    ? ResolveSafety(
+                        contract,
+                        usedAction ? action : null,
+                        validation.Normalized)
+                    : null,
+            };
         }
 
         static ToolSafetyContract ResolveSafety(
