@@ -48,7 +48,7 @@ namespace HeraAgent
             ["text"] =
                 "Text feel:\n" +
                 "  - Entrance: fade/slide in, EaseOut 0.3s; sequence multiple lines with a 0.03-0.05s stagger.\n" +
-                "  - Changing numbers (score/HP/gold): count up rather than snap — step every 0.05s, total ~0.25s, EaseOut; optional 120%->100% pop; on a streak/combo raise the tick SFX pitch each step (Peggle / Mario-coin) to sell the build-up.\n" +
+                "  - Changing numbers (score/HP/gold): count up rather than snap — step every 0.05s, total ~0.25s, EaseOut; optional 120%->100% pop; on a streak/combo raise the tick SFX pitch each step so the run itself is audible — a rising ladder, distinct from random pitch variation.\n" +
                 "  - Damage popup: 0%->120%->100% over 0.15s, rise 50px across 0.5s, fade out the last 0.2s.\n" +
                 "  - Critical: start 150%->100%, yellow/red + outline glow, +10px 0.1s shake, 50ms haptic; offset multiple popups positionally so they never overlap.",
 

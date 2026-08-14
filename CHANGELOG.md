@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.1.1)
+
+- The number-change recipe in the Game Feel UI Mode hint now describes the
+  rising tick-pitch ladder in its own terms instead of naming external games,
+  matching the rewritten corpus.
+
 ### Changed (Connector 0.1.0 — the game-feel corpus is now Unity-derived)
 
 - Rewrote the bundled `game_feel` knowledge base end to end. Every topic is now
