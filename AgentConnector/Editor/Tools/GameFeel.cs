@@ -5,7 +5,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "game_feel",
-        Description = "Look up a Game Feel / Juice design topic from the connector-bundled knowledge base (Game Feel & Juice Bible + Ethical Engagement Game Feel Framework + UI Feedback Design Guide + UI/UX Visual Theory & Trends). Returns { key, category, title, body } with concrete, implementation-ready parameters (px, seconds, %, Hz) and the ethical/accessibility constraints built in — presentation intensity must honestly match real achievement (Honest Juice). Includes a `ui` category (per-element feedback specs, ECN-DMN framework, cognitive load, choice symmetry, 2026 trends) — the deep layer behind Game Feel UI Mode's inline hints. No topic (or 'list') returns the bucketed topic index, ethics first. Always available; Game Feel Mode (Beta) additionally makes other tools point at these topics via agent_hint.",
+        Description = "Look up a Game Feel / Juice design topic from the connector-bundled knowledge base. Returns { key, category, title, body } with concrete, implementation-ready parameters (px, seconds, %, Hz), the Unity site each one applies at (Update vs FixedUpdate vs LateUpdate, Rigidbody.interpolation, Time.timeScale, Selectable transitions, Canvas rebuild cost), and the ethical/accessibility constraints built in — presentation intensity must honestly match real achievement (Honest Juice). Categories: theory (feel stack, control feel, input response, forgiveness, frame loops, session arc), technique (easing, deformation, particles, shake, hit stop, knockback, camera, sound, haptics, lighting, intensity ladder), ui (per-element feedback specs, attention states, cognitive load, hierarchy, choice symmetry, accessibility), ethics, anti_pattern, checklist, workflow. No topic (or 'list') returns the bucketed topic index, ethics first. Always available; Game Feel Mode (Beta) additionally makes other tools point at these topics via agent_hint.",
         Profiles = new[] { "ui" },
         RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict,
@@ -14,16 +14,18 @@ namespace HeraAgent.Tools
             "game_feel",
             "game_feel screen_shake",
             "game_feel control_feel",
+            "game_feel unity_frame_loops",
             "game_feel ui_bar",
             "game_feel ethics_checklist",
         },
         ExampleDescriptions = new[]
         {
             "Topic index grouped by category (ethics, theory, technique, ui, ...)",
-            "Screen shake parameters (intensity/duration/decay + accessibility option)",
-            "Input latency budget, ADSR, coyote time, jump buffering",
+            "Screen shake parameters (amplitude/duration/decay + accessibility option)",
+            "Input latency budget, motion envelope, lock-out vs cancel",
+            "Update/FixedUpdate/LateUpdate split, interpolation, velocity layering",
             "Dual-response health bar, segmented ticks, charge/cooldown bar specs",
-            "Full UX-ethics validation checklist",
+            "Full engagement and ethics checklist",
         })]
     public static class GameFeel
     {

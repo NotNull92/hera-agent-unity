@@ -549,11 +549,12 @@ Hera에는 오브젝트를 수정하는 기능 외에도 AI가 더 좋은 결과
 
 ### Game Feel Mode (Beta)
 
-게임이 단순히 동작하는 것을 넘어 **어떻게 느껴지는지** 생각하게 돕습니다. Screen shake, hit stop, knockback, 카메라, 조작감, 사운드, 보상 연출, 햅틱, 접근성 가이드를 제공합니다.
+게임이 단순히 동작하는 것을 넘어 **어떻게 느껴지는지** 생각하게 돕습니다. 조작감과 입력 관용, Update / FixedUpdate / LateUpdate 분리, screen shake, hit stop, knockback, 카메라, 사운드, 보상 연출, 햅틱, 세션 설계, 접근성 가이드를 제공합니다.
 
 ```bash
 hera-agent-unity asset-config gamefeel on
-hera-agent-unity game_feel hit-stop
+hera-agent-unity game_feel hit_stop
+hera-agent-unity game_feel unity_frame_loops
 ```
 
 가이드 기능이며 Hera가 몰래 무거운 런타임 시스템을 붙이지 않습니다.

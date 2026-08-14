@@ -140,8 +140,9 @@ internal/telemetry/   # Opt-in local counters
 internal/logutil/     # Shared log helpers
 tools/build-unity-docs/ # One-shot maintainer Go script: Documentation/en/ScriptReference
                         # → unity_docs_<ver>.jsonl(.gz)(.bytes). Run per Unity version.
-tools/build-game-feel-docs/ # game_feel.jsonl (checked-in source of truth, curated from
-                            # Game Feel & Juice Bible + Ethical Engagement Framework)
+tools/build-game-feel-docs/ # game_feel.jsonl (checked-in source of truth: Unity-derived
+                            # game-feel corpus, 67 topics across theory/technique/ui/
+                            # ethics/anti_pattern/checklist/workflow)
                             # → validate + gzip → Data/game_feel_1.0.jsonl.gz.bytes.
 tools/build-ui-slop-docs/ # ui_slop.jsonl (checked-in source of truth: Unity UI-slop
                           # taxonomy, 48 uGUI tells across areas A–E)
@@ -180,7 +181,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # UnityDocsStore (gzipped JSONL → dict + 3-layer
                       # prefix/length/bounded Levenshtein suggest),
                       # GameFeelStore (BundleStore<Entry> over game_feel bundle
-                      # + category-grouped BuildIndex, ethics first; corpus 54),
+                      # + category-grouped BuildIndex, ethics first; corpus 67),
                       # UiSlopStore (BundleStore<Entry> over ui_slop bundle
                       # + area-grouped BuildIndex + CheckFor;
                       # corpus 48),
@@ -188,10 +189,9 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # HeraSettings (reads shared asset-config.json at dispatch
                       # time — GameFeelMode + GameFeelUiMode + UiSlopMode
                       # + DotweenPreferred, mtime-cached),
-                      # UIJuiceGuide (per-UI-element juice recipes from Juice
-                      # Bible + UI Feedback Guide + UIUX Theory + Ethical
-                      # Framework; uGUI DOTween-aware,
-                      # pointer — manage_ui agent_hint source),
+                      # UIJuiceGuide (per-UI-element juice recipes; uGUI
+                      # DOTween-aware, game_feel pointer — manage_ui
+                      # agent_hint source),
                       # TargetResolver (GameObject/component lookup from
                       # ToolParams — instance_id > path; shared target helper),
                       # EntityIdCompat (instanceID→EntityId rename shim,

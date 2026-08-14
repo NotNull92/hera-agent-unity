@@ -545,11 +545,12 @@ Hera includes optional guidance and authoring systems that help the agent do mor
 
 ### Game Feel Mode (Beta)
 
-Helps the agent think about how gameplay **feels**, not only whether it functions: screen shake, hit stop, knockback, camera, control feel, sound, reward presentation, haptics, and accessibility constraints.
+Helps the agent think about how gameplay **feels**, not only whether it functions: control feel and input forgiveness, the Update / FixedUpdate / LateUpdate split, screen shake, hit stop, knockback, camera, sound, reward presentation, haptics, session pacing, and accessibility constraints.
 
 ```bash
 hera-agent-unity asset-config gamefeel on
-hera-agent-unity game_feel hit-stop
+hera-agent-unity game_feel hit_stop
+hera-agent-unity game_feel unity_frame_loops
 ```
 
 The knowledge is guidance. Hera does not secretly add heavy runtime systems to your game.

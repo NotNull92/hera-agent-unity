@@ -266,11 +266,11 @@ namespace HeraAgent.Tools
                 case "AudioSource": return new[] { "sound" };
                 case "Rigidbody":
                 case "Rigidbody2D":
-                case "CharacterController": return new[] { "control_feel", "knockback" };
+                case "CharacterController": return new[] { "control_feel", "unity_frame_loops", "knockback" };
                 case "Light":
                 case "Light2D": return new[] { "dynamic_lighting" };
                 case "Animator":
-                case "Animation": return new[] { "squash_stretch", "tweening_easing" };
+                case "Animation": return new[] { "squash_stretch", "tweening_easing", "unity_frame_loops" };
                 default: return null;
             }
         }

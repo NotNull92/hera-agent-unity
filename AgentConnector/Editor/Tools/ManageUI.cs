@@ -294,7 +294,7 @@ namespace HeraAgent.Tools
         }
 
         // When Game Feel UI Mode (Beta) is on (Hera Settings), attach the element's juice
-        // recipe — concrete Game Feel & Juice Bible + UI Feedback Design Guide parameters, DOTween-aware — as an
+        // recipe — concrete per-element parameters, DOTween-aware — as an
         // agent_hint so the calling agent can make the UI feel alive. No-op when
         // the toggle is off (agent_hint stays null → omitted from the response).
         private static SuccessResponse WithJuice(string element, SuccessResponse resp)

@@ -799,8 +799,7 @@ namespace HeraAgent.Editor
 
         // Game Feel Mode (Beta) — gameplay-wide game-feel guidance toggle.
         // When on, `doctor --agent-rules` and tool responses point agents at the
-        // bundled game_feel knowledge base (Game Feel & Juice Bible + Ethical
-        // Engagement Framework, ethics first).
+        // bundled game_feel knowledge base (ethics first).
         private void BuildGameFeelModeSection()
         {
             var section = new VisualElement();
@@ -836,7 +835,7 @@ namespace HeraAgent.Editor
             header.Add(headerLbl);
 
             var toggle = new Toggle { value = _config?.game_feel_mode ?? false };
-            toggle.tooltip = "When on, AI agents are guided by the bundled Game Feel knowledge base (Juice Bible + Ethical Engagement Framework) while building gameplay feel.";
+            toggle.tooltip = "When on, AI agents are guided by the bundled Game Feel knowledge base while building gameplay feel.";
             header.Add(toggle);
 
             section.Add(header);
@@ -900,7 +899,7 @@ namespace HeraAgent.Editor
             header.Add(headerLbl);
 
             var toggle = new Toggle { value = _config?.game_feel_ui_mode ?? false };
-            toggle.tooltip = "When on, manage_ui create attaches Game Feel & Juice Bible juice guidance to its responses.";
+            toggle.tooltip = "When on, manage_ui create attaches per-element juice guidance to its responses.";
             header.Add(toggle);
 
             section.Add(header);

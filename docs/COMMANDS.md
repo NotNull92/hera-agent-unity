@@ -721,9 +721,9 @@ Run this only when Unity ships a new docs revision or when adding a new version 
 
 ## game_feel
 
-Offline Game Feel / Juice design knowledge base. Returns implementation-ready recipes — concrete px / seconds / % / Hz parameters — curated from the *Game Feel & Juice Bible*, the *Ethical Engagement Game Feel Framework*, the *UI Feedback Design Guide*, and *UI/UX Visual Theory & Trends*, with the ethical and accessibility constraints built into each topic (Honest Juice: presentation intensity must match real achievement).
+Offline Game Feel / Juice design knowledge base. Returns implementation-ready recipes — concrete px / seconds / % / Hz parameters, plus the Unity site each one applies at (`Update` vs `FixedUpdate` vs `LateUpdate`, `Rigidbody.interpolation`, `Time.timeScale`, `Selectable` transitions, Canvas rebuild cost) — with the ethical and accessibility constraints built into each topic (Honest Juice: presentation intensity must match real achievement).
 
-The data set **ships inside the UPM connector package**, under `AgentConnector/Editor/Data/game_feel_1.0.jsonl.gz.bytes` (~38 KiB gzipped, 54 topics). The tool is always available; **Game Feel Mode (Beta)** (Hera Settings, or `asset-config gamefeel on`) additionally makes `doctor --agent-rules` and tool responses (e.g. `manage_components add` for Camera / ParticleSystem / AudioSource / Rigidbody / Light / Animator) point agents at the relevant topics via `agent_hint`. The `ui` category is also the deep layer behind **Game Feel UI Mode (Beta)** — `manage_ui create` hints end with a per-element pointer into it.
+The data set **ships inside the UPM connector package**, under `AgentConnector/Editor/Data/game_feel_1.0.jsonl.gz.bytes` (~40 KiB gzipped, 67 topics). The tool is always available; **Game Feel Mode (Beta)** (Hera Settings, or `asset-config gamefeel on`) additionally makes `doctor --agent-rules` and tool responses (e.g. `manage_components add` for Camera / ParticleSystem / AudioSource / Rigidbody / Light / Animator) point agents at the relevant topics via `agent_hint`. The `ui` category is also the deep layer behind **Game Feel UI Mode (Beta)** — `manage_ui create` hints end with a per-element pointer into it.
 
 ```bash
 hera-agent-unity game_feel              # topic index, grouped by category (ethics first)
@@ -734,13 +734,13 @@ hera-agent-unity game_feel <topic>      # one topic body
 
 | Category | Topics |
 |:---|:---|
-| `ethics` (listed first — apply while building, not after) | `engagement_core`, `engagement_loop`, `value_preservation`, `anticipation_reward`, `balanced_hurdles`, `community_synergy`, `cognitive_comfort`, `salience_balance`, `copywriting_framing`, `information_transparency`, `engagement_scenarios`, `friendly_signals`, `engagement_validation`, `ethics_checklist` |
-| `theory` | `juice_definition`, `game_feel_structure`, `feedback_loop`, `control_feel` |
-| `technique` | `tweening_easing`, `squash_stretch`, `particles`, `screen_shake`, `hit_stop`, `knockback`, `camera`, `sound`, `haptics`, `permanence`, `personality`, `dynamic_lighting` |
-| `ui` | `ui_button`, `ui_popup`, `ui_number_change`, `ui_bar`, `ui_notification`, `ui_inventory`, `ui_screen_transition`, `ui_microinteractions`, `ui_multimodal`, `ui_choice_symmetry`, `ecn_dmn_framework`, `cognitive_load`, `ui_trends_2026`, `glassmorphism_neumorphism`, `accessibility_baseline` |
-| `workflow` | `workflow_phases` |
-| `anti_pattern` | `golden_rule`, `honest_juice`, `anti_patterns`, `balancing_principles` |
-| `checklist` | `checklist_all`, `checklist_action`, `checklist_casual`, `checklist_mobile` |
+| `ethics` (listed first — apply while building, not after) | `anticipation_reward`, `balanced_hurdles`, `cognitive_comfort`, `community_synergy`, `copywriting_framing`, `engagement_core`, `engagement_loop`, `engagement_scenarios`, `engagement_validation`, `ethical_boundary`, `ethics_checklist`, `friendly_signals`, `information_transparency`, `salience_balance`, `value_preservation` |
+| `theory` | `context_space`, `control_feel`, `experience_arc`, `feedback_loop`, `feel_stack`, `game_feel_structure`, `input_forgiveness`, `input_response`, `juice_definition`, `metaphor_treatment`, `unity_frame_loops` |
+| `technique` | `camera`, `dynamic_lighting`, `haptics`, `hit_stop`, `juice_intensity_scale`, `knockback`, `multi_layer_feedback`, `particles`, `perceived_properties`, `permanence`, `personality`, `screen_shake`, `sound`, `squash_stretch`, `tweening_easing` |
+| `ui` | `accessibility_baseline`, `cognitive_load`, `diegetic_ui`, `ecn_dmn_framework`, `ui_bar`, `ui_button`, `ui_choice_symmetry`, `ui_inventory`, `ui_microinteractions`, `ui_multimodal`, `ui_notification`, `ui_number_change`, `ui_popup`, `ui_screen_transition`, `ui_visual_trends`, `visual_hierarchy` |
+| `workflow` | `feel_lab`, `workflow_phases` |
+| `anti_pattern` | `anti_patterns`, `golden_rule`, `honest_juice` |
+| `checklist` | `checklist_action`, `checklist_all`, `checklist_casual`, `checklist_mobile`, `checklist_strategy` |
 
 ### Return shape
 
@@ -1375,7 +1375,7 @@ hera-agent-unity manage_ui set_anchor --path /Canvas/Bg --preset stretch --snap 
 hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-40 --size_delta 300,60
 ```
 
-**Game Feel UI Mode (Beta)** — when enabled (Hera Settings window, or `asset-config gamefeel-ui on`), each `create` response carries an `agent_hint` with concrete juice recipes for the element just made, curated from the Game Feel & Juice Bible, the UI Feedback Design Guide, UI/UX Visual Theory & Trends, and the Ethical Engagement Framework: hover/press/release easing, popup overshoot with symmetric choice buttons (ethics built in), rarity-laddered reward presentation, damage-number/count-up timing with critical specs, dual-response bars with charge/cooldown patterns, ECN-DMN density guidance and accessibility baselines at the canvas level. The recipe is DOTween-aware: with DOTween enabled in Hera Settings it suggests `DOScale`-based tweens, otherwise a coroutine/lerp fallback. Each hint ends with a pointer into the `game_feel` knowledge base (`ui` category) for the full tables and theory. The hint is advisory — element property edits still go through `manage_components`. When the mode is off, no hint is added.
+**Game Feel UI Mode (Beta)** — when enabled (Hera Settings window, or `asset-config gamefeel-ui on`), each `create` response carries an `agent_hint` with concrete juice recipes for the element just made: hover/press/release easing, popup overshoot with symmetric choice buttons (ethics built in), rarity-laddered reward presentation, damage-number/count-up timing with critical specs, dual-response bars with charge/cooldown patterns, ECN-DMN density guidance and accessibility baselines at the canvas level. The recipe is DOTween-aware: with DOTween enabled in Hera Settings it suggests `DOScale`-based tweens, otherwise a coroutine/lerp fallback. Each hint ends with a pointer into the `game_feel` knowledge base (`ui` category) for the full tables and theory. The hint is advisory — element property edits still go through `manage_components`. When the mode is off, no hint is added.
 
 ---
 

@@ -143,7 +143,7 @@ func buildCompactUltraHeraAgentRules(mode assetconfig.LoopEngineeringMode) strin
 // Settings. Independent of Ultra Hera — it guides *what to build* (game-feel
 // parameters with the ethics built in), not how strictly to verify.
 const gameFeelAgentRules = "## Game Feel Mode (Beta)\n\n" +
-	"Game Feel Mode is ON. When you build or modify anything the player feels — combat feedback, movement, camera, audio, rewards, presentation — do not guess parameters. Use the bundled Game Feel knowledge base (Game Feel & Juice Bible + Ethical Engagement Game Feel Framework).\n\n" +
+	"Game Feel Mode is ON. When you build or modify anything the player feels — combat feedback, movement, camera, audio, rewards, presentation — do not guess parameters. Use the bundled Game Feel knowledge base.\n\n" +
 	"Core principles:\n\n" +
 	"1. Maximum output for minimum input — every player action gets multi-channel feedback (visual, audio, haptic, temporal).\n" +
 	"2. Juice is an amplifier, not the source of fun — it amplifies real achievement, it does not replace it.\n" +
@@ -152,9 +152,9 @@ const gameFeelAgentRules = "## Game Feel Mode (Beta)\n\n" +
 	"5. Accessibility is non-negotiable: screen-shake/flash/haptic intensity or off options, reduce-motion support, mobile shake at 70-80%.\n\n" +
 	"Workflow:\n\n" +
 	"1. Start from the topic index: `hera-agent-unity game_feel` (ethics topics listed first — apply them while building, not after).\n" +
-	"2. Query concrete parameters before implementing: `hera-agent-unity game_feel screen_shake`, `game_feel hit_stop`, `game_feel tweening_easing`, `game_feel control_feel`; for UI work the `ui` category has per-element specs and theory: `game_feel ui_button`, `game_feel ui_bar`, `game_feel ecn_dmn_framework`, `game_feel ui_choice_symmetry`, ...\n" +
+	"2. Query concrete parameters before implementing: `hera-agent-unity game_feel screen_shake`, `game_feel hit_stop`, `game_feel tweening_easing`, `game_feel control_feel`, `game_feel unity_frame_loops`; for UI work the `ui` category has per-element specs and theory: `game_feel ui_button`, `game_feel ui_bar`, `game_feel ecn_dmn_framework`, `game_feel ui_choice_symmetry`, ...\n" +
 	"3. Before reporting done, validate the result against `game_feel ethics_checklist` and `game_feel checklist_all`.\n\n" +
-	"Final quality questions (Ethical Engagement Framework):\n\n" +
+	"Final quality questions:\n\n" +
 	"- Does this design help the player actively enjoy the game because they genuinely want to, in every moment?\n" +
 	"- Does the Juice on this screen sensorially amplify the joy of the pure achievement the player has earned?\n"
 

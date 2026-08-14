@@ -39,8 +39,8 @@ type AssetConfig struct {
 	LoopEngineeringMode LoopEngineeringMode `json:"loopEngineeringMode"`
 
 	// GameFeelUIMode mirrors game_feel_ui_mode in the shared asset-config.json.
-	// When on, the connector's manage_ui attaches Game Feel & Juice Bible + UI
-	// Feedback Design Guide juice guidance to its create responses. The Hera
+	// When on, the connector's manage_ui attaches per-element juice
+	// guidance to its create responses. The Hera
 	// Settings window is the primary editor. (Persisted under the old
 	// `ui_juicy_mode` key before the Game Feel UI Mode rename; Load migrates
 	// that key transparently.)
@@ -48,8 +48,7 @@ type AssetConfig struct {
 
 	// GameFeelMode mirrors game_feel_mode — the gameplay-wide Game Feel Mode
 	// (Beta). When on, `doctor --agent-rules` and connector tool responses point
-	// agents at the bundled game_feel knowledge base (Game Feel & Juice Bible +
-	// Ethical Engagement Framework).
+	// agents at the bundled game_feel knowledge base.
 	GameFeelMode bool `json:"game_feel_mode"`
 
 	// UISlopMode mirrors ui_slop_mode — the Unity De-slop Mode (Beta). When on,

@@ -1,7 +1,6 @@
 // build-game-feel-docs validates and compresses the curated Game Feel
 // knowledge base (game_feel.jsonl in this directory — the checked-in source
-// of truth, curated from the Game Feel & Juice Bible and the Ethical
-// Engagement Game Feel Framework) into the bundle the connector ships.
+// of truth) into the bundle the connector ships.
 // Run after editing game_feel.jsonl, commit both files.
 //
 //	go run ./tools/build-game-feel-docs

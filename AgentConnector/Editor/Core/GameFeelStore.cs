@@ -4,10 +4,9 @@ using System.Collections.Generic;
 namespace HeraAgent
 {
     /// <summary>
-    /// Loads the connector-bundled Game Feel knowledge base (Game Feel &amp; Juice
-    /// Bible + Ethical Engagement Game Feel Framework) into a keyed dictionary on
-    /// first access. Powers the `game_feel` tool and the Game Feel Mode (Beta)
-    /// hints. The loading machinery lives in <see cref="BundleStore{TEntry}"/>;
+    /// Loads the connector-bundled Game Feel knowledge base into a keyed
+    /// dictionary on first access. Powers the `game_feel` tool and the Game Feel
+    /// Mode (Beta) hints. The loading machinery lives in <see cref="BundleStore{TEntry}"/>;
     /// what stays here is the entry shape and the ethics-first category index.
     /// </summary>
     public static class GameFeelStore

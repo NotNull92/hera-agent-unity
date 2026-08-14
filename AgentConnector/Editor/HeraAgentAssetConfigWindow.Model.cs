@@ -35,8 +35,8 @@ namespace HeraAgent.Editor
             public string defaultDotnetPath;
             public string loopEngineeringMode;
 
-            // Game Feel UI Mode (Beta) — when on, manage_ui attaches Game Feel & Juice
-            // Bible + UI Feedback Design Guide juice guidance (DOTween-aware) to its
+            // Game Feel UI Mode (Beta) — when on, manage_ui attaches per-element
+            // juice guidance (DOTween-aware) to its
             // create responses. Read at dispatch time by HeraSettings; surfaced to the
             // CLI via asset-config.json. (Persisted under `ui_juicy_mode` before the
             // rename; LoadConfig migrates that key transparently.)
@@ -44,8 +44,7 @@ namespace HeraAgent.Editor
 
             // Game Feel Mode (Beta) — gameplay-wide counterpart. When on, agent
             // rules and tool responses point agents at the bundled game_feel
-            // knowledge base (Game Feel & Juice Bible + Ethical Engagement
-            // Framework). Read at dispatch time by HeraSettings.
+            // knowledge base. Read at dispatch time by HeraSettings.
             public bool game_feel_mode;
 
             // Unity De-slop Mode (Beta) — static visual slop cleanup (layout,

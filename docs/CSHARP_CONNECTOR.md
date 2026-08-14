@@ -456,7 +456,7 @@ Selects the bundled `unity_docs_<version>.jsonl.gz.bytes` file for the current U
 
 ### GameFeelStore.cs
 
-Owns a `BundleStore<Entry>` over `game_feel_1.0.jsonl.gz.bytes` (Game Feel & Juice Bible + Ethical Engagement Game Feel Framework, 54 topics), keyed by topic. Adds the category-grouped index with ethics first.
+Owns a `BundleStore<Entry>` over `game_feel_1.0.jsonl.gz.bytes` (67 topics), keyed by topic. Adds the category-grouped index with ethics first.
 
 ### UiSlopStore.cs
 

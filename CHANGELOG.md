@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Connector 0.1.0 — the game-feel corpus is now Unity-derived)
+
+- Rewrote the bundled `game_feel` knowledge base end to end. Every topic is now
+  written against Unity itself: which loop the work belongs in (`Update`,
+  `FixedUpdate`, `LateUpdate`), `Rigidbody.interpolation`, `Time.timeScale` with
+  unscaled UI, `Selectable` transition modes, Canvas rebuild cost, pooling, and
+  the physics values behind a perceived weight. The API surface each topic names
+  was verified against a live Editor rather than assumed.
+- The corpus grows from 54 to 67 topics while the bundle stays at roughly the
+  same size (39,134 to 40,296 bytes), and the topic index the agent pays for on
+  a bare `game_feel` call stays flat at roughly 3 KB. New topics cover the five-layer feel stack,
+  the device-to-parameter response chain, space as the second tuning surface,
+  input forgiveness, representation versus treatment, session arc and need
+  layers, the frame-loop and velocity-layering split, channel layering,
+  perceived properties, the intensity ladder, visual hierarchy, diegetic UI,
+  the ethical boundary table, a strategy checklist, and a feel-toggle workflow.
+- `ui_trends_2026` is now `ui_visual_trends` and absorbs the translucency and
+  soft-surface styles, so the topic name no longer carries a year.
+  `balancing_principles` is retired.
+- Tool descriptions, agent-rules text, Hera Settings tooltips, and the docs that
+  describe the corpus were rewritten to state what the knowledge does rather
+  than where it came from.
+
 ### Changed (CLI 0.2.13 — compact MCP by default)
 
 - MCP now starts with Compact exposure by default. Profile and Full exposure
