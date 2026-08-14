@@ -1,7 +1,6 @@
 package mcpserver
 
 import (
-	"encoding/json"
 	"slices"
 	"strings"
 
@@ -9,11 +8,11 @@ import (
 )
 
 type compactSearchResult struct {
-	Name         string              `json:"name"`
-	Description  string              `json:"description"`
-	ContractMode string              `json:"contract_mode"`
-	Safety       toolregistry.Safety `json:"safety"`
-	InputSchema  json.RawMessage     `json:"input_schema,omitempty"`
+	Name         string        `json:"name"`
+	Description  string        `json:"description"`
+	ContractMode string        `json:"contract_mode"`
+	Actions      []string      `json:"actions,omitempty"`
+	Safety       compactSafety `json:"safety"`
 	score        int
 }
 
@@ -21,7 +20,6 @@ type catalogSearch struct {
 	query              string
 	profile            string
 	limit              int
-	includeSchema      bool
 	allowArbitraryCode bool
 }
 
@@ -40,10 +38,7 @@ func searchCatalog(catalog *toolregistry.Catalog, search catalogSearch) []compac
 		}
 		result := compactSearchResult{
 			Name: tool.Name, Description: tool.Description, ContractMode: tool.ContractMode,
-			Safety: tool.Safety, score: score,
-		}
-		if search.includeSchema {
-			result.InputSchema = tool.InputSchema
+			Actions: catalogActionNames(tool), Safety: summarizeSafety(tool.Safety), score: score,
 		}
 		results = append(results, result)
 	}

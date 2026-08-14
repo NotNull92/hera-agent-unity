@@ -11,7 +11,7 @@ The adapter is disabled unless `HERA_MCP_ENABLED=1` is set. Stdio is the only
 supported transport.
 
 ```text
-HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
+HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio
 ```
 
 Protocol frames are written only to stdout. Diagnostics are written to stderr.
@@ -34,7 +34,7 @@ portable shape (adapt the outer key and command path to the client):
 ```json
 {
   "command": "hera-agent-unity",
-  "args": ["mcp", "--transport", "stdio", "--profile", "core"],
+  "args": ["mcp", "--transport", "stdio"],
   "env": { "HERA_MCP_ENABLED": "1" }
 }
 ```
@@ -49,24 +49,27 @@ network listener.
 
 ## Exposure modes
 
-`--exposure profile` is the default. It registers the strict tools in one of
-these catalog-owned profiles:
-
-```text
-core scene assets ui diagnostics testing custom full advanced
-```
-
-`--exposure compact` registers only:
+`--exposure compact` is the default. It registers only:
 
 ```text
 tool_search tool_describe tool_call
 ```
 
-- `tool_search` performs deterministic lexical search over the live catalog.
-- `tool_describe` returns a normalized tool definition with the current catalog
-  hash and domain epoch.
+- `tool_search` returns matching tool identity, action names, and compact safety
+  metadata. It never embeds input schemas.
+- `tool_describe(name)` returns tool identity plus action summaries. For a
+  schema-only legacy tool, it returns the tool input/output schemas directly.
+- `tool_describe(name, action)` returns the selected canonical action's full
+  input/output and safety contract.
 - `tool_call` validates strict contracts, resolves safety policy, preserves an
   optional client operation ID, and invokes the shared Unity execution path.
+
+`--exposure profile` is an explicit opt-in. It registers the strict tools in
+one of these catalog-owned profiles:
+
+```text
+core scene assets ui diagnostics testing custom full advanced
+```
 
 Compact exposure can discover legacy custom tools from older Connectors.
 Unclassified legacy tools remain confirmation-required. Connectors without
@@ -75,10 +78,18 @@ Unclassified legacy tools remain confirmation-required. Connectors without
 `--exposure full` registers every strict tool in the normal-policy `full`
 profile. Arbitrary-code tools are excluded.
 
-Use Profile for a stable, small native surface. Use Compact when the client
-needs runtime search, when custom tools can change after startup, or when the
-connected Connector is too old to publish the strict catalog. Full is an
-explicit diagnostic/development opt-in, not the default.
+Use Compact for the normal MCP product path. Use Profile only when a client
+benefits from direct native tool registration and accepts its larger static
+schema payload. Full is an explicit diagnostic/development opt-in. Compact also
+remains the compatibility path when custom tools can change after startup or a
+Connector is too old to publish the strict catalog.
+
+The reviewed baseline records the actual serialized MCP `tools/list` definition
+payload separately from the larger internal normalized catalog. For the current
+34-tool catalog, Compact exposes 2,505 bytes (rough central estimate: 783 tokens),
+compared with 18,635 bytes for `core` and 61,825 bytes for `full`. See
+[`metrics/catalog-payload-baseline.json`](metrics/catalog-payload-baseline.json)
+and [`../tools/catalog-payload-report/`](../tools/catalog-payload-report/).
 
 ## Advanced profile
 
@@ -129,7 +140,7 @@ input channel. Without negotiated Tasks, Hera blocks and polls the same durable
 result until completion (package operations may wait up to ten minutes).
 
 Results whose complete MCP tool result exceeds `HERA_MCP_MAX_INLINE_BYTES`
-(default `131072`) are stored in the local per-project result cache and returned
+(default `32768`) are stored in the local per-project result cache and returned
 as integrity-checked `hera-result` resource links. Credential-shaped and
 arbitrary-code results are withheld rather than written to that cache.
 Stored payloads live under `~/.hera-agent-unity/results/` with restricted
@@ -166,10 +177,10 @@ an old Connector is safe.
 | Setting | Default | Meaning |
 |---|---:|---|
 | `HERA_MCP_ENABLED` | `0` | Required opt-in for the experimental server |
-| `HERA_MCP_PROFILE` | `core` | Profile selected by Profile exposure |
-| `HERA_MCP_EXPOSURE` | `profile` | `profile`, `compact`, or `full` |
+| `HERA_MCP_PROFILE` | `core` | Profile selected by explicit Profile exposure |
+| `HERA_MCP_EXPOSURE` | `compact` | `compact`, `profile`, or `full` |
 | `HERA_MCP_MRTR` / `--mrtr` | `0` | Negotiate Form elicitation approval |
-| `HERA_MCP_MAX_INLINE_BYTES` | `131072` | Positive maximum complete inline tool-result bytes |
+| `HERA_MCP_MAX_INLINE_BYTES` | `32768` | Positive maximum complete inline tool-result bytes |
 | `--allow-arbitrary-code` | off | Required startup permission for `advanced` |
 
 The normal global `HERA_AGENT_PROJECT`, `HERA_AGENT_PORT`, and
@@ -180,7 +191,7 @@ The normal global `HERA_AGENT_PROJECT`, `HERA_AGENT_PORT`, and
 - **`MCP server is disabled`:** set `HERA_MCP_ENABLED=1` in the child-process
   environment, not only in an unrelated terminal.
 - **Profile startup says a strict catalog is required:** update the Connector
-  or use `--exposure compact` for conservative legacy access.
+  or remove the explicit `--exposure profile` override to use Compact.
 - **Client reports invalid JSON or protocol noise:** stdout must contain MCP
   frames only. Remove shell banners, wrappers that print status, and debug
   redirection into stdout. Hera diagnostics belong on stderr; do not merge
@@ -197,6 +208,8 @@ The MCP adapter ships in CLI `v0.1.0+` but remains experimental, default-off,
 stdio-only, and limited to one selected local Editor per process. It does not
 replace the localhost Connector, expose Unity over the network, bypass
 Connector validation, or make arbitrary code safe.
+When the adapter is explicitly enabled, Compact is its default exposure;
+Profile and Full remain opt-in surfaces.
 M17 completed with the decision to retain the CLI as the production default.
 No benchmark in this repository currently justifies promoting MCP to the
 default.

@@ -48,6 +48,72 @@ func TestCompactSearchRanksDynamicCustomToolDeterministically(t *testing.T) {
 	}
 }
 
+func TestCompactSearchReturnsActionsAndCompactSafetyWithoutSchemas(t *testing.T) {
+	// Given
+	snapshot := snapshotWithDynamicTool(t)
+	for index := range snapshot.Catalog.Tools {
+		if snapshot.Catalog.Tools[index].Name == "dynamic_probe" {
+			snapshot.Catalog.Tools[index].Safety.Rules = []toolregistry.SafetyRule{{
+				Operation: "inspect",
+				Safety: toolregistry.Safety{
+					RiskClass: "destructive", Destructive: true, RequiresConfirmation: true,
+				},
+			}}
+		}
+	}
+	session, closeSession := startConfiguredTestSession(t, testServerSetup{compactTestConfig(), snapshot, &recordingToolSender{response: successResponse()}})
+	defer closeSession()
+
+	// When
+	data := callToolData(t, session, "tool_search", map[string]any{"query": "dynamic probe"}).([]any)
+
+	// Then
+	result := data[0].(map[string]any)
+	actions, ok := result["actions"].([]any)
+	if !ok || len(actions) != 1 || actions[0] != "inspect" {
+		t.Fatalf("actions=%#v, want inspect", actions)
+	}
+	if _, ok := result["input_schema"]; ok {
+		t.Fatalf("search result exposed input_schema: %#v", result)
+	}
+	safety := result["safety"].(map[string]any)
+	if _, ok := safety["rules"]; ok {
+		t.Fatalf("search result exposed safety rules: %#v", safety)
+	}
+	if _, ok := safety["side_effect_scope"]; ok {
+		t.Fatalf("search result exposed full safety metadata: %#v", safety)
+	}
+	if safety["risk_class"] != "conditional" || safety["destructive"] != true || safety["requires_confirmation"] != true || safety["read_only"] != false {
+		t.Fatalf("search result did not conservatively summarize safety rules: %#v", safety)
+	}
+}
+
+func TestCompactSearchSchemaOmitsIncludeSchema(t *testing.T) {
+	// Given
+	session, closeSession := startConfiguredTestSession(t, testServerSetup{compactTestConfig(), nativeTestSnapshot(t), &recordingToolSender{response: successResponse()}})
+	defer closeSession()
+
+	// When
+	result, err := session.ListTools(context.Background(), nil)
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tool := range result.Tools {
+		if tool.Name != "tool_search" {
+			continue
+		}
+		schema := tool.InputSchema.(map[string]any)
+		properties := schema["properties"].(map[string]any)
+		if _, ok := properties["include_schema"]; ok {
+			t.Fatalf("tool_search schema still exposes include_schema: %#v", properties)
+		}
+		return
+	}
+	t.Fatal("tool_search was not registered")
+}
+
 func TestCompactDescribeReturnsCatalogIdentity(t *testing.T) {
 	// Given
 	snapshot := snapshotWithDynamicTool(t)
@@ -65,6 +131,17 @@ func TestCompactDescribeReturnsCatalogIdentity(t *testing.T) {
 	if definition["name"] != "dynamic_probe" || definition["contract_mode"] != toolregistry.ContractStrict {
 		t.Fatalf("tool=%#v", definition)
 	}
+	if _, ok := definition["input_schema"]; ok {
+		t.Fatalf("overview exposed input_schema: %#v", definition)
+	}
+	actions, ok := data["actions"].([]any)
+	if !ok || len(actions) != 1 {
+		t.Fatalf("actions=%#v, want inspect overview", actions)
+	}
+	action, ok := actions[0].(map[string]any)
+	if !ok || action["name"] != "inspect" {
+		t.Fatalf("actions=%#v, want inspect overview", actions)
+	}
 }
 
 func TestCompactDescribeCanReturnOneAction(t *testing.T) {
@@ -74,7 +151,7 @@ func TestCompactDescribeCanReturnOneAction(t *testing.T) {
 	defer closeSession()
 
 	// When
-	full := callToolData(t, session, "tool_describe", map[string]any{"name": "dynamic_probe"})
+	overview := callToolData(t, session, "tool_describe", map[string]any{"name": "dynamic_probe"}).(map[string]any)
 	selected := callToolData(t, session, "tool_describe", map[string]any{"name": "dynamic_probe", "action": "show"}).(map[string]any)
 
 	// Then
@@ -82,8 +159,28 @@ func TestCompactDescribeCanReturnOneAction(t *testing.T) {
 	if action["name"] != "inspect" || selected["catalog_hash"] != nativeTestCatalogHash {
 		t.Fatalf("selected action=%#v", selected)
 	}
-	if len(mustJSON(t, selected)) >= len(mustJSON(t, full)) {
-		t.Fatalf("action-specific description was not smaller: selected=%d full=%d", len(mustJSON(t, selected)), len(mustJSON(t, full)))
+	if _, ok := action["input_schema"]; !ok {
+		t.Fatalf("selected action omitted input_schema: %#v", action)
+	}
+	if _, ok := overview["actions"]; !ok {
+		t.Fatalf("name-only describe omitted action overview: %#v", overview)
+	}
+}
+
+func TestCompactDescribeReturnsSchemasForToolWithoutActions(t *testing.T) {
+	// Given
+	session, closeSession := startConfiguredTestSession(t, testServerSetup{compactTestConfig(), nativeTestSnapshot(t), &recordingToolSender{response: successResponse()}})
+	defer closeSession()
+
+	// When
+	data := callToolData(t, session, "tool_describe", map[string]any{"name": "scene"}).(map[string]any)
+
+	// Then
+	if _, ok := data["input_schema"]; !ok {
+		t.Fatalf("schema-only tool omitted input_schema: %#v", data)
+	}
+	if _, ok := data["output_schema"]; !ok {
+		t.Fatalf("schema-only tool omitted output_schema: %#v", data)
 	}
 }
 

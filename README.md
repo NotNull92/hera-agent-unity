@@ -720,6 +720,11 @@ AI with MCP -> optional Hera MCP adapter -> same Hera execution core -> Unity
 
 MCP does not magically make the model smarter. It is another way to expose the same Unity capabilities. Hera keeps the CLI path as the default because it remains simple, explicit, and broadly compatible.
 
+When MCP is explicitly enabled, Hera exposes the three-tool Compact surface by
+default. Select an action through `tool_search` and `tool_describe`, then use
+`tool_call`; opt into Profile or Full only when the larger static schema payload
+is worth it.
+
 MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
 
 ---

@@ -26,7 +26,7 @@ func parseMCPOptions(args []string) (mcpOptions, error) {
 	flags.SetOutput(io.Discard)
 	flags.StringVar(&options.Transport, "transport", mcpserver.TransportStdio, "MCP transport")
 	flags.StringVar(&options.Profile, "profile", envString("HERA_MCP_PROFILE", "core"), "fixed tool profile")
-	flags.StringVar(&options.Exposure, "exposure", envString("HERA_MCP_EXPOSURE", mcpserver.ExposureProfile), "MCP tool exposure")
+	flags.StringVar(&options.Exposure, "exposure", envString("HERA_MCP_EXPOSURE", mcpserver.ExposureCompact), "MCP tool exposure")
 	flags.BoolVar(&options.AllowArbitraryCode, "allow-arbitrary-code", false, "allow advanced arbitrary-code tools at startup")
 	flags.BoolVar(&options.MRTR, "mrtr", envBool("HERA_MCP_MRTR"), "enable negotiated multi-round-trip approval")
 	if err := flags.Parse(args); err != nil {

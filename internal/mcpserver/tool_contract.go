@@ -14,9 +14,31 @@ func nativeMCPTool(tool toolregistry.Tool) *mcp.Tool {
 		Title:        tool.Title,
 		Description:  tool.Description,
 		InputSchema:  json.RawMessage(tool.InputSchema),
-		OutputSchema: envelopeSchema(tool.OutputSchema),
+		OutputSchema: envelopeSchema(outputDataSchema(tool.OutputSchema)),
 		Annotations:  nativeAnnotations(tool),
 	}
+}
+
+func outputDataSchema(outputSchema json.RawMessage) json.RawMessage {
+	var schema struct {
+		Properties map[string]json.RawMessage `json:"properties"`
+	}
+	if json.Unmarshal(outputSchema, &schema) != nil ||
+		!schemaPropertyHasType(schema.Properties["success"], "boolean") ||
+		!schemaPropertyHasType(schema.Properties["message"], "string") {
+		return outputSchema
+	}
+	if data, ok := schema.Properties["data"]; ok {
+		return data
+	}
+	return outputSchema
+}
+
+func schemaPropertyHasType(property json.RawMessage, want string) bool {
+	var schema struct {
+		Type string `json:"type"`
+	}
+	return json.Unmarshal(property, &schema) == nil && schema.Type == want
 }
 
 func nativeAnnotations(tool toolregistry.Tool) *mcp.ToolAnnotations {

@@ -159,20 +159,23 @@ Go serialization tests, Connector validation tests, live current-version probe, 
 
 ### Problem
 
-`tool_describe` currently returns every action schema for a multi-action tool even when the caller already knows the desired action.
+Compact discovery still loads every action schema when callers use name-only
+describe before choosing an action.
 
 ### Required behavior
 
-- Add optional `action` to `tool_describe`.
-- `name` only preserves the existing full-tool result for compatibility.
-- `name + action` returns tool identity plus only the selected action contract, catalog hash, and domain epoch.
+- `tool_search` returns action names and compact safety without input schemas.
+- `name` only returns tool identity and compact action summaries.
+- `name + action` returns tool identity plus the selected action's full contract, catalog hash, and domain epoch.
+- Tools without actions retain their input/output schemas in the name-only result.
 - Action aliases resolve to the canonical action name.
 - Missing action returns `ACTION_NOT_FOUND` with compact available-action names.
 - Arbitrary-code visibility rules remain unchanged.
 
 ### Gate
 
-Tests prove compatibility for name-only calls and a smaller serialized result for action-specific calls on a representative multi-action tool.
+Tests prove compact name-only discovery, full action-specific contracts, and
+schema preservation for tools without actions.
 
 ---
 
@@ -370,8 +373,9 @@ Next prerequisite:
 ### A4 Action-specific Compact describe
 
 - **Status:** PASS.
-- `tool_describe(name)` retains the original full-tool result.
-- `tool_describe(name, action)` returns one canonical action, compact tool identity, tool safety, catalog hash, and domain epoch; aliases resolve and missing actions return `ACTION_NOT_FOUND`.
+- `tool_search` returns action names and compact safety without schemas.
+- `tool_describe(name)` returns compact action summaries, while `tool_describe(name, action)` returns one canonical full action contract; aliases resolve and missing actions return `ACTION_NOT_FOUND`.
+- A tool without actions keeps its schemas available from name-only describe.
 - Measured catalog baseline shows `input/state` reduced from `27,926` bytes to `2,264` bytes, saving `25,662` bytes (`91.89%`). The next seven `input` actions save approximately `84–86%` each.
 
 ### A5 Explicit MCP catalog lifecycle
@@ -405,7 +409,7 @@ Next prerequisite:
 ### A9 Catalog payload budget
 
 - **Status:** PASS.
-- `tools/catalog-payload-report` separates raw input bytes, normalized catalog bytes, profile/tool/action sizes, description characters, and clearly labelled rough token estimates.
+- `tools/catalog-payload-report` separates raw input bytes, internal normalized catalog/profile bytes, actual MCP tool-definition bytes, profile/tool/action sizes, description characters, and clearly labelled rough token estimates.
 - Current baseline: `185,339` normalized bytes, `31` tools, `75` actions, `8,123` tool-description characters.
 - The report records the largest tools/profiles and action-specific describe savings. Budgets are warnings, not arbitrary release failures.
 - The report now compares a live catalog with the reviewed baseline. `--fail-on-change` marks any canonical contract difference for review, while `--fail-on-growth` gates only positive tool/action/description/profile deltas. A built reporter exits `3`; `go run` surfaces that child status as its own non-zero result. The disposable package test path runs the contract comparison before EditMode tests.

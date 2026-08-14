@@ -19,7 +19,7 @@ func isSupportedProfile(profile string) bool {
 
 func (config Config) exposure() string {
 	if config.Exposure == "" {
-		return ExposureProfile
+		return ExposureCompact
 	}
 	return config.Exposure
 }

@@ -42,6 +42,20 @@ func TestAdvancedProfileRequiresArbitraryCodePermission(t *testing.T) {
 	}
 }
 
+func TestEmptyExposureDefaultsToCompact(t *testing.T) {
+	// Given
+	config := enabledTestConfig()
+	config.Exposure = ""
+
+	// When
+	got := config.exposure()
+
+	// Then
+	if got != ExposureCompact {
+		t.Fatalf("exposure()=%q, want %q", got, ExposureCompact)
+	}
+}
+
 func TestAdvancedProfileRegistersArbitraryCodeToolWhenExplicitlyAllowed(t *testing.T) {
 	// Given
 	config := enabledTestConfig()

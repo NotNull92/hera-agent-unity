@@ -724,6 +724,10 @@ MCP AI -> 선택형 Hera MCP adapter -> 같은 Hera 실행 코어 -> Unity
 
 MCP 자체가 AI를 더 똑똑하게 만드는 것은 아닙니다. 같은 Unity 기능을 노출하는 다른 인터페이스입니다. Hera는 단순하고 명시적이며 대부분의 AI에서 사용할 수 있는 CLI를 계속 기본값으로 둡니다.
 
+MCP를 명시적으로 켜면 Hera는 기본으로 3-tool Compact surface를 노출합니다.
+`tool_search`와 `tool_describe`로 action을 고른 뒤 `tool_call`을 사용하고,
+더 큰 정적 schema payload가 필요한 경우에만 Profile 또는 Full을 선택합니다.
+
 MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
 
 ---

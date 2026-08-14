@@ -45,6 +45,14 @@ func TestBuildReportIsDeterministicAndSeparatesRawBytesFromEstimates(t *testing.
 	if len(first.Profiles) != 2 || first.Profiles[0].Name != "core" || first.Profiles[1].Name != "full" {
 		t.Fatalf("profiles=%#v", first.Profiles)
 	}
+	if first.MCPCompact.ToolCount != 3 || first.MCPCompact.ToolDefinitionBytes == 0 || first.MCPCompact.RoughTokens.Central == 0 {
+		t.Fatalf("compact MCP payload=%#v", first.MCPCompact)
+	}
+	for _, profile := range first.Profiles {
+		if profile.MCPToolDefinitionBytes == 0 || profile.MCPRoughTokens.Central == 0 {
+			t.Fatalf("profile MCP payload=%#v", profile)
+		}
+	}
 	if len(first.Warnings) == 0 {
 		t.Fatal("warning budgets produced no warnings")
 	}
@@ -69,8 +77,9 @@ func TestCompareReportsRequiresReviewForContractAndPayloadGrowth(t *testing.T) {
 		ActionCount:           1,
 		DescriptionCharacters: 10,
 		Profiles: []profileSize{{
-			Name: "core", ToolCount: 1, NormalizedContractBytes: 100,
+			Name: "core", ToolCount: 1, NormalizedContractBytes: 100, MCPToolDefinitionBytes: 80,
 		}},
+		MCPCompact: mcpPayloadSize{ToolCount: 3, ToolDefinitionBytes: 200},
 	}
 	current := report{
 		Schema:                reportSchema,
@@ -79,8 +88,9 @@ func TestCompareReportsRequiresReviewForContractAndPayloadGrowth(t *testing.T) {
 		ActionCount:           3,
 		DescriptionCharacters: 14,
 		Profiles: []profileSize{{
-			Name: "core", ToolCount: 2, NormalizedContractBytes: 140,
+			Name: "core", ToolCount: 2, NormalizedContractBytes: 140, MCPToolDefinitionBytes: 110,
 		}},
+		MCPCompact: mcpPayloadSize{ToolCount: 3, ToolDefinitionBytes: 220},
 	}
 
 	comparison := compareReports(baseline, current)
@@ -93,6 +103,9 @@ func TestCompareReportsRequiresReviewForContractAndPayloadGrowth(t *testing.T) {
 	}
 	if len(comparison.Profiles) != 1 || comparison.Profiles[0].ContractBytesDelta != 40 {
 		t.Fatalf("profile deltas=%#v", comparison.Profiles)
+	}
+	if comparison.MCPCompactBytesDelta != 20 || comparison.Profiles[0].MCPToolDefinitionBytesDelta != 30 {
+		t.Fatalf("MCP payload deltas=%#v", comparison)
 	}
 }
 

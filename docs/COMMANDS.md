@@ -33,12 +33,14 @@ Published CLI `v0.1.0` includes the default-off stdio MCP adapter. Configure it
 as described in [`MCP.md`](MCP.md), then start it with:
 
 ```bash
-HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
-HERA_MCP_ENABLED=1 hera-agent-unity mcp --exposure compact
+HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio
+HERA_MCP_ENABLED=1 hera-agent-unity mcp --exposure profile --profile core
 ```
 
-Profile is the normal MCP exposure, Compact registers only
-`tool_search`/`tool_describe`/`tool_call`, and Full is explicit opt-in. The
+Compact is the normal MCP exposure and registers only
+`tool_search`/`tool_describe`/`tool_call`. Profile and Full are explicit opt-ins.
+Search returns action names without schemas; describe returns a compact action
+overview until a specific action is selected. The
 `advanced` profile additionally requires `--allow-arbitrary-code`; every risky
 operation still needs approval. See [`MCP.md`](MCP.md) for client configuration,
 flags, Tasks fallback, compatibility, result resources, and security boundaries.

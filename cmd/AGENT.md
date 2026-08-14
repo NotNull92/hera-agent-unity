@@ -183,9 +183,11 @@ physical-click criterion as **BLOCKED** even when Unity-level input QA passes.
 **[Rule 12]** CLI `v0.1.0+` includes an experimental MCP adapter that remains
 default-off and stdio-only. The normal CLI remains the production default. Use
 `HERA_MCP_ENABLED=1 hera-agent-unity mcp` only with an intentionally configured
-MCP client, keep stdout free of shell banners and diagnostics, and use Compact
-exposure for older Connectors. Missing approval or operation-ledger features
-must fail closed. Full setup and compatibility rules are in `docs/MCP.md`.
+MCP client and keep stdout free of shell banners and diagnostics. Once enabled,
+Compact is the exposure default: search tool/action names, describe only the
+selected action contract, then call. Profile and Full are explicit larger-schema
+opt-ins. Missing approval or operation-ledger features must fail closed. Full
+setup and compatibility rules are in `docs/MCP.md`.
 
 **[Rule 13]** Treat a Unity port as a temporary connection endpoint, not an
 Editor identity. At the start of Unity work, run the bootstrap sequence and
@@ -611,10 +613,10 @@ Most have a `--flag` equivalent (column 2).
 | `HERA_AGENT_COMPACT_JSON=1` | `--compact-json` |
 | `HERA_AGENT_VERBOSE=1` | `--verbose` |
 | `HERA_MCP_ENABLED=1` | Enable the experimental stdio MCP adapter. |
-| `HERA_MCP_PROFILE=core` | Select the MCP Profile exposure profile. |
-| `HERA_MCP_EXPOSURE=profile` | Select `profile`, `compact`, or `full`. |
+| `HERA_MCP_PROFILE=core` | Select the explicit MCP Profile exposure profile. |
+| `HERA_MCP_EXPOSURE=compact` | Select `compact`, `profile`, or `full`. |
 | `HERA_MCP_MRTR=1` | Enable negotiated Form elicitation approval. |
-| `HERA_MCP_MAX_INLINE_BYTES=N` | Positive complete inline MCP result limit (default 131072). |
+| `HERA_MCP_MAX_INLINE_BYTES=N` | Positive complete inline MCP result limit (default 32768). |
 | `HERA_AGENT_NARRATE=1` | `--narrate` |
 | `HERA_AGENT_NO_PATH_CHECK=1` | Silence per-command PATH-mismatch warning (useful from wrapper binaries). |
 | `GITHUB_TOKEN` | Auth token for `update` from a private release repo. |

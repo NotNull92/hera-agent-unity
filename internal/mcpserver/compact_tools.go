@@ -14,33 +14,14 @@ import (
 )
 
 type compactSearchInput struct {
-	Query         string `json:"query"`
-	Profile       string `json:"profile,omitempty"`
-	Limit         int    `json:"limit,omitempty"`
-	IncludeSchema bool   `json:"include_schema,omitempty"`
+	Query   string `json:"query"`
+	Profile string `json:"profile,omitempty"`
+	Limit   int    `json:"limit,omitempty"`
 }
 
 type compactDescribeInput struct {
 	Name   string `json:"name"`
 	Action string `json:"action,omitempty"`
-}
-
-type compactToolIdentity struct {
-	Name         string              `json:"name"`
-	Title        string              `json:"title"`
-	Description  string              `json:"description"`
-	Source       toolregistry.Source `json:"source"`
-	ContractMode string              `json:"contract_mode"`
-	Profiles     []string            `json:"profiles"`
-	Aliases      []string            `json:"aliases"`
-}
-
-type compactActionDescription struct {
-	Tool        compactToolIdentity `json:"tool"`
-	Action      toolregistry.Action `json:"action"`
-	ToolSafety  toolregistry.Safety `json:"tool_safety"`
-	CatalogHash string              `json:"catalog_hash"`
-	DomainEpoch string              `json:"domain_epoch"`
 }
 
 type compactCallInput struct {
@@ -94,7 +75,7 @@ func acquireCatalogRuntime(runtime nativeRuntime) (nativeRuntime, *mcp.CallToolR
 func compactSearchTool() *mcp.Tool {
 	return &mcp.Tool{
 		Name: "tool_search", Title: "Tool Search", Description: "Search the live Unity tool catalog deterministically",
-		InputSchema:  json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"query":{"type":"string","minLength":1},"profile":{"type":"string"},"limit":{"type":"integer","minimum":1,"maximum":100},"include_schema":{"type":"boolean"}},"required":["query"]}`),
+		InputSchema:  json.RawMessage(`{"type":"object","additionalProperties":false,"properties":{"query":{"type":"string","minLength":1},"profile":{"type":"string"},"limit":{"type":"integer","minimum":1,"maximum":100}},"required":["query"]}`),
 		OutputSchema: envelopeSchema(json.RawMessage(`{"type":"array","items":{"type":"object"}}`)),
 		Annotations:  &mcp.ToolAnnotations{Title: "Tool Search", ReadOnlyHint: true, DestructiveHint: boolPointer(false), IdempotentHint: true, OpenWorldHint: boolPointer(false)},
 	}
@@ -139,7 +120,7 @@ func compactSearchHandler(catalog *toolregistry.Catalog, allowArbitraryCode bool
 		}
 		return dataResult(searchCatalog(catalog, catalogSearch{
 			query: input.Query, profile: input.Profile, limit: limit,
-			includeSchema: input.IncludeSchema, allowArbitraryCode: allowArbitraryCode,
+			allowArbitraryCode: allowArbitraryCode,
 		}))
 	}
 }
@@ -158,7 +139,7 @@ func compactDescribeHandler(catalog *toolregistry.Catalog, allowArbitraryCode bo
 			return errorResult("TOOL_NOT_FOUND", fmt.Sprintf("tool %q was not found", input.Name), nil), nil
 		}
 		if input.Action == "" {
-			return dataResult(map[string]any{"tool": tool, "catalog_hash": catalog.CatalogHash, "domain_epoch": catalog.DomainEpoch})
+			return dataResult(describeToolOverview(catalog, tool))
 		}
 		action, ok := findCatalogAction(tool, input.Action)
 		if !ok {
@@ -169,11 +150,7 @@ func compactDescribeHandler(catalog *toolregistry.Catalog, allowArbitraryCode bo
 			), nil
 		}
 		return dataResult(compactActionDescription{
-			Tool: compactToolIdentity{
-				Name: tool.Name, Title: tool.Title, Description: tool.Description,
-				Source: tool.Source, ContractMode: tool.ContractMode,
-				Profiles: tool.Profiles, Aliases: tool.Aliases,
-			},
+			Tool:   compactIdentity(tool),
 			Action: action, ToolSafety: tool.Safety,
 			CatalogHash: catalog.CatalogHash, DomainEpoch: catalog.DomainEpoch,
 		})

@@ -9,7 +9,7 @@ import (
 const TransportStdio = "stdio"
 
 const (
-	DefaultMaxInlineBytes   = 131072
+	DefaultMaxInlineBytes   = 32 * 1024
 	defaultResultCacheBytes = 64 * 1024 * 1024
 )
 

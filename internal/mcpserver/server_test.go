@@ -22,6 +22,7 @@ func enabledTestConfig() Config {
 		Enabled:   true,
 		Transport: TransportStdio,
 		Profile:   "core",
+		Exposure:  ExposureProfile,
 		Version:   "test",
 		TimeoutMS: 1_000,
 	}

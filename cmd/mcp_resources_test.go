@@ -16,7 +16,7 @@ func TestMCPProcessReadsOversizedResultResource(t *testing.T) {
 	port, home := startMCPUnityFixture(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	command := mcpHelperCommand(ctx, fmt.Sprintf("--port %d mcp --transport stdio --profile core", port))
+	command := mcpHelperCommand(ctx, fmt.Sprintf("--port %d mcp --transport stdio --exposure profile --profile core", port))
 	command.Env = append(command.Env,
 		"HOME="+home, "USERPROFILE="+home, "HERA_MCP_MAX_INLINE_BYTES=32",
 	)

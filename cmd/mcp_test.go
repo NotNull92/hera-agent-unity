@@ -36,7 +36,7 @@ func TestMCPStdoutContainsOnlyProtocolFrames(t *testing.T) {
 	port, home := startMCPUnityFixture(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	command := mcpHelperCommand(ctx, fmt.Sprintf("--port %d mcp --transport stdio --profile core", port))
+	command := mcpHelperCommand(ctx, fmt.Sprintf("--port %d mcp --transport stdio --exposure profile --profile core", port))
 	command.Env = append(command.Env, "HOME="+home, "USERPROFILE="+home)
 	stdout, err := command.StdoutPipe()
 	if err != nil {
@@ -143,12 +143,28 @@ func TestMCPOptionsParseCompactAndArbitraryCodePermission(t *testing.T) {
 	}
 }
 
-func TestMCPProcessCompactDiscoversAndCallsDynamicCustomTool(t *testing.T) {
+func TestMCPOptionsDefaultToCompactExposure(t *testing.T) {
+	// Given
+	t.Setenv("HERA_MCP_EXPOSURE", "")
+
+	// When
+	options, err := parseMCPOptions(nil)
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	if options.Exposure != "compact" {
+		t.Fatalf("exposure=%q, want compact", options.Exposure)
+	}
+}
+
+func TestMCPProcessDefaultsToCompactAndCallsDynamicCustomTool(t *testing.T) {
 	// Given
 	port, home := startMCPUnityFixture(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	command := mcpHelperCommand(ctx, fmt.Sprintf("--port %d mcp --transport stdio --exposure compact", port))
+	command := mcpHelperCommand(ctx, fmt.Sprintf("--port %d mcp --transport stdio", port))
 	command.Env = append(command.Env, "HOME="+home, "USERPROFILE="+home)
 	stdout, err := command.StdoutPipe()
 	if err != nil {

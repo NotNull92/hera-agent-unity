@@ -9,7 +9,7 @@ Usage:
 Options:
   --transport stdio   Use newline-delimited MCP over stdin/stdout. No other
                       transport is accepted.
-  --exposure <mode>   Select profile (default), compact, or full exposure.
+  --exposure <mode>   Select compact (default), profile, or full exposure.
   --profile <name>    Select core, scene, assets, ui, diagnostics, testing,
                       custom, full, or advanced.
   --allow-arbitrary-code
@@ -20,12 +20,13 @@ Options:
                       as HERA_MCP_MRTR=1. Disabled by default.
 
 HERA_MCP_MAX_INLINE_BYTES sets the positive model-facing result limit (default
-131072). Larger results are returned as integrity-checked MCP resource handles;
+32768). Larger results are returned as integrity-checked MCP resource handles;
 credential-like and arbitrary-code results are withheld instead of stored.
 
-Profile exposure registers strict native tools from the selected catalog
-profile. Compact exposure registers only tool_search, tool_describe, and
-tool_call and supports dynamic strict or legacy custom discovery. Full exposure
+Compact exposure registers only tool_search, tool_describe, and tool_call.
+Search returns action names without schemas; describe returns a compact action
+overview until a specific action is requested. Profile exposure registers
+strict native tools from the selected catalog profile. Full exposure
 registers every strict tool allowed by normal policy and excludes arbitrary
 code. Approval-required operations use Connector-signed, short-lived,
 single-use tokens. With --mrtr and client Form elicitation support, the MCP

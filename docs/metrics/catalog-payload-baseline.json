@@ -1,51 +1,117 @@
 {
-  "schema": "hera.catalog-payload-report/1",
+  "schema": "hera.catalog-payload-report/2",
   "catalog_hash": "sha256:0daec337b3070237475cb72ae70a55804b1483f2ff8f9b7410c60262b6e8f902",
   "input_bytes": 266014,
   "normalized_catalog_bytes": 266444,
   "tool_count": 34,
   "action_count": 132,
   "description_characters": 9694,
+  "mcp_compact": {
+    "tool_count": 3,
+    "tool_definition_bytes": 2505,
+    "rough_token_estimates": {
+      "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+      "low_4_bytes_per_token": 627,
+      "central_3_2_bytes_per_token": 783,
+      "high_2_5_bytes_per_token": 1002
+    }
+  },
   "profiles": [
     {
       "name": "advanced",
       "tool_count": 2,
-      "normalized_contract_bytes": 4834
+      "normalized_contract_bytes": 4834,
+      "mcp_tool_definition_bytes": 3259,
+      "mcp_rough_token_estimates": {
+        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+        "low_4_bytes_per_token": 815,
+        "central_3_2_bytes_per_token": 1019,
+        "high_2_5_bytes_per_token": 1304
+      }
     },
     {
       "name": "assets",
       "tool_count": 9,
-      "normalized_contract_bytes": 49981
+      "normalized_contract_bytes": 49981,
+      "mcp_tool_definition_bytes": 15060,
+      "mcp_rough_token_estimates": {
+        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+        "low_4_bytes_per_token": 3765,
+        "central_3_2_bytes_per_token": 4707,
+        "high_2_5_bytes_per_token": 6024
+      }
     },
     {
       "name": "core",
       "tool_count": 8,
-      "normalized_contract_bytes": 73446
+      "normalized_contract_bytes": 73446,
+      "mcp_tool_definition_bytes": 18635,
+      "mcp_rough_token_estimates": {
+        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+        "low_4_bytes_per_token": 4659,
+        "central_3_2_bytes_per_token": 5824,
+        "high_2_5_bytes_per_token": 7454
+      }
     },
     {
       "name": "diagnostics",
       "tool_count": 11,
-      "normalized_contract_bytes": 59689
+      "normalized_contract_bytes": 59689,
+      "mcp_tool_definition_bytes": 22735,
+      "mcp_rough_token_estimates": {
+        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+        "low_4_bytes_per_token": 5684,
+        "central_3_2_bytes_per_token": 7105,
+        "high_2_5_bytes_per_token": 9094
+      }
     },
     {
       "name": "full",
       "tool_count": 32,
-      "normalized_contract_bytes": 261336
+      "normalized_contract_bytes": 261336,
+      "mcp_tool_definition_bytes": 61825,
+      "mcp_rough_token_estimates": {
+        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+        "low_4_bytes_per_token": 15457,
+        "central_3_2_bytes_per_token": 19321,
+        "high_2_5_bytes_per_token": 24730
+      }
     },
     {
       "name": "scene",
       "tool_count": 11,
-      "normalized_contract_bytes": 108285
+      "normalized_contract_bytes": 108285,
+      "mcp_tool_definition_bytes": 24962,
+      "mcp_rough_token_estimates": {
+        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+        "low_4_bytes_per_token": 6241,
+        "central_3_2_bytes_per_token": 7801,
+        "high_2_5_bytes_per_token": 9985
+      }
     },
     {
       "name": "testing",
       "tool_count": 6,
-      "normalized_contract_bytes": 69240
+      "normalized_contract_bytes": 69240,
+      "mcp_tool_definition_bytes": 16962,
+      "mcp_rough_token_estimates": {
+        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+        "low_4_bytes_per_token": 4241,
+        "central_3_2_bytes_per_token": 5301,
+        "high_2_5_bytes_per_token": 6785
+      }
     },
     {
       "name": "ui",
       "tool_count": 7,
-      "normalized_contract_bytes": 101541
+      "normalized_contract_bytes": 101541,
+      "mcp_tool_definition_bytes": 19428,
+      "mcp_rough_token_estimates": {
+        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
+        "low_4_bytes_per_token": 4857,
+        "central_3_2_bytes_per_token": 6072,
+        "high_2_5_bytes_per_token": 7772
+      }
     }
   ],
   "largest_tools": [
@@ -176,7 +242,7 @@
     {
       "tool": "input",
       "action": "replay",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 1493,
       "saved_bytes": 34084,
       "saved_ratio": 0.9580346853304101
@@ -184,7 +250,7 @@
     {
       "tool": "input",
       "action": "record",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 1575,
       "saved_bytes": 34002,
       "saved_ratio": 0.9557298254490261
@@ -192,7 +258,7 @@
     {
       "tool": "input",
       "action": "keyboard",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 1860,
       "saved_bytes": 33717,
       "saved_ratio": 0.9477190319588498
@@ -200,7 +266,7 @@
     {
       "tool": "input",
       "action": "state",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 2284,
       "saved_bytes": 33293,
       "saved_ratio": 0.9358012198892542
@@ -208,7 +274,7 @@
     {
       "tool": "input",
       "action": "mouse",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 2502,
       "saved_bytes": 33075,
       "saved_ratio": 0.9296736655704528
@@ -216,7 +282,7 @@
     {
       "tool": "input",
       "action": "sequence",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 2838,
       "saved_bytes": 32739,
       "saved_ratio": 0.920229361666245
@@ -224,7 +290,7 @@
     {
       "tool": "input",
       "action": "inspect",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 3871,
       "saved_bytes": 31706,
       "saved_ratio": 0.8911937487702729
@@ -232,7 +298,7 @@
     {
       "tool": "input",
       "action": "click",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 3874,
       "saved_bytes": 31703,
       "saved_ratio": 0.891109424628271
@@ -240,7 +306,7 @@
     {
       "tool": "input",
       "action": "submit",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 3876,
       "saved_bytes": 31701,
       "saved_ratio": 0.8910532085336031
@@ -248,13 +314,13 @@
     {
       "tool": "input",
       "action": "pointer_up",
-      "full_tool_describe_bytes": 35577,
+      "legacy_full_tool_bytes": 35577,
       "action_describe_bytes": 3884,
       "saved_bytes": 31693,
       "saved_ratio": 0.8908283441549315
     }
   ],
-  "rough_token_estimates": {
+  "normalized_catalog_rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
     "low_4_bytes_per_token": 66611,
     "central_3_2_bytes_per_token": 83264,
