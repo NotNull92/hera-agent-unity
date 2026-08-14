@@ -26,10 +26,7 @@ namespace HeraAgent.Editor
         // Old Money palette — heritage, restraint, premium
         private static readonly Color ColorGold        = Hex("#C9A227"); // Antique Gold (primary accent)
         private static readonly Color ColorGoldDark    = Hex("#9C7E1E"); // darker gold (hover/pressed)
-        private static readonly Color ColorGoldGlow    = Hex("#C9A227"); // alias of primary
         private static readonly Color ColorAmber       = Hex("#9C7E1E"); // darker gold (secondary emphasis)
-        private static readonly Color ColorAmberDark   = Hex("#7A6418"); // deepest gold
-        private static readonly Color ColorError       = Hex("#8B3A3A"); // deep burgundy
         private static readonly Color ColorMuted       = Hex("#8B8178"); // Warm Gray
         private static readonly Color ColorDarkMuted   = Hex("#5C544B"); // dark warm gray
         private static readonly Color ColorBgCard      = Hex("#22201A"); // warm dark

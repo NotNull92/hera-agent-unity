@@ -44,11 +44,11 @@ func parseGlobalConfig(args []string) (GlobalConfig, []string, error) {
 	flags.IntVar(&config.Port, "port", envInt("HERA_AGENT_PORT", 0), "Select Unity instance by active heartbeat port")
 	flags.StringVar(&config.Project, "project", envString("HERA_AGENT_PROJECT", ""), "Select Unity instance by project path")
 	flags.IntVar(&timeoutMs, "timeout", envInt("HERA_AGENT_TIMEOUT_MS", 60000), "Request timeout in milliseconds")
-	flags.BoolVar(&config.Verbose, "verbose", envBool("HERA_AGENT_VERBOSE", false), "Print progress + per-phase timings to stderr")
-	flags.BoolVar(&config.Quiet, "quiet", envBool("HERA_AGENT_QUIET", false), "Suppress decorative progress messages")
-	flags.BoolVar(&config.Debug, "debug", envBool("HERA_AGENT_DEBUG", false), "Print HTTP request and response details")
-	flags.BoolVar(&config.CompactJSON, "compact-json", envBool("HERA_AGENT_COMPACT_JSON", false), "Output compact JSON")
-	flags.BoolVar(&config.Narrate, "narrate", envBool("HERA_AGENT_NARRATE", false), "Narrate wait progress")
+	flags.BoolVar(&config.Verbose, "verbose", envBool("HERA_AGENT_VERBOSE"), "Print progress + per-phase timings to stderr")
+	flags.BoolVar(&config.Quiet, "quiet", envBool("HERA_AGENT_QUIET"), "Suppress decorative progress messages")
+	flags.BoolVar(&config.Debug, "debug", envBool("HERA_AGENT_DEBUG"), "Print HTTP request and response details")
+	flags.BoolVar(&config.CompactJSON, "compact-json", envBool("HERA_AGENT_COMPACT_JSON"), "Output compact JSON")
+	flags.BoolVar(&config.Narrate, "narrate", envBool("HERA_AGENT_NARRATE"), "Narrate wait progress")
 	if err := flags.Parse(flagArgs); err != nil {
 		return GlobalConfig{}, nil, fmt.Errorf("flag parse error: %w", err)
 	}

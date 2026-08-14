@@ -1,0 +1,19 @@
+Usage: hera-agent-unity manage_timeline <action> [--params '{...}']
+
+Create and inspect Timeline assets, then add validated tracks and clips.
+The integration is reflection-only; without com.unity.timeline it returns
+PACKAGE_NOT_INSTALLED instead of adding a package dependency.
+
+Actions:
+  create      Create a .playable asset (--path required, frame_rate default 60).
+  get         Read metadata, tracks, and clips (--limit default 100, max 500).
+  add_track   Add Animation, Audio, Activation, Control, Playable, Signal,
+              Marker, or Group track; optional name and parent track name.
+  add_clip    Add a clip to an exact track name; start and duration required,
+              with optional source asset and display name.
+
+Examples:
+  hera-agent-unity manage_timeline create --params '{"path":"Assets/Cinematics/Intro.playable","frame_rate":60}'
+  hera-agent-unity manage_timeline add_track --params '{"path":"Assets/Cinematics/Intro.playable","type":"Animation","name":"Hero"}'
+  hera-agent-unity manage_timeline add_clip --params '{"path":"Assets/Cinematics/Intro.playable","track":"Hero","asset":"Assets/Anim/Hero.anim","start":0,"duration":2}'
+  hera-agent-unity manage_timeline get --params '{"path":"Assets/Cinematics/Intro.playable","limit":100}'

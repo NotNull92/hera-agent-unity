@@ -1,11 +1,11 @@
 {
   "schema": "hera.catalog-payload-report/1",
-  "catalog_hash": "sha256:17cd839f2ea72f44d9959287fbcd6f17646416aafecfc88b5d2799a1ca0749d3",
-  "input_bytes": 232590,
-  "normalized_catalog_bytes": 232940,
-  "tool_count": 33,
-  "action_count": 111,
-  "description_characters": 9410,
+  "catalog_hash": "sha256:0daec337b3070237475cb72ae70a55804b1483f2ff8f9b7410c60262b6e8f902",
+  "input_bytes": 266014,
+  "normalized_catalog_bytes": 266444,
+  "tool_count": 34,
+  "action_count": 132,
+  "description_characters": 9694,
   "profiles": [
     {
       "name": "advanced",
@@ -20,32 +20,32 @@
     {
       "name": "core",
       "tool_count": 8,
-      "normalized_contract_bytes": 58149
+      "normalized_contract_bytes": 73446
     },
     {
       "name": "diagnostics",
       "tool_count": 11,
-      "normalized_contract_bytes": 48342
+      "normalized_contract_bytes": 59689
     },
     {
       "name": "full",
-      "tool_count": 31,
-      "normalized_contract_bytes": 227832
+      "tool_count": 32,
+      "normalized_contract_bytes": 261336
     },
     {
       "name": "scene",
-      "tool_count": 10,
-      "normalized_contract_bytes": 86504
+      "tool_count": 11,
+      "normalized_contract_bytes": 108285
     },
     {
       "name": "testing",
       "tool_count": 6,
-      "normalized_contract_bytes": 67688
+      "normalized_contract_bytes": 69240
     },
     {
       "name": "ui",
       "tool_count": 7,
-      "normalized_contract_bytes": 89692
+      "normalized_contract_bytes": 101541
     }
   ],
   "largest_tools": [
@@ -57,27 +57,27 @@
     },
     {
       "name": "manage_gameobject",
-      "bytes": 17114,
-      "action_count": 8,
-      "description_characters": 140
+      "bytes": 28375,
+      "action_count": 11,
+      "description_characters": 190
+    },
+    {
+      "name": "manage_settings",
+      "bytes": 24442,
+      "action_count": 18,
+      "description_characters": 383
+    },
+    {
+      "name": "manage_animation",
+      "bytes": 15659,
+      "action_count": 10,
+      "description_characters": 370
     },
     {
       "name": "manage_ui",
       "bytes": 15140,
       "action_count": 4,
       "description_characters": 141
-    },
-    {
-      "name": "manage_settings",
-      "bytes": 13683,
-      "action_count": 10,
-      "description_characters": 360
-    },
-    {
-      "name": "manage_animation",
-      "bytes": 13380,
-      "action_count": 8,
-      "description_characters": 375
     },
     {
       "name": "manage_prefab",
@@ -98,16 +98,16 @@
       "description_characters": 411
     },
     {
+      "name": "manage_editor",
+      "bytes": 10678,
+      "action_count": 12,
+      "description_characters": 173
+    },
+    {
       "name": "profiler",
       "bytes": 10319,
       "action_count": 6,
       "description_characters": 141
-    },
-    {
-      "name": "manage_editor",
-      "bytes": 9714,
-      "action_count": 11,
-      "description_characters": 166
     }
   ],
   "largest_actions": [
@@ -121,6 +121,12 @@
       "tool": "manage_ui",
       "action": "set_anchor",
       "bytes": 4042,
+      "description_characters": 0
+    },
+    {
+      "tool": "manage_gameobject",
+      "action": "set_transform",
+      "bytes": 3863,
       "description_characters": 0
     },
     {
@@ -163,12 +169,6 @@
       "tool": "input",
       "action": "inspect",
       "bytes": 3117,
-      "description_characters": 0
-    },
-    {
-      "tool": "profiler",
-      "action": "hierarchy",
-      "bytes": 3017,
       "description_characters": 0
     }
   ],
@@ -256,18 +256,20 @@
   ],
   "rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-    "low_4_bytes_per_token": 58235,
-    "central_3_2_bytes_per_token": 72794,
-    "high_2_5_bytes_per_token": 93176
+    "low_4_bytes_per_token": 66611,
+    "central_3_2_bytes_per_token": 83264,
+    "high_2_5_bytes_per_token": 106578
   },
   "warnings": [
     "profile assets uses 49981 normalized bytes (warning budget 24000)",
-    "profile core uses 58149 normalized bytes (warning budget 24000)",
-    "profile diagnostics uses 48342 normalized bytes (warning budget 24000)",
-    "profile full uses 227832 normalized bytes (warning budget 24000)",
-    "profile scene uses 86504 normalized bytes (warning budget 24000)",
-    "profile testing uses 67688 normalized bytes (warning budget 24000)",
-    "profile ui uses 89692 normalized bytes (warning budget 24000)",
-    "tool input uses 35429 normalized bytes (warning budget 20000)"
+    "profile core uses 73446 normalized bytes (warning budget 24000)",
+    "profile diagnostics uses 59689 normalized bytes (warning budget 24000)",
+    "profile full uses 261336 normalized bytes (warning budget 24000)",
+    "profile scene uses 108285 normalized bytes (warning budget 24000)",
+    "profile testing uses 69240 normalized bytes (warning budget 24000)",
+    "profile ui uses 101541 normalized bytes (warning budget 24000)",
+    "tool input uses 35429 normalized bytes (warning budget 20000)",
+    "tool manage_gameobject uses 28375 normalized bytes (warning budget 20000)",
+    "tool manage_settings uses 24442 normalized bytes (warning budget 20000)"
   ]
 }

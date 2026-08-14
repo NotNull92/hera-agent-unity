@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"sort"
 	"strconv"
@@ -39,13 +38,13 @@ func envString(key, fallback string) string {
 	return fallback
 }
 
-func envBool(key string, fallback bool) bool {
+func envBool(key string) bool {
 	if v := os.Getenv(key); v != "" {
 		if b, err := strconv.ParseBool(v); err == nil {
 			return b
 		}
 	}
-	return fallback
+	return false
 }
 
 // humanCategories are subcommands invoked by humans at a terminal. Everything
@@ -389,47 +388,6 @@ func readExecFileIfPresent(args []string) ([]string, error) {
 	}
 	code := strings.TrimRight(string(data), "\n\r")
 	return append([]string{code}, out...), nil
-}
-
-// readStdinIfPiped reads stdin when piped and prepends it as the first positional arg.
-//
-// Stdin is only consumed when:
-//   - no positional arg is already present (positional takes precedence per docs), AND
-//   - stdin looks like a real data source: a named pipe (`echo ... | hera-agent-unity`)
-//     or a regular file redirect (`hera-agent-unity exec < code.cs`).
-//
-// In non-TTY shells where stdin is open but will never deliver data — Cursor's
-// shell, bash `$(...)` capture, compound `cmd1; hera-agent-unity exec ...`, CI
-// runners with detached stdin — io.ReadAll(os.Stdin) would otherwise block forever
-// waiting for EOF. The mode guard prevents that.
-func readStdinIfPiped(args []string) []string {
-	// Positional arg (the code) wins over stdin per documented precedence,
-	// so there is no reason to even probe stdin if one is already present.
-	_, positional, _ := buildParams(args, nil)
-	if len(positional) > 0 {
-		return args
-	}
-
-	info, err := os.Stdin.Stat()
-	if err != nil {
-		return args
-	}
-	mode := info.Mode()
-	if mode&os.ModeCharDevice != 0 {
-		return args // interactive terminal, not piped
-	}
-	// Only read when stdin has an actual data source: a pipe or a regular file.
-	// Anything else (detached, /dev/null on some platforms, closed socket) is
-	// treated as "no stdin" rather than blocked on indefinitely.
-	if mode&os.ModeNamedPipe == 0 && !mode.IsRegular() {
-		return args
-	}
-	data, err := io.ReadAll(os.Stdin)
-	if err != nil || len(data) == 0 {
-		return args
-	}
-	code := strings.TrimRight(string(data), "\n\r")
-	return append([]string{code}, args...)
 }
 
 // splitArgs separates global flags from subcommand arguments so each Execute

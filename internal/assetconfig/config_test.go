@@ -79,6 +79,28 @@ func TestDefaultAssets(t *testing.T) {
 	}
 }
 
+func TestSetDefaultCompilerPaths_PersistsBothPaths(t *testing.T) {
+	withTempHome(t)
+
+	if _, err := SetDefaultCscPath("C:/tools/csc.dll"); err != nil {
+		t.Fatalf("SetDefaultCscPath() error = %v", err)
+	}
+	if _, err := SetDefaultDotnetPath("C:/tools/dotnet.exe"); err != nil {
+		t.Fatalf("SetDefaultDotnetPath() error = %v", err)
+	}
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.DefaultCscPath != "C:/tools/csc.dll" {
+		t.Fatalf("DefaultCscPath = %q", cfg.DefaultCscPath)
+	}
+	if cfg.DefaultDotnetPath != "C:/tools/dotnet.exe" {
+		t.Fatalf("DefaultDotnetPath = %q", cfg.DefaultDotnetPath)
+	}
+}
+
 func TestLoadConfig_NoFile_ReturnsDefaultsAndCreatesFile(t *testing.T) {
 	withTempHome(t)
 
@@ -273,7 +295,7 @@ func TestSaveConfig_PreservesUnknownTopLevelAndAssetFields(t *testing.T) {
 	const source = `{
 	  "version":"1.0.0",
 	  "assets":[
-	    {"id":"dotween","name":"DOTween","enabled":false,"installed":true,"category":"animation","description":"old","vendor":{"license":"paid"}},
+	    {"id":"dotween","name":"DOTween","enabled":false,"installed":true,"category":"animation","description":"old","reference_path":"references/dotween.md","vendor":{"license":"paid"}},
 	    {"id":"custom_plugin","name":"Custom","enabled":true,"installed":true,"category":"custom","description":"keep","custom_asset_flag":true}
 	  ],
 	  "custom_top_level":{"keep":"yes"}
@@ -323,10 +345,39 @@ func TestSaveConfig_PreservesUnknownTopLevelAndAssetFields(t *testing.T) {
 	if dotween == nil || json.Unmarshal(dotween["vendor"], &vendor) != nil || vendor["license"] != "paid" {
 		t.Fatalf("unknown dotween field was not preserved: %s", raw)
 	}
+	if _, exists := dotween["reference_path"]; exists {
+		t.Fatalf("retired reference_path was preserved: %s", raw)
+	}
 	if custom == nil || string(custom["custom_asset_flag"]) != "true" {
 		t.Fatalf("unknown asset entry was not preserved: %s", raw)
 	}
 
+}
+
+func TestLoadEnabledBuiltInAssetsNoCreate(t *testing.T) {
+	home := withTempHome(t)
+	if enabled := LoadEnabledBuiltInAssetsNoCreate(); len(enabled) != 0 {
+		t.Fatalf("missing config enabled assets = %+v", enabled)
+	}
+	if _, err := os.Stat(filepath.Join(home, ".hera-agent-unity", "asset-config.json")); !os.IsNotExist(err) {
+		t.Fatalf("expected no config file to be created, stat err=%v", err)
+	}
+
+	path := ConfigFilePath()
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatalf("create config directory: %v", err)
+	}
+	if err := os.WriteFile(path, []byte(`{"assets":[{"id":"odin_inspector","enabled":true},{"id":"dotween","enabled":false},{"id":"custom_plugin","enabled":true}]}`), 0644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+
+	enabled := LoadEnabledBuiltInAssetsNoCreate()
+	if len(enabled) != 1 || enabled[0].ID != "odin_inspector" {
+		t.Fatalf("enabled built-in assets = %+v", enabled)
+	}
+	if enabled[0].Description == "" || enabled[0].DocURL == "" {
+		t.Fatalf("enabled asset metadata is incomplete: %+v", enabled[0])
+	}
 }
 
 func TestSaveConfig_ReturnsErrorWhenAnotherWriterOwnsTheLock(t *testing.T) {

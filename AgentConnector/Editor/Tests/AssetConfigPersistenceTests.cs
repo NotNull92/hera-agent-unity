@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -35,6 +36,7 @@ namespace HeraAgent.Tests
                 allPassed &= ExpectThrows("rejects malformed config", () => AssetConfigFile.Update(malformed, current => current));
                 allPassed &= TestHeraSettingsPreservesLastGoodSnapshot(root);
                 allPassed &= TestAssetConfigLockRecovery(root);
+                allPassed &= TestAssetDetectionIsProjectLocal(root);
             }
             catch (Exception ex)
             {
@@ -161,6 +163,50 @@ namespace HeraAgent.Tests
             return ExpectTrue(
                 "asset-config lock recovery preserves live owners and recovers abandoned locks",
                 recoveredDead && preservedLive && recoveredMalformed && nonceProtected && ownerReleased);
+        }
+
+        private static bool TestAssetDetectionIsProjectLocal(string root)
+        {
+            var activeProject = Path.Combine(root, "ActiveProject");
+            var explicitProject = Path.Combine(root, "ExplicitProject");
+            Directory.CreateDirectory(Path.Combine(activeProject, "Assets"));
+            Directory.CreateDirectory(Path.Combine(explicitProject, "Assets"));
+
+            var isolated = AssetDetector.Scan(
+                explicitProject,
+                activeProject,
+                _ => true);
+            var explicitProjectStayedEmpty = !isolated.Any(item => item.Value<bool>("installed"));
+
+            var validatorOnly = AssetDetector.Scan(
+                activeProject,
+                activeProject,
+                prefixes => prefixes.Contains("Sirenix.OdinValidator"));
+            var preciseAssemblies = !IsInstalled(validatorOnly, "odin_inspector")
+                && IsInstalled(validatorOnly, "odin_validator")
+                && !IsInstalled(validatorOnly, "odin_serializer");
+
+            var inspectorDll = Path.Combine(
+                explicitProject,
+                "Assets", "Plugins", "Sirenix", "Assemblies", "Sirenix.OdinInspector.Attributes.dll");
+            Directory.CreateDirectory(Path.GetDirectoryName(inspectorDll));
+            File.WriteAllText(inspectorDll, string.Empty);
+            var filesystem = AssetDetector.Scan(explicitProject, activeProject, _ => false);
+            var preciseFiles = IsInstalled(filesystem, "odin_inspector")
+                && !IsInstalled(filesystem, "odin_validator")
+                && !IsInstalled(filesystem, "odin_serializer");
+
+            return ExpectTrue(
+                "asset detection is project-local and product-specific",
+                explicitProjectStayedEmpty && preciseAssemblies && preciseFiles);
+        }
+
+        private static bool IsInstalled(JArray detections, string id)
+        {
+            return detections
+                .OfType<JObject>()
+                .First(item => item.Value<string>("id") == id)
+                .Value<bool>("installed");
         }
 
         private static bool ExpectEqual<T>(string label, T expected, T actual)

@@ -52,6 +52,25 @@ namespace HeraAgent
             return (JObject)CanonicalizeToken(schema);
         }
 
+        public static JObject CreateDefaultOutputSchema()
+        {
+            return CanonicalizeSchema(new JObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JObject
+                {
+                    ["success"] = new JObject { ["type"] = "boolean", ["description"] = "Whether the operation succeeded" },
+                    ["message"] = new JObject { ["type"] = "string", ["description"] = "Success or error message" },
+                    ["data"] = new JObject
+                    {
+                        ["type"] = "object",
+                        ["description"] = "Tool-specific output data",
+                        ["properties"] = new JObject(),
+                    }
+                }
+            });
+        }
+
         private static JObject BuildSchema(Type type, ISet<Type> visiting)
         {
             var nullableType = Nullable.GetUnderlyingType(type);

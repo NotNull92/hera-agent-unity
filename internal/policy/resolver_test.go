@@ -1,4 +1,4 @@
-package cmd
+package policy
 
 import (
 	"encoding/json"
@@ -7,8 +7,7 @@ import (
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
 
-func TestResolveCallSafetyUsesMostSpecificParameterRule(t *testing.T) {
-	// Given
+func TestResolveUsesMostSpecificParameterRule(t *testing.T) {
 	tool := toolregistry.Tool{
 		Name: "console",
 		Safety: toolregistry.Safety{
@@ -29,10 +28,8 @@ func TestResolveCallSafetyUsesMostSpecificParameterRule(t *testing.T) {
 		},
 	}
 
-	// When
-	_, safety, err := resolveCallSafety(tool, map[string]any{"clear": true})
+	_, safety, err := Resolve(tool, map[string]any{"clear": true})
 
-	// Then
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,8 +38,7 @@ func TestResolveCallSafetyUsesMostSpecificParameterRule(t *testing.T) {
 	}
 }
 
-func TestResolveCallSafetyFallsBackWhenRuleDoesNotMatch(t *testing.T) {
-	// Given
+func TestResolveFallsBackWhenRuleDoesNotMatch(t *testing.T) {
 	tool := toolregistry.Tool{
 		Name: "exec",
 		Safety: toolregistry.Safety{
@@ -60,10 +56,8 @@ func TestResolveCallSafetyFallsBackWhenRuleDoesNotMatch(t *testing.T) {
 		},
 	}
 
-	// When
-	_, safety, err := resolveCallSafety(tool, map[string]any{"compile_only": false})
+	_, safety, err := Resolve(tool, map[string]any{"compile_only": false})
 
-	// Then
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -55,6 +55,10 @@ func assetConfigCmd(args []string) error {
 		return assetConfigGameFeelUI(subArgs)
 	case "uislop":
 		return assetConfigUISlop(subArgs)
+	case "set-csc":
+		return assetConfigCompilerPath(subArgs, "set-csc", "defaultCscPath", assetconfig.SetDefaultCscPath)
+	case "set-dotnet":
+		return assetConfigCompilerPath(subArgs, "set-dotnet", "defaultDotnetPath", assetconfig.SetDefaultDotnetPath)
 	case "get":
 		if len(subArgs) == 0 {
 			return fmt.Errorf("usage: asset-config get <id>")
@@ -181,12 +185,9 @@ func assetConfigList() error {
 }
 
 func assetConfigToggle(id string, enabled bool) error {
-	cfg, err := assetconfig.SetAssetEnabled(id, enabled)
+	_, err := assetconfig.SetAssetEnabled(id, enabled)
 	if err != nil {
 		return err
-	}
-	if cfg == nil {
-		return fmt.Errorf("asset not found: %s", id)
 	}
 
 	state := "disabled"
@@ -201,9 +202,6 @@ func assetConfigToggleAction(id string) error {
 	cfg, err := assetconfig.ToggleAsset(id)
 	if err != nil {
 		return err
-	}
-	if cfg == nil {
-		return fmt.Errorf("asset not found: %s", id)
 	}
 
 	for _, a := range cfg.Assets {
@@ -246,6 +244,19 @@ func assetConfigUISlop(args []string) error {
 	return assetConfigBoolFlag(args, "uislop", "ui_slop_mode",
 		func(cfg *assetconfig.AssetConfig) bool { return cfg.UISlopMode },
 		assetconfig.SetUISlopMode)
+}
+
+func assetConfigCompilerPath(args []string, subcommand, key string, set func(string) (*assetconfig.AssetConfig, error)) error {
+	if len(args) != 1 || strings.TrimSpace(args[0]) == "" {
+		return fmt.Errorf("usage: asset-config %s <path>", subcommand)
+	}
+
+	path := strings.TrimSpace(args[0])
+	if _, err := set(path); err != nil {
+		return err
+	}
+	fmt.Printf("✓ %s %s\n", key, path)
+	return nil
 }
 
 // assetConfigBoolFlag shows or sets a boolean asset-config flag — shared by
@@ -318,6 +329,8 @@ Subcommands:
   gamefeel [on|off]             Show or set Game Feel Mode (Beta) (gameplay game-feel guidance)
   gamefeel-ui [on|off]          Show or set Game Feel UI Mode (Beta) (manage_ui juice guidance)
   uislop [on|off]               Show or set Unity De-slop Mode (Beta) (static UI slop cleanup guidance)
+  set-csc <path>                Set the default C# compiler path used by exec
+  set-dotnet <path>             Set the default dotnet host path used by exec
   detect                        Auto-detect installed assets (requires Unity)
   get <id>                      Show a single asset's state
   path                          Print the config file path
@@ -335,12 +348,14 @@ Examples:
   hera-agent-unity asset-config list
   hera-agent-unity asset-config toggle odin_inspector
   hera-agent-unity asset-config gamefeel on
+  hera-agent-unity asset-config set-csc <path-to-csc>
+  hera-agent-unity asset-config set-dotnet <path-to-dotnet>
 
 TUI Controls:
   ↑/k          Move up
   ↓/j          Move down
   Space/Enter  Toggle (ON/OFF)
-  q/Esc        Quit (changes auto-saved)
+  q/Esc        Save changes and quit (save errors stay open for retry)
 `)
 }
 
@@ -351,11 +366,16 @@ func jsonOutputForAI() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	return jsonOutputForAIConfig(cfg)
+}
 
+func jsonOutputForAIConfig(cfg *assetconfig.AssetConfig) ([]byte, error) {
 	type aiAsset struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Category string `json:"category"`
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		Category    string `json:"category"`
+		Description string `json:"description"`
+		DocURL      string `json:"doc_url,omitempty"`
 	}
 
 	var assets []aiAsset
@@ -365,9 +385,11 @@ func jsonOutputForAI() ([]byte, error) {
 			continue
 		}
 		assets = append(assets, aiAsset{
-			ID:       a.ID,
-			Name:     a.Name,
-			Category: a.Category,
+			ID:          a.ID,
+			Name:        a.Name,
+			Category:    a.Category,
+			Description: a.Description,
+			DocURL:      a.DocURL,
 		})
 		if a.ID == "dotween" || a.ID == "dotween_pro" {
 			dotweenPreferred = true

@@ -31,6 +31,10 @@ func extractAgentRules(format string) string {
 	out.WriteString("Full guide: https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md\n\n")
 	out.WriteString(buildUltraHeraAgentRules(assetconfig.LoadLoopEngineeringModeNoCreate()))
 	out.WriteString("\n")
+	if preferences := buildAssetPreferenceAgentRules(assetconfig.LoadEnabledBuiltInAssetsNoCreate(), false); preferences != "" {
+		out.WriteString(preferences)
+		out.WriteString("\n")
+	}
 	if assetconfig.LoadGameFeelModeNoCreate() {
 		out.WriteString(gameFeelAgentRules)
 		out.WriteString("\n")
@@ -57,6 +61,10 @@ func extractCompactAgentRules(format string) string {
 	out.WriteString(compactAgentRulesBody)
 	out.WriteString("\n")
 	out.WriteString(buildCompactUltraHeraAgentRules(assetconfig.LoadLoopEngineeringModeNoCreate()))
+	if preferences := buildAssetPreferenceAgentRules(assetconfig.LoadEnabledBuiltInAssetsNoCreate(), true); preferences != "" {
+		out.WriteString("\n")
+		out.WriteString(preferences)
+	}
 
 	gameFeel := assetconfig.LoadGameFeelModeNoCreate()
 	uiSlop := assetconfig.LoadUISlopModeNoCreate()
@@ -68,6 +76,36 @@ func extractCompactAgentRules(format string) string {
 		if uiSlop {
 			out.WriteString("- Unity De-slop Mode is ON. Query `ui_slop` and re-measure the live uGUI target before and after each fix.\n")
 		}
+	}
+	return out.String()
+}
+
+func buildAssetPreferenceAgentRules(assets []assetconfig.AssetEntry, compact bool) string {
+	var enabled []assetconfig.AssetEntry
+	for _, asset := range assets {
+		if asset.Enabled {
+			enabled = append(enabled, asset)
+		}
+	}
+	if len(enabled) == 0 {
+		return ""
+	}
+
+	var out strings.Builder
+	out.WriteString("## Enabled Asset Preferences\n\n")
+	if !compact {
+		out.WriteString("Hera Settings marks these assets as preferred. Verify that an asset is installed before using its APIs.\n\n")
+	}
+	for _, asset := range enabled {
+		if compact {
+			out.WriteString("- `" + asset.ID + "`: prefer " + asset.Name + " when installed")
+		} else {
+			out.WriteString("- **" + asset.Name + "** (`" + asset.ID + "`): " + asset.Description)
+		}
+		if asset.DocURL != "" {
+			out.WriteString(" Documentation: " + asset.DocURL)
+		}
+		out.WriteString("\n")
 	}
 	return out.String()
 }

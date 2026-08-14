@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -189,49 +187,6 @@ func TestWaitForFile_InvalidJSON(t *testing.T) {
 	}
 	if _, statErr := os.Stat(resultPath); statErr != nil {
 		t.Fatalf("expected invalid result file to be preserved, got %v", statErr)
-	}
-}
-
-func TestWaitForFile_UnityStopped(t *testing.T) {
-	// Detecting "unity editor has stopped" requires controlling the behaviour of
-	// client.FindByPort, which reads live instance state from the filesystem.
-	// There is no injection point for a mock, so this path is skipped.
-	t.Skip("requires mocking client.FindByPort / live instance state")
-}
-
-// WaitForAsyncJob is a thin wrapper; we just verify it delegates and does not panic.
-func TestWaitForAsyncJob_Delegates(t *testing.T) {
-	dir := t.TempDir()
-	resultPath := filepath.Join(dir, "async.json")
-
-	resp := client.CommandResponse{Success: true, Message: "async done"}
-	data, _ := json.Marshal(resp)
-	_ = os.WriteFile(resultPath, data, 0644)
-
-	got, err := WaitForAsyncJob(context.Background(), resultPath, 0, 5*time.Second, "async-op")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if got == nil || !got.Success {
-		t.Fatalf("unexpected response: %+v", got)
-	}
-}
-
-func TestWaitForAsyncJob_DoesNotMutateGlobalLogger(t *testing.T) {
-	original := log.Writer()
-	t.Cleanup(func() { log.SetOutput(original) })
-	log.SetOutput(io.Discard)
-	want := log.Writer()
-
-	dir := t.TempDir()
-	resultPath := filepath.Join(dir, "async.json")
-	data, _ := json.Marshal(client.CommandResponse{Success: true, Message: "done"})
-	_ = os.WriteFile(resultPath, data, 0o600)
-	if _, err := WaitForAsyncJob(context.Background(), resultPath, 0, time.Second, "async-op"); err != nil {
-		t.Fatal(err)
-	}
-	if log.Writer() != want {
-		t.Fatal("WaitForAsyncJob changed the process-global logger")
 	}
 }
 

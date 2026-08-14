@@ -9,7 +9,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
-	golang.org/x/net v0.55.0
 )
 
 require (

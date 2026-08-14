@@ -34,10 +34,6 @@ namespace HeraAgent.Tools
         ContractMode = ToolContractMode.Strict)]
     public static class ManagePackages
     {
-        public sealed class EmptyParameters
-        {
-        }
-
         public sealed class IdentifierParameters
         {
             [ToolParameter("Package identifier.", Required = true)]
@@ -132,7 +128,7 @@ namespace HeraAgent.Tools
         // state off the main thread.
         [HeraAction(
             Name = "list",
-            ParametersType = typeof(EmptyParameters),
+            ParametersType = typeof(object),
             ResultType = typeof(ListResult),
             RiskClass = HeraRiskClass.ReadOnly)]
         public static async Task<object> ListAsync(JObject raw)

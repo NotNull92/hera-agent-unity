@@ -2092,6 +2092,13 @@ namespace HeraAgent.Tests
                 ["property"] = "m_LocalPosition.x",
                 ["keys"] = new JArray(new JObject { ["time"] = 0, ["value"] = 0 }),
             });
+            yield return ("manage_animation", "remove_curve", new JObject
+            {
+                ["action"] = "remove_curve",
+                ["path"] = "Assets/Test.anim",
+                ["type"] = "UnityEngine.Transform",
+                ["property"] = "m_LocalPosition.x",
+            });
             yield return ("manage_animation", "create_controller", new JObject
             {
                 ["action"] = "create_controller",
@@ -2103,6 +2110,14 @@ namespace HeraAgent.Tests
                 ["path"] = "Assets/Test.controller",
                 ["name"] = "Speed",
                 ["type"] = "float",
+            });
+            yield return ("manage_animation", "add_layer", new JObject
+            {
+                ["action"] = "add_layer",
+                ["path"] = "Assets/Test.controller",
+                ["name"] = "UpperBody",
+                ["weight"] = 1,
+                ["blending"] = "override",
             });
             yield return ("manage_animation", "add_state", new JObject
             {

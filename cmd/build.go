@@ -53,5 +53,5 @@ func buildCmd(
 		timeout = 15 * time.Minute
 	}
 	fmt.Fprintln(os.Stderr, "build queued; the Editor blocks while building, waiting for the report...")
-	return poll.WaitForAsyncJob(ctx, paths.BuildResultPath(meta.Port), meta.Port, timeout, "build report")
+	return poll.WaitForFile(ctx, paths.BuildResultPath(meta.Port), meta.Port, timeout, "build report")
 }

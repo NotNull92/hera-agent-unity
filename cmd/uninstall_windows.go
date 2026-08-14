@@ -15,8 +15,8 @@ func removeFromPATH(installDir string) error {
 	//
 	// Only legacy hera-agent-unity PATH entries (from pre-WindowsApps installs)
 	// need cleanup.
-	legacyDir, _ := legacyInstallPaths()
-	if legacyDir == "" {
+	legacyDir, err := legacyInstallDir()
+	if err != nil {
 		return nil
 	}
 	// Verify the legacy directory actually exists before trying to clean PATH.
@@ -64,8 +64,8 @@ func removeBinaryAndDir(exe, installDir string) (deferred bool, err error) {
 	// Clean up the legacy install location (%LOCALAPPDATA%\hera-agent-unity)
 	// for users who installed before v0.0.6. RemoveAll instead of Remove
 	// because .bak / .tmp leftovers leave the directory non-empty.
-	legacyDir, _ := legacyInstallPaths()
-	if legacyDir != "" {
+	legacyDir, legacyErr := legacyInstallDir()
+	if legacyErr == nil {
 		if _, statErr := os.Stat(legacyDir); statErr == nil {
 			if rmErr := os.RemoveAll(legacyDir); rmErr != nil {
 				fmt.Fprintf(os.Stderr, "warning: could not remove legacy dir %s: %v\n", legacyDir, rmErr)

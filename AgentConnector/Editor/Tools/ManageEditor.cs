@@ -8,29 +8,25 @@ using UnityEditorInternal;
 namespace HeraAgent.Tools
 {
     [HeraTool(
-        Description = "Controls Unity editor state. Actions: play, stop, pause, set_active_tool, add_tag, remove_tag, add_layer, remove_layer, get_tags_layers, get_selection, set_selection.",
+        Description = "Controls Unity editor state. Actions: play, stop, pause, focus, set_active_tool, add_tag, remove_tag, add_layer, remove_layer, get_tags_layers, get_selection, set_selection.",
         Profiles = new[] { "core", "testing" },
         RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
-    [HeraActionContract("play", typeof(ManageEditor.EmptyParameters), RiskClass = HeraRiskClass.Write)]
-    [HeraActionContract("stop", typeof(ManageEditor.EmptyParameters), RiskClass = HeraRiskClass.Write)]
-    [HeraActionContract("pause", typeof(ManageEditor.EmptyParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("play", typeof(object), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("stop", typeof(object), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("pause", typeof(object), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("set_active_tool", typeof(ManageEditor.SetActiveToolParameters), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("add_tag", typeof(ManageEditor.TagParameters), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("remove_tag", typeof(ManageEditor.TagParameters), RiskClass = HeraRiskClass.Destructive)]
     [HeraActionContract("add_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("remove_layer", typeof(ManageEditor.LayerParameters), RiskClass = HeraRiskClass.Destructive)]
     [HeraActionContract("get_selection", typeof(ManageEditor.GetSelectionParameters), ResultType = typeof(ManageEditor.SelectionResult), RiskClass = HeraRiskClass.ReadOnly)]
-    [HeraActionContract("get_tags_layers", typeof(ManageEditor.EmptyParameters), ResultType = typeof(ManageEditor.TagsLayersResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("get_tags_layers", typeof(object), ResultType = typeof(ManageEditor.TagsLayersResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("set_selection", typeof(ManageEditor.SetSelectionParameters), ResultType = typeof(ManageEditor.SetSelectionResult), RiskClass = HeraRiskClass.Write)]
-    public static class ManageEditor
+    public static partial class ManageEditor
     {
         private const int FirstUserLayerIndex = 8;
         private const int TotalLayerCount = 32;
-
-        public sealed class EmptyParameters
-        {
-        }
 
         public sealed class SetActiveToolParameters
         {
@@ -114,7 +110,7 @@ namespace HeraAgent.Tools
             [ToolParameter(
                 "Action to perform.",
                 Required = true,
-                SchemaJson = "{\"type\":\"string\",\"enum\":[\"play\",\"stop\",\"pause\",\"set_active_tool\",\"add_tag\",\"remove_tag\",\"add_layer\",\"remove_layer\",\"get_tags_layers\",\"get_selection\",\"set_selection\"]}")]
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"play\",\"stop\",\"pause\",\"focus\",\"set_active_tool\",\"add_tag\",\"remove_tag\",\"add_layer\",\"remove_layer\",\"get_tags_layers\",\"get_selection\",\"set_selection\"]}")]
             public string Action { get; set; }
 
             [ToolParameter("Tool name (required for set_active_tool action)")]
@@ -204,6 +200,9 @@ namespace HeraAgent.Tools
                 case "add_layer":
                 case "remove_layer":
                     return ManageLayer(action, p);
+
+                case "focus":
+                    return FocusWindow(p);
 
                 case "get_tags_layers":
                     return GetTagsLayers();

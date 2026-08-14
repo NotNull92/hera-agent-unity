@@ -46,7 +46,11 @@ namespace HeraAgent.Tests
             var actions = sceneSchema["actions"]?.Values<string>("name").ToArray() ?? Array.Empty<string>();
             allPassed &= Expect("scene action descriptors are ordinal-sorted",
                 actions.SequenceEqual(actions.OrderBy(name => name, StringComparer.Ordinal))
-                && actions.SequenceEqual(new[] { "close", "hierarchy", "info", "list", "load", "save" }));
+                && actions.SequenceEqual(new[]
+                {
+                    "close", "create", "hierarchy", "info", "list", "load", "save",
+                    "save_all", "set_active",
+                }));
             allPassed &= Expect("unsupported schema capabilities stay false",
                 sceneSchema["metadata"]?.Value<bool>("enum_support") == false
                 && sceneSchema["metadata"]?.Value<bool>("default_support") == false
@@ -54,6 +58,7 @@ namespace HeraAgent.Tests
 
             allPassed &= TestNoPropertyLevelBooleanRequired(out var propertyRequiredCount);
             allPassed &= TestRequiredIsTopLevelStringArray();
+            allPassed &= TestRequiredArraysAreOrdinalSorted();
             allPassed &= TestArraysDeclareItems();
             allPassed &= TestNestedObjectsDeclareProperties();
             allPassed &= TestNullableTypesAllowNull();
@@ -119,6 +124,18 @@ namespace HeraAgent.Tests
                 .All(property => property.Value is JArray required
                     && required.All(item => item.Type == JTokenType.String));
             return Expect(nameof(TestRequiredIsTopLevelStringArray), valid);
+        }
+
+        private static bool TestRequiredArraysAreOrdinalSorted()
+        {
+            var valid = RuntimeSchemaTokens()
+                .SelectMany(schema => schema.DescendantsAndSelf())
+                .OfType<JProperty>()
+                .Where(property => property.Name == "required")
+                .Select(property => property.Value.Values<string>().ToArray())
+                .All(required => required.SequenceEqual(
+                    required.OrderBy(name => name, StringComparer.Ordinal)));
+            return Expect(nameof(TestRequiredArraysAreOrdinalSorted), valid);
         }
 
         private static bool TestArraysDeclareItems()
@@ -249,7 +266,7 @@ namespace HeraAgent.Tests
                 "input", "list_assemblies", "log", "manage_animation", "manage_asset_import",
                 "manage_assets", "manage_components", "manage_editor", "manage_gameobject",
                 "manage_material", "manage_packages", "manage_prefab", "manage_settings",
-                "manage_ui", "menu", "profiler", "refresh_unity", "reserialize", "run_tests",
+                "manage_timeline", "manage_ui", "menu", "profiler", "refresh_unity", "reserialize", "run_tests",
                 "scene", "screenshot", "ui_slop", "unity_docs",
             };
             var expectedActions = new Dictionary<string, string[]>
@@ -267,22 +284,22 @@ namespace HeraAgent.Tests
                 },
                 ["manage_animation"] = new[]
                 {
-                    "add_parameter", "add_state", "add_transition", "create_clip",
-                    "create_controller", "get_clip", "get_controller", "set_curve",
+                    "add_layer", "add_parameter", "add_state", "add_transition", "create_clip",
+                    "create_controller", "get_clip", "get_controller", "remove_curve", "set_curve",
                 },
                 ["manage_asset_import"] = new[] { "get", "set" },
                 ["manage_assets"] = new[] { "copy", "create", "delete", "deps", "find", "mkdir", "move" },
                 ["manage_components"] = new[] { "add", "get", "list", "remove", "set" },
                 ["manage_editor"] = new[]
                 {
-                    "add_layer", "add_tag", "get_selection", "get_tags_layers", "pause",
+                    "add_layer", "add_tag", "focus", "get_selection", "get_tags_layers", "pause",
                     "play", "remove_layer", "remove_tag", "set_active_tool", "set_selection",
                     "stop",
                 },
                 ["manage_gameobject"] = new[]
                 {
                     "create", "destroy", "duplicate", "get_transform", "move",
-                    "set_active", "set_name", "set_parent",
+                    "set_active", "set_layer", "set_name", "set_parent", "set_tag", "set_transform",
                 },
                 ["manage_material"] = new[] { "create", "get", "set", "set_shader" },
                 ["manage_packages"] = new[] { "add", "embed", "list", "remove", "search" },
@@ -293,14 +310,21 @@ namespace HeraAgent.Tests
                 },
                 ["manage_settings"] = new[]
                 {
-                    "get_audio", "get_physics", "get_player", "get_quality", "get_time",
-                    "set_audio", "set_physics", "set_player", "set_quality", "set_time",
+                    "get_audio", "get_graphics", "get_input", "get_lighting", "get_navmesh",
+                    "get_physics", "get_player", "get_quality", "get_time", "set_audio",
+                    "set_graphics", "set_input", "set_lighting", "set_navmesh", "set_physics",
+                    "set_player", "set_quality", "set_time",
                 },
+                ["manage_timeline"] = new[] { "add_clip", "add_track", "create", "get" },
                 ["manage_ui"] = new[] { "create", "get_rect", "set_anchor", "set_rect" },
                 ["menu"] = new[] { "list" },
                 ["profiler"] = new[] { "clear", "disable", "enable", "hierarchy", "stats", "status" },
                 ["run_tests"] = new[] { "cancel", "list" },
-                ["scene"] = new[] { "close", "hierarchy", "info", "list", "load", "save" },
+                ["scene"] = new[]
+                {
+                    "close", "create", "hierarchy", "info", "list", "load", "save",
+                    "save_all", "set_active",
+                },
             };
 
             var actualTools = ToolDiscovery.GetToolNames().Cast<string>().ToArray();
@@ -335,7 +359,7 @@ namespace HeraAgent.Tests
                 $"declared action contracts complete = true ({actionCount}); " +
                 $"built-in strict contracts complete = {allBuiltInsStrict.ToString().ToLowerInvariant()}");
             return Expect(nameof(TestRuntimeToolAndActionNamesUnchanged),
-                expectedTools.Length == 33 && actionCount == 111 && allBuiltInsStrict);
+                expectedTools.Length == 34 && actionCount == 132 && allBuiltInsStrict);
         }
 
         private static bool ContainsBaselineToolNames(

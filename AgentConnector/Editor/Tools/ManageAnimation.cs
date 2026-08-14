@@ -23,7 +23,7 @@ namespace HeraAgent.Tools
     [HeraActionContract("get_controller", typeof(ManageAnimation.PathParameters), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraTool(
         Name = "manage_animation",
-        Description = "Author animation assets without exec boilerplate: create_clip / set_curve build an AnimationClip (.anim) and its float curves; create_controller / add_parameter / add_state / add_transition build an AnimatorController (.controller) state machine on its base layer; get_clip / get_controller read the authored structure back for verification. Paths are constrained to Assets/.",
+        Description = "Author animation assets without exec boilerplate: create_clip / set_curve / remove_curve build an AnimationClip (.anim) and its float curves; create_controller / add_parameter / add_layer / add_state / add_transition build an AnimatorController (.controller); get_clip / get_controller read the authored structure back for verification. Paths are constrained to Assets/.",
         Destructive = true,
         MayReloadDomain = true,
         Examples = new[]
@@ -51,7 +51,7 @@ namespace HeraAgent.Tools
         Profiles = new[] { "scene" },
         RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
-    public static class ManageAnimation
+    public static partial class ManageAnimation
     {
         private const string ScalarSchema =
             "{\"oneOf\":[{\"type\":\"string\"},{\"type\":\"number\"},{\"type\":\"boolean\"}]}";
@@ -244,7 +244,7 @@ namespace HeraAgent.Tools
 
         public class Parameters
         {
-            [ToolParameter("Action: create_clip, set_curve, create_controller, add_parameter, add_state, add_transition, get_clip, get_controller.", Required = true)]
+            [ToolParameter("Action: create_clip, set_curve, remove_curve, create_controller, add_parameter, add_layer, add_state, add_transition, get_clip, get_controller.", Required = true)]
             public string Action { get; set; }
 
             [ToolParameter("Asset path under Assets/. create_clip -> .anim, create_controller -> .controller (appended if omitted); the other actions target an existing asset by path.", Required = false)]
@@ -295,14 +295,16 @@ namespace HeraAgent.Tools
             {
                 case "create_clip": return CreateClip(p);
                 case "set_curve": return SetCurve(p);
+                case "remove_curve": return RemoveCurve(p);
                 case "create_controller": return CreateController(p);
                 case "add_parameter": return AddParameter(p);
+                case "add_layer": return AddLayer(p);
                 case "add_state": return AddState(p);
                 case "add_transition": return AddTransition(p);
                 case "get_clip": return GetClip(p);
                 case "get_controller": return GetController(p);
                 default:
-                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: create_clip, set_curve, create_controller, add_parameter, add_state, add_transition, get_clip, get_controller.");
+                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: create_clip, set_curve, remove_curve, create_controller, add_parameter, add_layer, add_state, add_transition, get_clip, get_controller.");
             }
         }
 
@@ -658,7 +660,13 @@ namespace HeraAgent.Tools
                         });
                     }
                 }
-                layers.Add(new { name = layer.name, states });
+                layers.Add(new
+                {
+                    name = layer.name,
+                    weight = layer.defaultWeight,
+                    blending = layer.blendingMode.ToString().ToLowerInvariant(),
+                    states,
+                });
             }
 
             return new SuccessResponse(

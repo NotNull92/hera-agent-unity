@@ -261,9 +261,12 @@ hera-agent-unity scene <action> [target] [flags]
 | Action | Description |
 |:---|:---|
 | `info` | Active scene + every loaded scene (name, path, dirty, root count). |
+| `create <path>` | Create and save a scene. `--mode single\|additive`; `--template empty\|default`. |
 | `load <path\|name>` | Open a scene by asset path or bare filename. |
 | `save [<path\|name>]` | Save the active scene, or a named loaded scene if specified. |
+| `save_all` | Save every dirty loaded scene. |
 | `list` | List scenes registered in Build Settings. |
+| `set_active <path\|name>` | Make one loaded scene active. |
 | `close <path\|name>` | Unload a loaded scene. Cannot close the only loaded scene. |
 | `hierarchy` | Dump the GameObject tree of every loaded scene (or one subtree) as nested nodes with instance_id, name, and active state. |
 
@@ -272,6 +275,7 @@ hera-agent-unity scene <action> [target] [flags]
 | Flag | Description | Default | Applies to |
 |:---|:---|:---|:---|
 | `--mode` | `single`, `additive`, or `additive_without_loading` | `single` | `load` |
+| `--template` | `empty` or `default` initial contents | `empty` | `create` |
 | `--root` | Scope the dump to one subtree (instance_id or hierarchy path) | all loaded scenes | `hierarchy` |
 | `--depth` | Limit tree depth; `0` = unlimited | `0` | `hierarchy` |
 | `--max_nodes` | Node budget; the result reports `truncated=true` when hit | `500` (cap 5000) | `hierarchy` |
@@ -281,9 +285,12 @@ hera-agent-unity scene <action> [target] [flags]
 
 ```bash
 hera-agent-unity scene info
+hera-agent-unity scene create Assets/Scenes/Generated.unity --template default
 hera-agent-unity scene load Assets/Scenes/Main.unity
 hera-agent-unity scene load Main --mode additive
 hera-agent-unity scene save
+hera-agent-unity scene save_all
+hera-agent-unity scene set_active Main
 hera-agent-unity scene close Lobby
 hera-agent-unity scene list
 hera-agent-unity scene hierarchy --depth 2
@@ -299,7 +306,7 @@ hera-agent-unity scene hierarchy --root /GameCanvas --components
 
 ## build
 
-Player builds for the active build target. The Editor blocks for the whole build, so `start` queues it and returns immediately; the compact report lands on the file bus. `build start --wait` polls that file (floor 15 minutes; a larger `--timeout` extends it).
+Player builds for the active build target. The Editor blocks for the whole build, so `start` queues it and returns immediately; the compact report lands on the file bus. `build start --wait` polls that file (floor 15 minutes; a larger `--timeout` extends it). The queued build maps the persisted `development`, `allow_debugging`, and `build_scripts_only` settings into `BuildPlayerOptions`.
 
 ```bash
 hera-agent-unity build <action> [options]
@@ -371,6 +378,10 @@ hera-agent-unity manage_settings <action> [--params '{...}']
 | `get_quality` / `set_quality` | `level` or `level_name` (one of the two), `vsync_count` (0-4), `anti_aliasing` (0\|2\|4\|8); `get` also lists the project's level names |
 | `get_player` / `set_player` | `company_name`, `product_name`, `bundle_version`, `scripting_backend` (`mono2x`\|`il2cpp`), `api_compatibility_level` (`net_standard`\|`net_framework`) |
 | `get_audio` / `set_audio` | `volume` (0-1), `doppler_factor`, `rolloff_scale` — the persisted project audio configuration |
+| `get_graphics` / `set_graphics` | `render_pipeline_asset` (Assets path or durable handle; null/empty selects the built-in render pipeline) |
+| `get_input` / `set_input` | Bounded legacy Input Manager axes; one exact axis' `sensitivity`, `gravity`, `dead` |
+| `get_lighting` / `set_lighting` | Active `LightingSettings`: GI, sample, bounce, lightmap, compression, directionality, AO, and filtering fields |
+| `get_navmesh` / `set_navmesh` | Legacy built-in NavMesh agent radius/height/slope/climb, region area, and voxel settings |
 
 ### Examples
 
@@ -380,6 +391,11 @@ hera-agent-unity manage_settings set_physics --params '{"gravity":[0,-19.62,0]}'
 hera-agent-unity manage_settings set_time --params '{"fixed_delta_time":0.01,"dry_run":true}'
 hera-agent-unity manage_settings set_quality --params '{"level_name":"High"}'
 hera-agent-unity manage_settings set_player --params '{"scripting_backend":"il2cpp"}'
+hera-agent-unity manage_settings get_graphics
+hera-agent-unity manage_settings get_input --params '{"limit":25}'
+hera-agent-unity manage_settings set_input --params '{"axis":"Horizontal","dead":0.1,"dry_run":true}'
+hera-agent-unity manage_settings get_lighting
+hera-agent-unity manage_settings get_navmesh
 ```
 
 `get_player` reports the backend and API level exactly as Unity stores them, so a
@@ -396,6 +412,10 @@ calls do this, and `dry_run` reports it before anything changes. Changing
 Both apply to the active build target, named in the response as `build_target`.
 
 Related: `manage_editor get_tags_layers` lists tags and named layers before `add_tag` / `add_layer` / `manage_gameobject set_tag`.
+
+`manage_editor focus` focuses one already loaded Editor window. Pass exactly one
+of `--type <exact type or full type name>` or `--title <exact title>`; zero or
+ambiguous matches fail without opening a new window.
 
 ## manage_packages
 
@@ -562,8 +582,10 @@ hera-agent-unity manage_animation <action> [flags]
 |:---|:---|:---|
 | `create_clip` | `--path Assets/....anim` | Create an `AnimationClip`. `--frame_rate` (default 60), `--loop`. |
 | `set_curve` | `--path`, `--type`, `--property`, `--params '{"keys":[...]}'` | Set one float curve on a clip. |
+| `remove_curve` | `--path`, `--type`, `--property` | Remove one float curve; optional `--relative_path`. |
 | `create_controller` | `--path Assets/....controller` | Create an `AnimatorController` (base layer + state machine). |
 | `add_parameter` | `--path`, `--name`, `--type` | Add a `float`/`int`/`bool`/`trigger` parameter (optional `--params '{"default":...}'`). |
+| `add_layer` | `--path`, `--name` | Add an override/additive layer; optional weight (`0..1`) and blending via `--params`. |
 | `add_state` | `--path`, `--name` | Add a base-layer state. `--motion <clip path>`, `--default`. |
 | `add_transition` | `--path`, `--from`, `--to` | Add a transition. Conditions via `--params`. |
 | `get_clip` | `--path` | Read a clip's metadata and every curve binding; `--include_keys` adds keyframes (time/value/tangents). |
@@ -575,7 +597,7 @@ hera-agent-unity manage_animation <action> [flags]
 | `--loop` | `create_clip` loops the clip | `false` |
 | `--type` | `set_curve`: animated component type. `add_parameter`: `float`\|`int`\|`bool`\|`trigger` | |
 | `--property` | `set_curve` animated property, e.g. `localPosition.y` | |
-| `--relative_path` | `set_curve` GameObject path relative to the Animator root | `""` (root) |
+| `--relative_path` | `set_curve` / `remove_curve` GameObject path relative to the Animator root | `""` (root) |
 | `--name` | `add_parameter` / `add_state` name | |
 | `--motion` | `add_state` motion clip asset path | |
 | `--default` | `add_state` makes it the base-layer default state | `false` |
@@ -587,10 +609,36 @@ Condition `mode` is one of `If`, `IfNot`, `Greater`, `Less`, `Equals`, `NotEqual
 ```bash
 hera-agent-unity manage_animation create_clip --path Assets/Anim/Bob.anim --frame_rate 60 --loop true
 hera-agent-unity manage_animation set_curve --path Assets/Anim/Bob.anim --type Transform --property localPosition.y --params '{"keys":[{"time":0,"value":0},{"time":0.5,"value":0.3},{"time":1,"value":0}]}'
+hera-agent-unity manage_animation remove_curve --path Assets/Anim/Bob.anim --type Transform --property localPosition.y
 hera-agent-unity manage_animation create_controller --path Assets/Anim/Player.controller
 hera-agent-unity manage_animation add_parameter --path Assets/Anim/Player.controller --name Speed --type float
+hera-agent-unity manage_animation add_layer --path Assets/Anim/Player.controller --name UpperBody --params '{"weight":1,"blending":"override"}'
 hera-agent-unity manage_animation add_state --path Assets/Anim/Player.controller --name Run --motion Assets/Anim/Bob.anim --default true
 hera-agent-unity manage_animation add_transition --path Assets/Anim/Player.controller --from Idle --to Run --params '{"conditions":[{"parameter":"Speed","mode":"Greater","threshold":0.1}]}'
+```
+
+---
+
+## manage_timeline
+
+Create and inspect Timeline assets, then add validated tracks and clips. This tool uses reflection so `com.unity.timeline` stays optional; projects without it receive `PACKAGE_NOT_INSTALLED`.
+
+```bash
+hera-agent-unity manage_timeline <action> [--params '{...}']
+```
+
+| Action | Required fields | Description |
+|:---|:---|:---|
+| `create` | `path` | Create a `.playable` asset; `frame_rate` defaults to 60. |
+| `get` | `path` | Read metadata, tracks, and clips; `limit` defaults to 100 and caps at 500 combined entries. |
+| `add_track` | `path`, `type` | Add an Animation, Audio, Activation, Control, Playable, Signal, Marker, or Group track; optional `name` and parent track name. |
+| `add_clip` | `path`, `track`, `start`, `duration` | Add a clip to an exact track name; optional source `asset` and display `name`. |
+
+```bash
+hera-agent-unity manage_timeline create --params '{"path":"Assets/Cinematics/Intro.playable","frame_rate":60}'
+hera-agent-unity manage_timeline add_track --params '{"path":"Assets/Cinematics/Intro.playable","type":"Animation","name":"Hero"}'
+hera-agent-unity manage_timeline add_clip --params '{"path":"Assets/Cinematics/Intro.playable","track":"Hero","asset":"Assets/Anim/Hero.anim","start":0,"duration":2}'
+hera-agent-unity manage_timeline get --params '{"path":"Assets/Cinematics/Intro.playable","limit":100}'
 ```
 
 ---
@@ -974,6 +1022,9 @@ hera-agent-unity manage_gameobject <action> [flags]
 | `set_parent` | Reparent to another GameObject or unparent (`--parent none`). |
 | `set_active` | Toggle `GameObject.SetActive`. |
 | `set_name` | Rename. |
+| `set_transform` | Set any combination of position, euler rotation, and local scale; `space` defaults to `local`. |
+| `set_tag` | Assign an existing project tag. |
+| `set_layer` | Assign an existing layer by name or index (`0..31`). |
 | `get_transform` | Read position / rotation (euler) / scale + scene info. |
 
 ### Flags
@@ -987,6 +1038,10 @@ hera-agent-unity manage_gameobject <action> [flags]
 | `--parent <id\|path>` | Parent reference. `none` or empty unparents (`set_parent`). | `create`, `set_parent` |
 | `--position x,y,z` | World position. Also accepts JSON `[x,y,z]` or `{x,y,z}` via `--params`. | `create`, `move` |
 | `--space <world\|local>` | Coordinate space. | `move` (default `world`) |
+| `--rotation x,y,z` | Euler rotation. | `set_transform` |
+| `--scale x,y,z` | Local scale. | `set_transform` |
+| `--tag <name>` | Existing project tag. | `set_tag` |
+| `--layer <name\|0..31>` | Existing project layer. | `set_layer` |
 | `--active <true\|false>` | Active state. | `set_active` |
 | `--world_position_stays <true\|false>` | Match `Transform.SetParent` flag. | `set_parent` (default `true`) |
 | `--count <N>` | Number of copies (default `1`, max `100`). With `--name`, copies are suffixed ` (1)`, ` (2)`, … | `duplicate` |
@@ -1002,6 +1057,9 @@ hera-agent-unity manage_gameobject set_parent --path /Player --parent /Root
 hera-agent-unity manage_gameobject set_parent --path /Player --parent none
 hera-agent-unity manage_gameobject set_active --path /Player --active false
 hera-agent-unity manage_gameobject set_name --instance_id 12345 --name Hero
+hera-agent-unity manage_gameobject set_transform --path /Player --params '{"rotation":[0,90,0],"scale":[2,2,2]}'
+hera-agent-unity manage_gameobject set_tag --path /Player --tag Player
+hera-agent-unity manage_gameobject set_layer --path /Player --layer Characters
 hera-agent-unity manage_gameobject get_transform --path /Root/Player
 ```
 
@@ -1017,10 +1075,16 @@ All actions except `duplicate` return a depth-1 snapshot:
   "scene": "Main",
   "scene_path": "Assets/Scenes/Main.unity",
   "active": true,
+  "tag": "Player",
+  "layer": 0,
+  "layer_name": "Default",
   "transform": {
     "position": { "x": 0.0, "y": 1.0, "z": 0.0 },
     "rotation": { "x": 0.0, "y": 0.0, "z": 0.0 },
-    "scale":    { "x": 1.0, "y": 1.0, "z": 1.0 }
+    "scale":    { "x": 1.0, "y": 1.0, "z": 1.0 },
+    "local_position": { "x": 0.0, "y": 1.0, "z": 0.0 },
+    "local_rotation": { "x": 0.0, "y": 0.0, "z": 0.0 },
+    "local_scale":    { "x": 1.0, "y": 1.0, "z": 1.0 }
   }
 }
 ```
@@ -1119,6 +1183,10 @@ hera-agent-unity screenshot [flags]
 | `--physics_layer_mask` | Signed 32-bit physics layer mask, intersected with `Camera.main.cullingMask` | camera culling mask |
 | `--physics_max_distance` | Positive ray distance, at most 100000 world units | camera far clip plane |
 | `--physics_query_triggers` | `use_global`, `ignore`, or `collide` | `use_global` |
+| `--editor_ui_only` | Return bounded UI Toolkit metadata for one loaded `EditorWindow`, without pixels or file output | `false` |
+| `--editor_window` | Exact loaded window type, full type name, or title | required in editor UI mode |
+| `--editor_selector` | Optional exact `#name` or `VisualElement` type | all elements |
+| `--max_editor_elements` | Maximum returned elements (`1..500`) | `100` |
 
 ```bash
 hera-agent-unity screenshot
@@ -1128,6 +1196,7 @@ hera-agent-unity screenshot --view game --annotate_ui --max_annotations 50
 hera-agent-unity screenshot --annotations_only
 hera-agent-unity screenshot --physics_only --physics_grid_size 9
 hera-agent-unity screenshot --view game --annotate_physics --physics_layer_mask -1
+hera-agent-unity screenshot --editor_ui_only --editor_window InspectorWindow --max_editor_elements 50
 hera-agent-unity screenshot --width 3840 --height 2160
 hera-agent-unity screenshot --output_path captures/my_scene.png
 hera-agent-unity screenshot --isolated --target /Player --output_path captures/player.png
@@ -1145,6 +1214,12 @@ captured Game View window can include editor chrome. Results are path-sorted,
 bounded by `max_annotations`, and report total/skipped/truncated counts. An
 active `EventSystem` is required. Isolated capture cannot be combined with UI
 annotation.
+
+Editor UI metadata mode traverses one loaded UI Toolkit window and returns each
+element's exact hierarchy path, visibility, enabled state, and finite layout
+rectangle. It does not capture pixels and rejects all pixel/evidence/isolated
+capture options. `--editor_selector` accepts only an exact `#name` or exact
+element type name.
 
 Physics entries identify both the hit GameObject and its 3D `Collider`, then
 report layer, representative hit distance/point/normal, sample count, and
@@ -1625,8 +1700,8 @@ hera-agent-unity version
 
 ## asset-config
 
-Manage asset configuration (interactive TUI or command-based), including the
-top-level UI authoring backend.
+Manage asset preferences, verification/guidance modes, and default compiler
+paths through the interactive TUI or command-based interface.
 
 ```bash
 hera-agent-unity asset-config <subcommand>
@@ -1642,18 +1717,23 @@ hera-agent-unity asset-config <subcommand>
 | `gamefeel [on\|off]` | Show or set Game Feel Mode (Beta) (gameplay game-feel guidance via `game_feel` + agent rules) |
 | `gamefeel-ui [on\|off]` | Show or set Game Feel UI Mode (Beta) (drives `manage_ui` juice guidance); `juicy` is a legacy alias |
 | `uislop [on\|off]` | Show or set Unity De-slop Mode (Beta) (static UI-slop cleanup guidance via `ui_slop` + agent rules) |
+| `set-csc <path>` | Persist the default C# compiler path used by `exec` when `--csc` is omitted |
+| `set-dotnet <path>` | Persist the default dotnet host path used by `exec` when `--dotnet` is omitted |
 | `detect` | Auto-detect installed assets (requires Unity) |
 | `get <id>` | Show a single asset's state |
 | `path` | Print the config file path |
 
 | Flag | Description | Default |
 |:---|:---|:---|
-| `--json` | Output enabled assets + `loop_engineering_mode` + `game_feel_mode` + `game_feel_ui_mode` + `ui_slop_mode` + `dotween_preferred` as JSON | `false` |
+| `--json` | Output enabled assets with descriptions/documentation URLs + `loop_engineering_mode` + `game_feel_mode` + `game_feel_ui_mode` + `ui_slop_mode` + `dotween_preferred` as JSON | `false` |
 
 Asset configuration updates are serialized through a local lock and atomically
 replace the JSON file. Unknown fields and asset entries are retained. If two
 clients change the same recognized setting concurrently, the last completed
-write wins.
+write wins. Enabling a known asset means "prefer this API when installed"; it
+does not install the asset. Enabled preferences are included in generated
+`doctor --agent-rules` output. TUI quit waits for a successful save and leaves
+the UI open with the error when persistence fails.
 
 ---
 

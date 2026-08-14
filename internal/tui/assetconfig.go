@@ -60,9 +60,17 @@ type model struct {
 	cursor   int
 	quitting bool
 	changed  bool
+	saving   bool
+	saved    bool
+	saveErr  error
+	save     func(*assetconfig.AssetConfig) error
 	width    int
 	height   int
 	viewport viewport.Model
+}
+
+type assetConfigSavedMsg struct {
+	err error
 }
 
 // KeyMap defines the key bindings.
@@ -71,8 +79,6 @@ type keyMap struct {
 	Down   key.Binding
 	Toggle key.Binding
 	Quit   key.Binding
-	Save   key.Binding
-	Help   key.Binding
 }
 
 var keys = keyMap{
@@ -104,6 +110,10 @@ func NewAssetConfigModel() tea.Model {
 		}
 	}
 
+	return newAssetConfigModel(cfg, assetconfig.Save)
+}
+
+func newAssetConfigModel(cfg *assetconfig.AssetConfig, save func(*assetconfig.AssetConfig) error) model {
 	vp := viewport.New(60, 20)
 	vp.SetContent("")
 
@@ -111,8 +121,7 @@ func NewAssetConfigModel() tea.Model {
 		cfg:      cfg,
 		assets:   cfg.Assets,
 		cursor:   0,
-		quitting: false,
-		changed:  false,
+		save:     save,
 		viewport: vp,
 	}
 }
@@ -123,6 +132,18 @@ func (m model) Init() tea.Cmd {
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case assetConfigSavedMsg:
+		m.saving = false
+		if msg.err != nil {
+			m.saveErr = msg.err
+			m.viewport.SetContent(m.renderContent())
+			return m, nil
+		}
+		m.changed = false
+		m.saved = true
+		m.quitting = true
+		return m, tea.Quit
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -132,17 +153,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		if m.saving {
+			return m, nil
+		}
 		switch {
 		case key.Matches(msg, keys.Quit):
-			if m.cursor == len(m.assets) {
-				// On the "Quit" item — quit immediately
-				m.quitting = true
-				return m, tea.Quit
-			}
-			// Anywhere else — move to quit item
-			m.cursor = len(m.assets)
-			m.viewport.SetContent(m.renderContent())
-			return m, nil
+			return m.saveAndQuit()
 
 		case key.Matches(msg, keys.Up):
 			if m.cursor > 0 {
@@ -162,15 +178,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.assets) {
 				m.assets[m.cursor].Enabled = !m.assets[m.cursor].Enabled
 				m.changed = true
+				m.saveErr = nil
 			} else {
-				// "Quit" selected — save and quit. Preserve the loaded config's
-				// other fields (GameFeelMode, compiler paths); only assets changed.
-				if m.changed {
-					m.cfg.Assets = m.assets
-					_ = assetconfig.Save(m.cfg)
-				}
-				m.quitting = true
-				return m, tea.Quit
+				return m.saveAndQuit()
 			}
 			m.viewport.SetContent(m.renderContent())
 			return m, nil
@@ -180,9 +190,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m model) saveAndQuit() (tea.Model, tea.Cmd) {
+	if !m.changed {
+		m.quitting = true
+		return m, tea.Quit
+	}
+
+	m.cfg.Assets = m.assets
+	m.saving = true
+	m.saveErr = nil
+	cfg := m.cfg
+	save := m.save
+	return m, func() tea.Msg {
+		return assetConfigSavedMsg{err: save(cfg)}
+	}
+}
+
 func (m model) View() string {
 	if m.quitting {
-		if m.changed {
+		if m.saved {
 			return "✓ Asset Config saved\n"
 		}
 		return "Asset Config closed\n"
@@ -228,7 +254,7 @@ func (m model) renderContent() string {
 
 		for _, idx := range items {
 			asset := m.assets[idx]
-			line := m.renderItem(idx, asset, globalIdx == m.cursor)
+			line := m.renderItem(asset, globalIdx == m.cursor)
 			b.WriteString(line + "\n")
 			globalIdx++
 		}
@@ -242,12 +268,17 @@ func (m model) renderContent() string {
 	}
 
 	b.WriteString("\n")
+	if m.saving {
+		b.WriteString(helpStyle.Render("  Saving Asset Config...") + "\n")
+	} else if m.saveErr != nil {
+		b.WriteString(quitStyle.Render("  Save failed: "+m.saveErr.Error()) + "\n")
+	}
 	b.WriteString(helpStyle.Render("  ↑↓ move  │  Space toggle  │  q/Esc quit"))
 
 	return b.String()
 }
 
-func (m model) renderItem(globalIdx int, asset assetconfig.AssetEntry, isSelected bool) string {
+func (m model) renderItem(asset assetconfig.AssetEntry, isSelected bool) string {
 	// Checkbox
 	var checkbox string
 	if asset.Enabled {

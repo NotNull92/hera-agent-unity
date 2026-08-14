@@ -1,0 +1,21 @@
+Usage: hera-agent-unity manage_animation <action> [flags]
+
+Author AnimationClip and AnimatorController assets under Assets/.
+
+Actions:
+  create_clip       Create a .anim asset (--frame_rate, --loop).
+  set_curve         Set one float curve from --params '{"keys":[...]}'.
+  remove_curve      Remove one float curve by type/property/relative_path.
+  create_controller Create a .controller with a base layer.
+  add_parameter     Add a float/int/bool/trigger parameter.
+  add_layer         Add an override/additive controller layer (weight 0..1).
+  add_state         Add a base-layer state with optional motion/default.
+  add_transition    Add a validated base-layer transition and conditions.
+  get_clip          Read clip metadata and curve bindings (--include_keys).
+  get_controller    Read parameters, layers, states, and transitions.
+
+Examples:
+  hera-agent-unity manage_animation remove_curve --path Assets/Anim/Bob.anim --type Transform --property localPosition.y
+  hera-agent-unity manage_animation add_layer --path Assets/Anim/Player.controller --name UpperBody --params '{"weight":1,"blending":"override"}'
+
+Paths are constrained to Assets/. Asset writes may reload the domain.

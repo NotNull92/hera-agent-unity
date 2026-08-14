@@ -153,7 +153,7 @@ func pollTestResults(ctx context.Context, port int, runID string, timeout time.D
 		resultPath = paths.TestResultPath(port, runID)
 	}
 
-	resp, err := poll.WaitForAsyncJob(ctx, resultPath, port, timeout, "test results")
+	resp, err := poll.WaitForFile(ctx, resultPath, port, timeout, "test results")
 	if err == nil || runID == "" {
 		return resp, err
 	}

@@ -11,13 +11,12 @@
 package main
 
 import (
-	"bufio"
-	"compress/gzip"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
-	"os"
+
+	"github.com/NotNull92/hera-agent-unity/internal/docbundle"
 )
 
 type Entry struct {
@@ -52,81 +51,39 @@ func main() {
 		"Output gzipped JSONL path.")
 	flag.Parse()
 
-	src, err := os.Open(*in)
-	if err != nil {
-		log.Fatalf("open %s: %v", *in, err)
-	}
-	defer src.Close()
-
 	seen := map[string]bool{}
-	var lines []string
-	scanner := bufio.NewScanner(src)
-	scanner.Buffer(make([]byte, 0, 1024*1024), 1024*1024)
-	lineNo := 0
-	for scanner.Scan() {
-		lineNo++
-		line := scanner.Text()
-		if len(line) == 0 {
-			continue
-		}
+	entries, size, err := docbundle.Build(*in, *out, func(line []byte, _ int) error {
 		var e Entry
-		if err := json.Unmarshal([]byte(line), &e); err != nil {
-			log.Fatalf("%s:%d: invalid JSON: %v", *in, lineNo, err)
+		if err := json.Unmarshal(line, &e); err != nil {
+			return fmt.Errorf("invalid JSON: %w", err)
 		}
 		switch {
 		case e.ID == "":
-			log.Fatalf("%s:%d: missing id", *in, lineNo)
+			return fmt.Errorf("missing id")
 		case !knownAreas[e.Area]:
-			log.Fatalf("%s:%d (%s): invalid area %q (use A-E)", *in, lineNo, e.ID, e.Area)
+			return fmt.Errorf("(%s): invalid area %q (use A-E)", e.ID, e.Area)
 		case !knownSeverity[e.Severity]:
-			log.Fatalf("%s:%d (%s): invalid severity %q (use strong|weak)", *in, lineNo, e.ID, e.Severity)
+			return fmt.Errorf("(%s): invalid severity %q (use strong|weak)", e.ID, e.Severity)
 		case e.Tell == "":
-			log.Fatalf("%s:%d (%s): missing tell", *in, lineNo, e.ID)
+			return fmt.Errorf("(%s): missing tell", e.ID)
 		case e.CheckUGUI == "":
-			log.Fatalf("%s:%d (%s): missing check_ugui", *in, lineNo, e.ID)
+			return fmt.Errorf("(%s): missing check_ugui", e.ID)
 		case e.Fix == "":
-			log.Fatalf("%s:%d (%s): missing fix", *in, lineNo, e.ID)
+			return fmt.Errorf("(%s): missing fix", e.ID)
 		case !knownDeepTopics[e.DeepTopic]:
-			log.Fatalf("%s:%d (%s): invalid deep_topic %q (use decoration|layout|spacing|typography|color)", *in, lineNo, e.ID, e.DeepTopic)
+			return fmt.Errorf("(%s): invalid deep_topic %q (use decoration|layout|spacing|typography|color)", e.ID, e.DeepTopic)
 		case len(e.Exception) == 0:
-			log.Fatalf("%s:%d (%s): missing exception key (use null when none)", *in, lineNo, e.ID)
+			return fmt.Errorf("(%s): missing exception key (use null when none)", e.ID)
 		case len(e.Borrow) == 0:
-			log.Fatalf("%s:%d (%s): missing borrow key (use null for deletion-type)", *in, lineNo, e.ID)
+			return fmt.Errorf("(%s): missing borrow key (use null for deletion-type)", e.ID)
 		case seen[e.ID]:
-			log.Fatalf("%s:%d: duplicate id %q", *in, lineNo, e.ID)
+			return fmt.Errorf("duplicate id %q", e.ID)
 		}
 		seen[e.ID] = true
-		lines = append(lines, line)
-	}
-	if err := scanner.Err(); err != nil {
-		log.Fatalf("read %s: %v", *in, err)
-	}
-	if len(lines) == 0 {
-		log.Fatalf("%s: no entries", *in)
-	}
-
-	dst, err := os.Create(*out)
+		return nil
+	})
 	if err != nil {
-		log.Fatalf("create %s: %v", *out, err)
+		log.Fatal(err)
 	}
-	defer dst.Close()
-
-	gz, err := gzip.NewWriterLevel(dst, gzip.BestCompression)
-	if err != nil {
-		log.Fatalf("gzip: %v", err)
-	}
-	for _, line := range lines {
-		if _, err := gz.Write([]byte(line + "\n")); err != nil {
-			log.Fatalf("write: %v", err)
-		}
-	}
-	if err := gz.Close(); err != nil {
-		log.Fatalf("close gzip: %v", err)
-	}
-
-	info, err := os.Stat(*out)
-	if err != nil {
-		log.Fatalf("stat %s: %v", *out, err)
-	}
-	fmt.Printf("wrote %s: %d entries, %d bytes gzipped\n", *out, len(lines), info.Size())
+	fmt.Printf("wrote %s: %d entries, %d bytes gzipped\n", *out, entries, size)
 }

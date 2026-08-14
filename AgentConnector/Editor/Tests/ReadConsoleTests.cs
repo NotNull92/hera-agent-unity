@@ -12,6 +12,23 @@ namespace HeraAgent.Tests
         public static void RunTests()
         {
             bool allPassed = true;
+
+            var latestPrefix = "[ReadConsoleTests latest] " + Guid.NewGuid().ToString("N") + " ";
+            for (int i = 0; i < 3; i++)
+                Debug.Log(latestPrefix + i);
+
+            var latest = ReadData(new JObject
+            {
+                ["type"] = "log",
+                ["stacktrace"] = "none",
+                ["lines"] = 2,
+            });
+            var latestEntries = latest["entries"] as JArray;
+            allPassed &= Expect("initial page returns newest entries",
+                latestEntries != null && latestEntries.Count == 2 &&
+                latestEntries[0].Value<string>() == latestPrefix + "1" &&
+                latestEntries[1].Value<string>() == latestPrefix + "2");
+
             var start = ReadData(new JObject
             {
                 ["type"] = "log",

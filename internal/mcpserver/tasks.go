@@ -78,16 +78,59 @@ func registerTaskBridge(server *mcp.Server, runtime nativeRuntime) error {
 	}); err != nil {
 		return err
 	}
-	return mcp.AddReceivingCustomMethod(server, "tasks/cancel", func(_ context.Context, _ *mcp.ServerSession, params *taskParams) (*taskAckResult, error) {
+	return mcp.AddReceivingCustomMethod(server, "tasks/cancel", func(ctx context.Context, _ *mcp.ServerSession, params *taskParams) (*taskAckResult, error) {
 		if params == nil || params.TaskID == "" {
 			return nil, invalidTaskParamsError()
 		}
-		cancel, err := runtime.tasks.Cancel(params.TaskID)
+		task, err := runtime.tasks.Get(params.TaskID)
+		if err != nil {
+			return nil, taskMethodError(err)
+		}
+		return cancelTask(ctx, runtime, task)
+	})
+}
+
+func cancelTask(ctx context.Context, runtime nativeRuntime, task *taskbridge.Task) (*taskAckResult, error) {
+	if task.Kind != taskbridge.KindTest {
+		cancel, err := runtime.tasks.Cancel(task.ID)
 		if err != nil {
 			return nil, taskMethodError(err)
 		}
 		return &taskAckResult{ResultType: "complete", Supported: cancel.Supported, Cancelled: cancel.Cancelled, Reason: cancel.Reason}, nil
+	}
+
+	operationID, err := client.NewOperationID()
+	if err != nil {
+		return nil, fmt.Errorf("generate test cancellation operation id: %w", err)
+	}
+	instance := *runtime.instance
+	instance.Port = task.Port
+	response, err := runtime.sender.SendWithOptions(ctx, &instance, "run_tests", map[string]any{"action": "cancel"}, runtime.timeout, client.SendOptions{
+		OperationID: operationID,
+		Idempotent:  true,
+		ClientKind:  "mcp",
+		CatalogHash: runtime.snapshot.Catalog.CatalogHash,
 	})
+	if err != nil {
+		return nil, fmt.Errorf("cancel Unity test task: %w", err)
+	}
+	if response == nil {
+		return nil, fmt.Errorf("cancel Unity test task: empty response")
+	}
+	if !response.Success {
+		return nil, fmt.Errorf("cancel Unity test task: %s", response.Message)
+	}
+	var data struct {
+		WasRunning bool `json:"was_running"`
+	}
+	if err := json.Unmarshal(response.Data, &data); err != nil {
+		return nil, fmt.Errorf("decode Unity test cancellation response: %w", err)
+	}
+	result := &taskAckResult{ResultType: "complete", Supported: true, Cancelled: data.WasRunning}
+	if !data.WasRunning {
+		result.Reason = "task was no longer active"
+	}
+	return result, nil
 }
 
 func supportsTasks(request *mcp.CallToolRequest) bool {

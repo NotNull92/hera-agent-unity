@@ -151,7 +151,7 @@ namespace HeraAgent.Tools
             if (!TryGetNonNegativeInt(p, "since", null, 0, out var since, out var sinceError))
                 return new ErrorResponse("INVALID_PARAM", sinceError);
 
-            return GetEntries(types, count, stacktrace, since);
+            return GetEntries(types, count, stacktrace, since, p.GetRaw("since") != null);
         }
 
         private static bool TryGetNonNegativeInt(ToolParams p, string key, string fallbackKey, int defaultValue,
@@ -182,13 +182,14 @@ namespace HeraAgent.Tools
             return true;
         }
 
-        private static object GetEntries(List<string> types, int? count, string stacktrace, int since)
+        private static object GetEntries(List<string> types, int? count, string stacktrace, int since, bool hasSince)
         {
             var entries = new List<string>();
             int total = 0;
             int filteredTotal = 0;
             int lastReturnedCursor = since;
             bool truncated = false;
+            bool returnLatest = !hasSince && count.HasValue;
             try
             {
                 _startGettingEntriesMethod.Invoke(null, null);
@@ -211,6 +212,17 @@ namespace HeraAgent.Tools
                     if (!want) continue;
 
                     filteredTotal++;
+                    if (returnLatest)
+                    {
+                        if (entries.Count == count.Value)
+                        {
+                            entries.RemoveAt(0);
+                            truncated = true;
+                        }
+                        entries.Add(FormatMessage(message, stacktrace));
+                        continue;
+                    }
+
                     if (count.HasValue && entries.Count >= count.Value)
                     {
                         truncated = true;
@@ -226,7 +238,7 @@ namespace HeraAgent.Tools
                 try { _endGettingEntriesMethod.Invoke(null, null); } catch { }
             }
 
-            int nextCursor = truncated ? lastReturnedCursor : total;
+            int nextCursor = returnLatest ? total : truncated ? lastReturnedCursor : total;
             return new SuccessResponse($"Retrieved {entries.Count} entries.", new
             {
                 entries,

@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.0.109 — official Unity CLI pipeline parity)
+
+- Audited all 153 public commands in Unity CLI `1.0.0-beta.3` against Hera's
+  actual Go CLI, HTTP/JSON bridge, Unity connector, and optional packages.
+  The resulting matrix classifies 126 as covered, 12 as duplicate surfaces,
+  7 as intentionally rejected, 6 as environment-owned exclusions, and 2
+  Project Auditor commands as conditional on the unavailable package/module.
+- Added scene creation, save-all, active-scene selection, complete transform
+  writes, tag/layer writes, Animation curve removal, Animator layers, optional
+  reflection-only Timeline authoring, graphics/legacy input/lighting/legacy
+  NavMesh settings, exact loaded Editor-window focus, and bounded UI Toolkit
+  Editor-window metadata.
+- Player builds now carry the persisted development, debugging, and
+  scripts-only flags into `BuildPlayerOptions`.
+
+### Fixed (Connector 0.0.109)
+
+- Hera Settings asset detection and `detect_assets` now share one
+  product-specific detector. Explicit other-project scans no longer inherit
+  Odin/DOTween assemblies loaded by the active Editor.
+- `asset-config set-csc` / `set-dotnet` now persist the documented compiler
+  defaults, and an already-running Editor observes changed paths on the next
+  `exec` resolution.
+- The asset-config TUI now waits for a successful save before quitting, shows
+  persistence failures, and supports retry without losing changes.
+- Enabled Odin/DOTween preferences now reach generated agent rules and AI JSON;
+  nonexistent `reference_path` metadata is retired while documentation URLs
+  remain available.
+- An initial bounded console read now returns the newest matching entries;
+  explicit `since` cursors keep their forward-pagination semantics.
+- Cancelling a live MCP Unity test task now forwards the cancel request to the
+  existing Unity run instead of only marking local task state.
+- Strict-contract `required` arrays are now ordinal-sorted, so identical
+  catalogs produce the same hash across Unity compiler versions and partial
+  class metadata order no longer creates false contract drift.
+- Removed dead palette/key-map fields, impossible result nil checks, unused
+  imports/parameters, and one duplicated asset-config JSON marshaling path.
+
 ### Fixed (Connector 0.0.108 — queued builds actually start)
 
 - `build start` queued the build and then never ran it while the Editor was

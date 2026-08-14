@@ -9,12 +9,12 @@ using UnityEditor.Build.Reporting;
 namespace HeraAgent.Tools
 {
     [HeraActionContract("start", typeof(Build.StartParameters), ResultType = typeof(Build.StartResult), RiskClass = HeraRiskClass.Write)]
-    [HeraActionContract("status", typeof(Build.EmptyParameters), ResultType = typeof(Build.StatusResult), RiskClass = HeraRiskClass.ReadOnly)]
-    [HeraActionContract("get_settings", typeof(Build.EmptyParameters), ResultType = typeof(Build.SettingsResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("status", typeof(object), ResultType = typeof(Build.StatusResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("get_settings", typeof(object), ResultType = typeof(Build.SettingsResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("set_settings", typeof(Build.SetSettingsParameters), ResultType = typeof(Build.SetSettingsResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("add_scene", typeof(Build.AddSceneParameters), ResultType = typeof(Build.SceneListResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("remove_scene", typeof(Build.ScenePathParameters), ResultType = typeof(Build.SceneListResult), RiskClass = HeraRiskClass.Write)]
-    [HeraActionContract("list_targets", typeof(Build.EmptyParameters), ResultType = typeof(Build.TargetsResult), RiskClass = HeraRiskClass.ReadOnly)]
+    [HeraActionContract("list_targets", typeof(object), ResultType = typeof(Build.TargetsResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionSafety("start", RequiresConfirmation = true)]
     [HeraTool(
         Name = "build",
@@ -36,7 +36,7 @@ namespace HeraAgent.Tools
         Profiles = new[] { "full" },
         RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
-    public static class Build
+    public static partial class Build
     {
         const int MaxErrorMessages = 20;
         const int MaxErrorLength = 300;
@@ -48,10 +48,6 @@ namespace HeraAgent.Tools
         // last report for this domain. A domain reload clears it, after which
         // status honestly reports no retained report.
         static object s_LastReport;
-
-        public sealed class EmptyParameters
-        {
-        }
 
         public sealed class StartParameters
         {
@@ -248,13 +244,8 @@ namespace HeraAgent.Tools
             try
             {
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(outputPath)) ?? ".");
-                var unityReport = BuildPipeline.BuildPlayer(new BuildPlayerOptions
-                {
-                    scenes = scenes,
-                    target = target,
-                    locationPathName = outputPath,
-                    options = BuildOptions.None,
-                });
+                var unityReport = BuildPipeline.BuildPlayer(
+                    CreatePlayerOptions(scenes, target, outputPath));
                 report = Summarize(unityReport, outputPath);
             }
             catch (Exception ex)

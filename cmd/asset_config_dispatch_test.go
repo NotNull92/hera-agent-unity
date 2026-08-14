@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/NotNull92/hera-agent-unity/internal/assetconfig"
@@ -14,6 +15,41 @@ func withTempAssetConfigHome(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
+}
+
+func TestAssetConfigCompilerPath_RequiresExactlyOnePath(t *testing.T) {
+	for _, args := range [][]string{nil, {}, {"one", "two"}, {"   "}} {
+		err := assetConfigCompilerPath(args, "set-csc", "defaultCscPath", func(string) (*assetconfig.AssetConfig, error) {
+			t.Fatal("setter must not run for invalid input")
+			return nil, nil
+		})
+		if err == nil || !strings.Contains(err.Error(), "usage: asset-config set-csc <path>") {
+			t.Fatalf("args %q error = %v", args, err)
+		}
+	}
+}
+
+func TestAssetConfigCompilerPath_PassesTrimmedPathToSetter(t *testing.T) {
+	var got string
+	err := assetConfigCompilerPath([]string{"  C:/tools/csc.dll  "}, "set-csc", "defaultCscPath", func(path string) (*assetconfig.AssetConfig, error) {
+		got = path
+		return &assetconfig.AssetConfig{}, nil
+	})
+	if err != nil {
+		t.Fatalf("assetConfigCompilerPath() error = %v", err)
+	}
+	if got != "C:/tools/csc.dll" {
+		t.Fatalf("setter path = %q", got)
+	}
+}
+
+func TestAssetConfigCmd_CompilerPathSubcommandsUseSpecificUsage(t *testing.T) {
+	for _, subcommand := range []string{"set-csc", "set-dotnet"} {
+		err := assetConfigCmd([]string{subcommand})
+		if err == nil || !strings.Contains(err.Error(), "usage: asset-config "+subcommand+" <path>") {
+			t.Fatalf("%s error = %v", subcommand, err)
+		}
+	}
 }
 
 func TestAssetConfigDetect_fallsThroughStandaloneRouting(t *testing.T) {

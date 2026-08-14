@@ -72,5 +72,5 @@ func managePackagesCmd(
 }
 
 func pollPackageJob(ctx context.Context, port int, jobID string) (*client.CommandResponse, error) {
-	return poll.WaitForAsyncJob(ctx, paths.PackageResultPath(port, jobID), port, 10*time.Minute, fmt.Sprintf("package job %s", jobID))
+	return poll.WaitForFile(ctx, paths.PackageResultPath(port, jobID), port, 10*time.Minute, fmt.Sprintf("package job %s", jobID))
 }

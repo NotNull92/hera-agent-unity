@@ -2,9 +2,13 @@ Usage: hera-agent-unity scene <action> [target] [options]
 
 Actions:
   info                          Show active scene + all loaded scenes (name, path, dirty)
+  create <path>                 Create and save a scene; --mode single|additive,
+                                --template empty|default
   load <path|name> [--mode M]   Open a scene. Modes: single (default), additive, additive_without_loading
   save [<path|name>]            Save the active scene, or a named loaded scene
+  save_all                      Save every dirty loaded scene
   list                          List scenes registered in Build Settings
+  set_active <path|name>        Make one loaded scene active
   close <path|name>             Unload a loaded scene (cannot close the only one)
   hierarchy [options]           Dump the GameObject tree of the loaded scenes
     --root <id|path>            Scope to one subtree (instance_id or hierarchy path)
@@ -18,9 +22,12 @@ Target resolution:
 
 Examples:
   hera-agent-unity scene info
+  hera-agent-unity scene create Assets/Scenes/Generated.unity --template default
   hera-agent-unity scene load Assets/Scenes/Main.unity
   hera-agent-unity scene load Main --mode additive
   hera-agent-unity scene save
+  hera-agent-unity scene save_all
+  hera-agent-unity scene set_active Main
   hera-agent-unity scene close Lobby
   hera-agent-unity scene hierarchy --depth 2
   hera-agent-unity scene hierarchy --root /GameCanvas --components

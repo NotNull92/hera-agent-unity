@@ -28,6 +28,13 @@ Actions:
                                 scripting_backend never recompiles.
   get_audio / set_audio         volume (0-1), doppler_factor, rolloff_scale
                                 (persisted project audio configuration)
+  get_graphics / set_graphics   render_pipeline_asset (Assets/ path or durable
+                                handle; null/empty selects built-in rendering)
+  get_input / set_input         Read bounded legacy Input Manager axes; change
+                                one exact axis' sensitivity, gravity, dead
+  get_lighting / set_lighting   Active LightingSettings GI sampler, lightmap,
+                                compression, directionality, AO, filter fields
+  get_navmesh / set_navmesh     Legacy built-in NavMesh agent/voxel settings
 
 Safety:
   Settings changes are project-wide and not undoable via Ctrl+Z, so every
@@ -41,6 +48,11 @@ Examples:
   hera-agent-unity manage_settings set_physics --params '{"gravity":[0,-19.62,0]}'
   hera-agent-unity manage_settings set_time --params '{"fixed_delta_time":0.01,"dry_run":true}'
   hera-agent-unity manage_settings set_quality --params '{"level_name":"High"}'
+  hera-agent-unity manage_settings get_graphics
+  hera-agent-unity manage_settings get_input --params '{"limit":25}'
+  hera-agent-unity manage_settings set_input --params '{"axis":"Horizontal","dead":0.1,"dry_run":true}'
+  hera-agent-unity manage_settings get_lighting
+  hera-agent-unity manage_settings get_navmesh
 
 Related:
   manage_editor get_tags_layers   List tags and named layers before add_tag /

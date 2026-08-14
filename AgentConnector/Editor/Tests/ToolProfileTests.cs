@@ -20,7 +20,7 @@ namespace HeraAgent.Tests
                 {
                     "bake", "find_gameobjects", "manage_animation", "manage_components",
                     "manage_gameobject", "manage_material", "manage_prefab", "refresh_unity",
-                    "scene", "screenshot",
+                    "manage_timeline", "scene", "screenshot",
                 },
                 ["assets"] = new[]
                 {

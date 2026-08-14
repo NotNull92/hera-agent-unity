@@ -88,7 +88,7 @@ func (command *callCommand) Run(
 	if snapshot.Schemas == nil || tool.ContractMode != toolregistry.ContractStrict {
 		return nil, fmt.Errorf("tool %q does not provide a strict contract", tool.Name)
 	}
-	action, safety, err := resolveCallSafety(tool, params)
+	action, safety, err := policy.Resolve(tool, params)
 	if err != nil {
 		return nil, fmt.Errorf("resolve call safety %q: %w", tool.Name, err)
 	}

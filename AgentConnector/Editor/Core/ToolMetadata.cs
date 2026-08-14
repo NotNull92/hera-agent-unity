@@ -163,24 +163,7 @@ namespace HeraAgent
             var hasOutputSchema = parameters.Any(p => !string.IsNullOrWhiteSpace(p.OutputSchema));
             
             if (!hasOutputSchema)
-            {
-                // Default output schema
-                return SchemaUtility.CanonicalizeSchema(new JObject
-                {
-                    ["type"] = "object",
-                    ["properties"] = new JObject
-                    {
-                        ["success"] = new JObject { ["type"] = "boolean", ["description"] = "Whether the operation succeeded" },
-                        ["message"] = new JObject { ["type"] = "string", ["description"] = "Success or error message" },
-                        ["data"] = new JObject
-                        {
-                            ["type"] = "object",
-                            ["description"] = "Tool-specific output data",
-                            ["properties"] = new JObject(),
-                        }
-                    }
-                });
-            }
+                return SchemaUtility.CreateDefaultOutputSchema();
 
             // Use custom output schema if provided
             var customOutputSchema = parameters.FirstOrDefault(p => !string.IsNullOrWhiteSpace(p.OutputSchema));

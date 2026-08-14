@@ -490,24 +490,6 @@ namespace HeraAgent.Editor
                 detailPanel.Add(docBtn);
             }
 
-            // Reference path
-            var refRow = new VisualElement();
-            refRow.style.flexDirection = FlexDirection.Row;
-            refRow.style.alignItems = Align.Center;
-            refRow.style.marginBottom = 2;
-
-            var refIcon = new Label("📄");
-            refIcon.style.fontSize = 10;
-            refIcon.style.marginRight = 4;
-            refRow.Add(refIcon);
-
-            var refLbl = new Label($"Ref: {asset.reference_path}");
-            refLbl.style.fontSize = 9;
-            refLbl.style.color = ColorMuted;
-            refRow.Add(refLbl);
-
-            detailPanel.Add(refRow);
-
             // Config path
             var cfgRow = new VisualElement();
             cfgRow.style.flexDirection = FlexDirection.Row;

@@ -201,7 +201,7 @@ func invokeTool(ctx context.Context, runtime nativeRuntime, invocation toolInvoc
 		if start.Kind == taskbridge.KindPackage {
 			waitTimeout = 10 * time.Minute
 		}
-		response, err = poll.WaitForAsyncJob(ctx, resultPath, start.Port, waitTimeout, string(start.Kind)+" task")
+		response, err = poll.WaitForFile(ctx, resultPath, start.Port, waitTimeout, string(start.Kind)+" task")
 		if err != nil {
 			return nil, err
 		}

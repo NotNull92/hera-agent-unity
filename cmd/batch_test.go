@@ -29,12 +29,42 @@ func TestBatchCmd_Success(t *testing.T) {
 
 	// Mock stdin with valid JSON so the "no file" path works.
 	oldStdin := batchStdin
-	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
+	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`), mode: os.ModeNamedPipe}
 	defer func() { batchStdin = oldStdin }()
 
 	err := batchCmd(context.Background(), []string{}, testBatchRuntime(mockSend, mockInst, 60000))
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
+	}
+}
+
+func TestBatchCmd_WhenStdinIsDetached_DoesNotReadOrSend(t *testing.T) {
+	// Given: stdin is neither a terminal, named pipe, nor regular file.
+	oldStdin := batchStdin
+	batchStdin = &mockFile{
+		data: []byte(`{"commands":[{"command":"list"}]}`),
+		mode: os.ModeDevice,
+	}
+	t.Cleanup(func() { batchStdin = oldStdin })
+	sendCalled := false
+	mockSend := func(context.Context, *client.Instance, client.BatchCommandRequest, int) (*client.BatchCommandResponse, error) {
+		sendCalled = true
+		return &client.BatchCommandResponse{}, nil
+	}
+
+	// When: batch has no --file fallback.
+	err := batchCmd(
+		context.Background(),
+		nil,
+		testBatchRuntime(mockSend, &client.Instance{Port: 8090}, 60_000),
+	)
+
+	// Then: detached stdin is rejected before any read-driven dispatch.
+	if err == nil || !strings.Contains(err.Error(), "usage:") {
+		t.Fatalf("batchCmd error = %v, want usage error", err)
+	}
+	if sendCalled {
+		t.Fatal("batch command was sent from detached stdin")
 	}
 }
 
@@ -54,7 +84,7 @@ func TestBatchCmd_FailFast(t *testing.T) {
 	}
 
 	oldStdin := batchStdin
-	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
+	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`), mode: os.ModeNamedPipe}
 	defer func() { batchStdin = oldStdin }()
 
 	err := batchCmd(context.Background(), []string{}, testBatchRuntime(mockSend, mockInst, 60000))
@@ -136,7 +166,7 @@ func TestBatchCmd_UsesInitialInstance(t *testing.T) {
 	}
 
 	oldStdin := batchStdin
-	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
+	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`), mode: os.ModeNamedPipe}
 	defer func() { batchStdin = oldStdin }()
 
 	err := batchCmd(context.Background(), []string{}, testBatchRuntime(mockSend, initial, 60000))
@@ -156,7 +186,7 @@ func TestBatchCmd_WhenServerRejectsEnvelope_ReturnsSentinel(t *testing.T) {
 	}
 
 	oldStdin := batchStdin
-	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
+	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`), mode: os.ModeNamedPipe}
 	defer func() { batchStdin = oldStdin }()
 
 	_, _, err := captureBatchOutput(t, func() error {
@@ -184,7 +214,7 @@ func TestBatchCmd_WritesStructuredRejectionToStderrAndReturnsSentinel(t *testing
 	}
 
 	oldStdin := batchStdin
-	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`)}
+	batchStdin = &mockFile{data: []byte(`{"commands":[{"command":"list"}]}`), mode: os.ModeNamedPipe}
 	t.Cleanup(func() { batchStdin = oldStdin })
 
 	// When

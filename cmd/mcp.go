@@ -28,7 +28,7 @@ func parseMCPOptions(args []string) (mcpOptions, error) {
 	flags.StringVar(&options.Profile, "profile", envString("HERA_MCP_PROFILE", "core"), "fixed tool profile")
 	flags.StringVar(&options.Exposure, "exposure", envString("HERA_MCP_EXPOSURE", mcpserver.ExposureProfile), "MCP tool exposure")
 	flags.BoolVar(&options.AllowArbitraryCode, "allow-arbitrary-code", false, "allow advanced arbitrary-code tools at startup")
-	flags.BoolVar(&options.MRTR, "mrtr", envBool("HERA_MCP_MRTR", false), "enable negotiated multi-round-trip approval")
+	flags.BoolVar(&options.MRTR, "mrtr", envBool("HERA_MCP_MRTR"), "enable negotiated multi-round-trip approval")
 	if err := flags.Parse(args); err != nil {
 		return mcpOptions{}, fmt.Errorf("parse MCP flags: %w", err)
 	}
@@ -48,7 +48,7 @@ func mcpCmd(ctx context.Context, config GlobalConfig, args []string) error {
 		return err
 	}
 	return mcpserver.RunStdio(ctx, mcpserver.Config{
-		Enabled:            envBool("HERA_MCP_ENABLED", false),
+		Enabled:            envBool("HERA_MCP_ENABLED"),
 		Transport:          options.Transport,
 		Profile:            options.Profile,
 		Exposure:           options.Exposure,

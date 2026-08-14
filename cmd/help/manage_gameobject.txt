@@ -9,6 +9,9 @@ Actions:
   set_parent      Reparent or unparent (--parent none).
   set_active      Toggle GameObject.SetActive.
   set_name        Rename.
+  set_transform   Set any combination of position, euler rotation, and scale.
+  set_tag         Assign an existing project tag.
+  set_layer       Assign an existing layer by name or index (0-31).
   get_transform   Read position / rotation (euler) / scale.
 
 Target (required for every action except create):
@@ -25,6 +28,11 @@ Flags:
                                      Also accepts JSON [x,y,z] or {x,y,z}
                                      via --params.
   --space <world|local>              Coordinate space for move (default: world).
+                                     For set_transform, defaults to local.
+  --rotation x,y,z                   Euler rotation for set_transform.
+  --scale x,y,z                      Local scale for set_transform.
+  --tag <name>                       Existing tag for set_tag.
+  --layer <name|0..31>               Existing layer for set_layer.
   --active <true|false>              Active state for set_active.
   --world_position_stays <bool>      Match Transform.SetParent flag (default: true).
   --count <N>                        Number of copies for duplicate (default 1,
@@ -32,8 +40,9 @@ Flags:
                                      " (1)", " (2)", …
 
 Return shape (depth 1, every action except duplicate):
-  { instance_id, name, path, scene, scene_path, active,
-    transform: { position:{x,y,z}, rotation:{x,y,z}, scale:{x,y,z} } }
+  { instance_id, name, path, scene, scene_path, active, tag, layer,
+    layer_name, transform: { position, rotation, scale, local_position,
+    local_rotation, local_scale } }
 
 Return shape (duplicate):
   { source: { instance_id, name }, count,
@@ -47,6 +56,9 @@ Examples:
   hera-agent-unity manage_gameobject set_parent --path /Player --parent none
   hera-agent-unity manage_gameobject set_active --path /Player --active false
   hera-agent-unity manage_gameobject move --instance_id 12345 --position 5,0,0
+  hera-agent-unity manage_gameobject set_transform --path /Player --params '{"rotation":[0,90,0],"scale":[2,2,2]}'
+  hera-agent-unity manage_gameobject set_tag --path /Player --tag Player
+  hera-agent-unity manage_gameobject set_layer --path /Player --layer Characters
   hera-agent-unity manage_gameobject get_transform --path /Root/Player
 
 Notes:

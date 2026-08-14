@@ -90,6 +90,8 @@ func TestExtractMdSection(t *testing.T) {
 }
 
 func TestExtractAgentRules(t *testing.T) {
+	withTempAssetConfigHome(t)
+
 	t.Run("markdown format", func(t *testing.T) {
 		out := extractAgentRules("markdown")
 		if strings.HasPrefix(out, "---") {
@@ -175,6 +177,43 @@ func TestExtractCompactAgentRules(t *testing.T) {
 	if got := strings.Count(out, "\n"); got != compactAgentRulesBaselineNewlines {
 		t.Fatalf("compact rules newlines = %d, reviewed baseline = %d",
 			got, compactAgentRulesBaselineNewlines)
+	}
+}
+
+func TestBuildAssetPreferenceAgentRules_UsesEnabledMetadata(t *testing.T) {
+	assets := assetconfig.DefaultAssets()
+	assets[0].Enabled = true
+
+	full := buildAssetPreferenceAgentRules(assets, false)
+	for _, want := range []string{"## Enabled Asset Preferences", "Odin Inspector", assets[0].Description, assets[0].DocURL} {
+		if !strings.Contains(full, want) {
+			t.Fatalf("full asset preference rules missing %q in %q", want, full)
+		}
+	}
+	compact := buildAssetPreferenceAgentRules(assets, true)
+	if !strings.Contains(compact, "odin_inspector") || !strings.Contains(compact, assets[0].DocURL) {
+		t.Fatalf("compact asset preference rules = %q", compact)
+	}
+
+	assets[0].Enabled = false
+	if got := buildAssetPreferenceAgentRules(assets, false); got != "" {
+		t.Fatalf("disabled asset rules = %q", got)
+	}
+}
+
+func TestJSONOutputForAIConfig_IncludesActionableAssetMetadata(t *testing.T) {
+	assets := assetconfig.DefaultAssets()
+	assets[3].Enabled = true
+	cfg := &assetconfig.AssetConfig{Assets: assets}
+
+	data, err := jsonOutputForAIConfig(cfg)
+	if err != nil {
+		t.Fatalf("jsonOutputForAIConfig() error = %v", err)
+	}
+	for _, want := range []string{assets[3].Description, assets[3].DocURL, `"dotween_preferred": true`} {
+		if !strings.Contains(string(data), want) {
+			t.Fatalf("AI JSON missing %q in %s", want, data)
+		}
 	}
 }
 

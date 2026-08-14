@@ -12,14 +12,13 @@ import (
 
 // AssetEntry represents a single asset plugin entry.
 type AssetEntry struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	Enabled       bool   `json:"enabled"`
-	Installed     bool   `json:"installed"`
-	Category      string `json:"category"`
-	Description   string `json:"description"`
-	DocURL        string `json:"doc_url,omitempty"`
-	ReferencePath string `json:"reference_path,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Enabled     bool   `json:"enabled"`
+	Installed   bool   `json:"installed"`
+	Category    string `json:"category"`
+	Description string `json:"description"`
+	DocURL      string `json:"doc_url,omitempty"`
 
 	extra map[string]json.RawMessage
 }
@@ -59,9 +58,7 @@ type AssetConfig struct {
 	// slop: layout, spacing, typography, color) via agent_hint.
 	UISlopMode bool `json:"ui_slop_mode"`
 
-	// DefaultCscPath/DefaultDotnetPath are written by the Hera Settings window.
-	// The CLI doesn't edit them, but it must round-trip them so a CLI-side Save
-	// (e.g. toggling an asset or Game Feel UI Mode) doesn't drop a user's compiler paths.
+	// DefaultCscPath/DefaultDotnetPath are shared by the Hera Settings window and CLI.
 	DefaultCscPath    string `json:"defaultCscPath,omitempty"`
 	DefaultDotnetPath string `json:"defaultDotnetPath,omitempty"`
 
@@ -101,54 +98,49 @@ func NormalizeLoopEngineeringMode(mode string) LoopEngineeringMode {
 func DefaultAssets() []AssetEntry {
 	return []AssetEntry{
 		{
-			ID:            "odin_inspector",
-			Name:          "Odin Inspector",
-			Enabled:       false,
-			Installed:     false,
-			Category:      "inspector",
-			Description:   "Odin Inspector — powerful inspector extension. Prefer the Odin API when building custom editors.",
-			DocURL:        "https://odininspector.com/documentation",
-			ReferencePath: "references/odin-inspector.md",
+			ID:          "odin_inspector",
+			Name:        "Odin Inspector",
+			Enabled:     false,
+			Installed:   false,
+			Category:    "inspector",
+			Description: "Odin Inspector — powerful inspector extension. Prefer the Odin API when building custom editors.",
+			DocURL:      "https://odininspector.com/documentation",
 		},
 		{
-			ID:            "odin_validator",
-			Name:          "Odin Validator",
-			Enabled:       false,
-			Installed:     false,
-			Category:      "validation",
-			Description:   "Odin Validator — data validation system. Use Odin Validator for data integrity checks.",
-			DocURL:        "https://odininspector.com/tutorials/odin-validator/getting-started-with-odin-validator",
-			ReferencePath: "references/odin-validator.md",
+			ID:          "odin_validator",
+			Name:        "Odin Validator",
+			Enabled:     false,
+			Installed:   false,
+			Category:    "validation",
+			Description: "Odin Validator — data validation system. Use Odin Validator for data integrity checks.",
+			DocURL:      "https://odininspector.com/tutorials/odin-validator/getting-started-with-odin-validator",
 		},
 		{
-			ID:            "odin_serializer",
-			Name:          "Odin Serializer",
-			Enabled:       false,
-			Installed:     false,
-			Category:      "serialization",
-			Description:   "Odin Serializer — high-performance serialization. Prefer Odin Serializer over Unity's default serializer.",
-			DocURL:        "https://odininspector.com/tutorials/serialize-anything/odin-serializer-quick-start",
-			ReferencePath: "references/odin-serializer.md",
+			ID:          "odin_serializer",
+			Name:        "Odin Serializer",
+			Enabled:     false,
+			Installed:   false,
+			Category:    "serialization",
+			Description: "Odin Serializer — high-performance serialization. Prefer Odin Serializer over Unity's default serializer.",
+			DocURL:      "https://odininspector.com/tutorials/serialize-anything/odin-serializer-quick-start",
 		},
 		{
-			ID:            "dotween",
-			Name:          "DOTween",
-			Enabled:       false,
-			Installed:     false,
-			Category:      "animation",
-			Description:   "DOTween — tweening/animation engine. Use the DOTween API as the default for Unity animation work.",
-			DocURL:        "https://dotween.demigiant.com/documentation.php",
-			ReferencePath: "references/dotween.md",
+			ID:          "dotween",
+			Name:        "DOTween",
+			Enabled:     false,
+			Installed:   false,
+			Category:    "animation",
+			Description: "DOTween — tweening/animation engine. Use the DOTween API as the default for Unity animation work.",
+			DocURL:      "https://dotween.demigiant.com/documentation.php",
 		},
 		{
-			ID:            "dotween_pro",
-			Name:          "DOTween Pro",
-			Enabled:       false,
-			Installed:     false,
-			Category:      "animation",
-			Description:   "DOTween Pro — DOTween extensions (Visual Animation, Physics2D, Audio).",
-			DocURL:        "https://dotween.demigiant.com/pro.php",
-			ReferencePath: "references/dotween-pro.md",
+			ID:          "dotween_pro",
+			Name:        "DOTween Pro",
+			Enabled:     false,
+			Installed:   false,
+			Category:    "animation",
+			Description: "DOTween Pro — DOTween extensions (Visual Animation, Physics2D, Audio).",
+			DocURL:      "https://dotween.demigiant.com/pro.php",
 		},
 	}
 }
@@ -192,7 +184,7 @@ func Load() (*AssetConfig, error) {
 	}
 
 	// Merge with defaults. User state (Enabled, Installed) is preserved per ID.
-	// Immutable metadata (Name, Description, Category, DocURL, ReferencePath)
+	// Immutable metadata (Name, Description, Category, DocURL)
 	// is refreshed from defaults so existing configs pick up upstream changes
 	// (e.g. translated copy) without needing the user to delete the file.
 	defaults := DefaultAssets()
@@ -259,6 +251,39 @@ func LoadLoopEngineeringModeNoCreate() LoopEngineeringMode {
 		return LoopEngineeringLight
 	}
 	return NormalizeLoopEngineeringMode(string(cfg.LoopEngineeringMode))
+}
+
+// LoadEnabledBuiltInAssetsNoCreate reads trusted metadata for enabled built-in assets without writing a config file.
+func LoadEnabledBuiltInAssetsNoCreate() []AssetEntry {
+	data, err := os.ReadFile(ConfigFilePath())
+	if err != nil {
+		return nil
+	}
+	var stored struct {
+		Assets []struct {
+			ID      string `json:"id"`
+			Enabled bool   `json:"enabled"`
+		} `json:"assets"`
+	}
+	if err := json.Unmarshal(data, &stored); err != nil {
+		return nil
+	}
+
+	enabledIDs := make(map[string]bool, len(stored.Assets))
+	for _, asset := range stored.Assets {
+		if asset.Enabled {
+			enabledIDs[asset.ID] = true
+		}
+	}
+
+	var enabled []AssetEntry
+	for _, asset := range DefaultAssets() {
+		if enabledIDs[asset.ID] {
+			asset.Enabled = true
+			enabled = append(enabled, asset)
+		}
+	}
+	return enabled
 }
 
 // ToggleAsset flips the enabled state of an asset by ID.
@@ -381,6 +406,32 @@ func SetLoopEngineeringMode(mode LoopEngineeringMode) (*AssetConfig, error) {
 		return nil, err
 	}
 	cfg.LoopEngineeringMode = NormalizeLoopEngineeringMode(string(mode))
+	if err := Save(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+// SetDefaultCscPath persists the compiler path used by exec when no override is supplied.
+func SetDefaultCscPath(path string) (*AssetConfig, error) {
+	cfg, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	cfg.DefaultCscPath = path
+	if err := Save(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+// SetDefaultDotnetPath persists the dotnet host used by exec when no override is supplied.
+func SetDefaultDotnetPath(path string) (*AssetConfig, error) {
+	cfg, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	cfg.DefaultDotnetPath = path
 	if err := Save(cfg); err != nil {
 		return nil, err
 	}

@@ -4,14 +4,13 @@ import "encoding/json"
 
 func (entry *AssetEntry) UnmarshalJSON(data []byte) error {
 	var fields struct {
-		ID            string `json:"id"`
-		Name          string `json:"name"`
-		Enabled       bool   `json:"enabled"`
-		Installed     bool   `json:"installed"`
-		Category      string `json:"category"`
-		Description   string `json:"description"`
-		DocURL        string `json:"doc_url"`
-		ReferencePath string `json:"reference_path"`
+		ID          string `json:"id"`
+		Name        string `json:"name"`
+		Enabled     bool   `json:"enabled"`
+		Installed   bool   `json:"installed"`
+		Category    string `json:"category"`
+		Description string `json:"description"`
+		DocURL      string `json:"doc_url"`
 	}
 	if err := json.Unmarshal(data, &fields); err != nil {
 		return err
@@ -24,46 +23,26 @@ func (entry *AssetEntry) UnmarshalJSON(data []byte) error {
 	deleteKnownAssetEntryFields(extra)
 
 	*entry = AssetEntry{
-		ID:            fields.ID,
-		Name:          fields.Name,
-		Enabled:       fields.Enabled,
-		Installed:     fields.Installed,
-		Category:      fields.Category,
-		Description:   fields.Description,
-		DocURL:        fields.DocURL,
-		ReferencePath: fields.ReferencePath,
-		extra:         extra,
+		ID:          fields.ID,
+		Name:        fields.Name,
+		Enabled:     fields.Enabled,
+		Installed:   fields.Installed,
+		Category:    fields.Category,
+		Description: fields.Description,
+		DocURL:      fields.DocURL,
+		extra:       extra,
 	}
 	return nil
 }
 
 func (entry AssetEntry) MarshalJSON() ([]byte, error) {
-	root := cloneRawMessages(entry.extra)
-	if err := addRawMessage(root, "id", entry.ID); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "name", entry.Name); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "enabled", entry.Enabled); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "installed", entry.Installed); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "category", entry.Category); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "description", entry.Description); err != nil {
-		return nil, err
-	}
-	if err := addOptionalRawMessage(root, "doc_url", entry.DocURL); err != nil {
-		return nil, err
-	}
-	if err := addOptionalRawMessage(root, "reference_path", entry.ReferencePath); err != nil {
-		return nil, err
-	}
-	return json.Marshal(root)
+	return marshalRawMessages(entry.extra, map[string]any{
+		"id": entry.ID, "name": entry.Name, "enabled": entry.Enabled,
+		"installed": entry.Installed, "category": entry.Category,
+		"description": entry.Description,
+	}, map[string]string{
+		"doc_url": entry.DocURL,
+	})
 }
 
 func (cfg *AssetConfig) UnmarshalJSON(data []byte) error {
@@ -102,30 +81,28 @@ func (cfg *AssetConfig) UnmarshalJSON(data []byte) error {
 }
 
 func (cfg AssetConfig) MarshalJSON() ([]byte, error) {
-	root := cloneRawMessages(cfg.extra)
-	if err := addRawMessage(root, "version", cfg.Version); err != nil {
-		return nil, err
+	return marshalRawMessages(cfg.extra, map[string]any{
+		"version": cfg.Version, "assets": cfg.Assets,
+		"loopEngineeringMode": cfg.LoopEngineeringMode,
+		"game_feel_ui_mode":   cfg.GameFeelUIMode,
+		"game_feel_mode":      cfg.GameFeelMode, "ui_slop_mode": cfg.UISlopMode,
+	}, map[string]string{
+		"defaultCscPath":    cfg.DefaultCscPath,
+		"defaultDotnetPath": cfg.DefaultDotnetPath,
+	})
+}
+
+func marshalRawMessages(extra map[string]json.RawMessage, required map[string]any, optional map[string]string) ([]byte, error) {
+	root := cloneRawMessages(extra)
+	for key, value := range required {
+		if err := addRawMessage(root, key, value); err != nil {
+			return nil, err
+		}
 	}
-	if err := addRawMessage(root, "assets", cfg.Assets); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "loopEngineeringMode", cfg.LoopEngineeringMode); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "game_feel_ui_mode", cfg.GameFeelUIMode); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "game_feel_mode", cfg.GameFeelMode); err != nil {
-		return nil, err
-	}
-	if err := addRawMessage(root, "ui_slop_mode", cfg.UISlopMode); err != nil {
-		return nil, err
-	}
-	if err := addOptionalRawMessage(root, "defaultCscPath", cfg.DefaultCscPath); err != nil {
-		return nil, err
-	}
-	if err := addOptionalRawMessage(root, "defaultDotnetPath", cfg.DefaultDotnetPath); err != nil {
-		return nil, err
+	for key, value := range optional {
+		if err := addOptionalRawMessage(root, key, value); err != nil {
+			return nil, err
+		}
 	}
 	return json.Marshal(root)
 }

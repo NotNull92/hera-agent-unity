@@ -32,6 +32,11 @@ Options:
   --physics_layer_mask <N> Signed 32-bit physics mask intersected with camera culling
   --physics_max_distance <N> Positive ray distance, at most 100000 (default: camera far clip)
   --physics_query_triggers <mode> use_global, ignore, or collide (default: use_global)
+  --editor_ui_only Return bounded UI Toolkit metadata for one loaded
+                   EditorWindow without rendering or writing a PNG
+  --editor_window <name> Exact window type, full type name, or title
+  --editor_selector <selector> Optional exact #name or VisualElement type
+  --max_editor_elements <N> Maximum returned elements, 1..500 (default: 100)
 
 UI annotations require an active EventSystem and Game View coordinates. Input
 coordinates use bottom-left origin with Y up; image coordinates use top-left
@@ -47,6 +52,7 @@ Examples:
   hera-agent-unity screenshot --annotations_only
   hera-agent-unity screenshot --physics_only --physics_grid_size 9
   hera-agent-unity screenshot --view game --annotate_physics --physics_layer_mask -1
+  hera-agent-unity screenshot --editor_ui_only --editor_window InspectorWindow --max_editor_elements 50
   hera-agent-unity screenshot --view scene --width 3840 --height 2160
   hera-agent-unity screenshot --output_path captures/my_scene.png
   hera-agent-unity screenshot --isolated --target /Player --output_path captures/player.png

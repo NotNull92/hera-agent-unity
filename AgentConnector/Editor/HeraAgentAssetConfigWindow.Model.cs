@@ -24,7 +24,6 @@ namespace HeraAgent.Editor
             public string category;
             public string description;
             public string doc_url;
-            public string reference_path;
         }
 
         [System.Serializable]
@@ -255,8 +254,7 @@ namespace HeraAgent.Editor
                     installed = false,
                     category = "inspector",
                     description = "Powerful inspector extension. Prioritize Odin API when generating custom editor code.",
-                    doc_url = "https://odininspector.com/documentation",
-                    reference_path = "references/odin-inspector.md"
+                    doc_url = "https://odininspector.com/documentation"
                 },
                 new AssetEntry
                 {
@@ -266,8 +264,7 @@ namespace HeraAgent.Editor
                     installed = false,
                     category = "validation",
                     description = "Data validation system. Use Odin Validator for runtime and editor data integrity checks.",
-                    doc_url = "https://odininspector.com/tutorials/odin-validator/getting-started-with-odin-validator",
-                    reference_path = "references/odin-validator.md"
+                    doc_url = "https://odininspector.com/tutorials/odin-validator/getting-started-with-odin-validator"
                 },
                 new AssetEntry
                 {
@@ -277,8 +274,7 @@ namespace HeraAgent.Editor
                     installed = false,
                     category = "serialization",
                     description = "High-performance serialization. Replace Unity's default serializer with Odin Serializer for complex data structures.",
-                    doc_url = "https://odininspector.com/tutorials/serialize-anything/odin-serializer-quick-start",
-                    reference_path = "references/odin-serializer.md"
+                    doc_url = "https://odininspector.com/tutorials/serialize-anything/odin-serializer-quick-start"
                 },
                 new AssetEntry
                 {
@@ -288,8 +284,7 @@ namespace HeraAgent.Editor
                     installed = false,
                     category = "animation",
                     description = "Tweening and animation engine. Default to DOTween API for all tweening and timing implementations.",
-                    doc_url = "https://dotween.demigiant.com/documentation.php",
-                    reference_path = "references/dotween.md"
+                    doc_url = "https://dotween.demigiant.com/documentation.php"
                 },
                 new AssetEntry
                 {
@@ -299,8 +294,7 @@ namespace HeraAgent.Editor
                     installed = false,
                     category = "animation",
                     description = "Advanced tweening features including Visual Animation, Physics2D integration, and Audio tweening.",
-                    doc_url = "https://dotween.demigiant.com/pro.php",
-                    reference_path = "references/dotween-pro.md"
+                    doc_url = "https://dotween.demigiant.com/pro.php"
                 }
             };
         }
@@ -313,141 +307,18 @@ namespace HeraAgent.Editor
 
         private void RunDetection()
         {
-            var projectPath = Directory.GetParent(Application.dataPath)?.FullName ?? Application.dataPath;
-            int detectedCount = 0;
-
-            var rules = new (string id, string[] folders, string[] dlls, string[] assemblies)[]
+            foreach (var detection in AssetDetector.Scan(Application.dataPath))
             {
-                ("odin_inspector",
-                 new[] {
-                     "Assets/Plugins/Sirenix",
-                     "Assets/ThirdParty/Sirenix",
-                     "Assets/Sirenix",
-                     "Packages/com.sirenix.odin-inspector"
-                 },
-                 new[] {
-                     "Assets/Plugins/Sirenix/Assemblies/Sirenix.OdinInspector.Attributes.dll",
-                     "Assets/Plugins/Sirenix/Assemblies/NoEditor/Sirenix.OdinInspector.Attributes.dll",
-                     "Assets/Plugins/Sirenix/Assemblies/NoEmitAndNoEditor/Sirenix.OdinInspector.Attributes.dll"
-                 },
-                 new[] { "Sirenix.OdinInspector.Attributes", "Sirenix.OdinInspector.Editor" }),
-
-                ("odin_validator",
-                 new[] {
-                     "Assets/Plugins/Sirenix/Odin Validator",
-                     "Assets/Plugins/Sirenix/Odin/Modules/Sirenix.OdinValidator",
-                     "Assets/ThirdParty/Sirenix/Odin/Modules/Sirenix.OdinValidator",
-                     "Packages/com.sirenix.odin-validator"
-                 },
-                 new[] {
-                     "Assets/Plugins/Sirenix/Assemblies/Sirenix.OdinValidator.dll",
-                     "Assets/Plugins/Sirenix/Assemblies/NoEditor/Sirenix.OdinValidator.dll"
-                 },
-                 new[] { "Sirenix.OdinValidator" }),
-
-                ("odin_serializer",
-                 new[] {
-                     "Assets/Plugins/Sirenix/Odin Serializer",
-                     "Assets/Plugins/Sirenix/Odin/Modules/Sirenix.OdinSerializer",
-                     "Assets/ThirdParty/Sirenix/Odin/Modules/Sirenix.OdinSerializer",
-                     "Packages/com.sirenix.odin-serializer"
-                 },
-                 new[] {
-                     "Assets/Plugins/Sirenix/Assemblies/Sirenix.Serialization.dll",
-                     "Assets/Plugins/Sirenix/Assemblies/NoEditor/Sirenix.Serialization.dll",
-                     "Assets/Plugins/Sirenix/Assemblies/NoEmitAndNoEditor/Sirenix.Serialization.dll"
-                 },
-                 new[] { "Sirenix.Serialization" }),
-
-                ("dotween",
-                 new[] {
-                     "Assets/Demigiant/DOTween",
-                     "Assets/Plugins/Demigiant/DOTween",
-                     "Assets/Plugins/DOTween",
-                     "Assets/ThirdParty/DOTween",
-                     "Packages/com.demigiant.dotween"
-                 },
-                 new[] {
-                     "Assets/Plugins/Demigiant/DOTween/DOTween.dll",
-                     "Assets/Demigiant/DOTween/DOTween.dll"
-                 },
-                 new[] { "DOTween" }),
-
-                ("dotween_pro",
-                 new[] {
-                     "Assets/Demigiant/DOTweenPro",
-                     "Assets/Plugins/Demigiant/DOTweenPro",
-                     "Assets/Plugins/DOTweenPro",
-                     "Assets/ThirdParty/DOTweenPro",
-                     "Packages/com.demigiant.dotween-pro"
-                 },
-                 new[] {
-                     "Assets/Plugins/Demigiant/DOTweenPro/DOTweenPro.dll",
-                     "Assets/Demigiant/DOTweenPro/DOTweenPro.dll"
-                 },
-                 new[] { "DOTweenPro" }),
-            };
-
-            foreach (var (id, folders, dlls, assemblies) in rules)
-            {
+                var id = detection.Value<string>("id");
                 var asset = _config.assets.FirstOrDefault(a => a.id == id);
                 if (asset == null) continue;
-
-                bool found = false;
-
-                if (!found)
-                {
-                    foreach (var folder in folders)
-                    {
-                        if (Directory.Exists(Path.Combine(projectPath, folder)))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!found)
-                {
-                    foreach (var dll in dlls)
-                    {
-                        if (File.Exists(Path.Combine(projectPath, dll)))
-                        {
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!found)
-                {
-                    found = CheckAssemblies(assemblies);
-                }
-
-                if (found && !asset.installed)
-                    detectedCount++;
-
-                asset.installed = found;
+                asset.installed = detection.Value<bool>("installed");
             }
 
             _isDirty = true;
             SaveConfig();
             HideLoading();
             RefreshUI();
-        }
-
-        private static bool CheckAssemblies(string[] prefixes)
-        {
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (string.IsNullOrEmpty(asm.FullName)) continue;
-                foreach (var prefix in prefixes)
-                {
-                    if (asm.FullName.StartsWith(prefix))
-                        return true;
-                }
-            }
-            return false;
         }
 
         private string FindValidCscPath()

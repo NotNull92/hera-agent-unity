@@ -52,11 +52,14 @@ Log:
 
 Scene:
   scene info                    Active scene name/path/dirty + loaded scene list
+  scene create <path>           Create and save an empty/default scene
   scene load <path|name>        Open scene (default mode: single)
   scene load <path> --mode additive
                                 Load additively without unloading current
   scene save [<path|name>]      Save active scene (or named scene if specified)
+  scene save_all                Save every dirty loaded scene
   scene list                    Build Settings registered scenes
+  scene set_active <path|name>  Make one loaded scene active
   scene close <path|name>       Unload a non-active loaded scene (additive)
 
   Examples:
@@ -79,11 +82,12 @@ Bakes:
   bake clear --area <area>                          Delete baked data (approval-gated)
 
 Project settings:
-  manage_settings get_physics|get_time|get_quality|get_player|get_audio
+  manage_settings get_physics|get_time|get_quality|get_player|get_audio|get_graphics|get_input|get_lighting|get_navmesh
                                                     Read an area's full snapshot
   manage_settings set_<area> --params '{...}'       Change only the passed fields
                                                     (approval-gated; "dry_run":true previews)
   manage_editor get_tags_layers                     List tags and named layers
+  manage_editor focus --type <EditorWindow>          Focus one exact loaded window
 
 Packages (Package Manager):
   manage_packages list                              List every resolved package (sync)
@@ -159,6 +163,9 @@ GameObjects:
   manage_gameobject set_parent --instance_id <N>|--path </R/C> --parent <id|path|none>
   manage_gameobject set_active --instance_id <N>|--path </R/C> --active true|false
   manage_gameobject set_name --instance_id <N>|--path </R/C> --name <new>
+  manage_gameobject set_transform --path </R/C> --params '{"rotation":[0,90,0]}'
+  manage_gameobject set_tag --path </R/C> --tag <existing>
+  manage_gameobject set_layer --path </R/C> --layer <name|index>
   manage_gameobject get_transform --instance_id <N>|--path </R/C>
 
   Primitives: cube, sphere, capsule, cylinder, plane, quad (omit for empty GameObject)
@@ -183,6 +190,8 @@ Screenshot:
                                       Capture only one GameObject
   screenshot --isolated --target /Player --angles front,right,top
                                       Capture an angle contact sheet
+  screenshot --editor_ui_only --editor_window InspectorWindow
+                                      Read bounded UI Toolkit metadata without pixels
   screenshot --output_path <path>     Custom output path
 
 Reserialize:
@@ -252,8 +261,10 @@ Asset Config:
   asset-config list             List all assets with status
   asset-config enable <id>      Enable an asset
   asset-config disable <id>     Disable an asset
+  asset-config set-csc <path>   Set the default compiler path for exec
+  asset-config set-dotnet <path> Set the default dotnet host path for exec
   asset-config detect           Auto-detect installed assets (requires Unity)
-  asset-config --json           Output enabled assets as JSON (for AI agents)
+  asset-config --json           Output enabled assets, guidance, and docs as JSON
 
 Global Options:
   --port <N>          Select Unity instance by active heartbeat port

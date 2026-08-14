@@ -10,7 +10,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "manage_gameobject",
-        Description = "GameObject CRUD: create, destroy, duplicate, move, set_parent, set_active, set_name, get_transform. Target by instance_id or hierarchy path.",
+        Description = "GameObject CRUD and properties: create, destroy, duplicate, move, set_transform, set_parent, set_active, set_name, set_tag, set_layer, get_transform. Target by instance_id or hierarchy path.",
         Examples = new[]
         {
             "manage_gameobject create --name Player",
@@ -36,8 +36,12 @@ namespace HeraAgent.Tools
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_parent")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_active")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_name")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_transform")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_tag")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_layer")]
+    [HeraArgumentGroup(ToolArgumentGroupMode.AtLeastOne, "position", "rotation", "scale", Action = "set_transform")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "get_transform")]
-    public static class ManageGameObject
+    public static partial class ManageGameObject
     {
         private const string Vector3Schema =
             "{\"oneOf\":["
@@ -149,6 +153,9 @@ namespace HeraAgent.Tools
             public Vector3Result Position { get; set; }
             public Vector3Result Rotation { get; set; }
             public Vector3Result Scale { get; set; }
+            public Vector3Result LocalPosition { get; set; }
+            public Vector3Result LocalRotation { get; set; }
+            public Vector3Result LocalScale { get; set; }
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
@@ -160,6 +167,9 @@ namespace HeraAgent.Tools
             public string Scene { get; set; }
             public string ScenePath { get; set; }
             public bool Active { get; set; }
+            public string Tag { get; set; }
+            public int Layer { get; set; }
+            public string LayerName { get; set; }
             public TransformResult Transform { get; set; }
         }
 
@@ -188,7 +198,7 @@ namespace HeraAgent.Tools
 
         public class Parameters
         {
-            [ToolParameter("Action: create, destroy, duplicate, move, set_parent, set_active, set_name, get_transform", Required = true)]
+            [ToolParameter("Action: create, destroy, duplicate, move, set_transform, set_parent, set_active, set_name, set_tag, set_layer, get_transform", Required = true)]
             public string Action { get; set; }
 
             [ToolParameter("Target by InstanceID (all actions except create)")]
@@ -656,11 +666,17 @@ namespace HeraAgent.Tools
                 scene = go.scene.name,
                 scene_path = go.scene.path,
                 active = go.activeInHierarchy,
+                tag = go.tag,
+                layer = go.layer,
+                layer_name = LayerMask.LayerToName(go.layer),
                 transform = new
                 {
                     position = new { x = t.position.x, y = t.position.y, z = t.position.z },
                     rotation = new { x = t.eulerAngles.x, y = t.eulerAngles.y, z = t.eulerAngles.z },
                     scale = new { x = t.localScale.x, y = t.localScale.y, z = t.localScale.z },
+                    local_position = new { x = t.localPosition.x, y = t.localPosition.y, z = t.localPosition.z },
+                    local_rotation = new { x = t.localEulerAngles.x, y = t.localEulerAngles.y, z = t.localEulerAngles.z },
+                    local_scale = new { x = t.localScale.x, y = t.localScale.y, z = t.localScale.z },
                 },
             };
         }

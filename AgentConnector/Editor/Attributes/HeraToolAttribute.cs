@@ -13,7 +13,6 @@ namespace HeraAgent
         public string Description { get; set; } = "";
         public string Name { get; set; }
         public string Group { get; set; } = "";
-        public bool EnableDebugLogging { get; set; } = false;
         public string[] Groups { get; set; } = Array.Empty<string>();
         public bool Enabled { get; set; } = true;
         public bool ReadOnly { get; set; } = false;

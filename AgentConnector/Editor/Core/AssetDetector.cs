@@ -1,6 +1,5 @@
 using System;
 using System.IO;
-using System.Linq;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
@@ -13,37 +12,72 @@ namespace HeraAgent
     /// </summary>
     public static class AssetDetector
     {
-        // Detection patterns: asset ID → list of paths/assembly names to check
-        private static readonly (string id, string[] patterns)[] DetectionRules = new[]
+        private static readonly (string id, string[] folders, string[] files, string[] assemblies)[] DetectionRules = new[]
         {
-            ("odin_inspector", new[]
-            {
-                "Assets/Plugins/Sirenix",
-                "Assets/ThirdParty/Sirenix",
-                "Assets/Sirenix",
-            }),
-            ("odin_validator", new[]
-            {
-                "Assets/Plugins/Sirenix/Odin/Modules/Sirenix.OdinValidator",
-                "Assets/ThirdParty/Sirenix/Odin/Modules/Sirenix.OdinValidator",
-            }),
-            ("odin_serializer", new[]
-            {
-                "Assets/Plugins/Sirenix/Odin/Modules/Sirenix.OdinSerializer",
-                "Assets/ThirdParty/Sirenix/Odin/Modules/Sirenix.OdinSerializer",
-            }),
-            ("dotween", new[]
-            {
-                "Assets/Demigiant/DOTween",
-                "Assets/Plugins/DOTween",
-                "Assets/ThirdParty/DOTween",
-            }),
-            ("dotween_pro", new[]
-            {
-                "Assets/Demigiant/DOTweenPro",
-                "Assets/Plugins/DOTweenPro",
-                "Assets/ThirdParty/DOTweenPro",
-            }),
+            ("odin_inspector",
+                new[] {
+                    "Assets/Plugins/Sirenix/Odin Inspector",
+                    "Assets/ThirdParty/Sirenix/Odin Inspector",
+                    "Assets/Sirenix/Odin Inspector",
+                    "Packages/com.sirenix.odin-inspector"
+                },
+                new[] {
+                    "Assets/Plugins/Sirenix/Assemblies/Sirenix.OdinInspector.Attributes.dll",
+                    "Assets/Plugins/Sirenix/Assemblies/NoEditor/Sirenix.OdinInspector.Attributes.dll",
+                    "Assets/Plugins/Sirenix/Assemblies/NoEmitAndNoEditor/Sirenix.OdinInspector.Attributes.dll"
+                },
+                new[] { "Sirenix.OdinInspector.Attributes", "Sirenix.OdinInspector.Editor" }),
+            ("odin_validator",
+                new[] {
+                    "Assets/Plugins/Sirenix/Odin Validator",
+                    "Assets/Plugins/Sirenix/Odin/Modules/Sirenix.OdinValidator",
+                    "Assets/ThirdParty/Sirenix/Odin/Modules/Sirenix.OdinValidator",
+                    "Packages/com.sirenix.odin-validator"
+                },
+                new[] {
+                    "Assets/Plugins/Sirenix/Assemblies/Sirenix.OdinValidator.dll",
+                    "Assets/Plugins/Sirenix/Assemblies/NoEditor/Sirenix.OdinValidator.dll"
+                },
+                new[] { "Sirenix.OdinValidator" }),
+            ("odin_serializer",
+                new[] {
+                    "Assets/Plugins/Sirenix/Odin Serializer",
+                    "Assets/Plugins/Sirenix/Odin/Modules/Sirenix.OdinSerializer",
+                    "Assets/ThirdParty/Sirenix/Odin/Modules/Sirenix.OdinSerializer",
+                    "Packages/com.sirenix.odin-serializer"
+                },
+                new[] {
+                    "Assets/Plugins/Sirenix/Assemblies/Sirenix.Serialization.dll",
+                    "Assets/Plugins/Sirenix/Assemblies/NoEditor/Sirenix.Serialization.dll",
+                    "Assets/Plugins/Sirenix/Assemblies/NoEmitAndNoEditor/Sirenix.Serialization.dll"
+                },
+                new[] { "Sirenix.Serialization" }),
+            ("dotween",
+                new[] {
+                    "Assets/Demigiant/DOTween",
+                    "Assets/Plugins/Demigiant/DOTween",
+                    "Assets/Plugins/DOTween",
+                    "Assets/ThirdParty/DOTween",
+                    "Packages/com.demigiant.dotween"
+                },
+                new[] {
+                    "Assets/Plugins/Demigiant/DOTween/DOTween.dll",
+                    "Assets/Demigiant/DOTween/DOTween.dll"
+                },
+                new[] { "DOTween" }),
+            ("dotween_pro",
+                new[] {
+                    "Assets/Demigiant/DOTweenPro",
+                    "Assets/Plugins/Demigiant/DOTweenPro",
+                    "Assets/Plugins/DOTweenPro",
+                    "Assets/ThirdParty/DOTweenPro",
+                    "Packages/com.demigiant.dotween-pro"
+                },
+                new[] {
+                    "Assets/Plugins/Demigiant/DOTweenPro/DOTweenPro.dll",
+                    "Assets/Demigiant/DOTweenPro/DOTweenPro.dll"
+                },
+                new[] { "DOTweenPro" }),
         };
 
         public class Result
@@ -60,52 +94,13 @@ namespace HeraAgent
         /// </summary>
         public static Result Detect(string projectPath)
         {
-            if (string.IsNullOrEmpty(projectPath))
-                projectPath = UnityEngine.Application.dataPath;
-
-            // Ensure projectPath points to the project root (parent of Assets)
-            if (projectPath.EndsWith("Assets"))
-                projectPath = Directory.GetParent(projectPath)?.FullName ?? projectPath;
+            projectPath = NormalizeProjectPath(projectPath);
 
             var configPath = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 ".hera-agent-unity", "asset-config.json");
 
-            var detectedAssets = new JArray();
-
-            foreach (var (id, patterns) in DetectionRules)
-            {
-                bool found = false;
-                string foundPath = null;
-
-                foreach (var pattern in patterns)
-                {
-                    var fullPath = Path.Combine(projectPath, pattern);
-                    if (Directory.Exists(fullPath))
-                    {
-                        found = true;
-                        foundPath = pattern;
-                        break;
-                    }
-                }
-
-                // Also check assembly references for Odin
-                if (!found && id.StartsWith("odin"))
-                    found = CheckAssemblyReference("Sirenix");
-                // Check for DOTween assembly
-                if (!found && id == "dotween")
-                    found = CheckAssemblyReference("DOTween");
-                if (!found && id == "dotween_pro")
-                    found = CheckAssemblyReference("DOTweenPro");
-
-                detectedAssets.Add(new JObject
-                {
-                    ["id"] = id,
-                    ["installed"] = found,
-                    ["path"] = foundPath ?? (string)null,
-                });
-
-            }
+            var detectedAssets = Scan(projectPath);
 
             AssetConfigFile.Update(configPath, config =>
             {
@@ -124,6 +119,62 @@ namespace HeraAgent
             };
         }
 
+        internal static JArray Scan(string projectPath)
+        {
+            return Scan(projectPath, Application.dataPath, CheckAssemblyReferences);
+        }
+
+        internal static JArray Scan(
+            string projectPath,
+            string activeProjectPath,
+            Func<string[], bool> checkAssemblies)
+        {
+            var projectRoot = NormalizeProjectPath(projectPath);
+            var activeProjectRoot = NormalizeProjectPath(activeProjectPath);
+            var canUseLoadedAssemblies = string.Equals(
+                projectRoot,
+                activeProjectRoot,
+                StringComparison.OrdinalIgnoreCase);
+            var detectedAssets = new JArray();
+
+            foreach (var (id, folders, files, assemblies) in DetectionRules)
+            {
+                var found = false;
+                string foundPath = null;
+
+                foreach (var folder in folders)
+                {
+                    if (!Directory.Exists(Path.Combine(projectRoot, folder))) continue;
+                    found = true;
+                    foundPath = folder;
+                    break;
+                }
+
+                if (!found)
+                {
+                    foreach (var file in files)
+                    {
+                        if (!File.Exists(Path.Combine(projectRoot, file))) continue;
+                        found = true;
+                        foundPath = file;
+                        break;
+                    }
+                }
+
+                if (!found && canUseLoadedAssemblies && checkAssemblies != null)
+                    found = checkAssemblies(assemblies);
+
+                detectedAssets.Add(new JObject
+                {
+                    ["id"] = id,
+                    ["installed"] = found,
+                    ["path"] = foundPath ?? (string)null,
+                });
+            }
+
+            return detectedAssets;
+        }
+
         private static void UpdateConfig(JObject config, string id, bool installed)
         {
             if (config == null) return;
@@ -139,12 +190,30 @@ namespace HeraAgent
             }
         }
 
-        private static bool CheckAssemblyReference(string assemblyName)
+        private static string NormalizeProjectPath(string projectPath)
+        {
+            var path = string.IsNullOrWhiteSpace(projectPath)
+                ? Application.dataPath
+                : projectPath;
+            path = Path.GetFullPath(path)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            if (string.Equals(Path.GetFileName(path), "Assets", StringComparison.OrdinalIgnoreCase))
+                path = Directory.GetParent(path)?.FullName ?? path;
+            return path;
+        }
+
+        private static bool CheckAssemblyReferences(string[] prefixes)
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (assembly.FullName != null && assembly.FullName.StartsWith(assemblyName))
-                    return true;
+                var name = assembly.GetName().Name;
+                if (string.IsNullOrEmpty(name)) continue;
+                foreach (var prefix in prefixes)
+                {
+                    if (string.Equals(name, prefix, StringComparison.OrdinalIgnoreCase)
+                        || name.StartsWith(prefix + ".", StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
             }
             return false;
         }

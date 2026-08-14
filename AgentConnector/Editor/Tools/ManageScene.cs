@@ -10,20 +10,12 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "scene",
-        Description = "Scene operations: info, load, save, list, close, hierarchy (bounded GameObject tree dump).",
+        Description = "Scene operations: info, create, load, save, save_all, list, set_active, close, hierarchy (bounded GameObject tree dump).",
         Profiles = new[] { "core", "scene" },
         RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
-    public static class ManageScene
+    public static partial class ManageScene
     {
-        public sealed class InfoParameters
-        {
-        }
-
-        public sealed class ListParameters
-        {
-        }
-
         public sealed class LoadParameters
         {
             [ToolParameter(
@@ -132,7 +124,7 @@ namespace HeraAgent.Tools
 
         public class Parameters
         {
-            [ToolParameter("Action: info, load, save, list, close, hierarchy", Required = true)]
+            [ToolParameter("Action: info, create, load, save, save_all, list, set_active, close, hierarchy", Required = true)]
             public string Action { get; set; }
 
             [ToolParameter("Scene path or name (used by load, save, close)")]
@@ -143,7 +135,7 @@ namespace HeraAgent.Tools
         }
 
         [HeraAction(
-            ParametersType = typeof(InfoParameters),
+            ParametersType = typeof(object),
             ResultType = typeof(InfoResult),
             RiskClass = HeraRiskClass.ReadOnly)]
         public static object Info(JObject raw)
@@ -366,7 +358,7 @@ namespace HeraAgent.Tools
         }
 
         [HeraAction(
-            ParametersType = typeof(ListParameters),
+            ParametersType = typeof(object),
             ResultType = typeof(SceneListEntry[]),
             RiskClass = HeraRiskClass.ReadOnly)]
         public static object List(JObject raw)

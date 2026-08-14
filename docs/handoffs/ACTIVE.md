@@ -24,12 +24,13 @@ records only current state and what is open.
 | 10 | `0.0.106` | `bake --area navmesh_surfaces` for the AI Navigation package, reflection-only and fail-closed (`docs/NAVMESH_SURFACE_DESIGN.md`) |
 | 11 | `0.0.107` | `manage_settings set_player` writes `scripting_backend` and `api_compatibility_level` from a curated value set, reporting `recompile_triggered` and `build_target` (`docs/PLAYER_TOOLCHAIN_DESIGN.md`) |
 | — | `0.0.108` | Fix: deferred command work runs on the editor update loop, so `build start` no longer queues a build that never begins in an unfocused Editor |
+| 12 | `0.0.109` | Official Unity CLI `1.0.0-beta.3` parity audit: scene/GameObject/animation/Timeline/settings/editor-window coverage, build-option propagation, console/MCP fixes, and whole-repo dead/duplicate-code cleanup (`docs/UNITY_PIPELINE_PARITY_MATRIX.md`) |
 
 Alongside the queue: `0.0.91` moved the support floor to Unity 6+ (three
 compatibility buckets), and `0.0.90` fixed the `EntityIdCompat` round trip that
 had made every emitted `instance_id` unresolvable on Unity 6000.3+.
 
-Catalog now: **33 tools / 111 actions**. Every wave passed the feature
+Catalog now: **34 tools / 132 actions**. Every wave passed the feature
 admission gate, regenerated `docs/metrics/catalog-payload-baseline.json` in the
 same review, and was live-verified before release.
 

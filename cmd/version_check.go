@@ -22,10 +22,6 @@ type versionCache struct {
 	Outdated  bool   `json:"outdated,omitempty"`
 }
 
-func cacheFilePath() string {
-	return paths.VersionCheckPath()
-}
-
 func loadCache(path string) (*versionCache, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -100,10 +96,7 @@ func printUpdateNoticeWithConfig(category string, quiet bool) {
 		return
 	}
 
-	path := cacheFilePath()
-	if path == "" {
-		return
-	}
+	path := paths.VersionCheckPath()
 
 	now := time.Now().Unix()
 	cache, _ := loadCache(path)

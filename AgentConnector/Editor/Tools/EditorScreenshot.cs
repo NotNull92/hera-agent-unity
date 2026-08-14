@@ -11,7 +11,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "screenshot",
-        Description = "Capture a Scene/Game view or isolated target, with optional bounded uGUI or 3D physics identity and input-coordinate evidence.",
+        Description = "Capture a Scene/Game view or isolated target, with optional bounded uGUI, 3D physics, or Editor UI Toolkit metadata evidence.",
         Profiles = new[] { "core", "scene", "ui", "diagnostics", "testing" },
         RiskClass = HeraRiskClass.Write,
         Reversible = true,
@@ -152,6 +152,27 @@ namespace HeraAgent.Tools
                 Required = false,
                 SchemaJson = "{\"type\":\"string\",\"enum\":[\"use_global\",\"ignore\",\"collide\"]}")]
             public string PhysicsQueryTriggers { get; set; }
+
+            [ToolParameter(
+                "Return bounded metadata for UI Toolkit elements in one loaded EditorWindow without rendering pixels or writing a file.",
+                Required = false)]
+            public bool EditorUiOnly { get; set; }
+
+            [ToolParameter(
+                "Editor UI mode: exact loaded EditorWindow type name, full name, or title.",
+                Required = false)]
+            public string EditorWindow { get; set; }
+
+            [ToolParameter(
+                "Editor UI mode: optional exact element selector. Use #name or a VisualElement type name.",
+                Required = false)]
+            public string EditorSelector { get; set; }
+
+            [ToolParameter(
+                "Editor UI mode: maximum elements returned (default 100, maximum 500).",
+                Required = false,
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":500}")]
+            public int MaxEditorElements { get; set; }
         }
 
         public static object HandleCommand(JObject @params)
@@ -166,6 +187,7 @@ namespace HeraAgent.Tools
             var physicsOnly = p.GetBool("physics_only");
             var annotatePhysics = p.GetBool("annotate_physics") || physicsOnly;
             var wantsEvidence = annotateUi || annotatePhysics;
+            var editorUiOnly = p.GetBool("editor_ui_only");
             var view = p.Get("view", wantsEvidence ? "game" : "scene").ToLowerInvariant();
             var width = p.GetInt("width", DefaultWidth).Value;
             var height = p.GetInt("height", DefaultHeight).Value;
@@ -176,6 +198,17 @@ namespace HeraAgent.Tools
 
             try
             {
+                if (editorUiOnly)
+                {
+                    if (overlay || wantsEvidence || wantsIsolated
+                        || p.GetRaw("output_path") != null || p.GetBool("overwrite"))
+                    {
+                        return new ErrorResponse(
+                            "SCREENSHOT_EDITOR_UI_ONLY_CONFLICT",
+                            "Editor UI metadata mode cannot be combined with pixel capture, scene evidence, isolated capture, output_path, or overwrite.");
+                    }
+                    return CollectEditorUi(p);
+                }
                 if (overlay && wantsEvidence)
                     return new ErrorResponse(
                         "SCREENSHOT_OVERLAY_EVIDENCE_CONFLICT",

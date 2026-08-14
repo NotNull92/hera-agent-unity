@@ -58,7 +58,8 @@ namespace HeraAgent
                 ["additionalProperties"] = false,
             };
             if (required.Count > 0)
-                schema["required"] = required;
+                schema["required"] = new JArray(
+                    required.Values<string>().OrderBy(name => name, StringComparer.Ordinal));
             AddArgumentGroups(schema, argumentGroups);
             return SchemaUtility.CanonicalizeSchema(schema);
         }

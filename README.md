@@ -130,11 +130,11 @@ You can use Hera for tiny one-line checks or for a full AI-assisted Unity workfl
 | Check whether Unity is healthy | Live Editor status, version, project, compile state, Console errors |
 | Start or restart the right Editor | Launch or restart the exact project from its recorded Unity version and wait for that project's heartbeat |
 | Understand the current Scene | Scene info, GameObject search, Component and Inspector reads |
-| Change the Scene | Create, duplicate, rename, parent, move, or delete GameObjects |
+| Change the Scene | Create/save Scenes; create, duplicate, rename, parent, transform, tag, layer, or delete GameObjects |
 | Edit Components | Add, remove, inspect, and change serialized Component values |
 | Work with project assets | Find, create, copy, move, or delete assets under `Assets/` |
 | Run project-specific C# | Execute C# inside the loaded Editor with access to Unity APIs and project assemblies |
-| Make animations | Author AnimationClips and AnimatorController state machines |
+| Make animations | Author AnimationClips, AnimatorController state machines, and Timeline tracks/clips |
 | Test a feature | Run EditMode and PlayMode tests and keep the result across domain reloads |
 | Play the game | Enter Play Mode, wait for the real state change, inspect, then stop |
 | See what Unity rendered | Capture Scene/Game views or isolated objects, plus bounded uGUI identity/coordinate and Camera.main 3D physics evidence |
@@ -573,6 +573,22 @@ hera-agent-unity ui_slop box-in-box
 
 The rules include exceptions so functional game UI such as inventory cells is not flattened just because it is repetitive.
 
+### Asset preferences and compiler defaults
+
+Known assets such as Odin and DOTween can be enabled as preferences. Enabling
+one does not install it; it tells generated agent rules and AI JSON to prefer
+that API when the project actually contains it.
+
+```bash
+hera-agent-unity asset-config enable odin_inspector
+hera-agent-unity asset-config --json
+hera-agent-unity asset-config set-csc <path-to-csc>
+hera-agent-unity asset-config set-dotnet <path-to-dotnet>
+```
+
+The compiler defaults are read by the next `exec` call, without restarting the
+Editor. You can configure the same values from `HeraAgent -> Hera Settings`.
+
 ---
 
 ## Command overview
@@ -586,21 +602,22 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `list --compact` | Discover available built-in and project-specific tools cheaply. |
 | `call <tool>` | Validate a strict live tool contract, then call it. |
 | `console` | Read or clear the real Unity Console. |
-| `scene` | Inspect, load, save, list, or close Scenes; dump the GameObject tree. |
+| `scene` | Inspect, create, load, save, activate, list, or close Scenes; dump the GameObject tree. |
 | `find_gameobjects` | Search the loaded Scene hierarchy. |
 | `manage_gameobject` | Create and edit GameObjects. |
 | `manage_components` | Read, add, remove, or modify Components. |
 | `manage_assets` | Work with project assets under `Assets/`, and trace what an asset uses or what still uses it. |
 | `manage_prefab` | Create, instantiate, and edit prefab assets, and apply, revert, or unpack an instance's overrides. |
 | `manage_animation` | Author AnimationClips and AnimatorController state machines, and read them back. |
-| `manage_settings` | Read and change project settings (physics, time, quality, player, audio) with previews and approval, including the scripting backend and API compatibility level. |
+| `manage_timeline` | Create and inspect optional Timeline assets, tracks, and clips without taking a package dependency. |
+| `manage_settings` | Read and change physics, time, quality, player, audio, graphics, legacy input, lighting, and legacy NavMesh settings with previews and approval. |
 | `bake` | Trigger, poll, cancel, or clear lighting / NavMesh / occlusion bakes. |
 | `build` | Queue a Player build for the active target and read the compact report. |
 | `exec` | Run arbitrary project-aware C# inside the Editor. |
 | `editor` | Launch/restart the exact project, or play, stop, pause, refresh, and compile. |
 | `test` | Run, list, resume, or cancel Unity tests, selecting by name, category, or assembly. |
 | `task` | Inspect durable test/package work without contacting Unity. |
-| `screenshot` | Capture Scene/Game views, ScreenSpaceOverlay canvases, or isolated objects; optionally return bounded uGUI or Camera.main-constrained 3D collider identity/coordinates, including metadata-only modes. |
+| `screenshot` | Capture Scene/Game views, ScreenSpaceOverlay canvases, or isolated objects; optionally return bounded uGUI, 3D collider, or UI Toolkit Editor-window metadata. |
 | `input` | Test uGUI, or synthesize optional Input System keyboard/mouse/sequence input and record/replay it in Play Mode. |
 | `profiler` | Read profiler hierarchy snapshots and one-call performance stats. |
 | `game_feel` | Query game-feel guidance. |

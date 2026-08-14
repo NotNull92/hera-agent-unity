@@ -8,8 +8,10 @@ Use 'return' to get output. Add --usings for types outside default namespaces.
 Options:
   --usings <ns1,ns2>   Add extra using directives
   --file <path>        Load code from file. Positional/stdin take precedence.
-  --csc <path>         Path to csc compiler (csc.dll or csc.exe). Auto-detected if omitted.
-  --dotnet <path>      Path to dotnet runtime. Auto-detected if omitted.
+  --csc <path>         Path to csc compiler (csc.dll or csc.exe). If omitted,
+                       use asset-config set-csc, then auto-detection.
+  --dotnet <path>      Path to dotnet runtime. If omitted, use asset-config
+                       set-dotnet, then auto-detection.
   --no-cache           Bypass exec caches: force a fresh compile without reading
                        or writing cached assemblies or disk DLLs.
   --depth <n>          Max object graph depth in the serialized return value

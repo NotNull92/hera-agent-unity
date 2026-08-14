@@ -50,6 +50,28 @@ namespace HeraAgent.Tests
                     "external SDK csc allowed",
                     ExecCompileCache.IsBundledToolPathForDifferentEditor(externalCsc, currentEditor));
 
+                var configuredCscA = CreateFile(root, "ConfiguredA", "csc.dll");
+                var configuredCscB = CreateFile(root, "ConfiguredB", "csc.dll");
+                var configuredDotnetA = CreateFile(root, "ConfiguredA", DotnetName());
+                var configuredDotnetB = CreateFile(root, "ConfiguredB", DotnetName());
+                ExecCompileCache.Invalidate();
+                allPassed &= ExpectEqual(
+                    "configured csc changes without domain reload",
+                    configuredCscA,
+                    ExecCompileCache.ResolveCscFromConfiguration(configuredCscA));
+                allPassed &= ExpectEqual(
+                    "changed configured csc replaces cached path",
+                    configuredCscB,
+                    ExecCompileCache.ResolveCscFromConfiguration(configuredCscB));
+                allPassed &= ExpectEqual(
+                    "configured dotnet changes without domain reload",
+                    configuredDotnetA,
+                    ExecCompileCache.ResolveDotnetFromConfiguration(configuredDotnetA));
+                allPassed &= ExpectEqual(
+                    "changed configured dotnet replaces cached path",
+                    configuredDotnetB,
+                    ExecCompileCache.ResolveDotnetFromConfiguration(configuredDotnetB));
+
                 var compiler = CreateFile(root, "Compiler", "csc.dll");
                 var dotnet = CreateFile(root, "Runtime", DotnetName());
                 File.WriteAllText(compiler, "compiler-v1");

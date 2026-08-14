@@ -33,6 +33,8 @@ Guards:
   - start refuses in play mode (IN_PLAY_MODE), while building
     (ALREADY_BUILDING), with an empty enabled-scene list (NO_SCENES), and
     for output paths inside Assets/ (INVALID_OUTPUT_PATH).
+  - start maps persisted development, allow_debugging, and
+    build_scripts_only settings into BuildPlayerOptions.
 
 Examples:
   hera-agent-unity build get_settings

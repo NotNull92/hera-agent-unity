@@ -20,17 +20,17 @@ namespace HeraAgent.Tools
         typeof(ManageProfiler.HierarchyParameters),
         ResultType = typeof(ManageProfiler.Result),
         RiskClass = HeraRiskClass.ReadOnly)]
-    [HeraActionContract("enable", typeof(ManageProfiler.EmptyParameters), RiskClass = HeraRiskClass.Write)]
-    [HeraActionContract("disable", typeof(ManageProfiler.EmptyParameters), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("enable", typeof(object), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("disable", typeof(object), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract(
         "status",
-        typeof(ManageProfiler.EmptyParameters),
+        typeof(object),
         ResultType = typeof(ManageProfiler.StatusResult),
         RiskClass = HeraRiskClass.ReadOnly)]
-    [HeraActionContract("clear", typeof(ManageProfiler.EmptyParameters), RiskClass = HeraRiskClass.Destructive)]
+    [HeraActionContract("clear", typeof(object), RiskClass = HeraRiskClass.Destructive)]
     [HeraActionContract(
         "stats",
-        typeof(ManageProfiler.EmptyParameters),
+        typeof(object),
         ResultType = typeof(ManageProfiler.StatsResult),
         RiskClass = HeraRiskClass.ReadOnly)]
     [HeraArgumentGroup(
@@ -71,10 +71,6 @@ namespace HeraAgent.Tools
     [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "root", "parent")]
     public static class ManageProfiler
     {
-        public sealed class EmptyParameters
-        {
-        }
-
         public class HierarchyParameters
         {
             [ToolParameter(

@@ -21,11 +21,18 @@ namespace HeraAgent.Tests
             nameof(AssetConfigPersistence),
             nameof(AssetMutationPreflight),
             nameof(AtomicFile),
+            nameof(AnimationTimeline),
+            nameof(BuildOptions),
+            nameof(EditorUiCapture),
+            nameof(ExecCompileCache),
             nameof(ExecRestricted),
             nameof(InputQa),
             nameof(OperationLedger),
             nameof(OutputFilePolicy),
+            nameof(PipelineSettings),
             nameof(ProjectIdentity),
+            nameof(ReadConsole),
+            nameof(SceneGameObject),
             nameof(ScreenshotAnnotations),
             nameof(ScreenshotPhysics),
             nameof(ToolCatalog),
@@ -48,6 +55,18 @@ namespace HeraAgent.Tests
         public void AtomicFile() => AtomicFileTests.RunTests();
 
         [Test]
+        public void AnimationTimeline() => AnimationTimelineToolTests.RunTests();
+
+        [Test]
+        public void BuildOptions() => BuildToolTests.RunTests();
+
+        [Test]
+        public void EditorUiCapture() => EditorUiCaptureTests.RunTests();
+
+        [Test]
+        public void ExecCompileCache() => ExecCompileCacheTests.RunTests();
+
+        [Test]
         public void ExecRestricted() => ExecRestrictedTests.RunTests();
 
         [Test]
@@ -60,7 +79,16 @@ namespace HeraAgent.Tests
         public void OutputFilePolicy() => OutputFilePolicyTests.RunTests();
 
         [Test]
+        public void PipelineSettings() => PipelineSettingsToolTests.RunTests();
+
+        [Test]
         public void ProjectIdentity() => ProjectIdentityTests.RunTests();
+
+        [Test]
+        public void ReadConsole() => ReadConsoleTests.RunTests();
+
+        [Test]
+        public void SceneGameObject() => SceneGameObjectToolTests.RunTests();
 
         [Test]
         public void ScreenshotAnnotations() => ScreenshotAnnotationTests.RunTests();

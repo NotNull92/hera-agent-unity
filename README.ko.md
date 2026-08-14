@@ -130,11 +130,11 @@ UPM 경로 해석을 시작합니다.
 | Unity가 정상인지 확인 | 실제 Editor 상태, 버전, 프로젝트, 컴파일 상태, Console 에러 확인 |
 | 올바른 Editor 시작/재시작 | 프로젝트에 기록된 Unity 버전으로 정확한 프로젝트를 실행·재시작하고 해당 heartbeat까지 대기 |
 | 현재 Scene 이해 | Scene 정보, GameObject 검색, Component와 Inspector 값 조회 |
-| Scene 수정 | GameObject 생성, 복제, 이름 변경, 부모 변경, 이동, 삭제 |
+| Scene 수정 | Scene 생성·저장, GameObject 생성·복제·이름·부모·Transform·Tag·Layer 변경과 삭제 |
 | Component 편집 | Component 추가, 제거, 조회, 직렬화 값 수정 |
 | 프로젝트 에셋 관리 | `Assets/` 아래에서 찾기, 생성, 복사, 이동, 삭제 |
 | 프로젝트용 C# 실행 | 현재 열린 프로젝트의 Unity API와 Assembly를 사용해 Editor 안에서 C# 실행 |
-| 애니메이션 제작 | AnimationClip과 AnimatorController 상태머신 저작 |
+| 애니메이션 제작 | AnimationClip, AnimatorController 상태머신, Timeline Track/Clip 저작 |
 | 기능 테스트 | EditMode/PlayMode 테스트 실행, Domain Reload를 넘어 결과 추적 |
 | 게임 실행 | 실제 Play Mode 진입을 기다리고 상태를 확인한 뒤 Stop |
 | Unity가 그린 화면 확인 | Scene/Game View나 단일 오브젝트 캡처, 제한된 uGUI 식별자/좌표와 Camera.main 기준 3D physics 근거 수집 |
@@ -577,6 +577,22 @@ hera-agent-unity ui_slop box-in-box
 
 인벤토리 슬롯처럼 기능적으로 반복돼야 하는 게임 UI를 무조건 평탄화하지 않도록 예외 규칙도 포함합니다.
 
+### 에셋 선호 설정과 컴파일러 기본 경로
+
+Odin, DOTween 같은 알려진 에셋을 선호 대상으로 활성화할 수 있습니다.
+활성화는 설치가 아니라, 프로젝트에 실제로 있을 때 생성된 에이전트 규칙과
+AI JSON이 해당 API를 우선 사용하도록 알려주는 설정입니다.
+
+```bash
+hera-agent-unity asset-config enable odin_inspector
+hera-agent-unity asset-config --json
+hera-agent-unity asset-config set-csc <path-to-csc>
+hera-agent-unity asset-config set-dotnet <path-to-dotnet>
+```
+
+컴파일러 기본 경로는 Editor 재시작 없이 다음 `exec`부터 반영됩니다.
+같은 값은 `HeraAgent -> Hera Settings`에서도 설정할 수 있습니다.
+
 ---
 
 ## 명령 한눈에 보기
@@ -590,21 +606,22 @@ hera-agent-unity ui_slop box-in-box
 | `list --compact` | 기본/프로젝트 전용 Tool을 작은 응답으로 발견 |
 | `call <tool>` | 현재 Tool 규격을 검증하고 안전하게 호출 |
 | `console` | 실제 Unity Console 읽기/초기화 |
-| `scene` | Scene 조회, 열기, 저장, 목록, 닫기, GameObject 트리 덤프 |
+| `scene` | Scene 조회, 생성, 열기, 저장, 활성화, 목록, 닫기, GameObject 트리 덤프 |
 | `find_gameobjects` | 열린 Scene의 GameObject 검색 |
 | `manage_gameobject` | GameObject 생성과 편집 |
 | `manage_components` | Component 조회, 추가, 제거, 수정 |
 | `manage_assets` | `Assets/` 아래 에셋 작업 + 의존성 추적(무엇을 쓰는지 / 무엇이 쓰는지) |
 | `manage_prefab` | 프리팹 에셋 생성·인스턴스화·편집 + 인스턴스 override의 apply/revert/unpack |
 | `manage_animation` | AnimationClip/AnimatorController 저작·읽기 |
-| `manage_settings` | 프로젝트 설정(physics·time·quality·player·audio) 조회·변경 — 스크립팅 백엔드·API 호환성 레벨 포함, dry_run 프리뷰 + 승인 게이트 |
+| `manage_timeline` | 선택적 Timeline 패키지 의존성을 추가하지 않고 Timeline 에셋·Track·Clip 저작·읽기 |
+| `manage_settings` | physics·time·quality·player·audio·graphics·legacy input·lighting·legacy NavMesh 설정 조회·변경, dry_run 프리뷰 + 승인 게이트 |
 | `bake` | lighting/NavMesh/occlusion 베이크 트리거·상태 폴링·취소·삭제 |
 | `build` | 활성 타겟 Player 빌드 큐잉 + compact 리포트 |
 | `exec` | Editor 안에서 프로젝트를 아는 C# 실행 |
 | `editor` | 정확한 프로젝트 launch/restart 또는 Play, Stop, Pause, Refresh, Compile |
 | `test` | Unity 테스트 실행/열거/재개/취소 — 이름·카테고리·어셈블리로 선택 |
 | `task` | Unity에 다시 명령하지 않고 장기 작업 상태 확인 |
-| `screenshot` | Scene/Game View, ScreenSpaceOverlay Canvas 또는 단일 오브젝트 캡처; 제한된 uGUI 또는 Camera.main 기준 3D Collider 식별자/좌표 메타데이터와 메타데이터 전용 모드 지원 |
+| `screenshot` | Scene/Game View, ScreenSpaceOverlay Canvas 또는 단일 오브젝트 캡처; 제한된 uGUI·3D Collider·UI Toolkit EditorWindow 메타데이터 지원 |
 | `input` | EventSystem uGUI 검증 또는 Play Mode Input System 키보드/마우스/sequence 합성 및 record/replay |
 | `profiler` | Profiler hierarchy snapshot·성능 스탯 1호출 읽기 |
 | `game_feel` | Game Feel 가이드 조회 |

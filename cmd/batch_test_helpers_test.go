@@ -11,6 +11,7 @@ import (
 type mockFile struct {
 	data   []byte
 	closed bool
+	mode   os.FileMode
 }
 
 func (m *mockFile) Read(p []byte) (n int, err error) {
@@ -28,14 +29,16 @@ func (m *mockFile) Close() error {
 }
 
 func (m *mockFile) Stat() (os.FileInfo, error) {
-	return &mockFileInfo{}, nil
+	return &mockFileInfo{mode: m.mode}, nil
 }
 
-type mockFileInfo struct{}
+type mockFileInfo struct {
+	mode os.FileMode
+}
 
 func (m *mockFileInfo) Name() string       { return "mock" }
 func (m *mockFileInfo) Size() int64        { return 0 }
-func (m *mockFileInfo) Mode() os.FileMode  { return 0 }
+func (m *mockFileInfo) Mode() os.FileMode  { return m.mode }
 func (m *mockFileInfo) ModTime() time.Time { return time.Time{} }
 func (m *mockFileInfo) IsDir() bool        { return false }
 func (m *mockFileInfo) Sys() interface{}   { return nil }

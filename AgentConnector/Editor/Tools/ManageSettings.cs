@@ -27,7 +27,7 @@ namespace HeraAgent.Tools
         Idempotent = true)]
     [HeraTool(
         Name = "manage_settings",
-        Description = "Read and change project settings by area: physics, time, quality, player, audio. get_<area> returns the full snapshot; set_<area> applies only the fields you pass (omitted fields stay untouched), supports dry_run previews, and reports {applied, skipped}. Settings changes are project-wide and not undoable, so set_* requires approval; dry_run runs without one.",
+        Description = "Read and change project settings by area: physics, time, quality, player, audio, graphics, legacy input, lighting, and legacy NavMesh. get_<area> returns a bounded snapshot; set_<area> applies only the fields you pass, supports dry_run previews, and reports {applied, skipped}. Settings changes are project-wide and not undoable, so set_* requires approval; dry_run runs without one.",
         Examples = new[]
         {
             "manage_settings get_physics",
@@ -45,7 +45,7 @@ namespace HeraAgent.Tools
         Profiles = new[] { "diagnostics", "full" },
         RiskClass = HeraRiskClass.Destructive,
         ContractMode = ToolContractMode.Strict)]
-    public static class ManageSettings
+    public static partial class ManageSettings
     {
         public sealed class EmptyParameters
         {
@@ -209,7 +209,7 @@ namespace HeraAgent.Tools
             [ToolParameter(
                 "Action to perform.",
                 Required = true,
-                SchemaJson = "{\"type\":\"string\",\"enum\":[\"get_physics\",\"set_physics\",\"get_time\",\"set_time\",\"get_quality\",\"set_quality\",\"get_player\",\"set_player\",\"get_audio\",\"set_audio\"]}")]
+                SchemaJson = "{\"type\":\"string\",\"enum\":[\"get_physics\",\"set_physics\",\"get_time\",\"set_time\",\"get_quality\",\"set_quality\",\"get_player\",\"set_player\",\"get_audio\",\"set_audio\",\"get_graphics\",\"set_graphics\",\"get_input\",\"set_input\",\"get_lighting\",\"set_lighting\",\"get_navmesh\",\"set_navmesh\"]}")]
             public string Action { get; set; }
         }
 
@@ -234,8 +234,16 @@ namespace HeraAgent.Tools
                 case "set_player": return SetPlayer(p);
                 case "get_audio": return GetAudio();
                 case "set_audio": return SetAudio(p);
+                case "get_graphics": return GetGraphics();
+                case "set_graphics": return SetGraphics(p);
+                case "get_input": return GetInput(p);
+                case "set_input": return SetInput(p);
+                case "get_lighting": return GetLighting();
+                case "set_lighting": return SetLighting(p);
+                case "get_navmesh": return GetNavMesh();
+                case "set_navmesh": return SetNavMesh(p);
                 default:
-                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{actionResult.Value}'. Valid: get/set_physics, get/set_time, get/set_quality, get/set_player, get/set_audio.");
+                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{actionResult.Value}'. Valid: get/set_physics, get/set_time, get/set_quality, get/set_player, get/set_audio, get/set_graphics, get/set_input, get/set_lighting, get/set_navmesh.");
             }
         }
 

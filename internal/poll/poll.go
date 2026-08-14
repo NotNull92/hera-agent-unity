@@ -69,7 +69,3 @@ func WaitForFile(ctx context.Context, resultPath string, port int, timeout time.
 
 	return nil, fmt.Errorf("%w: timed out waiting for %s", ErrWaitTimeout, opName)
 }
-
-func WaitForAsyncJob(ctx context.Context, resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {
-	return WaitForFile(ctx, resultPath, port, timeout, opName)
-}

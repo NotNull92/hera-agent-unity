@@ -341,7 +341,7 @@ namespace HeraAgent
                     output_schema = strictDefault
                         ? contract.OutputSchema
                         : toolMeta?.OutputSchema
-                        ?? GetDefaultOutputSchema(),
+                        ?? SchemaUtility.CreateDefaultOutputSchema(),
                     metadata = new
                     {
                         enum_support = HasEnumSupport(paramsType),
@@ -618,25 +618,6 @@ namespace HeraAgent
                 .Distinct(StringComparer.Ordinal)
                 .OrderBy(type => type, StringComparer.Ordinal)
                 .ToList();
-        }
-
-        private static JObject GetDefaultOutputSchema()
-        {
-            return SchemaUtility.CanonicalizeSchema(new JObject
-            {
-                ["type"] = "object",
-                ["properties"] = new JObject
-                {
-                    ["success"] = new JObject { ["type"] = "boolean", ["description"] = "Whether the operation succeeded" },
-                    ["message"] = new JObject { ["type"] = "string", ["description"] = "Success or error message" },
-                    ["data"] = new JObject
-                    {
-                        ["type"] = "object",
-                        ["description"] = "Tool-specific output data",
-                        ["properties"] = new JObject(),
-                    }
-                }
-            });
         }
 
         private static bool HasOutputSchemaSupport(Type paramsType)

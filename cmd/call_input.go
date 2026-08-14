@@ -14,11 +14,6 @@ type callInput struct {
 	Piped  bool
 }
 
-type callStdin interface {
-	io.Reader
-	Stat() (os.FileInfo, error)
-}
-
 type callOptions struct {
 	Tool          string
 	JSON          optionalString
@@ -45,15 +40,8 @@ func (value *optionalString) Set(raw string) error {
 	return nil
 }
 
-func detectCallInput(stdin callStdin) callInput {
-	info, err := stdin.Stat()
-	if err != nil {
-		return callInput{}
-	}
-	mode := info.Mode()
-	piped := mode&os.ModeCharDevice == 0 &&
-		(mode&os.ModeNamedPipe != 0 || mode.IsRegular())
-	return callInput{Reader: stdin, Piped: piped}
+func detectCallInput(stdin stdinReader) callInput {
+	return callInput{Reader: stdin, Piped: hasStdinData(stdin)}
 }
 
 func parseCallOptions(args []string) (callOptions, error) {

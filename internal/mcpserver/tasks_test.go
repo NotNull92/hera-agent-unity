@@ -27,6 +27,21 @@ func (sender *asyncTaskSender) SendWithOptions(context.Context, *client.Instance
 	return sender.response, nil
 }
 
+type taskCancelSender struct {
+	instance *client.Instance
+	command  string
+	params   any
+	options  client.SendOptions
+}
+
+func (sender *taskCancelSender) SendWithOptions(_ context.Context, instance *client.Instance, command string, params any, _ int, options client.SendOptions) (*client.CommandResponse, error) {
+	sender.instance = instance
+	sender.command = command
+	sender.params = params
+	sender.options = options
+	return &client.CommandResponse{Success: true, Data: json.RawMessage(`{"was_running":true}`)}, nil
+}
+
 func TestTaskFallbackBlocksUntilResult(t *testing.T) {
 	statusDir := t.TempDir()
 	runID := "0123456789abcdef0123456789abcdef"
@@ -165,8 +180,11 @@ func TestTaskExtensionAdvertisesAndServesDurableState(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	cancelSender := &taskCancelSender{}
+	runtime := taskTestRuntime(statusDir, cancelSender, true)
+	runtime.tasks = store
 	server := newServerWithTasks(enabledTestConfig(), true)
-	if err := registerTaskBridge(server, nativeRuntime{tasks: store, taskMode: true}); err != nil {
+	if err := registerTaskBridge(server, runtime); err != nil {
 		t.Fatal(err)
 	}
 	serverTransport, clientTransport := mcp.NewInMemoryTransports()
@@ -202,12 +220,19 @@ func TestTaskExtensionAdvertisesAndServesDurableState(t *testing.T) {
 		t.Fatalf("get=%#v error=%v", got, err)
 	}
 	cancelResult, err := mcp.CallCustomMethod[*taskParams, *taskAckResult](ctx, session, "tasks/cancel", &taskParams{TaskID: task.ID})
-	if err != nil || cancelResult.Supported || cancelResult.Cancelled || cancelResult.Reason == "" {
+	if err != nil || !cancelResult.Supported || !cancelResult.Cancelled || cancelResult.Reason != "" {
 		t.Fatalf("cancel=%#v error=%v", cancelResult, err)
 	}
 	encoded, err := json.Marshal(cancelResult)
-	if err != nil || !bytes.Contains(encoded, []byte(`"supported":false`)) || !bytes.Contains(encoded, []byte(`"cancelled":false`)) {
+	if err != nil || !bytes.Contains(encoded, []byte(`"supported":true`)) || !bytes.Contains(encoded, []byte(`"cancelled":true`)) {
 		t.Fatalf("cancel JSON=%s error=%v", encoded, err)
+	}
+	cancelParams, ok := cancelSender.params.(map[string]any)
+	if !ok || cancelSender.command != "run_tests" || cancelParams["action"] != "cancel" || cancelSender.instance == nil || cancelSender.instance.Port != 8093 {
+		t.Fatalf("cancel request: command=%q params=%#v instance=%#v", cancelSender.command, cancelSender.params, cancelSender.instance)
+	}
+	if cancelSender.options.OperationID == "" || cancelSender.options.OperationID == client.OperationID(task.OperationID) || !cancelSender.options.Idempotent || cancelSender.options.ClientKind != "mcp" || cancelSender.options.CatalogHash != nativeTestCatalogHash {
+		t.Fatalf("cancel options=%#v", cancelSender.options)
 	}
 	_, err = mcp.CallCustomMethod[*taskParams, *taskResult](ctx, session, "tasks/get", &taskParams{TaskID: "invalid"})
 	var rpcErr *jsonrpc.Error

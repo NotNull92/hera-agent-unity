@@ -34,7 +34,9 @@ namespace HeraAgent.Tools
         private static string s_RefHash;
         private static string s_RefRspPath;
         private static string s_CscPath;
+        private static string s_CscConfiguredPath;
         private static string s_DotnetPath;
+        private static string s_DotnetConfiguredPath;
         private static string s_MonoPath;
 
         private struct CachedAssembly
@@ -70,6 +72,11 @@ namespace HeraAgent.Tools
                 s_RefLocations = null;
                 s_RefHash = null;
                 s_RefRspPath = null;
+                s_CscPath = null;
+                s_CscConfiguredPath = null;
+                s_DotnetPath = null;
+                s_DotnetConfiguredPath = null;
+                s_MonoPath = null;
                 foreach (var entry in s_AssemblyCache.Values)
                     TryUnload(entry.LoadContext);
                 s_AssemblyCache.Clear();
@@ -190,10 +197,13 @@ namespace HeraAgent.Tools
         public static string ResolveCsc(string overridePath)
         {
             if (!string.IsNullOrEmpty(overridePath)) return overridePath;
+            return ResolveCscFromConfiguration(HeraSettings.DefaultCscPath);
+        }
+
+        internal static string ResolveCscFromConfiguration(string configPath)
+        {
             lock (Gate)
             {
-                if (s_CscPath != null && File.Exists(s_CscPath)) return s_CscPath;
-                var configPath = HeraSettings.DefaultCscPath;
                 // Honor a configured csc path — UNLESS it points at the bundled
                 // Mono csc.exe. The Hera Settings auto-detect persists that path on
                 // Unity versions where it can't find the .NET SDK Roslyn (6.5 moved
@@ -202,10 +212,14 @@ namespace HeraAgent.Tools
                 // non-Latin (CP949 etc.) Windows console — breaking every exec. Fall
                 // through to FindCsc, which resolves the working csc.dll, so a stale
                 // or auto-detected Mono path can't override the fix.
-                if (IsUsableConfiguredCsc(configPath))
-                    s_CscPath = configPath;
-                else
-                    s_CscPath = FindCsc();
+                var configuredPath = IsUsableConfiguredCsc(configPath) ? configPath : null;
+                if (s_CscPath != null
+                    && File.Exists(s_CscPath)
+                    && string.Equals(s_CscConfiguredPath, configuredPath, StringComparison.OrdinalIgnoreCase))
+                    return s_CscPath;
+
+                s_CscConfiguredPath = configuredPath;
+                s_CscPath = configuredPath ?? FindCsc();
                 return s_CscPath;
             }
         }
@@ -220,14 +234,21 @@ namespace HeraAgent.Tools
         public static string ResolveDotnet(string overridePath)
         {
             if (!string.IsNullOrEmpty(overridePath)) return overridePath;
+            return ResolveDotnetFromConfiguration(HeraSettings.DefaultDotnetPath);
+        }
+
+        internal static string ResolveDotnetFromConfiguration(string configPath)
+        {
             lock (Gate)
             {
-                if (s_DotnetPath != null && File.Exists(s_DotnetPath)) return s_DotnetPath;
-                var configPath = HeraSettings.DefaultDotnetPath;
-                if (IsUsableConfiguredDotnet(configPath))
-                    s_DotnetPath = configPath;
-                else
-                    s_DotnetPath = FindDotnet();
+                var configuredPath = IsUsableConfiguredDotnet(configPath) ? configPath : null;
+                if (s_DotnetPath != null
+                    && File.Exists(s_DotnetPath)
+                    && string.Equals(s_DotnetConfiguredPath, configuredPath, StringComparison.OrdinalIgnoreCase))
+                    return s_DotnetPath;
+
+                s_DotnetConfiguredPath = configuredPath;
+                s_DotnetPath = configuredPath ?? FindDotnet();
                 return s_DotnetPath;
             }
         }

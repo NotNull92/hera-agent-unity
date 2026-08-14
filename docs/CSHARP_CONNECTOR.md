@@ -473,7 +473,9 @@ Reads `~/.hera-agent-unity/asset-config.json` by last-write-time cache. Exposes:
 - `GameFeelMode` → drives `manage_components add` game-feel topic hints
 - `UiSlopMode` → drives `manage_components add` UI-slop tell hints and the `doctor --agent-rules` de-slop section
 - `DotweenPreferred` → tween backend hint
-- `DefaultCscPath` / `DefaultDotnetPath` → compiler defaults for `exec`
+- `DefaultCscPath` / `DefaultDotnetPath` → compiler defaults for `exec`; the
+  resolver compares the configured path on every call, so a saved change is
+  observed without a domain reload
 
 ### PackageJobState.cs
 
@@ -485,7 +487,12 @@ Wrapper around `AssetDatabase.Refresh` and `CompilationPipeline.RequestScriptCom
 
 ### AssetDetector.cs
 
-Scans the project for known third-party assets (Odin, DOTween, etc.) by directory and loaded-assembly checks, then mirrors the installed flags into `~/.hera-agent-unity/asset-config.json`. Used by `detect_assets`.
+Owns the shared Odin/DOTween detection rules used by both Hera Settings and
+`detect_assets`. It checks product-specific folders, package paths, and DLLs.
+Loaded-assembly fallback is product-specific and is used only for the active
+Unity project; an explicit different project path is scanned from disk only.
+Detected installed flags are mirrored into
+`~/.hera-agent-unity/asset-config.json`.
 
 ### AssetConfigFile.cs
 

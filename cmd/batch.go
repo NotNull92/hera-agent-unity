@@ -13,12 +13,7 @@ import (
 
 // SendBatchFunc is injected for testing.
 
-type batchStdinReader interface {
-	io.Reader
-	Stat() (os.FileInfo, error)
-}
-
-var batchStdin batchStdinReader = os.Stdin
+var batchStdin stdinReader = os.Stdin
 
 type batchRuntime struct {
 	Config    GlobalConfig
@@ -43,8 +38,7 @@ func batchCmd(ctx context.Context, args []string, runtime batchRuntime) error {
 		}
 	} else {
 		// Read from stdin if piped (no --file required)
-		info, statErr := batchStdin.Stat()
-		if statErr != nil || info.Mode()&os.ModeCharDevice != 0 {
+		if !hasStdinData(batchStdin) {
 			return fmt.Errorf("usage: hera-agent-unity batch --file <path.json>  (or pipe JSON via stdin)")
 		}
 		data, err = io.ReadAll(batchStdin)

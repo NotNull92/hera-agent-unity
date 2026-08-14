@@ -3,19 +3,22 @@
 package cmd
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
-// legacyInstallPaths returns the pre-WindowsApps install location
+// legacyInstallDir returns the pre-WindowsApps install location
 // (%LOCALAPPDATA%\hera-agent-unity). uninstall scrubs leftover binaries and PATH
 // entries from this location for users who installed before v0.0.6.
-func legacyInstallPaths() (dir, bin string) {
-	home, _ := os.UserHomeDir()
-	dir = filepath.Join(home, "AppData", "Local", "hera-agent-unity")
-	bin = filepath.Join(dir, "hera-agent-unity.exe")
-	return
+func legacyInstallDir() (string, error) {
+	root := strings.TrimSpace(os.Getenv("LOCALAPPDATA"))
+	if root == "" || !filepath.IsAbs(root) {
+		return "", errors.New("LOCALAPPDATA must be an absolute path")
+	}
+	return filepath.Join(root, "hera-agent-unity"), nil
 }
 
 // runPowerShellWithArgs invokes powershell.exe with -Command "<script>" and
