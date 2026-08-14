@@ -29,14 +29,6 @@
         {
           "type": "positional",
           "value": "stdio"
-        },
-        {
-          "type": "positional",
-          "value": "--profile"
-        },
-        {
-          "type": "positional",
-          "value": "core"
         }
       ],
       "environmentVariables": [

@@ -26,7 +26,7 @@ assert.equal(mcpServer.packages[0].version, npmPackage.version);
 assert.deepEqual(mcpServer.packages[0].transport, { type: "stdio" });
 assert.deepEqual(
   mcpServer.packages[0].packageArguments,
-  ["mcp", "--transport", "stdio", "--profile", "core"].map((value) => ({ type: "positional", value })),
+  ["mcp", "--transport", "stdio"].map((value) => ({ type: "positional", value })),
 );
 assert.deepEqual(mcpServer.packages[0].environmentVariables, [
   { name: "HERA_MCP_ENABLED", value: "1" },

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (CLI 0.2.13 — compact MCP by default)
+
+- MCP now starts with Compact exposure by default. Profile and Full exposure
+  remain explicit opt-ins, keeping the normal product path limited to
+  `tool_search`, `tool_describe`, and `tool_call`.
+- Compact search returns action names without schemas, while name-only describe
+  returns bounded action summaries and action-specific describe returns the
+  selected full contract. The payload report now measures actual MCP tool
+  definitions in addition to the internal catalog representation.
+- The default inline MCP result budget is 32 KiB, and large-result handling
+  avoids encoding the complete response twice before deciding whether to spool
+  it to the result store.
+
 ### Added (Connector 0.0.109 — official Unity CLI pipeline parity)
 
 - Audited all 153 public commands in Unity CLI `1.0.0-beta.3` against Hera's
@@ -44,6 +57,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   class metadata order no longer creates false contract drift.
 - Removed dead palette/key-map fields, impossible result nil checks, unused
   imports/parameters, and one duplicated asset-config JSON marshaling path.
+- Batch dispatch now prepares validation and safety once per command instead of
+  repeating the same work during execution. Tool discovery uses Unity's
+  `TypeCache` fast path with the assembly scan retained as a fallback.
+- HTTP listener ownership is synchronized across stop, fault, and restart;
+  package jobs now finish with a bounded timeout; approval-ledger replay keeps
+  the verified approval decision; and `exec` reference sets are rebuilt from
+  the currently loaded assemblies instead of trusting stale disk metadata.
+- A failed or unwritable CLI catalog cache no longer prevents Hera from using a
+  valid live catalog returned by Unity.
 
 ### Fixed (Connector 0.0.108 — queued builds actually start)
 
