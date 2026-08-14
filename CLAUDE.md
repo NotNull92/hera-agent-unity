@@ -134,6 +134,8 @@ internal/paths/       # Single source of truth for ~/.hera-agent-unity/** file-b
 internal/resultstore/ # Durable async job results behind `task`
 internal/taskbridge/  # MCP Tasks bridge over the same durable results
 internal/unitystate/  # Heartbeat parsing and editor-state predicates
+internal/unityprocess/ # Windows child-process environment repair shared by the
+                      # editor launcher and the disposable benchmark fixture
 internal/telemetry/   # Opt-in local counters
 internal/logutil/     # Shared log helpers
 tools/build-unity-docs/ # One-shot maintainer Go script: Documentation/en/ScriptReference
