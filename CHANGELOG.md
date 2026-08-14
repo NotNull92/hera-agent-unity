@@ -20,6 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   avoids encoding the complete response twice before deciding whether to spool
   it to the result store.
 
+### Fixed (CLI — stable Windows Unity launches)
+
+- Repository-owned Unity child processes now share one Windows environment
+  repair: when `ALLUSERSPROFILE` is missing but `ProgramData` is present, Hera
+  restores the common-profile value before launch. This covers normal
+  `editor launch/restart` and disposable benchmark fixture creation instead of
+  leaving direct launchers vulnerable to Unity UPM's undefined-path failure.
+
 ### Added (Connector 0.0.109 — official Unity CLI pipeline parity)
 
 - Audited all 153 public commands in Unity CLI `1.0.0-beta.3` against Hera's

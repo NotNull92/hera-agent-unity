@@ -9,6 +9,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/NotNull92/hera-agent-unity/internal/unityprocess"
 )
 
 const markerName = ".hera-mcp-benchmark-fixture.json"
@@ -63,6 +65,7 @@ func prepareFixture(unity, destination, connector string) error {
 	}
 	var output bytes.Buffer
 	command := exec.Command(unity, createProjectArguments(abs)...)
+	unityprocess.ConfigureEnvironment(command)
 	command.Stdout, command.Stderr = &output, &output
 	if err := command.Run(); err != nil {
 		return fmt.Errorf("create disposable Unity project: %w: %s", err, output.String())
