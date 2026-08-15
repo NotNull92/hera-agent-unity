@@ -65,14 +65,6 @@ namespace HeraAgent
                 "  - Screen transitions (always animated, never abrupt): same-level = slide 0.3s EaseInOut; parent->child = slide-up/scale-in 0.3s EaseOut; child->parent = 0.25s EaseIn; scene = fade 0.5-1.0s.\n" +
                 "  - Hit-pause: on high-impact moments freeze the reaction ~30-80ms before it resolves — impact feels weighty. Use sparingly, and tween UI on unscaled time so it survives the pause.\n" +
                 "  - Accessibility is baseline, not optional: text contrast >=4.5:1, touch targets >=44x44pt, reduce-motion + shake/flash intensity-or-off options.",
-
-            ["bar"] =
-                "Progress / health bar feel (the signature bar juice):\n" +
-                "  - On decrease: drop the main fill fast (instant or EaseOut <=0.1s) and trail a second 'ghost'/'chip' bar behind it (white or darker) that lags and catches up over ~0.4s EaseOut — the gap reads as 'damage just taken'. Flash the border red 0.1s at the moment of the hit.\n" +
-                "  - On increase (heal/XP): ease the fill up 0.2-0.3s and flash the bar brighter at the moment of change.\n" +
-                "  - Low threshold: pulse/desaturate at low value (e.g. <25% = red breathing, cycle speeds up as it gets critical) to signal danger.\n" +
-                "  - Segmented bars: tick each unit with a small pop + click, staggered 0.03-0.05s when several change — the count is felt, not just seen.\n" +
-                "  - Charge/cooldown bars: bright fill over a dark track; pre-announce 'almost full' with particles; on full: light burst + 'ready' SFX + icon punch 100->120->100% over 0.2s.",
         };
 
         // Per-element pointers into the game_feel knowledge base — the full specs
@@ -85,7 +77,6 @@ namespace HeraAgent
             ["text"] = "ui_number_change",
             ["empty"] = "ui_screen_transition",
             ["canvas"] = "ecn_dmn_framework, cognitive_load, visual_hierarchy, accessibility_baseline",
-            ["bar"] = "ui_bar",
         };
 
         /// <summary>
@@ -102,30 +93,6 @@ namespace HeraAgent
         }
 
         /// <summary>
-        /// Composes one hint for several element types — dedupes by type and emits
-        /// a single header / tween line / footer. Returns null when no type has a recipe.
-        /// </summary>
-        public static string ForElements(IEnumerable<string> elements, bool dotweenPreferred)
-        {
-            if (elements == null) return null;
-            var bodies = new List<string>();
-            var seen = new HashSet<string>();
-            var keys = new List<string>();
-            foreach (var e in elements)
-            {
-                if (string.IsNullOrEmpty(e)) continue;
-                var key = e.ToLowerInvariant();
-                if (!seen.Add(key)) continue;
-                if (Recipes.TryGetValue(key, out var recipe))
-                {
-                    bodies.Add("--- " + key + " ---\n" + recipe);
-                    keys.Add(key);
-                }
-            }
-            if (bodies.Count == 0) return null;
-            return Header + string.Join("\n\n", bodies) + "\n" + TweenLine(dotweenPreferred) + "\n" + DeepLine(keys) + Footer;
-        }
-
         const string Header = "[Hera] Game Feel UI Mode (Beta) is on — make this feel alive. Maximum output for minimum input.\n";
         const string Footer = "Golden rule — double down on the screen's purpose: reward / celebration UI earns big, exaggerated juice (bigger = more important); precision or input-heavy UI (forms, drag, text entry, competitive HUD) stays calm and steady so it stays readable. Honest Juice: presentation intensity must match the actual value of what happened. Always gate strong motion behind a reduce-motion / intensity option, and match feedback weight to action weight.";
 

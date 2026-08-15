@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed (Connector 0.1.2)
+
+- Removed the unreachable multi-element hint composer and the bar recipe from
+  the Game Feel UI Mode guide. Both were only reachable through the retired
+  HTML-to-UI pipeline; `manage_ui` never creates a bar element, and the full
+  bar specification remains available as the `game_feel ui_bar` topic.
+
 ### Fixed (Connector 0.1.1)
 
 - The number-change recipe in the Game Feel UI Mode hint now describes the
