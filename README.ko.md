@@ -368,7 +368,7 @@ Editor가 열리면 Connector가 자동으로 시작합니다.
 현재 릴리스 Connector를 고정하려면:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.102
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.1.2
 ```
 
 ### 3단계. Unity를 열고 연결 확인
@@ -735,18 +735,17 @@ MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.2.11**, native binary 5종
-- npm: **0.2.0** (`latest`)
-- Unity Connector / OpenUPM: **0.0.102** (`latest`)
-- Official MCP Registry: **0.2.0** (`active`)
+- CLI / GitHub Release: **v0.2.14**, native binary 5종
+- npm: **0.2.14** (`latest`)
+- Unity Connector / OpenUPM: **0.1.2** (`latest`)
+- Official MCP Registry: **0.2.14** (`active`)
 - License: **Apache-2.0**
 
-npm과 MCP Registry는 현재 GitHub Release보다 뒤처져 있습니다. `v0.2.11`을 쓰려면 GitHub Release에서
-받거나 소스에서 빌드하세요.
+네 배포 채널이 같은 릴리스를 제공합니다. npm과 MCP Registry 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-unity`와 GitHub 바이너리가 같은 버전을 유지합니다.
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
 
-`v0.2.11`은 `v0.2.0` 이후 쌓아온 editor-workflow 표면을 이어갑니다. 프로젝트 설정, 씬 베이크, Player 빌드, 테스트 열거와 취소, 프리팹 override apply/revert/unpack, 에셋 의존성 양방향 추적입니다. 릴리스 Connector는 **33 tools / 111 actions**를 제공하고, Unity 3개 compile bucket을 경고 0건으로 통과하며, 각 bucket에서 Connector 자체 `ReleaseGateTests` **17/17 PASS**, Console error **0건**을 확인했습니다.
+`v0.2.14`는 에이전트 셸이 common-profile 환경변수를 빠뜨렸을 때의 Windows Unity 실행을 안정화했고, Connector `0.1.x`는 `game_feel` 지식베이스 전체를 Unity 기반 지식으로 다시 썼습니다 — 각 파라미터가 적용되는 Unity 지점(`Update` / `FixedUpdate` / `LateUpdate`, `Rigidbody.interpolation`, unscaled UI를 포함한 `Time.timeScale`, Canvas rebuild 비용)을 명시하는 67개 주제이며, 명명된 API 표면은 라이브 `6000.3.5f2` Editor에서 검증했습니다. 라이브 카탈로그는 **34 tools / 132 actions**를 노출합니다.
 
 릴리스별 기술 변경을 모두 보고 싶다면 메인 README보다 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
 

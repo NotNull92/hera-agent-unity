@@ -364,7 +364,7 @@ To pin an existing Connector tag:
 The current released Connector pin is:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.0.102
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.1.2
 ```
 
 ### Step 3. Open Unity and check the connection
@@ -732,18 +732,17 @@ MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
 
 ## Current release
 
-- CLI / GitHub Release: **v0.2.11** with five native binaries
-- npm: **0.2.0** (`latest`)
-- Unity Connector / OpenUPM: **0.0.102** (`latest`)
-- Official MCP Registry: **0.2.0** (`active`)
+- CLI / GitHub Release: **v0.2.14** with five native binaries
+- npm: **0.2.14** (`latest`)
+- Unity Connector / OpenUPM: **0.1.2** (`latest`)
+- Official MCP Registry: **0.2.14** (`active`)
 - License: **Apache-2.0**
 
-npm and the MCP Registry currently trail the GitHub Release. Install from the
-GitHub Release or build from source to get `v0.2.11`.
+All four channels ship the same release: the npm and MCP Registry publishes are chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
 
-`v0.2.11` continues the editor-workflow surface built since `v0.2.0`: project settings, scene bakes, Player builds, test enumeration and cancellation, prefab override apply/revert/unpack, and asset dependency tracing in both directions. The released Connector exposes **33 tools / 111 actions**, passes the three Unity compile buckets with zero warnings, and runs the Connector's own `ReleaseGateTests` at **17/17** in every bucket with **0** Console errors.
+`v0.2.14` stabilizes Windows Unity launches when an agent shell omits the common-profile environment, and Connector `0.1.x` rewrites the entire `game_feel` knowledge base as Unity-derived knowledge — 67 topics that name the exact Unity site of every parameter (`Update` / `FixedUpdate` / `LateUpdate`, `Rigidbody.interpolation`, `Time.timeScale` with unscaled UI, Canvas rebuild cost), with the named API surface verified against a live `6000.3.5f2` Editor. The live catalog exposes **34 tools / 132 actions**.
 
 For release-by-release engineering detail, read [CHANGELOG.md](CHANGELOG.md) instead of treating the main README as a migration log.
 
