@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   avoids encoding the complete response twice before deciding whether to spool
   it to the result store.
 
-### Fixed (CLI — stable Windows Unity launches)
+### Fixed (CLI 0.2.14 — stable Windows Unity launches)
 
 - Repository-owned Unity child processes now share one Windows environment
   repair: when `ALLUSERSPROFILE` is missing but `ProgramData` is present, Hera
