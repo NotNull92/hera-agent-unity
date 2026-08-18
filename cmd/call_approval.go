@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
@@ -34,10 +35,20 @@ func (command *callCommand) resolveApproval(
 		if hashErr != nil {
 			return "", "", nil, hashErr
 		}
-		if claims.Tool != request.tool.Name || claims.Action != request.action || claims.ArgumentsHash != argumentsHash ||
-			claims.RiskClass != request.safety.RiskClass || claims.ProjectID != request.catalog.ProjectID ||
-			(operationID != "" && claims.OperationID != operationID) {
-			response, responseErr := callPolicyResponse("APPROVAL_MISMATCH", "approval token does not match this request", nil)
+		if mismatched := approvalMismatches(claims, request, argumentsHash, operationID); len(mismatched) > 0 {
+			response, responseErr := callPolicyResponse(
+				"APPROVAL_MISMATCH",
+				"approval token does not match this request: "+strings.Join(mismatched, ", "),
+				map[string][]string{"mismatched": mismatched},
+			)
+			if response != nil && slices.Contains(mismatched, "arguments") {
+				response.Suggestions = append(
+					response.Suggestions,
+					"Preflight and approve through the same command form. A bare command and "+
+						"the same work sent through 'call' bind different argument objects, so a "+
+						"token issued by one cannot approve the other.",
+				)
+			}
 			return "", "", response, responseErr
 		}
 		return request.options.ApprovalToken, claims.OperationID, nil, nil
@@ -70,6 +81,36 @@ func (command *callCommand) resolveApproval(
 		return "", "", response, responseErr
 	}
 	return preflight.Token, preflight.OperationID, nil, nil
+}
+
+// approvalMismatches names every claim in the token that disagrees with the
+// request being dispatched. A token binds to all of them at once, so naming the
+// exact field turns an opaque rejection into an actionable one — most often
+// "arguments", which is what a token issued through a different command form
+// trips on.
+func approvalMismatches(
+	claims policy.ApprovalClaims,
+	request callApprovalRequest,
+	argumentsHash string,
+	operationID client.OperationID,
+) []string {
+	var mismatched []string
+	for _, claim := range []struct {
+		name  string
+		match bool
+	}{
+		{"tool", claims.Tool == request.tool.Name},
+		{"action", claims.Action == request.action},
+		{"arguments", claims.ArgumentsHash == argumentsHash},
+		{"risk_class", claims.RiskClass == request.safety.RiskClass},
+		{"project", claims.ProjectID == request.catalog.ProjectID},
+		{"operation_id", operationID == "" || claims.OperationID == operationID},
+	} {
+		if !claim.match {
+			mismatched = append(mismatched, claim.name)
+		}
+	}
+	return mismatched
 }
 
 func parseOptionalOperationID(value string) (client.OperationID, error) {

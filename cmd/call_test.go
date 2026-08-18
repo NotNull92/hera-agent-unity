@@ -330,6 +330,53 @@ func TestApprovedTokenDispatches(t *testing.T) {
 	}
 }
 
+func TestMismatchedApprovalNamesTheClaimThatDiffers(t *testing.T) {
+	// Given: a token preflighted for the same tool and action but a different
+	// argument object, which is what a token issued through another command
+	// form carries.
+	command, sent := newTestCallCommand(t, callInput{})
+	snapshot := testSnapshot(t)
+	requireSceneApproval(snapshot)
+	command.load = func(context.Context, *client.Instance) (*toolregistry.Snapshot, error) {
+		return snapshot, nil
+	}
+	claims, err := json.Marshal(policy.ApprovalClaims{
+		Version: 1, OperationID: "op_other_form", Tool: "scene", Action: "info",
+		ArgumentsHash: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+		RiskClass:     "destructive", ProjectID: snapshot.Catalog.ProjectID,
+		ExpiresAtMS: 4_102_444_800_000, SingleUse: true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	token := base64.RawURLEncoding.EncodeToString(claims) + ".signature"
+
+	// When
+	response, err := command.Run(context.Background(), approvalTestInstance(), []string{
+		"scene", "--json", `{"action":"info"}`, "--approve", token,
+	})
+
+	// Then: the rejection names the arguments claim and never dispatches.
+	if err != nil {
+		t.Fatal(err)
+	}
+	if response.Code != "APPROVAL_MISMATCH" || sent.calls != 0 {
+		t.Fatalf("response=%#v HTTP tool calls=%d", response, sent.calls)
+	}
+	var detail struct {
+		Mismatched []string `json:"mismatched"`
+	}
+	if err := json.Unmarshal(response.Data, &detail); err != nil {
+		t.Fatal(err)
+	}
+	if len(detail.Mismatched) != 1 || detail.Mismatched[0] != "arguments" {
+		t.Fatalf("mismatched=%#v, want [arguments]", detail.Mismatched)
+	}
+	if len(response.Suggestions) == 0 {
+		t.Fatalf("response=%#v, want a command-form suggestion", response)
+	}
+}
+
 func TestTypedAndLegacyProduceEquivalentRequest(t *testing.T) {
 	// Given
 	typed, err := decodeCallObject([]byte(`{"type":"error","lines":5}`))

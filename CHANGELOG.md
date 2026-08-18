@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   omit the original input. The token is bound to the exact arguments, so the
   retry has to repeat them.
 
+### Changed (CLI — a rejected approval token says what differs)
+
+- `APPROVAL_MISMATCH` now reports the claims that disagree in `data.mismatched`
+  (`tool`, `action`, `arguments`, `risk_class`, `project`, `operation_id`)
+  instead of a bare "does not match this request". When the arguments claim is
+  the one that differs, the response also explains that a bare command and the
+  same work sent through `call` bind different argument objects, so a token
+  issued by one cannot approve the other.
+
 ### Changed (CLI — a Connector that predates an action says so)
 
 - When the running Connector rejects the `action` argument of a command, Hera

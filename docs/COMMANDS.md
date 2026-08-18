@@ -89,7 +89,11 @@ tool's top-level dispatcher shape. In a non-interactive shell, an approval-gated
 request returns `APPROVAL_REQUIRED`; repeat the exact same typed or established
 command with `--approve <token>`, carrying the original input again because the
 token is bound to the exact arguments. Changing its project, tool, action,
-arguments, or operation ID invalidates the single-use token.
+arguments, or operation ID invalidates the single-use token. A rejected token reports
+`APPROVAL_MISMATCH` with the claims that differ in `data.mismatched` — `tool`,
+`action`, `arguments`, `risk_class`, `project`, or `operation_id` — so the same
+work preflighted through a different command form is recognizable as an
+`arguments` mismatch rather than an opaque refusal.
 
 `--yes` (env: `HERA_AGENT_APPROVE=1`) belongs to an operator's own shell or CI
 job: it answers the preflight in the same invocation rather than returning
