@@ -17,6 +17,10 @@ import (
 
 var editorBootstrapPollInterval = 250 * time.Millisecond
 
+// Windows can keep the project lock handle open for a moment after the owning
+// process dies, so a lock is only stale once it survives this window.
+var editorLockReleaseTimeout = 3 * time.Second
+
 type editorBootstrapRuntime struct {
 	Scan   func() ([]client.Instance, error)
 	Start  func(executable, project string) (int, error)
@@ -119,7 +123,18 @@ func runEditorBootstrap(
 		}
 		lockPath := filepath.Join(project, "Temp", "UnityLockfile")
 		if err := runtime.Remove(lockPath); err != nil && !errors.Is(err, os.ErrNotExist) {
-			lockWarning = fmt.Sprintf("could not remove stale project lock: %v", err)
+			// The exiting Editor may still hold the handle, so the first
+			// failure says nothing about the lock being stuck. Warn only about
+			// one that outlives the release window.
+			lockCtx, cancelLock := context.WithTimeout(deadline, editorLockReleaseTimeout)
+			waitErr := waitForEditorCondition(lockCtx, func() bool {
+				retryErr := runtime.Remove(lockPath)
+				return retryErr == nil || errors.Is(retryErr, os.ErrNotExist)
+			})
+			cancelLock()
+			if waitErr != nil {
+				lockWarning = fmt.Sprintf("could not remove stale project lock: %v", err)
+			}
 		}
 	}
 

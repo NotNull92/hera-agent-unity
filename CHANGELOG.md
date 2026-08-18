@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (CLI — two races that reported a healthy Editor as broken)
+
+- The first typed `call` after a recompile no longer fails with a domain-epoch
+  mismatch. The heartbeat is read before the catalog request and is not written
+  at all while the domain reloads, so a compile between the two left the CLI
+  holding the older epoch — a stale view of a healthy Editor rather than a wrong
+  catalog. The comparison now settles against a re-read heartbeat and only fails
+  when the epoch genuinely never agrees.
+- `editor restart` no longer warns about a project lock that was never stale.
+  The exiting Editor can still hold `Temp/UnityLockfile` for a moment after its
+  process dies, and that first removal failure was reported as a warning even
+  though the new Editor started and reached `ready`. The warning is now reserved
+  for a lock that outlives the release window.
+
 ### Added (CLI 0.2.15 — one-invocation approvals)
 
 - `--yes` (env: `HERA_AGENT_APPROVE`) answers an approval preflight in the same

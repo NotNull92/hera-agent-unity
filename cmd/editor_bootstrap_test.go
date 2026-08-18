@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -164,4 +166,100 @@ func writeBootstrapProject(t *testing.T, version string) (string, string, string
 		t.Fatal(err)
 	}
 	return filepath.Clean(project), hubRoot, filepath.Clean(executable)
+}
+
+func TestEditorRestartDoesNotWarnAboutALockTheExitingEditorStillHeld(t *testing.T) {
+	// Given: the first removal loses the race with the exiting Editor's handle,
+	// which is what Windows reports right after the process dies.
+	project, hubRoot, _ := writeBootstrapProject(t, "6000.3.5f2")
+	originalInterval := editorBootstrapPollInterval
+	editorBootstrapPollInterval = time.Millisecond
+	t.Cleanup(func() { editorBootstrapPollInterval = originalInterval })
+
+	started := false
+	stoppedPID := 0
+	removeCalls := 0
+	runtime := editorBootstrapRuntime{
+		Scan: func() ([]client.Instance, error) {
+			if started {
+				return []client.Instance{{ProjectPath: project, PID: 333, Port: 8094, State: "ready", Timestamp: 4}}, nil
+			}
+			return []client.Instance{{ProjectPath: project, PID: 222, Port: 8092, State: "ready", Timestamp: 3}}, nil
+		},
+		Start: func(string, string) (int, error) { started = true; return 333, nil },
+		Stop:  func(pid int) error { stoppedPID = pid; return nil },
+		Dead:  func(pid int) bool { return pid == stoppedPID },
+		Remove: func(string) error {
+			removeCalls++
+			if removeCalls == 1 {
+				return fmt.Errorf("The process cannot access the file because it is being used by another process.")
+			}
+			return os.ErrNotExist
+		},
+	}
+
+	// When
+	resp, err := runEditorBootstrap(context.Background(), []string{"restart", "--hub-root", hubRoot}, GlobalConfig{
+		Project: project,
+		Timeout: time.Second,
+	}, runtime)
+
+	// Then: the lock did release, so the restart reports no warning.
+	if err != nil {
+		t.Fatal(err)
+	}
+	var data editorBootstrapData
+	if unmarshalErr := json.Unmarshal(resp.Data, &data); unmarshalErr != nil {
+		t.Fatal(unmarshalErr)
+	}
+	if data.LockWarning != "" {
+		t.Fatalf("lock_warning = %q, want none once the lock released", data.LockWarning)
+	}
+	if removeCalls < 2 {
+		t.Fatalf("remove calls = %d, want a retry after the first failure", removeCalls)
+	}
+}
+
+func TestEditorRestartStillWarnsAboutALockThatNeverReleases(t *testing.T) {
+	// Given: removal keeps failing for the whole release window.
+	project, hubRoot, _ := writeBootstrapProject(t, "6000.3.5f2")
+	originalInterval := editorBootstrapPollInterval
+	editorBootstrapPollInterval = time.Millisecond
+	t.Cleanup(func() { editorBootstrapPollInterval = originalInterval })
+	originalRelease := editorLockReleaseTimeout
+	editorLockReleaseTimeout = 10 * time.Millisecond
+	t.Cleanup(func() { editorLockReleaseTimeout = originalRelease })
+
+	started := false
+	stoppedPID := 0
+	runtime := editorBootstrapRuntime{
+		Scan: func() ([]client.Instance, error) {
+			if started {
+				return []client.Instance{{ProjectPath: project, PID: 333, Port: 8094, State: "ready", Timestamp: 4}}, nil
+			}
+			return []client.Instance{{ProjectPath: project, PID: 222, Port: 8092, State: "ready", Timestamp: 3}}, nil
+		},
+		Start:  func(string, string) (int, error) { started = true; return 333, nil },
+		Stop:   func(pid int) error { stoppedPID = pid; return nil },
+		Dead:   func(pid int) bool { return pid == stoppedPID },
+		Remove: func(string) error { return fmt.Errorf("locked by another process") },
+	}
+
+	// When
+	resp, err := runEditorBootstrap(context.Background(), []string{"restart", "--hub-root", hubRoot}, GlobalConfig{
+		Project: project,
+		Timeout: time.Second,
+	}, runtime)
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	var data editorBootstrapData
+	if unmarshalErr := json.Unmarshal(resp.Data, &data); unmarshalErr != nil {
+		t.Fatal(unmarshalErr)
+	}
+	if data.LockWarning == "" {
+		t.Fatal("lock_warning is empty, want the surviving lock reported")
+	}
 }
