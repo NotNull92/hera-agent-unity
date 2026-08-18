@@ -1,8 +1,14 @@
 version: "2"
 
+# docs/report/ is gitignored scratch: audit probes and one-off evidence live
+# there and must not gate the repository's own lint or format run.
+
 formatters:
   enable:
     - gofmt
+  exclusions:
+    paths:
+      - docs/report
 
 linters:
   enable:
@@ -17,3 +23,6 @@ linters:
         - (io.Closer).Close
         - (*net/http.Response).Body.Close
         - (*os.File).Close
+  exclusions:
+    paths:
+      - docs/report
