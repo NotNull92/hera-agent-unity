@@ -5,6 +5,8 @@ Generated from 161 source-declared commands; eight internal test commands are ex
 
 Classification meanings: `covered` is available in Hera, `duplicate` is intentionally served by an existing safer primitive, `rejected` is a locked decision, `excluded` would expand the architecture, and `conditional` requires a positive fixture.
 
+The "Hera equivalent" column names the live catalog identity — `<tool> <action>` — so a row can be checked against `list --catalog` without interpretation. Where the CLI spells the same capability differently, the CLI form follows in parentheses. Three rows name a CLI-only surface (`status`, `editor refresh --compile`) that has no catalog tool.
+
 | Official command | Classification | Hera equivalent or decision |
 |---|---|---|
 | `add_animator_layer` | covered | manage_animation add_layer |
@@ -28,7 +30,7 @@ Classification meanings: `covered` is available in Hera, `duplicate` is intentio
 | `cancel_lighting_bake` | covered | bake cancel lighting |
 | `cancel_navmesh_bake` | covered | bake cancel navmesh |
 | `cancel_occlusion_bake` | covered | bake cancel occlusion |
-| `cancel_tests` | covered | test cancel |
+| `cancel_tests` | covered | run_tests cancel (CLI `test cancel`) |
 | `capture_editor_element` | covered | screenshot --editor_ui_only returns bounded UI Toolkit metadata; official PNG capture is compiled only for Unity 6000.7+, outside the current 6000.0/6000.3/6000.5+ matrix |
 | `capture_game_view` | covered | screenshot --view game |
 | `capture_runtime_element` | excluded | runtime/hot-reload server expands locked Editor-only architecture |
@@ -39,7 +41,7 @@ Classification meanings: `covered` is available in Hera, `duplicate` is intentio
 | `clear_navmesh` | covered | bake clear navmesh |
 | `clear_occlusion_culling` | covered | bake clear occlusion |
 | `console` | covered | console |
-| `copy_asset` | covered | manage_assets duplicate/copy |
+| `copy_asset` | covered | manage_assets copy |
 | `create_animation_clip` | covered | manage_animation create_clip |
 | `create_animator_controller` | covered | manage_animation create_controller |
 | `create_asset` | covered | manage_assets create |
@@ -54,10 +56,10 @@ Classification meanings: `covered` is available in Hera, `duplicate` is intentio
 | `delete_asset` | covered | manage_assets delete |
 | `delete_gameobject` | covered | manage_gameobject destroy |
 | `editor_focus` | covered | manage_editor focus (Unity EditorWindow focus; not physical OS focus) |
-| `editor_pause` | covered | editor pause |
-| `editor_play` | covered | editor play |
+| `editor_pause` | covered | manage_editor pause (CLI `editor pause`) |
+| `editor_play` | covered | manage_editor play (CLI `editor play`) |
 | `editor_status` | covered | status |
-| `editor_stop` | covered | editor stop |
+| `editor_stop` | covered | manage_editor stop (CLI `editor stop`) |
 | `eval` | covered | exec |
 | `eval_file` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
 | `find_assets` | covered | manage_assets find |
@@ -94,7 +96,7 @@ Classification meanings: `covered` is available in Hera, `duplicate` is intentio
 | `list_build_targets` | covered | build list_targets |
 | `list_open_scenes` | covered | scene list/info |
 | `list_shaders` | covered | describe_shader --list |
-| `list_tests` | covered | test list |
+| `list_tests` | covered | run_tests list (CLI `test list`) |
 | `log` | covered | log |
 | `menu` | covered | menu |
 | `move_asset` | covered | manage_assets move |
@@ -117,16 +119,16 @@ Classification meanings: `covered` is available in Hera, `duplicate` is intentio
 | `remove_component` | covered | manage_components remove |
 | `remove_scene_from_build` | covered | build remove_scene |
 | `rename_asset` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
-| `rename_gameobject` | covered | manage_gameobject name |
+| `rename_gameobject` | covered | manage_gameobject set_name |
 | `revert_prefab_overrides` | covered | manage_prefab revert |
-| `run_tests` | covered | test |
+| `run_tests` | covered | run_tests (CLI `test`) |
 | `runtime_status` | excluded | runtime/hot-reload server expands locked Editor-only architecture |
 | `save_all` | covered | scene save_all |
 | `save_prefab_contents` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
 | `save_scene` | covered | scene save |
 | `screenshot` | covered | screenshot |
 | `search` | rejected | locked decision or unsafe/duplicative host operation |
-| `set_active` | covered | manage_gameobject active |
+| `set_active` | covered | manage_gameobject set_active |
 | `set_active_scene` | covered | scene set_active |
 | `set_animation_curve` | covered | manage_animation set_curve |
 | `set_audio_settings` | covered | manage_settings set_audio |
@@ -141,14 +143,14 @@ Classification meanings: `covered` is available in Hera, `duplicate` is intentio
 | `set_lighting_settings` | covered | manage_settings set_lighting |
 | `set_material_properties` | covered | manage_material set |
 | `set_navmesh_settings` | covered | manage_settings set_navmesh (legacy NavMesh settings) |
-| `set_parent` | covered | manage_gameobject parent |
+| `set_parent` | covered | manage_gameobject set_parent |
 | `set_physics_settings` | covered | manage_settings set_physics |
 | `set_player_settings` | covered | manage_settings set_player |
 | `set_quality_settings` | covered | manage_settings set_quality |
 | `set_selection` | covered | manage_editor set_selection |
 | `set_serialized_field` | covered | manage_components set |
 | `set_tag` | covered | manage_gameobject set_tag |
-| `set_tags_layers` | covered | manage_editor add/remove tag/layer |
+| `set_tags_layers` | covered | manage_editor add_tag / remove_tag / add_layer / remove_layer |
 | `set_target_framerate` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
 | `set_time_settings` | covered | manage_settings set_time |
 | `set_timescale` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
@@ -157,7 +159,7 @@ Classification meanings: `covered` is available in Hera, `duplicate` is intentio
 | `simulate_pointer` | covered | input mouse/click |
 | `switch_build_target` | rejected | locked decision or unsafe/duplicative host operation |
 | `switch_build_target_status` | rejected | locked decision or unsafe/duplicative host operation |
-| `test_status` | covered | test --resume/task status |
+| `test_status` | covered | run_tests (CLI `test --resume`) / task status |
 | `unpack_prefab` | covered | manage_prefab unpack |
 | `write_text_file` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
 

@@ -202,7 +202,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # [HeraActionSafety] (shown only by list --tool, not
                       # list --compact),
     Tools/            # Tool implementations (auto-registered via [HeraTool]).
-                      # 33 [HeraTool] classes (32 here + RunTests in TestRunner/).
+                      # 34 [HeraTool] classes (33 here + RunTests in TestRunner/).
                       # Name= explicit unless noted
                       # (no Name= → filename snake_case). ExecCompileCache.cs is
                       # NOT a tool — internal helper for exec compile caching.
@@ -237,6 +237,9 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       #   create_controller/add_parameter/add_state/add_transition
                       #   → AnimatorController state machine on base layer;
                       #   animation types = built-in engine module → no asmdef ref).
+                      # Timeline authoring: manage_timeline ManageTimeline
+                      #   (create/add_track/add_clip/get; com.unity.timeline stays
+                      #   optional via reflection → PACKAGE_NOT_INSTALLED when absent).
                       # Editor-workflow queue (all shipped):
                       #   manage_settings ManageSettings v0.0.96 (physics/time/
                       #     quality/player/audio get+set; dry_run previews are

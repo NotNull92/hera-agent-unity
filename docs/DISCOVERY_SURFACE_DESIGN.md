@@ -129,7 +129,7 @@ the agent spends a domain reload on `add`.
 |---|---|
 | `menu list` | Already shipped. `menu list [--filter] [--limit]` exists with group-count and bounded-flat-list modes. |
 | `set_autotick` | No failure to prevent. Measured unfocused heartbeat cadence is 1001–1109 ms against a 1.0 s target, so the Editor is not meaningfully throttled at Hera's granularity, and `HttpServer.ForceEditorUpdate` already repaints on unfocused command dispatch. `EditorApplication.SignalTick` is non-public, so building it would mean a reflection binding for no measured gain. |
-| `manage_packages resolve` | `Client.Resolve()` returns `void` — the action could never report whether it worked. Hera also has no path that hand-edits `manifest.json`; `manage_packages` exists precisely so that never happens. No failure evidence. |
+| `manage_packages resolve` | `Client.Resolve()` returns `void`, so the action has no completion signal to report. A contract-shaped answer is still constructible — measured 2026-08-18, an external caller returned `status: completed, applied: true` in all three buckets while `packages-lock.json` kept its byte-identical hash and mtime — but that field asserts an outcome the API cannot confirm, which is the thing worth refusing. Hera also has no path that hand-edits `manifest.json`; `manage_packages` exists precisely so that never happens. No failure evidence. |
 | `manage_assets import` | An agent copying an external file into `Assets/` already has its own filesystem tools plus `editor refresh`. Fails the "existing surface reuse" gate. |
 
 ## Admission gate
