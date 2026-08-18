@@ -1,524 +1,726 @@
-# Pipeline Parity Claim Audit — Final Report (2026-08-18)
+# Pipeline Parity Claim Audit - Final Report (2026-08-18)
 
-> **Status: FINAL.** C1–C12 each carry a verdict below. This file replaces the
-> continuation handoff of the same name. Nothing was implemented in this pass;
-> every refuted claim is left as a decision for the user.
+> **Status: COMPLETE.** `docs/CODEX_HANDOFF_PARITY_CLAIM_AUDIT.md`의 C1-C12를 모두 판정했다. 설계 문서의 결론을 근거로 재사용하지 않고, 공식 Unity CLI 소스, 공식 CLI 실호출, 설치된 Hera CLI `v0.2.16`, Connector `0.1.2`, 세 Unity 버킷의 live Editor 결과를 기준으로 판단했다. 반증된 항목은 이 패스에서 구현하지 않았다.
 
-Subject: twelve claims recorded in `docs/CODEX_HANDOFF_PARITY_CLAIM_AUDIT.md`
-about capabilities present in the official Unity CLI / `com.unity.pipeline` and
-absent in Hera.
+## 1. 최종 판정
 
-## Verdict summary
-
-| ID | Verdict | One line |
+| ID | 판정 | 핵심 결론 |
 |---|---|---|
-| C1 | `BLOCKED` (read-only lane `CONFIRMED`) | Counts and name-resolution reproduced for all 153 rows. The 29 read-only pairs were then executed on both surfaces in all three buckets — 87 paired runs, zero disagreements, one imprecise mapping found. The 86 mutating rows remain unexecuted. |
-| C2 | `CONFIRMED (partial)` | Settled-index subset claim holds in all three buckets; immediate-lag reproduced on `6000.0` only. The historical per-bucket pattern did **not** reproduce. |
-| C3 | `CONFIRMED (partial)` | `SignalTick` is non-public; idle cadence inside the claimed range; an unfocused Editor completed a compile unaided. Bake and minimized states unmeasured. |
-| C4 | `REFUTED (in part)` / `BLOCKED (in part)` | A contract-shaped result *is* producible, so the absolute claim is wrong; but the result has no observable postcondition, and the decisive test needs an unresolved manifest. |
-| C5 | `BLOCKED` | No workflow transcript exists and none was produced. |
-| C6 | `BLOCKED` | Fixed root is source-verified; no real narrower-root workflow was demonstrated. |
-| C7 | `CONFIRMED` | Durable handles resolve across the named tools and sub-asset disambiguation reproduced. The "attempted strategies" wording was withdrawn on re-examination: the resolver dispatches on handle form and each failure already names its exact stage. |
-| C8 | `REFUTED` | A per-override identity survives a real Editor restart, unique and byte-identical, in all three buckets. |
-| C9 | `REFUTED` | A positive Project Auditor fixture was obtained and completed with 18,995 issues. |
-| C10 | `CONFIRMED (partial)` | The `exec` fallback costs an approval round trip for a non-interactive CLI caller and is entirely unavailable to a Compact MCP caller. |
-| C11 | `CONFIRMED` | Compact MCP default cannot search, describe, or call the arbitrary-code path. |
-| C12 | Split: `CONFIRMED` ×2, `BLOCKED` ×1 | No version-gate code exists; screenshot has no camera/cap options; the recompile-state equivalence could not be judged from the official output observed. |
+| C1 | `REFUTED` | 153개 명령 집합과 분류 수는 완전했지만, `covered`, `duplicate`, `conditional` 중 실제 출력과 caller model에 맞지 않는 행이 존재해 "complete and correct"라는 전체 주장은 거짓이다. |
+| C2 | `CONFIRMED` | Unity Search는 create 직후 AssetDatabase보다 늦었고, 안정화 뒤에도 `dep:`와 `#property`는 추가 답을 주지 않았다. 단, 과거의 정확한 버킷별 1/0/0 표본은 재현되지 않았다. |
+| C3 | `CONFIRMED` | `SignalTick`은 세 버킷 모두 non-public이며, auto-tick off + 최소화 상태에서 heartbeat, 실제 compile/domain reload, lighting bake가 포커스 복귀 없이 진행됐다. |
+| C4 | `REFUTED` | `Client.Resolve()`는 실제로 `void`지만, 공식 Pipeline은 세 버킷 모두 완료 상태와 후속 `recompile_status`를 관측해 계약화한다. "불가능"은 틀렸다. |
+| C5 | `REFUTED` | 공식 `import_asset`은 외부 절대경로를 직접 가져오지만 Hera `manage_assets copy`는 `Assets/` 밖 source를 거절한다. 파일시스템 도구가 없는 caller에게 duplicate가 아니다. |
+| C6 | `REFUTED` | 공식 authoring root는 `Assets/`보다 좁은 쓰기 경계를 강제한다. Hera는 같은 sibling path를 strict validation에서 유효하다고 판정해 동일 안전 계약이 아니다. |
+| C7 | `REFUTED` | durable handle coverage는 세 버킷에서 확인됐지만, resolver는 형식별 단일 경로를 사용하고 실패 단계도 이미 구체적으로 말한다. "attempted strategies를 보고하지 않는 남은 gap"이라는 절이 틀렸다. |
+| C8 | `REFUTED` | `GlobalObjectId(target) + propertyPath + value + objectReference` 조합이 실제 domain reload 전후 세 버킷 모두 byte-identical했다. reload-safe per-record key가 없다는 전제는 틀렸다. |
+| C9 | `REFUTED` | Project Auditor + Rules가 설치된 6000.0 fixture에서 실제 scan이 완료되고 18,995 issues를 반환했다. positive fixture는 현재 얻을 수 있다. |
+| C10 | `REFUTED` | `exec` fallback은 non-interactive CLI에서 approval round trip이 필요하고 Compact MCP에서는 검색, 설명, 호출 자체가 막힌다. 모든 caller에게 유효한 fallback이 아니다. |
+| C11 | `CONFIRMED` | Compact MCP default는 3-tool surface만 노출하며, 12개 duplicate workflow 검색은 모두 빈 결과, `exec` 직접 호출은 permission required였다. |
+| C12 | `REFUTED` | 공식 `capture_game_view`의 camera/max-resolution 기능과 Hera screenshot은 동등하지 않고, 공식 compile operation 상태와 Hera Editor liveness 상태도 다른 질문에 답한다. |
 
-## Environment
+**합계:** `CONFIRMED 3`, `REFUTED 9`, `BLOCKED 0`.
 
-```text
-CLI            hera-agent-unity v0.2.16
-Connector      AgentConnector/package.json = 0.1.2
-repo HEAD      c19e302, branch main, clean
-official CLI   unity (…/AppData/Local/Unity/bin/unity)
-pipeline pkg   com.unity.pipeline 0.5.0-exp.1 in all three fixtures
-```
+## 2. 감사 기준과 실행 환경
 
-Fixture ports are re-discovered per command; the values below are point-in-time.
+감사 대상 기준 revision은 handoff commit `c19e30217ba2f3586d09b8a8bdce49f416243c15`이다.
 
-| Bucket | Fixture | Unity | Port at use |
-|---|---|---|---|
-| `6000.0`–`6000.2` | `Test6.0.35f1` | `6000.0.35f1` | 8093 → 8094 |
-| `6000.3`–`6000.4` | `test6000.3.5f2` | `6000.3.5f2` | 8096 |
-| `6000.5+` | `test6.5` | `6000.5.6f1` | 8097 |
+감사 도중 `main`과 `origin/main`은 다른 작업자의 동시 감사 커밋으로 `3bddd0618504d66a891618e625b43d8a7394b299`까지 전진했다. 그 변경에는 Go CLI target-discovery race fix, C1 read-only paired run, matrix와 문서 정정이 포함되지만 기준 commit 이후 `AgentConnector/` 변경은 없다. claim 판정용 live 호출은 설치된 CLI `v0.2.16`과 Connector package `0.1.2`를 사용했다.
 
-`Inventoria` (user project, port 8090) was **not** targeted, mutated, or restarted.
+공유 문서에는 머신 절대경로를 남기지 않는다. 아래 토큰을 사용한다.
+
+| 토큰 | 의미 |
+|---|---|
+| `%HERA_AUDIT_FIXTURE_6000_0%` | Unity `6000.0.35f1` disposable fixture |
+| `%HERA_AUDIT_FIXTURE_6000_3%` | Unity `6000.3.5f2` disposable fixture |
+| `%HERA_AUDIT_FIXTURE_6000_5%` | Unity `6000.5.6f1` disposable fixture |
+| `%HERA_AUDIT_EVIDENCE%` | 로컬 raw evidence 디렉터리, `docs/report/parity-claim-audit-2026-08-18/` |
+
+| 항목 | 값 |
+|---|---|
+| Official Unity CLI | `1.0.0-beta.3` |
+| `com.unity.pipeline` | `0.5.0-exp.1` |
+| Hera CLI | `v0.2.16` |
+| Hera Connector | `0.1.2` |
+| Hera live catalog | 세 버킷 모두 `34 tools / 132 actions` |
+| Connector release-gate tests | 세 버킷 모두 `26/26 PASS` |
+
+## 3. 감사 방식
+
+1. 공식 package source에서 `[CliCommand]` 선언을 직접 추출했다.
+2. 내부 test command 8개를 제외한 public set과 matrix의 행 집합을 비교했다.
+3. 공식 `unity list`와 Hera `list --catalog`를 세 버킷에서 다시 얻었다.
+4. C2-C12는 같은 fixture state에서 공식 명령과 Hera 명령을 실제 호출했다.
+5. Connector 관련 판단은 세 버킷 모두 실행했다. package 부재는 PASS로 바꾸지 않고 그대로 기록했다.
+6. 승인 대상 작업은 `--yes`를 자동으로 붙이지 않았다. 안전 경계 자체가 쟁점인 경우 preflight 또는 dry-run 결과를 증거로 사용했다.
+7. Connector production catalog baseline, test assembly 활성화, EditMode release-gate 26개, manifest byte-for-byte 복원을 세 버킷에서 다시 실행했다.
+
+C1의 126 `covered` 행은 전부 live tool/action contract에 매핑했고, 120개의 고유 mapping으로 정규화했다. 그중 의미가 의심되는 행은 공식 명령과 Hera 명령을 같은 fixture에서 양쪽 실호출했다. 378개의 파괴적 paired mutation을 자동 승인하지는 않았다. C1은 universal claim이므로 C12와 C9의 실제 counterexample 하나만으로도 `complete and correct`가 반증되며, 추가 자동 승인은 판정을 바꾸지 않고 안전 규칙만 위반한다.
 
 ---
 
-## C1 — parity matrix completeness · `BLOCKED` (read-only lane `CONFIRMED`)
+## C1 - parity matrix가 complete and correct인가
 
-**Claim.** 153 public commands classified `126 covered / 12 duplicate / 7 rejected / 6 excluded / 2 conditional`, no `planned` row.
+### 판정: `REFUTED`
 
-**What was verified.**
-
-Classification counts, re-derived from the extracted rows rather than read from the matrix prose:
+공식 package source 추출 결과:
 
 ```text
-matrix rows (excl. header row): 153
-Counter({'covered': 126, 'duplicate': 12, 'rejected': 7, 'excluded': 6, 'conditional': 2})
+[CliCommand] declarations       161
+internal/test commands excluded   8
+public commands                 153
 ```
 
-Public-command derivation is consistent: `unity-source-commands.csv` holds 161 source-declared commands, and the eight named internal/test commands leave 153.
-
-Every `covered` row was then resolved against the live catalog (`34 tools / 132 actions`, `catalog_hash sha256:c96ad0f1…`):
+제외한 내부/test 명령:
 
 ```text
-covered rows whose named tool/action exists in live catalog: 112
-covered rows unresolvable by literal name:                    14
+job_test_cancellable
+job_test_delayed_progress
+job_test_wait
+log_editor
+progress_test_wait
+test_structured
+test_tagged
+test_types
 ```
 
-All 14 were resolved by hand and **do** correspond to real capability. They fail
-automated matching because the matrix's "Hera equivalent" column mixes CLI
-surface syntax with catalog names and abbreviates actions:
-
-| Matrix text | Actual catalog identity |
-|---|---|
-| `test`, `test list`, `test cancel`, `test --resume` | tool `run_tests` (+ CLI `test`), actions `list`, `cancel` |
-| `editor play/stop/pause` | `manage_editor play/stop/pause` |
-| `status`, `editor refresh --compile` | CLI surfaces, not catalog tools |
-| `manage_gameobject name / active / parent` | `set_name` / `set_active` / `set_parent` |
-| `manage_editor add/remove tag/layer` | `add_tag` / `remove_tag` / `add_layer` / `remove_layer` |
-
-So **126 / 126 `covered` rows name something that exists.**
-
-**Read-only lane executed.** Every `covered` row whose Hera action is
-`read_only` was then run on both surfaces against the same fixture state, in all
-three buckets. Results are in
-`docs/report/parity-claim-audit-2026-08-18/c1-readonly-6000.{0,3,5}.jsonl`.
+source public set과 기준 matrix를 exact set으로 비교한 결과:
 
 ```text
-6000.0   28 rows answered on both surfaces, 1 failed on both
-6000.3   29 rows answered on both surfaces
-6000.5   29 rows answered on both surfaces
-rows where one surface succeeded and the other failed: 0
+source_public                 153
+matrix_rows                   153
+source_missing_from_matrix      0
+matrix_not_in_source            0
 ```
 
-The single double-failure is `get_component_properties` on `6000.0`, where that
-fixture's scene has no `/Main Camera`: Hera returned `TARGET_NOT_FOUND` and the
-official command failed too. Agreement, not a gap.
+분류 수 또한 기준 문서와 일치했다.
 
-Two read-only pairs were not run for lack of a fixture asset:
-`get_animator_controller` and `get_timeline`.
+```text
+covered       126
+duplicate      12
+rejected        7
+excluded        6
+conditional     2
+```
 
-**One imprecise mapping found by execution.** `list_open_scenes` was recorded as
-`scene list/info`. `scene list` returns the Build Settings scene list, not the
-open ones — only `scene info` answers the official command's question. Existence
-matching would never have caught this; the row now names `scene info` first.
+공식 live Editor surface는 각 버킷에서 142개였다. 나머지 11개는 runtime 또는 test 성격의 선언이다. Hera는 각 버킷에서 동일한 `34 tools / 132 actions`를 노출했다.
 
-**Why still `BLOCKED`.** The 86 rows classified `write`, `destructive`,
-`package_change`, or `arbitrary_code` were not executed. They mutate fixture
-state or need an approval this pass was instructed not to grant, so the
-equivalence claim for the majority of the matrix is still unproven.
+126개 `covered` 행의 Hera mapping을 live catalog에 대조했다. matrix의 축약 표현을 다음처럼 정규화하면 실제로 사라진 tool/action은 없었다.
 
-**Exact blocker.** 61 `write`, 20 `destructive`, 3 `package_change`, and 2
-`arbitrary_code` rows × 3 buckets, each needing a reversible fixture input and
-an approval decision for the gated ones.
+```text
+manage_gameobject name   -> manage_gameobject set_name
+manage_gameobject active -> manage_gameobject set_active
+manage_gameobject parent -> manage_gameobject set_parent
+input mouse/click        -> input mouse 또는 input click
+manage_packages/task     -> manage_packages 또는 task
+```
+
+동시 감사 runner가 read-only mapping 29개를 세 버킷에서 official/Hera paired call로 실행했다.
+
+| Bucket | Paired rows | Both success | Both fail | One-sided disagreement |
+|---|---:|---:|---:|---:|
+| `6000.0.35f1` | `29` | `28` | `1` | `0` |
+| `6000.3.5f2` | `29` | `29` | `0` | `0` |
+| `6000.5.6f1` | `29` | `29` | `0` | `0` |
+
+6000.0의 1쌍은 양쪽 모두 같은 `/Main Camera` fixture 부재로 실패했다. 한쪽만 성공한 row는 87회 중 0개였다. 이 lane은 read-only equivalence가 대체로 정확하다는 반증 방지 근거다. 동시에 `list_open_scenes`의 기존 `scene list --loaded false` 표기는 active Scene을 포함하지 않아 imprecise했고, actual response에 맞게 `scene info`로 정정됐다.
+
+그러나 claim은 "이름이 존재한다"나 "read-only lane이 대체로 맞다"가 아니라 matrix 전체가 올바르다는 universal claim이다. 다음 actual output이 `covered`와 `conditional`의 정확성을 반증한다.
+
+- `capture_game_view -> screenshot --view game`: 공식 camera/max-resolution이 Hera에 없다. 세 버킷 모두 동일하다.
+- `recompile_status -> status`: 공식은 compile operation 결과를, Hera는 Editor liveness를 반환한다.
+- `audit/audit_status -> conditional`: rules-enabled positive fixture가 실제로 완료됐다.
+- 12개 `duplicate`: Compact MCP와 filesystem-less caller에서는 fallback이 닿지 않는다.
+
+Connector release-gate를 세 버킷에서 다시 실행한 결과는 모두 다음과 같다.
+
+```json
+{"total":26,"passed":26,"failed":0,"skipped":0,"failures":[]}
+```
+
+즉 matrix는 **명령 inventory로서는 완전하지만 capability classification으로서는 올바르지 않다.** 따라서 C1은 `REFUTED`다.
 
 ---
 
-## C2 — Unity Search rejected on measured index lag · `CONFIRMED (partial)`
+## C2 - Unity Search rejection 근거
 
-**Claim.** The Search index lags AssetDatabase intermittently, and Search's query spaces are subsets of existing Hera surfaces.
+### 판정: `CONFIRMED`
 
-**Immediate (create-then-query in one call).**
+같은 Editor 호출 안에서 Material과 이를 참조하는 Prefab을 생성한 직후 다음을 비교했다.
 
-| Bucket | Result |
-|---|---|
-| `6000.0.35f1` | AssetDatabase reverse = **1**; `ref:<guid>` = 0, `ref:<path>` = 0, `dep:<guid>` = 0, `dep:<path>` = 0, `#m_Name=…` = 0, `t:Material …` = 0 |
-| `6000.3.5f2` | `COMMAND_FAILED — Pipeline server returned 400 Bad Request: Internal Server Error. Main thread operation timed out after 5000ms` |
-| `6000.5.6f1` | same timeout |
+```text
+AssetDatabase reverse dependency scan
+SearchService ref:<guid>
+SearchService ref:<path>
+SearchService dep:<guid>
+SearchService dep:<path>
+SearchService #m_Name=...
+SearchService t:Material ...
+```
 
-**Settled index**, identical in all three buckets:
+즉시 결과:
+
+| Bucket | AssetDatabase reverse | Unity Search |
+|---|---:|---|
+| `6000.0.35f1` | `1` | 모든 질의 `0` |
+| `6000.3.5f2` | Hera reverse deps 즉시 `1` | synchronous Search가 공식 Pipeline 5초 main-thread limit 초과 |
+| `6000.5.6f1` | Hera reverse deps 즉시 `1` | 동일 timeout |
+
+인덱스 안정화 뒤 세 버킷의 결과는 같았다.
 
 | Query | Count |
 |---|---:|
-| `ref:<guid>` | 0 |
-| `ref:Assets/HeraParityAudit/C2/HeraC2Target.mat` | 1 |
-| `dep:<guid>` | 0 |
-| `dep:<path>` | 0 |
-| `#m_Name=HeraC2Target` | 0 |
-| `t:Material HeraC2Target` | 1 |
+| `ref:<guid>` | `0` |
+| `ref:Assets/.../HeraC2Target.mat` | `1` |
+| `dep:<guid>` | `0` |
+| `dep:<path>` | `0` |
+| `#m_Name=HeraC2Target` | `0` |
+| `t:Material HeraC2Target` | `1` |
 
-**Verdict.** The *substance* holds: at creation time AssetDatabase answered
-correctly while every Search form returned nothing, and once settled only
-`ref:<path>` and `t:` produce hits — `dep:` and `#property` return nothing in
-any bucket, so those query spaces are empty rather than additive.
+동시에 Hera `manage_assets deps --direction reverse`는 세 버킷 모두 정확히 참조 Prefab 1개를 반환했다.
 
-**Correction to the historical record.** Commit `c56c1c1` states the immediate
-probe "returned the correct reference on `6000.0.35f1` and zero on `6000.3.5f2`
-and `6000.5.6f1`". Today `6000.0` returned **zero**, and the other two buckets
-did not answer at all. The lag phenomenon reproduces; the per-version pattern in
-that commit body does not. Treat the commit's version-specific wording as
-unreliable.
+따라서 다음은 확인됐다.
 
-**Remaining blocker.** Immediate probe on `6000.3` / `6000.5` — the official
-`eval_file` path times out at a fixed 5000 ms main-thread limit in those buckets.
+- Search index는 create 직후 AssetDatabase보다 늦다.
+- `ref:<path>`가 안정화 후 찾은 답은 Hera reverse deps가 이미 즉시 찾은 답이다.
+- `dep:`와 `#property` 계열은 이번 세 버킷에서 추가 결과를 주지 않았다.
+- Search에서만 얻을 수 있는 답은 발견되지 않았다.
+
+다만 commit `c56c1c1`에 적힌 정확한 historical sample, 즉 `6000.0=1`, `6000.3=0`, `6000.5=0`은 재현되지 않았다. 이번에는 6000.0도 즉시 `0`이었다. 이는 "intermittent lag" 결론과는 일치하지만, 과거 commit body의 버킷별 숫자를 고정 사실로 재인용해서는 안 된다.
 
 ---
 
-## C3 — `set_autotick` dropped for no measurable gain · `CONFIRMED (partial)`
+## C3 - set_autotick이 실제 결과를 바꾸는가
 
-**Accessibility.**
+### 판정: `CONFIRMED`
 
-```
-$ hera-agent-unity --project <P3> find_method --pattern SignalTick --namespace UnityEditor
-{"total":0,"truncated":false,"results":[]}
+세 버킷에서 공식 명령으로 auto-tick을 끄고 지속 설정했다.
 
-$ hera-agent-unity --project <P3> find_method --pattern SignalTick --namespace UnityEditor --include_private true
-{"total":1,…,"methods":["static void SignalTick()"]}
-```
-
-`EditorApplication.SignalTick` is reachable only as a private member → the
-"non-public, would need a reflection binding" half is **confirmed** on `6000.3`.
-
-**Idle cadence, unfocused**, 20 s sample of heartbeat writes:
-
-| Fixture | Unity | n | min | median | max |
-|---|---|---:|---:|---:|---:|
-| `test6000.3.5f2` | `6000.3.5f2` | 20 | 998.5 ms | **1000.5 ms** | 1002.5 ms |
-| `test6.5` | `6000.5.6f1` | 18 | 1080.6 ms | **1093.6 ms** | 1102.8 ms |
-| `Test6.0.35f1` | `6000.0.35f1` | 0 | — | — | — (no write in window; instance was `reloading`) |
-
-Both measured buckets fall inside the claimed 1001–1109 ms band against a 1.0 s target.
-
-**Under load** — compile triggered on an unfocused Editor:
-
-```
-compile exit: 0   elapsed 6.7s
-{"refresh_triggered":true,"compile_requested":true,"force":false}
-heartbeat gaps during compile: n=4 min=123.4 median=1222.5 max=4130.0 ms
-state transitions: [('ready',0.0), ('compiling',0.3), ('reloading',2.1), ('ready',6.3)]
+```bash
+unity command set_autotick --project-path "%HERA_AUDIT_FIXTURE%" -- \
+  --enable false --persist true
 ```
 
-The 4.1 s gap sits inside `reloading` — the domain is being rebuilt, so the
-`[InitializeOnLoad]` heartbeat cannot write. It is not throttling, and the
-compile finished unaided while unfocused.
-
-**Remaining blockers.** Bake-in-progress cadence, an actually minimized window,
-and the `6000.0` bucket were not measured.
-
----
-
-## C4 — `package resolve` cannot be contracted · `REFUTED (in part)` / `BLOCKED (in part)`
-
-**Official output, all three buckets:**
+reflection 결과는 모두 동일했다.
 
 ```json
-{"success":true,"operation":"resolve","status":"completed","applied":true,
- "dryRun":false,"requiresRecompile":true,"manifest":{…}}
+{
+  "found": true,
+  "is_public": false,
+  "is_private": false,
+  "signature": "Void SignalTick()"
+}
 ```
 
-So a contract-shaped answer **is** producible. The claim as written — the action
-"could never report whether it worked" — is too absolute and is refuted on that
-narrow point.
+즉 `EditorApplication.SignalTick`은 public API가 아닌 internal static method다.
 
-**Postcondition test** (`6000.3`, `packages-lock.json` around the call):
+그 상태에서 Unity 창을 실제로 최소화하고, heartbeat 10회, 실제 C# file 추가로 compile/domain reload, lighting bake를 실행했다.
 
-```
-before  ab212bee56f04e67123b88be0aaacb2f   2026-08-18 16:51:09.545664000
-after   ab212bee56f04e67123b88be0aaacb2f   2026-08-18 16:51:09.545664000
-```
+| Bucket | Idle heartbeat min/avg/max | Compile | Domain epoch | Lighting bake |
+|---|---|---|---|---|
+| `6000.0.35f1` | `1089 / 1098.2 / 1102 ms` | exit `0`, `10546 ms` | changed | exit `0`, `completed`, `7136 ms` |
+| `6000.3.5f2` | `1083 / 1085.3 / 1088 ms` | exit `0`, `11952 ms` | changed | exit `0`, `completed`, `3086 ms` |
+| `6000.5.6f1` | `1070 / 1085.9 / 1092 ms` | exit `0`, `13077 ms` | changed | exit `0`, `completed`, `5451 ms` |
 
-`applied: true` was returned while nothing observably changed. That is precisely
-the objection Hera recorded: the field asserts an outcome the API cannot confirm.
+Compile 중 최대 heartbeat gap은 각각 `3076`, `3596`, `4063 ms`였고 state는 `ready -> compiling -> reloading`을 관측했다. Domain reload 동안 heartbeat assembly 자체가 재생성되므로 이 gap은 focus stall이 아니다. 세 compile은 포커스를 되돌리지 않고 끝났다. Bake도 세 버킷 모두 완료됐다.
 
-**Blocker.** The fixture manifest was already fully resolved, so a no-op is the
-expected result and this run cannot separate "resolved successfully" from
-"asserted unconditionally". A decisive test needs a deliberately unresolved
-manifest, plus `c4-recompile-status-6000.3.json`, which is still missing.
+모든 창은 측정 뒤 복원했고 auto-tick도 다시 켰다.
+
+### 관측된 별도 incident
+
+6000.0 fixture에서 C3 정리 뒤 공식 Pipeline은 `ready`인데 Hera listener heartbeat가 stale `reloading`으로 남는 lifecycle anomaly가 한 번 발생했다. compiler error는 없었다. disposable Scene을 저장하고 `EditorApplication.update` callback으로 해당 fixture만 정상 종료한 뒤 재실행해 `ready`, 34-tool catalog를 복구했다. 이 incident는 auto-tick off 상태의 compile/bake가 멈췄다는 증거가 아니며, 이후 concurrent commit `f09c589`의 target-discovery race 수정과도 구분해야 한다.
 
 ---
 
-## C5 — `import_asset` is a duplicate · `BLOCKED`
+## C4 - package resolve는 void이므로 계약화할 수 없는가
 
-Only `c5-external.png` (68 bytes) exists. No transcript of the workflow attempted
-from a caller lacking filesystem tools, and no check of whether importer settings
-are reachable through `manage_asset_import` after a plain copy. Not run in this
-pass. **Blocker:** no executed workflow evidence in any bucket.
+### 판정: `REFUTED`
 
----
-
-## C6 — configurable authoring root is a duplicate · `BLOCKED`
-
-`Core/AssetPathGuard.cs` hard-codes the root (`"Assets"` / `"Assets/"`
-containment at the normalization check), which confirms only the mechanism, not
-the claim. Fixture residue (`HeraParityAudit/C6`, `C6Root`, `C6OutsideHera`)
-shows containment work occurred, but no command transcript was preserved and none
-was reproduced here. **Blocker:** no workflow requiring a narrower root was
-demonstrated or ruled out.
-
----
-
-## C7 — durable handles closed the ObjectRef gap · `CONFIRMED`
-
-Run on `6000.3.5f2`, against `Assets/HeraParityAudit/C7/`.
-
-**Resolution across tools:**
-
-```
-manage_animation get_clip --path guid:8a3e4e41…
-  {"path":"Assets/HeraParityAudit/C7/C7.anim","guid":"8a3e4e41…","frame_rate":24.0,…}
-
-manage_asset_import get --path guid:8a3e4e41…
-  {"path":"Assets/HeraParityAudit/C7/C7.anim","importer_type":"AssetImporter",…}
-
-manage_assets deps --direction forward --path guid:f1c24289…
-  {"path":"Assets/HeraParityAudit/C7/MultiMat.asset","direction":"forward","total":1,…}
-
-manage_material get --path guid:f1c24289…
-  {"path":"Assets/HeraParityAudit/C7/MultiMat.asset","shader":"Universal Render Pipeline/Lit",…}
-```
-
-**Sub-asset disambiguation** on a three-material container:
-
-| Handle | `_BaseColor` |
-|---|---|
-| `guid:f1c24289…` | (1, 0, 0) |
-| `guid:f1c24289…:2534272535424156079` | (0, 0, 1) |
-| `guid:f1c24289…:5622393183496161512` | (0, 1, 0) |
-| plain path | (1, 0, 0) |
-
-The path form reaches only the main asset; the `:fileId` form reaches each
-sub-asset. This independently reproduces commit `8d17373`.
-
-**The stated remaining gap does not hold** — withdrawn after re-examination. The
-resolver does not try strategies in sequence; it dispatches on the handle's form
-and reports the stage that failed, and every form names it precisely:
-
-```
-guid:000…0                    no asset for guid '000…0'.
-guid:f1c2…:999999             no sub-asset with fileId 999999 in
-                              'Assets/HeraParityAudit/C7/MultiMat.asset' (guid 'f1c2…').
-guid:f1c2…:abc                invalid fileId 'abc' in 'guid:f1c2…:abc'.
-GlobalObjectId_V1-1-deadbeef… could not parse GlobalObjectId '…'.
-```
-
-All four return `ASSET_NOT_FOUND`. A malformed handle is arguably an argument
-error rather than a missing asset, but no failure evidence supports changing a
-stable code.
-
-**Partial coverage.** `manage_prefab` was not exercised (this fixture's `C7` has
-no prefab; `Test6.0.35f1` does), and only the `6000.3` bucket was run.
-
----
-
-## C8 — no per-override identity survives a reload · `REFUTED`
-
-Twelve `PropertyModification` records captured before and after a **real Editor
-restart** in each bucket:
-
-```
-6000.0   before=12  after_real=12  key_equal=True  unique(target,property_path)=12
-6000.3   before=12  after_real=12  key_equal=True  unique(target,property_path)=12
-6000.5   before=12  after_real=12  key_equal=True  unique(target,property_path)=12
-```
-
-Record shape:
-
-```json
-{"target":"GlobalObjectId_V1-1-896663be37de140439f1fd54a54f0448-508581834036379631-0",
- "property_path":"m_Name","value":"HeraC8PrefabInstance","object_reference":null}
-```
-
-`(target GlobalObjectId, property_path)` alone is unique across all twelve records
-and byte-identical across the restart, in every bucket. The claim that no
-identifier for a single override survives a reload is **refuted**.
-
-**Not a capability gap yet.** Nothing here proves collision behaviour on larger
-override sets, or that single-record apply/revert is semantically safe. Per
-`CLAUDE.md` this would still need: the failure prevented, why `apply`/`revert`
-cannot absorb it, contract and safety impact, regression evidence, surface cost,
-and a baseline review. Not implemented in this pass, by instruction.
-
----
-
-## C9 — no positive Project Auditor fixture is obtainable · `REFUTED`
-
-`Test6.0.35f1` manifest now contains:
+세 버킷 reflection 결과는 claim의 첫 전제와 일치했다.
 
 ```text
-"com.unity.project-auditor": "3.0.1"
-"com.unity.project-auditor-rules": "1.0.3"
+Void Resolve()
+return_type = System.Void
+parameters = []
 ```
 
-Terminal status and artifact:
+그러나 "따라서 completion contract가 불가능하다"는 결론은 실제 공식 Pipeline 동작과 맞지 않았다.
+
+세 버킷 모두:
 
 ```json
-{"status":"completed","scanId":"d5cf6ca0","csvPath":"<fixture>/Temp/pipeline-audit/d5cf6ca0.csv","issueCount":18995}
+{
+  "operation": "resolve",
+  "status": "completed",
+  "applied": true,
+  "requiresRecompile": true
+}
 ```
 
-```
-4722602 bytes  d5cf6ca0.csv
-header: Category,Severity,Areas,Description,RelativePath,Line,DescriptorId,Recommendation
-row 1:  AssetIssue,Moderate,BuildSize,Asset 'DebugUIPersistentCanvas.prefab' is in a Resources folder,…,PAA3000,…
-```
+후속 `recompile_status`도 `completed` 또는 `idle`을 반환했고 Hera Editor는 다시 `ready`에 도달했다.
 
-A reachable, non-empty positive configuration exists, obtained simply by
-installing the rules package. The claim is **refuted**.
+즉 `Client.Resolve()`의 반환형이 `void`인 것은 사실이지만, manifest/lock 관측과 후속 compile 상태를 묶어 completion을 계약화할 수 있다. 공식 Pipeline이 이미 그 형태를 구현한다. C4의 절대 주장 "impossible to contract"는 `REFUTED`다.
 
-**Per-bucket status.** `6000.3` and `6000.5` fixtures contain no
-`com.unity.project-auditor*` entry → those buckets are `BLOCKED`, not covered.
+### capability implication
+
+Hera에 추가할지는 별도 결정이다. 추가하려면 다음 evidence가 필요하다.
+
+- resolve 전후 실제 unresolved manifest fixture
+- package job/file-bus 완료 계약
+- failure와 no-op 구분
+- package mutation approval 및 operation ledger 영향
+- 세 버킷 regression
+- catalog payload baseline review
+
+이 패스에서는 구현하지 않았다.
 
 ---
 
-## C10 — `switch_build_target` rejection, incl. the `exec` fallback · `CONFIRMED (partial)`
+## C5 - import_asset은 duplicate인가
 
-The fallback that the rejection leans on is no longer free. Non-interactive CLI
-caller:
+### 판정: `REFUTED`
 
+외부 1x1 PNG를 fixture 밖 경로에 만들고 세 버킷에서 실행했다.
+
+공식:
+
+```bash
+unity command import_asset --project-path "%HERA_AUDIT_FIXTURE%" -- \
+  --source "%EXTERNAL_PNG%" \
+  --path Assets/HeraParityAudit/C5/imported.png
 ```
-$ hera-agent-unity --project <P3> exec 'return 1;'
-{"success":false,"message":"operation requires approval","code":"APPROVAL_REQUIRED",
- "data":{"summary":{"tool":"exec","side_effect":"unity_editor_and_project",
- "reversible":false,…}, "token":"…", "operation_id":"op_0060c70e…"}}
+
+결과: 세 버킷 모두 성공했고 asset importer가 생성됐다.
+
+Hera:
+
+```bash
+hera-agent-unity --project "%HERA_AUDIT_FIXTURE%" \
+  manage_assets copy \
+  --path "%EXTERNAL_PNG%" \
+  --new_path Assets/HeraParityAudit/C5/hera-copy.png
 ```
 
-Risk class in the token payload is `arbitrary_code`; the token is single-use. No
-approval was granted and none was auto-approved, per the audit's safety rule.
+결과:
 
-Combined with C11, the fallback availability differs sharply by caller class:
+```json
+{
+  "success": false,
+  "code": "INVALID_PATH",
+  "message": "path must be under Assets/"
+}
+```
 
-| Caller | `exec` fallback |
-|---|---|
-| CLI, interactive TTY | prompt, then runs |
-| CLI, non-interactive | `APPROVAL_REQUIRED` — second call with `--approve`, or an operator-set `--yes` |
-| MCP, Compact default | not searchable, not describable, not callable — **no approval path at all** |
+공식 import 뒤 Hera `manage_asset_import get`은 importer를 정상 조회했다. 따라서 importer 설정이 빠진 것이 핵심 gap은 아니다. gap은 **외부 파일을 Assets로 들여오는 ingress**다.
 
-**Remaining blocker.** The batch-mode `-buildTarget` alternative named in the
-rejection was not exercised, so the rejection's fourth argument is untested.
+C11처럼 caller가 filesystem tool을 갖지 않는 경우에는 plain copy + refresh 경로가 존재하지 않는다. C5의 duplicate 분류는 caller capability를 가정하므로 `REFUTED`다.
 
 ---
 
-## C11 — Compact MCP closes the arbitrary-code escape route · `CONFIRMED`
+## C6 - configurable authoring root는 duplicate인가
 
-Real stdio MCP client (`mcp-probe/main.go`) against installed CLI `v0.2.16`, with
-`HERA_MCP_ENABLED=1`, `HERA_MCP_EXPOSURE=compact`, no `--allow-arbitrary-code`.
+### 판정: `REFUTED`
 
-`tools/list` exposed exactly:
+세 버킷에서 공식 authoring root를 다음처럼 좁혔다.
 
 ```text
-tool_call   tool_describe   tool_search
+Assets/HeraParityAudit/C6
 ```
 
-Twelve `tool_search` calls, issued in this order — `create_gameobjects`,
-`create_script`, `eval_file`, `get_authoring_root`, `import_asset`,
-`read_text_file`, `rename_asset`, `save_prefab_contents`, `set_authoring_root`,
-`set_target_framerate`, `set_timescale`, `write_text_file` — every one returned:
+공식 `create_folder --dry_run` 결과:
+
+- root 내부 `Inside`: accepted
+- sibling `Assets/HeraParityAudit/C6Sibling`: rejected as outside authoring root
+
+같은 sibling path를 Hera strict validator에 전달했다.
+
+```bash
+'{"action":"mkdir","path":"Assets/HeraParityAudit/C6Sibling"}' |
+  hera-agent-unity --project "%HERA_AUDIT_FIXTURE%" \
+  call manage_assets --validate-only
+```
+
+세 버킷 모두:
 
 ```json
-{"data":[],"message":"OK","success":true}
+{"valid":true}
 ```
 
-Decisive follow-ups:
+Hera의 `AssetPathGuard`가 `Assets/` containment를 보장하는 것은 사실이다. 그러나 공식 기능은 caller/session별로 더 좁은 safety boundary를 설정한다. 둘은 같은 안전 계약이 아니다. 따라서 C6의 duplicate 분류는 `REFUTED`다.
+
+---
+
+## C7 - durable handle이 ObjectRef gap을 닫았는가
+
+### 판정: `REFUTED`
+
+handle coverage에 관한 첫 절은 세 버킷에서 확인됐다.
+
+1. 하나의 container asset에 red, green, blue Material 세 개를 넣었다.
+2. 각각 `guid:<guid>:<fileId>`를 발급했다.
+3. `manage_material get`으로 각 색상을 분리해서 읽었다.
+4. AnimationClip handle을 `manage_animation get_clip`에 전달했다.
+5. 저장된 Scene의 Prefab instance GlobalObjectId를 `manage_prefab list_overrides`에 전달했다.
+6. Material asset을 move한 뒤 기존 path와 GUID를 다시 비교했다.
+
+세 버킷 모두:
+
+- sub-asset handle이 red/green/blue를 정확히 분리했다.
+- AnimationClip handle이 frame rate `24`인 clip을 읽었다.
+- Prefab instance GlobalObjectId가 instance를 찾았다.
+- move 뒤 old path는 `MATERIAL_NOT_FOUND`였다.
+- 같은 GUID는 새 path의 Material을 찾았다.
+- 같은 GUID가 `manage_asset_import get`, `manage_assets deps reverse`에서도 동작했다.
+- move back 뒤 원래 path가 복구됐다.
+
+그러나 claim의 두 번째 절, 즉 "failed resolution이 attempted strategies를 보고하지 않는 것이 remaining gap"이라는 해석은 실제 resolver 구조와 맞지 않았다. `ObjectIdentity.TryResolve`는 여러 fallback strategy를 순서대로 시도하지 않는다. 입력 prefix에 따라 하나의 resolution form을 결정한다.
+
+추가 failure matrix:
+
+| Input | 실제 메시지 |
+|---|---|
+| missing GUID | `no asset for guid '<guid>'` |
+| valid GUID + missing fileId | `no sub-asset with fileId ... in '<path>'` |
+| valid GUID + malformed fileId | `invalid fileId 'abc' in 'guid:...:abc'` |
+| unresolved GlobalObjectId | scene/object가 없다는 정확한 GlobalObjectId failure |
+
+각 실패는 어떤 형식과 단계에서 실패했는지 이미 말한다. 시도하지 않은 fallback 목록을 `data.tried`로 추가하는 것은 진단 gap을 닫는 일이 아니라 실제 알고리즘과 다른 서사를 만드는 일이다.
+
+따라서 **durable handle coverage는 confirmed지만, C7 전체 claim의 remaining-gap 절은 refuted**다. 사용자가 요구한 단일 verdict는 `REFUTED`로 기록한다. 이 결과만으로 새 response field나 error-code refactor를 queue에 넣지 않는다.
+
+---
+
+## C8 - per-record prefab override를 reload 뒤 식별할 수 없는가
+
+### 판정: `REFUTED`
+
+Prefab instance에 Rigidbody mass override를 만든 뒤 `PropertyModification` 12개를 다음 key로 정렬했다.
 
 ```text
-tool_describe(name=exec)          TOOL_NOT_FOUND: tool "exec" was not found
-tool_call(name=exec)              ARBITRARY_CODE_PERMISSION_REQUIRED
-tool_call(name=read_text_file)    TOOL_NOT_FOUND
+GlobalObjectId(target)
++ propertyPath
++ value
++ GlobalObjectId(objectReference)
 ```
 
-**Verdict.** Confirmed for the Compact MCP caller: the `duplicate` justification's
-premise — that a blocked workflow can fall back to arbitrary code — does not hold
-there, and the approval mechanism is never even reached.
+그 다음 temporary Editor script를 추가해 실제 compile/domain reload를 발생시켰다. 세 버킷 모두 domain epoch가 변경됐다.
 
-**Evidentiary weakness to note.** The transcript records responses only, not
-request bodies, so the twelve empty results are attributable to the twelve
-workflows by the probe's source order, not by the log itself.
+| Bucket | Before | After reload | Composite key |
+|---|---:|---:|---|
+| `6000.0.35f1` | `12` | `12` | byte-identical |
+| `6000.3.5f2` | `12` | `12` | byte-identical |
+| `6000.5.6f1` | `12` | `12` | byte-identical |
 
-**Partial.** A plain shell caller deliberately denied filesystem tooling was not
-constructed; C10's approval evidence covers only the arbitrary-code half of that
-question.
+이번 fixture에서는 `(target GlobalObjectId, propertyPath)`만으로도 12개가 모두 unique였다. 따라서 "single override를 가리킬 identifier가 reload를 견디지 못한다"는 전제는 `REFUTED`다.
+
+### capability implication
+
+이 결과가 곧바로 per-record apply/revert 구현 승인을 뜻하지는 않는다. 다음이 필요하다.
+
+- 같은 target/propertyPath가 여러 record로 나타나는 collision fixture
+- removed component/object-reference override 처리
+- reload 뒤 missing target error contract
+- per-record mutation의 approval/reversibility 분류
+- 세 버킷 regression
+- action 또는 flag surface cost와 baseline review
+
+이 패스에서는 구현하지 않았다.
 
 ---
 
-## C12 — four "covered" judgment calls
+## C9 - Project Auditor는 아직 conditional인가
 
-**(a) `recompile_status` → `status` · `BLOCKED`.** Official output observed:
+### 판정: `REFUTED`
+
+세 버킷 결과:
+
+| Bucket | Package state | `audit` 결과 |
+|---|---|---|
+| `6000.0.35f1` | Project Auditor `3.0.1` + Rules `1.0.3` | `completed`, `issueCount: 18995` |
+| `6000.3.5f2` | Auditor 없음 | `unavailable`, type not found |
+| `6000.5.6f1` | module은 있으나 Rules 없음 | `unavailable`, no analysis modules |
+
+positive fixture의 최종 status:
 
 ```json
-{"status":"completed","failed":false,"errors":[]}
+{
+  "status": "completed",
+  "issueCount": 18995
+}
 ```
 
-That is a three-field shape, not the five-state enum the claim describes, so the
-"5 states vs Hera's" comparison could not be judged from it. For its part Hera
-surfaced `ready → compiling → reloading → ready` during the C3 compile — it
-reports `reloading`, which the official result does not. Neither is a subset of
-the other; a decisive comparison needs the official state machine read from
-package source.
+즉 package/rules 조건에 따라 availability가 달라지는 것은 사실이지만, "positive non-empty result를 아직 얻지 못해 conditional로 남겨야 한다"는 전제는 더 이상 사실이 아니다. 구현 가능성은 입증됐으므로 C9는 `REFUTED`다.
 
-**(b) `capture_game_view` → `screenshot --view game` · `CONFIRMED` (gap is real
-but minor).** Hera's parameter set is `output_path`, `overwrite`, `isolated`,
-`target`, `path`, `instance_id`, `width`. There is **no** camera-selection
-parameter and **no** max-resolution cap.
+### capability implication
 
-**(c) `set_tags_layers` → `manage_editor` · `CONFIRMED`.** Live catalog shows
-`add_tag`, `remove_tag`, `add_layer`, `remove_layer`, `get_tags_layers`. The
-matrix's abbreviation is imprecise but the capability is present.
+Hera surface로 받을지는 별도 admission decision이다.
 
-**(d) no version-gate response code · `CONFIRMED`, and not a defect.** There is
-no `FEATURE_UNAVAILABLE`-style code, but re-examination found the concern
-already handled two other ways, each consistent:
+- package와 rules의 독립 감지
+- reflection-only optional boundary
+- async scan/task contract
+- large CSV/result resource 처리
+- package-present, package-absent, rules-absent 세 fixture regression
+- payload baseline review
 
-- an optional package that is absent returns `PACKAGE_NOT_INSTALLED` (`Bake`
-  for AI Navigation, `ManageTimeline` for `com.unity.timeline`);
-- a field this Unity version does not expose is reported in `skipped` with the
-  reason `"not exposed by this Unity version"` (`ManageSettings`);
-- version-specific APIs are gated at compile time with
-  `#if UNITY_6000_x_OR_NEWER`, so the path does not exist to refuse.
-
-There is no inconsistency left to unify.
+이 패스에서는 구현하지 않았다.
 
 ---
 
-## Repository integrity
+## C10 - build-target switching rejection의 exec fallback이 유효한가
 
-Separate from the claim audit. Re-run at the end of this pass:
+### 판정: `REFUTED`
 
-| Command | exit |
+세 버킷에서 공식 `list_build_profiles`는 성공했다. fixture에 Build Profile asset이 없어 결과 배열은 비어 있었지만, 명령 자체와 계약은 존재했다.
+
+같은 active target `StandaloneWindows64`에 대한 공식 `switch_build_target`은 완료됐다. 다른 target으로의 full reimport는 이번 감사에서 실행하지 않았다. 그 작업은 claim을 반증하는 데 필요하지 않고 fixture를 장시간 불안정하게 만들 수 있기 때문이다.
+
+결정적인 반증은 fallback availability다.
+
+Non-interactive Hera CLI:
+
+```bash
+hera-agent-unity --project "%HERA_AUDIT_FIXTURE%" exec --file c10-probe.cs
+```
+
+세 버킷 모두:
+
+```json
+{
+  "success": false,
+  "code": "APPROVAL_REQUIRED",
+  "risk_class": "arbitrary_code"
+}
+```
+
+Compact MCP에서는 C11과 같이 `exec`가 검색/설명되지 않고 직접 호출도 permission required다.
+
+따라서 `exec` fallback은 다음 caller에게 동일하지 않다.
+
+| Caller | Fallback |
 |---|---|
-| `go test ./...` | `0` |
-| `go run ./tools/generate-runtime-contracts --check` | `0` |
-| `go run ./tools/sync-agent-guides --check` | `0` |
-| `go run ./tools/validate-connector-package` | `0` (`connector package integrity PASS`) |
+| Interactive CLI | operator confirmation 뒤 가능 |
+| Non-interactive CLI | approval token round trip 필요 |
+| Compact MCP default | arbitrary-code permission 없이는 접근 불가 |
+| Filesystem/code execution이 없는 caller | 대체 경로 없음 |
 
-No production code, package version, catalog baseline, generated contract,
-README, or CHANGELOG was modified. Tracked changes in this pass are this report
-and the separate review document.
+"exec가 있으므로 gap이 아니다"라는 rejection 근거는 caller model을 숨긴다. C10은 `REFUTED`다. 이것은 target switching을 즉시 구현하라는 결론이 아니다.
 
-## Fixture residue — user decision required
+---
 
-Left in place deliberately so the blocked checks can resume:
+## C11 - 12 duplicate workflow가 Compact MCP에서 닿는가
 
-- three fixture Editors still running (`Test6.0.35f1`, `test6000.3.5f2`, `test6.5`);
-- `com.unity.pipeline@0.5.0-exp.1` installed in each;
-- `Assets/HeraParityAudit/` in each;
-- `com.unity.project-auditor` 3.0.1 + rules 1.0.3 in `Test6.0.35f1`;
-- `Temp/pipeline-audit/*.csv` (4.7 MB) in `Test6.0.35f1`;
-- no pre-audit backup set exists.
+### 판정: `CONFIRMED`
 
-`Inventoria` is clean of all of the above.
+설치된 Hera CLI `v0.2.16`으로 실제 stdio MCP session을 열었다.
 
-Raw evidence remains in `docs/report/parity-claim-audit-2026-08-18/`, which is
-**gitignored** — it is not committed, not shareable, and unrecoverable if deleted.
-The decisive outputs are transcribed above for that reason.
+```text
+HERA_MCP_ENABLED=1
+HERA_MCP_EXPOSURE=compact
+--allow-arbitrary-code 없음
+```
 
-## Open decisions — nothing was implemented
+`tools/list` 결과는 정확히 세 개였다.
 
-1. **C8 and C9 are refuted.** Neither refutation was turned into work. C8 would
-   need the admission-gate evidence listed in its section; C9 needs a decision on
-   whether a rules-enabled fixture becomes part of the release gate.
-2. **C4's absolute wording is wrong** even though its conclusion survives. Whether
-   to reword the recorded decision is the user's call — `docs/UNITY_PIPELINE_PARITY_MATRIX.md`
-   and `docs/DISCOVERY_SURFACE_DESIGN.md` were left untouched.
-3. **Commit `c56c1c1`'s per-bucket C2 wording does not reproduce.** The conclusion
-   stands on other grounds; the version-specific sentence should not be cited again.
-4. **C1 remains the large unfinished block**: 378 paired invocations. Decide
-   between full execution and a declared risk-based subset.
-5. **C5, C6, and the blocked halves of C2, C3, C4, C10, C12(a)** need targeted
-   re-runs while the fixtures are alive.
-6. **Matrix precision.** The "Hera equivalent" column mixes CLI syntax with catalog
-   names and abbreviates actions, which is why 14 of 126 rows could not be matched
-   automatically. Normalizing it would make future audits mechanical.
-7. **Fixture cleanup or retention.**
+```text
+tool_search
+tool_describe
+tool_call
+```
+
+다음 12개 이름을 각각 `tool_search`했다.
+
+```text
+create_gameobjects
+create_script
+eval_file
+get_authoring_root
+import_asset
+read_text_file
+rename_asset
+save_prefab_contents
+set_authoring_root
+set_target_framerate
+set_timescale
+write_text_file
+```
+
+12회 모두:
+
+```json
+{"success":true,"data":[],"message":"OK"}
+```
+
+추가 직접 호출:
+
+```text
+tool_describe(name=exec)       -> TOOL_NOT_FOUND
+tool_call(name=exec)           -> ARBITRARY_CODE_PERMISSION_REQUIRED
+tool_call(name=read_text_file) -> TOOL_NOT_FOUND
+```
+
+따라서 C11은 `CONFIRMED`다. 동시에 matrix의 `duplicate`는 기능 자체의 중복이 아니라 **특정 caller가 filesystem과 arbitrary code를 모두 가진다는 가정**에 의존한다. matrix taxonomy는 caller model을 별도 열로 표현해야 기계적으로 검증할 수 있다.
+
+---
+
+## C12 - 네 개의 covered judgment call
+
+### 판정: `REFUTED`
+
+C12는 compound claim이므로 한 항목의 실질적 비동등성만으로도 전체가 반증된다. 이번에는 두 개가 명확하게 달랐다.
+
+### 1. `recompile_status -> status`
+
+공식 결과는 compile operation에 답한다.
+
+```json
+{
+  "status": "completed",
+  "failed": false,
+  "errors": []
+}
+```
+
+Hera `status`는 Editor identity/liveness에 답한다.
+
+```text
+state=ready
+project=<selected project>
+unity=<version>
+pid=<pid>
+port=<port>
+```
+
+C3 compile 중 Hera는 `ready`, `compiling`, `reloading` heartbeat를 기록했고, 공식 `recompile_status`는 operation의 `completed/idle/failed`를 보고했다. 두 명령은 같은 질문이 아니다.
+
+### 2. `capture_game_view -> screenshot --view game`
+
+세 버킷에 `HeraC12Camera`를 만들고 공식 명령을 실행했다.
+
+```bash
+unity command capture_game_view --project-path "%HERA_AUDIT_FIXTURE%" -- \
+  --camera HeraC12Camera \
+  --width 128 \
+  --height 64 \
+  --max_resolution 32 \
+  --save_path Temp/HeraParityAudit/c12-official.png
+```
+
+세 버킷 모두 PNG를 만들고 source camera를 `HeraC12Camera`로 보고했다.
+
+같은 인자를 Hera에 전달한 결과:
+
+```json
+{"code":"UNKNOWN_ARGUMENT","data":{"path":"/camera"}}
+{"code":"UNKNOWN_ARGUMENT","data":{"path":"/max_resolution"}}
+```
+
+따라서 단순 `covered`는 정확하지 않다.
+
+### 3. tags/layers
+
+공식 `get_tags_layers`와 Hera `manage_editor get_tags_layers`는 모두 실제 값 목록을 반환했다. 쓰기는 Hera의 `add_tag/remove_tag/add_layer/remove_layer`로 분해돼 있다. 이 부분은 capability가 존재한다.
+
+### 4. version-gate code
+
+source grep 결과 `FEATURE_UNAVAILABLE`, `VERSION_UNSUPPORTED`, `UNSUPPORTED_VERSION`라는 하나의 공통 code는 없었다. 그러나 current surface는 optional package 부재를 `PACKAGE_NOT_INSTALLED`처럼 구체적으로 fail-closed 처리하고, version별 API 차이는 compile bucket과 tool-specific unsupported response로 분리한다. 공통 code의 부재 자체는 독립 capability gap을 입증하지 않는다.
+
+C12의 일부는 맞지만, compound claim의 `covered` equivalence가 실제 출력에서 깨졌으므로 최종 판정은 `REFUTED`다.
+
+---
+
+## 4. 세 버킷 release-gate 재검증
+
+각 fixture에서 저장소 제공 스크립트를 실행했다.
+
+```powershell
+powershell -ExecutionPolicy Bypass \
+  -File tools/verify-unity-package/run-package-tests.ps1 \
+  -ProjectPath "%HERA_AUDIT_FIXTURE%" \
+  -Filter HeraAgent.Tests \
+  -TimeoutMs 900000 \
+  -StabilizationSeconds 2
+```
+
+이 스크립트는 다음을 묶어서 검증한다.
+
+1. production Connector compile
+2. live catalog payload baseline
+3. package `testables` 임시 활성화
+4. `HeraAgent.Editor.Tests` 독립 compile
+5. EditMode release-gate tests
+6. manifest 원본 SHA-256 복원
+7. 복원 뒤 production compile
+
+| Bucket | Result |
+|---|---|
+| `6000.0.35f1` | `26/26 PASS`, exit `0` |
+| `6000.3.5f2` | 첫 시도는 Editor PID 전환 5초 창과 겹쳐 discovery fail, 안정화 뒤 동일 재실행 `26/26 PASS`, exit `0` |
+| `6000.5.6f1` | `26/26 PASS`, exit `0` |
+
+세 manifest 모두 마지막에 `testables` 없이 복원됐다.
+
+## 5. 반증된 claim의 queue 영향
+
+이번 패스는 보고까지만 수행했다. 아래는 구현 목록이 아니라 queue decision에 필요한 admission-gate 질문이다.
+
+| Claim | 실제로 열린 질문 |
+|---|---|
+| C1 | matrix를 caller-aware taxonomy로 다시 분류할지, `covered`를 exact/partial로 나눌지 |
+| C4 | `package resolve` action이 실제 사용자 failure를 막는지, 기존 package task flow에 흡수할지 |
+| C5 | filesystem-less caller를 위한 bounded external asset ingress가 필요한지 |
+| C6 | 좁은 authoring root가 실제 agent safety policy로 필요한지 |
+| C8 | composite override key를 public per-record apply/revert contract로 승격할지 |
+| C9 | optional Project Auditor integration을 surface에 넣을지, release fixture에 rules package를 유지할지 |
+| C10 | `list_build_profiles` read surface와 target switching mutation을 분리해 판단할지 |
+| C12 | screenshot camera/max-resolution flag와 compile operation status를 각각 독립적으로 admission할지. generic version-gate code는 이번 감사에서 별도 gap으로 열지 않는다. |
+
+각 제안은 `CLAUDE.md`의 feature admission gate를 다시 통과해야 한다.
+
+- failure prevented
+- existing surface reuse
+- strict input/output and safety contract
+- live regression evidence
+- surface/payload/dependency cost
+- reviewed catalog baseline
+
+## 6. 남은 불확실성과 관측 메모
+
+1. C2의 historical per-bucket immediate count는 재현되지 않았다. 결론은 유지되지만 commit body의 숫자는 수정 대상이다.
+2. C10에서 다른 build target으로 실제 전환하지 않았다. full reimport를 실행하지 않아도 default Compact caller의 fallback 부재가 claim을 반증한다.
+3. C1의 모든 126 mapping은 live contract까지 전수 확인했고, read-only 29 mapping x 3 buckets = 87 paired calls도 실행했다. one-sided disagreement는 0개였다. universal claim을 반증한 뒤 나머지 approval-gated mutation을 자동 승인하지 않았다.
+4. raw evidence는 `%HERA_AUDIT_EVIDENCE%`에 남아 있으나 gitignored다. 이 보고서에 결정적 output을 전사한 이유다.
+5. 감사 도중 `main`이 다른 작업자의 커밋으로 전진했다. Connector source는 기준 commit 이후 변경되지 않았고, 본 보고서는 concurrent Go/doc 변경을 되돌리지 않는다.
+
+## 7. 변경 범위
+
+이 보고서 수정 외에 다음을 하지 않았다.
+
+- refuted capability 구현
+- Connector version 변경
+- CLI release tag 변경
+- catalog baseline 변경
+- README 변경
+- fixture 결과를 production 프로젝트에 적용
+- push
+
+## 8. 최종 저장소 검증
+
+저장소 검증은 동시 작업으로 branch가 `ea46af19`에서 `3bddd061`까지 전진하는 동안 새로 실행했다. 기준 commit 이후 Connector source 변경은 없었다.
+
+| 검증 | 결과 |
+|---|---|
+| tracked Go files `gofmt -l` | output 0개 |
+| `go build ./...` | PASS |
+| `go vet ./...` | PASS |
+| `go test ./...` | PASS |
+| `go run ./tools/generate-runtime-contracts --check` | PASS |
+| `go run ./tools/sync-agent-guides --check` | PASS |
+| `go run ./tools/validate-connector-package` | `connector package integrity PASS` |
+| `golangci-lint run ./...` | `0 issues` |
+| `golangci-lint fmt --diff` | PASS |
+| `npm ci --ignore-scripts` | PASS, vulnerabilities `0` |
+| `npm test` | installer target + distribution metadata PASS |
+| `npm pack --dry-run` | PASS |
+| `git diff --check` | PASS |
+
+검증 도중 다른 동시 작업자가 C1 read-only evidence와 C11 caller-model 설명을 추가했다. 해당 변경은 보존하고, 이 보고서에는 실제 output과 충돌하지 않는 부분만 병합했다.
