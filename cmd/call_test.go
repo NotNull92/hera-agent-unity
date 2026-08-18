@@ -241,6 +241,47 @@ func TestDeniedApprovalCausesZeroMutation(t *testing.T) {
 	}
 }
 
+func TestAutoApproveDispatchesInOneInvocation(t *testing.T) {
+	// Given
+	command, sent := newTestCallCommand(t, callInput{})
+	snapshot := testSnapshot(t)
+	requireSceneApproval(snapshot)
+	command.load = func(context.Context, *client.Instance) (*toolregistry.Snapshot, error) {
+		return snapshot, nil
+	}
+	command.preflight = func(client.ApprovalPreflightRequest) (*client.ApprovalPreflight, error) {
+		return testApprovalPreflight(), nil
+	}
+	command.sendOperation = func(
+		command string,
+		params map[string]any,
+		options client.SendOptions,
+	) (*client.CommandResponse, error) {
+		sent.command = command
+		sent.params = params
+		sent.options = options
+		sent.calls++
+		return &client.CommandResponse{Success: true, Message: "OK"}, nil
+	}
+	command.interactive = true
+	command.confirm = approvalConfirmer(true)
+
+	// When
+	response, err := command.Run(context.Background(), approvalTestInstance(), []string{
+		"scene", "--json", `{"action":"info"}`,
+	})
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !response.Success || sent.calls != 1 ||
+		sent.options.ApprovalToken != "approval-token" ||
+		sent.options.OperationID != "op_approval_fixture" {
+		t.Fatalf("response=%#v sent=%#v", response, sent)
+	}
+}
+
 func TestApprovedTokenDispatches(t *testing.T) {
 	// Given
 	command, sent := newTestCallCommand(t, callInput{})

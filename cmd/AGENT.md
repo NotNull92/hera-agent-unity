@@ -206,7 +206,10 @@ preflighted. In a non-interactive shell, both typed `call` and established
 commands return `APPROVAL_REQUIRED`; repeat the same command and append
 `--approve <token>`. Do not change the project, tool, action, arguments, or
 operation ID, because the short-lived token is bound to all of them and is
-single-use. Never approve automatically on the user's behalf.
+single-use, so the repeat must carry the original arguments again. Never
+approve automatically on the user's behalf: the `--yes` flag and
+`HERA_AGENT_APPROVE` belong to the operator's own shell or CI job, so read the
+approval summary and ask instead of adding them to a command yourself.
 
 **[Rule 15]** Treat `TEST_RUN_PENDING` as a slow Unity Test Runner result, not
 as proof that the Editor is unresponsive. The error data contains the exact

@@ -107,7 +107,7 @@ cmd/                  # Go CLI — thin passthrough layer
   help.go             # go:embed help/*.txt topic printer
   call_approval.go    # approval-token preflight and --approve replay
   call_safety.go      # risk-class projection for call
-  call_tty.go         # interactive confirmation when stdin is a TTY
+  call_tty.go         # interactive confirmation when stdin is a TTY (+ --yes)
   legacy_approval.go  # approval handling on the legacy passthrough path
   doctor_agent_rules.go # --agent-rules sections (Ultra Hera loop text lives here)
   editor_process.go   # PID liveness + stop helpers (+ _unix/_windows variants)

@@ -16,6 +16,7 @@ type GlobalConfig struct {
 	Debug       bool
 	CompactJSON bool
 	Narrate     bool
+	AutoApprove bool
 }
 
 type WaitConfig struct {
@@ -49,6 +50,7 @@ func parseGlobalConfig(args []string) (GlobalConfig, []string, error) {
 	flags.BoolVar(&config.Debug, "debug", envBool("HERA_AGENT_DEBUG"), "Print HTTP request and response details")
 	flags.BoolVar(&config.CompactJSON, "compact-json", envBool("HERA_AGENT_COMPACT_JSON"), "Output compact JSON")
 	flags.BoolVar(&config.Narrate, "narrate", envBool("HERA_AGENT_NARRATE"), "Narrate wait progress")
+	flags.BoolVar(&config.AutoApprove, "yes", envBool("HERA_AGENT_APPROVE"), "Answer approval preflights without prompting")
 	if err := flags.Parse(flagArgs); err != nil {
 		return GlobalConfig{}, nil, fmt.Errorf("flag parse error: %w", err)
 	}

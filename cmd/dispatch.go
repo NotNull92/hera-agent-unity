@@ -143,10 +143,8 @@ func (runner unityCommandRunner) Run(
 					options,
 				)
 			},
-			interactive: approvalTTY(os.Stdin, os.Stderr),
-			confirm: func(summary client.ApprovalSummary) (bool, error) {
-				return promptCallApproval(os.Stdin, os.Stderr, summary)
-			},
+			interactive: runner.config.AutoApprove || approvalTTY(os.Stdin, os.Stderr),
+			confirm:     approvalConfirmer(runner.config.AutoApprove),
 		})
 	}
 
@@ -185,10 +183,8 @@ func (runner unityCommandRunner) Run(
 				return client.DefaultClient.PreflightApproval(ctx, runner.instance, request)
 			},
 			input:       detectCallInput(os.Stdin),
-			interactive: approvalTTY(os.Stdin, os.Stderr),
-			confirm: func(summary client.ApprovalSummary) (bool, error) {
-				return promptCallApproval(os.Stdin, os.Stderr, summary)
-			},
+			interactive: runner.config.AutoApprove || approvalTTY(os.Stdin, os.Stderr),
+			confirm:     approvalConfirmer(runner.config.AutoApprove),
 		}
 		resp, err = command.Run(ctx, runner.instance, subArgs)
 	case "editor":

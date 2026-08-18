@@ -16,6 +16,7 @@ func TestGlobalConfigIsIsolatedBetweenParses(t *testing.T) {
 		"HERA_AGENT_DEBUG",
 		"HERA_AGENT_COMPACT_JSON",
 		"HERA_AGENT_NARRATE",
+		"HERA_AGENT_APPROVE",
 	} {
 		t.Setenv(name, "")
 	}
@@ -41,5 +42,31 @@ func TestGlobalConfigIsIsolatedBetweenParses(t *testing.T) {
 	}
 	if firstCommand[0] != "scene" || secondCommand[0] != "scene" {
 		t.Fatalf("commands=%#v %#v", firstCommand, secondCommand)
+	}
+}
+
+func TestAutoApproveComesFromFlagOrEnvironment(t *testing.T) {
+	// Given
+	t.Setenv("HERA_AGENT_APPROVE", "")
+	args := []string{"exec", "return 1;", "--yes"}
+
+	// When
+	flagged, command, err := parseGlobalConfig(args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HERA_AGENT_APPROVE", "1")
+	fromEnv, _, err := parseGlobalConfig([]string{"exec", "return 1;"})
+
+	// Then
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !flagged.AutoApprove || !fromEnv.AutoApprove {
+		t.Fatalf("flagged=%#v fromEnv=%#v", flagged, fromEnv)
+	}
+	// --yes is a global flag: it must not survive into the tool arguments.
+	if len(command) != 2 || command[0] != "exec" || command[1] != "return 1;" {
+		t.Fatalf("command=%#v", command)
 	}
 }

@@ -14,6 +14,7 @@ These flags work with any command:
 | `--project` | Select Unity instance by project path | Auto-discover | `--project /path/to/project` |
 | `--timeout` | Request timeout in milliseconds | `60000` (1 min) | `--timeout 120000` (2 min) |
 | `--verbose` | Print progress + per-phase timings to stderr | `false` | `--verbose` |
+| `--yes` | Answer approval preflights in the same invocation (env: `HERA_AGENT_APPROVE`) | `false` | `--yes` |
 
 `--timeout` is always milliseconds: `--timeout 120000` means two minutes,
 while `--timeout 120` means 120 milliseconds.
@@ -79,8 +80,14 @@ Validation uses the resolved action schema, so an action-specific object such as
 `{"action":"set_rect","path":"/Canvas","size_delta":"300,60"}` is checked against `manage_ui/set_rect`, not only the
 tool's top-level dispatcher shape. In a non-interactive shell, an approval-gated
 request returns `APPROVAL_REQUIRED`; repeat the exact same typed or established
-command with `--approve <token>`. Changing its project, tool, action, arguments,
-or operation ID invalidates the single-use token.
+command with `--approve <token>`, carrying the original input again because the
+token is bound to the exact arguments. Changing its project, tool, action,
+arguments, or operation ID invalidates the single-use token.
+
+`--yes` (env: `HERA_AGENT_APPROVE=1`) belongs to an operator's own shell or CI
+job: it answers the preflight in the same invocation rather than returning
+`APPROVAL_REQUIRED`. Preflight, token binding, and the Connector operation
+ledger are unchanged; only the terminal question is skipped.
 
 ---
 

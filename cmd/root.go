@@ -401,7 +401,7 @@ func splitArgs(args []string) (flags, commands []string) {
 				i++
 				flags = append(flags, args[i])
 			}
-		case "--verbose", "--quiet", "--debug", "--compact-json", "--narrate":
+		case "--verbose", "--quiet", "--debug", "--compact-json", "--narrate", "--yes":
 			flags = append(flags, args[i])
 		default:
 			commands = append(commands, args[i])

@@ -7,7 +7,8 @@ Typed Call:
                                       Quoting-free JSON input from stdin
   call <tool> --validate-only      Validate without invoking the tool
   call <tool> --explain            Show resolved action/profile/safety without invoking
-  call <tool> --approve <token>    Continue an approval-required preflight
+  call <tool> <input> --approve <token>
+                                   Continue an approval-required preflight
 
 Experimental MCP:
   HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
@@ -280,6 +281,9 @@ Global Options:
                       (env: HERA_AGENT_COMPACT_JSON)
   --narrate           Print waitForAlive/waitForReady progress even on
                       tool commands (env: HERA_AGENT_NARRATE)
+  --yes               Answer approval preflights in the same invocation
+                      instead of returning APPROVAL_REQUIRED
+                      (env: HERA_AGENT_APPROVE)
 
 Use "hera-agent-unity <command> --help" for more information about a command.
 

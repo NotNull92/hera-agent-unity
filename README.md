@@ -678,7 +678,7 @@ Ambiguous targeting fails instead of guessing.
 
 ### Risky operations can require approval
 
-Approval-gated work is preflighted first. The returned token is tied to that exact request and is single-use. Changing the target or arguments invalidates the approval.
+Approval-gated work is preflighted first. The returned token is tied to that exact request and is single-use. Changing the target or arguments invalidates the approval. In a shell or CI job you already trust, `--yes` (env: `HERA_AGENT_APPROVE=1`) answers the preflight in the same invocation instead of returning `APPROVAL_REQUIRED` — the preflight and the operation ledger still run.
 
 ### It does not blindly repeat an uncertain mutation
 
