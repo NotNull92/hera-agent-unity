@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI 0.2.15 — one-invocation approvals)
+
+- `--yes` (env: `HERA_AGENT_APPROVE`) answers an approval preflight in the same
+  invocation instead of returning `APPROVAL_REQUIRED`, on both the typed `call`
+  path and the established command path. Preflight, token binding, and the
+  Connector operation ledger are unchanged; only the terminal question is
+  skipped. It belongs to an operator's own shell or CI job, so an agent must not
+  add it on the user's behalf.
+- Corrected the `call` help usage line, which implied an approval retry could
+  omit the original input. The token is bound to the exact arguments, so the
+  retry has to repeat them.
+
+### Changed (CLI — a Connector that predates an action says so)
+
+- When the running Connector rejects the `action` argument of a command, Hera
+  now returns `CONNECTOR_UPDATE_REQUIRED` with an update suggestion instead of
+  the raw `UNKNOWN_ARGUMENT` validation failure. A Connector accepts `action`
+  only for tools that declare an action contract, so this rejection means the
+  installed package predates the action rather than that the caller sent
+  something malformed. Rejections at any other argument keep their own code.
+
 ### Removed (Connector 0.1.2)
 
 - Removed the unreachable multi-element hint composer and the bar recipe from

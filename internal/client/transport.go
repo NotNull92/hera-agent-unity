@@ -170,7 +170,45 @@ func (c *Client) SendWithOptions(
 		return nil, fmt.Errorf("HTTP %d from Unity returned an error envelope without a code", statusCode)
 	}
 
+	diagnoseUnsupportedAction(command, params, &result)
+
 	return &result, nil
+}
+
+// diagnoseUnsupportedAction rewrites a generic argument rejection into a
+// version-skew diagnosis. The Connector accepts an "action" argument only for
+// tools that declare an action contract, so rejecting "/action" on a request
+// that carries one means the installed package predates that action rather than
+// that the caller passed something malformed.
+func diagnoseUnsupportedAction(command string, params any, result *CommandResponse) {
+	if result.Success || result.Code != "UNKNOWN_ARGUMENT" {
+		return
+	}
+	fields, ok := params.(map[string]any)
+	if !ok {
+		return
+	}
+	action, ok := fields["action"].(string)
+	if !ok || action == "" {
+		return
+	}
+	var detail struct {
+		Path string `json:"path"`
+	}
+	if json.Unmarshal(result.Data, &detail) != nil || detail.Path != "/action" {
+		return
+	}
+	result.Code = "CONNECTOR_UPDATE_REQUIRED"
+	result.Message = fmt.Sprintf(
+		"the Unity Connector installed in this project does not support the %q action of %q",
+		action,
+		command,
+	)
+	result.Suggestions = append(
+		result.Suggestions,
+		"Update the com.notnull92.hera-agent-unity package in this project, then retry.",
+		"Run 'hera-agent-unity manage_packages list' to read the installed Connector version.",
+	)
 }
 
 func optionalToken(token string) *string {

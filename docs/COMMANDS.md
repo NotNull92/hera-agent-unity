@@ -26,6 +26,13 @@ both `--project` and `--port` are present they must resolve to the same heartbea
 Transport failures and request timeouts trigger a fresh heartbeat ownership
 check before any retry.
 
+The CLI and the Unity Connector are versioned independently, so a CLI can know
+an action the installed Connector does not. When the Connector rejects the
+`action` argument itself, Hera returns `CONNECTOR_UPDATE_REQUIRED` with the tool
+and action it could not run, rather than the raw validation failure. Update the
+`com.notnull92.hera-agent-unity` package in that project; retrying the same
+command against the same Connector cannot succeed.
+
 ---
 
 ## mcp (experimental)
