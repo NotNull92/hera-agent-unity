@@ -94,7 +94,7 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `lighting_bake_status` | covered | bake status lighting |
 | `list_build_profiles` | rejected | locked decision or unsafe/duplicative host operation |
 | `list_build_targets` | covered | build list_targets |
-| `list_open_scenes` | covered | scene list/info |
+| `list_open_scenes` | covered | scene info (loaded/active/dirty; `scene list` answers Build Settings instead) |
 | `list_shaders` | covered | describe_shader --list |
 | `list_tests` | covered | run_tests list (CLI `test list`) |
 | `log` | covered | log |

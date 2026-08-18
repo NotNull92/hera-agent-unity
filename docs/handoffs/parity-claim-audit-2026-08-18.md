@@ -12,13 +12,13 @@ absent in Hera.
 
 | ID | Verdict | One line |
 |---|---|---|
-| C1 | `BLOCKED` | Counts and name-resolution reproduced for all 153 rows; per-row semantic execution of the 126 `covered` rows was not run. |
+| C1 | `BLOCKED` (read-only lane `CONFIRMED`) | Counts and name-resolution reproduced for all 153 rows. The 29 read-only pairs were then executed on both surfaces in all three buckets — 87 paired runs, zero disagreements, one imprecise mapping found. The 86 mutating rows remain unexecuted. |
 | C2 | `CONFIRMED (partial)` | Settled-index subset claim holds in all three buckets; immediate-lag reproduced on `6000.0` only. The historical per-bucket pattern did **not** reproduce. |
 | C3 | `CONFIRMED (partial)` | `SignalTick` is non-public; idle cadence inside the claimed range; an unfocused Editor completed a compile unaided. Bake and minimized states unmeasured. |
 | C4 | `REFUTED (in part)` / `BLOCKED (in part)` | A contract-shaped result *is* producible, so the absolute claim is wrong; but the result has no observable postcondition, and the decisive test needs an unresolved manifest. |
 | C5 | `BLOCKED` | No workflow transcript exists and none was produced. |
 | C6 | `BLOCKED` | Fixed root is source-verified; no real narrower-root workflow was demonstrated. |
-| C7 | `CONFIRMED` | Durable handles resolve across the named tools, sub-asset disambiguation reproduced, and failure does **not** name attempted strategies. |
+| C7 | `CONFIRMED` | Durable handles resolve across the named tools and sub-asset disambiguation reproduced. The "attempted strategies" wording was withdrawn on re-examination: the resolver dispatches on handle form and each failure already names its exact stage. |
 | C8 | `REFUTED` | A per-override identity survives a real Editor restart, unique and byte-identical, in all three buckets. |
 | C9 | `REFUTED` | A positive Project Auditor fixture was obtained and completed with 18,995 issues. |
 | C10 | `CONFIRMED (partial)` | The `exec` fallback costs an approval round trip for a non-interactive CLI caller and is entirely unavailable to a Compact MCP caller. |
@@ -47,7 +47,7 @@ Fixture ports are re-discovered per command; the values below are point-in-time.
 
 ---
 
-## C1 — parity matrix completeness · `BLOCKED`
+## C1 — parity matrix completeness · `BLOCKED` (read-only lane `CONFIRMED`)
 
 **Claim.** 153 public commands classified `126 covered / 12 duplicate / 7 rejected / 6 excluded / 2 conditional`, no `planned` row.
 
@@ -83,14 +83,38 @@ surface syntax with catalog names and abbreviates actions:
 
 So **126 / 126 `covered` rows name something that exists.**
 
-**Why still `BLOCKED`.** Existence is not equivalence, and the claim under audit
-is equivalence. The per-row execution — 126 rows × 3 buckets, official and Hera
-run against the same fixture state with results compared by meaning — was **not
-performed in this pass**. No machine-readable per-row result table exists.
+**Read-only lane executed.** Every `covered` row whose Hera action is
+`read_only` was then run on both surfaces against the same fixture state, in all
+three buckets. Results are in
+`docs/report/parity-claim-audit-2026-08-18/c1-readonly-6000.{0,3,5}.jsonl`.
 
-**Exact blocker.** 378 paired invocations were not run. `matrix-rows-raw.csv` is
-a re-parse of the document under audit and cannot substitute. A finishing pass
-needs the column set named in §8.1 of the previous handoff.
+```text
+6000.0   28 rows answered on both surfaces, 1 failed on both
+6000.3   29 rows answered on both surfaces
+6000.5   29 rows answered on both surfaces
+rows where one surface succeeded and the other failed: 0
+```
+
+The single double-failure is `get_component_properties` on `6000.0`, where that
+fixture's scene has no `/Main Camera`: Hera returned `TARGET_NOT_FOUND` and the
+official command failed too. Agreement, not a gap.
+
+Two read-only pairs were not run for lack of a fixture asset:
+`get_animator_controller` and `get_timeline`.
+
+**One imprecise mapping found by execution.** `list_open_scenes` was recorded as
+`scene list/info`. `scene list` returns the Build Settings scene list, not the
+open ones — only `scene info` answers the official command's question. Existence
+matching would never have caught this; the row now names `scene info` first.
+
+**Why still `BLOCKED`.** The 86 rows classified `write`, `destructive`,
+`package_change`, or `arbitrary_code` were not executed. They mutate fixture
+state or need an approval this pass was instructed not to grant, so the
+equivalence claim for the majority of the matrix is still unproven.
+
+**Exact blocker.** 61 `write`, 20 `destructive`, 3 `package_change`, and 2
+`arbitrary_code` rows × 3 buckets, each needing a reversible fixture input and
+an approval decision for the gated ones.
 
 ---
 
@@ -259,13 +283,21 @@ manage_material get --path guid:f1c24289…
 The path form reaches only the main asset; the `:fileId` form reaches each
 sub-asset. This independently reproduces commit `8d17373`.
 
-**The stated remaining gap also holds.** A bad handle names the input but not the
-strategies attempted:
+**The stated remaining gap does not hold** — withdrawn after re-examination. The
+resolver does not try strategies in sequence; it dispatches on the handle's form
+and reports the stage that failed, and every form names it precisely:
 
 ```
-manage_animation get_clip --path guid:00000000000000000000000000000000
-  {"success":false,"message":"no asset for guid '000…0'.","code":"ASSET_NOT_FOUND"}
+guid:000…0                    no asset for guid '000…0'.
+guid:f1c2…:999999             no sub-asset with fileId 999999 in
+                              'Assets/HeraParityAudit/C7/MultiMat.asset' (guid 'f1c2…').
+guid:f1c2…:abc                invalid fileId 'abc' in 'guid:f1c2…:abc'.
+GlobalObjectId_V1-1-deadbeef… could not parse GlobalObjectId '…'.
 ```
+
+All four return `ASSET_NOT_FOUND`. A malformed handle is arguably an argument
+error rather than a missing asset, but no failure evidence supports changing a
+stable code.
 
 **Partial coverage.** `manage_prefab` was not exercised (this fixture's `C7` has
 no prefab; `Test6.0.35f1` does), and only the `6000.3` bucket was run.
@@ -425,12 +457,18 @@ parameter and **no** max-resolution cap.
 `add_tag`, `remove_tag`, `add_layer`, `remove_layer`, `get_tags_layers`. The
 matrix's abbreviation is imprecise but the capability is present.
 
-**(d) no version-gate response code · `CONFIRMED`.**
+**(d) no version-gate response code · `CONFIRMED`, and not a defect.** There is
+no `FEATURE_UNAVAILABLE`-style code, but re-examination found the concern
+already handled two other ways, each consistent:
 
-```
-$ grep -rn "FEATURE_UNAVAILABLE\|VERSION_UNSUPPORTED\|UNSUPPORTED_UNITY" AgentConnector/Editor/ internal/ cmd/
-(no matches)
-```
+- an optional package that is absent returns `PACKAGE_NOT_INSTALLED` (`Bake`
+  for AI Navigation, `ManageTimeline` for `com.unity.timeline`);
+- a field this Unity version does not expose is reported in `skipped` with the
+  reason `"not exposed by this Unity version"` (`ManageSettings`);
+- version-specific APIs are gated at compile time with
+  `#if UNITY_6000_x_OR_NEWER`, so the path does not exist to refuse.
+
+There is no inconsistency left to unify.
 
 ---
 
