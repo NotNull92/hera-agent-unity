@@ -732,17 +732,17 @@ MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
 
 ## Current release
 
-- CLI / GitHub Release: **v0.2.14** with five native binaries
-- npm: **0.2.14** (`latest`)
+- CLI / GitHub Release: **v0.2.16** with five native binaries
+- npm: **0.2.16** (`latest`)
 - Unity Connector / OpenUPM: **0.1.2** (`latest`)
-- Official MCP Registry: **0.2.14** (`active`)
+- Official MCP Registry: **0.2.16** (`active`)
 - License: **Apache-2.0**
 
 All four channels ship the same release: the npm and MCP Registry publishes are chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
 
-`v0.2.14` stabilizes Windows Unity launches when an agent shell omits the common-profile environment, and Connector `0.1.x` rewrites the entire `game_feel` knowledge base as Unity-derived knowledge — 67 topics that name the exact Unity site of every parameter (`Update` / `FixedUpdate` / `LateUpdate`, `Rigidbody.interpolation`, `Time.timeScale` with unscaled UI, Canvas rebuild cost), with the named API surface verified against a live `6000.3.5f2` Editor. The live catalog exposes **34 tools / 132 actions**.
+`v0.2.16` finishes the approval and compatibility feedback from live agent runs. `--yes` (env: `HERA_AGENT_APPROVE`) answers an approval preflight in the same invocation, so a trusted shell or CI job no longer spends two round trips on a read-only smoke run, while preflight, token binding, and the operation ledger stay in place. A rejected token now names the claims that differ in `data.mismatched`, and a Connector that predates a requested action returns `CONNECTOR_UPDATE_REQUIRED` instead of a generic argument rejection. The live catalog exposes **34 tools / 132 actions**.
 
 For release-by-release engineering detail, read [CHANGELOG.md](CHANGELOG.md) instead of treating the main README as a migration log.
 

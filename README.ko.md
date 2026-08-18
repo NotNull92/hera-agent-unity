@@ -735,17 +735,17 @@ MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.2.14**, native binary 5종
-- npm: **0.2.14** (`latest`)
+- CLI / GitHub Release: **v0.2.16**, native binary 5종
+- npm: **0.2.16** (`latest`)
 - Unity Connector / OpenUPM: **0.1.2** (`latest`)
-- Official MCP Registry: **0.2.14** (`active`)
+- Official MCP Registry: **0.2.16** (`active`)
 - License: **Apache-2.0**
 
 네 배포 채널이 같은 릴리스를 제공합니다. npm과 MCP Registry 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-unity`와 GitHub 바이너리가 같은 버전을 유지합니다.
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
 
-`v0.2.14`는 에이전트 셸이 common-profile 환경변수를 빠뜨렸을 때의 Windows Unity 실행을 안정화했고, Connector `0.1.x`는 `game_feel` 지식베이스 전체를 Unity 기반 지식으로 다시 썼습니다 — 각 파라미터가 적용되는 Unity 지점(`Update` / `FixedUpdate` / `LateUpdate`, `Rigidbody.interpolation`, unscaled UI를 포함한 `Time.timeScale`, Canvas rebuild 비용)을 명시하는 67개 주제이며, 명명된 API 표면은 라이브 `6000.3.5f2` Editor에서 검증했습니다. 라이브 카탈로그는 **34 tools / 132 actions**를 노출합니다.
+`v0.2.16`은 라이브 에이전트 실행에서 모인 승인·호환성 피드백을 마무리했습니다. `--yes`(환경변수 `HERA_AGENT_APPROVE`)는 승인 프리플라이트를 같은 호출에서 끝내므로, 신뢰하는 셸이나 CI 작업이 읽기 전용 스모크 실행에 두 번 왕복하지 않습니다. 프리플라이트·토큰 바인딩·operation ledger는 그대로입니다. 거절된 토큰은 어긋난 claim을 `data.mismatched`에 담고, 요청한 action을 모르는 구 Connector는 일반적인 인자 거절 대신 `CONNECTOR_UPDATE_REQUIRED`를 반환합니다. 라이브 카탈로그는 **34 tools / 132 actions**를 노출합니다.
 
 릴리스별 기술 변경을 모두 보고 싶다면 메인 README보다 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
 
