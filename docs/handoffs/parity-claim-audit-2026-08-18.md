@@ -517,6 +517,45 @@ Hera surface로 받을지는 별도 admission decision이다.
 
 이 패스에서는 구현하지 않았다.
 
+### 구현 착수 후 중단 (2026-08-19)
+
+C9가 반증됐으므로 Hera surface로 받는 작업을 시작했다가, 실측이 비용 판단을 뒤집어
+중단했다. 아래는 그 실측이며, 다시 제안될 때의 출발점이다.
+
+**1. API가 버전 간 호환되지 않는다.** 두 버킷 모두 `Unity.ProjectAuditor.Editor`
+네임스페이스를 노출해 처음에는 단일 reflection 경로로 보였으나, `AnalysisParams`의
+필드 타입이 갈린다:
+
+```text
+6000.0 패키지 3.0.1   Categories = IssueCategory[]
+6000.5 내장 모듈      Categories = SerializableEnum<IssueCategory>[]
+```
+
+필드 구성도 다르다 — 패키지에는 `CompilationMode`, 내장 모듈에는 `CodeAnalysisFlags`와
+`OnStarted`가 있다. 즉 `manage_timeline`이 `com.unity.timeline`을 다루는 단일 reflection
++ `PACKAGE_NOT_INSTALLED` 선례를 그대로 쓸 수 없고, **버전 게이트로 나뉜 reflection 경로
+두 벌**을 유지해야 한다.
+
+**2. 내장 모듈만으로는 결과가 0이다.** `6000.5`에서 `Categories`를 명시적으로 채워
+(`AssetIssue`, `Texture`, `AudioClip`, `Mesh`, `AnimationClip`, `ProjectSetting`,
+`Shader`) 실제로 `Audit(AnalysisParams, IProgress)`를 호출한 결과는 4 ms에 0건이었다.
+`com.unity.project-auditor-rules`가 있어야 descriptor가 생긴다. 따라서 이 기능은 **모든
+버킷에서 선택적 rules 패키지 설치를 전제**하며, 3버킷 release gate를 통과하려면 세
+fixture에 이를 상시 유지해야 한다.
+
+**3. 답할 내용이 아직 정의되지 않았다.** 유일하게 결과가 나온 `6000.0`의 18,995건은 CSV
+선두부터 `Packages/com.unity.render-pipelines.core` 항목이다. 사용자 코드(`Assets/`) 범위의
+실제 이슈 수는 측정하지 못했다. compact JSON 응답에 무엇을 남길지가 미설계 상태다.
+
+**중단 사유:** admission gate 1항(막은 실패)이 여전히 비어 있는 상태에서 reflection 경로
+두 벌, fixture 정책 변경, 대용량 응답 설계를 요구한다. 같은 날 구현한 C5와 C12는 각각
+실측된 결핍에 30~60줄로 답했고 기존 도구의 액션·파라미터로 흡수됐다. 이 항목은 그 조건을
+만족하지 않는다.
+
+**다시 열 때 먼저 정할 것:** `com.unity.project-auditor-rules`를 세 release-gate fixture에
+상시 설치할 것인가. 그것이 "예"가 아니면 3버킷 게이트를 통과할 수 없고, 통과하지 못하는
+기능은 이 저장소 규칙상 릴리스할 수 없다.
+
 ---
 
 ## C10 - build-target switching rejection의 exec fallback이 유효한가
