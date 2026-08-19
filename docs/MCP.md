@@ -104,6 +104,14 @@ Startup permission does not approve individual operations. Each destructive,
 package, external-process, or arbitrary-code call still requires a
 Connector-signed approval token bound to the exact operation.
 
+Without that permission the arbitrary-code surface is not merely refused, it is
+absent. Measured on 2026-08-18 against the compact default: `tool_search` for an
+arbitrary-code tool returns an empty list, `tool_describe` answers
+`TOOL_NOT_FOUND`, and `tool_call` answers `ARBITRARY_CODE_PERMISSION_REQUIRED` —
+the approval path is never reached. Plan accordingly: a workflow that assumes
+"fall back to `exec`" does not have that fallback on the compact default, and a
+non-interactive CLI caller pays an approval round trip for it.
+
 ## Approval and MRTR
 
 `HERA_MCP_MRTR=1` or `--mrtr` enables negotiated multi-round-trip approval.

@@ -10,8 +10,8 @@
 | C2 | `CONFIRMED` | Unity Search는 create 직후 AssetDatabase보다 늦었고, 안정화 뒤에도 `dep:`와 `#property`는 추가 답을 주지 않았다. 단, 과거의 정확한 버킷별 1/0/0 표본은 재현되지 않았다. |
 | C3 | `CONFIRMED` | `SignalTick`은 세 버킷 모두 non-public이며, auto-tick off + 최소화 상태에서 heartbeat, 실제 compile/domain reload, lighting bake가 포커스 복귀 없이 진행됐다. |
 | C4 | `REFUTED` | `Client.Resolve()`는 실제로 `void`지만, 공식 Pipeline은 세 버킷 모두 완료 상태와 후속 `recompile_status`를 관측해 계약화한다. "불가능"은 틀렸다. |
-| C5 | `REFUTED` | 공식 `import_asset`은 외부 절대경로를 직접 가져오지만 Hera `manage_assets copy`는 `Assets/` 밖 source를 거절한다. 파일시스템 도구가 없는 caller에게 duplicate가 아니다. |
-| C6 | `REFUTED` | 공식 authoring root는 `Assets/`보다 좁은 쓰기 경계를 강제한다. Hera는 같은 sibling path를 strict validation에서 유효하다고 판정해 동일 안전 계약이 아니다. |
+| C5 | `REFUTED` | 공식 `import_asset`은 외부 절대경로를 직접 가져오지만 Hera에는 ingress 액션이 없다. 매트릭스가 주장한 대체 수단은 "exec/filesystem tool"이므로, 그 둘을 갖지 못한 caller(C11)에게는 duplicate가 아니다. |
+| C6 | `REFUTED` | 공식 authoring root는 작업 단위로 쓰기 경계를 좁힌다. Hera의 `AssetPathGuard`는 `Assets/` containment를 실행 시점에 강제하지만 그 경계는 고정이고 더 좁힐 수단이 없다. 안전 구멍이 아니라 부재한 구성 능력이며 막힌 workflow 증거는 아직 없다. |
 | C7 | `REFUTED` | durable handle coverage는 세 버킷에서 확인됐지만, resolver는 형식별 단일 경로를 사용하고 실패 단계도 이미 구체적으로 말한다. "attempted strategies를 보고하지 않는 남은 gap"이라는 절이 틀렸다. |
 | C8 | `REFUTED` | `GlobalObjectId(target) + propertyPath + value + objectReference` 조합이 실제 domain reload 전후 세 버킷 모두 byte-identical했다. reload-safe per-record key가 없다는 전제는 틀렸다. |
 | C9 | `REFUTED` | Project Auditor + Rules가 설치된 6000.0 fixture에서 실제 scan이 완료되고 18,995 issues를 반환했다. positive fixture는 현재 얻을 수 있다. |
@@ -138,6 +138,39 @@ Connector release-gate를 세 버킷에서 다시 실행한 결과는 모두 다
 {"total":26,"passed":26,"failed":0,"skipped":0,"failures":[]}
 ```
 
+### 실행 기반 보강 (교차검증)
+
+이름 대조는 "존재한다"까지만 증명한다. `covered` 행을 실제로 두 표면에서 같은 fixture
+상태에 대고 실행한 결과를 덧붙인다. 총 **123쌍**이며 한쪽만 성공한 행은 0건이다.
+
+```text
+read-only 29쌍  x 3버킷 : 6000.0 28 both-answered + 1 both-failed / 6000.3 29 / 6000.5 29
+mutating  12행  x 3버킷 : 세 버킷 모두 12/12 both-answered
+한쪽만 성공한 행         : 0
+```
+
+mutating 12행은 두 표면의 입력이 비대칭이거나 부작용의 동일성이 자명하지 않은 행,
+즉 잘못된 `covered`가 숨을 만한 곳을 골랐다: `create_gameobject`, `set_transform`,
+`add_component`, `set_component_properties`, `create_asset`, `copy_asset`, `move_asset`,
+`delete_asset`, `set_material_properties`, `set_physics_settings`(dry_run),
+`create_prefab`, `create_timeline`.
+
+`move_asset`과 `delete_asset`은 승인 게이트 대상이다. `--yes`를 쓰지 않고 매 버킷마다
+실제 preflight 후 동일 요청을 단일사용 `--approve`로 재호출해 통과시켰다. 증거:
+`docs/report/parity-claim-audit-2026-08-18/c1-readonly-6000.{0,3,5}.jsonl`,
+`c1-write-6000.{0,3,5}.jsonl`.
+
+실행으로만 드러난 오분류가 **2건** 더 있다. 이름 대조로는 잡히지 않는다.
+
+- `list_open_scenes -> scene list/info`: `scene list`는 Build Settings 씬 목록을 답한다.
+  열린 씬을 답하는 것은 `scene info`뿐이다.
+- `create_asset -> manage_assets create`: 이 액션은 ScriptableObject `.asset` 전용이라
+  Material을 요청하면 `TYPE_NOT_FOUND`다. 실제 능력은 `manage_material create`,
+  `manage_animation create_clip`, `manage_timeline create`, `manage_prefab create`로
+  타입별로 나뉘어 있다.
+
+두 행 모두 매트릭스를 수정했다. 이는 위 네 개 근거와 독립적으로 C1 `REFUTED`를 보강한다.
+
 즉 matrix는 **명령 inventory로서는 완전하지만 capability classification으로서는 올바르지 않다.** 따라서 C1은 `REFUTED`다.
 
 ---
@@ -261,6 +294,17 @@ parameters = []
 
 즉 `Client.Resolve()`의 반환형이 `void`인 것은 사실이지만, manifest/lock 관측과 후속 compile 상태를 묶어 completion을 계약화할 수 있다. 공식 Pipeline이 이미 그 형태를 구현한다. C4의 절대 주장 "impossible to contract"는 `REFUTED`다.
 
+> **보강 (교차검증).** 계약화가 가능한 것과 그 계약이 정직한 것은 별개다. 이미 해석된
+> fixture에서 `applied: true` 직후 `packages-lock.json`은 해시와 mtime이 모두 불변이었다:
+>
+> ```text
+> before  ab212bee56f04e67123b88be0aaacb2f   2026-08-18 16:51:09.545664000
+> after   ab212bee56f04e67123b88be0aaacb2f   2026-08-18 16:51:09.545664000
+> ```
+>
+> no-op이므로 무변화가 정상이지만, 이 응답만으로는 "해석이 성공했다"와 "무조건 그렇게
+> 보고한다"를 구분할 수 없다. Hera의 원래 거절 사유가 겨냥한 지점이 이것이다.
+
 ### capability implication
 
 Hera에 추가할지는 별도 결정이다. 추가하려면 다음 evidence가 필요하다.
@@ -311,6 +355,12 @@ hera-agent-unity --project "%HERA_AUDIT_FIXTURE%" \
 }
 ```
 
+> **정정 (교차검증).** `manage_assets copy`는 매트릭스가 주장한 대체 수단이 아니다.
+> 해당 행의 근거는 "existing exec/filesystem/atomic tool"이다. `copy`는 AssetDatabase
+> 내부 복사 명령이라 외부 경로 거절이 설계대로다(재현됨: `INVALID_PATH: path must be
+> under Assets/`). 이 시험은 Hera에 ingress 액션이 없다는 사실을 보여줄 뿐 주장된 대체
+> 수단을 반증하지는 않는다. 실질 논거는 caller capability(=C11)이며 그것은 유효하다.
+
 공식 import 뒤 Hera `manage_asset_import get`은 importer를 정상 조회했다. 따라서 importer 설정이 빠진 것이 핵심 gap은 아니다. gap은 **외부 파일을 Assets로 들여오는 ingress**다.
 
 C11처럼 caller가 filesystem tool을 갖지 않는 경우에는 plain copy + refresh 경로가 존재하지 않는다. C5의 duplicate 분류는 caller capability를 가정하므로 `REFUTED`다.
@@ -332,21 +382,24 @@ Assets/HeraParityAudit/C6
 - root 내부 `Inside`: accepted
 - sibling `Assets/HeraParityAudit/C6Sibling`: rejected as outside authoring root
 
-같은 sibling path를 Hera strict validator에 전달했다.
+> **정정 (교차검증).** 최초 근거는 `call manage_assets --validate-only`가 sibling
+> path에 `{"valid":true}`를 반환한다는 것이었다. 이 근거는 무효다. `--validate-only`는
+> 스키마 검사이고 containment는 실행 시점에 강제된다:
+>
+> ```text
+> --validate-only  {"action":"mkdir","path":"C:/Windows/Temp/EscapeTest"}  -> {"valid":true}
+> 실제 실행        같은 입력  -> INVALID_PATH: path must be under Assets/ (got 'C:/Windows/Temp/EscapeTest')
+> ```
+>
+> `valid:true`는 Assets/ 밖 경로에도 나오므로 안전 경계에 대해 아무것도 증명하지 않는다.
+> 또한 `Assets/HeraParityAudit/C6Sibling`은 Assets/ 안이므로 Hera가 허용하는 것이 설계대로다.
 
-```bash
-'{"action":"mkdir","path":"Assets/HeraParityAudit/C6Sibling"}' |
-  hera-agent-unity --project "%HERA_AUDIT_FIXTURE%" \
-  call manage_assets --validate-only
-```
-
-세 버킷 모두:
-
-```json
-{"valid":true}
-```
-
-Hera의 `AssetPathGuard`가 `Assets/` containment를 보장하는 것은 사실이다. 그러나 공식 기능은 caller/session별로 더 좁은 safety boundary를 설정한다. 둘은 같은 안전 계약이 아니다. 따라서 C6의 duplicate 분류는 `REFUTED`다.
+정정된 근거로 다시 판정한다. `AssetPathGuard`는 `Assets/` containment를 실행 시점에
+강제하며 이는 실측으로 확인된다. 그러나 그 경계는 고정이고 caller나 session 단위로 더
+좁힐 수단이 없다. 공식 기능이 제공하는 것은 "쓰기 가능한 영역을 작업 단위로 좁히는
+능력"이고 이를 대신하는 기존 Hera 표면은 없다. 따라서 `duplicate` 분류는 성립하지
+않는다 — `REFUTED`. 다만 이는 안전 구멍이 아니라 **부재한 구성 능력**이며, 실제로 막힌
+workflow 증거는 아직 없다.
 
 ---
 

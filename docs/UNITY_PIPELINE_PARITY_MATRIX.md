@@ -5,6 +5,12 @@ Generated from 161 source-declared commands; eight internal test commands are ex
 
 Classification meanings: `covered` is available in Hera, `duplicate` is intentionally served by an existing safer primitive, `rejected` is a locked decision, `excluded` would expand the architecture, and `conditional` requires a positive fixture.
 
+`duplicate` carries a caller assumption worth stating: the safer primitive is
+either the caller's own filesystem tooling or `exec`. A caller with neither —
+an MCP client on the compact default, where the arbitrary-code surface is absent
+rather than refused — cannot reach those workflows at all, and a non-interactive
+CLI caller pays an approval round trip for `exec`. See `docs/MCP.md`.
+
 The "Hera equivalent" column names the live catalog identity — `<tool> <action>` — so a row can be checked against `list --catalog` without interpretation. Where the CLI spells the same capability differently, the CLI form follows in parentheses. Three rows name a CLI-only surface (`status`, `editor refresh --compile`) that has no catalog tool.
 
 | Official command | Classification | Hera equivalent or decision |
@@ -44,7 +50,7 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `copy_asset` | covered | manage_assets copy |
 | `create_animation_clip` | covered | manage_animation create_clip |
 | `create_animator_controller` | covered | manage_animation create_controller |
-| `create_asset` | covered | manage_assets create |
+| `create_asset` | covered | type-dependent: manage_assets create (ScriptableObject `.asset`), manage_material create, manage_animation create_clip, manage_timeline create, manage_prefab create |
 | `create_folder` | covered | manage_assets create-folder |
 | `create_gameobject` | covered | manage_gameobject create |
 | `create_gameobjects` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
