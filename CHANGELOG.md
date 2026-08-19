@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.1.3 — one ingress, and a camera you can name)
+
+- `manage_assets import --source <file> --path Assets/...` brings a file from
+  outside the project into `Assets/` and imports it, returning the resulting
+  `guid` and `importer_type`. It is the only action that reads a file the
+  AssetDatabase does not already own, and it exists because a caller with no
+  filesystem tooling and no arbitrary-code permission — an MCP client on the
+  compact default — otherwise cannot get a file the user already has on disk
+  into the project. A folder, a missing source, and an existing destination are
+  each refused by name.
+- `screenshot --camera <name>` renders one named scene camera instead of what
+  the Game view happens to show, which is what a scene with a minimap, a
+  cutscene rig, or a second display needs. The capture goes through a temporary
+  copy of that camera so a scriptable render pipeline keeps driving the
+  original; rendering the tracked camera directly is what the existing URP guard
+  refuses. A miss lists the cameras the loaded scenes actually contain.
+- `screenshot --max_resolution <N>` caps the longest output edge and preserves
+  aspect ratio, so a bounded capture no longer requires knowing the view's
+  proportions to avoid distorting it.
+
 ### Fixed (CLI — two races that reported a healthy Editor as broken)
 
 - The first typed `call` after a recompile no longer fails with a domain-epoch

@@ -577,10 +577,24 @@ hera-agent-unity manage_assets deps --path Assets/Art/Hero.mat --direction rever
 hera-agent-unity manage_assets mkdir --path Assets/Generated/UI
 hera-agent-unity manage_assets create --type GameConfig --path Assets/Config/Game.asset
 hera-agent-unity manage_assets create --type EnemyStats --path Assets/Data/Goblin.asset --params '{"properties":{"m_MaxHealth":30}}'
+hera-agent-unity manage_assets import --source /downloads/icon.png --path Assets/Art/icon.png
 hera-agent-unity manage_assets copy --path Assets/A.prefab --new_path Assets/B.prefab
 hera-agent-unity manage_assets move --path Assets/Old.asset --new_path Assets/New.asset
 hera-agent-unity manage_assets delete --path Assets/Generated/Temp.asset
 ```
+
+**Ingress**: `import` is the only action that reads a file from outside the
+project. The source must be an existing file, the destination must be under
+`Assets/` and must not already exist, and the response returns the resulting
+`guid` and `importer_type`. Every other action moves assets Unity already knows
+about. It exists because a caller with no filesystem tooling and no
+arbitrary-code permission — an MCP client on the compact default — otherwise has
+no way to get a file the user already has on disk into the project.
+
+**Named camera**: `screenshot --camera <name>` renders through a temporary copy
+of that camera rather than the camera itself, so a scriptable render pipeline
+keeps driving the original. The response names the camera that rendered, and a
+miss lists the cameras the loaded scenes actually contain.
 
 **Dependencies**: `deps forward` returns `{path, direction, recursive, total, returned, truncated, assets}`; `deps reverse` adds `scope`, `scanned`, and `elapsed_ms`. The queried asset never appears in its own result.
 
@@ -1185,6 +1199,8 @@ hera-agent-unity screenshot [flags]
 | `--overlay` | Render active non-world root canvases instead of a Scene/Game view; cannot be combined with isolated or annotation modes | `false` |
 | `--width` | Image width in pixels | `1920` |
 | `--height` | Image height in pixels | `1080` |
+| `--camera` | Render one named scene camera instead of what the Game view shows. Game view only; not combinable with `--isolated` or `--overlay` | display camera |
+| `--max_resolution` | Cap the longest output edge, preserving aspect ratio; applied after `--width` and `--height` | none |
 | `--output_path` | Output path (absolute or relative to project) | unique PNG under `Screenshots/` |
 | `--overwrite` | Approval-gated replacement of an existing PNG under the project or system temp directory; existing external files are never overwritten | `false` |
 | `--isolated` | Render only one target GameObject through a temporary camera | `false` |
@@ -1211,6 +1227,8 @@ hera-agent-unity screenshot [flags]
 ```bash
 hera-agent-unity screenshot
 hera-agent-unity screenshot --view game
+hera-agent-unity screenshot --view game --camera Minimap
+hera-agent-unity screenshot --view game --max_resolution 512
 hera-agent-unity screenshot --overlay --output_path captures/overlay.png
 hera-agent-unity screenshot --view game --annotate_ui --max_annotations 50
 hera-agent-unity screenshot --annotations_only

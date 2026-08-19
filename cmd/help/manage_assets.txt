@@ -19,6 +19,12 @@ Actions:
                                   to ask before delete or move.
   mkdir --path <Assets/folder>     Create a folder recursively. Existing folders
                                   return success with created=false.
+  import --source <file> --path <Assets/dst>
+                                  Bring a file from outside the project into
+                                  Assets/ and import it. The only ingress: every
+                                  other action moves assets Unity already knows.
+                                  Refuses a folder, a missing source, and a
+                                  destination that already exists.
   copy --path <src> --new_path <dst>
                                   Copy one asset file.
   move --path <src> --new_path <dst>

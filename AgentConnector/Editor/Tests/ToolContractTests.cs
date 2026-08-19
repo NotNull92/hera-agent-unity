@@ -1998,6 +1998,12 @@ namespace HeraAgent.Tests
                     ["new_path"] = "Assets/Destination.asset",
                 });
             }
+            yield return ("manage_assets", "import", new JObject
+            {
+                ["action"] = "import",
+                ["source"] = "/outside/source.png",
+                ["path"] = "Assets/Destination.png",
+            });
 
             yield return ("manage_asset_import", "get", new JObject
             {

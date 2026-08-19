@@ -107,6 +107,7 @@ namespace HeraAgent.Tests
                 ["manage_animation/set_curve"] = HeraRiskClass.Write,
                 ["manage_asset_import/set"] = HeraRiskClass.Write,
                 ["manage_assets/copy"] = HeraRiskClass.Write,
+                ["manage_assets/import"] = HeraRiskClass.Write,
                 ["manage_assets/create"] = HeraRiskClass.Write,
                 ["manage_assets/mkdir"] = HeraRiskClass.Write,
                 ["manage_components/add"] = HeraRiskClass.Write,

@@ -7,6 +7,14 @@ Options:
   --view <mode>      scene (default), game
   --width <N>        Image width in pixels (default: 1920)
   --height <N>       Image height in pixels (default: 1080)
+  --camera <name>    Render one named scene camera instead of what the Game
+                     view shows. Game view only; not combinable with --isolated
+                     or overlay. The capture renders through a temporary copy of
+                     that camera, so a scriptable render pipeline keeps driving
+                     the original. The response names the camera that rendered.
+  --max_resolution <N>  Cap the longest output edge, preserving aspect ratio.
+                     Applied after --width and --height, so 1920x1080 with
+                     --max_resolution 512 writes 512x288.
   --output_path <path>  Output path, absolute or relative to project root
                         (default: unique PNG under Screenshots/)
   --overwrite        Approval-gated replacement of an existing PNG under the

@@ -11,6 +11,7 @@ namespace HeraAgent.Tools
     [HeraActionSafety("deps", ReadOnly = true, Idempotent = true)]
     [HeraActionSafety("mkdir", Idempotent = true, MayReloadDomain = true)]
     [HeraActionSafety("create", MayReloadDomain = true)]
+    [HeraActionSafety("import", MayReloadDomain = true)]
     [HeraActionSafety("copy", MayReloadDomain = true)]
     [HeraActionSafety("move", Destructive = true, MayReloadDomain = true)]
     [HeraActionSafety("delete", Destructive = true, MayReloadDomain = true)]
@@ -18,6 +19,7 @@ namespace HeraAgent.Tools
     [HeraActionContract("deps", typeof(ManageAssets.DepsParameters), ResultType = typeof(ManageAssets.DepsResult), RiskClass = HeraRiskClass.ReadOnly)]
     [HeraActionContract("mkdir", typeof(ManageAssets.PathParameters), ResultType = typeof(ManageAssets.MkdirResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("create", typeof(ManageAssets.CreateParameters), ResultType = typeof(ManageAssets.CreateResult), RiskClass = HeraRiskClass.Write)]
+    [HeraActionContract("import", typeof(ManageAssets.ImportParameters), ResultType = typeof(ManageAssets.ImportResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("copy", typeof(ManageAssets.TransferParameters), ResultType = typeof(ManageAssets.TransferResult), RiskClass = HeraRiskClass.Write)]
     [HeraActionContract("move", typeof(ManageAssets.TransferParameters), ResultType = typeof(ManageAssets.TransferResult), RiskClass = HeraRiskClass.Destructive)]
     [HeraActionContract("delete", typeof(ManageAssets.PathParameters), ResultType = typeof(ManageAssets.PathResult), RiskClass = HeraRiskClass.Destructive)]
@@ -30,7 +32,7 @@ namespace HeraAgent.Tools
         Expected = "filter or type")]
     [HeraTool(
         Name = "manage_assets",
-        Description = "Compact AssetDatabase operations: find, deps, mkdir, create, copy, move, delete. create instantiates a ScriptableObject subclass as an Assets/ .asset (optional initial field values via --params '{\"properties\":{...}}'). deps answers both dependency directions — forward is what an asset uses, reverse is what uses it, which is the question to ask before delete or move. Mutating paths are constrained to Assets/.",
+        Description = "Compact AssetDatabase operations: find, deps, mkdir, create, import, copy, move, delete. create instantiates a ScriptableObject subclass as an Assets/ .asset (optional initial field values via --params '{\"properties\":{...}}'). deps answers both dependency directions — forward is what an asset uses, reverse is what uses it, which is the question to ask before delete or move. Mutating paths are constrained to Assets/.",
         Destructive = true,
         MayReloadDomain = true,
         Examples = new[]
@@ -40,6 +42,7 @@ namespace HeraAgent.Tools
             "manage_assets deps --path Assets/Art/Hero.mat --direction reverse",
             "manage_assets mkdir --path Assets/Generated/UI",
             "manage_assets create --type GameConfig --path Assets/Config/Game.asset",
+            "manage_assets import --source C:/Downloads/icon.png --path Assets/Art/icon.png",
             "manage_assets copy --path Assets/A.prefab --new_path Assets/B.prefab",
             "manage_assets move --path Assets/Old.asset --new_path Assets/New.asset",
             "manage_assets delete --path Assets/Generated/Temp.asset",
@@ -51,6 +54,7 @@ namespace HeraAgent.Tools
             "List what still references a material — ask before deleting or moving it",
             "Create an Assets/ folder recursively; existing folders are accepted",
             "Create a ScriptableObject asset of the named subclass (add --params '{\"properties\":{\"m_Field\":1}}' to set fields)",
+            "Bring a file from outside the project into Assets/ and import it",
             "Copy one asset file to another Assets/ path",
             "Move or rename one asset file",
             "Delete one asset file or folder under Assets/",
@@ -117,6 +121,12 @@ namespace HeraAgent.Tools
                 "Raw SerializedProperty name to value map.",
                 SchemaJson = "{\"type\":\"object\",\"additionalProperties\":true}")]
             public JObject Properties { get; set; }
+        }
+
+        public sealed class ImportParameters : PathParameters
+        {
+            [ToolParameter("Source file outside Assets/, absolute or relative to the project root.", Required = true)]
+            public string Source { get; set; }
         }
 
         public sealed class TransferParameters : PathParameters
@@ -188,6 +198,14 @@ namespace HeraAgent.Tools
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class ImportResult : PathResult
+        {
+            public string Source { get; set; }
+            public string Guid { get; set; }
+            public string ImporterType { get; set; }
+        }
+
+        [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class TransferResult : PathResult
         {
             public string NewPath { get; set; }
@@ -195,7 +213,7 @@ namespace HeraAgent.Tools
 
         public class Parameters
         {
-            [ToolParameter("Action: find, deps, mkdir, create, copy, move, delete.", Required = true)]
+            [ToolParameter("Action: find, deps, mkdir, create, import, copy, move, delete.", Required = true)]
             public string Action { get; set; }
 
             [ToolParameter("For deps: 'forward' (what this asset uses) or 'reverse' (what uses this asset).", Required = false)]
@@ -212,6 +230,9 @@ namespace HeraAgent.Tools
 
             [ToolParameter("Destination path for copy/move, under Assets/.", Required = false)]
             public string NewPath { get; set; }
+
+            [ToolParameter("For import only: the source file outside Assets/, absolute or relative to the project root.", Required = false)]
+            public string Source { get; set; }
 
             [ToolParameter("AssetDatabase.FindAssets filter text.", Required = false)]
             public string Filter { get; set; }
@@ -234,7 +255,7 @@ namespace HeraAgent.Tools
             var p = new ToolParams(@params ?? new JObject());
             var action = (p.GetRaw("args") as JArray)?[0]?.ToString() ?? p.Get("action");
             if (string.IsNullOrWhiteSpace(action))
-                return new ErrorResponse("MISSING_PARAM", "'action' required: find, deps, mkdir, create, copy, move, or delete.");
+                return new ErrorResponse("MISSING_PARAM", "'action' required: find, deps, mkdir, create, import, copy, move, or delete.");
 
             switch (action.ToLowerInvariant())
             {
@@ -242,11 +263,12 @@ namespace HeraAgent.Tools
                 case "deps": return Deps(p);
                 case "mkdir": return Mkdir(p.Get("path"));
                 case "create": return Create(p);
+                case "import": return Import(p.Get("source"), p.Get("path"));
                 case "copy": return Copy(p.Get("path"), p.Get("new_path"));
                 case "move": return Move(p.Get("path"), p.Get("new_path"));
                 case "delete": return Delete(p.Get("path"));
                 default:
-                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: find, deps, mkdir, create, copy, move, delete.");
+                    return new ErrorResponse("UNKNOWN_ACTION", $"Unknown action '{action}'. Valid: find, deps, mkdir, create, import, copy, move, delete.");
             }
         }
 
@@ -532,6 +554,76 @@ namespace HeraAgent.Tools
                     data: shortMatches.ConvertAll(t => t.FullName)));
             return (null, new ErrorResponse("TYPE_NOT_FOUND",
                 $"No non-abstract ScriptableObject subclass named '{name}'. Provide its class name or fully-qualified name."));
+        }
+
+        /// <summary>
+        /// Bring a file from outside the project into Assets/ and import it.
+        /// Every other transfer action moves assets Unity already knows about;
+        /// this one is the only ingress, and it exists because a caller without
+        /// filesystem tooling or arbitrary-code permission has no other way to
+        /// get a file the user already has on disk into the project.
+        /// </summary>
+        private static object Import(string rawSource, string rawDestination)
+        {
+            if (string.IsNullOrWhiteSpace(rawSource))
+                return new ErrorResponse("MISSING_PARAM", "'source' required: the file to bring into Assets/.");
+            if (ObjectIdentity.IsDurableForm(rawDestination))
+            {
+                return new ErrorResponse("INVALID_PATH",
+                    $"'{rawDestination}' is a handle for an existing asset; a destination needs an Assets/ path.");
+            }
+            if (!AssetPathGuard.TryNormalizeAssetFile(rawDestination, out var destination, out var pathError))
+                return new ErrorResponse("INVALID_PATH", pathError);
+
+            string source;
+            try
+            {
+                source = Path.GetFullPath(rawSource);
+            }
+            catch (Exception e)
+            {
+                return new ErrorResponse("INVALID_PATH", $"[Hera] I couldn't read the source path '{rawSource}': {e.Message}");
+            }
+            if (Directory.Exists(source))
+                return new ErrorResponse("SOURCE_NOT_A_FILE", $"'{rawSource}' is a folder; import brings in one file.");
+            if (!File.Exists(source))
+                return new ErrorResponse("SOURCE_NOT_FOUND", $"No file at '{rawSource}'.");
+            if (AssetDatabase.LoadMainAssetAtPath(destination) != null)
+                return new ErrorResponse("ASSET_EXISTS", $"Destination already exists: '{destination}'.");
+            if (!ParentExists(destination, out var parent))
+                return new ErrorResponse("PARENT_FOLDER_MISSING", $"Parent folder '{parent}' does not exist.");
+
+            try
+            {
+                File.Copy(source, destination, false);
+            }
+            catch (Exception e)
+            {
+                return new ErrorResponse("ASSET_IMPORT_FAILED", $"[Hera] I couldn't copy '{rawSource}' into the project: {e.Message}");
+            }
+
+            AssetDatabase.ImportAsset(destination, ImportAssetOptions.ForceSynchronousImport);
+            var importer = AssetImporter.GetAtPath(destination);
+            if (importer == null)
+            {
+                // Unity accepted the bytes but produced no importer, which
+                // means the extension is not one it recognizes. Leave nothing
+                // half-imported behind.
+                AssetDatabase.DeleteAsset(destination);
+                AssetDatabase.Refresh();
+                return new ErrorResponse(
+                    "ASSET_IMPORT_FAILED",
+                    $"[Hera] Unity produced no importer for '{destination}', so I removed it again. Its extension is probably not one Unity imports.");
+            }
+
+            AssetDatabase.Refresh();
+            return new SuccessResponse("Asset imported", new
+            {
+                path = destination,
+                source = source.Replace('\\', '/'),
+                guid = AssetDatabase.AssetPathToGUID(destination),
+                importer_type = importer.GetType().Name,
+            });
         }
 
         private static object Copy(string rawPath, string rawNewPath)

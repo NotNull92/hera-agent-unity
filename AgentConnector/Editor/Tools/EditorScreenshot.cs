@@ -61,6 +61,17 @@ namespace HeraAgent.Tools
                 SchemaJson = "{\"type\":\"integer\",\"minimum\":1}")]
             public int Height { get; set; }
 
+            [ToolParameter(
+                "Render one named scene Camera instead of what the Game view shows. Game view only.",
+                Required = false)]
+            public string Camera { get; set; }
+
+            [ToolParameter(
+                "Cap the longest output edge, preserving aspect ratio. Applied after width and height.",
+                Required = false,
+                SchemaJson = "{\"type\":\"integer\",\"minimum\":1}")]
+            public int MaxResolution { get; set; }
+
             [ToolParameter("Output file path, absolute or relative to project root (default: unique PNG under Screenshots/)", Required = false)]
             public string OutputPath { get; set; }
 
@@ -191,6 +202,8 @@ namespace HeraAgent.Tools
             var view = p.Get("view", wantsEvidence ? "game" : "scene").ToLowerInvariant();
             var width = p.GetInt("width", DefaultWidth).Value;
             var height = p.GetInt("height", DefaultHeight).Value;
+            var cameraName = p.Get("camera");
+            ApplyMaxResolution(p.GetInt("max_resolution", 0) ?? 0, ref width, ref height);
             var wantsIsolated = p.GetBool("isolated")
                 || p.GetRaw("target") != null
                 || p.GetRaw("path") != null
@@ -217,6 +230,21 @@ namespace HeraAgent.Tools
                     return new ErrorResponse(
                         "SCREENSHOT_OVERLAY_ISOLATED_CONFLICT",
                         "[Hera] I can't combine overlay rendering with isolated GameObject rendering.");
+                if (!string.IsNullOrEmpty(cameraName))
+                {
+                    if (overlay)
+                        return new ErrorResponse(
+                            "SCREENSHOT_CAMERA_OVERLAY_CONFLICT",
+                            "[Hera] I can't render a named camera while overlay rendering draws canvases instead.");
+                    if (wantsIsolated)
+                        return new ErrorResponse(
+                            "SCREENSHOT_CAMERA_ISOLATED_CONFLICT",
+                            "[Hera] I can't render a named camera while isolated capture builds its own camera.");
+                    if (view != "game")
+                        return new ErrorResponse(
+                            "SCREENSHOT_CAMERA_REQUIRES_GAME_VIEW",
+                            "[Hera] I can render a named camera only in the game view coordinate space.");
+                }
                 if (annotateUi && view != "game")
                     return new ErrorResponse(
                         "SCREENSHOT_UI_ANNOTATION_REQUIRES_GAME_VIEW",
@@ -308,7 +336,7 @@ namespace HeraAgent.Tools
                         response = CaptureSceneView(width, height, outputPath, overwrite);
                         break;
                     case "game":
-                        response = CaptureGameView(width, height, outputPath, overwrite);
+                        response = CaptureGameView(cameraName, width, height, outputPath, overwrite);
                         break;
                     default:
                         return new ErrorResponse("INVALID_PARAM", $"Unknown view '{view}'. Valid: scene, game.");
@@ -345,28 +373,131 @@ namespace HeraAgent.Tools
             return CaptureCamera(camera, width, height, outputPath, overwrite);
         }
 
-        private static object CaptureGameView(int width, int height, string outputPath, bool overwrite)
+        private static object CaptureGameView(
+            string cameraName,
+            int width,
+            int height,
+            string outputPath,
+            bool overwrite)
         {
-            var gameCapture = CaptureGameViewWindow(width, height, outputPath, overwrite);
-            if (gameCapture != null)
-                return gameCapture;
-
-            var camera = Camera.main;
-            if (!camera)
+            // A named camera has to bypass the window capture: that path renders
+            // whatever the Game view is already showing, which is the display
+            // camera and not the one that was asked for.
+            if (string.IsNullOrEmpty(cameraName))
             {
-#if UNITY_6000_5_OR_NEWER
-                camera = UnityEngine.Object.FindAnyObjectByType<Camera>();
-#else
-                camera = UnityEngine.Object.FindFirstObjectByType<Camera>();
-#endif
-                if (!camera)
-                    return new ErrorResponse("CAMERA_NOT_FOUND", "No camera found in scene.");
+                var gameCapture = CaptureGameViewWindow(width, height, outputPath, overwrite);
+                if (gameCapture != null)
+                    return gameCapture;
             }
+
+            var camera = ResolveCamera(cameraName, out var cameraError);
+            if (cameraError != null)
+                return cameraError;
+
+            // A named camera renders through a throwaway copy. Rendering a
+            // scene camera directly is what the URP guard below refuses, and
+            // for good reason: URP's render graph is already tracking that
+            // camera. A copy is not tracked, which is the same reason the
+            // isolated path can render under URP at all.
+            if (!string.IsNullOrEmpty(cameraName))
+                return AttachCameraName(
+                    CaptureCameraCopy(camera, width, height, outputPath, overwrite),
+                    camera.name);
 
             if (!CanUseDirectCameraRender())
                 return DirectCameraRenderUnavailable("GameView");
 
             return CaptureCamera(camera, width, height, outputPath, overwrite);
+        }
+
+        /// <summary>
+        /// Resolve the Camera to render. Without a name this is the ordinary
+        /// main-camera fallback; with one it is an exact scene Camera, and a
+        /// miss reports what the scene actually offers rather than a bare
+        /// not-found.
+        /// </summary>
+        private static Camera ResolveCamera(string cameraName, out ErrorResponse error)
+        {
+            error = null;
+            if (string.IsNullOrEmpty(cameraName))
+            {
+                var main = Camera.main;
+                if (main) return main;
+#if UNITY_6000_5_OR_NEWER
+                main = UnityEngine.Object.FindAnyObjectByType<Camera>();
+#else
+                main = UnityEngine.Object.FindFirstObjectByType<Camera>();
+#endif
+                if (!main)
+                    error = new ErrorResponse("CAMERA_NOT_FOUND", "No camera found in scene.");
+                return main;
+            }
+
+#if UNITY_6000_5_OR_NEWER
+            var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#else
+            var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
+#endif
+            var names = new List<string>();
+            foreach (var candidate in cameras)
+            {
+                if (!candidate) continue;
+                if (string.Equals(candidate.name, cameraName, StringComparison.Ordinal))
+                    return candidate;
+                names.Add(candidate.name);
+            }
+
+            names.Sort(StringComparer.Ordinal);
+            var suggestion = SuggestCameraName(cameraName, names);
+            var message = $"[Hera] I found no camera named '{cameraName}' in the loaded scenes.";
+            if (suggestion != null)
+                message += $" Did you mean '{suggestion}'?";
+            error = new ErrorResponse("CAMERA_NOT_FOUND", message, new { cameras = names });
+            return null;
+        }
+
+        private static string SuggestCameraName(string requested, List<string> available)
+        {
+            var best = (string)null;
+            var limit = Math.Max(2, requested.Length / 3);
+            // DistanceBounded reports an over-budget pair as limit + 1, so the
+            // budget itself is the accept threshold.
+            var bestDistance = limit + 1;
+            foreach (var candidate in available)
+            {
+                var distance = Levenshtein.DistanceBounded(requested, candidate, limit);
+                if (distance >= bestDistance) continue;
+                bestDistance = distance;
+                best = candidate;
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// Name the camera that actually rendered, so a capture taken through a
+        /// specific camera is self-describing in the response.
+        /// </summary>
+        private static object AttachCameraName(object response, string cameraName)
+        {
+            if (!(response is SuccessResponse success)) return response;
+            var payload = JObject.FromObject(success.data ?? new object());
+            payload["camera"] = cameraName;
+            return new SuccessResponse(success.message, payload);
+        }
+
+        /// <summary>
+        /// Scale the requested size down so its longest edge fits
+        /// <paramref name="maxResolution"/>, preserving aspect ratio. Zero or a
+        /// size already inside the cap leaves both dimensions untouched.
+        /// </summary>
+        private static void ApplyMaxResolution(int maxResolution, ref int width, ref int height)
+        {
+            if (maxResolution <= 0) return;
+            var longest = Math.Max(width, height);
+            if (longest <= maxResolution) return;
+            var scale = (double)maxResolution / longest;
+            width = Math.Max(1, (int)Math.Round(width * scale));
+            height = Math.Max(1, (int)Math.Round(height * scale));
         }
 
         private static object CaptureOverlayCanvases(
@@ -573,6 +704,38 @@ namespace HeraAgent.Tools
                 RenderTexture.active = previousRT;
                 if (rt) UnityEngine.Object.DestroyImmediate(rt);
                 if (tex) UnityEngine.Object.DestroyImmediate(tex);
+            }
+        }
+
+        /// <summary>
+        /// Render a copy of <paramref name="source"/> rather than the camera
+        /// itself, so a named capture works under a scriptable render pipeline
+        /// without disturbing the camera the pipeline is driving.
+        /// </summary>
+        private static object CaptureCameraCopy(
+            Camera source,
+            int width,
+            int height,
+            string outputPath,
+            bool overwrite)
+        {
+            GameObject holder = null;
+            try
+            {
+                holder = new GameObject("Hera Named Screenshot Camera");
+                holder.hideFlags = HideFlags.HideAndDontSave;
+                var copy = holder.AddComponent<Camera>();
+                copy.enabled = false;
+                copy.CopyFrom(source);
+                copy.targetTexture = null;
+                holder.transform.SetPositionAndRotation(
+                    source.transform.position,
+                    source.transform.rotation);
+                return CaptureCamera(copy, width, height, outputPath, overwrite);
+            }
+            finally
+            {
+                if (holder) UnityEngine.Object.DestroyImmediate(holder);
             }
         }
 

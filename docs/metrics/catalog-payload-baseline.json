@@ -1,11 +1,11 @@
 {
   "schema": "hera.catalog-payload-report/2",
-  "catalog_hash": "sha256:c96ad0f1eae8e211273db8d65e9ff152950be0f9537ad86a75ae21c0a8eb2868",
-  "input_bytes": 266378,
-  "normalized_catalog_bytes": 266798,
+  "catalog_hash": "sha256:c1e70531a7c20a27df5e427ae47e01fb323ccfe65251378881e0e11801608a20",
+  "input_bytes": 267977,
+  "normalized_catalog_bytes": 268417,
   "tool_count": 34,
-  "action_count": 132,
-  "description_characters": 9932,
+  "action_count": 133,
+  "description_characters": 9940,
   "mcp_compact": {
     "tool_count": 3,
     "tool_definition_bytes": 2505,
@@ -32,85 +32,85 @@
     {
       "name": "assets",
       "tool_count": 9,
-      "normalized_contract_bytes": 49981,
-      "mcp_tool_definition_bytes": 15060,
+      "normalized_contract_bytes": 51324,
+      "mcp_tool_definition_bytes": 15211,
       "mcp_rough_token_estimates": {
         "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 3765,
-        "central_3_2_bytes_per_token": 4707,
-        "high_2_5_bytes_per_token": 6024
+        "low_4_bytes_per_token": 3803,
+        "central_3_2_bytes_per_token": 4754,
+        "high_2_5_bytes_per_token": 6085
       }
     },
     {
       "name": "core",
       "tool_count": 8,
-      "normalized_contract_bytes": 73446,
-      "mcp_tool_definition_bytes": 18635,
+      "normalized_contract_bytes": 73722,
+      "mcp_tool_definition_bytes": 18911,
       "mcp_rough_token_estimates": {
         "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 4659,
-        "central_3_2_bytes_per_token": 5824,
-        "high_2_5_bytes_per_token": 7454
+        "low_4_bytes_per_token": 4728,
+        "central_3_2_bytes_per_token": 5910,
+        "high_2_5_bytes_per_token": 7565
       }
     },
     {
       "name": "diagnostics",
       "tool_count": 11,
-      "normalized_contract_bytes": 59689,
-      "mcp_tool_definition_bytes": 22735,
+      "normalized_contract_bytes": 59965,
+      "mcp_tool_definition_bytes": 23011,
       "mcp_rough_token_estimates": {
         "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 5684,
-        "central_3_2_bytes_per_token": 7105,
-        "high_2_5_bytes_per_token": 9094
+        "low_4_bytes_per_token": 5753,
+        "central_3_2_bytes_per_token": 7191,
+        "high_2_5_bytes_per_token": 9205
       }
     },
     {
       "name": "full",
       "tool_count": 32,
-      "normalized_contract_bytes": 261690,
-      "mcp_tool_definition_bytes": 62051,
+      "normalized_contract_bytes": 263309,
+      "mcp_tool_definition_bytes": 62478,
       "mcp_rough_token_estimates": {
         "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 15513,
-        "central_3_2_bytes_per_token": 19391,
-        "high_2_5_bytes_per_token": 24821
+        "low_4_bytes_per_token": 15620,
+        "central_3_2_bytes_per_token": 19525,
+        "high_2_5_bytes_per_token": 24992
       }
     },
     {
       "name": "scene",
       "tool_count": 11,
-      "normalized_contract_bytes": 108285,
-      "mcp_tool_definition_bytes": 24962,
+      "normalized_contract_bytes": 108561,
+      "mcp_tool_definition_bytes": 25238,
       "mcp_rough_token_estimates": {
         "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 6241,
-        "central_3_2_bytes_per_token": 7801,
-        "high_2_5_bytes_per_token": 9985
+        "low_4_bytes_per_token": 6310,
+        "central_3_2_bytes_per_token": 7887,
+        "high_2_5_bytes_per_token": 10096
       }
     },
     {
       "name": "testing",
       "tool_count": 6,
-      "normalized_contract_bytes": 69240,
-      "mcp_tool_definition_bytes": 16962,
+      "normalized_contract_bytes": 69516,
+      "mcp_tool_definition_bytes": 17238,
       "mcp_rough_token_estimates": {
         "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 4241,
-        "central_3_2_bytes_per_token": 5301,
-        "high_2_5_bytes_per_token": 6785
+        "low_4_bytes_per_token": 4310,
+        "central_3_2_bytes_per_token": 5387,
+        "high_2_5_bytes_per_token": 6896
       }
     },
     {
       "name": "ui",
       "tool_count": 7,
-      "normalized_contract_bytes": 101895,
-      "mcp_tool_definition_bytes": 19654,
+      "normalized_contract_bytes": 102171,
+      "mcp_tool_definition_bytes": 19930,
       "mcp_rough_token_estimates": {
         "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 4914,
-        "central_3_2_bytes_per_token": 6142,
-        "high_2_5_bytes_per_token": 7862
+        "low_4_bytes_per_token": 4983,
+        "central_3_2_bytes_per_token": 6229,
+        "high_2_5_bytes_per_token": 7972
       }
     }
   ],
@@ -152,16 +152,16 @@
       "description_characters": 640
     },
     {
+      "name": "manage_assets",
+      "bytes": 13101,
+      "action_count": 8,
+      "description_characters": 419
+    },
+    {
       "name": "manage_components",
       "bytes": 12128,
       "action_count": 5,
       "description_characters": 442
-    },
-    {
-      "name": "manage_assets",
-      "bytes": 11758,
-      "action_count": 7,
-      "description_characters": 411
     },
     {
       "name": "manage_editor",
@@ -322,18 +322,18 @@
   ],
   "normalized_catalog_rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-    "low_4_bytes_per_token": 66700,
-    "central_3_2_bytes_per_token": 83375,
-    "high_2_5_bytes_per_token": 106720
+    "low_4_bytes_per_token": 67105,
+    "central_3_2_bytes_per_token": 83881,
+    "high_2_5_bytes_per_token": 107367
   },
   "warnings": [
-    "profile assets uses 49981 normalized bytes (warning budget 24000)",
-    "profile core uses 73446 normalized bytes (warning budget 24000)",
-    "profile diagnostics uses 59689 normalized bytes (warning budget 24000)",
-    "profile full uses 261690 normalized bytes (warning budget 24000)",
-    "profile scene uses 108285 normalized bytes (warning budget 24000)",
-    "profile testing uses 69240 normalized bytes (warning budget 24000)",
-    "profile ui uses 101895 normalized bytes (warning budget 24000)",
+    "profile assets uses 51324 normalized bytes (warning budget 24000)",
+    "profile core uses 73722 normalized bytes (warning budget 24000)",
+    "profile diagnostics uses 59965 normalized bytes (warning budget 24000)",
+    "profile full uses 263309 normalized bytes (warning budget 24000)",
+    "profile scene uses 108561 normalized bytes (warning budget 24000)",
+    "profile testing uses 69516 normalized bytes (warning budget 24000)",
+    "profile ui uses 102171 normalized bytes (warning budget 24000)",
     "tool input uses 35429 normalized bytes (warning budget 20000)",
     "tool manage_gameobject uses 28375 normalized bytes (warning budget 20000)",
     "tool manage_settings uses 24442 normalized bytes (warning budget 20000)"

@@ -112,6 +112,8 @@ Assets:
                                                      Move or rename one asset file
   manage_assets delete --path Assets/Generated/Temp.mat
                                                      Delete one asset file or folder
+  manage_assets import --source <external file> --path Assets/Art/icon.png
+                                                     Bring a file from outside the project into Assets/
 
 Documentation:
   unity_docs <query>                              Offline Unity ScriptReference lookup.
@@ -193,6 +195,8 @@ Screenshot:
                                       Capture an angle contact sheet
   screenshot --editor_ui_only --editor_window InspectorWindow
                                       Read bounded UI Toolkit metadata without pixels
+  screenshot --camera <name>          Render one named scene camera (game view)
+  screenshot --max_resolution 512     Cap the longest edge, preserving aspect
   screenshot --output_path <path>     Custom output path
 
 Reserialize:

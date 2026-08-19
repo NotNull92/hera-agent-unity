@@ -196,7 +196,7 @@ namespace HeraAgent.Tests
                 && ToolCatalogTestSupport.IsSha256(hash)
                 && ToolCatalogTestSupport.IsSha256(projectId)
                 && catalog.Tools.Count == 34
-                && actionCount == 132
+                && actionCount == 133
                 && fieldsComplete);
         }
 

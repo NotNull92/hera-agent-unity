@@ -607,7 +607,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `find_gameobjects` | Search the loaded Scene hierarchy. |
 | `manage_gameobject` | Create and edit GameObjects. |
 | `manage_components` | Read, add, remove, or modify Components. |
-| `manage_assets` | Work with project assets under `Assets/`, and trace what an asset uses or what still uses it. |
+| `manage_assets` | Work with project assets under `Assets/`, bring in a file from outside the project, and trace what an asset uses or what still uses it. |
 | `manage_prefab` | Create, instantiate, and edit prefab assets, and apply, revert, or unpack an instance's overrides. |
 | `manage_animation` | Author AnimationClips and AnimatorController state machines, and read them back. |
 | `manage_timeline` | Create and inspect optional Timeline assets, tracks, and clips without taking a package dependency. |
