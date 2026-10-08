@@ -1,7 +1,9 @@
 # Active Development Handoff
 
-Current workstream: **editor-workflow surface queue.** Waves 1a, 1b, 2, 3, 4,
-5, 6, 7, and 8 are complete, and the survey queue is closed. Per-release detail lives in `CHANGELOG.md`; this file
+Current state (2026-08-19): **no queue is in progress.** The editor-workflow
+surface queue (waves 1a–12) and the survey queue are closed, and the pipeline
+parity claim audit that followed is complete. Current releases are Connector
+`0.1.3` and CLI `v0.2.17`. Per-release detail lives in `CHANGELOG.md`; this file
 records only current state and what is open.
 
 ## Shipped in this queue
@@ -24,13 +26,24 @@ records only current state and what is open.
 | 10 | `0.0.106` | `bake --area navmesh_surfaces` for the AI Navigation package, reflection-only and fail-closed (`docs/NAVMESH_SURFACE_DESIGN.md`) |
 | 11 | `0.0.107` | `manage_settings set_player` writes `scripting_backend` and `api_compatibility_level` from a curated value set, reporting `recompile_triggered` and `build_target` (`docs/PLAYER_TOOLCHAIN_DESIGN.md`) |
 | — | `0.0.108` | Fix: deferred command work runs on the editor update loop, so `build start` no longer queues a build that never begins in an unfocused Editor |
-| 12 | `0.0.109` | Official Unity CLI `1.0.0-beta.3` parity audit: scene/GameObject/animation/Timeline/settings/editor-window coverage, build-option propagation, console/MCP fixes, and whole-repo dead/duplicate-code cleanup (`docs/UNITY_PIPELINE_PARITY_MATRIX.md`) |
+| 12 | `0.0.109` + CLI `v0.2.13` | Official Unity CLI `1.0.0-beta.3` parity audit: scene/GameObject/animation/Timeline/settings/editor-window coverage, build-option propagation, console/MCP fixes, and whole-repo dead/duplicate-code cleanup (`docs/UNITY_PIPELINE_PARITY_MATRIX.md`) |
+
+## Shipped after the queue
+
+| Release | Surface |
+|---|---|
+| CLI `v0.2.13` | Compact exposure becomes the MCP product default; hardened Editor request paths; smaller large-result serialization |
+| `0.1.0`–`0.1.2` + CLI `v0.2.14` | `game_feel` corpus rebuilt as Unity-derived knowledge, 54 → 67 topics; unreachable bar recipe and multi-element composer removed. Tool and action counts unchanged. The CLI release also restores the Windows common-profile environment for launched Editors |
+| CLI `v0.2.15` | `--yes` / `HERA_AGENT_APPROVE` answers an approval preflight in one invocation. It belongs to the operator's shell; an agent still may not approve on the user's behalf |
+| CLI `v0.2.16` | A Connector that predates a requested action is named as version skew instead of a generic `UNKNOWN_ARGUMENT`; `APPROVAL_MISMATCH` lists the claims that differ |
+| CLI `v0.2.17` | Two races that reported a healthy Editor as broken: a stale domain epoch on the first typed call after a compile, and a lock-file warning during restart |
+| `0.1.3` | `manage_assets import` (one external file into `Assets/`) and `screenshot --camera` / `--max_resolution` — audit claims C5 and C12, both absorbed into existing tools |
 
 Alongside the queue: `0.0.91` moved the support floor to Unity 6+ (three
 compatibility buckets), and `0.0.90` fixed the `EntityIdCompat` round trip that
 had made every emitted `instance_id` unresolvable on Unity 6000.3+.
 
-Catalog now: **34 tools / 132 actions**. Every wave passed the feature
+Catalog now: **34 tools / 133 actions** (`manage_assets import` added in `0.1.3`). Every wave passed the feature
 admission gate, regenerated `docs/metrics/catalog-payload-baseline.json` in the
 same review, and was live-verified before release.
 
@@ -40,6 +53,8 @@ No verification debt. `0.0.102` is a fix-only release with no catalog
 change. Each release ran its design's live matrix plus the
 three-bucket gate (`6000.0.35f1`, `6000.3.5f2`, `6000.5.6f1`); evidence is in
 `docs/UNITY_EDITOR_VERSION_INVENTORY.md` and the per-wave design documents.
+`0.1.3` ran `HeraAgent.Editor.Tests` 26/26 on all three buckets, which covers
+the cumulative Connector source including `0.1.0`–`0.1.2`.
 
 **The release gate now has three steps, and skipping any of them has already
 shipped a defect:**
@@ -67,13 +82,42 @@ heartbeat demonstrates every second.
 
 ## Open items
 
+- **Pipeline parity claim audit (2026-08-18/19) is complete; its refuted claims
+  are admission questions, not a queue.** Twelve claims about what Hera lacks
+  were re-run against three live Editors by a second agent and then
+  cross-checked: C2, C3, C11 confirmed, the rest refuted in whole or in part
+  (`docs/handoffs/parity-claim-audit-2026-08-18.md`). Disposition so far:
+  - C5 and the screenshot half of C12 shipped in `0.1.3`.
+  - C9 (Project Auditor) was started and stopped the same day. It needs two
+    version-split reflection paths, returns nothing without
+    `com.unity.project-auditor-rules`, and has no defined answer shape.
+    Reopening starts with one decision: whether that rules package lives in all
+    three release-gate fixtures.
+  - C7's "does not report attempted strategies" finding was withdrawn: the
+    resolver dispatches on handle form and each failure already names its stage.
+  - Still undecided, each needing the feature admission gate and a named
+    failure first: caller-aware reclassification of the matrix (C1), a
+    `package resolve` action whose completion the API cannot confirm (C4), a
+    narrower authoring root — a missing capability, not a safety hole, with no
+    blocked workflow on record (C6), per-record prefab apply/revert (C8, below),
+    a read-only build-profile listing (C10, below), and a compile-operation
+    status distinct from Editor liveness (C12).
+  - The audit's standing lesson: every `duplicate` row assumes the caller has
+    its own filesystem tooling or `exec`. A compact-default MCP client has
+    neither, so "the caller can do it another way" must be checked against that
+    caller before it closes a gap.
+
 - **Active build-target switching and Unity 6 build profiles are rejected, not
   pending** (2026-08-13, `docs/DECISION_LEDGER.md`). No failure evidence exists,
   a switch costs a full project reimport that no agent loop can usefully drive,
   `exec` covers the rare scripted case, and automated cross-platform builds
   belong to batch-mode `-buildTarget` rather than an in-place switch of a
   running Editor. `build list_targets` already lets an agent report the active
-  target and which platform support is installed.
+  target and which platform support is installed. The audit (C10) weakened
+  one leg of this: `exec` is not a fallback for a compact-default MCP client.
+  The rejection stands on the other three; whether a read-only
+  `list_build_profiles` should be judged separately from the switch itself is
+  undecided.
 - Deferred by locked designs: AI Navigation package
   `NavMeshSurface` baking — **done in wave 10**
   (`docs/NAVMESH_SURFACE_DESIGN.md`), lighting/navmesh
@@ -101,10 +145,12 @@ heartbeat demonstrates every second.
   buckets. Two earlier hypotheses were falsified by measurement first
   (`test cancel` over three cancel cycles, and a compile-reload racing a test
   start over four cycles).
-- Per-record prefab apply/revert is deferred: the record objects support it,
-  but addressing "the Rigidbody override on /Player/Arm" needs an identifier
-  that survives a reload, and none exists yet. `list_overrides` already returns
-  the paths that would key it (`docs/PREFAB_OVERRIDE_DESIGN.md` D2).
+- Per-record prefab apply/revert is still not shipped, but its stated blocker
+  is gone. The audit (C8) measured that `(GlobalObjectId, property_path)` is
+  unique per override record and byte-identical across a real Editor restart in
+  all three buckets, so a reload-safe key exists. What remains is the decision
+  to promote that composite key to a public contract
+  (`docs/PREFAB_OVERRIDE_DESIGN.md` D2 predates this measurement).
 - **Resolved.** The output-casing item was not a style preference: `bake`,
   `manage_editor`, and `manage_settings` returned typed result objects whose
   PascalCase names matched none of the snake_case properties their own schema
