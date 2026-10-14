@@ -97,6 +97,62 @@ func Test_ClientSend_retries_when_reload_returns_empty_success_response(t *testi
 	}
 }
 
+func Test_ClientSend_keeps_last_port_while_heartbeat_reports_port_zero_during_reload(t *testing.T) {
+	// Given: during a Play-entry domain reload the connector's heartbeat reads
+	// state=reloading, port=0 (no listener yet). Port 0 is a marker, not a target.
+	writeInstanceFiles(t, map[string]Instance{
+		"target.json": {
+			State:       unitystate.Reloading,
+			ProjectPath: "C:/Project",
+			Port:        0,
+			PID:         100,
+			Timestamp:   1000,
+		},
+	})
+	originalDelay := reloadRetryDelay
+	reloadRetryDelay = time.Millisecond
+	t.Cleanup(func() { reloadRetryDelay = originalDelay })
+	var ports []string
+	c := NewClient()
+	c.processDeadChecker = func(int) bool { return false }
+	c.httpClient = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		ports = append(ports, req.URL.Port())
+		if req.URL.Port() == "0" {
+			return nil, errors.New("dial tcp 127.0.0.1:0: connectex: The requested address is not valid in its context.")
+		}
+		if len(ports) < 3 {
+			return nil, errors.New("connectex: No connection could be made because the target machine actively refused it")
+		}
+		return jsonResponse(`{"success":true,"message":"ok"}`), nil
+	})}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// When
+	response, err := c.Send(ctx, &Instance{
+		Port:        8090,
+		ProjectPath: "C:/Project",
+		PID:         100,
+		Features:    []string{FeatureOperationLedgerV1},
+	}, "manage_editor", nil, 2_000)
+
+	// Then
+	if err != nil {
+		t.Fatalf("Send error = %v, want retry on the last valid port (dialed ports %v)", err, ports)
+	}
+	if !response.Success {
+		t.Fatalf("response.Success = false, want true")
+	}
+	for _, port := range ports {
+		if port != "8090" {
+			t.Fatalf("dialed ports = %v, want only 8090 while the heartbeat reports port 0", ports)
+		}
+	}
+	if len(ports) != 3 {
+		t.Fatalf("attempts = %d, want 3", len(ports))
+	}
+}
+
 func Test_ClientSend_rejects_reused_port_owned_by_another_project(t *testing.T) {
 	// Given
 	stubIsProcessDead(t, map[int]bool{})

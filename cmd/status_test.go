@@ -389,3 +389,42 @@ func TestStatusCmd_reports_reachable_when_heartbeat_is_stale_but_port_accepts_co
 		t.Fatalf("status output = %q, must not report reachable port as not responding", got)
 	}
 }
+
+func TestWaitForAlive_SkipsHeartbeatThatReportsPortZeroWhileReloading(t *testing.T) {
+	// Given: a domain reload in flight writes state=reloading, port=0 with a fresh
+	// timestamp. Port 0 is "no listener yet", never a target to dial.
+	origPollInterval := statusPollBaseInterval
+	statusPollBaseInterval = 5 * time.Millisecond
+	t.Cleanup(func() { statusPollBaseInterval = origPollInterval })
+
+	project := "C:/WorkSpace/ProjectMaid"
+	callCount := 0
+	resolve := func() (*client.Instance, error) {
+		callCount++
+		if callCount <= 2 {
+			return &client.Instance{
+				State:       unitystate.Reloading,
+				ProjectPath: project,
+				Port:        0,
+				Timestamp:   time.Now().UnixMilli(),
+			}, nil
+		}
+		return &client.Instance{
+			State:       unitystate.Ready,
+			ProjectPath: project,
+			Port:        8091,
+			Timestamp:   time.Now().UnixMilli(),
+		}, nil
+	}
+
+	// When
+	inst, err := waitForAlive(context.Background(), resolve, 2_000, "exec")
+
+	// Then
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if inst.Port != 8091 {
+		t.Fatalf("inst.Port = %d, want 8091 (port 0 must not be returned as a target)", inst.Port)
+	}
+}
