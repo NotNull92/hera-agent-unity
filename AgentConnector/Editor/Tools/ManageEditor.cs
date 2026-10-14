@@ -67,7 +67,7 @@ namespace HeraAgent.Tools
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SelectionEntry
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public string Name { get; set; }
             public string Kind { get; set; }
             public string Path { get; set; }
@@ -81,7 +81,7 @@ namespace HeraAgent.Tools
         public sealed class SelectionResult
         {
             public int Count { get; set; }
-            public int ActiveInstanceId { get; set; }
+            public ulong ActiveInstanceId { get; set; }
             public SelectionEntry[] Objects { get; set; }
         }
 
@@ -291,7 +291,7 @@ namespace HeraAgent.Tools
                     if (!ObjectIdentity.TryResolve(target, out obj, out var durableErr))
                         return new ErrorResponse("OBJECT_NOT_FOUND", $"targets[{i}]: {durableErr}");
                 }
-                else if (int.TryParse(target, out var id))
+                else if (ulong.TryParse(target, out var id))
                 {
                     obj = EntityIdCompat.ToObject(id);
                     if (obj == null)

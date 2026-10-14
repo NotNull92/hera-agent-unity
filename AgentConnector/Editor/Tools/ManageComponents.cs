@@ -67,7 +67,7 @@ namespace HeraAgent.Tools
         public class GameObjectTargetParameters
         {
             [ToolParameter("Target GameObject by InstanceID.")]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
 
             [ToolParameter("Target GameObject by hierarchy path.")]
             public string Path { get; set; }
@@ -131,28 +131,28 @@ namespace HeraAgent.Tools
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class AddResult
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public ComponentResult Component { get; set; }
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class RemoveResult
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public ComponentResult Removed { get; set; }
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class ListResult
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public ComponentResult[] Components { get; set; }
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class GetResult
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public int? ComponentId { get; set; }
             public string Type { get; set; }
             public string Property { get; set; }
@@ -167,7 +167,7 @@ namespace HeraAgent.Tools
             public string Action { get; set; }
 
             [ToolParameter("Target GameObject by InstanceID (preferred)")]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
 
             [ToolParameter("Target GameObject by hierarchy path '/Root/Child' (alternative to instance_id)")]
             public string Path { get; set; }
@@ -473,7 +473,7 @@ namespace HeraAgent.Tools
             var idToken = p.GetRaw("component_id");
             if (idToken != null && idToken.Type != JTokenType.Null)
             {
-                int? id = p.GetInt("component_id");
+                ulong? id = p.GetULong("component_id");
                 if (id == null) return (null, null, new ErrorResponse("INVALID_COMPONENT_ID", $"Invalid 'component_id': '{idToken}'."));
                 var obj = EntityIdCompat.ToObject(id.Value);
                 if (obj == null) return (null, null, new ErrorResponse("OBJECT_NOT_FOUND", $"No object for component_id={id.Value}."));

@@ -217,7 +217,7 @@ namespace HeraAgent.Tools
         public class TargetParameters : CommonParameters
         {
             [ToolParameter("Target by InstanceID.")]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
 
             [ToolParameter("Target by hierarchy path.")]
             public string Path { get; set; }
@@ -274,7 +274,7 @@ namespace HeraAgent.Tools
             public string Key { get; set; }
 
             [ToolParameter("Target by InstanceID.")]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
 
             [ToolParameter("Target by hierarchy path '/Canvas/Child'.")]
             public string Path { get; set; }

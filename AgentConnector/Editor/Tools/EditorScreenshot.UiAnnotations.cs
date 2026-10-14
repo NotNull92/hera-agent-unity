@@ -27,7 +27,7 @@ namespace HeraAgent.Tools
 
         internal sealed class ScreenshotUiElementAnnotation
         {
-            public int instance_id;
+            public ulong instance_id;
             public string hierarchy_path;
             public string name;
             public string type;
@@ -81,7 +81,7 @@ namespace HeraAgent.Tools
                     path = HierarchyPath.Build(selectable.transform),
                 })
                 .OrderBy(candidate => candidate.path, StringComparer.Ordinal)
-                .ThenBy(candidate => EntityIdCompat.IdOf(candidate.selectable), Comparer<int>.Default)
+                .ThenBy(candidate => EntityIdCompat.IdOf(candidate.selectable), Comparer<ulong>.Default)
                 .ToList();
 
             var gameViewWidth = Mathf.Max(1, Screen.width);

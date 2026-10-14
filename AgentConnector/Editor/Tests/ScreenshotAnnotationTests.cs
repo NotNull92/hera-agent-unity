@@ -71,7 +71,7 @@ namespace HeraAgent.Tests
                 var blockerId = EntityIdCompat.IdOf(blocker);
                 var annotation = annotations?
                     .OfType<JObject>()
-                    .FirstOrDefault(item => item.Value<int>("instance_id") == targetId);
+                    .FirstOrDefault(item => item.Value<ulong>("instance_id") == targetId);
                 var blockedBy = annotation?["blocked_by"] as JObject;
                 var coordinateSpaces = data?["coordinate_spaces"] as JObject;
                 var inputSpace = coordinateSpaces?["input"] as JObject;
@@ -93,7 +93,7 @@ namespace HeraAgent.Tests
                     passed &= Expect("AnnotationRaycastTargetHit",
                         annotation?.Value<bool>("target_hit") == true);
                     passed &= Expect("AnnotationBlocker",
-                        blockedBy?.Value<int>("instance_id") == blockerId);
+                        blockedBy?.Value<ulong>("instance_id") == blockerId);
                 }
                 else
                 {

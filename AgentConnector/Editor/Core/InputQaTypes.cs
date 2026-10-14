@@ -53,7 +53,7 @@ namespace HeraAgent
     internal sealed class InputQaHit
     {
         public int rank;
-        public int instance_id;
+        public ulong instance_id;
         public string name;
         public string path;
         public string module;
@@ -66,7 +66,7 @@ namespace HeraAgent
     {
         public InputQaOptions Options;
         public EventSystem EventSystem;
-        public int TargetId;
+        public ulong TargetId;
         public string TargetName;
         public string TargetPath;
         public Vector2 Point;

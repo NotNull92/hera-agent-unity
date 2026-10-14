@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.1.4 - Unity 6000.6 id width)
+
+- Instance ids are carried as 64-bit `EntityId` values (`EntityIdCompat.IdOf` -> `ulong`,
+  `ToObject(ulong)`), so the connector builds and resolves objects on Unity 6000.6. There the
+  `int` <-> `EntityId` conversions are obsolete-as-error (CS0619) and their members - like
+  `EditorUtility.InstanceIDToObject(int)` - throw `System.NotImplementedException`; entity ids are
+  64-bit and a bare 32-bit id no longer resolves, so the previous `int` contract could not work even
+  with the old pragma suppression intact. `ToolParams.GetULong`, the id parsers, the tool parameter
+  declarations and the affected tests follow. Unity 6000.3-6000.5 keep the existing reflected-operator
+  path and older versions keep the legacy `int` path, both unchanged.
+
 ### Added (Connector 0.1.3 — one ingress, and a camera you can name)
 
 - `manage_assets import --source <file> --path Assets/...` brings a file from

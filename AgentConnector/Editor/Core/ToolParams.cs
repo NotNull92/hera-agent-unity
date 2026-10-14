@@ -32,6 +32,13 @@ namespace HeraAgent
             return int.TryParse(str, out var result) ? result : defaultValue;
         }
 
+        public ulong? GetULong(string key, ulong? defaultValue = null)
+        {
+            var str = GetString(key);
+            if (string.IsNullOrEmpty(str)) return defaultValue;
+            return ulong.TryParse(str, out var result) ? result : defaultValue;
+        }
+
         public float? GetFloat(string key, float? defaultValue = null)
         {
             var str = GetString(key);

@@ -205,8 +205,8 @@ namespace HeraAgent
 
             if (token.Type == JTokenType.Integer)
             {
-                var obj = EntityIdCompat.ToObject(token.Value<int>());
-                return obj == null ? (null, $"no object for instance_id={token.Value<int>()}") : (obj, null);
+                var obj = EntityIdCompat.ToObject(token.Value<ulong>());
+                return obj == null ? (null, $"no object for instance_id={token.Value<ulong>()}") : (obj, null);
             }
 
             if (token.Type == JTokenType.String)
@@ -219,7 +219,7 @@ namespace HeraAgent
                         ? (durable, null)
                         : (null, durableErr);
                 }
-                if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedId))
+                if (ulong.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedId))
                 {
                     var obj = EntityIdCompat.ToObject(parsedId);
                     return obj == null ? (null, $"no object for instance_id={parsedId}") : (obj, null);
@@ -232,7 +232,7 @@ namespace HeraAgent
             {
                 if (jo["instance_id"] != null)
                 {
-                    int id = jo["instance_id"].Value<int>();
+                    ulong id = jo["instance_id"].Value<ulong>();
                     var obj = EntityIdCompat.ToObject(id);
                     return obj == null ? (null, $"no object for instance_id={id}") : (obj, null);
                 }

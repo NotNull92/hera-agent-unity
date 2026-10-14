@@ -54,7 +54,7 @@ namespace HeraAgent.Tests
                 && data.TryGetValue("instanceID", out var instanceId)
                 && (string)name == value.name
                 && (string)type == value.GetType().Name
-                && (int)instanceId == EntityIdCompat.IdOf(value);
+                && (ulong)instanceId == EntityIdCompat.IdOf(value);
             return Expect(label, passed);
         }
 

@@ -119,7 +119,10 @@ func (c *Client) doWithReloadRetry(
 		if time.Now().After(deadline) {
 			break
 		}
-		if next != nil {
+		// The connector heartbeat reports port 0 while the domain is reloading
+		// (no listener yet). That is "not available", not a target: keep the last
+		// valid port and keep retrying until a real port appears.
+		if next != nil && next.Port > 0 {
 			port = next.Port
 		}
 		select {

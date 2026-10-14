@@ -88,7 +88,7 @@ namespace HeraAgent.Tools
             public string Path { get; set; }
 
             [ToolParameter("InstanceID for isolated capture.", Required = false)]
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
 
             [ToolParameter(
                 "Isolated capture angles: iso, front, back, left, right, top, bottom; comma-separated.",

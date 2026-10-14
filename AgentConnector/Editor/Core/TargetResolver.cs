@@ -24,7 +24,7 @@ namespace HeraAgent
             var idToken = p.GetRaw("instance_id");
             if (idToken != null && idToken.Type != Newtonsoft.Json.Linq.JTokenType.Null)
             {
-                int? id = p.GetInt("instance_id");
+                ulong? id = p.GetULong("instance_id");
                 if (id == null)
                     return (null, new ErrorResponse("INVALID_INSTANCE_ID", $"Invalid 'instance_id': '{idToken}'."));
                 var obj = EntityIdCompat.ToObject(id.Value);
@@ -95,7 +95,7 @@ namespace HeraAgent
         public static (Transform t, ErrorResponse err) ResolveTransform(string s)
         {
             if (string.IsNullOrEmpty(s)) return (null, null);
-            if (int.TryParse(s, out var id))
+            if (ulong.TryParse(s, out var id))
             {
                 var obj = EntityIdCompat.ToObject(id);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;

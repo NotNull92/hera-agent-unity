@@ -123,7 +123,9 @@ func (config WaitConfig) WaitForAlive(
 ) (*client.Instance, error) {
 	baseline := time.Now().UnixMilli()
 	inst, err := resolve()
-	if err == nil {
+	// Port 0 is the connector's "reloading, no listener yet" marker, never a
+	// target: keep polling until a heartbeat with a real port appears.
+	if err == nil && inst.Port > 0 {
 		baseline = inst.Timestamp
 		if slices.Contains([]string{unitystate.Ready, unitystate.Playing, unitystate.Paused}, inst.State) {
 			return inst, nil
@@ -149,7 +151,7 @@ func (config WaitConfig) WaitForAlive(
 			if err != nil {
 				return false
 			}
-			if inst.Timestamp > baseline {
+			if inst.Port > 0 && inst.Timestamp > baseline {
 				result = inst
 				return true
 			}

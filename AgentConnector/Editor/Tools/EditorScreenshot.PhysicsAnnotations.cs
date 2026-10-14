@@ -31,16 +31,16 @@ namespace HeraAgent.Tools
             public int effective_layer_mask;
             public int game_view_width;
             public int game_view_height;
-            public int camera_instance_id;
+            public ulong camera_instance_id;
             public string camera_hierarchy_path;
         }
 
         internal sealed class ScreenshotPhysicsAnnotation
         {
-            public int instance_id;
+            public ulong instance_id;
             public string hierarchy_path;
             public string name;
-            public int collider_instance_id;
+            public ulong collider_instance_id;
             public string collider_type;
             public int layer;
             public string layer_name;
@@ -109,7 +109,7 @@ namespace HeraAgent.Tools
 
             var width = Mathf.Max(1, Screen.width);
             var height = Mathf.Max(1, Screen.height);
-            var clusters = new Dictionary<int, PhysicsCluster>();
+            var clusters = new Dictionary<ulong, PhysicsCluster>();
             var raysHit = 0;
             Physics.SyncTransforms();
 
@@ -149,7 +149,7 @@ namespace HeraAgent.Tools
             var ordered = clusters.Values
                 .OrderByDescending(cluster => cluster.samples.Count)
                 .ThenBy(cluster => HierarchyPath.Build(cluster.collider.transform), StringComparer.Ordinal)
-                .ThenBy(cluster => EntityIdCompat.IdOf(cluster.collider), Comparer<int>.Default)
+                .ThenBy(cluster => EntityIdCompat.IdOf(cluster.collider), Comparer<ulong>.Default)
                 .ToList();
             var result = new ScreenshotPhysicsAnnotationCollection
             {

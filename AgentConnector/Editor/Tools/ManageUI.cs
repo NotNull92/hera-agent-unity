@@ -81,7 +81,7 @@ namespace HeraAgent.Tools
         public class TargetParameters
         {
             [ToolParameter("Target GameObject InstanceID.")]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
 
             [ToolParameter("Target hierarchy path.")]
             public string Path { get; set; }
@@ -153,7 +153,7 @@ namespace HeraAgent.Tools
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public class RectResult
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public string Name { get; set; }
             public string Path { get; set; }
             public RectValuesResult Rect { get; set; }
@@ -181,7 +181,7 @@ namespace HeraAgent.Tools
             public string Parent { get; set; }
 
             [ToolParameter("Target by InstanceID (get_rect/set_anchor/set_rect).")]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
 
             [ToolParameter("Target by hierarchy path '/Canvas/Child' (get_rect/set_anchor/set_rect).")]
             public string Path { get; set; }

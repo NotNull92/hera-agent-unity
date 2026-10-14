@@ -59,13 +59,13 @@ namespace HeraAgent.Tests
                     && data.Value<int>("physics_annotation_count") == 1
                     && annotation?.Value<int>("sample_count") == 9);
                 passed &= Expect("PhysicsIdentity",
-                    annotation?.Value<int>("instance_id") == EntityIdCompat.IdOf(fixture.target)
-                    && annotation.Value<int>("collider_instance_id")
+                    annotation?.Value<ulong>("instance_id") == EntityIdCompat.IdOf(fixture.target)
+                    && annotation.Value<ulong>("collider_instance_id")
                         == EntityIdCompat.IdOf(fixture.targetCollider)
                     && annotation.Value<string>("hierarchy_path") == "/!HeraPhysicsTarget"
                     && annotation.Value<string>("collider_type") == "BoxCollider");
                 passed &= Expect("PhysicsCameraAndLayerConstraints",
-                    camera?.Value<int>("instance_id") == EntityIdCompat.IdOf(fixture.camera.gameObject)
+                    camera?.Value<ulong>("instance_id") == EntityIdCompat.IdOf(fixture.camera.gameObject)
                     && raycast.Value<int>("requested_layer_mask") == 1 << fixture.target.layer
                     && raycast.Value<int>("effective_layer_mask") == 1 << fixture.target.layer
                     && raycast.Value<string>("query_triggers") == "ignore");

@@ -56,7 +56,7 @@ namespace HeraAgent.Tools
         public class TargetParameters
         {
             [ToolParameter("Target by InstanceID.")]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
 
             [ToolParameter("Target by hierarchy path.")]
             public string Path { get; set; }
@@ -161,7 +161,7 @@ namespace HeraAgent.Tools
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class GameObjectResult
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public string Name { get; set; }
             public string Path { get; set; }
             public string Scene { get; set; }
@@ -176,7 +176,7 @@ namespace HeraAgent.Tools
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class DuplicateItemResult
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public string Name { get; set; }
             public string Path { get; set; }
         }
@@ -184,7 +184,7 @@ namespace HeraAgent.Tools
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class DuplicateSourceResult
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public string Name { get; set; }
         }
 
@@ -202,7 +202,7 @@ namespace HeraAgent.Tools
             public string Action { get; set; }
 
             [ToolParameter("Target by InstanceID (all actions except create)")]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
 
             [ToolParameter("Target by hierarchy path '/Root/Child' (alternative to instance_id)")]
             public string Path { get; set; }
@@ -322,7 +322,7 @@ namespace HeraAgent.Tools
             // Selection and clobbers the copy/paste buffer, so snapshot and
             // restore the prior selection around the loop.
             var scene = src.scene;
-            int srcRawId = EntityIdCompat.IdOf(src);
+            ulong srcRawId = EntityIdCompat.IdOf(src);
             var prevSelection = Selection.objects;
             int undoGroup = Undo.GetCurrentGroup();
             var clones = new List<object>();
@@ -537,7 +537,7 @@ namespace HeraAgent.Tools
 
             if (token.Type == JTokenType.Integer)
             {
-                int id = token.Value<int>();
+                ulong id = token.Value<ulong>();
                 var obj = EntityIdCompat.ToObject(id);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;
                 if (go == null) return (null, new ErrorResponse("OBJECT_NOT_FOUND", $"No GameObject for parent instance_id={id}."));
@@ -546,7 +546,7 @@ namespace HeraAgent.Tools
 
             var s = token.ToString();
             if (string.IsNullOrEmpty(s)) return (null, null);
-            if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedId))
+            if (ulong.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedId))
             {
                 var obj = EntityIdCompat.ToObject(parsedId);
                 var go = obj as GameObject ?? (obj as Component)?.gameObject;

@@ -62,7 +62,7 @@ namespace HeraAgent.Tools
             public string Source { get; set; }
 
             [ToolParameter("Source scene GameObject InstanceID.")]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
         }
 
         public sealed class InstantiateParameters : PathParameters
@@ -120,7 +120,7 @@ namespace HeraAgent.Tools
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class InstanceResult
         {
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
             public string Name { get; set; }
             public string Path { get; set; }
         }
@@ -190,7 +190,7 @@ namespace HeraAgent.Tools
             public string Source { get; set; }
 
             [ToolParameter("create: source scene GameObject by InstanceID (alternative to --source).")]
-            public int InstanceId { get; set; }
+            public ulong InstanceId { get; set; }
 
             [ToolParameter("add_component / remove_component: component type name (e.g. Rigidbody, BoxCollider).")]
             public string Component { get; set; }
@@ -568,7 +568,7 @@ namespace HeraAgent.Tools
             var idToken = p.GetRaw("instance_id");
             if (idToken != null && idToken.Type != JTokenType.Null)
             {
-                var id = p.GetInt("instance_id");
+                var id = p.GetULong("instance_id");
                 if (id == null)
                     return (null, new ErrorResponse("INVALID_INSTANCE_ID", $"Invalid 'instance_id': '{idToken}'."));
                 var obj = EntityIdCompat.ToObject(id.Value);

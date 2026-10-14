@@ -50,7 +50,7 @@ namespace HeraAgent.Tools
         public sealed class Entry
         {
             [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-            public int? InstanceId { get; set; }
+            public ulong? InstanceId { get; set; }
 
             [Newtonsoft.Json.JsonProperty(NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
             public string Name { get; set; }
