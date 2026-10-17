@@ -66,6 +66,13 @@ namespace HeraAgent
         const int DEFAULT_PORT = 8090;
         const int FALLBACK_PORT = 8091;
         const int MAX_PORT_ATTEMPTS = 10;
+
+        /// <summary>
+        /// The one prefix this server binds. Single-sourced so the loopback-only contract is
+        /// testable and cannot drift into a wildcard bind: Unity's Mono HttpListener resolves
+        /// "+" and "*" to IPAddress.Any, which would expose the port on every interface.
+        /// </summary>
+        internal static string HttpPrefix(int port) => $"http://127.0.0.1:{port}/";
         const int MAX_COMMAND_BODY_BYTES = 1024 * 1024;
         const int MAX_BATCH_BODY_BYTES = 4 * 1024 * 1024;
         const int MAX_BATCH_COMMANDS = 50;
@@ -166,7 +173,7 @@ namespace HeraAgent
                 try
                 {
                     listener = new HttpListener();
-                    listener.Prefixes.Add($"http://127.0.0.1:{port}/");
+                    listener.Prefixes.Add(HttpPrefix(port));
                     listener.Start();
 
                     var cancellation = new CancellationTokenSource();

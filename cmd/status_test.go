@@ -78,6 +78,49 @@ func TestWaitForAlive_FollowsResolverPortChange(t *testing.T) {
 	}
 }
 
+// The other half of the reload contract (Step 5 measured 20/20 reloads keeping the same
+// port): while the heartbeat keeps reporting the same port, waitForAlive must not churn the
+// target — the reloading window is polled but the resolved port never moves.
+func TestWaitForAlive_keepsPortWhileHeartbeatIsStable(t *testing.T) {
+	origPollInterval := statusPollBaseInterval
+	statusPollBaseInterval = 5 * time.Millisecond
+	t.Cleanup(func() { statusPollBaseInterval = origPollInterval })
+
+	project := "C:/WorkSpace/ProjectMaid"
+	callCount := 0
+	resolve := func() (*client.Instance, error) {
+		callCount++
+		if callCount < 3 {
+			return &client.Instance{
+				State:       unitystate.Reloading,
+				ProjectPath: project,
+				Port:        8090,
+				Timestamp:   time.Now().Add(-5 * time.Second).UnixMilli(),
+			}, nil
+		}
+		return &client.Instance{
+			State:       unitystate.Ready,
+			ProjectPath: project,
+			Port:        8090,
+			Timestamp:   time.Now().UnixMilli(),
+		}, nil
+	}
+
+	inst, err := waitForAlive(context.Background(), resolve, 200, "status")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if inst.Port != 8090 {
+		t.Fatalf("expected the stable port 8090 to be kept, got %d", inst.Port)
+	}
+	// A stale heartbeat in a stable (non-ready) state is returned as-is rather than retried
+	// forever — the contract under test is that the port never moves, not that polling
+	// continues through the whole reload window (see the stale-instance test above).
+	if callCount < 2 {
+		t.Fatalf("expected the resolver to be polled at least twice, got %d calls", callCount)
+	}
+}
+
 func TestWaitForAlive_WhenRootContextCancelled_ReturnsCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
