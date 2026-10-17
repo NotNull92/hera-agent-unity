@@ -89,6 +89,25 @@ func (registry *Registry) Load(
 		ProjectID:   projectID,
 		Features:    instance.Features,
 		DomainEpoch: instance.DomainEpoch,
+		CatalogHash: instance.CatalogSchemaHash,
+	}
+	// Exact hit first: the heartbeat advertises the catalog hash, so a matching cache
+	// entry can be reused without fetching the catalog from Unity at all. This is an
+	// advertisement, not a handshake — no negotiation request is sent.
+	if instance.CatalogSchemaHash != "" {
+		if cached, exactErr := registry.cache.Load(lookup); exactErr == nil {
+			if compiled, compileErr := registry.schemas.Compile(
+				cached.CatalogHash,
+				cached.SchemaDefinitions(),
+			); compileErr == nil {
+				return &Snapshot{
+					Catalog:   cached,
+					Schemas:   compiled,
+					Exposure:  ExposureProfile,
+					FromCache: true,
+				}, nil
+			}
+		}
 	}
 	if cached, _, cacheErr := registry.cache.LoadMatching(lookup); cacheErr == nil {
 		compiled, compileErr := registry.schemas.Compile(

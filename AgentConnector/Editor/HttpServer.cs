@@ -404,7 +404,10 @@ namespace HeraAgent
             }
 
             if (result is ErrorResponse error)
+            {
+                ResponsePolicy.Apply(error);
                 response.StatusCode = StatusCodeFor(error.code);
+            }
 
             try
             {
@@ -470,6 +473,18 @@ namespace HeraAgent
             {
                 DebugLogging.LogError("unknown", new Exception("Missing 'command' field"));
                 return new ErrorResponse("HTTP_MISSING_COMMAND", "Missing 'command' field");
+            }
+            // Reload fast-path: during a compile/reload the main thread cannot drain the work
+            // queue, so queueing would stall the client for the whole compile. Answer now with
+            // a retryable RELOADING envelope (503) and let the client retry when ready.
+            if (Heartbeat.IsReloadWindow && !CommandRouter.IsReloadExempt(command))
+            {
+                DebugLogging.LogRequest(command, parameters);
+                var reloading = new ErrorResponse(
+                    ResponsePolicy.CodeReloading,
+                    $"[Hera] The Editor is compiling/reloading; '{command}' was not executed. Retry shortly.");
+                ResponsePolicy.Apply(reloading, 1000);
+                return reloading;
             }
             if (!CommandRequestContext.TryCreate(
                 json["meta"] as JObject,
@@ -627,6 +642,7 @@ namespace HeraAgent
                 case "HTTP_METHOD_NOT_ALLOWED": return 405;
                 case "HTTP_REQUEST_BODY_TOO_LARGE": return 413;
                 case "HTTP_QUEUE_FULL": return 429;
+                case ResponsePolicy.CodeReloading: return 503;
                 case "HTTP_INTERNAL_ERROR": return 500;
                 case "HTTP_INVALID_JSON":
                 case "HTTP_MISSING_COMMAND":

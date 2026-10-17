@@ -3,6 +3,7 @@ package client
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -53,6 +54,41 @@ func (c *Client) doWithReloadRetry(
 		req.Close = true
 		resp, err := c.httpClient.Do(req)
 		if err == nil {
+			if resp.StatusCode == http.StatusServiceUnavailable {
+				// Retry contract: 503 + retryable=true means the command was NOT executed
+				// (currently RELOADING while the editor compiles). Retrying is therefore safe
+				// for callers that declared the request idempotent; everyone else receives the
+				// original envelope unchanged.
+				raw, readErr := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
+				_ = resp.Body.Close()
+				restore := func() { resp.Body = io.NopCloser(bytes.NewReader(raw)) }
+				if readErr != nil {
+					restore()
+					return resp, nil
+				}
+				var envelope struct {
+					Retryable    bool `json:"retryable"`
+					RetryAfterMs int  `json:"retry_after_ms"`
+				}
+				_ = json.Unmarshal(raw, &envelope)
+				if !envelope.Retryable || !policy.allowRetry || time.Now().After(deadline) {
+					restore()
+					return resp, nil
+				}
+				delay := reloadRetryDelay
+				if envelope.RetryAfterMs > 0 {
+					delay = time.Duration(envelope.RetryAfterMs) * time.Millisecond
+				}
+				if next, targetErr := c.inspectTarget(project, port); targetErr == nil && next != nil {
+					port = next.Port
+				}
+				select {
+				case <-ctx.Done():
+					return nil, ctx.Err()
+				case <-time.After(delay):
+				}
+				continue
+			}
 			if resp.StatusCode != http.StatusOK || resp.ContentLength != 0 {
 				return resp, nil
 			}

@@ -14,6 +14,9 @@ namespace HeraAgent
         internal const string FeatureOperationLedgerV1 = "operation_ledger_v1";
         internal const string FeatureTaskBridgeV1 = "task_bridge_v1";
         internal const string FeatureToolCatalogV1 = "tool_catalog_v1";
+        internal const string FeatureRetryableV1 = "retryable_v1";
+        internal const string FeatureCatalogSchemaV1 = "catalog_schema_v1";
+        internal const string FeatureMainThreadFlagV1 = "mainthread_flag_v1";
 
         internal const int AssetConfigLockVersion = 1;
         internal const long AssetConfigLockStaleAfterMilliseconds = 120000L;

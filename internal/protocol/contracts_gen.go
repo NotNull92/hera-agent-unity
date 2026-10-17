@@ -13,6 +13,9 @@ const (
 	FeatureOperationLedgerV1   = "operation_ledger_v1"
 	FeatureTaskBridgeV1        = "task_bridge_v1"
 	FeatureToolCatalogV1       = "tool_catalog_v1"
+	FeatureRetryableV1         = "retryable_v1"
+	FeatureCatalogSchemaV1     = "catalog_schema_v1"
+	FeatureMainThreadFlagV1    = "mainthread_flag_v1"
 
 	AssetConfigLockVersion                = 1
 	AssetConfigLockStaleAfterMilliseconds = int64(120000)

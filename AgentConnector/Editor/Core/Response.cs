@@ -19,6 +19,21 @@ namespace HeraAgent
 
         public Dictionary<string, long> timings;
 
+        /// <summary>
+        /// True when the failure is transient and the identical (idempotent) request may be
+        /// retried. Omitted when false so payloads stay lean.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public bool? retryable;
+
+        /// <summary>Editor state observed while the response was produced (ready/compiling/reloading/...).</summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string state;
+
+        /// <summary>Suggested wait before retrying a retryable failure.</summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? retry_after_ms;
+
         public SuccessResponse(string message, object data = null)
         {
             this.message = message;
@@ -58,6 +73,21 @@ namespace HeraAgent
         public List<ToolContractDiagnostic> diagnostics;
 
         public Dictionary<string, long> timings;
+
+        /// <summary>
+        /// True when the failure is transient and the identical (idempotent) request may be
+        /// retried. Omitted when false so payloads stay lean.
+        /// </summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public bool? retryable;
+
+        /// <summary>Editor state observed while the response was produced (ready/compiling/reloading/...).</summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string state;
+
+        /// <summary>Suggested wait before retrying a retryable failure.</summary>
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public int? retry_after_ms;
 
         public ErrorResponse(string message, object data = null)
         {
@@ -103,6 +133,38 @@ namespace HeraAgent
         {
             if (source == null) return;
             foreach (var kv in source) Set(response, kv.Key, kv.Value);
+        }
+    }
+
+    /// <summary>
+    /// Fills the retry contract (retryable / state / retry_after_ms) on failures.
+    /// Single source for the router, the HTTP ingress, and the reload fast-path so the
+    /// CLI can branch on one contract instead of inferring transience from messages.
+    /// </summary>
+    public static class ResponsePolicy
+    {
+        /// <summary>Failure while the editor is compiling/reloading; not executed, safe to retry once ready.</summary>
+        public const string CodeReloading = "RELOADING";
+
+        static readonly HashSet<string> s_RetryableCodes = new HashSet<string>
+        {
+            CodeReloading,
+            "COMMAND_LOCK_TIMEOUT",
+            "HTTP_QUEUE_FULL",
+            "HTTP_INTERNAL_ERROR",
+        };
+
+        public static bool IsRetryableCode(string code) =>
+            !string.IsNullOrEmpty(code) && s_RetryableCodes.Contains(code);
+
+        public static void Apply(ErrorResponse error, int? retryAfterMs = null)
+        {
+            if (error == null || !IsRetryableCode(error.code))
+                return;
+            error.retryable = true;
+            if (string.IsNullOrEmpty(error.state))
+                error.state = Heartbeat.CurrentState();
+            error.retry_after_ms = retryAfterMs ?? (error.code == CodeReloading ? 1000 : 500);
         }
     }
 

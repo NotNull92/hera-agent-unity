@@ -273,6 +273,14 @@ func (rp *ResponsePrinter) Print(resp *client.CommandResponse, category string) 
 			}
 			fmt.Fprintln(os.Stderr, tui.ErrorPanel("Failed", body))
 		}
+		if resp.Retryable {
+			state := resp.State
+			if state == "" {
+				state = "not ready"
+			}
+			fmt.Fprintf(os.Stderr,
+				"hint: transient (editor state: %s) — the command was not executed; retry the same request\n", state)
+		}
 		return
 	}
 

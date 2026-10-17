@@ -23,6 +23,16 @@ namespace HeraAgent
         static bool s_SawCompileStart;
         static string s_FilePath;
 
+        // Cross-thread reload window flag. The HTTP ingress runs on background threads and
+        // must be able to refuse commands during a compile/reload without touching
+        // main-thread-only APIs, so the main thread publishes the fact here (volatile read
+        // is all a background thread needs).
+        static volatile bool s_ReloadWindow;
+
+        internal static bool IsReloadWindow => s_ReloadWindow;
+
+        internal static string CurrentState() => s_ForcedState ?? GetState();
+
         // Domain-lifetime invariants. These never change between reloads, so we
         // compute them once instead of rebuilding them on every 1.0s tick (a
         // Process allocation + ~4 File.Exists stats + a version re-parse that
@@ -40,7 +50,7 @@ namespace HeraAgent
             EditorApplication.update += Tick;
             EditorApplication.quitting += Cleanup;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
-            AssemblyReloadEvents.afterAssemblyReload += () => { s_ForcedState = null; s_LastWrite = 0; };
+            AssemblyReloadEvents.afterAssemblyReload += () => { s_ForcedState = null; s_LastWrite = 0; s_ReloadWindow = false; };
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
         }
 
@@ -48,7 +58,6 @@ namespace HeraAgent
         {
             WriteState("reloading");
         }
-
         static void OnPlayModeChanged(PlayModeStateChange change)
         {
             if (change == PlayModeStateChange.ExitingEditMode)
@@ -58,6 +67,7 @@ namespace HeraAgent
         static void WriteState(string state)
         {
             s_ForcedState = state;
+            s_ReloadWindow = state == "reloading" || state == "compiling";
             Write();
         }
 
@@ -74,6 +84,10 @@ namespace HeraAgent
 
         static void Tick()
         {
+            // Publish the reload window first: HTTP ingress threads read this to answer
+            // RELOADING immediately instead of queueing work the main thread cannot drain.
+            s_ReloadWindow = EditorApplication.isCompiling || s_ForcedState == "reloading" || s_ForcedState == "compiling";
+
             if (HttpServer.Port == 0) return;
 
             var now = EditorApplication.timeSinceStartup;
@@ -147,7 +161,7 @@ namespace HeraAgent
             EnsureInvariants();
             return new
             {
-                state = s_ForcedState ?? GetState(),
+                state = CurrentState(),
                 projectPath = s_ProjectPath,
                 port = HttpServer.Port,
                 pid = s_Pid,
@@ -156,6 +170,7 @@ namespace HeraAgent
                 compiler = s_Compiler,
                 domainEpoch = ToolCatalogRuntime.DomainEpoch,
                 features = ToolCatalogRuntime.Features,
+                catalogSchemaHash = ToolCatalogRuntime.CatalogSchemaHash,
                 timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
                 compileErrors = EditorUtility.scriptCompilationFailed,
             };

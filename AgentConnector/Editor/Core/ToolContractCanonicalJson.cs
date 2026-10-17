@@ -75,7 +75,17 @@ namespace HeraAgent
             ProtocolContracts.FeatureOperationLedgerV1,
             ProtocolContracts.FeatureTaskBridgeV1,
             ProtocolContracts.FeatureToolCatalogV1,
+            ProtocolContracts.FeatureRetryableV1,
+            ProtocolContracts.FeatureCatalogSchemaV1,
+            ProtocolContracts.FeatureMainThreadFlagV1,
         };
+
+        /// <summary>
+        /// Hash of the canonical tool catalog. Published in the heartbeat so a client can
+        /// reuse a cached catalog without fetching it first; it is an advertisement, not a
+        /// handshake — no negotiation round-trip and no version exchange.
+        /// </summary>
+        internal static string CatalogSchemaHash => CatalogHash;
 
         internal static string ProjectId =>
             ProjectIdentity.CurrentId;

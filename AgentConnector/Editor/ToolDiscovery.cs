@@ -374,6 +374,12 @@ namespace HeraAgent
                             attr.MayReloadDomain,
                             attr.RequiresPlayMode),
                         action_safety = BuildActionSafetyMetadata(type),
+                    // Every connector command is dispatched through the editor main-thread queue
+                    // (see CommandRouter), so main-thread affinity is a constant here. What is
+                    // NOT constant is whether the command may run during a compile/reload window
+                    // — that is the actionable signal for a client.
+                    main_thread_required = true,
+                    reload_window = CommandRouter.IsReloadExempt(name) ? "allowed" : "deferred",
                     },
                 };
             }

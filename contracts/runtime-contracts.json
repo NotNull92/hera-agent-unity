@@ -12,7 +12,10 @@
     "execution_protocol": "execution_protocol_v1",
     "operation_ledger": "operation_ledger_v1",
     "task_bridge": "task_bridge_v1",
-    "tool_catalog": "tool_catalog_v1"
+    "tool_catalog": "tool_catalog_v1",
+    "retryable": "retryable_v1",
+    "catalog_schema": "catalog_schema_v1",
+    "main_thread_flag": "mainthread_flag_v1"
   },
   "asset_config_lock": {
     "version": 1,

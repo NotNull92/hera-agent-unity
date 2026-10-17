@@ -29,17 +29,18 @@ func NewClient() *Client {
 var DefaultClient = NewClient()
 
 type Instance struct {
-	State         string        `json:"state"`
-	ProjectPath   string        `json:"projectPath"`
-	Port          int           `json:"port"`
-	PID           int           `json:"pid"`
-	UnityVersion  string        `json:"unityVersion,omitempty"`
-	DocsVersion   string        `json:"docsVersion,omitempty"`
-	Compiler      *CompilerInfo `json:"compiler,omitempty"`
-	DomainEpoch   string        `json:"domainEpoch,omitempty"`
-	Features      []string      `json:"features,omitempty"`
-	Timestamp     int64         `json:"timestamp,omitempty"`
-	CompileErrors bool          `json:"compileErrors,omitempty"`
+	State             string        `json:"state"`
+	ProjectPath       string        `json:"projectPath"`
+	Port              int           `json:"port"`
+	PID               int           `json:"pid"`
+	UnityVersion      string        `json:"unityVersion,omitempty"`
+	DocsVersion       string        `json:"docsVersion,omitempty"`
+	Compiler          *CompilerInfo `json:"compiler,omitempty"`
+	DomainEpoch       string        `json:"domainEpoch,omitempty"`
+	Features          []string      `json:"features,omitempty"`
+	CatalogSchemaHash string        `json:"catalogSchemaHash,omitempty"`
+	Timestamp         int64         `json:"timestamp,omitempty"`
+	CompileErrors     bool          `json:"compileErrors,omitempty"`
 }
 
 type CompilerInfo struct {
@@ -91,4 +92,9 @@ type CommandResponse struct {
 	AgentHint   string           `json:"agent_hint,omitempty"`
 	Data        json.RawMessage  `json:"data,omitempty"`
 	Timings     map[string]int64 `json:"timings,omitempty"`
+	// Retry contract (connector >= 0.2.0): a retryable failure was NOT executed, so an
+	// idempotent caller may repeat the identical request.
+	Retryable    bool   `json:"retryable,omitempty"`
+	State        string `json:"state,omitempty"`
+	RetryAfterMs int    `json:"retry_after_ms,omitempty"`
 }

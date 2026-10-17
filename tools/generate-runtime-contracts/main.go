@@ -27,6 +27,9 @@ type manifest struct {
 		OperationLedger   string `json:"operation_ledger"`
 		TaskBridge        string `json:"task_bridge"`
 		ToolCatalog       string `json:"tool_catalog"`
+		Retryable         string `json:"retryable"`
+		CatalogSchema     string `json:"catalog_schema"`
+		MainThreadFlag    string `json:"main_thread_flag"`
 	} `json:"features"`
 	AssetConfigLock struct {
 		Version      int   `json:"version"`
@@ -110,6 +113,9 @@ func parseManifest(raw []byte) (manifest, error) {
 		"features.operation_ledger":   value.Features.OperationLedger,
 		"features.task_bridge":        value.Features.TaskBridge,
 		"features.tool_catalog":       value.Features.ToolCatalog,
+		"features.retryable":          value.Features.Retryable,
+		"features.catalog_schema":     value.Features.CatalogSchema,
+		"features.main_thread_flag":   value.Features.MainThreadFlag,
 	}
 	for name, field := range stringsRequired {
 		if strings.TrimSpace(field) == "" {
@@ -138,6 +144,9 @@ const (
 	FeatureOperationLedgerV1   = %q
 	FeatureTaskBridgeV1        = %q
 	FeatureToolCatalogV1       = %q
+	FeatureRetryableV1         = %q
+	FeatureCatalogSchemaV1     = %q
+	FeatureMainThreadFlagV1    = %q
 
 	AssetConfigLockVersion                = %d
 	AssetConfigLockStaleAfterMilliseconds = int64(%d)
@@ -145,6 +154,7 @@ const (
 `, value.SchemaVersion, value.ToolCatalog.SchemaVersion, value.Execution.ProtocolVersion,
 		value.Features.Approval, value.Features.DomainEpoch, value.Features.ExecutionProtocol,
 		value.Features.OperationLedger, value.Features.TaskBridge, value.Features.ToolCatalog,
+		value.Features.Retryable, value.Features.CatalogSchema, value.Features.MainThreadFlag,
 		value.AssetConfigLock.Version, value.AssetConfigLock.StaleAfterMS)
 	formatted, err := format.Source([]byte(goSource))
 	if err != nil {
@@ -166,6 +176,9 @@ namespace HeraAgent
         internal const string FeatureOperationLedgerV1 = %s;
         internal const string FeatureTaskBridgeV1 = %s;
         internal const string FeatureToolCatalogV1 = %s;
+        internal const string FeatureRetryableV1 = %s;
+        internal const string FeatureCatalogSchemaV1 = %s;
+        internal const string FeatureMainThreadFlagV1 = %s;
 
         internal const int AssetConfigLockVersion = %d;
         internal const long AssetConfigLockStaleAfterMilliseconds = %dL;
@@ -174,6 +187,7 @@ namespace HeraAgent
 `, csString(value.SchemaVersion), csString(value.ToolCatalog.SchemaVersion), csString(value.Execution.ProtocolVersion),
 		csString(value.Features.Approval), csString(value.Features.DomainEpoch), csString(value.Features.ExecutionProtocol),
 		csString(value.Features.OperationLedger), csString(value.Features.TaskBridge), csString(value.Features.ToolCatalog),
+		csString(value.Features.Retryable), csString(value.Features.CatalogSchema), csString(value.Features.MainThreadFlag),
 		value.AssetConfigLock.Version, value.AssetConfigLock.StaleAfterMS)
 	return map[string][]byte{
 		"internal/protocol/contracts_gen.go":                        normalizeLF(formatted),

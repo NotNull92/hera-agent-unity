@@ -26,6 +26,19 @@ namespace HeraAgent
         // the caller deserves a clear error instead of an indefinite hang.
         static readonly TimeSpan s_LockTimeout = TimeSpan.FromSeconds(120);
 
+        /// <summary>
+        /// Commands allowed to run while the editor is compiling/reloading. These are the
+        /// commands that start or observe the reload window; everything else is deferred with
+        /// a retryable RELOADING response so a client never waits through a whole compile.
+        /// </summary>
+        static readonly HashSet<string> s_ReloadExemptCommands = new HashSet<string>
+        {
+            "refresh_unity",
+        };
+
+        internal static bool IsReloadExempt(string command) =>
+            !string.IsNullOrEmpty(command) && s_ReloadExemptCommands.Contains(command);
+
         public class BatchCommandItem
         {
             public string Command { get; set; }
@@ -72,8 +85,10 @@ namespace HeraAgent
         {
             if (!await s_Lock.WaitAsync(s_LockTimeout))
             {
-                return new ErrorResponse("COMMAND_LOCK_TIMEOUT",
+                var timeout = new ErrorResponse("COMMAND_LOCK_TIMEOUT",
                     "[Hera] I waited 120s for the command lock but another command is still running.");
+                ResponsePolicy.Apply(timeout);
+                return timeout;
             }
             var sw = Stopwatch.StartNew();
             try
@@ -113,8 +128,10 @@ namespace HeraAgent
 
             if (!await s_Lock.WaitAsync(s_LockTimeout))
             {
-                return new ErrorResponse("COMMAND_LOCK_TIMEOUT",
+                var timeout = new ErrorResponse("COMMAND_LOCK_TIMEOUT",
                     "[Hera] I waited 120s for the command lock but another command is still running.");
+                ResponsePolicy.Apply(timeout);
+                return timeout;
             }
 
             var results = new List<object>();
