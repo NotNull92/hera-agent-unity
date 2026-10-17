@@ -16,21 +16,21 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 ## 설계 의도
 
-**기존 Go CLI와 localhost HTTP Unity Connector가 실행 코어라는 결정은 유지한다** 🔒. `HttpServer`, `CommandRouter`, `ToolDiscovery`, `Heartbeat`, Unity main-thread queue, 파일버스 복구 경로를 교체하거나 Unity Connector 안에 MCP를 직접 구현하지 않는다.
+**기존 Go CLI와 localhost HTTP Unity Connector가 실행 코어라는 결정은 유지한다** 🔒. `HttpServer`, `CommandRouter`, `ToolDiscovery`, `Heartbeat`, Unity main-thread queue, 파일버스 복구 경로를 교체하거나 Unity Connector 안에 별도 프로토콜/실행 엔진을 구현하지 않는다.
 
-**CLI + MCP adapter migration의 M0부터 M17까지 PASS다** 🔒. 기존 바이너리 안의 선택적 Go stdio MCP adapter는 같은 실행 코어 앞에 있으며 Connector를 대체하거나, 도구 정의를 분기하거나, CLI 호환성을 제거하면 안 된다. CLI와 MCP는 하나의 정규화된 tool contract registry를 공유한다. M17에서 열네 개 section 28.3 시나리오와 복구 증거를 완결하고 독립 PASS B 승인을 받았다. Typed CLI와 기존 CLI가 production default이고 MCP는 experimental·default-off 상태를 유지한다. MCP를 명시적으로 켠 뒤의 exposure 기본값은 실측된 model-facing definition payload와 명시적 사용자 결정에 따라 Compact다. Profile과 Full은 큰 정적 schema payload를 감수하는 opt-in이다.
+**CLI + MCP adapter migration의 M0부터 M17까지 PASS였다** 🔒. 기존 바이너리 안의 선택적 Go stdio MCP adapter는 같은 실행 코어 앞에 있었고 Connector를 대체하거나 도구 정의를 분기하지 않았다. M17에서 열네 개 section 28.3 시나리오와 복구 증거를 완결하고 독립 PASS B 승인을 받았으며, 그 판단대로 Typed CLI와 기존 CLI가 production default이고 MCP는 experimental·default-off로 남았다. **이 lock은 Step 6 M1-d로 종료됐다:** 사용자 승인 아래 CLI `v0.3.0`이 adapter와 `HERA_MCP_*` 표면을 제거했다(→ `docs/report/plan-step6-application-2026-10-17.md`). 남는 결정은 "에이전트 표면은 CLI 하나"이며, MCP 서버를 되살리거나 두 번째 프로토콜 경로를 만들자는 제안은 새 승인 없이는 모델 밖이다.
 
 이유:
 - 런타임 의존성 0개 — 사용자는 바이너리 하나 + UPM 패키지 하나만 설치
 - Stateless — 모든 요청이 독립적이라 세션·재연결 로직 불필요
 - 도메인 리로드를 파일시스템 버스(`~/.hera-agent-unity/instances/`, `status/`)로 우회
-- 어떤 셸·AI 에이전트·스크립트에서도 호출 가능 (MCP 클라이언트에 묶이지 않음)
+- 어떤 셸·AI 에이전트·스크립트에서도 호출 가능 (호스트 프로토콜에 묶이지 않음)
 
-### MCP migration lock and ledger
+### MCP migration ledger (historical, closed)
 
 - **Authoritative implementation specification:** `docs/CODEX_MCP_MIGRATION_IMPLEMENTATION.md`
 - **Milestone evidence and rollback ledger:** `docs/MCP_MIGRATION_PROGRESS.md`
-- **현재 상태:** M0부터 M17까지 PASS다. CLI `v0.1.0+`의 `mcp`는 `HERA_MCP_ENABLED=1`일 때만 stdio로 시작하며 Compact 3-tool default, opt-in Profile/Full-safe, 명시적 arbitrary-code permission이 필요한 Advanced, 승인/MRTR, operation ledger, Tasks와 blocking fallback, large-result resource를 지원한다. 오래된 Connector는 Compact-only로 보수적으로 저하되고 안전 feature 누락은 fail-closed다. 측정 이득 기준은 MCP 자체를 production default로 승격하지 않으므로 Typed CLI와 기존 CLI가 production default이고 MCP는 experimental·default-off다.
+- **현재 상태:** M0부터 M17까지 PASS였고, 이후 사용자 승인 아래 M1-d가 adapter를 제거했다. `mcp` 명령, `HERA_MCP_*` 환경변수, `internal/mcpserver`, `server.json`, `mcp-publish.yml`은 존재하지 않는다. 제거 이후 이 lock이 보존하는 것은 **표면이 아니라 계약**이다: 정규화된 tool contract registry, 승인, operation ledger, durable task 결과, 그리고 CLI=단일 진입점.
 - **보존 경계:** 기존 Go CLI, localhost HTTP Connector, single-selected-target model, main-thread serialization, heartbeat discovery, package/test file bus, CLI/Connector 독립 버전은 계속 잠금 상태다.
 
 ### Rule-document hierarchy
@@ -48,9 +48,9 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 
 - **Roadmap and evidence:** `docs/ARCHITECTURE_REFINEMENT_ROADMAP.md`; catalog payload baseline: `docs/metrics/catalog-payload-baseline.json`.
 - **Execution protocol:** current single-command metadata is `hera.execution/1`. Missing version remains a legacy-compatible request; an unknown non-empty version fails before catalog validation, approval, ledger, or handler execution. Batch remains on its existing contract until a separate versioned-batch requirement is proven.
-- **MCP catalog lifecycle:** `ready`, `refreshing`, and `restart_required` are distinct states. A Tasks capability transition requires MCP process restart and must not be cleared by an ordinary catalog refresh.
-- **Compact discovery:** `tool_search`는 action 이름과 축약 safety만 반환하고 schema를 싣지 않는다. `tool_describe(name)`은 action overview를, `tool_describe(name, action)`은 선택한 canonical action의 full contract를 반환한다. action이 없는 legacy tool만 name-only 응답에 tool schema를 싣는다. Profile과 Full MCP는 opt-in이다.
-- **Legacy CLI boundary:** dynamic custom-tool passthrough and legacy `exec` input adaptation live in `cmd/legacy_tool.go`; do not spread legacy coercion into strict `call` or MCP paths.
+- **MCP catalog lifecycle (retired):** the `ready`/`refreshing`/`restart_required` MCP lifecycle and its Tasks-restart rule belonged to the removed stdio adapter. The underlying rule that survives: a catalog refresh must not clear a state that only a process restart can clear, and a call never waits on a signal that cannot complete.
+- **Compact discovery (retired):** `tool_search`/`tool_describe`/`tool_call` were the MCP Compact surface. Their surviving contract is the CLI one: `list --names` for discovery, `list --tool <name>` for one schema, `call --validate-only`/`--explain` before executing.
+- **Legacy CLI boundary:** dynamic custom-tool passthrough and legacy `exec` input adaptation live in `cmd/legacy_tool.go`; do not spread legacy coercion into the strict `call` path.
 - **Measurement gate:** keep-alive, observer cadence, and event-driven catalog invalidation remain unchanged until latency, domain-reload, and Mono idle-channel regression evidence exists.
 
 **파생 원칙** — decoupled/비대칭이 *의도된* 곳에 결합·통일 제안 금지:
@@ -58,7 +58,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 - **CLI ↔ Connector 버전 핸드셰이크 불필요**: 두 버전이 일치한다는 전제 자체가 없음. HTTP+JSON forward-compat과 동적 dispatch가 자연 처리. "버전 매칭 검사 추가하자"는 제안은 모델 밖.
 - **버전 용어 분리 필수**: CLI release tag(`hera-agent-unity vX.Y.Z`, git tag)는 Go 바이너리 버전이다. Unity UPM connector 버전은 `AgentConnector/package.json` 의 `version` 값(`0.0.N`)이다. 둘은 독립 버전이므로 같은 숫자라고 말하거나, UPM 패키지 버전을 CLI tag처럼 `vX.Y.Z`로 부르지 않는다. Git lock hash/commit 은 "어느 커밋의 connector를 받았는지"만 증명하며 UPM package version 자체가 아니다.
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
-- **다중 에디터 발견 + 단일 선택 모델** 🔒: 한 머신의 여러 Unity heartbeat를 발견할 수 있지만 각 CLI 명령과 MCP 프로세스는 한 에디터만 선택한다. 프로젝트의 정규화된 절대경로가 안정적인 정체성이고 `port`는 `8090`–`8099`에서 재시작/domain reload 때 바뀔 수 있는 임시 연결 정보다. `--project`는 exact match 우선, legacy substring은 유일할 때만 허용하며 모호하면 실패한다. `--project`와 `--port`를 함께 주면 같은 heartbeat를 가리켜야 한다. 전송 실패/timeout 때는 fresh heartbeat로 port 재사용·PID 변경·target 소실을 다시 확인하고, idempotent 또는 operation-ledger-backed 작업만 재시도한다. 여러 에디터 broadcast/fan-out은 모델 밖이다.
+- **다중 에디터 발견 + 단일 선택 모델** 🔒: 한 머신의 여러 Unity heartbeat를 발견할 수 있지만 각 CLI 명령은 한 에디터만 선택한다. 프로젝트의 정규화된 절대경로가 안정적인 정체성이고 `port`는 `8090`–`8099`에서 재시작/domain reload 때 바뀔 수 있는 임시 연결 정보다. `--project`는 exact match 우선, legacy substring은 유일할 때만 허용하며 모호하면 실패한다. `--project`와 `--port`를 함께 주면 같은 heartbeat를 가리켜야 한다. 전송 실패/timeout 때는 fresh heartbeat로 port 재사용·PID 변경·target 소실을 다시 확인하고, idempotent 또는 operation-ledger-backed 작업만 재시도한다. 여러 에디터 broadcast/fan-out은 모델 밖이다.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
   - **표준 envelope tool 명령** (`call`, `exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, `manage_animation`, `manage_settings`, `bake`, `build`, `input`, `task`, `game_feel`, `ui_slop`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
   - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
@@ -73,7 +73,7 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
   - **작명은 헤라 어휘로**(`ui_slop`, `game_feel`, `unity_docs`) — 외부 도구 이름을 따지 않는다.
 - **번들 지식과 도구 표면은 영어** 🔒: `Data/*.jsonl.gz.bytes` 의 소스(`tools/build-*-docs/*.jsonl`)와 에이전트가 보는 모든 문자열(`[HeraTool]` Description·`agent_hint`·`doctor --agent-rules` 섹션·응답 필드)은 **영어로 쓴다**. 소비자가 다국어 AI 에이전트이고 `game_feel`·`unity_docs` 번들이 이미 영어라 혼용은 표면만 갈라놓는다. **주제가 한국어인 tell 도 예외가 아니다** — `hangul-font-fallback-jump` 처럼 한글 조판을 다루더라도 설명문은 영어로 쓰고, 한국어는 이 `CLAUDE.md` 같은 레포 자체 문서에만 둔다. (asset-config 한/영 혼용을 영어로 통일한 선례와 같은 결정.)
 
-Unity 실행 기능을 추가할 때도 기존 코어 모델 안에서 풀 것: HTTP 한 번 / 필요하면 파일 폴링. 선택적 Go adapter는 이 코어 앞에서만 동작한다.
+Unity 실행 기능을 추가할 때도 기존 코어 모델 안에서 풀 것: HTTP 한 번 / 필요하면 파일 폴링. 새 프로토콜 계층이나 두 번째 실행 엔진을 코어 앞에 세우지 않는다.
 
 ## Structure
 
@@ -81,7 +81,6 @@ Unity 실행 기능을 추가할 때도 기존 코어 모델 안에서 풀 것: 
 cmd/                  # Go CLI — thin passthrough layer
   root.go             # Entry point, flag/arg parsing, humanCategories, response printing
   dispatch.go         # Standalone vs Unity-backed command routing
-  mcp.go              # Env-gated stdio MCP entry point and Profile selection
   call.go             # Strict typed-tool validation/explain/dispatch
   call_input.go       # JSON/file/stdin source parsing and conflict checks
   config.go           # Immutable per-execution global CLI configuration
@@ -125,14 +124,12 @@ internal/client/      # Unity HTTP client, instance discovery, SendBatch
 internal/schema/      # Bounded Draft 2020-12 compiled-schema cache + validation
 internal/toolregistry/ # Native/legacy catalog providers, profiles, memory/disk cache
 internal/policy/      # Typed policy projection skeleton (M6: descriptive only)
-internal/mcpserver/   # Official Go SDK server identity/discovery + stdio lifecycle
-                      # Profile/Full native registration + Compact search/describe/call
 internal/assetconfig/ # Asset plugin configuration persistence
                       # (assets + game_feel_mode + game_feel_ui_mode + loopEngineeringMode)
 internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
 internal/paths/       # Single source of truth for ~/.hera-agent-unity/** file-bus paths
 internal/resultstore/ # Durable async job results behind `task`
-internal/taskbridge/  # MCP Tasks bridge over the same durable results
+internal/taskbridge/  # Durable task bridge over the same results
 internal/unitystate/  # Heartbeat parsing and editor-state predicates
 internal/unityprocess/ # Windows child-process environment repair shared by the
                       # editor launcher and the disposable benchmark fixture
@@ -510,15 +507,15 @@ Commit all unstaged changes before finishing. Unrelated changes should be commit
 4. main CI 통과 확인 (`gh run watch --exit-status`).
 5. CLI 변경 있으면 새 tag push — `release.yml`이 cross-build 5종(linux/darwin × amd64+arm64, windows amd64) + GitHub Release를 자동 생성.
 6. release workflow 통과 확인 (`gh run watch --exit-status`).
-7. `npm-publish.yml`과 그 뒤를 잇는 `mcp-publish.yml` 통과 확인. 두 워크플로는 릴리스 태그에서 버전을 유도해 `npm/package.json`·`npm/package-lock.json`·`server.json`에 써 넣으므로 손으로 bump할 필요가 없다. 실패하면 npm과 MCP Registry만 조용히 뒤처지고 GitHub Release는 정상으로 보이므로 반드시 확인한다.
+7. `npm-publish.yml` 통과 확인. 워크플로는 릴리스 태그에서 버전을 유도해 `npm/package.json`·`npm/package-lock.json`에 써 넣으므로 손으로 bump할 필요가 없다. 실패하면 npm만 조용히 뒤처지고 GitHub Release는 정상으로 보이므로 반드시 확인한다.
 8. `go clean -cache -testcache`로 빌드/테스트 캐시 전부 정리.
 9. 전부 성공하면 `hera-agent-unity update`로 설치된 CLI 업데이트.
 
 > Release notes는 release.yml이 compare 링크만 자동 생성한다. 의미 있는 변경 요약이 필요하면 push 후 `gh release edit <tag> --notes "..."`로 보강.
 
-> 배포 채널은 셋이다: GitHub Release(태그 push), npm(`npm-publish.yml`, Release 성공에 반응), MCP Registry(`mcp-publish.yml`, npm 성공에 반응). 사슬이라 앞이 실패하면 뒤는 skipped 된다 — `v0.2.1`~`v0.2.11` 구간에서 실제로 그렇게 11회 연속 누락됐다.
+> 배포 채널은 둘이다: GitHub Release(태그 push), npm(`npm-publish.yml`, Release 성공에 반응). 사슬이라 앞이 실패하면 뒤는 skipped 된다 — `v0.2.1`~`v0.2.11` 구간에서 실제로 그렇게 11회 연속 누락됐다. MCP Registry hop은 `v0.3.0`에서 제거됐다.
 >
-> **사슬에서 태그를 보는 건 첫 hop 뿐이다.** `workflow_run`으로 시작된 실행은 자신의 `head_branch`를 기본 브랜치(`main`)로 보고하므로, 두 번째 hop이 이전 실행의 `head_branch`를 태그로 믿으면 `main`을 받는다. commit SHA는 정확하니 `git tag --points-at`으로 태그를 역인출한다. 또한 각 publish job은 `npm/package.json`·`npm/package-lock.json`·`server.json`을 **모두** 태그 버전으로 핀해야 한다 — 패키지 테스트가 이 값들의 일치를 검사한다.
+> **사슬에서 태그를 보는 건 첫 hop 뿐이다.** `workflow_run`으로 시작된 실행은 자신의 `head_branch`를 기본 브랜치(`main`)로 보고하므로, 두 번째 hop이 이전 실행의 `head_branch`를 태그로 믿으면 `main`을 받는다. commit SHA는 정확하니 `git tag --points-at`으로 태그를 역인출한다. 또한 각 publish job은 `npm/package.json`·`npm/package-lock.json`을 **모두** 태그 버전으로 핀해야 한다 — 패키지 테스트가 이 값들의 일치를 검사한다.
 
 ### 수동 release (fallback)
 

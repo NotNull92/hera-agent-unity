@@ -1,10 +1,29 @@
 # Active Development Handoff
 
-Current state (2026-08-19): **no queue is in progress.** The editor-workflow
-surface queue (waves 1a–12) and the survey queue are closed, and the pipeline
-parity claim audit that followed is complete. Current releases are Connector
-`0.1.3` and CLI `v0.2.17`. Per-release detail lives in `CHANGELOG.md`; this file
-records only current state and what is open.
+Current state (2026-10-17): **the Step 6 M1 queue is implemented and committed;
+M2 is next.** M1 = contract hardening plus MCP removal (CLI `v0.3.0` unreleased,
+Connector `0.2.0` unreleased). Per-release detail lives in `CHANGELOG.md`; this
+file records only current state and what is open.
+
+## Step 6 queue (2026-10-17)
+
+Plan and evidence: `docs/report/plan-step6-application-2026-10-17.md`. Adopted
+candidate A (contract hardening); the transport experiments were rejected on
+measurement, and the 150 ms dispatch delay moved to M3.
+
+| Step | State | What it changed |
+|---|---|---|
+| M1-a | Done | `retryable`/`state`/`retry_after_ms` on both envelopes; ingress answers `RELOADING` (503) instead of queueing; CLI retries only a declared-idempotent request |
+| M1-b | Done | Heartbeat advertises `catalogSchemaHash` + three `*_v1` features; a hash match reuses the cached catalog. `main_thread_required`/`reload_window` live in tool detail, not the catalog — a new catalog key would break installed CLIs |
+| M1-c | Done | Port-stability regression tests, now wired into `ReleaseGateTests`. No behavior change |
+| M1-d | Done | MCP removal: `internal/mcpserver`, `mcp` command + tests, `tools/benchmark-mcp`, `server.json`, `mcp-publish.yml`, `cmd/help/mcp.txt`, MCP annotation mapping, npm `mcpName`, `docs/MCP.md`, all `HERA_MCP_*` |
+| M2 | **Next** | Catalog rebaseline: `cli_summary` replaces `mcp_compact` in the payload report, absorb the 12 duplicate actions (target ≤145), regenerate the baseline |
+| M3+ | Not authorized | Dispatch-delay reduction and the rest of §1 in the plan |
+
+**Compatibility buckets for M1: `6000.5.6f1` PASS. `6000.0` and `6000.3` are
+BLOCKED** — no representative Editor is installed on this machine, and a missing
+bucket is never a PASS (AGENTS.md §7.2). Resolving it needs a fixture install or
+a machine that holds both.
 
 ## Shipped in this queue
 
@@ -103,9 +122,9 @@ heartbeat demonstrates every second.
     a read-only build-profile listing (C10, below), and a compile-operation
     status distinct from Editor liveness (C12).
   - The audit's standing lesson: every `duplicate` row assumes the caller has
-    its own filesystem tooling or `exec`. A compact-default MCP client has
-    neither, so "the caller can do it another way" must be checked against that
-    caller before it closes a gap.
+    its own filesystem tooling or `exec`. A caller restricted to declared tool
+    actions has neither, so "the caller can do it another way" must be checked
+    against that caller before it closes a gap.
 
 - **Active build-target switching and Unity 6 build profiles are rejected, not
   pending** (2026-08-13, `docs/DECISION_LEDGER.md`). No failure evidence exists,
@@ -114,8 +133,8 @@ heartbeat demonstrates every second.
   belong to batch-mode `-buildTarget` rather than an in-place switch of a
   running Editor. `build list_targets` already lets an agent report the active
   target and which platform support is installed. The audit (C10) weakened
-  one leg of this: `exec` is not a fallback for a compact-default MCP client.
-  The rejection stands on the other three; whether a read-only
+  one leg of this: `exec` is not a fallback for an agent restricted to declared
+  tool actions. The rejection stands on the other three; whether a read-only
   `list_build_profiles` should be judged separately from the switch itself is
   undecided.
 - Deferred by locked designs: AI Navigation package

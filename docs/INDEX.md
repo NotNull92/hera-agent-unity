@@ -9,10 +9,9 @@
 Tests, TUI, batch engine, and asset-config layer sit on top — but the engine that talks to Unity stays lean.
 
 The production-default CLI path uses **no WebSockets, JSON-RPC, Python, or
-persistent server process**. CLI `v0.1.0+` also includes an experimental,
-default-off stdio MCP adapter in front of the shared execution core. M17
-completed with the decision to retain the CLI as the production default because
-the measured benefit gates did not justify MCP promotion.
+persistent server process**. CLI `v0.3.0` removed the experimental stdio MCP
+adapter that `v0.1.0`-`v0.2.x` shipped: it sat in front of the same execution core,
+so the CLI remains the single agent surface and the single protocol path.
 
 ```
 ┌─────────────────┐      HTTP POST      ┌─────────────────────┐
@@ -41,8 +40,7 @@ the measured benefit gates did not justify MCP promotion.
 | File | Purpose | Read This When |
 |:---|:---|:---|
 | [`INDEX.md`](INDEX.md) | This file — project overview | Starting here |
-| [`MCP.md`](MCP.md) | Experimental MCP setup, compatibility, safety, and troubleshooting | Configuring an MCP client |
-| [`DISTRIBUTION_CHANNELS.md`](DISTRIBUTION_CHANNELS.md) | CLI, UPM/OpenUPM, npm, Codex, MCP registry, mirror, and candidate distribution status | Preparing, expanding, or auditing a release channel |
+| [`DISTRIBUTION_CHANNELS.md`](DISTRIBUTION_CHANNELS.md) | CLI, UPM/OpenUPM, npm, Codex, mirror, and candidate distribution status | Preparing, expanding, or auditing a release channel |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System architecture, data flow, state machine | You need the big picture |
 | [`GO_CLI.md`](GO_CLI.md) | Go CLI code structure, entry point, command dispatch | Modifying Go code |
 | [`CSHARP_CONNECTOR.md`](CSHARP_CONNECTOR.md) | C# Unity side — HttpServer, CommandRouter, ToolDiscovery | Modifying C# code |

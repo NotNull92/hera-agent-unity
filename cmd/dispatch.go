@@ -30,8 +30,6 @@ func (runner standaloneRunner) Run(
 	case "version", "--version", "-v":
 		fmt.Println("hera-agent-unity " + Version)
 		return true, nil
-	case "mcp":
-		return true, mcpCmd(ctx, runner.config, subArgs)
 	case "update":
 		return true, updateCmd(subArgs)
 	case "install":

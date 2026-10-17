@@ -26,14 +26,6 @@ namespace HeraAgent
         public ToolSafetyContract Safety { get; set; }
     }
 
-    internal sealed class McpToolAnnotations
-    {
-        public bool ReadOnlyHint { get; set; }
-        public bool DestructiveHint { get; set; }
-        public bool IdempotentHint { get; set; }
-        public bool OpenWorldHint { get; set; }
-    }
-
     internal static class ToolContractSafety
     {
         internal static bool IsBuiltIn(Type type)
@@ -146,24 +138,6 @@ namespace HeraAgent
             JObject arguments)
         {
             return ToolContractSafetyRules.Resolve(fallback, rules, arguments);
-        }
-
-        internal static McpToolAnnotations ToMcpAnnotations(ToolContract contract)
-        {
-            var safety = new[] { contract.Safety }
-                .Concat(contract.SafetyRules.Select(rule => rule.Safety))
-                .Concat(contract.Actions.Values.Select(action => action.Safety))
-                .ToArray();
-            return new McpToolAnnotations
-            {
-                ReadOnlyHint = safety.All(item => item.ReadOnly),
-                DestructiveHint = safety.Any(item => item.Destructive),
-                IdempotentHint = safety.All(item => item.Idempotent),
-                OpenWorldHint = safety.Any(item =>
-                    item.RiskClass == HeraRiskClass.ArbitraryCode
-                    || item.RiskClass == HeraRiskClass.PackageChange
-                    || item.RiskClass == HeraRiskClass.ExternalProcess),
-            };
         }
 
         internal static ToolSafetyContract Normalize(

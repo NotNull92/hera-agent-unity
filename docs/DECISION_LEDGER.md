@@ -11,6 +11,14 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > Current authoring is generic uGUI tooling; `ui_slop` exposes one `check_ugui`
 > predicate across 48 tells.
 
+> **Removal override (2026-10-17):** the MCP migration rows below (M1-M17),
+> `docs/MCP_MIGRATION_PROGRESS.md`, and `docs/ARCHITECTURE_REFINEMENT_ROADMAP.md`
+> A4/A5 are historical records only. CLI `v0.3.0` removed the stdio adapter, the
+> `mcp` command, `HERA_MCP_*`, `internal/mcpserver`, the Compact/Profile/Full
+> exposure surfaces, the Tasks negotiation, and the MCP Registry publication
+> chain. The CLI is the only agent surface. Do not re-propose any of it without a
+> new explicit approval.
+
 ### 이미 처리된 항목 (다른 세션에서 중복 제안 금지)
 
 | 항목 | 상태 | 비고 |
@@ -105,3 +113,60 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 - Added action-specific Compact describe, explicit `ready`/`refreshing`/`restart_required` MCP catalog lifecycle, and one isolated legacy CLI compatibility adapter.
 - Added repeatable five-bucket compile, package NUnit ownership, race, and catalog-payload evidence.
 - Kept keep-alive and observer-cadence changes measurement-gated. See `docs/ARCHITECTURE_REFINEMENT_ROADMAP.md` and `docs/ARCHITECTURE_REFINEMENT_RESULT.md`.
+
+
+## Step 6 M1 — contract hardening and MCP removal (CLI v0.3.0 / Connector 0.2.0) — 2026-10-17
+
+Plan: `docs/report/plan-step6-application-2026-10-17.md`. Adopted candidate A
+(contract hardening); the transport experiments were rejected on measurement, not
+on preference.
+
+- **M1-a failure contract.** `SuccessResponse`/`ErrorResponse` gained `retryable`,
+  `state`, and `retry_after_ms`. The HTTP ingress answers `RELOADING` (503)
+  immediately while the Editor compiles or reloads instead of queueing work the
+  main thread cannot drain; `COMMAND_LOCK_TIMEOUT` and `HTTP_QUEUE_FULL` are
+  retryable. The CLI retries a retryable 503 with the identical request only when
+  the caller declared the command idempotent, and prints a one-line hint
+  otherwise. Server declaration replaced the CLI's inference from a dropped
+  connection.
+- **M1-b discovery contract.** The heartbeat advertises `catalogSchemaHash` plus
+  `retryable_v1`/`catalog_schema_v1`/`mainthread_flag_v1`; a hash match reuses the
+  cached catalog. `main_thread_required`/`reload_window` ship in tool-detail
+  metadata, **not** in the catalog entry: `ParseCatalog` uses
+  `DisallowUnknownFields`, so a new catalog key would break every installed CLI
+  against the new Connector. The catalog bytes and hash are unchanged by M1.
+- **M1-c port stability.** Regression tests lock the reload port contract (20/20
+  identical port in the Step 5 measurement), and the suite is wired into
+  `ReleaseGateTests` so it actually runs in the gate. No behavior change.
+- **M1-d MCP removal.** `internal/mcpserver` (34 files), the four `mcp*` command
+  files and tests, `tools/benchmark-mcp`, `server.json`,
+  `.github/workflows/mcp-publish.yml`, `cmd/help/mcp.txt`,
+  `internal/toolregistry` MCP annotation mapping, the npm `mcpName` and `mcp`
+  keyword, and `docs/MCP.md` are deleted. `HERA_MCP_*` is gone from code, tests,
+  docs, and the generated guides. `npm-publish.yml` no longer pins `server.json`.
+  Breaking for MCP hosts; CHANGELOG and both READMEs say so.
+- **Verified** on Unity `6000.5.6f1` with a disposable UPM install: clean compile,
+  0 console errors, the full `ReleaseGateTests` suite green (1 suite skipped
+  because the blank fixture has no Timeline package), 34 tools / 133 actions.
+  The `6000.0`-`6000.2` and `6000.3`-`6000.4` buckets were not run for this
+  release. Two stale test expectations were repaired with it: the heartbeat
+  feature assertion in `ToolCatalogTests` and the unwired `PortStabilityTests`
+  suite.
+- **Rejected by measurement (Step 5):** a Unix-domain-socket/pipe transport
+  (18 µs vs 172 µs per call, against a 150 ms dispatch cost) and in-process Roslyn
+  (`BadImageFormatException` on Mono 6.13 with SDK 4.10 and ApiUpdater 4.4). The
+  dispatch delay is deferred to M3, not solved by M1.
+- **Fixture gaps:** the `6000.0` and `6000.3` representative Editors are not
+  installed on this machine, so those two compatibility buckets are **BLOCKED**,
+  not PASS. `6000.5.6f1` was verified on a disposable UPM install
+  (`Library` reset, connector resolved as a local `file:` dependency): initial
+  compile reached `ready`, `console --type error` was 0, the production
+  `HeraAgent.Editor` response file listed 120 sources and zero of them under
+  `Editor/Tests/`, the test-enabled pass compiled `HeraAgent.Editor.Tests`
+  separately and ran the full suite green, and `testables` was removed
+  afterwards. `HeraAgent.Editor.dll` measured 1,319,424 bytes against 1,320,960
+  for the same sources without M1-d (the annotation removal is net-negative).
+  Two stale expectations were found and fixed in the same pass: `ToolCatalogTests`
+  still asserted the six-feature heartbeat from before M1-b, and
+  `PortStabilityTests` had never been wired into `ReleaseGateTests`, so the
+  M1-c suite was compiled but never executed.

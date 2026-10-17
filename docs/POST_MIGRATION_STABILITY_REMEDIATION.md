@@ -1,5 +1,10 @@
 # Post-Migration Stability Remediation
 
+> **Historical (2026-10-17).** Written while the optional stdio MCP adapter
+> existed. CLI `v0.3.0` removed the adapter and `internal/mcpserver`; the S6/S9
+> MCP tasks below are records, not current rules. The contract, ledger, and
+> recovery work still holds.
+
 ## Purpose
 
 This document turns the post-M17 stability review into bounded implementation tasks. The goal is not another architecture migration. The existing Go CLI, optional stdio MCP adapter, localhost HTTP Connector, dynamic tool catalog, Unity main-thread queue, approval flow, file-bus recovery, and single-selected-Editor model remain the architecture.

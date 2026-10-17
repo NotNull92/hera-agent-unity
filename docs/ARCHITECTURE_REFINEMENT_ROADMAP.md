@@ -1,5 +1,10 @@
 ﻿# Architecture Refinement Roadmap
 
+> **Historical record, with one update.** `A5` and the MCP-specific boundaries
+> below describe the optional stdio adapter that CLI `v0.3.0` removed. The A5
+> behavior is retired with it; every other boundary in this document still holds.
+> The catalog payload report no longer measures MCP tool definitions.
+
 ## Purpose
 
 This roadmap improves the cleanliness and long-term maintainability of the completed CLI + optional MCP architecture without replacing its proven execution core.
@@ -372,7 +377,9 @@ Next prerequisite:
 
 ### A4 Action-specific Compact describe
 
-- **Status:** PASS.
+- **Status:** historical. The `tool_search`/`tool_describe` MCP surface was removed
+  in CLI `v0.3.0`; the preserved idea is that discovery stays action-scoped and
+  schema-free until one action is selected (`list --names`, then `list --tool`).
 - `tool_search` returns action names and compact safety without schemas.
 - `tool_describe(name)` returns compact action summaries, while `tool_describe(name, action)` returns one canonical full action contract; aliases resolve and missing actions return `ACTION_NOT_FOUND`.
 - A tool without actions keeps its schemas available from name-only describe.
@@ -380,7 +387,9 @@ Next prerequisite:
 
 ### A5 Explicit MCP catalog lifecycle
 
-- **Status:** PASS.
+- **Status:** retired with the adapter in CLI `v0.3.0`. The state machine belonged
+  to the removed stdio host; no `CATALOG_STALE` or `MCP_RESTART_REQUIRED` code is
+  produced today.
 - Catalog state is `ready`, `refreshing`, or `restart_required` rather than one overloaded boolean.
 - Transient reloads return `CATALOG_STALE`; Tasks capability transitions return `MCP_RESTART_REQUIRED` immediately.
 - Tests cover no infinite `tools/list` wait, no lost wake-up, structured tool-call failure, and inability of ordinary replacement to clear restart-required state.
@@ -409,7 +418,7 @@ Next prerequisite:
 ### A9 Catalog payload budget
 
 - **Status:** PASS.
-- `tools/catalog-payload-report` separates raw input bytes, internal normalized catalog/profile bytes, actual MCP tool-definition bytes, profile/tool/action sizes, description characters, and clearly labelled rough token estimates.
+- `tools/catalog-payload-report` separates raw input bytes, internal normalized catalog/profile bytes, profile/tool/action sizes, description characters, and clearly labelled rough token estimates.
 - Current baseline: `185,339` normalized bytes, `31` tools, `75` actions, `8,123` tool-description characters.
 - The report records the largest tools/profiles and action-specific describe savings. Budgets are warnings, not arbitrary release failures.
 - The report now compares a live catalog with the reviewed baseline. `--fail-on-change` marks any canonical contract difference for review, while `--fail-on-growth` gates only positive tool/action/description/profile deltas. A built reporter exits `3`; `go run` surfaces that child status as its own non-zero result. The disposable package test path runs the contract comparison before EditMode tests.

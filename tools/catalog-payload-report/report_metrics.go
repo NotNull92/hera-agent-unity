@@ -6,7 +6,6 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/NotNull92/hera-agent-unity/internal/mcpserver"
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
 
@@ -18,21 +17,13 @@ func buildReport(catalog *toolregistry.Catalog, inputBytes int, options reportOp
 	if err != nil {
 		return report{}, fmt.Errorf("encode normalized catalog: %w", err)
 	}
-	compactPayload, err := mcpserver.MeasureCompactToolDefinitions()
-	if err != nil {
-		return report{}, err
-	}
 	result := report{
 		Schema:                 reportSchema,
 		CatalogHash:            catalog.CatalogHash,
 		InputBytes:             inputBytes,
 		NormalizedCatalogBytes: len(normalized),
 		ToolCount:              len(catalog.Tools),
-		MCPCompact: mcpPayloadSize{
-			ToolCount: compactPayload.ToolCount, ToolDefinitionBytes: compactPayload.Bytes,
-			RoughTokens: tokenRange(compactPayload.Bytes),
-		},
-		Warnings: []string{},
+		Warnings:               []string{},
 	}
 	profiles := make(map[string]struct{})
 	for _, tool := range catalog.Tools {
@@ -113,13 +104,8 @@ func buildReport(catalog *toolregistry.Catalog, inputBytes int, options reportOp
 		if marshalErr != nil {
 			return report{}, fmt.Errorf("encode profile %s: %w", name, marshalErr)
 		}
-		mcpPayload, measureErr := mcpserver.MeasureProfileToolDefinitions(catalog, name)
-		if measureErr != nil {
-			return report{}, fmt.Errorf("measure MCP profile %s: %w", name, measureErr)
-		}
 		size := profileSize{
 			Name: name, ToolCount: len(tools), NormalizedContractBytes: len(encoded),
-			MCPToolDefinitionBytes: mcpPayload.Bytes, MCPRoughTokens: tokenRange(mcpPayload.Bytes),
 		}
 		result.Profiles = append(result.Profiles, size)
 		if options.WarnProfileBytes > 0 && size.NormalizedContractBytes > options.WarnProfileBytes {

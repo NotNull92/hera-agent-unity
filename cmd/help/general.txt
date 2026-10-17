@@ -10,13 +10,6 @@ Typed Call:
   call <tool> <input> --approve <token>
                                    Continue an approval-required preflight
 
-Experimental MCP:
-  HERA_MCP_ENABLED=1 hera-agent-unity mcp --transport stdio --profile core
-                                      Start the native core-profile stdio server.
-  HERA_MCP_ENABLED=1 hera-agent-unity mcp --exposure compact
-  HERA_MCP_ENABLED=1 HERA_MCP_MRTR=1 hera-agent-unity mcp --exposure compact
-                                      Start compact search/describe/call exposure.
-
 Editor Control:
   editor launch|restart          Start or restart an exact --project path
   editor play [--wait]          Enter play mode (--wait blocks until fully entered)

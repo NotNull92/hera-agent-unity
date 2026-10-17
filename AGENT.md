@@ -180,14 +180,11 @@ physical OS/window click worked. If Computer Use still cannot capture Unity
 screenshot state and no native OS/window input backend is available, record the
 physical-click criterion as **BLOCKED** even when Unity-level input QA passes.
 
-**[Rule 12]** CLI `v0.1.0+` includes an experimental MCP adapter that remains
-default-off and stdio-only. The normal CLI remains the production default. Use
-`HERA_MCP_ENABLED=1 hera-agent-unity mcp` only with an intentionally configured
-MCP client and keep stdout free of shell banners and diagnostics. Once enabled,
-Compact is the exposure default: search tool/action names, describe only the
-selected action contract, then call. Profile and Full are explicit larger-schema
-opt-ins. Missing approval or operation-ledger features must fail closed. Full
-setup and compatibility rules are in `docs/MCP.md`.
+**[Rule 12]** *(retired in CLI `v0.3.0`)* The experimental MCP adapter was removed.
+The CLI is the only agent surface: there is no `mcp` command, no `HERA_MCP_*`
+environment variable, and no protocol stdout path. Agents consume the same
+compact JSON envelope, catalog, approval flow, and operation ledger used by
+every other command.
 
 **[Rule 13]** Treat a Unity port as a temporary connection endpoint, not an
 Editor identity. At the start of Unity work, run the bootstrap sequence and
@@ -219,7 +216,7 @@ result without sending `run_tests` again. A stale heartbeat can occur while
 Unity's main thread is busy recording test results, so check the pending run,
 the OS process, and port reachability before declaring the Editor lost. For an
 immediate, non-waiting check, use `task list` and retain its `task_id`, then use
-`task status <task_id>`; both read the same local durable state as MCP Tasks and
+`task status <task_id>`; both read the same local durable state and
 do not contact or mutate Unity.
 
 ## 1.5 Ultra Hera
@@ -574,7 +571,6 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `asset-config set-csc <path>` / `set-dotnet <path>` | Persist a default csc / dotnet path | (no flags) |
 | `status` / `ping` | Editor state / liveness | (none) |
 | `doctor` | Self-diagnostic | `--json`, `--agent-rules` (this guide's TL;DR subset) |
-| `mcp` | Unreleased experimental default-off stdio adapter | `--profile`, `--exposure`, `--mrtr`, `--allow-arbitrary-code` |
 
 ### 5.2 Response envelope
 
@@ -615,11 +611,6 @@ Most have a `--flag` equivalent (column 2).
 | `HERA_AGENT_DEBUG=1` | `--debug` |
 | `HERA_AGENT_COMPACT_JSON=1` | `--compact-json` |
 | `HERA_AGENT_VERBOSE=1` | `--verbose` |
-| `HERA_MCP_ENABLED=1` | Enable the experimental stdio MCP adapter. |
-| `HERA_MCP_PROFILE=core` | Select the explicit MCP Profile exposure profile. |
-| `HERA_MCP_EXPOSURE=compact` | Select `compact`, `profile`, or `full`. |
-| `HERA_MCP_MRTR=1` | Enable negotiated Form elicitation approval. |
-| `HERA_MCP_MAX_INLINE_BYTES=N` | Positive complete inline MCP result limit (default 32768). |
 | `HERA_AGENT_NARRATE=1` | `--narrate` |
 | `HERA_AGENT_NO_PATH_CHECK=1` | Silence per-command PATH-mismatch warning (useful from wrapper binaries). |
 | `GITHUB_TOKEN` | Auth token for `update` from a private release repo. |

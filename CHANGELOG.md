@@ -7,14 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed (CLI 0.3.0 — the MCP adapter is gone)
+
+- The experimental, default-off, stdio-only MCP adapter was removed. There is no
+  `mcp` command, no `HERA_MCP_*` environment variable, and no protocol stdout
+  path: `internal/mcpserver`, the four `mcp*` command files and their tests, the
+  `tools/benchmark-mcp` harness, the official-registry `server.json`, and the
+  `mcp-publish.yml` publication chain are deleted together. The adapter sat in
+  front of the same execution core, so no Unity capability is lost — `list`,
+  `call`, `exec`, approval, and the operation ledger are unchanged. `docs/MCP.md`
+  is deleted and `docs/COMMANDS.md` records the removal. **Breaking:** a host
+  that launched `hera-agent-unity mcp` must call the CLI instead. Connector
+  `0.2.0` drops the MCP annotation mapping that no longer had a consumer, and
+  npm no longer claims the MCP registry entry.
+
+### Added (CLI 0.3.0 / Connector 0.2.0 — a failure that says how to retry)
+
+- Every response carries an explicit retry contract. `retryable` is true when the
+  failure is transient, `state` reports the Editor state observed while the
+  response was produced, and `retry_after_ms` suggests how long to wait. The HTTP
+  ingress now answers `RELOADING` (503) immediately while the Editor compiles or
+  reloads instead of queueing work the main thread cannot drain, and the CLI
+  retries a retryable 503 with the identical request only when the caller declared
+  the command idempotent. A non-idempotent caller gets the code plus a one-line
+  retry hint instead of a silent second execution.
+- The heartbeat advertises `catalogSchemaHash` and the `retryable_v1`,
+  `catalog_schema_v1`, and `mainthread_flag_v1` features. When the advertised hash
+  matches a cached catalog, the CLI reuses it and skips the catalog round-trip.
+- Tool detail metadata exposes `main_thread_required` and `reload_window`. They
+  live in the tool detail rather than the catalog entry on purpose: `ParseCatalog`
+  rejects unknown keys, so adding a catalog key would break every already-installed
+  CLI against the new Connector.
+
+### Changed (Connector 0.2.0 — the release gate is honest again)
+
+- `ToolCatalogTests` asserted the exact six-feature heartbeat from before the
+  retry contract, so it failed as soon as the heartbeat advertised nine. The
+  expectation now lists all nine: keeping the list explicit is what makes it a
+  canary for an accidental feature change.
+- `PortStabilityTests` (added with the port contract) was compiled but never
+  executed: it had no `ReleaseGateTests` wrapper, so the release-gate manifest
+  never saw it. It is wired in now and runs with the rest of the gate.
+
+### Verified (Connector 0.2.0, Unity 6000.5.6f1)
+
+- Disposable UPM install with a reset `Library`: initial compile reached `ready`,
+  `console --type error` reported 0, the production `HeraAgent.Editor` response
+  file carried 120 sources with none under `Editor/Tests/` and no test type in the
+  built assembly, and the test-enabled pass compiled `HeraAgent.Editor.Tests`
+  separately and ran the suite green (26 passed, 1 skipped because the blank
+  fixture has no Timeline package). `testables` was removed from the manifest
+  afterwards. The `6000.0`-`6000.2` and `6000.3`-`6000.4` buckets were not run for
+  this release.
+
 ### Added (Connector 0.1.3 — one ingress, and a camera you can name)
 
 - `manage_assets import --source <file> --path Assets/...` brings a file from
   outside the project into `Assets/` and imports it, returning the resulting
   `guid` and `importer_type`. It is the only action that reads a file the
   AssetDatabase does not already own, and it exists because a caller with no
-  filesystem tooling and no arbitrary-code permission — an MCP client on the
-  compact default — otherwise cannot get a file the user already has on disk
+  filesystem tooling and no arbitrary-code permission — an agent restricted to
+  declared tools — otherwise cannot get a file the user already has on disk
   into the project. A folder, a missing source, and an existing destination are
   each refused by name.
 - `screenshot --camera <name>` renders one named scene camera instead of what

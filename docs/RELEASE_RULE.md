@@ -27,7 +27,6 @@
 - The Unity Connector is installed from the Git repository and can be pinned to `connector-<version>`.
 - OpenUPM mirrors the tagged Connector package; registry `latest` is `0.0.86` as verified on 2026-08-10.
 - The publisher-owned Codex catalog lives at `.agents/plugins/marketplace.json`; HOL mirrors are scanner-gated by `.github/workflows/hol-plugin-scanner.yml`.
-- The shipped MCP adapter is registered in the official MCP Registry; successful npm trusted publication triggers the matching OIDC-backed Registry publication workflow.
 
 ## Release Notes Strategy
 
@@ -44,4 +43,4 @@
 
 ## Current publication gaps
 
-- No blocking gap remains for GitHub Release, npm, OpenUPM, or official MCP Registry publication. Curated third-party listings remain separately owned distribution channels.
+- No blocking gap remains for GitHub Release, npm, or OpenUPM publication. Curated third-party listings remain separately owned distribution channels. The MCP Registry channel was retired with the adapter in CLI `v0.3.0`.

@@ -27,12 +27,19 @@ Path token: `%UNITY_HUB_EDITOR%`
 Default resolver: `%ProgramFiles%\Unity\Hub\Editor` on Windows Unity Hub
 installs. Override the scanner with `-HubRoot` for non-default install roots.
 
+> **Regenerated 2026-10-17:** the `6000.0.35f1` and `6000.3.5f2` Editor folders
+> are gone from this workstation, so those two buckets are **BLOCKED** for any
+> Connector change until one editor per bucket is installed again. The `v0.3.0` /
+> Connector `0.2.0` release therefore carries `6000.5.6f1` evidence only, and that
+> must not be described as full three-bucket compatibility. Install a
+> representative for each bucket and re-run the scanner before claiming them.
+
 | Unity | Editor | uGUI | TMP | Entities | Built-in packages | Primary csc.dll | Primary dotnet |
 |---|---:|---:|---:|---:|---:|---|---|
 | `2022.3.62f2` | yes | `1.0.0` |  |  | 59 | `%UNITY_HUB_EDITOR%\2022.3.62f2\Editor\Data\DotNetSdkRoslyn\csc.dll` | `%UNITY_HUB_EDITOR%\2022.3.62f2\Editor\Data\NetCoreRuntime\dotnet.exe` |
 | `2023.2.22f1` | yes | `2.0.0` | `5.0.0` |  | 62 | `%UNITY_HUB_EDITOR%\2023.2.22f1\Editor\Data\DotNetSdkRoslyn\csc.dll` | `%UNITY_HUB_EDITOR%\2023.2.22f1\Editor\Data\NetCoreRuntime\dotnet.exe` |
-| `6000.0.35f1` | yes | `2.0.0` | `5.0.0` |  | 66 | `%UNITY_HUB_EDITOR%\6000.0.35f1\Editor\Data\DotNetSdkRoslyn\csc.dll` | `%UNITY_HUB_EDITOR%\6000.0.35f1\Editor\Data\NetCoreRuntime\dotnet.exe` |
-| `6000.3.5f2` | yes | `2.0.0` | `5.0.0` |  | 75 | `%UNITY_HUB_EDITOR%\6000.3.5f2\Editor\Data\DotNetSdkRoslyn\csc.dll` | `%UNITY_HUB_EDITOR%\6000.3.5f2\Editor\Data\NetCoreRuntime\dotnet.exe` |
+| `6000.0.35f1` | no |  |  |  | 0 |  |  |
+| `6000.3.5f2` | no |  |  |  | 0 |  |  |
 | `6000.5.6f1` | yes | `2.5.0` | `5.0.0` | `6.5.0` | 85 | `%UNITY_HUB_EDITOR%\6000.5.6f1\Editor\Data\DotNetSdk\sdk\8.0.318\Roslyn\bincore\csc.dll` | `%UNITY_HUB_EDITOR%\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe` |
 
 ## Hera Implications

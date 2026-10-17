@@ -32,6 +32,7 @@ namespace HeraAgent.Tests
             nameof(OutputFilePolicy),
             nameof(PackageJobState),
             nameof(PipelineSettings),
+            nameof(PortStability),
             nameof(ProjectIdentity),
             nameof(ReadConsole),
             nameof(SceneGameObject),
@@ -88,6 +89,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void PipelineSettings() => PipelineSettingsToolTests.RunTests();
+
+        [Test]
+        public void PortStability() => PortStabilityTests.RunTests();
 
         [Test]
         public void ProjectIdentity() => ProjectIdentityTests.RunTests();

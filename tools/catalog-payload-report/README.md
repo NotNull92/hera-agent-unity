@@ -1,10 +1,9 @@
 # Catalog Payload Report
 
-This maintainer tool measures both the internal normalized Unity tool catalog
-and the actual serialized MCP tool definitions. It reports Compact and profile
-`tools/list` definition bytes separately from tool, action, and legacy full-vs-
-selected-action describe sizes. Token counts remain clearly labelled rough JSON
-estimates rather than provider billing claims.
+This maintainer tool measures the internal normalized Unity tool catalog: total
+normalized bytes, per-profile contract bytes, and tool, action, and legacy
+full-vs-selected-action describe sizes. Token counts remain clearly labelled
+rough JSON estimates rather than provider billing claims.
 
 ## Generate a report
 
@@ -31,8 +30,8 @@ go run ./tools/catalog-payload-report `
 
 `--fail-on-change` marks review required when the canonical catalog hash changed
 or any measured surface grew. `--fail-on-growth` ignores a same-size contract
-change and marks review required only for positive tool, action, description,
-normalized profile, Compact MCP, or profile MCP payload deltas. A directly built binary exits with code `3`; `go run`
+change and marks review required only for positive tool, action, description, or
+normalized profile deltas. A directly built binary exits with code `3`; `go run`
 returns its own non-zero status and prints `exit status 3`.
 
 A failure does not mean growth is forbidden. It means the change must include:

@@ -198,7 +198,7 @@ The normal production path is a CLI. Any agent that can run shell commands can u
 - scripts and CI jobs
 - your own automation
 
-No Python server is required. MCP is optional, not mandatory.
+No Python server is required, and no host protocol has to be configured.
 
 ### 4. It is designed for AI context, not just humans
 
@@ -703,46 +703,39 @@ Version-specific behavior is checked against live Editors rather than assumed fr
 
 ---
 
-## CLI first, MCP optional
+## One agent surface: the CLI
 
-The production default is the normal CLI.
+Hera is a plain command-line binary.
 
 ```text
 AI / terminal -> Hera CLI -> localhost Connector -> Unity Editor
 ```
 
-That means any shell-capable coding agent can use Hera without configuring MCP.
+Any shell-capable coding agent can drive it, and every command answers with the
+same compact JSON envelope over the same catalog, approval flow, and operation
+ledger.
 
-CLI `v0.1.0+` also ships an **experimental, default-off, stdio-only MCP adapter** for hosts that intentionally want MCP discovery and invocation. It uses the same Hera execution core instead of creating a second Unity backend.
-
-```text
-AI with MCP -> optional Hera MCP adapter -> same Hera execution core -> Unity
-```
-
-MCP does not magically make the model smarter. It is another way to expose the same Unity capabilities. Hera keeps the CLI path as the default because it remains simple, explicit, and broadly compatible.
-
-When MCP is explicitly enabled, Hera exposes the three-tool Compact surface by
-default. Select an action through `tool_search` and `tool_describe`, then use
-`tool_call`; opt into Profile or Full only when the larger static schema payload
-is worth it.
-
-MCP setup and compatibility boundaries: [docs/MCP.md](docs/MCP.md).
+CLI `v0.1.0`-`v0.2.x` also carried an experimental, default-off, stdio-only MCP
+adapter. It was removed in `v0.3.0`. The adapter sat in front of the same
+execution core, so it never unlocked a Unity capability the CLI did not already
+have, and keeping a second protocol surface meant a second discovery, approval,
+and result path to maintain. Use the CLI directly: `list` to discover, `call` for
+typed execution, `exec` when no dedicated command exists.
 
 ---
 
 ## Current release
 
-- CLI / GitHub Release: **v0.2.17** with five native binaries
-- npm: **0.2.17** (`latest`)
-- Unity Connector / OpenUPM: **0.1.3** (`latest`)
-- Official MCP Registry: **0.2.17** (`active`)
+- CLI / GitHub Release: **v0.3.0** with five native binaries
+- npm: **0.3.0** (`latest`)
+- Unity Connector: **0.2.0**
 - License: **Apache-2.0**
 
-All four channels ship the same release: the npm and MCP Registry publishes are chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
+The npm publish is chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
 
-`v0.2.17` clears two races that reported a healthy Editor as broken: the first typed `call` after a recompile no longer fails on a domain epoch the reload had already replaced, and `editor restart` no longer warns about a project lock the exiting Editor was still holding. Connector `0.1.3` adds the one ingress the asset tools lacked — `manage_assets import` brings a file from outside the project into `Assets/`, which a client on the compact MCP default cannot otherwise do — and lets `screenshot` name the camera it renders and cap its longest edge. The live catalog exposes **34 tools / 133 actions**.
+`v0.3.0` is a breaking release: the experimental MCP adapter is gone, so there is no `mcp` command and no `HERA_MCP_*` environment variable. In exchange, a failed request now declares how it can be retried (`retryable`, `state`, `retry_after_ms`) instead of leaving the CLI to guess from a dropped connection, and the heartbeat advertises the catalog schema hash so a matching catalog can be reused without another round-trip. Connector `0.2.0` carries the same contract. The live catalog exposes **34 tools / 133 actions**.
 
 For release-by-release engineering detail, read [CHANGELOG.md](CHANGELOG.md) instead of treating the main README as a migration log.
 
@@ -803,9 +796,9 @@ No. Hera gives the AI better access to **your real Unity state** and better ways
 
 No. The normal install is one native CLI plus one Unity package.
 
-### Do I need MCP?
+### Is a host protocol required?
 
-No. The CLI is the production default. MCP is optional and default-off.
+No. The CLI is the only surface. It speaks localhost HTTP to the Unity package and nothing else.
 
 ### Can it control more than one open Unity Editor?
 
@@ -829,7 +822,6 @@ Also check that the Unity package is installed and the Editor has finished compi
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [C# Connector](docs/CSHARP_CONNECTOR.md)
-- [MCP adapter](docs/MCP.md)
 - [Agent operating guide](AGENTS.md)
 
 ---

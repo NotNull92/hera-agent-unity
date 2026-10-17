@@ -10,8 +10,7 @@ Actions:
 `task list` discovers project-owned pending records and returns reusable opaque
 task_id values. Keep a task_id if you need the completed result: after Unity
 clears the pending record, completed work is no longer discoverable by list,
-but `task status <task_id>` still resolves its result file. A task_id returned
-by negotiated MCP Tasks is accepted by the same status command.
+but `task status <task_id>` still resolves its result file.
 
 Use --project with the full project path when multiple Editors are open. These
 commands read local durable state only; they do not start, repeat, cancel, or

@@ -41,7 +41,7 @@ func TestTaskCLI_listPrintsActiveDurableTasks(t *testing.T) {
 	}
 }
 
-func TestTaskCLI_statusReadsMCPTaskHandleWithoutUnityRequest(t *testing.T) {
+func TestTaskCLI_statusReadsTaskHandleWithoutUnityRequest(t *testing.T) {
 	// Given
 	root := t.TempDir()
 	runID := "0123456789abcdef0123456789abcdef"

@@ -96,11 +96,6 @@ jobs:
             lock.version = version;
             if (lock.packages && lock.packages[""]) lock.packages[""].version = version;
             write("npm/package-lock.json", lock);
-
-            const server = JSON.parse(fs.readFileSync("server.json", "utf8"));
-            server.version = version;
-            for (const entry of server.packages || []) entry.version = version;
-            write("server.json", server);
           ' "$version"
           echo "pinned to $(node -p "require('./npm/package.json').version")"
 

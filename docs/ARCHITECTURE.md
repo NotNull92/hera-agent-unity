@@ -203,7 +203,7 @@ The standalone `task list` and `task status <task_id>` commands read this same
 file bus without entering the normal Unity HTTP readiness path. `task list`
 filters pending test/package records by the selected project's fingerprint and
 current port, then returns opaque handles compatible with the shared Go task
-store. `task status` accepts either one of those handles or an MCP Tasks handle
+store. `task status` accepts either one of those handles or a bare durable handle
 and resolves `working`/`completed` directly from pending/result files. Listing
 discovers active work only; retaining the handle is what makes a completed
 result addressable after Unity clears its pending record.
@@ -218,12 +218,12 @@ without it, the connector preserves the legacy synchronous EditMode contract.
 
 ## Security Considerations
 
-The optional MCP surface lives in the Go process, never in Unity. It is
-default-off and stdio-only: the MCP SDK maps Profile, Compact, or Full tool
-exposure onto the same normalized catalog, policy, HTTP client, and Connector
-operation ledger used by Typed CLI calls. stdout is reserved for protocol
-frames. Older Connectors are Compact-only and every missing safety feature
-fails closed. See [`MCP.md`](MCP.md) for the compatibility matrix.
+Agent traffic reaches Unity through one path: the CLI over `POST /command`.
+The former optional MCP surface (a default-off stdio adapter in front of the
+same execution core) was removed in CLI `v0.3.0`, so there is no second protocol
+endpoint, no `HERA_MCP_*` configuration, and no stdout protocol channel to keep
+clean. Approval, the operation ledger, and the restricted exec mode apply to
+every call.
 
 | Layer | Protection |
 |:---|:---|

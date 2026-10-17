@@ -1,5 +1,10 @@
 # Architecture Refinement Result
 
+> **Historical (2026-10-17).** Written while the optional stdio MCP adapter
+> existed. CLI `v0.3.0` removed the adapter and `internal/mcpserver`; the A4/A5
+> MCP findings below are records, not current rules. Everything else in this
+> document still holds.
+
 ## Verdict
 
 The completed CLI + optional MCP architecture remains the correct execution architecture for local Unity Editor control. This refinement wave did not replace the Go CLI, MCP adapter, localhost Connector, Unity main-thread queue, heartbeat, operation ledger, or file-bus recovery.

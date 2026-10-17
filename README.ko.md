@@ -198,7 +198,7 @@ PlayMode 테스트: 6/6
 - 스크립트와 CI
 - 직접 만든 자동화
 
-Python 서버가 필요하지 않습니다. MCP도 필수가 아니라 선택 기능입니다.
+Python 서버가 필요하지 않고, 호스트 프로토콜도 설정할 필요가 없습니다.
 
 ### 4. 사람보다 AI가 읽기 좋은 출력에 신경 씁니다
 
@@ -707,45 +707,38 @@ Test Runner가 오래 걸리면 실행 상태를 파일에 남기므로 AI가 �
 
 ---
 
-## CLI가 기본, MCP는 선택
+## 에이전트 표면은 CLI 하나
 
-제품 기본값은 일반 CLI입니다.
+Hera는 평범한 command-line 바이너리입니다.
 
 ```text
 AI / 터미널 -> Hera CLI -> localhost Connector -> Unity Editor
 ```
 
-따라서 셸을 실행할 수 있는 AI라면 MCP 설정 없이 Hera를 사용할 수 있습니다.
+셸을 실행할 수 있는 AI라면 그대로 사용할 수 있고, 모든 명령이 같은 compact JSON
+envelope, 같은 카탈로그, 같은 승인 흐름과 operation ledger로 응답합니다.
 
-CLI `v0.1.0+`에는 MCP를 원하는 호스트를 위해 **실험적·default-off·stdio-only MCP adapter**도 들어 있습니다. 별도의 Unity backend를 만드는 것이 아니라 같은 Hera 실행 코어를 사용합니다.
-
-```text
-MCP AI -> 선택형 Hera MCP adapter -> 같은 Hera 실행 코어 -> Unity
-```
-
-MCP 자체가 AI를 더 똑똑하게 만드는 것은 아닙니다. 같은 Unity 기능을 노출하는 다른 인터페이스입니다. Hera는 단순하고 명시적이며 대부분의 AI에서 사용할 수 있는 CLI를 계속 기본값으로 둡니다.
-
-MCP를 명시적으로 켜면 Hera는 기본으로 3-tool Compact surface를 노출합니다.
-`tool_search`와 `tool_describe`로 action을 고른 뒤 `tool_call`을 사용하고,
-더 큰 정적 schema payload가 필요한 경우에만 Profile 또는 Full을 선택합니다.
-
-MCP 설정과 호환성: [docs/MCP.md](docs/MCP.md).
+CLI `v0.1.0`-`v0.2.x`에는 **실험적·default-off·stdio-only MCP adapter**도 들어
+있었습니다. 이 adapter는 `v0.3.0`에서 제거되었습니다. 같은 실행 코어 앞에 놓여
+있었기 때문에 CLI에 없던 Unity 기능을 열어주지 않았고, 두 번째 프로토콜 표면을
+유지한다는 것은 discovery·승인·결과 경로를 하나 더 관리한다는 뜻이었습니다. 대신
+CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전용 명령이 없을 때는
+`exec`입니다.
 
 ---
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.2.17**, native binary 5종
-- npm: **0.2.17** (`latest`)
-- Unity Connector / OpenUPM: **0.1.3** (`latest`)
-- Official MCP Registry: **0.2.17** (`active`)
+- CLI / GitHub Release: **v0.3.0**, native binary 5종
+- npm: **0.3.0** (`latest`)
+- Unity Connector: **0.2.0**
 - License: **Apache-2.0**
 
-네 배포 채널이 같은 릴리스를 제공합니다. npm과 MCP Registry 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-unity`와 GitHub 바이너리가 같은 버전을 유지합니다.
+npm 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-unity`와 GitHub 바이너리가 같은 버전을 유지합니다.
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
 
-`v0.2.17`은 멀쩡한 에디터를 고장으로 보고하던 두 경합을 없앴습니다. 재컴파일 직후 첫 typed `call`이 이미 교체된 도메인 epoch 때문에 실패하지 않고, `editor restart`가 종료 중인 에디터가 잠시 쥐고 있는 프로젝트 lock을 두고 경고하지 않습니다. Connector `0.1.3`은 에셋 도구에 없던 유일한 ingress를 더했습니다 — `manage_assets import`가 프로젝트 밖 파일을 `Assets/`로 들여오며, 이는 compact MCP 기본값의 클라이언트가 달리 할 수 없는 일입니다. 또한 `screenshot`이 렌더할 카메라를 지정하고 최장변을 제한할 수 있습니다. 라이브 카탈로그는 **34 tools / 133 actions**를 노출합니다.
+`v0.3.0`은 breaking 릴리스입니다. 실험적 MCP adapter가 제거되어 `mcp` 명령과 `HERA_MCP_*` 환경변수가 없습니다. 대신 실패한 요청이 재시도 가능 여부를 직접 선언하고(`retryable`, `state`, `retry_after_ms`) CLI가 끊긴 연결만 보고 추측하지 않으며, heartbeat가 catalog schema hash를 광고해 일치하는 카탈로그를 왕복 없이 재사용합니다. Connector `0.2.0`이 같은 계약을 제공합니다. 라이브 카탈로그는 **34 tools / 133 actions**를 노출합니다.
 
 릴리스별 기술 변경을 모두 보고 싶다면 메인 README보다 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
 
@@ -806,9 +799,9 @@ Domain Reload와 장기 작업은 파일시스템 상태를 사용해 HTTP liste
 
 아니요. 기본 설치는 native CLI 하나와 Unity 패키지 하나입니다.
 
-### MCP가 꼭 필요한가요?
+### 호스트 프로토콜이 필요한가요?
 
-아니요. CLI가 production 기본값입니다. MCP는 선택형이며 기본으로 꺼져 있습니다.
+아니요. CLI가 유일한 표면입니다. Unity 패키지와 localhost HTTP로만 통신합니다.
 
 ### Unity Editor를 여러 개 열어도 되나요?
 
@@ -832,7 +825,6 @@ Unity 패키지가 설치되어 있고 Editor 컴파일이 끝났는지도 확�
 - [문제 해결](docs/TROUBLESHOOTING.md)
 - [아키텍처](docs/ARCHITECTURE.md)
 - [C# Connector](docs/CSHARP_CONNECTOR.md)
-- [MCP adapter](docs/MCP.md)
 - [Agent 운영 가이드](AGENTS.md)
 
 ---

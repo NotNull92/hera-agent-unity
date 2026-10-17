@@ -110,6 +110,9 @@ namespace HeraAgent.Tests
                     ProtocolContracts.FeatureOperationLedgerV1,
                     ProtocolContracts.FeatureTaskBridgeV1,
                     ProtocolContracts.FeatureToolCatalogV1,
+                    ProtocolContracts.FeatureRetryableV1,
+                    ProtocolContracts.FeatureCatalogSchemaV1,
+                    ProtocolContracts.FeatureMainThreadFlagV1,
                 }));
         }
 

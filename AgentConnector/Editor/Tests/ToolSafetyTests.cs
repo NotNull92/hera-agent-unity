@@ -27,7 +27,6 @@ namespace HeraAgent.Tests
             allPassed &= TestLegacyBooleanNormalization();
             allPassed &= TestUnspecifiedCustomIsConservative();
             allPassed &= TestUnspecifiedBuiltInFails();
-            allPassed &= TestConservativeMcpAnnotations();
             allPassed &= TestAmbiguousRulesFailValidation();
             return allPassed;
         }
@@ -159,23 +158,6 @@ namespace HeraAgent.Tests
             {
                 return Expect(nameof(TestUnspecifiedBuiltInFails), true);
             }
-        }
-
-        private static bool TestConservativeMcpAnnotations()
-        {
-            var readonlyHints = ToolContractSafety.ToMcpAnnotations(
-                ToolContractRegistry.Get("describe_type"));
-            var mixedHints = ToolContractSafety.ToMcpAnnotations(
-                ToolContractRegistry.Get("manage_assets"));
-            var execHints = ToolContractSafety.ToMcpAnnotations(
-                ToolContractRegistry.Get("exec"));
-
-            return Expect(nameof(TestConservativeMcpAnnotations),
-                readonlyHints.ReadOnlyHint && readonlyHints.IdempotentHint
-                && !readonlyHints.DestructiveHint && !readonlyHints.OpenWorldHint
-                && !mixedHints.ReadOnlyHint && mixedHints.DestructiveHint
-                && !mixedHints.IdempotentHint
-                && execHints.OpenWorldHint && !execHints.ReadOnlyHint);
         }
 
         private static bool TestAmbiguousRulesFailValidation()

@@ -13,7 +13,6 @@ func compareReports(baseline, current report) reportComparison {
 		ActionCountDelta:            current.ActionCount - baseline.ActionCount,
 		NormalizedCatalogBytesDelta: current.NormalizedCatalogBytes - baseline.NormalizedCatalogBytes,
 		DescriptionCharactersDelta:  current.DescriptionCharacters - baseline.DescriptionCharacters,
-		MCPCompactBytesDelta:        current.MCPCompact.ToolDefinitionBytes - baseline.MCPCompact.ToolDefinitionBytes,
 		Profiles:                    compareProfiles(baseline.Profiles, current.Profiles),
 	}
 
@@ -35,11 +34,6 @@ func compareReports(baseline, current report) reportComparison {
 		comparison.Reasons = append(comparison.Reasons,
 			fmt.Sprintf("tool descriptions grew by %d characters", comparison.DescriptionCharactersDelta))
 	}
-	if comparison.MCPCompactBytesDelta > 0 {
-		comparison.Growth = true
-		comparison.Reasons = append(comparison.Reasons,
-			fmt.Sprintf("compact MCP tool definitions grew by %d byte(s)", comparison.MCPCompactBytesDelta))
-	}
 	for _, profile := range comparison.Profiles {
 		switch {
 		case profile.ToolCountDelta > 0 && profile.ContractBytesDelta > 0:
@@ -55,11 +49,6 @@ func compareReports(baseline, current report) reportComparison {
 			comparison.Growth = true
 			comparison.Reasons = append(comparison.Reasons,
 				fmt.Sprintf("profile %s grew by %d normalized byte(s)", profile.Name, profile.ContractBytesDelta))
-		}
-		if profile.MCPToolDefinitionBytesDelta > 0 {
-			comparison.Growth = true
-			comparison.Reasons = append(comparison.Reasons,
-				fmt.Sprintf("profile %s MCP tool definitions grew by %d byte(s)", profile.Name, profile.MCPToolDefinitionBytesDelta))
 		}
 	}
 	comparison.ReviewRequired = comparison.ContractChanged || comparison.Growth
@@ -94,13 +83,10 @@ func compareProfiles(baseline, current []profileSize) []profileDelta {
 		result = append(result, profileDelta{
 			Name:              name,
 			BaselineToolCount: before.ToolCount, CurrentToolCount: after.ToolCount,
-			ToolCountDelta:                 after.ToolCount - before.ToolCount,
-			BaselineContractBytes:          before.NormalizedContractBytes,
-			CurrentContractBytes:           after.NormalizedContractBytes,
-			ContractBytesDelta:             after.NormalizedContractBytes - before.NormalizedContractBytes,
-			BaselineMCPToolDefinitionBytes: before.MCPToolDefinitionBytes,
-			CurrentMCPToolDefinitionBytes:  after.MCPToolDefinitionBytes,
-			MCPToolDefinitionBytesDelta:    after.MCPToolDefinitionBytes - before.MCPToolDefinitionBytes,
+			ToolCountDelta:        after.ToolCount - before.ToolCount,
+			BaselineContractBytes: before.NormalizedContractBytes,
+			CurrentContractBytes:  after.NormalizedContractBytes,
+			ContractBytesDelta:    after.NormalizedContractBytes - before.NormalizedContractBytes,
 		})
 	}
 	return result

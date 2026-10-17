@@ -165,14 +165,16 @@ appears). If the staleness persists, restart Unity.
 
 ---
 
-## MCP client reports invalid JSON or protocol noise
+## A request fails while Unity is compiling or reloading
 
-The experimental MCP adapter reserves stdout exclusively for MCP protocol
-frames. Configure the client to launch `hera-agent-unity` directly, remove shell
-startup banners or wrappers that print status, and never merge stderr with
-stdout using `2>&1`. Hera diagnostics are intentionally written to stderr.
+While the Editor compiles or reloads, the ingress answers immediately instead of
+queueing work the main thread cannot drain. The response is `RELOADING` with
+`state` (the Editor state that was observed), `retryable: true`, and
+`retry_after_ms`. The CLI retries that answer with the identical request only when
+the command is idempotent; otherwise it prints `hint: transient (editor state:
+...) — the command was not executed; retry the same request`, so a mutation is
+never silently sent twice. Wait for the Editor to reach `ready`
+(`hera-agent-unity status`) and repeat the command.
 
-If startup says MCP is disabled, put `HERA_MCP_ENABLED=1` in the client child
-process environment. If Profile or Full requires a strict catalog, update the
-Connector or use `--exposure compact` for conservative legacy discovery. The
-full compatibility and approval matrix is in [`MCP.md`](MCP.md).
+If a stale `~/.hera-agent-unity/instances/*.json` heartbeat survives an Editor
+crash, delete the file for that project; `status` and `ping` read it directly.

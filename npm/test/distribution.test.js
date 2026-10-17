@@ -6,7 +6,6 @@ const npmRoot = path.resolve(__dirname, "..");
 const repositoryRoot = path.resolve(npmRoot, "..");
 const npmPackage = require(path.join(npmRoot, "package.json"));
 const npmLock = require(path.join(npmRoot, "package-lock.json"));
-const mcpServer = require(path.join(repositoryRoot, "server.json"));
 const npmPublishWorkflow = fs.readFileSync(
   path.join(repositoryRoot, ".github", "workflows", "npm-publish.yml"),
   "utf8",
@@ -16,21 +15,7 @@ const plugin = require(path.join(repositoryRoot, "plugins", "hera-unity", ".code
 
 assert.equal(npmLock.version, npmPackage.version, "npm package-lock version must match package.json");
 assert.equal(npmLock.packages[""].version, npmPackage.version, "npm root lock version must match package.json");
-assert.equal(npmPackage.mcpName, "io.github.NotNull92/hera-agent-unity");
-assert.equal(mcpServer.name, npmPackage.mcpName, "MCP registry name must match npm ownership metadata");
-assert.equal(mcpServer.version, npmPackage.version, "MCP server version must match npm package version");
-assert.equal(mcpServer.packages.length, 1);
-assert.equal(mcpServer.packages[0].registryType, "npm");
-assert.equal(mcpServer.packages[0].identifier, npmPackage.name);
-assert.equal(mcpServer.packages[0].version, npmPackage.version);
-assert.deepEqual(mcpServer.packages[0].transport, { type: "stdio" });
-assert.deepEqual(
-  mcpServer.packages[0].packageArguments,
-  ["mcp", "--transport", "stdio"].map((value) => ({ type: "positional", value })),
-);
-assert.deepEqual(mcpServer.packages[0].environmentVariables, [
-  { name: "HERA_MCP_ENABLED", value: "1" },
-]);
+assert.equal(npmPackage.mcpName, undefined, "the MCP registry entry was removed in v0.3.0");
 assert.match(npmPublishWorkflow, /workflow_run:\s*\n\s+workflows: \["Release"\]/);
 assert.match(npmPublishWorkflow, /github\.event\.workflow_run\.conclusion == 'success'/);
 assert.equal(marketplace.name, "hera-agent-unity");
