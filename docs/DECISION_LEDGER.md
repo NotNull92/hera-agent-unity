@@ -115,6 +115,34 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 - Kept keep-alive and observer-cadence changes measurement-gated. See `docs/ARCHITECTURE_REFINEMENT_ROADMAP.md` and `docs/ARCHITECTURE_REFINEMENT_RESULT.md`.
 
 
+## Step 6 M2 — catalog rebaseline (CLI v0.3.1) — 2026-10-17
+
+- **The payload metric follows the surface.** `mcp_compact` was deleted with the
+  adapter it measured; `cli_summary` replaces it: the `list --names` array plus the
+  machine-independent compact agent rules, with a 3,000-byte warning budget and a
+  growth rule in `--fail-on-growth`. Local asset-config opt-ins are excluded, so
+  the baseline is reproducible on any machine. `agent_rules_bytes` (2,277) is the
+  same number `README.md` publishes as the reviewed compact-rules default.
+- **The duplicate rows now name the exact primitive, and no action was added.**
+  `import_asset` → `manage_assets import` and `rename_asset` → `manage_assets move`
+  are `covered` because those actions shipped in Connector `0.1.3`;
+  `set_timescale` → `manage_settings set_time` (`time_scale`) was already covered;
+  the remaining nine keep `exec` and now state the call. Classification is
+  **129 covered, 9 duplicate**, 7 rejected, 6 excluded, 2 conditional. The catalog
+  stays at **34 tools / 133 actions**, inside the 145-action budget, so no
+  connector C# changed and no new fixture risk was taken on.
+- **Measured:** `cli_summary` 2,754 B (477 + 2,277), `agent_rules_compact_bytes`
+  2,277 (≤3,500), normalized catalog 268,417 B (262.1 KiB, unchanged), tool
+  descriptions 9,940 characters (≤10,000), profiles unchanged.
+  `--fail-on-change` accepts the regenerated baseline; the only delta against the
+  previous baseline was the new metric itself.
+- **Fixtures:** Unity `6000.5.6f1` PASS. `6000.0`-`6000.2` and `6000.3`-`6000.4`
+  are BLOCKED (no representative Editor installed).
+- **Deliberately not done:** implementing the nine `exec`-served commands as new
+  actions. The admission rule holds them out — `exec` already expresses each one —
+  and shipping them would add connector C# that the two missing buckets cannot
+  verify.
+
 ## Step 6 M1 — contract hardening and MCP removal (CLI v0.3.0 / Connector 0.2.0) — 2026-10-17
 
 Plan: `docs/report/plan-step6-application-2026-10-17.md`. Adopted candidate A

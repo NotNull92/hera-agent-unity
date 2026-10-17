@@ -6,112 +6,57 @@
   "tool_count": 34,
   "action_count": 133,
   "description_characters": 9940,
-  "mcp_compact": {
-    "tool_count": 3,
-    "tool_definition_bytes": 2505,
+  "cli_summary": {
+    "name_list_bytes": 477,
+    "agent_rules_bytes": 2277,
+    "total_bytes": 2754,
     "rough_token_estimates": {
       "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-      "low_4_bytes_per_token": 627,
-      "central_3_2_bytes_per_token": 783,
-      "high_2_5_bytes_per_token": 1002
+      "low_4_bytes_per_token": 689,
+      "central_3_2_bytes_per_token": 861,
+      "high_2_5_bytes_per_token": 1102
     }
   },
   "profiles": [
     {
       "name": "advanced",
       "tool_count": 2,
-      "normalized_contract_bytes": 4834,
-      "mcp_tool_definition_bytes": 3259,
-      "mcp_rough_token_estimates": {
-        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 815,
-        "central_3_2_bytes_per_token": 1019,
-        "high_2_5_bytes_per_token": 1304
-      }
+      "normalized_contract_bytes": 4834
     },
     {
       "name": "assets",
       "tool_count": 9,
-      "normalized_contract_bytes": 51324,
-      "mcp_tool_definition_bytes": 15211,
-      "mcp_rough_token_estimates": {
-        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 3803,
-        "central_3_2_bytes_per_token": 4754,
-        "high_2_5_bytes_per_token": 6085
-      }
+      "normalized_contract_bytes": 51324
     },
     {
       "name": "core",
       "tool_count": 8,
-      "normalized_contract_bytes": 73722,
-      "mcp_tool_definition_bytes": 18911,
-      "mcp_rough_token_estimates": {
-        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 4728,
-        "central_3_2_bytes_per_token": 5910,
-        "high_2_5_bytes_per_token": 7565
-      }
+      "normalized_contract_bytes": 73722
     },
     {
       "name": "diagnostics",
       "tool_count": 11,
-      "normalized_contract_bytes": 59965,
-      "mcp_tool_definition_bytes": 23011,
-      "mcp_rough_token_estimates": {
-        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 5753,
-        "central_3_2_bytes_per_token": 7191,
-        "high_2_5_bytes_per_token": 9205
-      }
+      "normalized_contract_bytes": 59965
     },
     {
       "name": "full",
       "tool_count": 32,
-      "normalized_contract_bytes": 263309,
-      "mcp_tool_definition_bytes": 62478,
-      "mcp_rough_token_estimates": {
-        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 15620,
-        "central_3_2_bytes_per_token": 19525,
-        "high_2_5_bytes_per_token": 24992
-      }
+      "normalized_contract_bytes": 263309
     },
     {
       "name": "scene",
       "tool_count": 11,
-      "normalized_contract_bytes": 108561,
-      "mcp_tool_definition_bytes": 25238,
-      "mcp_rough_token_estimates": {
-        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 6310,
-        "central_3_2_bytes_per_token": 7887,
-        "high_2_5_bytes_per_token": 10096
-      }
+      "normalized_contract_bytes": 108561
     },
     {
       "name": "testing",
       "tool_count": 6,
-      "normalized_contract_bytes": 69516,
-      "mcp_tool_definition_bytes": 17238,
-      "mcp_rough_token_estimates": {
-        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 4310,
-        "central_3_2_bytes_per_token": 5387,
-        "high_2_5_bytes_per_token": 6896
-      }
+      "normalized_contract_bytes": 69516
     },
     {
       "name": "ui",
       "tool_count": 7,
-      "normalized_contract_bytes": 102171,
-      "mcp_tool_definition_bytes": 19930,
-      "mcp_rough_token_estimates": {
-        "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-        "low_4_bytes_per_token": 4983,
-        "central_3_2_bytes_per_token": 6229,
-        "high_2_5_bytes_per_token": 7972
-      }
+      "normalized_contract_bytes": 102171
     }
   ],
   "largest_tools": [

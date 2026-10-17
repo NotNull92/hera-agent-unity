@@ -13,6 +13,7 @@ func compareReports(baseline, current report) reportComparison {
 		ActionCountDelta:            current.ActionCount - baseline.ActionCount,
 		NormalizedCatalogBytesDelta: current.NormalizedCatalogBytes - baseline.NormalizedCatalogBytes,
 		DescriptionCharactersDelta:  current.DescriptionCharacters - baseline.DescriptionCharacters,
+		CLISummaryTotalBytesDelta:   current.CLISummary.TotalBytes - baseline.CLISummary.TotalBytes,
 		Profiles:                    compareProfiles(baseline.Profiles, current.Profiles),
 	}
 
@@ -33,6 +34,11 @@ func compareReports(baseline, current report) reportComparison {
 		comparison.Growth = true
 		comparison.Reasons = append(comparison.Reasons,
 			fmt.Sprintf("tool descriptions grew by %d characters", comparison.DescriptionCharactersDelta))
+	}
+	if comparison.CLISummaryTotalBytesDelta > 0 {
+		comparison.Growth = true
+		comparison.Reasons = append(comparison.Reasons,
+			fmt.Sprintf("CLI summary grew by %d byte(s)", comparison.CLISummaryTotalBytesDelta))
 	}
 	for _, profile := range comparison.Profiles {
 		switch {

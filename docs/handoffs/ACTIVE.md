@@ -1,9 +1,10 @@
 # Active Development Handoff
 
-Current state (2026-10-17): **the Step 6 M1 queue is implemented and committed;
-M2 is next.** M1 = contract hardening plus MCP removal (CLI `v0.3.0` unreleased,
-Connector `0.2.0` unreleased). Per-release detail lives in `CHANGELOG.md`; this
-file records only current state and what is open.
+Current state (2026-10-17): **M1 and M2 are implemented and committed; the Step 6
+queue is complete.** M1 = contract hardening plus MCP removal (CLI `v0.3.0`
+unreleased, Connector `0.2.0` unreleased); M2 = catalog rebaseline (CLI `v0.3.1`
+unreleased, no connector change). M3+ is not authorized. Per-release detail lives
+in `CHANGELOG.md`; this file records only current state and what is open.
 
 ## Step 6 queue (2026-10-17)
 
@@ -17,13 +18,15 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | M1-b | Done | Heartbeat advertises `catalogSchemaHash` + three `*_v1` features; a hash match reuses the cached catalog. `main_thread_required`/`reload_window` live in tool detail, not the catalog — a new catalog key would break installed CLIs |
 | M1-c | Done | Port-stability regression tests, now wired into `ReleaseGateTests`. No behavior change |
 | M1-d | Done | MCP removal: `internal/mcpserver`, `mcp` command + tests, `tools/benchmark-mcp`, `server.json`, `mcp-publish.yml`, `cmd/help/mcp.txt`, MCP annotation mapping, npm `mcpName`, `docs/MCP.md`, all `HERA_MCP_*` |
-| M2 | **Next** | Catalog rebaseline: `cli_summary` replaces `mcp_compact` in the payload report, absorb the 12 duplicate actions (target ≤145), regenerate the baseline |
+| M2 | Done | Catalog rebaseline: `cli_summary` replaces `mcp_compact` in the payload report, the 12 former `duplicate` rows name their exact primitive (2 became `covered` in `0.1.3`, `set_timescale` was already covered, 9 stay `exec`), baseline regenerated. **34 tools / 133 actions unchanged** |
 | M3+ | Not authorized | Dispatch-delay reduction and the rest of §1 in the plan |
 
 **Compatibility buckets for M1: `6000.5.6f1` PASS. `6000.0` and `6000.3` are
 BLOCKED** — no representative Editor is installed on this machine, and a missing
 bucket is never a PASS (AGENTS.md §7.2). Resolving it needs a fixture install or
-a machine that holds both.
+a machine that holds both. M2 changes no connector code, so its own evidence is
+the live `6000.5.6f1` catalog: 34 tools / 133 actions, `cli_summary` 2,754 B,
+`--fail-on-change` accepting the regenerated baseline.
 
 ## Shipped in this queue
 

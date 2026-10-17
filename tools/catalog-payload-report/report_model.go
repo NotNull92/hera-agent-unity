@@ -3,9 +3,10 @@ package main
 import "github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 
 type reportOptions struct {
-	WarnProfileBytes int
-	WarnToolBytes    int
-	Largest          int
+	WarnProfileBytes    int
+	WarnToolBytes       int
+	WarnCLISummaryBytes int
+	Largest             int
 }
 
 type report struct {
@@ -16,6 +17,7 @@ type report struct {
 	ToolCount              int               `json:"tool_count"`
 	ActionCount            int               `json:"action_count"`
 	DescriptionCharacters  int               `json:"description_characters"`
+	CLISummary             cliSummarySize    `json:"cli_summary"`
 	Profiles               []profileSize     `json:"profiles"`
 	LargestTools           []toolSize        `json:"largest_tools"`
 	LargestActions         []actionSize      `json:"largest_actions"`
@@ -23,6 +25,16 @@ type report struct {
 	RoughTokens            tokenEstimates    `json:"normalized_catalog_rough_token_estimates"`
 	Warnings               []string          `json:"warnings"`
 	Comparison             *reportComparison `json:"comparison,omitempty"`
+}
+
+// cliSummarySize is the fixed per-session cost of driving Unity through the CLI:
+// the flat tool-name list an agent discovers from, plus the machine-independent
+// compact agent rules it loads once per project.
+type cliSummarySize struct {
+	NameListBytes   int            `json:"name_list_bytes"`
+	AgentRulesBytes int            `json:"agent_rules_bytes"`
+	TotalBytes      int            `json:"total_bytes"`
+	RoughTokens     tokenEstimates `json:"rough_token_estimates"`
 }
 
 type profileSize struct {
@@ -38,6 +50,7 @@ type reportComparison struct {
 	ActionCountDelta            int            `json:"action_count_delta"`
 	NormalizedCatalogBytesDelta int            `json:"normalized_catalog_bytes_delta"`
 	DescriptionCharactersDelta  int            `json:"description_characters_delta"`
+	CLISummaryTotalBytesDelta   int            `json:"cli_summary_total_bytes_delta"`
 	Profiles                    []profileDelta `json:"profiles"`
 	Growth                      bool           `json:"growth"`
 	ReviewRequired              bool           `json:"review_required"`

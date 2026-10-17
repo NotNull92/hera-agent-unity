@@ -6,6 +6,8 @@ import (
 	"slices"
 	"sort"
 
+	"github.com/NotNull92/hera-agent-unity/cmd"
+	"github.com/NotNull92/hera-agent-unity/internal/assetconfig"
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
 
@@ -23,7 +25,13 @@ func buildReport(catalog *toolregistry.Catalog, inputBytes int, options reportOp
 		InputBytes:             inputBytes,
 		NormalizedCatalogBytes: len(normalized),
 		ToolCount:              len(catalog.Tools),
+		CLISummary:             buildCLISummary(catalog),
 		Warnings:               []string{},
+	}
+	if options.WarnCLISummaryBytes > 0 && result.CLISummary.TotalBytes > options.WarnCLISummaryBytes {
+		result.Warnings = append(result.Warnings,
+			fmt.Sprintf("CLI summary uses %d bytes (warning budget %d)",
+				result.CLISummary.TotalBytes, options.WarnCLISummaryBytes))
 	}
 	profiles := make(map[string]struct{})
 	for _, tool := range catalog.Tools {
@@ -143,6 +151,29 @@ func buildReport(catalog *toolregistry.Catalog, inputBytes int, options reportOp
 	result.RoughTokens = tokenRange(result.NormalizedCatalogBytes)
 	slices.Sort(result.Warnings)
 	return result, nil
+}
+
+// buildCLISummary measures the fixed context cost of the CLI surface: the flat
+// name list `list --names` prints, plus the machine-independent compact agent
+// rules. Both are derived, so the number moves only when the catalog or the
+// always-loaded rules actually change.
+func buildCLISummary(catalog *toolregistry.Catalog) cliSummarySize {
+	names := make([]string, 0, len(catalog.Tools))
+	for _, tool := range catalog.Tools {
+		names = append(names, tool.Name)
+	}
+	encodedNames, err := json.Marshal(names)
+	if err != nil {
+		// A []string cannot fail to encode; keep the measurement honest if it ever does.
+		encodedNames = nil
+	}
+	size := cliSummarySize{
+		NameListBytes:   len(encodedNames),
+		AgentRulesBytes: len(cmd.CompactAgentRulesText(assetconfig.LoopEngineeringLight)),
+	}
+	size.TotalBytes = size.NameListBytes + size.AgentRulesBytes
+	size.RoughTokens = tokenRange(size.TotalBytes)
+	return size
 }
 
 func tokenRange(size int) tokenEstimates {

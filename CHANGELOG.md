@@ -60,6 +60,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   afterwards. The `6000.0`-`6000.2` and `6000.3`-`6000.4` buckets were not run for
   this release.
 
+### Changed (CLI 0.3.1 — the payload baseline measures the CLI, not the adapter)
+
+- The catalog payload report replaced the `mcp_compact` block with `cli_summary`:
+  the `list --names` array (477 bytes) plus the machine-independent compact agent
+  rules (2,277 bytes), 2,754 bytes total against a 3,000-byte budget. Local
+  asset-config opt-ins are excluded so a checked-in baseline stays reproducible;
+  a positive delta now fails `--fail-on-growth` like any other measured surface.
+- `docs/UNITY_PIPELINE_PARITY_MATRIX.md` now points every former `duplicate` row
+  at the exact primitive: `manage_assets import` and `manage_assets move` are
+  `covered` (they shipped in Connector `0.1.3`), `manage_settings set_time` covers
+  `set_timescale`, and the remaining nine name the `exec` call they map to. No
+  tool or action was added — the catalog stays at 34 tools / 133 actions — and the
+  baseline was regenerated and reviewed in the same change.
+
 ### Added (Connector 0.1.3 — one ingress, and a camera you can name)
 
 - `manage_assets import --source <file> --path Assets/...` brings a file from

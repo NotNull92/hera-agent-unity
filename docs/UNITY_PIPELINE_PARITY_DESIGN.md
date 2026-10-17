@@ -121,6 +121,38 @@ a positive audit result can be exercised; absence-only behavior is not enough.
   docs, English/Korean README files, agent guides, changelog, handoff, and
   package version.
 
+## Rebaseline: duplicate rows and the payload metric (2026-10-17)
+
+Recorded with CLI `v0.3.1` / Connector `0.2.0`. This rebaseline adds no tool and
+no action: the catalog stays at **34 tools / 133 actions**, inside the 145-action
+budget.
+
+- **Duplicate rows point at the exact primitive.** Nine rows keep `exec` as their
+  sanctioned answer and now name the call (`exec --file` for `eval_file`,
+  `PrefabUtility.SaveAsPrefabAsset` for `save_prefab_contents`,
+  `Application.targetFrameRate` for `set_target_framerate`, and so on). Three rows
+  are reclassified `covered` because the audit undercounted the catalog:
+  `import_asset` → `manage_assets import` and `rename_asset` →
+  `manage_assets move` shipped in Connector `0.1.3`, and `set_timescale` →
+  `manage_settings set_time` (`time_scale`) already existed. Tally: **129 covered,
+  9 duplicate**, 7 rejected, 6 excluded, 2 conditional. Nothing here changes the
+  admission rule: a workflow `exec` already expresses is not a candidate for a
+  new action.
+- **The retired MCP measurement is replaced by a CLI one.** The payload report
+  dropped the `mcp_compact` block with the adapter and now reports `cli_summary`:
+  the `list --names` array plus the machine-independent compact agent rules
+  (`doctor --agent-rules --compact` at the documented default mode; local asset
+  opt-ins are deliberately excluded so a checked-in baseline stays reproducible).
+- **Measured budgets:** `cli_summary` 2,754 B (name list 477 + rules 2,277) against
+  3,000; `agent_rules_compact_bytes` 2,277 against 3,500; normalized catalog
+  268,417 B (262.1 KiB) unchanged; tool descriptions 9,940 characters against
+  10,000; profiles unchanged. `--fail-on-change` accepts the regenerated baseline,
+  and the only delta against the previous baseline is the new metric itself.
+- **Fixtures:** verified on Unity `6000.5.6f1`. `6000.0`-`6000.2` and
+  `6000.3`-`6000.4` are **BLOCKED** — their representative Editors are not
+  installed — and this rebaseline changes no connector code, so it adds no
+  bucket-specific risk.
+
 ## Verification and rollback
 
 Every behavioral task follows red, green, refactor. Each task is independently

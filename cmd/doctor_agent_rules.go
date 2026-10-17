@@ -55,12 +55,7 @@ func extractAgentRules(format string) string {
 func extractCompactAgentRules(format string) string {
 	var out strings.Builder
 	writeAgentRulesFrontmatter(&out, format)
-	out.WriteString("# hera-agent-unity - Compact Project Rules\n\n")
-	out.WriteString("> Emitted by `hera-agent-unity doctor --agent-rules --compact`. ")
-	out.WriteString("Load the full guide only when needed: https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md\n\n")
-	out.WriteString(compactAgentRulesBody)
-	out.WriteString("\n")
-	out.WriteString(buildCompactUltraHeraAgentRules(assetconfig.LoadLoopEngineeringModeNoCreate()))
+	out.WriteString(CompactAgentRulesText(assetconfig.LoadLoopEngineeringModeNoCreate()))
 	if preferences := buildAssetPreferenceAgentRules(assetconfig.LoadEnabledBuiltInAssetsNoCreate(), true); preferences != "" {
 		out.WriteString("\n")
 		out.WriteString(preferences)
@@ -77,6 +72,23 @@ func extractCompactAgentRules(format string) string {
 			out.WriteString("- Unity De-slop Mode is ON. Query `ui_slop` and re-measure the live uGUI target before and after each fix.\n")
 		}
 	}
+	return out.String()
+}
+
+// CompactAgentRulesText is the machine-independent half of the compact rules
+// document: the title, provenance line, always-loaded body, and the verification
+// loop for the given mode. Asset-config opt-ins (enabled plugins, Game Feel,
+// De-slop) are appended by extractCompactAgentRules and are deliberately excluded
+// here. The catalog payload report measures it with the documented default mode
+// so a checked-in baseline cannot move because of a local asset toggle.
+func CompactAgentRulesText(mode assetconfig.LoopEngineeringMode) string {
+	var out strings.Builder
+	out.WriteString("# hera-agent-unity - Compact Project Rules\n\n")
+	out.WriteString("> Emitted by `hera-agent-unity doctor --agent-rules --compact`. ")
+	out.WriteString("Load the full guide only when needed: https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md\n\n")
+	out.WriteString(compactAgentRulesBody)
+	out.WriteString("\n")
+	out.WriteString(buildCompactUltraHeraAgentRules(mode))
 	return out.String()
 }
 

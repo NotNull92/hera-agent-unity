@@ -6,10 +6,17 @@ Generated from 161 source-declared commands; eight internal test commands are ex
 Classification meanings: `covered` is available in Hera, `duplicate` is intentionally served by an existing safer primitive, `rejected` is a locked decision, `excluded` would expand the architecture, and `conditional` requires a positive fixture.
 
 `duplicate` carries a caller assumption worth stating: the safer primitive is
-either the caller's own filesystem tooling or `exec`. A caller with neither —
-an MCP client on the compact default, where the arbitrary-code surface is absent
-rather than refused — cannot reach those workflows at all, and a non-interactive
-CLI caller pays an approval round trip for `exec`. See `docs/MCP.md`.
+either the caller's own filesystem tooling or `exec`. The CLI always has `exec`
+— arbitrary code is the default and the restricted mode is an opt-in — and a
+non-interactive caller pays one approval round trip for it. Nine rows therefore
+stay `duplicate`, each naming the exact call it maps to.
+
+Two rows that the audit carried as `duplicate` became declared actions in
+Connector `0.1.3` and are now `covered`, and one was already covered by an
+existing action once its `time_scale` property was checked: `import_asset` →
+`manage_assets import`, `rename_asset` → `manage_assets move`, `set_timescale` →
+`manage_settings set_time time_scale`. Nothing in this rebaseline adds a tool or
+an action; the catalog stays at 34 tools / 133 actions.
 
 The "Hera equivalent" column names the live catalog identity — `<tool> <action>` — so a row can be checked against `list --catalog` without interpretation. Where the CLI spells the same capability differently, the CLI form follows in parentheses. Three rows name a CLI-only surface (`status`, `editor refresh --compile`) that has no catalog tool.
 
@@ -53,11 +60,11 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `create_asset` | covered | type-dependent: manage_assets create (ScriptableObject `.asset`), manage_material create, manage_animation create_clip, manage_timeline create, manage_prefab create |
 | `create_folder` | covered | manage_assets create-folder |
 | `create_gameobject` | covered | manage_gameobject create |
-| `create_gameobjects` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `create_gameobjects` | duplicate | `exec` — one snippet creating the batch (`new GameObject(...)`, or a loop of the CLI `manage_gameobject create` / `duplicate --count` per object) |
 | `create_prefab` | covered | manage_prefab create |
 | `create_prefab_variant` | covered | manage_prefab create from prefab instance |
 | `create_scene` | covered | scene create |
-| `create_script` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `create_script` | duplicate | `exec` — write the file under `Assets/`, then `refresh_unity` (CLI `editor refresh --compile`) to import it |
 | `create_timeline` | covered | manage_timeline create |
 | `delete_asset` | covered | manage_assets delete |
 | `delete_gameobject` | covered | manage_gameobject destroy |
@@ -67,13 +74,13 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `editor_status` | covered | status |
 | `editor_stop` | covered | manage_editor stop (CLI `editor stop`) |
 | `eval` | covered | exec |
-| `eval_file` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `eval_file` | duplicate | `exec` — `exec --file <path>` or stdin piped to `exec` |
 | `find_assets` | covered | manage_assets find |
 | `find_gameobjects` | covered | find_gameobjects |
 | `get_animation_clip` | covered | manage_animation get_clip |
 | `get_animator_controller` | covered | manage_animation get_controller |
 | `get_audio_settings` | covered | manage_settings get_audio |
-| `get_authoring_root` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `get_authoring_root` | duplicate | `exec` — `Application.dataPath` / `AssetDatabase` already name the authoring root |
 | `get_build_settings` | covered | build get_settings |
 | `get_component_properties` | covered | manage_components get |
 | `get_console_logs` | covered | console |
@@ -95,7 +102,7 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `get_time_settings` | covered | manage_settings get_time |
 | `get_timeline` | covered | manage_timeline get |
 | `hotreload_status` | excluded | runtime/hot-reload server expands locked Editor-only architecture |
-| `import_asset` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `import_asset` | covered | manage_assets import (CLI `manage_assets import --source <file> --path Assets/...`, shipped in Connector `0.1.3`) |
 | `instantiate_prefab` | covered | manage_prefab instantiate |
 | `lighting_bake_status` | covered | bake status lighting |
 | `list_build_profiles` | rejected | locked decision or unsafe/duplicative host operation |
@@ -116,7 +123,7 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `package_search` | covered | manage_packages search |
 | `package_status` | covered | manage_packages/task status |
 | `quit` | rejected | locked decision or unsafe/duplicative host operation |
-| `read_text_file` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `read_text_file` | duplicate | `exec` — `File.ReadAllText` inside the project (asset text also comes back from `manage_assets` reads) |
 | `recompile` | covered | editor refresh --compile |
 | `recompile_status` | covered | status |
 | `reload_file` | excluded | runtime/hot-reload server expands locked Editor-only architecture |
@@ -124,13 +131,13 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `remove_animation_curve` | covered | manage_animation remove_curve |
 | `remove_component` | covered | manage_components remove |
 | `remove_scene_from_build` | covered | build remove_scene |
-| `rename_asset` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `rename_asset` | covered | manage_assets move (CLI `manage_assets move --path <old> --new_path <new>`) |
 | `rename_gameobject` | covered | manage_gameobject set_name |
 | `revert_prefab_overrides` | covered | manage_prefab revert |
 | `run_tests` | covered | run_tests (CLI `test`) |
 | `runtime_status` | excluded | runtime/hot-reload server expands locked Editor-only architecture |
 | `save_all` | covered | scene save_all |
-| `save_prefab_contents` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `save_prefab_contents` | duplicate | `exec` — `PrefabUtility.SaveAsPrefabAsset` on the open Prefab Stage root; an instance-override save is `manage_prefab apply` |
 | `save_scene` | covered | scene save |
 | `screenshot` | covered | screenshot |
 | `search` | rejected | locked decision or unsafe/duplicative host operation |
@@ -138,7 +145,7 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `set_active_scene` | covered | scene set_active |
 | `set_animation_curve` | covered | manage_animation set_curve |
 | `set_audio_settings` | covered | manage_settings set_audio |
-| `set_authoring_root` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `set_authoring_root` | duplicate | `exec` — authoring root follows the open project; there is no second root to point at |
 | `set_autotick` | rejected | locked decision or unsafe/duplicative host operation |
 | `set_build_settings` | covered | build set_settings |
 | `set_component_properties` | covered | manage_components set |
@@ -157,9 +164,9 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `set_serialized_field` | covered | manage_components set |
 | `set_tag` | covered | manage_gameobject set_tag |
 | `set_tags_layers` | covered | manage_editor add_tag / remove_tag / add_layer / remove_layer |
-| `set_target_framerate` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `set_target_framerate` | duplicate | `exec` — `Application.targetFrameRate` is runtime state; the persisted `vsync_count` is `manage_settings set_quality` |
 | `set_time_settings` | covered | manage_settings set_time |
-| `set_timescale` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `set_timescale` | covered | manage_settings set_time (property `time_scale`, `Time.timeScale`) |
 | `set_transform` | covered | manage_gameobject set_transform |
 | `simulate_key` | covered | input keyboard |
 | `simulate_pointer` | covered | input mouse/click |
@@ -167,7 +174,7 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `switch_build_target_status` | rejected | locked decision or unsafe/duplicative host operation |
 | `test_status` | covered | run_tests (CLI `test --resume`) / task status |
 | `unpack_prefab` | covered | manage_prefab unpack |
-| `write_text_file` | duplicate | existing exec/filesystem/atomic tool already covers the workflow |
+| `write_text_file` | duplicate | `exec` — `File.WriteAllText` inside the project, then `refresh_unity` |
 
 ## Internal commands excluded
 
@@ -182,4 +189,5 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 
 ## Acceptance
 
-Final classification: **126 covered, 12 duplicate, 7 rejected, 6 excluded, 2 conditional**. No `planned` row remains. The conditional Project Auditor rows are not called implemented from absence-only tests.
+Final classification: **129 covered, 9 duplicate, 7 rejected, 6 excluded, 2 conditional**. No `planned` row remains. The conditional Project Auditor rows are not called implemented from absence-only tests.
+

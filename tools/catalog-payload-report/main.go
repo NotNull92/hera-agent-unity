@@ -42,6 +42,7 @@ func run(args []string, stdin io.Reader, stdout io.Writer) (int, error) {
 	options := reportOptions{}
 	flags.IntVar(&options.WarnProfileBytes, "warn-profile-bytes", 24_000, "warning budget for one normalized profile")
 	flags.IntVar(&options.WarnToolBytes, "warn-tool-bytes", 20_000, "warning budget for one normalized tool")
+	flags.IntVar(&options.WarnCLISummaryBytes, "warn-cli-summary-bytes", 3_000, "warning budget for the CLI summary (name list + compact agent rules)")
 	flags.IntVar(&options.Largest, "largest", 10, "number of largest tools and actions to report")
 	if err := flags.Parse(args); err != nil {
 		return 0, fmt.Errorf("parse arguments: %w", err)

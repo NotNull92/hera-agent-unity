@@ -224,6 +224,15 @@ hera-agent-unity exec "return Application.unityVersion;" --security-mode restric
 
 **Caching**: Compiled assemblies are cached in `Library/HeraAgentCache/` and held in memory. The cache key includes the source, reference-set hash, language version, and a versioned compiler/compilation fingerprint, so incompatible compiler inputs cannot reuse an old DLL. The first call per Unity session is the cold path (csc invocation); identical follow-up calls skip both compile and load. Cache invalidates automatically on assembly reload. `--no-cache` bypasses every exec cache read and write: it compiles against transient reference arguments, does not load or store cached assemblies, and does not persist a DLL — including with `--check`.
 
+**Where exec is the intended answer, not a workaround**: nine commands in the
+official Unity CLI surface are served here rather than by a dedicated action —
+batch GameObject creation, script creation, `eval_file`, the authoring-root
+read/write pair, project text read/write, Prefab Stage save, and
+`Application.targetFrameRate`. `docs/UNITY_PIPELINE_PARITY_MATRIX.md` names the
+exact call for each. Two more that used to be listed that way are now declared
+actions: `manage_assets import` and `manage_assets move`, plus
+`manage_settings set_time` for `time_scale`.
+
 ---
 
 ## console

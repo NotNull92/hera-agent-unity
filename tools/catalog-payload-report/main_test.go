@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
@@ -50,6 +51,50 @@ func TestBuildReportIsDeterministicAndSeparatesRawBytesFromEstimates(t *testing.
 	}
 	if len(first.ActionDescribeSavings) != 1 || first.ActionDescribeSavings[0].ActionBytes == 0 {
 		t.Fatalf("action describe savings=%#v", first.ActionDescribeSavings)
+	}
+	if first.CLISummary.NameListBytes == 0 || first.CLISummary.AgentRulesBytes == 0 ||
+		first.CLISummary.TotalBytes != first.CLISummary.NameListBytes+first.CLISummary.AgentRulesBytes ||
+		first.CLISummary.RoughTokens.Central == 0 {
+		t.Fatalf("CLI summary=%#v", first.CLISummary)
+	}
+}
+
+func TestBuildReportWarnsWhenCLISummaryExceedsBudget(t *testing.T) {
+	catalog := &toolregistry.Catalog{
+		CatalogHash: "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Tools: []toolregistry.Tool{{
+			Name: "alpha", ContractMode: toolregistry.ContractStrict,
+			InputSchema: json.RawMessage(`{"type":"object"}`),
+		}},
+	}
+	result, err := buildReport(catalog, 1, reportOptions{Largest: 1, WarnCLISummaryBytes: 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, warning := range result.Warnings {
+		if strings.Contains(warning, "CLI summary uses") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("warnings=%#v", result.Warnings)
+	}
+}
+
+func TestCompareReportsFlagsCLISummaryGrowth(t *testing.T) {
+	baseline := report{
+		Schema:                reportSchema,
+		CatalogHash:           "sha256:same",
+		CLISummary:            cliSummarySize{NameListBytes: 400, AgentRulesBytes: 2_000, TotalBytes: 2_400},
+		DescriptionCharacters: 10,
+	}
+	current := baseline
+	current.CLISummary = cliSummarySize{NameListBytes: 500, AgentRulesBytes: 2_000, TotalBytes: 2_500}
+
+	comparison := compareReports(baseline, current)
+	if comparison.CLISummaryTotalBytesDelta != 100 || !comparison.Growth || !comparison.ReviewRequired {
+		t.Fatalf("comparison=%#v", comparison)
 	}
 }
 
