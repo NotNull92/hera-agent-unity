@@ -8,11 +8,11 @@ namespace HeraAgent
     /// in its high bits, so the id travels as the full <c>EntityId.ToULong</c> value and the reverse
     /// is <c>EntityId.FromULong</c>. Unity 6000.6 removed the <c>int</c> ↔ <c>EntityId</c>
     /// conversions and turned the int-based lookups into runtime stubs, so a 32-bit id cannot resolve
-    /// an object on this version.
+    /// an object on this version. Ids are scoped to the current Editor process; persist global_id instead.
     /// </summary>
     internal static class EntityIdCompat
     {
-        /// <summary>Resolve a Unity object from its 64-bit (instance/entity) id.</summary>
+        /// <summary>Resolve a 64-bit id in this Editor process; after restart it may identify a different object.</summary>
         public static Object ToObject(long id)
         {
             var entityId = UnityEngine.EntityId.FromULong(unchecked((ulong)id));

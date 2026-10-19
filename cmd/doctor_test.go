@@ -167,7 +167,7 @@ func TestExtractCompactAgentRules(t *testing.T) {
 	}
 
 	const (
-		compactAgentRulesBaselineUTF8Bytes = 2277
+		compactAgentRulesBaselineUTF8Bytes = 2368
 		compactAgentRulesBaselineNewlines  = 28
 	)
 	if got := len([]byte(out)); got != compactAgentRulesBaselineUTF8Bytes {

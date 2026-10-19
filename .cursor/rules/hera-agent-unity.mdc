@@ -294,6 +294,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 
 | You want to … | Use | Notes |
 |---|---|---|
+| Find GameObject targets | `find_gameobjects --fields instance_id,name,global_id` | `instance_id` is session-scoped; store `global_id` and re-resolve it for references that must survive an Editor restart. |
 | Active scene name / path / dirty | `scene info` | Returns active + loaded scenes in one shot. |
 | Open / save / close a scene | `scene load <path>` / `scene save` / `scene close` | Modes: single (default), additive. |
 | Read recent console errors | `console --type error` | Default 20 entries; pagination via `--lines` + `--since`. |
@@ -429,6 +430,8 @@ Costs a fraction of a wrong `exec` round-trip plus a stack trace.
 ## 4. Pitfalls
 
 ### 4.1 `GameObject.Find` is active-only
+
+`instance_id` is scoped to the current Editor process and may identify another object after a restart. Store `global_id` and explicitly re-resolve it for references that must survive an Editor restart (with the saved scene loaded).
 
 `Find` walks the active object graph. An object you just `SetActive(false)`'d is invisible to it; subsequent `Find` returns `null` → `NullReferenceException` on the next member access.
 

@@ -1,10 +1,26 @@
 # Active Development Handoff
 
 Current state (2026-10-19): **M1 and M2 are implemented; the support floor is now
-Unity 6.6 (`6000.6`).** Connector `0.2.0` (unreleased) requires `6000.6+`, M1 =
+Unity 6.6 (`6000.6`).** Connector `0.2.1` (unreleased) requires `6000.6+`, M1 =
 contract hardening plus MCP removal (CLI `v0.3.0`), M2 = catalog rebaseline (CLI
 `v0.3.1`). M3+ is not authorized. Per-release detail lives in `CHANGELOG.md`;
 this file records only current state and what is open.
+
+Step 6 fix A is implemented for **CLI v0.3.2 / Connector 0.2.1**, without a tag
+or release: preserve integer literals in params/batch/flags, reject integers
+outside signed 64-bit range before conversion, and document process-scoped
+`instance_id` values. Persist `global_id` and explicitly re-resolve after restart.
+Atomic batch hardening (B), Reversible classification, and M3+ remain excluded.
+
+Implementation verification on a disposable `6000.6.6f1` project: 48/48 boundary
+requests passed (40 `OBJECT_NOT_FOUND`, 8 `INVALID_ARGUMENT`, 0 `INTERNAL_ERROR`);
+Connector suite 28 passed / 0 failed / 1 skipped (Timeline package absent).
+Normal install and restored manifest contain no test sources in the production
+response file and no test assembly. Go/static gates and exact-source compilation
+passed. Independent review and its separate fixture pass are tracked separately;
+these implementation results do not substitute for that review.
+Catalog hash remains `3649a714…`, 34 tools / 133 actions. Compact rules increased
+91 B to 2,368 B; CLI summary is now 2,845 B, within the 2,500 B rules budget.
 
 ## Step 6 queue (2026-10-17)
 

@@ -654,7 +654,7 @@ npx skills add NotNull92/hera-agent-unity --skill hera-agent-unity --agent codex
 hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 ```
 
-The compact default guidance is intentionally small. Its reviewed baseline is **2,277 UTF-8 bytes** and contains the important rules for bootstrap, targeting, approvals, safety, and verification. The full guide is available on demand.
+The compact default guidance is intentionally small. Its reviewed baseline is **2,368 UTF-8 bytes** and contains the important rules for bootstrap, targeting, approvals, safety, and verification. The full guide is available on demand.
 
 This repository also ships templates for Cursor, Copilot, AntiGravity, Continue, and other agent environments under [examples/rules](examples/rules).
 
@@ -723,6 +723,8 @@ typed execution, `exec` when no dedicated command exists.
 ---
 
 ## Current release
+
+The source tree also contains the **unreleased CLI v0.3.2 / Connector 0.2.1 candidate**, which preserves integer literals and documents Editor-session-scoped instance IDs. No tag or release has been published for this candidate.
 
 - CLI / GitHub Release: **v0.3.0** with five native binaries
 - npm: **0.3.0** (`latest`)

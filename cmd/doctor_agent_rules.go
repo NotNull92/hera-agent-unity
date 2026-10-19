@@ -130,7 +130,7 @@ const compactAgentRulesBody = "## Bootstrap\n\n" +
 	"Confirm the selected project's full path before mutation. With no selector, Hera prefers a current-working-directory match and then the most recent live heartbeat. After selection, the normalized project path remains the identity across port changes. Use `--project <full-path>` when the task names a specific project.\n\n" +
 	"## Working Rules\n\n" +
 	"1. Observe only the state needed for the current decision. Prefer dedicated tools and bounded projections such as `list --compact`, `find_gameobjects --ids`, `console --type error --lines 20`, and shallow `exec --depth 1`.\n" +
-	"2. Use dedicated commands before `exec`. For side-effecting `exec`, return `null` or nothing. Return primitive fields or instance IDs, never a full Unity object.\n" +
+	"2. Use dedicated commands before `exec`. For side-effecting `exec`, return `null` or nothing. Return primitive fields or instance IDs, never a full Unity object. Instance IDs are session-scoped; store `global_id` and re-resolve after an Editor restart.\n" +
 	"3. Branch on stable error `code` values. Do not scrape message wording.\n" +
 	"4. After a mutation, verify compile or Editor state, check console errors, and re-read only the changed target. Do not claim success from the request alone.\n" +
 	"5. Never blindly resend a mutation after timeout or response loss. Preserve the operation ID and follow `OPERATION_OUTCOME_UNKNOWN`, target-restart, target-loss, and port-mismatch evidence.\n" +

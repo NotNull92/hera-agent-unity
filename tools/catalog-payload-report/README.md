@@ -11,7 +11,7 @@ rather than provider billing claims.
 Game Feel, De-slop, a stricter verification loop), so a checked-in baseline is
 reproducible on any machine. Its default warning budget is 3,000 bytes
 (`--warn-cli-summary-bytes`); `agent_rules_bytes` is the compact rules half that
-`README.md` publishes as the reviewed 2,277-byte default.
+`README.md` publishes as the reviewed 2,368-byte default.
 
 ## Generate a report
 

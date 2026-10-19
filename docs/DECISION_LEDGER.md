@@ -266,3 +266,14 @@ on preference.
   still asserted the six-feature heartbeat from before M1-b, and
   `PortStabilityTests` had never been wired into `ReleaseGateTests`, so the
   M1-c suite was compiled but never executed.
+
+## Step 6 fix A — integer literal preservation and session-scoped identity (CLI v0.3.2 / Connector 0.2.1)
+
+Implemented 2026-10-19; candidate only, with no tag or release.
+
+- CLI params and batch file/stdin decoding use `json.Number`; numeric flags preserve signed 64-bit integers and canonicalize overflowing integer spellings as JSON numbers. Trailing JSON remains rejected; bool/string behavior is unchanged.
+- Connector validation rejects out-of-Int64 integer tokens with `INVALID_ARGUMENT` before numeric conversion and compares declared integer bounds without a double round-trip. No new schema bounds or catalog descriptions were added.
+- `instance_id` is scoped to the Editor process; after restart a reused number may identify another object. Persist the existing `global_id` and explicitly re-resolve it. No new session-handle protocol was added.
+- Live `6000.6.6f1` verification: 12 literals × typed/flag/params/batch = 48/48 passed, with exact literals retained; 40 `OBJECT_NOT_FOUND`, 8 `INVALID_ARGUMENT`, 0 `INTERNAL_ERROR`. Int64 endpoints retain the not-found behavior. Connector suite: 28 passed, 0 failed, 1 skipped (Timeline absent); normal install/restoration excludes test sources and assembly. Exact-source compile and Go/static gates passed.
+- Production catalog remains 34 tools / 133 actions, normalized 268,413 B, hash `3649a7147a3f1847127f054a2d3926b26068821691cff1744a5c232be9f3aa93`. Only compact rules and their derived totals change: 2,277 → 2,368 B (+91), CLI summary 2,754 → 2,845 B. Rules remain within 2,500 B; rough token estimates are derived, not provider billing measurements.
+- Atomic batch hardening, Reversible classification, dispatch-delay changes, and other M3+ work are excluded. Independent verification uses a separate fixture and is not claimed by the implementation measurements above.

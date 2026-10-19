@@ -28,8 +28,9 @@ Output projection:
                              scene, active, global_id, or all (all except
                              global_id). Default: instance_id,name.
                              global_id is a durable handle that survives
-                             domain reloads; every tool that takes a path
-                             target also accepts it.
+                             domain reloads. Store and explicitly re-resolve
+                             it after an Editor restart with the saved scene
+                             loaded; path targets also accept this handle.
 
 Results are sorted by hierarchy path for stable pagination across calls.
 
@@ -49,7 +50,9 @@ Notes:
   - Prefab assets and HideFlags.HideInHierarchy objects are stripped — only
     things a user would see in the Hierarchy window are returned.
   - Combine with manage_gameobject by feeding 'instance_id' back in
-    (survives renames and reparenting; preferred over path).
+    (survives renames and reparenting within the same Editor process).
+    Numeric ids may identify different objects after an Editor restart;
+    store global_id and explicitly re-resolve it for persistent references.
   - Use --fields all for the legacy verbose shape with path, scene, and active.
 
 Examples:

@@ -163,6 +163,7 @@ GameObjects:
   manage_gameobject set_tag --path </R/C> --tag <existing>
   manage_gameobject set_layer --path </R/C> --layer <name|index>
   manage_gameobject get_transform --instance_id <N>|--path </R/C>
+  instance_id is session-scoped; store global_id and re-resolve after an Editor restart.
 
   Primitives: cube, sphere, capsule, cylinder, plane, quad (omit for empty GameObject)
 

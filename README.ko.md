@@ -656,7 +656,7 @@ npx skills add NotNull92/hera-agent-unity --skill hera-agent-unity --agent codex
 hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 ```
 
-기본 compact 규칙은 의도적으로 작습니다. 검토된 기준은 **UTF-8 2,277바이트**이며 bootstrap, 대상 선택, 승인, 안전, 검증에 필요한 핵심 규칙만 항상 읽게 합니다. 전체 가이드는 필요할 때 가져옵니다.
+기본 compact 규칙은 의도적으로 작습니다. 검토된 기준은 **UTF-8 2,368바이트**이며 bootstrap, 대상 선택, 승인, 안전, 검증에 필요한 핵심 규칙만 항상 읽게 합니다. 전체 가이드는 필요할 때 가져옵니다.
 
 Cursor, Copilot, AntiGravity, Continue 등 다른 환경용 템플릿도 [examples/rules](examples/rules)에 있습니다.
 
@@ -724,6 +724,8 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 ---
 
 ## 현재 릴리스
+
+소스에는 정수 리터럴 보존과 instance_id의 Editor 세션 범위를 명시한 **미출시 CLI v0.3.2 / Connector 0.2.1 후보**도 포함되어 있습니다. 이 후보의 태그·릴리스는 발행하지 않았습니다.
 
 - CLI / GitHub Release: **v0.3.0**, native binary 5종
 - npm: **0.3.0** (`latest`)

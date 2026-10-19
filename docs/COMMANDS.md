@@ -896,7 +896,7 @@ GameObject (required for `add` / `list`, and for `remove` / `get` / `set` unless
 
 | Flag | Description |
 |:---|:---|
-| `--instance_id <N>`   | Preferred. Survives renames and reparenting. A 64-bit id: on Unity `6000.6+` it carries the full EntityId value, which is larger than 32 bits. |
+| `--instance_id <N>`   | Preferred within the same Editor process; survives renames and reparenting. A 64-bit id: on Unity `6000.6+` it carries the full EntityId value, which is larger than 32 bits. After an Editor restart the number may identify another object; store `global_id` and explicitly re-resolve it for persistent references. |
 | `--path </Root/Child>` | Hierarchy path; fallback walk covers inactive subtrees. |
 
 Component:
@@ -996,7 +996,7 @@ hera-agent-unity find_gameobjects [filters] [pagination]
 |:---|:---|
 | `--ids` | Return `results` as bare instance IDs. Lowest-token handoff to `manage_*` tools. |
 | `--names` | Return `results` as bare names. |
-| `--fields <csv>` | Return only selected object fields: `instance_id`, `name`, `path`, `scene`, `active`, `global_id` (durable handle that survives domain reloads), or `all` (all except `global_id`). Default: `instance_id,name`. |
+| `--fields <csv>` | Return only selected object fields: `instance_id`, `name`, `path`, `scene`, `active`, `global_id` (durable handle; store and explicitly re-resolve it after an Editor restart, with the saved scene loaded), or `all` (all except `global_id`). Default: `instance_id,name`. |
 
 ### Return shape
 
@@ -1030,14 +1030,14 @@ hera-agent-unity find_gameobjects --name Pickup --fields instance_id,name,path
 
 **Notes**:
 - Prefab assets and `HideFlags.HideInHierarchy` objects are stripped — only items visible in the Hierarchy window are returned.
-- Feed an `instance_id` from a result back into `manage_gameobject` for follow-up edits — it survives renames and reparenting (path can change underneath you).
+- Feed an `instance_id` from a result back into `manage_gameobject` for follow-up edits in the same Editor process — it survives renames and reparenting (path can change underneath you). Store `global_id` and explicitly re-resolve it after an Editor restart; a stale numeric id may identify another object.
 - `--component` resolves through `TypeCache.GetTypesDerivedFrom<Component>()` so user-defined `MonoBehaviour`s work too.
 
 ---
 
 ## manage_gameobject
 
-GameObject CRUD inside the active scene(s). Target by `instance_id` (preferred — survives renames and duplicates) or hierarchy `path` (`/Root/Child/...`).
+GameObject CRUD inside the active scene(s). Target by `instance_id` (preferred within the same Editor process — survives renames and reparenting) or hierarchy `path` (`/Root/Child/...`). Store `global_id` and explicitly re-resolve it after an Editor restart; numeric ids can be reused for different objects.
 
 ```bash
 hera-agent-unity manage_gameobject <action> [flags]
@@ -1063,7 +1063,7 @@ hera-agent-unity manage_gameobject <action> [flags]
 
 | Flag | Description | Applies to |
 |:---|:---|:---|
-| `--instance_id <N>` | Target by InstanceID. Preferred. | all except `create` |
+| `--instance_id <N>` | Target by InstanceID. Preferred within the same Editor process; store `global_id` for persistent references. | all except `create` |
 | `--path </Root/Child>` | Target by hierarchy path. Fallback walk covers inactive subtrees. | all except `create` |
 | `--name <str>` | New GameObject name / rename target. | `create`, `set_name` |
 | `--primitive <kind>` | `cube`, `sphere`, `capsule`, `cylinder`, `plane`, `quad`. Omit for an empty GameObject. | `create` |
