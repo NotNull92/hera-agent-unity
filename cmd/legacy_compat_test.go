@@ -47,7 +47,7 @@ func TestLegacyParamsPrecedence(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if params["type"] != "error" || params["lines"] != 5 {
+	if params["type"] != "error" || params["lines"] != int64(5) {
 		t.Fatalf("params=%#v", params)
 	}
 }

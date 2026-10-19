@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"math/big"
 	"os"
 	"sort"
 	"strconv"
@@ -338,7 +340,7 @@ func buildParams(args []string, base map[string]interface{}) (map[string]interfa
 	}
 
 	if raw, ok := flags["params"]; ok {
-		if jsonErr := json.Unmarshal([]byte(raw), &params); jsonErr != nil {
+		if jsonErr := decodeJSONNumbers([]byte(raw), &params); jsonErr != nil {
 			return nil, nil, fmt.Errorf("invalid JSON in --params: %w", jsonErr)
 		}
 	}
@@ -346,8 +348,11 @@ func buildParams(args []string, base map[string]interface{}) (map[string]interfa
 		if k == "params" {
 			continue
 		}
-		if n, err := strconv.Atoi(v); err == nil {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil {
 			params[k] = n
+		} else if n, ok := new(big.Int).SetString(v, 10); ok {
+			// Normalize optional '+' and leading zeroes to valid JSON syntax.
+			params[k] = json.Number(n.String())
 		} else if v == "true" {
 			params[k] = true
 		} else if v == "false" {
@@ -362,6 +367,22 @@ func buildParams(args []string, base map[string]interface{}) (map[string]interfa
 	}
 
 	return params, positional, nil
+}
+
+func decodeJSONNumbers(data []byte, target any) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.UseNumber()
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		if err == nil {
+			return errors.New("multiple JSON values")
+		}
+		return err
+	}
+	return nil
 }
 
 // readExecFileIfPresent strips --file <path> and prepends file contents as the

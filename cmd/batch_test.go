@@ -282,3 +282,60 @@ func captureBatchOutput(t *testing.T, fn func() error) (string, string, error) {
 
 	return string(stdout), string(stderr), callErr
 }
+
+func TestBatchCmd_PreservesIntegerLiterals(t *testing.T) {
+	for _, source := range []string{"file", "stdin"} {
+		t.Run(source, func(t *testing.T) {
+			for _, literal := range []string{"9007199254740993", "9223372036854775807", "9223372036854775808", "-9223372036854775808", "-9223372036854775809"} {
+				payload := `{"commands":[{"command":"manage_gameobject","params":{"instance_id":` + literal + `}}]}`
+				old := batchStdin
+				t.Cleanup(func() { batchStdin = old })
+				var args []string
+				if source == "file" {
+					file := filepath.Join(t.TempDir(), "batch.json")
+					if err := os.WriteFile(file, []byte(payload), 0600); err != nil {
+						t.Fatal(err)
+					}
+					args = []string{"--file", file}
+				} else {
+					batchStdin = &mockFile{data: []byte(payload), mode: os.ModeNamedPipe}
+				}
+				sent := false
+				send := func(_ context.Context, _ *client.Instance, req client.BatchCommandRequest, _ int) (*client.BatchCommandResponse, error) {
+					sent = true
+					params := req.Commands[0].Params.(map[string]any)
+					n, ok := params["instance_id"].(json.Number)
+					if !ok || n.String() != literal {
+						t.Fatalf("integer changed: %#v", params)
+					}
+					encoded, err := json.Marshal(params)
+					if err != nil || string(encoded) != `{"instance_id":`+literal+`}` {
+						t.Fatalf("wire changed: %s, %v", encoded, err)
+					}
+					return &client.BatchCommandResponse{Completed: 1}, nil
+				}
+				if err := batchCmd(context.Background(), args, testBatchRuntime(send, &client.Instance{Port: 8090}, 1000)); err != nil {
+					t.Fatal(err)
+				}
+				if !sent {
+					t.Fatal("batch was not sent")
+				}
+			}
+		})
+	}
+}
+
+func TestBatchCmd_RejectsTrailingJSON(t *testing.T) {
+	old := batchStdin
+	t.Cleanup(func() { batchStdin = old })
+	for _, suffix := range []string{` {}`, ` trailing`} {
+		batchStdin = &mockFile{data: []byte(`{"commands":[]}` + suffix), mode: os.ModeNamedPipe}
+		send := func(context.Context, *client.Instance, client.BatchCommandRequest, int) (*client.BatchCommandResponse, error) {
+			t.Fatal("invalid request sent")
+			return nil, nil
+		}
+		if err := batchCmd(context.Background(), nil, testBatchRuntime(send, &client.Instance{Port: 8090}, 1000)); err == nil {
+			t.Fatal("trailing JSON accepted")
+		}
+	}
+}

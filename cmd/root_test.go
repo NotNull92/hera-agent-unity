@@ -81,7 +81,7 @@ func TestBuildParams_IntParsing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if p["lines"] != 50 {
+	if p["lines"] != int64(50) {
 		t.Errorf("expected lines=50, got %v", p["lines"])
 	}
 }
@@ -114,7 +114,7 @@ func TestBuildParams_BaseParams(t *testing.T) {
 	if p["action"] != "hierarchy" {
 		t.Errorf("expected action=hierarchy, got %v", p["action"])
 	}
-	if p["depth"] != 5 {
+	if p["depth"] != int64(5) {
 		t.Errorf("expected depth=5, got %v", p["depth"])
 	}
 }
@@ -129,7 +129,7 @@ func TestBuildParams_ExplicitFlagsOverrideParamsJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if p["lines"] != 20 {
+	if p["lines"] != int64(20) {
 		t.Errorf("expected lines=20, got %v", p["lines"])
 	}
 	if p["clear"] != true {
@@ -171,4 +171,42 @@ func sliceEqual(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+func TestBuildParams_PreservesIntegerLiterals(t *testing.T) {
+	for _, literal := range []string{"9007199254740993", "9223372036854775807", "9223372036854775808", "-9223372036854775808", "-9223372036854775809", "18446744073709551615"} {
+		for _, args := range [][]string{{"--params", `{"id":` + literal + `}`}, {"--id", literal}} {
+			p, _, err := buildParams(args, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			encoded, err := json.Marshal(p)
+			if err != nil || string(encoded) != `{"id":`+literal+`}` {
+				t.Fatalf("%v: %s, %v", args, encoded, err)
+			}
+		}
+	}
+	for _, literal := range []string{"+09223372036854775808", "0009223372036854775808"} {
+		p, _, err := buildParams([]string{"--id", literal}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		encoded, err := json.Marshal(p)
+		if err != nil || string(encoded) != `{"id":9223372036854775808}` {
+			t.Fatalf("%s: %s, %v", literal, encoded, err)
+		}
+	}
+	p, _, err := buildParams([]string{"--params", `{"enabled":false,"name":"test","ratio":1.25}`, "--enabled", "true", "--depth", "3"}, map[string]any{"action": "get"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(p)
+	if err != nil || string(encoded) != `{"action":"get","depth":3,"enabled":true,"name":"test","ratio":1.25}` {
+		t.Fatalf("regression: %s, %v", encoded, err)
+	}
+	for _, raw := range []string{`{"id":1} {"id":2}`, `{"id":1} garbage`} {
+		if _, _, err := buildParams([]string{"--params", raw}, nil); err == nil {
+			t.Fatalf("accepted trailing JSON: %s", raw)
+		}
+	}
 }

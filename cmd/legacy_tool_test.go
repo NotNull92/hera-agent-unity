@@ -18,7 +18,7 @@ func TestRunLegacyToolCommandPreservesDynamicPassthrough(t *testing.T) {
 	if err != nil || response == nil || command != "custom_probe" {
 		t.Fatalf("response=%#v command=%q error=%v", response, command, err)
 	}
-	if params["count"] != 3 {
+	if params["count"] != int64(3) {
 		t.Fatalf("count=%#v", params["count"])
 	}
 	args, ok := params["args"].([]string)

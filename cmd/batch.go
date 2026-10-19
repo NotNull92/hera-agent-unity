@@ -48,7 +48,7 @@ func batchCmd(ctx context.Context, args []string, runtime batchRuntime) error {
 	}
 
 	var req client.BatchCommandRequest
-	if err := json.Unmarshal(data, &req); err != nil {
+	if err := decodeJSONNumbers(data, &req); err != nil {
 		return fmt.Errorf("invalid JSON in batch data: %w", err)
 	}
 
