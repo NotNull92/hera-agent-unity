@@ -11,13 +11,11 @@ namespace HeraAgent
     {
         public string Text { get; }
         public string DocSlug { get; }
-        public string MinDocsVersion { get; }
 
-        public PitfallEntry(string text, string docSlug = null, string minDocsVersion = null)
+        public PitfallEntry(string text, string docSlug = null)
         {
             Text = text;
             DocSlug = docSlug;
-            MinDocsVersion = minDocsVersion;
         }
     }
 
@@ -287,20 +285,12 @@ namespace HeraAgent
             if (string.IsNullOrEmpty(fullTypeName)) return Array.Empty<RenderedPitfall>();
             if (!s_Catalog.TryGetValue(fullTypeName, out var entries)) return Array.Empty<RenderedPitfall>();
 
-            var docsVersion = UnityVersionCompat.CurrentDocsVersion();
             var rendered = new List<RenderedPitfall>(entries.Length);
             foreach (var e in entries)
             {
-                if (!IsApplicable(e, docsVersion)) continue;
                 rendered.Add(Render(e));
             }
             return rendered;
-        }
-
-        private static bool IsApplicable(PitfallEntry e, string docsVersion)
-        {
-            return string.IsNullOrEmpty(e.MinDocsVersion)
-                || UnityVersionCompat.DocsVersionAtLeast(docsVersion, e.MinDocsVersion);
         }
 
         private static RenderedPitfall Render(PitfallEntry e)

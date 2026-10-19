@@ -32,7 +32,7 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `add_timeline_track` | covered | manage_timeline add_track |
 | `apply_prefab_overrides` | covered | manage_prefab apply |
 | `attach_script` | covered | manage_components add |
-| `audit` | conditional | 6000.0/6000.3 expose no Project Auditor assembly and 6000.5+ exposes `UnityEditor.ProjectAuditorModule`, but no fixture — including the current `6000.6` representative — has `com.unity.project-auditor-rules`, so no positive rules-enabled fixture exists |
+| `audit` | conditional | `6000.0`/`6000.3` exposed no Project Auditor assembly and `6000.5`+ exposes `UnityEditor.ProjectAuditorModule` (the `6000.6` representative included), but no fixture has `com.unity.project-auditor-rules`, so no positive rules-enabled fixture exists |
 | `audit_status` | conditional | same prerequisite evidence as `audit`; production code intentionally omitted until a rules-enabled fixture can prove non-empty modules/results |
 | `bake_lighting` | covered | bake start lighting |
 | `bake_navmesh` | covered | bake start navmesh |

@@ -84,11 +84,7 @@ namespace HeraAgent
 
         static Component FindEventSystem(Type eventSystemType)
         {
-#if UNITY_6000_5_OR_NEWER
             return Object.FindAnyObjectByType(eventSystemType) as Component;
-#else
-            return Object.FindFirstObjectByType(eventSystemType) as Component;
-#endif
         }
 
         static bool TryAdd(GameObject gameObject, Type componentType)

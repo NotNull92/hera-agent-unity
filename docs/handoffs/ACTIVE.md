@@ -19,7 +19,8 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | M1-c | Done | Port-stability regression tests, now wired into `ReleaseGateTests`. No behavior change |
 | M1-d | Done | MCP removal: `internal/mcpserver`, `mcp` command + tests, `tools/benchmark-mcp`, `server.json`, `mcp-publish.yml`, `cmd/help/mcp.txt`, MCP annotation mapping, npm `mcpName`, `docs/MCP.md`, all `HERA_MCP_*` |
 | M2 | Done | Catalog rebaseline: `cli_summary` replaces `mcp_compact` in the payload report, the 12 former `duplicate` rows name their exact primitive (2 became `covered` in `0.1.3`, `set_timescale` was already covered, 9 stay `exec`), baseline regenerated. **34 tools / 133 actions unchanged** |
-| Support floor | Done | Unity 6.6 (`6000.6`): `package.json` floor, `com.unity.ugui` declared, `instance_id` widened to 64-bit (EntityId `FromULong`/`ToULong`), two 6000.6 API updates. `6000.0`-`6000.5` move to Connector `0.1.3` |
+| Support floor | Done | Unity 6.6 (`6000.6`): `package.json` floor, `com.unity.ugui` declared, `instance_id` widened to 64-bit (EntityId `FromULong`/`ToULong`), two 6000.6 API updates |
+| Pre-6.6 cleanup | Done | Every version-gated `#if`, the reflected int ↔ EntityId bridge, the docs-bucket selection, the pitfalls min-docs filter and the 6000.0/6000.3 docs bundles are gone; the shipped docs corpus is rebuilt from the Unity 6.6 archive, so `Docs:` reports `6000.6` |
 | M3+ | Not authorized | Dispatch-delay reduction and the rest of §1 in the plan |
 
 **Compatibility for this release: `6000.6.6f1` is the single representative and

@@ -44,6 +44,7 @@ namespace HeraAgent.Tests
             nameof(ToolDiscovery),
             nameof(ToolProfiles),
             nameof(ToolSafety),
+            nameof(UnityDocsStore),
         };
 
         [Test]
@@ -126,6 +127,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void ToolSafety() => ToolSafetyTests.RunTests();
+
+        [Test]
+        public void UnityDocsStore() => UnityDocsStoreTests.RunTests();
 
         [Test]
         public void CanonicalManifestMatchesNUnitWrappers()

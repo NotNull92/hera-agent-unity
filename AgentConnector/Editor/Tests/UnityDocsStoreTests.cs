@@ -14,8 +14,9 @@ namespace HeraAgent.Tests
 
             allPassed &= ExpectTrue("docs index loaded", UnityDocsStore.Count > 1000);
             allPassed &= ExpectTrue(
-                "loaded docs version matches current bucket or fallback",
-                loadedDocsVersion == currentDocsVersion || loadedDocsVersion == UnityVersionCompat.Docs6000_0);
+                "loaded docs version is the shipped bucket",
+                loadedDocsVersion == currentDocsVersion);
+            allPassed &= ExpectTrue("shipped bucket is 6000.6", currentDocsVersion == "6000.6");
             allPassed &= ExpectTrue("legacy GameObject page present", UnityDocsStore.Lookup("GameObject") != null);
             allPassed &= ExpectTrue("property page present", UnityDocsStore.Lookup("Rigidbody-mass") != null);
             allPassed &= ExpectTrue("property signature present", !string.IsNullOrEmpty(UnityDocsStore.Lookup("Rigidbody-mass")?.signature));

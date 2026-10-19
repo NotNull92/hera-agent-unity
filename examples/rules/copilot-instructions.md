@@ -46,4 +46,4 @@ hera-agent-unity describe_type UnityEditor.AssetDatabase --members methods --lim
 hera-agent-unity find_method Refresh --namespace UnityEditor --limit 20
 ```
 
-Unity 6000.0, 6000.3, and 6000.5 can differ. Do not assume one Unity 6 minor behaves like another.
+Unity 6 minors can differ. Do not assume one Unity 6 minor behaves like another.

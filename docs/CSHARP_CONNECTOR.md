@@ -383,8 +383,8 @@ Certain operations force a temporary state to prevent the CLI from seeing premat
   "projectPath": "/Users/admin/Unity/MyProject",
   "port": 8090,
   "pid": 12345,
-  "unityVersion": "6000.3.5f2",
-  "docsVersion": "6000.3",
+  "unityVersion": "6000.6.6f1",
+  "docsVersion": "6000.6",
   "compiler": { "cscKind": "unity_dotnet_sdk_roslyn", "dotnetKind": "unity_netcore_runtime" },
   "timestamp": 1714372800000,
   "compileErrors": false
@@ -436,7 +436,7 @@ Shared target resolution: `instance_id` (highest priority) or `path`, with optio
 
 ### EntityIdCompat.cs
 
-Unity 6000.3 renamed `InstanceIDToObject`/`GetInstanceID` to `EntityIdToObject`/`GetEntityId` and made the old API obsolete-as-error; `6000.6` then removed the `int` ↔ `EntityId` conversions entirely and turned the int-based lookups into runtime stubs. This shim picks the right path per compile-time Unity version: the full 64-bit id (`EntityId.FromULong`/`ToULong`) on `6000.6+`, the reflected int bridge on `6000.3`-`6000.5`, and `InstanceIDToObject` below that. `IdOf`/`ToObject` are the only place the id width is decided, so callers carry `long` without caring which branch is compiled.
+The id contract on Unity 6.6+. An EntityId is 64-bit and carries a kind tag in its high bits, so the id travels as the full `EntityId.ToULong` value and the reverse is `EntityId.FromULong`. `6000.6` removed the `int` ↔ `EntityId` conversions and turned the int-based lookups into runtime stubs, so a 32-bit id cannot resolve an object. `IdOf`/`ToObject` are the only place the id width is decided; callers carry `long`.
 
 ### GameObjectComponents.cs
 
@@ -448,7 +448,7 @@ Edit-distance helper with a bounded early-exit variant used by command/type/docs
 
 ### UnityDocsStore.cs
 
-Selects the bundled `unity_docs_<version>.jsonl.gz.bytes` file for the current Unity version, falling back to the 6000.0 bundle when an exact bucket is not present. Loads it into a dictionary keyed by class/property/method name. Provides exact lookup and prefix-bucketed Levenshtein suggestions.
+Selects the shipped `unity_docs_6000.6.jsonl.gz.bytes` file (the bucket the supported Unity 6.6+ range documents with), with a fallback path for a missing file. Loads it into a dictionary keyed by class/property/method name. Provides exact lookup and prefix-bucketed Levenshtein suggestions.
 
 ### BundleStore.cs
 
@@ -464,7 +464,7 @@ Owns a `BundleStore<Entry>` over `ui_slop_1.0.jsonl.gz.bytes` (49 Unity UI-slop 
 
 ### UnityPitfalls.cs
 
-Curated catalog of Unity API pitfalls attached to `describe_type` responses. Entries can carry a minimum docs bucket so Unity 6-only advice is hidden on 2022.3/2023.2.
+Curated catalog of Unity API pitfalls attached to `describe_type` responses.
 
 ### HeraSettings.cs
 
@@ -543,13 +543,13 @@ Thin wrapper around `AssetDatabase.ForceReserializeAssets`. Handles the "whole p
 
 ## Data Bundle
 
-`AgentConnector/Editor/Data/unity_docs_<version>.jsonl.gz.bytes` files are gzipped JSONL imported as `TextAsset`s. The current checkout still includes the legacy `unity_docs_6.0.jsonl.gz.bytes` file, which `UnityDocsStore` treats as the 6000.0 fallback. Regenerate a versioned bundle with:
+`AgentConnector/Editor/Data/unity_docs_6000.6.jsonl.gz.bytes` is gzipped JSONL imported as a `TextAsset`: the ScriptReference corpus the supported Unity 6.6+ range documents with. Regenerate it with:
 
 ```bash
 go run ./tools/build-unity-docs \
     --in  <path-to-Documentation/en> \
-    --out AgentConnector/Editor/Data/unity_docs_6000.0.jsonl.gz.bytes \
-    --unity-version 6000.0
+    --out AgentConnector/Editor/Data/unity_docs_6000.6.jsonl.gz.bytes \
+    --unity-version 6000.6
 ```
 
 `game_feel_1.0.jsonl.gz.bytes` is the Game Feel Mode knowledge base. Its checked-in source of truth is `tools/build-game-feel-docs/game_feel.jsonl`; regenerate with `go run ./tools/build-game-feel-docs`.

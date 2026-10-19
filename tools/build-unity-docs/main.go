@@ -5,14 +5,14 @@
 //
 //	go run ./tools/build-unity-docs \
 //	    --in  "$UNITY_DOCS_ROOT/Documentation/en" \
-//	    --out AgentConnector/Editor/Data/unity_docs_6000.0.jsonl.gz.bytes \
-//	    --unity-version 6000.0
+//	    --out AgentConnector/Editor/Data/unity_docs_6000.6.jsonl.gz.bytes \
+//	    --unity-version 6000.6
 //
 // Output line shape:
 //
 //	{"name":"Rigidbody-mass","title":"Rigidbody.mass","signature":"public float mass;",
 //	 "summary":"The mass of the rigidbody.","manual_url":"Manual/class-Rigidbody.html",
-//	 "scriptreference_url":"ScriptReference/Rigidbody-mass.html","unity_version":"6000.0"}
+//	 "scriptreference_url":"ScriptReference/Rigidbody-mass.html","unity_version":"6000.6"}
 //
 // `name` is the filename without `.html` so the Connector's existing
 // query→candidate-filename mapping doubles as the dict lookup key.
@@ -49,7 +49,7 @@ func main() {
 	out := flag.String("out", "",
 		"Output JSONL path (e.g. AgentConnector/Editor/Data/unity_docs_6.0.jsonl).")
 	unityVersion := flag.String("unity-version", "",
-		"Unity version label to write into every entry (e.g. 6000.0, 6000.3, 6000.5). If empty, parse per page.")
+		"Unity version label to write into every entry (e.g. 6000.6). If empty, parse per page.")
 	flag.Parse()
 
 	if *in == "" || *out == "" {

@@ -37,7 +37,7 @@ namespace HeraAgent
         }
 
         const string DataDir = "Editor/Data";
-        const string FallbackDocsVersion = UnityVersionCompat.Docs6000_0;
+        const string FallbackDocsVersion = UnityVersionCompat.DocsVersion;
 
         static Dictionary<string, Entry> s_index;
         static string[] s_keys;

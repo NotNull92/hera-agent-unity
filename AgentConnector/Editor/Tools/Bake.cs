@@ -302,18 +302,9 @@ namespace HeraAgent.Tools
                 var target = p.Get("target");
                 if (string.IsNullOrWhiteSpace(target))
                 {
-                    // 6000.5 deprecates the sort-mode overloads; earlier
-                    // buckets do not have the two-argument one.
-#if UNITY_6000_5_OR_NEWER
                     return UnityEngine.Object.FindObjectsByType(
                         SurfaceType,
                         UnityEngine.FindObjectsInactive.Include);
-#else
-                    return UnityEngine.Object.FindObjectsByType(
-                        SurfaceType,
-                        UnityEngine.FindObjectsInactive.Include,
-                        UnityEngine.FindObjectsSortMode.None);
-#endif
                 }
 
                 var (transform, resolveError) = TargetResolver.ResolveTransform(target);

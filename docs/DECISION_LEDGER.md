@@ -162,12 +162,15 @@ no Timeline package in the blank fixture), and the served catalog verified at
 description now states the id width (normalized catalog −4 bytes, tool
 descriptions unchanged), and the baseline was regenerated with it.
 
-Follow-ups deliberately left out of this change:
-- The `#if UNITY_6000_3_OR_NEWER` / `UNITY_6000_5_OR_NEWER` lower branches are now
-  compiled-out code. Removing them needs its own change plus a 6000.6 re-run.
-- The `unity_docs_6000.0` and `unity_docs_6000.3` bundles are unused on 6000.6
-  (`UnityVersionCompat` maps 6000.6 to the 6000.5 bundle). Removing ~2.7 MB means
-  deleting the bundles and changing the fallback constant.
+Follow-ups:
+- **Done in the same wave.** Every version-gated `#if`, the reflected
+  `int` ↔ `EntityId` bridge, the per-version docs-bucket selection, the pitfalls
+  minimum-docs filter, and the `unity_docs_6000.0`/`6000.3` bundles are removed:
+  none of them is reachable below the `6000.6` floor, so keeping them compiled-out
+  would only preserve unverified code. The shipped corpus was rebuilt from the
+  Unity 6.6 documentation archive (`unity_docs_6000.6`, 46,663 entries), so the
+  heartbeat and `status` now report `Docs: 6000.6` instead of falling back to the
+  6000.5 bucket.
 - Older Connectors still emit 32-bit ids; they belong to the `≤0.1.3` streams, so
   the two id widths never meet in one install.
 

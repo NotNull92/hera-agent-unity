@@ -113,11 +113,7 @@ namespace HeraAgent
         {
             var eventSystem = EventSystem.current;
             if (eventSystem == null)
-#if UNITY_6000_5_OR_NEWER
                 eventSystem = Object.FindAnyObjectByType<EventSystem>();
-#else
-                eventSystem = Object.FindFirstObjectByType<EventSystem>();
-#endif
 
             if (eventSystem == null)
                 return (null, new ErrorResponse("INPUT_NO_EVENT_SYSTEM", "No active EventSystem found."));
@@ -208,11 +204,7 @@ namespace HeraAgent
         {
             var (eventSystem, _) = ResolveEventSystem();
             var raycasters = new List<object>();
-#if UNITY_6000_5_OR_NEWER
             var allRaycasters = Object.FindObjectsByType<BaseRaycaster>(FindObjectsInactive.Exclude);
-#else
-            var allRaycasters = Object.FindObjectsByType<BaseRaycaster>(FindObjectsSortMode.None);
-#endif
             foreach (var raycaster in allRaycasters)
             {
                 if (raycaster == null) continue;

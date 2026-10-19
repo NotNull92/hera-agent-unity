@@ -1,8 +1,5 @@
 param(
     [string[]]$Versions = @(
-        "2022.3.62f2",
-        "2023.2.22f1",
-        "6000.5.6f1",
         "6000.6.6f1"
     ),
     [string]$HubRoot = (Join-Path $env:ProgramFiles "Unity\Hub\Editor"),

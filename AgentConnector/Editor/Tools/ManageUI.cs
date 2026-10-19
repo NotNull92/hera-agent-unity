@@ -357,11 +357,7 @@ namespace HeraAgent.Tools
         // Returns an existing Canvas or creates one (recording it in `created`).
         private static (GameObject go, ErrorResponse err) EnsureCanvas(List<string> created)
         {
-#if UNITY_6000_5_OR_NEWER
             var existing = Object.FindAnyObjectByType<Canvas>();
-#else
-            var existing = Object.FindFirstObjectByType<Canvas>();
-#endif
             if (existing != null) return (existing.gameObject, null);
             return CreateCanvas("Canvas", created);
         }

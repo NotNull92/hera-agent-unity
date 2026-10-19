@@ -10,10 +10,8 @@ powershell -ExecutionPolicy Bypass -File tools/unity-editor-inventory/inventory-
 ## Supported release-gate representative
 
 Hera targets **Unity 6.6+ (`6000.6` minimum)**, enforced by the `unity` field in
-`AgentConnector/package.json`. The release gate covers one representative Editor;
-`2022.3.62f2` and `2023.2.22f1` remain in the inventory as historical rows only,
-and `6000.5.6f1` is kept as the lower-boundary reference for the range that was
-supported through Connector `0.1.3`.
+`AgentConnector/package.json`. The release gate covers the single representative
+below, and the scanner's default version list contains only that Editor.
 
 | Bucket | Representative |
 |---|---|
@@ -26,52 +24,36 @@ Path token: `%UNITY_HUB_EDITOR%`
 Default resolver: `%ProgramFiles%\Unity\Hub\Editor` on Windows Unity Hub
 installs. Override the scanner with `-HubRoot` for non-default install roots.
 
-> **Regenerated 2026-10-19:** the support floor moved to `6000.6`, so
-> `6000.6.6f1` is the single release-gate representative. `6000.0.35f1` and
-> `6000.3.5f2` are gone from this workstation and are **out of scope** rather than
-> BLOCKED — projects on those streams stay on the last Connector verified for
-> them (`0.1.3`). `6000.5.6f1` is kept as the lower-boundary reference. The
-> `6000.6.6f1` representative is what the `v0.3.0` / Connector `0.2.0` release
-> carries, and it must not be described as compatibility for any other Unity line.
+> **Regenerated 2026-10-19:** `6000.6.6f1` is the single release-gate
+> representative of the `v0.3.0` / Connector `0.2.0` release, and its result must
+> not be described as compatibility for any other Unity line. Editors below the
+> floor are out of scope rather than BLOCKED.
 
 | Unity | Editor | uGUI | TMP | Entities | Built-in packages | Primary csc.dll | Primary dotnet |
 |---|---:|---:|---:|---:|---:|---|---|
-| `2022.3.62f2` | yes | `1.0.0` |  |  | 59 | `%UNITY_HUB_EDITOR%\2022.3.62f2\Editor\Data\DotNetSdkRoslyn\csc.dll` | `%UNITY_HUB_EDITOR%\2022.3.62f2\Editor\Data\NetCoreRuntime\dotnet.exe` |
-| `2023.2.22f1` | yes | `2.0.0` | `5.0.0` |  | 62 | `%UNITY_HUB_EDITOR%\2023.2.22f1\Editor\Data\DotNetSdkRoslyn\csc.dll` | `%UNITY_HUB_EDITOR%\2023.2.22f1\Editor\Data\NetCoreRuntime\dotnet.exe` |
-| `6000.5.6f1` | yes | `2.5.0` | `5.0.0` | `6.5.0` | 85 | `%UNITY_HUB_EDITOR%\6000.5.6f1\Editor\Data\DotNetSdk\sdk\8.0.318\Roslyn\bincore\csc.dll` | `%UNITY_HUB_EDITOR%\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe` |
 | `6000.6.6f1` | yes | `2.6.0` | `5.0.0` | `6.6.0` | 95 | `%UNITY_HUB_EDITOR%\6000.6.6f1\Editor\Data\DotNetSdk\sdk\8.0.318\Roslyn\bincore\csc.dll` | `%UNITY_HUB_EDITOR%\6000.6.6f1\Editor\Data\DotNetSdk\dotnet.exe` |
 
 ## Hera Implications
 
-1. `6000.5.6f1` is the only checked version whose primary Roslyn compiler lives
-   under `Data\DotNetSdk\sdk\<version>\Roslyn\bincore\csc.dll`. Earlier checked
-   versions use `Data\DotNetSdkRoslyn\csc.dll`.
-2. `6000.0.35f1` belongs to the `6000.0` docs bucket and still uses uGUI `2.0.0`.
-3. `6000.5.6f1` is the checked representative with uGUI `2.5.0`, matching Hera's
-   `6000.5` UI diagnostics bucket.
-4. `2022.3.62f2` is the only checked version with uGUI `1.0.0`.
-5. The installed editors do not include `Data\Documentation\en\ScriptReference`;
-   Hera ships generated `unity_docs_*.jsonl.gz.bytes` bundles instead of reading
-   local Editor documentation folders at runtime.
-6. Compiler selection now prefers the running Editor's bundled tools before
-   external SDKs, covering both `DotNetSdkRoslyn` and
-   `DotNetSdk\sdk\<version>` layouts. Saved config paths that point inside a
-   different Unity Editor install are ignored, while external SDK overrides
-   remain valid.
-7. `6000.6.6f1` is the current representative and the first version whose blank
-   project template does **not** include `com.unity.ugui` (6000.5's does). The
-   Connector now declares that dependency itself; without it the package fails to
+1. `6000.6.6f1` is the representative: uGUI `2.6.0`, test-framework `1.8.0`,
+   Entities `6.6.0`, 95 built-in packages, and its primary Roslyn compiler under
+   `Data\DotNetSdk\sdk\<version>\Roslyn\bincore\csc.dll`. Compiler selection
+   prefers the running Editor's bundled tools before external SDKs, and a saved
+   config path that points inside a different Editor install is ignored.
+2. Its blank project template does **not** include `com.unity.ugui`, so the
+   Connector declares that dependency itself; without it the package fails to
    compile on a fresh 6000.6 project.
-8. `6000.6` also raises the `EntityId` API pressure on one of the two compile
-   boundaries this gate exists for: `EntityId.implicit operator EntityId(int)` is
-   obsolete-as-**error** (CS0619) where 6000.3-6000.5 only warned (CS0618), and
-   `Object.FindObjectsByType<T>(FindObjectsInactive, FindObjectsSortMode)` is
-   obsolete (CS0618). Both are handled without a compiled-out branch.
-9. The docs bundle does not need a `6000.6` file: `UnityVersionCompat` maps
-   `6000.6` to the `6000.5` bundle, confirmed live in the representative's
-   heartbeat (`docsVersion: 6000.5`).
+3. `6000.6` removed the `int` ↔ `EntityId` conversions and turned the int-based
+   lookups into runtime stubs, so `instance_id` is carried as the full 64-bit
+   `EntityId` value (`FromULong`/`ToULong`).
+4. `Object.FindObjectsByType<T>(FindObjectsInactive, FindObjectsSortMode)` is
+   obsolete on `6000.6`; the two-argument overload without the sort mode is used.
+5. The installed Editors ship no `Data\Documentation\en\ScriptReference`, so
+   Hera ships the generated `unity_docs_6000.6.jsonl.gz.bytes` bundle instead of
+   reading a local documentation folder at runtime. It is built from the Unity
+   6.6 documentation archive with `tools/build-unity-docs`.
 
-## Completed Checks
+## Pre-6.6 gate history
 
 > Historical: the entries below ran under the three-bucket policy
 > (`6000.0.35f1` / `6000.3.5f2` / `6000.5.6f1`) that applied through Connector

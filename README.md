@@ -243,7 +243,7 @@ Supported Unity versions are Unity 6.6+ (`6000.6` minimum). The release compile 
 |:---|:---|:---:|
 | 6000.6+ | 6000.6.6f1 | PASS |
 
-The floor states what is actually verified. `6000.0`-`6000.5` were verified through Connector `0.1.3`; a project on those versions should stay on that release. `AgentConnector/package.json` carries the `6000.6` floor, so Package Manager refuses the new Connector on an older Editor instead of failing later at compile time.
+The floor states what is actually verified: a single representative Editor, with no compatibility claim for any other Unity line. `AgentConnector/package.json` carries the `6000.6` floor, so Package Manager refuses the Connector on an older Editor instead of failing later at compile time.
 
 CLI and Connector versions are intentionally separate.
 
@@ -695,8 +695,7 @@ A long Test Runner job can outlive a normal request window. Hera stores durable 
 | Unity version | Status | Representative verification |
 |:---|:---|:---|
 | 6000.6+ | Supported | `6000.6.6f1` release gate |
-| 6000.0 - 6000.5 | Not supported by this release | Stay on the last Connector verified for that stream (≤ `0.1.3`) |
-| Older than 6000.0 | Not supported | Minimum is Unity 6.6 (6000.6) |
+| Older than 6000.6 | Not supported | Minimum is Unity 6.6 (6000.6) |
 
 Version-specific behavior is checked against live Editors rather than assumed from one Unity version.
 

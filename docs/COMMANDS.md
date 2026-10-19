@@ -679,7 +679,7 @@ hera-agent-unity manage_timeline get --params '{"path":"Assets/Cinematics/Intro.
 
 Offline Unity ScriptReference lookup. Returns a slim, JSON-ready shape suitable for AI agents who need to verify an API exists at this Unity version before running it through `exec`. No network, no rate limits.
 
-The data set **ships inside the UPM connector package itself**, under `AgentConnector/Editor/Data/unity_docs_<version>.jsonl.gz.bytes`. The connector selects the current Unity docs bucket (`2022.3`, `2023.2`, `6000.0`, `6000.3`, `6000.5`) and falls back to the 6000.0 bundle when an exact bucket is not present. Installing the connector is the only prerequisite — there is no docs folder to point at, no environment variable, no asset-config entry. The CLI passes the query straight through; the connector loads the bundled data once per domain and serves every subsequent lookup from an in-memory dictionary.
+The data set **ships inside the UPM connector package itself**, under `AgentConnector/Editor/Data/unity_docs_6000.6.jsonl.gz.bytes` — the ScriptReference corpus the supported Unity 6.6+ range documents with. Installing the connector is the only prerequisite — there is no docs folder to point at, no environment variable, no asset-config entry. The CLI passes the query straight through; the connector loads the bundled data once per domain and serves every subsequent lookup from an in-memory dictionary.
 
 ```bash
 hera-agent-unity unity_docs <query>
@@ -706,8 +706,8 @@ hera-agent-unity unity_docs <query>
   "title": "Rigidbody.mass",
   "signature": "public float mass;",
   "summary": "The mass of the rigidbody.",
-  "unity_version": "6000.0",
-  "docs_version": "6000.0"
+  "unity_version": "6000.6",
+  "docs_version": "6000.6"
 }
 ```
 
@@ -717,7 +717,7 @@ Typically 250–400 bytes per call.
 
 | Code | Meaning |
 |:---|:---|
-| `DOCS_BUNDLE_UNAVAILABLE` | The bundled data file is missing or unreadable on this connector install. Reinstall the UPM package; or in a local checkout, rerun `go run ./tools/build-unity-docs --unity-version 6000.0`. |
+| `DOCS_BUNDLE_UNAVAILABLE` | The bundled data file is missing or unreadable on this connector install. Reinstall the UPM package; or in a local checkout, rerun `go run ./tools/build-unity-docs --unity-version 6000.6`. |
 | `DOC_NOT_FOUND` | Query did not map to any key. `data.did_you_mean[]` holds up to 5 nearest keys; `suggestions[]` carries them as ready-to-run CLI calls. |
 
 ### Examples
@@ -1693,8 +1693,8 @@ hera-agent-unity status
 ```text
 Unity (port 8090): ready
   Project: /Users/admin/Unity/MyProject
-  Version: 6000.0.35f1
-  Docs:    6000.0
+  Version: 6000.6.6f1
+  Docs:    6000.6
   Compiler: csc=unity_dotnet_sdk_roslyn dotnet=unity_netcore_runtime
   PID:     12345
 ```

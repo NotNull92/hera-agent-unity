@@ -423,23 +423,13 @@ namespace HeraAgent.Tools
             {
                 var main = Camera.main;
                 if (main) return main;
-#if UNITY_6000_5_OR_NEWER
                 main = UnityEngine.Object.FindAnyObjectByType<Camera>();
-#else
-                main = UnityEngine.Object.FindFirstObjectByType<Camera>();
-#endif
                 if (!main)
                     error = new ErrorResponse("CAMERA_NOT_FOUND", "No camera found in scene.");
                 return main;
             }
 
-#if UNITY_6000_6_OR_NEWER
             var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include);
-#elif UNITY_6000_5_OR_NEWER
-            var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-#else
-            var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);
-#endif
             var names = new List<string>();
             foreach (var candidate in cameras)
             {
@@ -509,11 +499,7 @@ namespace HeraAgent.Tools
             string outputPath,
             bool overwrite)
         {
-#if UNITY_6000_5_OR_NEWER
             var allCanvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude);
-#else
-            var allCanvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-#endif
             var targets = new List<Canvas>();
             foreach (var canvas in allCanvases)
             {

@@ -33,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   documented in a parameter description (normalized catalog −4 bytes) and the
   canonical hash moved to `3649a714…`. Tools, actions, and tool-description
   characters are unchanged.
+- Pre-6.6 compatibility code is gone. The version-gated `#if` branches, the
+  reflected `int` ↔ `EntityId` bridge, the docs-bucket selection and the pitfalls
+  minimum-docs filter cannot be reached below the floor, so they were removed
+  rather than kept compiled-out. The shipped ScriptReference corpus is rebuilt
+  from the Unity 6.6 documentation archive (`unity_docs_6000.6`, 46,663 entries,
+  replacing the 6000.5 bundle and deleting the 6000.0/6000.3 ones), which also
+  makes the heartbeat and `status` report `Docs: 6000.6`.
 
 ### Removed (CLI 0.3.0 — the MCP adapter is gone)
 
