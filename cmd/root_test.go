@@ -210,3 +210,23 @@ func TestBuildParams_PreservesIntegerLiterals(t *testing.T) {
 		}
 	}
 }
+
+func TestDialogResponsePreservesOutcome(t *testing.T) {
+	stalled := &client.TargetUnresponsiveError{State: "blocked_by_dialog", DialogTitle: "Probe", Project: "game", Port: 8090}
+	for _, err := range []error{stalled, &client.OperationOutcomeUnknownError{Code: "OPERATION_OUTCOME_UNKNOWN", OperationID: "op_probe", Cause: stalled}} {
+		response := operationOutcomeResponse(err)
+		if response == nil || response.State != "blocked_by_dialog" || response.Retryable {
+			t.Fatalf("%#v", response)
+		}
+		var data map[string]any
+		if e := json.Unmarshal(response.Data, &data); e != nil {
+			t.Fatal(e)
+		}
+		if data["dialog_title"] != "Probe" {
+			t.Fatal(data)
+		}
+	}
+	if operationOutcomeResponse(&client.TargetUnresponsiveError{State: "ready"}) != nil {
+		t.Fatal("changed ordinary timeout")
+	}
+}

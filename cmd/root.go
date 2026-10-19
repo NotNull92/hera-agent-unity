@@ -85,24 +85,27 @@ func (rp *ResponsePrinter) shouldCompactJSON(category string) bool {
 // failures don't read as tool failures.
 func operationOutcomeResponse(err error) *client.CommandResponse {
 	var unknown *client.OperationOutcomeUnknownError
-	if !errors.As(err, &unknown) {
+	var unresponsive *client.TargetUnresponsiveError
+	blocked := errors.As(err, &unresponsive) && unresponsive.State == "blocked_by_dialog"
+	response := &client.CommandResponse{Success: false}
+	data := map[string]any{}
+	if errors.As(err, &unknown) {
+		response.Code, response.Message = unknown.Code, unknown.Error()
+		data["operation_id"], data["tool"] = string(unknown.OperationID), unknown.Command
+		data["project"], data["port"] = unknown.Project, unknown.Port
+	} else if blocked {
+		response.Code, response.Message = "EDITOR_BLOCKED_BY_DIALOG", unresponsive.Error()
+		data["project"], data["port"] = unresponsive.Project, unresponsive.Port
+	} else {
 		return nil
 	}
-	data, marshalErr := json.Marshal(map[string]any{
-		"operation_id": string(unknown.OperationID),
-		"tool":         unknown.Command,
-		"project":      unknown.Project,
-		"port":         unknown.Port,
-	})
-	if marshalErr != nil {
-		return nil
+	if blocked {
+		response.State = "blocked_by_dialog"
+		data["dialog_title"] = unresponsive.DialogTitle
+		response.Message += "; a modal Editor dialog is blocking the main thread; a person must close it"
 	}
-	return &client.CommandResponse{
-		Success: false,
-		Code:    unknown.Code,
-		Message: unknown.Error(),
-		Data:    data,
-	}
+	response.Data, _ = json.Marshal(data)
+	return response
 }
 
 func isUserCodeDiagnostic(code string) bool {

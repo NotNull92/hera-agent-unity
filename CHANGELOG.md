@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (CLI v0.3.5; Connector unchanged at 0.2.7)
+
+- Windows request timeouts and stale `status` now identify visible native Editor dialogs by PID and title. Error envelopes report `blocked_by_dialog` and explicit `retryable:false`, preserving unknown operation outcomes. No automatic dismissal or retry; other platforms retain existing behavior.
+
 ### Fixed (Connector 0.2.7; CLI unchanged at v0.3.4)
 
 - Exec journal entries rejected before compilation now use `compile_cache: none`, keeping rejection counts out of cache-miss statistics. Actual compilation and cache-hit paths are unchanged.

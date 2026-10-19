@@ -12,6 +12,7 @@ type Client struct {
 	httpClient         *http.Client
 	cache              *InstanceCache
 	processDeadChecker func(int) bool
+	enumerateWindows   func(int) []editorWindow
 	readFile           func(string) ([]byte, error)
 	sleep              func(time.Duration)
 }
@@ -21,6 +22,7 @@ func NewClient() *Client {
 		httpClient:         sharedHTTPClient,
 		cache:              NewInstanceCache(),
 		processDeadChecker: checkProcessDead,
+		enumerateWindows:   enumerateEditorWindows,
 		readFile:           os.ReadFile,
 		sleep:              time.Sleep,
 	}
@@ -97,4 +99,16 @@ type CommandResponse struct {
 	Retryable    bool   `json:"retryable,omitempty"`
 	State        string `json:"state,omitempty"`
 	RetryAfterMs int    `json:"retry_after_ms,omitempty"`
+}
+
+// MarshalJSON retains the existing envelope while making the dialog no-retry decision explicit.
+func (response CommandResponse) MarshalJSON() ([]byte, error) {
+	type plain CommandResponse
+	if response.State == "blocked_by_dialog" {
+		return json.Marshal(struct {
+			plain
+			Retryable bool `json:"retryable"`
+		}{plain: plain(response), Retryable: false})
+	}
+	return json.Marshal(plain(response))
 }

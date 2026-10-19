@@ -117,13 +117,20 @@ func (c *Client) doWithReloadRetry(
 						Cause:       ctx.Err(),
 					}
 				} else {
-					timeoutErr = &TargetUnresponsiveError{
+					unresponsive := &TargetUnresponsiveError{
 						Project: next.ProjectPath,
 						Port:    next.Port,
 						PID:     next.PID,
 						State:   next.State,
 						Cause:   ctx.Err(),
 					}
+					if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+						if title, found := c.BlockingDialog(next); found {
+							unresponsive.State = "blocked_by_dialog"
+							unresponsive.DialogTitle = title
+						}
+					}
+					timeoutErr = unresponsive
 				}
 			} else if project != "" {
 				timeoutErr = &TargetLostError{

@@ -596,6 +596,17 @@ Every command returns this JSON over HTTP (the CLI then prints just `data` to st
 }
 ```
 
+Optional error-state contract:
+
+| `state` | Meaning / retry policy |
+|---|---|
+| `reloading` | Connector reload gate; `retryable:true` means the command was not executed. Only declared-idempotent requests retry. |
+| `blocked_by_dialog` | Windows CLI diagnosis after a request timeout, stale heartbeat and a visible `#32770` dialog owned by the live Editor PID. `retryable:false`, `data.dialog_title`; a person must close the dialog. Operation outcome may remain unknown: never blindly resend a mutation. |
+
+`status` reports the same dialog diagnosis with a nonzero exit. `ping` remains
+heartbeat-only. Other platforms and unrecognized dialog classes retain the
+existing timeout behavior. The CLI does not close dialogs automatically.
+
 Common `code` values you might branch on:
 - `EXEC_COMPILE_ERROR` — `data.compile_errors: [{line, col, error_code, message}, ...]`. `line` is relative to the user snippet (1-based); errors that fall inside the internal wrapper (e.g. a bad `--usings` namespace) report the raw csc line as a fallback.
 - `EXEC_RUNTIME_ERROR` — `data.exception_type`, `data.stack_trace` (user-filtered unless `--stacktrace full`). The synthetic wrapper frame is collapsed to `at (your snippet)` in user-filtered mode; pass `--stacktrace full` to see the raw `__CliDynamic.Execute` frame.

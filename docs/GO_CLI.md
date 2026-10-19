@@ -259,6 +259,22 @@ func Send(ctx context.Context, inst *Instance, command string, params any, timeo
 4. Transparently retries while Unity's HTTP listener is down between domain reloads (`doWithReloadRetry`), using fresh discovery only for that retry path.
 5. If response is not JSON → wraps it in `SuccessResponse`
 
+### Dialog timeout diagnosis (Windows)
+
+After a request deadline, the client checks the fresh target heartbeat and PID.
+Only a stale heartbeat (>3 seconds), live same Editor process and visible
+`#32770` window produce `state="blocked_by_dialog"`, explicit `retryable=false`
+and `data.dialog_title`. `OPERATION_OUTCOME_UNKNOWN` and operation identity
+remain intact; otherwise the diagnostic code is `EDITOR_BLOCKED_BY_DIALOG`.
+A person must close the dialog. No automatic dismissal or mutation retry.
+`status` performs this check on stale heartbeats and exits nonzero on a match;
+`ping` remains file-only. Other OSes and window classes keep existing behavior.
+
+| Error state | Contract |
+|---|---|
+| `reloading` | Connector reports a request not executed; `retryable:true`, optional `retry_after_ms`. |
+| `blocked_by_dialog` | CLI timeout diagnosis; `retryable:false`, outcome can still be unknown. |
+
 ### CommandResponse
 
 ```go

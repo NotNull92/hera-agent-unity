@@ -28,11 +28,12 @@ type TargetMismatchError struct {
 }
 
 type TargetUnresponsiveError struct {
-	Project string
-	Port    int
-	PID     int
-	State   string
-	Cause   error
+	DialogTitle string
+	Project     string
+	Port        int
+	PID         int
+	State       string
+	Cause       error
 }
 
 type TargetRestartedError struct {

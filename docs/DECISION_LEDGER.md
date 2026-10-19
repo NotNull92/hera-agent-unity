@@ -20,6 +20,28 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## U4 — native modal blocking diagnosis (2026-10-19)
+
+- Reproduction gate passed: one approved delayed DisplayDialog opened a visible
+  `#32770` window on the dedicated Editor PID. The exec response was lost after
+  60 seconds (`OPERATION_OUTCOME_UNKNOWN`), not retried. Baseline status called
+  the stale process reachable; ping reported stale; scene/console timed out
+  without explaining the modal. No second exec was issued.
+- CLI v0.3.5 diagnoses a visible same-PID native dialog only for a live process
+  with a stale heartbeat, after a request deadline (or during stale status).
+  Emit `blocked_by_dialog`, explicit `retryable:false`, and `data.dialog_title`.
+  Preserve unknown operation outcomes and identity. No dismissal or retry policy
+  changes. Existing x/sys becomes direct; no new module. Connector stays 0.2.7.
+- The same open dialog produced the expected candidate status and both error
+  envelopes. After closing only that dialog, 20 normal status/scene probes all
+  succeeded with zero false positives. Injected window tests cover wrong PID,
+  hidden/non-dialog windows, fresh/dead guards; timeout regression proves one
+  request and preserved unknown outcome. Other OSes remain no-op probes.
+- Limits: native `#32770` only; custom Editor dialogs may remain generic timeouts.
+  A matching window is diagnostic evidence, not proof that a queued operation
+  never executed. No automatic OS interaction ships. Catalog and compact rules
+  are unchanged; the full guide documents the state contract.
+
 ## U3 follow-up — distinguish no compilation from cache misses (2026-10-19)
 
 - Independent review passed U3 and identified that pre-compilation rejection was

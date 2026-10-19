@@ -24,6 +24,10 @@ var statusPollBaseInterval = 500 * time.Millisecond
 func statusCmd(ctx context.Context, status *client.Instance) error {
 	age := time.Since(time.UnixMilli(status.Timestamp))
 	if age > 3*time.Second {
+		if title, found := client.DefaultClient.BlockingDialog(status); found {
+			fmt.Fprintf(os.Stderr, "Unity (port %d): blocked_by_dialog dialog_title=%q; a person must close the dialog\n", status.Port, title)
+			return ErrCommandFailed
+		}
 		if client.IsPortReachable(ctx, status.Port) {
 			fmt.Fprintf(os.Stderr, "Unity (port %d): reachable (heartbeat stale %s; last state=%s)\n",
 				status.Port, age.Truncate(time.Second), status.State)

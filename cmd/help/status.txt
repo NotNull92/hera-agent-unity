@@ -2,7 +2,10 @@ Usage: hera-agent-unity status
 
 Show the current Unity Editor state: port, project path, version, docs bucket,
 compiler/runtime kind, PID.
-Reports "not responding" if heartbeat is older than 3 seconds.
+For a heartbeat older than 3 seconds, reports TCP reachability.
+On Windows, a visible native dialog owned by the live Editor instead reports
+blocked_by_dialog and its title, with a nonzero exit; a person must close it.
+No dialog is closed automatically. ping remains a heartbeat-only probe.
 
 Example:
   hera-agent-unity status

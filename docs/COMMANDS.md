@@ -1733,6 +1733,12 @@ JObject -> object|Task<object>|Task` contract. `metadata.safety` describes the w
 
 ## status
 
+On Windows, a stale heartbeat plus a visible native dialog owned by the live
+Editor reports `blocked_by_dialog` and the dialog title, with a nonzero exit.
+Request timeouts carry the same state, `retryable:false` and `data.dialog_title`.
+Unknown operation outcomes stay unknown; close the dialog before inspecting
+state, and never blindly resend a mutation. `ping` remains heartbeat-only.
+
 Show current Unity Editor state from the heartbeat file.
 
 ```bash
