@@ -69,12 +69,12 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | fix B | Done (candidate) | Atomic fail-closed preflight and 12 Undo-covered action declarations; screenshot reversible=false. CLI `v0.3.3`, Connector `0.2.2`; independent verification follows implementation |
 | M3 | Done (candidate); independent verification PASS | Connector `0.2.3` isolates bounded body byte reads from Unity context; no watchdog/tick or CLI changes. Measurements and rejected alternatives are in `docs/DECISION_LEDGER.md`. Independent verification was documentary: the raw before/after matrices were recomputed and matched the report, so no independent re-measurement is claimed |
 | M4 | Implemented; local gates PASS (candidate) | CLI v0.3.4 / Connector 0.2.4: cases, JUnit/NUnit artifacts, contiguous test shards; suite 29/0/1, shard union/disjointness/repeatability and PlayMode/resume PASS. Catalog +636 B, 34/133 unchanged; independent static/evidence-recalculation review PASS; no independent live rerun |
-| M5 | Approved next; not started | ILPP stub experiment in a scratch fixture only |
+| M5 | Done via U2 | Scratch marker/reload PASS; no product adoption |
 | M6 | Approved after M5; not started | exec usage journal; detailed scope to be finalized |
 | M7 | Approved after M6; not started | Transport token policy gate; detailed scope to be finalized |
 | M8 | Approved after M7; not started | PDB research tooling, not distributed |
-| U1 | Implemented; local gates PASS (candidate) | Connector 0.2.5 shard selector parity; unsharded/list unchanged |
-| U2 | Approved next | M5 ILPP scratch experiment only |
+| U1 | Done; independent static/evidence review PASS | Connector 0.2.5 shard selector parity; unsharded/list unchanged |
+| U2 | Done; scratch experiment PASS | Marker/reload confirmed; 425.85 ms off / 425.78 ms on, n=5 each; no product adoption |
 | U3 | Approved after U2 | M6 bounded exec journal; four exec probes require approval |
 | U4 | Approved after U3 | Reproduce modal blocking first; one exec probe requires approval |
 | U5 | Approved after U4 | Review profile assignments, then CLI profile discovery |

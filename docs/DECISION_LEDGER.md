@@ -20,6 +20,12 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## U2 / M5 — scratch IL post-processing (2026-10-19)
+
+| Result | Evidence and decision |
+|---|---|
+| Marker and reload PASS; no product adoption | A blank 6000.6.6f1 fixture without Hera resolves the compilation API after naming its processor assembly `Unity.M5.CodeGen`; the initial unprefixed name failed reference resolution. Target recompilation writes a marker in a separate process and increments it after each domain reload. Five warm one-line edits per state measured compile-event medians 425.8533 ms off / 425.7802 ms on (−0.0731 ms, below sample variation); no performance benefit claimed. Marker-only, fixed-order, small-fixture limits apply. Product code/dependencies/version/catalog unchanged. Re-evaluate Hera adoption only when a concrete blocking failure warrants it. |
+
 ## U1 — shard selector parity (2026-10-19)
 
 - **Decision:** preserve unsharded run and list behavior. Shards use exact AND
