@@ -432,7 +432,18 @@ namespace HeraAgent
                 return SchemaError("INVALID_ARGUMENT", path, pattern, value);
             }
 
-            if (value.Type == JTokenType.Integer || value.Type == JTokenType.Float)
+            if (value.Type == JTokenType.Integer)
+            {
+                if (!long.TryParse(value.ToString(Newtonsoft.Json.Formatting.None),
+                    NumberStyles.Integer, CultureInfo.InvariantCulture, out var integer))
+                    return SchemaError("INVALID_ARGUMENT", path, "signed 64-bit integer", value);
+
+                if (schema["minimum"] != null && CompareIntegerBound(integer, schema["minimum"]) < 0)
+                    return SchemaError("INVALID_ARGUMENT", path, schema["minimum"], value);
+                if (schema["maximum"] != null && CompareIntegerBound(integer, schema["maximum"]) > 0)
+                    return SchemaError("INVALID_ARGUMENT", path, schema["maximum"], value);
+            }
+            else if (value.Type == JTokenType.Float)
             {
                 var number = value.Value<double>();
                 if (schema["minimum"] != null && number < schema["minimum"].Value<double>())
@@ -543,6 +554,16 @@ namespace HeraAgent
             }
 
             return null;
+        }
+
+        private static int CompareIntegerBound(long value, JToken bound)
+        {
+            if (decimal.TryParse(bound.ToString(Newtonsoft.Json.Formatting.None),
+                NumberStyles.Float, CultureInfo.InvariantCulture, out var exactBound))
+                return ((decimal)value).CompareTo(exactBound);
+
+            // Bounds outside decimal's range are also outside every signed 64-bit value.
+            return ((double)value).CompareTo(bound.Value<double>());
         }
 
         private static bool MatchesSchemaType(JToken declared, JToken value)

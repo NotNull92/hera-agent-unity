@@ -40,6 +40,7 @@ namespace HeraAgent.Tests
             allPassed &= TestAliasesNormalizeBeforeValidation();
             allPassed &= TestDeprecatedAliasReturnsDiagnostic();
             allPassed &= TestSchemaConstraintsAndInvalidFragments();
+            allPassed &= TestSignedIntegerBoundaries();
             allPassed &= TestM21ValueConstraints();
             allPassed &= TestCrossFieldConstraints();
             allPassed &= TestActionSchemaUsesConstOrEnum();
@@ -241,6 +242,66 @@ namespace HeraAgent.Tests
                 && result.Normalized.Value<string>("value") == "legacy"
                 && result.Diagnostics.Count == 1
                 && result.Diagnostics[0].Path == "/old_value");
+        }
+
+        private static bool TestSignedIntegerBoundaries()
+        {
+            var contract = ToolContractRegistry.Get("manage_gameobject");
+            var passed = true;
+            foreach (var literal in new[]
+            {
+                "-9223372036854775808", "9007199254740993", "9223372036854775807",
+                "9223372036854775808", "18446744073709551615", "-9223372036854775809",
+            })
+            {
+                var inRange = long.TryParse(literal, out _);
+                var result = ToolContractValidator.Validate(contract,
+                    JObject.Parse("{\"action\":\"get_transform\",\"instance_id\":" + literal + "}"),
+                    "get_transform");
+                passed &= Expect("SignedInteger " + literal, inRange
+                    ? result.IsValid && result.Normalized["instance_id"].ToString() == literal
+                    : !result.IsValid && result.Error?.code == "INVALID_ARGUMENT");
+            }
+            var stringResult = ToolContractValidator.Validate(contract,
+                JObject.Parse("{\"action\":\"get_transform\",\"instance_id\":\"9223372036854775808\"}"),
+                "get_transform");
+            passed &= Expect("SignedInteger string compatibility",
+                stringResult.Error?.code == "ARGUMENT_TYPE_MISMATCH");
+
+            var bounded = ToolContractRegistry.Build(typeof(IntegerBoundsFixture));
+            foreach (var literal in new[] { "9007199254740992", "9007199254740993", "9007199254740995", "9007199254740996" })
+            {
+                var result = ToolContractValidator.Validate(bounded,
+                    JObject.Parse("{\"value\":" + literal + "}"));
+                var expected = literal == "9007199254740993" || literal == "9007199254740995";
+                passed &= Expect("Integer bound " + literal,
+                    expected ? result.IsValid : result.Error?.code == "INVALID_ARGUMENT");
+            }
+            foreach (var literal in new[] { "-9223372036854775808", "9223372036854775807", "9223372036854775808" })
+            {
+                var result = ToolContractValidator.Validate(bounded,
+                    JObject.Parse("{\"wide\":" + literal + "}"));
+                passed &= Expect("Wide bound " + literal, literal == "9223372036854775808"
+                    ? result.Error?.code == "INVALID_ARGUMENT" : result.IsValid);
+            }
+            var parent = ToolContractValidator.Validate(contract,
+                JObject.Parse("{\"action\":\"set_parent\",\"instance_id\":1,\"parent\":9223372036854775808}"),
+                "set_parent");
+            passed &= Expect("Parent integer boundary", parent.Error?.code == "INVALID_ARGUMENT");
+            return passed;
+        }
+
+        [HeraTool(Name = "signed_integer_bounds_fixture", ContractMode = ToolContractMode.Strict, Enabled = false)]
+        private sealed class IntegerBoundsFixture
+        {
+            public sealed class Parameters
+            {
+                [ToolParameter("Integer bounds fixture.", SchemaJson = "{\"type\":\"integer\",\"minimum\":9007199254740993,\"maximum\":9007199254740995}")]
+                public long? Value { get; set; }
+
+                [ToolParameter("Wide bounds fixture.", SchemaJson = "{\"type\":\"integer\",\"minimum\":-1e100,\"maximum\":1e100}")]
+                public long? Wide { get; set; }
+            }
         }
 
         private static bool TestSchemaConstraintsAndInvalidFragments()
