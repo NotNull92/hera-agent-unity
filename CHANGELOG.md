@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed (CLI v0.3.2 / Connector 0.2.1)
 
 - CLI `--params`, batch file/stdin, and numeric flags preserve integer values beyond JavaScript's safe-integer range. Signed 64-bit overflow remains numeric so the Connector can return `INVALID_ARGUMENT` instead of a misleading string type error.
+- Number spellings also stay literal, so a float spelling such as `1.0` is no longer coerced into an integer field: it answers `ARGUMENT_TYPE_MISMATCH`, matching the typed `call` route.
 - Connector schema validation rejects integer tokens outside signed 64-bit range before numeric conversion, and compares declared integer bounds without rounding through `double`. Schema, catalog, and field names are unchanged.
 - Guides and identity comments now scope `instance_id` to the current Editor process. Persist `global_id` and explicitly re-resolve it after restart; stale numeric IDs may identify different objects.
 - Default compact rules are 2,368 UTF-8 bytes (+91), within the 2,500-byte budget. The catalog remains 34 tools / 133 actions; only compact-rule size and derived payload totals change.

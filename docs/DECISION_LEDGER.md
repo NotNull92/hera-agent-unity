@@ -271,7 +271,7 @@ on preference.
 
 Implemented 2026-10-19; candidate only, with no tag or release.
 
-- CLI params and batch file/stdin decoding use `json.Number`; numeric flags preserve signed 64-bit integers and canonicalize overflowing integer spellings as JSON numbers. Trailing JSON remains rejected; bool/string behavior is unchanged.
+- CLI params and batch file/stdin decoding use `json.Number`; numeric flags preserve signed 64-bit integers and canonicalize overflowing integer spellings as JSON numbers. Trailing JSON remains rejected; bool/string behavior is unchanged. Number spellings also stay literal, so `1.0` is no longer coerced into an integer field and answers `ARGUMENT_TYPE_MISMATCH`, matching the typed route. Exponent-form floats (`1e2`) keep their literal too and are covered by a separate follow-up: the Connector canonicalizes them differently for the arguments hash than the CLI does.
 - Connector validation rejects out-of-Int64 integer tokens with `INVALID_ARGUMENT` before numeric conversion and compares declared integer bounds without a double round-trip. No new schema bounds or catalog descriptions were added.
 - `instance_id` is scoped to the Editor process; after restart a reused number may identify another object. Persist the existing `global_id` and explicitly re-resolve it. No new session-handle protocol was added.
 - Live `6000.6.6f1` verification: 12 literals × typed/flag/params/batch = 48/48 passed, with exact literals retained; 40 `OBJECT_NOT_FOUND`, 8 `INVALID_ARGUMENT`, 0 `INTERNAL_ERROR`. Int64 endpoints retain the not-found behavior. Connector suite: 28 passed, 0 failed, 1 skipped (Timeline absent); normal install/restoration excludes test sources and assembly. Exact-source compile and Go/static gates passed.

@@ -37,6 +37,7 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | M2 | Done | Catalog rebaseline: `cli_summary` replaces `mcp_compact` in the payload report, the 12 former `duplicate` rows name their exact primitive (2 became `covered` in `0.1.3`, `set_timescale` was already covered, 9 stay `exec`), baseline regenerated. **34 tools / 133 actions unchanged** |
 | Support floor | Done | Unity 6.6 (`6000.6`): `package.json` floor, `com.unity.ugui` declared, `instance_id` widened to 64-bit (EntityId `FromULong`/`ToULong`), two 6000.6 API updates |
 | Pre-6.6 cleanup | Done | Every version-gated `#if`, the reflected int ↔ EntityId bridge, the docs-bucket selection, the pitfalls min-docs filter and the 6000.0/6000.3 docs bundles are gone; the shipped docs corpus is rebuilt from the Unity 6.6 archive, so `Docs:` reports `6000.6` |
+| fix A | Done (candidate) | Integer literals survive `--params`, batch file/stdin, and numeric flags; the Connector rejects out-of-Int64 integers with `INVALID_ARGUMENT` and compares declared bounds without a double round-trip; `instance_id` is documented as Editor-process-scoped. Connector `0.2.1`, CLI `v0.3.2`. Independent verification on a separate fixture passed |
 | M3+ | Not authorized | Dispatch-delay reduction and the rest of §1 in the plan |
 
 **Compatibility for this release: `6000.6.6f1` is the single representative and

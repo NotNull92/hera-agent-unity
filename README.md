@@ -724,7 +724,7 @@ typed execution, `exec` when no dedicated command exists.
 
 ## Current release
 
-The source tree also contains the **unreleased CLI v0.3.2 / Connector 0.2.1 candidate**, which preserves integer literals and documents Editor-session-scoped instance IDs. No tag or release has been published for this candidate.
+The source tree also contains the **unreleased CLI v0.3.2 / Connector 0.2.1 candidate** — the second unreleased step after the v0.3.1 catalog rebaseline — which preserves integer literals and documents Editor-session-scoped instance IDs. Neither candidate has a tag or release.
 
 - CLI / GitHub Release: **v0.3.0** with five native binaries
 - npm: **0.3.0** (`latest`)
