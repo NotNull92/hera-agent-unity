@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.2.3; CLI unchanged at v0.3.3)
+
+- HTTP request-body reads no longer return to the Editor context for every byte-read completion. Parsing, dispatch, response serialization, and response/ledger handling remain on their existing main-thread path. Body limits, queue behavior, catalog, and retry contracts are unchanged; no keep-alive tick is added.
+- Regression coverage verifies incomplete reads without context posts, fragmented UTF-8, exact-size bodies, and declared/streaming size limits. See the M3 decision ledger for measured latency and limits of the result.
+
 ### Fixed (CLI v0.3.3 / Connector 0.2.2)
 
 - Atomic batches now reject every ineligible item before approval, locking, or execution with `ATOMIC_UNSUPPORTED_ITEM` and indexed `data.rejects`. Eligibility requires declared reversible, non-destructive work without domain reloads; non-atomic behavior is unchanged.

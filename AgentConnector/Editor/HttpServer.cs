@@ -608,9 +608,12 @@ namespace HeraAgent
             return null;
         }
 
-        static async Task<(string body, ErrorResponse error)> ReadBody(HttpListenerRequest request, int maximumBytes)
+        static Task<(string body, ErrorResponse error)> ReadBody(HttpListenerRequest request, int maximumBytes) =>
+            ReadBody(request.InputStream, request.ContentLength64, maximumBytes);
+
+        internal static async Task<(string body, ErrorResponse error)> ReadBody(Stream input, long contentLength, int maximumBytes)
         {
-            if (request.ContentLength64 > maximumBytes)
+            if (contentLength > maximumBytes)
                 return (null, new ErrorResponse("HTTP_REQUEST_BODY_TOO_LARGE", $"Request body exceeds {maximumBytes} bytes."));
 
             var buffer = new byte[8192];
@@ -618,7 +621,8 @@ namespace HeraAgent
             using var output = new MemoryStream();
             while (true)
             {
-                var read = await request.InputStream.ReadAsync(buffer, 0, buffer.Length);
+                // Only byte I/O leaves Unity's context; callers still resume on the main thread.
+                var read = await input.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
                 if (read == 0) break;
                 total += read;
                 if (total > maximumBytes)

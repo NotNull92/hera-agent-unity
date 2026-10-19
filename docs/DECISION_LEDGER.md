@@ -288,3 +288,57 @@ Implemented 2026-10-19; candidate only, push without tags or release.
 - Catalog rebaseline changes exactly 13 reversible booleans: 12 false→true and screenshot true→false. Tool/action inventory stays 34/133, description characters stay 9,940, compact rules stay 2,368 B and CLI summary stays 2,845 B. Normalized catalog 268,413→268,402 B (−11 B); hash `3649a7147a3f1847127f054a2d3926b26068821691cff1744a5c232be9f3aa93` → `93827d168bdacec5c78697b1821c5e938dc17ee34701f5e3f93af710bc3e240c`. Baseline comparison first rejected the intentional drift, then passed after regeneration.
 - Verified on a disposable Unity 6000.6.6f1 project: six live criteria (safe success, rollback, mkdir mixed rejection before mutation, unknown rejection, rejects shape, catalog allowlist including actionless screenshot rejection). NUnit covers busy-lock preflight/unchanged Undo group/unchanged target, fixed allowlist, rollback, and non-atomic regression. EditMode suite 29 passed / 0 failed / 1 skipped (Timeline absent). Go/static gates and exact-source compile passed. ToolDiscovery's old zero action-safety expectation was updated for the two new component declarations.
 - Undo coverage applies to declared Editor edits, not arbitrary script callbacks or external side effects. No AGENTS.md or compact rules changes. M3 and O2 remain separate follow-up trains; independent validation is recorded separately.
+
+## Step 6 M3 — request-body I/O context (Connector 0.2.3, CLI v0.3.3 unchanged)
+
+Implemented 2026-10-19; candidate only, no tag or release. One GUI Editor,
+Unity 6000.6.6f1, fixed project and scene, three warmups and 30 samples per
+read/write × foreground/background case. CLI wall time includes process startup.
+The read was scene info; the write alternated one GameObject's position.
+
+| Condition | Before p50/p95 ms | After p50/p95 ms |
+|---|---:|---:|
+| Foreground read | 199.52 / 201.40 | 149.60 / 150.17 |
+| Foreground write | 150.49 / 199.49 | 101.77 / 151.93 |
+| Background read | 315.37 / 411.61 | 310.83 / 316.09 |
+| Background write | 326.50 / 428.63 | 323.74 / 331.05 |
+
+- These are uninstrumented before/after runs. An instrumented baseline and
+  repeat candidate reproduced the foreground improvement and background tail
+  reduction. Background medians vary with tick phase; their small clean-run
+  difference is not claimed as an improvement. This is not a universal 150 ms
+  reduction or a formal statistical confidence interval.
+- Idle Editor CPU, three five-second windows per state, normalized over 20
+  logical processors: foreground 8.00–8.58% before / 8.23–8.44% after;
+  background 0.04–0.14% before / 0.04–0.06% after. No material idle regression
+  observed. Foreground PID was verified; interrupted runs were excluded.
+- Stage probes (30 reads per condition) found body-read p50 99.13/195.70 ms
+  foreground/background and enqueue-to-execution 0.023/0.045 ms. Acceptance,
+  parsing, dispatch, and serialization ran on managed thread 1 with Unity's
+  synchronization context. A blanket worker-thread listener was rejected:
+  error policy reads Editor state and response serialization can touch Unity.
+- Adopted: `ConfigureAwait(false)` only inside the bounded byte-read loop.
+  Caller continuations, dispatch, response serialization, write/ledger ordering,
+  queue limits, and reload handling retain their existing context. Instrumented
+  body-read p50 fell to 49.11/98.55 ms. No permanent or bounded keep-alive tick
+  was needed. A stream overload makes context and byte-limit regressions testable.
+- Alternative (a), cheaper wake/keep-alive: rejected on negligible observed
+  queue residence, under the follow-up's stage-evidence gate; no timer prototype
+  is claimed. Alternative (b), inline completion notification: prototyped and
+  measured; foreground read p50/p95 149.67/150.63 ms but write p95 201.85 ms.
+  Retain asynchronous completion behavior and take the narrower I/O change.
+- Negative HTTP probes retain their status codes. Foreground 403/404 p50 stays
+  about 100 ms. Background p95 remains about 200 ms and medians are phase-sensitive;
+  no improvement claimed. Server write-completion timestamps can follow client
+  receipt and are not treated as additive client-visible critical-path delays.
+- No new catalog keys/features, retry semantics, dependencies, CLI label, or
+  agent-rules changes. O2 and plan M4–M8 are not part of this change. Independent
+  verification is a separate step, not implied by these measurements.
+- Validation: removing the context fix in the isolated fixture makes the new
+  body-reader regression fail; the final source passes. Both the normal fixture
+  and fresh-project testables suite pass 29 / fail 0 / skip 1 (Timeline absent).
+  Fresh normal installation compiles 120 production sources with zero test
+  sources and no Tests.dll. Exact-source compile, Go vet/tests, guide sync,
+  package integrity, and catalog `--fail-on-change` pass. Catalog hash remains
+  `93827d168bdacec5c78697b1821c5e938dc17ee34701f5e3f93af710bc3e240c`,
+  34 tools / 133 actions, normalized 268,402 B, rules 2,368 B.

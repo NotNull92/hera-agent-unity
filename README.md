@@ -724,7 +724,7 @@ typed execution, `exec` when no dedicated command exists.
 
 ## Current release
 
-The source tree contains the **unreleased CLI v0.3.3 / Connector 0.2.2 candidate**. It adds atomic batch preflight for non-destructive, Undo-covered edits after the unreleased v0.3.1 catalog rebaseline and v0.3.2 integer/identity fixes. Ineligible batches are rejected before any item executes. None of these candidates has a tag or release.
+The source tree contains the **unreleased CLI v0.3.3 / Connector 0.2.3 candidate**. Connector 0.2.3 reduces request-body I/O delays while retaining main-thread tool execution. It follows the unreleased v0.3.1 catalog rebaseline, v0.3.2 integer/identity fixes, and v0.3.3 atomic batch preflight for non-destructive, Undo-covered edits. None of these candidates has a tag or release.
 
 - CLI / GitHub Release: **v0.3.0** with five native binaries
 - npm: **0.3.0** (`latest`)

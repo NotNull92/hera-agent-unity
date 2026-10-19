@@ -53,7 +53,7 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
      │
      ▷  ⑥ client.Send(ctx, ...) → HTTP POST /command (JSON body)
      │
-     ▷  ⑦ Unity HttpServer.HandleRequest() → enqueue WorkItem to ConcurrentQueue
+     ▷  ⑦ Unity HttpServer.HandleRequest() → bounded body read → enqueue WorkItem to ConcurrentQueue
      │
      ▷  ⑧ EditorApplication.update(ProcessQueue) → CommandRouter.Dispatch()
      │
@@ -69,6 +69,13 @@ This document describes how the Go CLI and C# Unity connector communicate, how s
 ```
 
 ---
+
+Request acceptance currently captures Unity's synchronization context. The
+bounded body-reader loop uses `ConfigureAwait(false)` only for stream reads;
+its callers retain the context for parsing, queueing, tool execution, response
+serialization, and ledger handling. No Editor API runs inside that byte loop.
+This avoids a context round-trip per read without adding a timer, changing the
+queue, or moving Unity-backed response getters to a worker thread.
 
 ## Core Components
 

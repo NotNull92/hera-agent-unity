@@ -1,9 +1,9 @@
 # Active Development Handoff
 
 Current state (2026-10-19): **M1 and M2 are implemented; the support floor is now
-Unity 6.6 (`6000.6`).** Connector `0.2.2` (unreleased) requires `6000.6+`, M1 =
+Unity 6.6 (`6000.6`).** Connector `0.2.3` (unreleased) requires `6000.6+`, M1 =
 contract hardening plus MCP removal (CLI `v0.3.0`), M2 = catalog rebaseline (CLI
-`v0.3.1`). The selected order is fix B → M3 → O2; only fix B is in this train. Per-release detail lives in `CHANGELOG.md`;
+`v0.3.1`). The selected order is fix B → M3 → O2; this train implements M3 only. Per-release detail lives in `CHANGELOG.md`;
 this file records only current state and what is open.
 
 Step 6 fix A is implemented for **CLI v0.3.2 / Connector 0.2.1**, without a tag
@@ -11,7 +11,7 @@ or release: preserve integer literals in params/batch/flags, reject integers
 outside signed 64-bit range before conversion, and document process-scoped
 `instance_id` values. Persist `global_id` and explicitly re-resolve after restart.
 Atomic batch hardening (B) and Reversible classification follow in the next paragraph;
-M3 and O2 implementation remain outside this train.
+M3 follows below; O2 remains outside this train.
 
 Step 6 fix B is implemented for **CLI v0.3.3 / Connector 0.2.2**, without tags or
 releases. Atomic preflight rejects unknown or ineligible items before approval,
@@ -34,6 +34,16 @@ these implementation results do not substitute for that review.
 Fix A kept catalog hash `3649a714…`, 34 tools / 133 actions. Compact rules increased
 91 B to 2,368 B, within the 2,500 B rules budget; CLI summary became 2,845 B.
 
+M3 is implemented for **Connector 0.2.3; CLI v0.3.3 unchanged**. Only the bounded
+request-body byte loop detaches from Unity's context. No timer or queue changes.
+Foreground read/write p50 decreased by about 50 ms; background p95 decreased
+by about 95 ms, with no claim for its nearly unchanged p50. Idle CPU did not
+materially regress in three five-second windows. Both Editor fixture suites
+passed 29 / failed 0 / skipped 1; normal installation isolates test sources,
+and exact-source/Go/package/catalog gates passed. Catalog hash `93827d16…`,
+34 tools / 133 actions, and 2,368-byte rules remain unchanged. Independent
+verification is pending; O2 and other planned work are not started.
+
 ## Step 6 queue (2026-10-17)
 
 Plan and evidence: `docs/report/plan-step6-application-2026-10-17.md`. Adopted
@@ -51,7 +61,7 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | Pre-6.6 cleanup | Done | Every version-gated `#if`, the reflected int ↔ EntityId bridge, the docs-bucket selection, the pitfalls min-docs filter and the 6000.0/6000.3 docs bundles are gone; the shipped docs corpus is rebuilt from the Unity 6.6 archive, so `Docs:` reports `6000.6` |
 | fix A | Done (candidate) | Integer literals survive `--params`, batch file/stdin, and numeric flags; the Connector rejects out-of-Int64 integers with `INVALID_ARGUMENT` and compares declared bounds without a double round-trip; `instance_id` is documented as Editor-process-scoped. Connector `0.2.1`, CLI `v0.3.2`. Independent verification on a separate fixture passed |
 | fix B | Done (candidate) | Atomic fail-closed preflight and 12 Undo-covered action declarations; screenshot reversible=false. CLI `v0.3.3`, Connector `0.2.2`; independent verification follows implementation |
-| M3 | Next, separate train | Selected next: 150 ms dispatch watchdog; not changed by fix B |
+| M3 | Implemented candidate; independent verification pending | Connector `0.2.3` isolates bounded body byte reads from Unity context; no watchdog/tick or CLI changes. Measurements and rejected alternatives are in `docs/DECISION_LEDGER.md` |
 | O2 | After M3, separate train | Argument hash normalization; not changed by fix B |
 | Other M3+ | Not authorized | Remaining items in §1 of the plan |
 
