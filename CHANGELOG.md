@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI v0.3.4 / Connector 0.2.4)
+
+- Test results now include sorted per-test names, status, duration, and failure details while preserving summary fields. The final result tree supplies the same data after PlayMode domain reload.
+- `test --format json|junit|nunit --output <path>` exports CI artifacts, including for resumed runs. XML escapes test data, keeps failing exit codes, and warns about missing detail from older connectors.
+- Paired `--shard-index` / `--shard-count` select deterministic contiguous partitions of sorted full names. Empty shards fail with `NO_TESTS_MATCHED`; duplicate full names fail closed. Shard metadata survives the result file bus.
+- No new tools, actions, runtime dependencies, tags, or releases. Compact agent rules remain unchanged.
+
 ### Fixed (Connector 0.2.3; CLI unchanged at v0.3.3)
 
 - HTTP request-body reads no longer return to the Editor context for every byte-read completion. Parsing, dispatch, response serialization, and response/ledger handling remain on their existing main-thread path. Body limits, queue behavior, catalog, and retry contracts are unchanged; no keep-alive tick is added.

@@ -19,6 +19,56 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > chain. The CLI is the only agent surface. Do not re-propose any of it without a
 > new explicit approval.
 
+
+## Step 6 M4 — test artifacts and deterministic shards (2026-10-19)
+
+- **Admission gate:** CI consumers need JUnit/NUnit XML with per-case outcomes and
+  durations; the previous summary-only file bus could not provide that detail.
+  Existing single-name filters cannot express a deterministic partition, and
+  splitting names on commas would corrupt parameterized test names. This extends
+  the existing test surface; no tool/action or dependency is added.
+- **User decisions:** M4–M8 are approved in sequence, with M4 implemented first.
+  The contradictory slice notation in the initial order was resolved explicitly
+  in favor of ordinal sorting followed by contiguous balanced ranges. First
+  remainder shards receive one extra name. Only the dedicated M4 Editor was
+  authorized for lifecycle operations. OpenCode is excluded from further work;
+  these are Codex implementation checks, not independent approval.
+- **Contract:** paired positive Int32 shard inputs, index <= count; local invalid
+  flags return `INVALID_ARGUMENT`. An empty shard returns `NO_TESTS_MATCHED`
+  with `{index,count,selected:0}` so CI cannot mistake no coverage for success.
+  Duplicate full names fail with `AMBIGUOUS_TEST_NAMES`. Exact names containing
+  commas remain one array element. New `cases` and optional `shard` coexist with
+  all prior summary fields. Final-tree collection and persisted shard metadata
+  cover the PlayMode reload path.
+- **Artifacts:** JSON remains default. JUnit/NUnit export also works with resume;
+  failed tests still exit nonzero. Old summary-only results warn on stderr and
+  omit unknown durations; skipped names use explicit placeholders. No invented
+  engine version, timestamps, or assertion counts are emitted. Suite duration is
+  the sum of case durations, not measured wall time. Pending/interrupted/selector
+  errors remain JSON and do not create a misleading XML artifact.
+- **Measured:** Unity 6000.6.6f1 fresh normal install, testables, and restored normal
+  install pass; production response file has zero test sources and normal install
+  has no test DLL. Release gate 30 total / 29 passed / 0 failed / 1 skipped
+  (Timeline absent); new assertions execute inside `ReleaseGateTests.ToolContract`.
+  JUnit/NUnit parsed with matching counts; two shards contain 15 names each,
+  union equals the full list, intersection is empty, and shard 1 repeats exactly.
+  Comma-bearing names, empty shard, deliberate failure XML/exit 1, a PlayMode
+  shard after reload, and exact-run-id resume all pass. Go vet/test/lint/format,
+  guide sync, package validation, and catalog comparison pass.
+- **Catalog rebaseline:** `93827d16…` ->
+  `cbbab9d699ee8e6b7c7ec3f456bebba0ed51c2081e6f11b95cfcf6acfabe565a`.
+  Normalized bytes 268,402 -> 269,038 (**+636 B**). Exactly four added schema
+  properties: input shard_index/shard_count; output cases/shard. 34 tools /
+  133 actions, 2,368 B compact rules, and 2,845 B CLI summary remain unchanged.
+- **Versions:** unreleased CLI v0.3.4 / Connector 0.2.4. No tag or release.
+- **Limits:** old connector compatibility is a synthetic payload test, not an
+  old installed binary run. No large-project scaling or third-party CI ingestion
+  claim. Sharded filters support documented exact names/class or namespace
+  prefixes and category/assembly names, not arbitrary NUnit regex expressions.
+  One mistaken resume probe selected a historical unconsumed result because the
+  CLI consumes current result files; its bytes were restored and the sample was
+  excluded. The corrected probe uses the exact `TEST_RUN_PENDING` run ID.
+
 ### 이미 처리된 항목 (다른 세션에서 중복 제안 금지)
 
 | 항목 | 상태 | 비고 |

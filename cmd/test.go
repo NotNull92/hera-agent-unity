@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
@@ -49,6 +50,9 @@ func testResumeRunID(args []string) (string, bool, error) {
 }
 
 func testCmd(ctx context.Context, args []string, send SendFunc, resolve instanceResolver, timeout time.Duration) (*client.CommandResponse, error) {
+	if _, err := parseTestOptions(args); err != nil {
+		return &client.CommandResponse{Code: "INVALID_ARGUMENT", Message: err.Error()}, nil
+	}
 	resumeRunID, resume, err := testResumeRunID(args)
 	if err != nil {
 		return nil, err
@@ -102,6 +106,11 @@ func testCmd(ctx context.Context, args []string, send SendFunc, resolve instance
 	for _, key := range []string{"filter", "category", "assembly"} {
 		if v, ok := parsedParams[key].(string); ok {
 			params[key] = v
+		}
+	}
+	for _, key := range []string{"shard-index", "shard-count"} {
+		if value, ok := parsedParams[key]; ok {
+			params[strings.ReplaceAll(key, "-", "_")] = value
 		}
 	}
 

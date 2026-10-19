@@ -140,6 +140,14 @@ func Execute(ctx context.Context) error {
 		}
 	}
 
+	var testOutput testOptions
+	if category == "test" {
+		testOutput, err = parseTestOptions(subArgs)
+		if err != nil {
+			(&ResponsePrinter{CompactJSON: true}).Print(&client.CommandResponse{Code: "INVALID_ARGUMENT", Message: err.Error()}, category)
+			return ErrCommandFailed
+		}
+	}
 	handled, err := (standaloneRunner{config: config}).Run(ctx, category, subArgs)
 	if err != nil {
 		return err
@@ -190,7 +198,16 @@ func Execute(ctx context.Context) error {
 		Quiet:       config.Quiet,
 		CompactJSON: config.CompactJSON,
 	}
-	printer.Print(resp, category)
+	written := false
+	if category == "test" {
+		written, err = writeTestOutput(resp, testOutput, os.Stdout, os.Stderr)
+		if err != nil {
+			return err
+		}
+	}
+	if !written {
+		printer.Print(resp, category)
+	}
 
 	if config.Verbose {
 		printTimings(resp)

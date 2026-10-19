@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -55,6 +56,12 @@ namespace HeraAgent.TestRunner
 
             [ToolParameter("Request run-scoped asynchronous results (new CLI capability)")]
             public bool AsyncResults { get; set; }
+
+            [ToolParameter("One-based shard index; requires shard_count", SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":2147483647}")]
+            public int? ShardIndex { get; set; }
+
+            [ToolParameter("Number of contiguous partitions of the sorted selected test names; requires shard_index", SchemaJson = "{\"type\":\"integer\",\"minimum\":1,\"maximum\":2147483647}")]
+            public int? ShardCount { get; set; }
         }
 
         public sealed class ListParameters
@@ -94,6 +101,28 @@ namespace HeraAgent.TestRunner
             public int Skipped { get; set; }
             public string[] Failures { get; set; }
             public string[] Passes { get; set; }
+            public CaseResult[] Cases { get; set; }
+            public ShardResult Shard { get; set; }
+        }
+
+        [JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class CaseResult
+        {
+            public string FullName { get; set; }
+            public string Status { get; set; }
+            public double DurationMs { get; set; }
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+            public string Message { get; set; }
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+            public string StackTrace { get; set; }
+        }
+
+        [JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
+        public sealed class ShardResult
+        {
+            public int Index { get; set; }
+            public int Count { get; set; }
+            public int Selected { get; set; }
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
@@ -156,10 +185,78 @@ namespace HeraAgent.TestRunner
             var assemblies = SplitList(p.Get("assembly", null));
             var asyncResults = p.GetBool("async_results");
 
+            var shardError = ParseShard(@params, out var shard);
+            if (shardError != null) return Task.FromResult<object>(shardError);
+            if (shard != null)
+                return StartShardedRun(testMode, filter, categories, assemblies, shard);
+
             if (testMode == TestMode.EditMode && !asyncResults)
                 return ExecuteLegacyEditMode(filter, categories, assemblies);
 
             return Task.FromResult<object>(StartTestRun(testMode, filter, categories, assemblies));
+        }
+
+        internal static ErrorResponse ParseShard(JObject raw, out ShardResult shard)
+        {
+            shard = null;
+            var index = raw["shard_index"];
+            var count = raw["shard_count"];
+            if (index == null && count == null) return null;
+            if (index?.Type != JTokenType.Integer || count?.Type != JTokenType.Integer
+                || !int.TryParse(index.ToString(), out var i) || !int.TryParse(count.ToString(), out var c)
+                || i < 1 || c < 1 || i > c)
+                return new ErrorResponse("INVALID_ARGUMENT", "Shards require both shard_index and shard_count, with 1 <= index <= count <= 2147483647.");
+            shard = new ShardResult { Index = i, Count = c };
+            return null;
+        }
+
+        internal static string[] PartitionNames(IEnumerable<string> names, int index, int count)
+        {
+            if (count < 1 || index < 1 || index > count) throw new ArgumentOutOfRangeException(nameof(index));
+            var sorted = names.OrderBy(name => name, StringComparer.Ordinal).ToArray();
+            // First remainder shards receive one extra name; multiplication uses Int64.
+            var size = sorted.Length / count;
+            var extra = sorted.Length % count;
+            var start = (int)((long)(index - 1) * size + Math.Min(index - 1, extra));
+            return sorted.Skip(start).Take(size + (index <= extra ? 1 : 0)).ToArray();
+        }
+
+        private static async Task<object> StartShardedRun(TestMode mode, string filter, string[] categories,
+            string[] assemblies, ShardResult shard)
+        {
+            if (TestRunnerState.HasPending(HttpServer.Port))
+                return new ErrorResponse("TEST_RUN_ALREADY_RUNNING", "A test run is already active.");
+            var api = ScriptableObject.CreateInstance<TestRunnerApi>();
+            var entries = new List<TestEntry>();
+            var done = false;
+            try
+            {
+                api.RetrieveTestList(mode, root => { if (root != null) Collect(root, null, entries); done = true; });
+                var deadline = DateTime.UtcNow.AddSeconds(60);
+                while (!done)
+                {
+                    if (DateTime.UtcNow > deadline) return new ErrorResponse("TEST_LIST_TIMEOUT", "Unity did not return the test list within 60s.");
+                    await EditorUpdate.Next();
+                }
+            }
+            finally { Object.DestroyImmediate(api); }
+            var names = entries.Where(entry => MatchesRunSelectors(entry, filter, categories, assemblies))
+                .Select(entry => entry.FullName).ToArray();
+            if (names.Distinct(StringComparer.Ordinal).Count() != names.Length)
+                return new ErrorResponse("AMBIGUOUS_TEST_NAMES", "Selected tests have duplicate full names and cannot be partitioned safely.");
+            var selected = PartitionNames(names, shard.Index, shard.Count);
+            shard.Selected = selected.Length;
+            if (selected.Length == 0)
+                return BuildResponse(new List<string>(), new List<string>(), new List<string>(), true,
+                    new List<CaseResult>(), shard);
+            return StartTestRun(mode, filter, categories, assemblies, selected, shard);
+        }
+
+        internal static bool MatchesRunSelectors(TestEntry entry, string filter, string[] categories, string[] assemblies)
+        {
+            if (!string.IsNullOrEmpty(filter) && !string.Equals(entry.FullName, filter, StringComparison.Ordinal)
+                && !(entry.FullName ?? "").StartsWith(filter + ".", StringComparison.Ordinal)) return false;
+            return MatchesSelectors(entry, null, categories, assemblies);
         }
 
         // Any of --filter / --category / --assembly narrows the run. A narrowed
@@ -195,6 +292,7 @@ namespace HeraAgent.TestRunner
             var passed = new List<string>();
             var failed = new List<string>();
             var skipped = new List<string>();
+            var cases = new List<CaseResult>();
             var completion = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
             TestRunnerApi api = null;
             TestCallbacks callbacks = null;
@@ -211,13 +309,14 @@ namespace HeraAgent.TestRunner
             {
                 api = ScriptableObject.CreateInstance<TestRunnerApi>();
                 callbacks = new TestCallbacks(
-                    onResult: r => CollectResult(r, passed, failed, skipped),
-                    onFinished: _ =>
+                    onResult: _ => { },
+                    onFinished: result =>
                     {
                         if (completed) return;
                         completed = true;
+                        CollectResultTree(result, passed, failed, skipped, cases);
                         var response = BuildResponse(passed, failed, skipped,
-                            IsSelective(filter, categories, assemblies));
+                            IsSelective(filter, categories, assemblies), cases);
                         cleanup();
                         completion.TrySetResult(response);
                     });
@@ -234,7 +333,8 @@ namespace HeraAgent.TestRunner
             }
         }
 
-        private static object StartTestRun(TestMode mode, string filter, string[] categories, string[] assemblies)
+        private static object StartTestRun(TestMode mode, string filter, string[] categories, string[] assemblies,
+            string[] selectedNames = null, ShardResult shard = null)
         {
             var port = HttpServer.Port;
 
@@ -254,12 +354,13 @@ namespace HeraAgent.TestRunner
                 if (File.Exists(legacyPath)) File.Delete(legacyPath);
             }
             catch { }
-            var selective = IsSelective(filter, categories, assemblies);
-            TestRunnerState.MarkPending(port, runId, filter, mode, selective);
+            var selective = shard != null || IsSelective(filter, categories, assemblies);
+            TestRunnerState.MarkPending(port, runId, filter, mode, selective, shard);
 
             var passed  = new List<string>();
             var failed  = new List<string>();
             var skipped = new List<string>();
+            var cases = new List<CaseResult>();
 
             TestRunnerApi api = null;
             TestCallbacks callbacks = null;
@@ -276,12 +377,13 @@ namespace HeraAgent.TestRunner
             {
                 api = ScriptableObject.CreateInstance<TestRunnerApi>();
                 callbacks = new TestCallbacks(
-                onResult: r => CollectResult(r, passed, failed, skipped),
-                onFinished: _ =>
+                onResult: _ => { },
+                onFinished: result =>
                 {
                     if (completed) return;
                     completed = true;
-                    if (WriteResultsFile(port, runId, passed, failed, skipped, selective))
+                    CollectResultTree(result, passed, failed, skipped, cases);
+                    if (WriteResultsFile(port, runId, passed, failed, skipped, selective, cases, shard))
                         TestRunnerState.ClearPending(port, runId);
                     cleanup();
                 }
@@ -291,9 +393,17 @@ namespace HeraAgent.TestRunner
                 // Execute returns NUnit's own run guid — the only handle
                 // CancelTestRun accepts. Persist it so `test cancel` still works
                 // after the PlayMode domain reload.
-                var nunitGuid = api.Execute(new ExecutionSettings(BuildFilter(mode, filter, categories, assemblies)));
+                var executionFilter = BuildFilter(mode, filter, categories, assemblies);
+                if (selectedNames != null)
+                {
+                    executionFilter.testNames = selectedNames;
+                    executionFilter.groupNames = null;
+                }
+                var nunitGuid = api.Execute(new ExecutionSettings(executionFilter));
                 TestRunnerState.AttachRunGuid(port, runId, nunitGuid);
-                return new SuccessResponse("running", new { port, run_id = runId });
+                var started = JObject.FromObject(new { port, run_id = runId });
+                if (shard != null) started["shard"] = JObject.FromObject(shard);
+                return new SuccessResponse("running", started);
             }
             catch (Exception ex)
             {
@@ -556,10 +666,18 @@ namespace HeraAgent.TestRunner
         }
 
         internal static void CollectResult(ITestResultAdaptor result,
-            List<string> passed, List<string> failed, List<string> skipped)
+            List<string> passed, List<string> failed, List<string> skipped, List<CaseResult> cases)
         {
             if (result.Test.IsSuite) return;
             var name = result.Test.FullName;
+            cases.Add(new CaseResult
+            {
+                FullName = name,
+                Status = result.TestStatus == TestStatus.Passed ? "passed" : result.TestStatus == TestStatus.Failed ? "failed" : "skipped",
+                DurationMs = Math.Max(0, result.Duration * 1000),
+                Message = result.TestStatus == TestStatus.Failed ? result.Message : null,
+                StackTrace = result.TestStatus == TestStatus.Failed ? result.StackTrace : null
+            });
             switch (result.TestStatus)
             {
                 case TestStatus.Passed:  passed.Add(name); break;
@@ -568,9 +686,18 @@ namespace HeraAgent.TestRunner
             }
         }
 
-        internal static bool WriteResultsFile(int port, string runId, List<string> passed, List<string> failed, List<string> skipped, bool selective)
+        internal static void CollectResultTree(ITestResultAdaptor result, List<string> passed,
+            List<string> failed, List<string> skipped, List<CaseResult> cases)
         {
-            return WriteResponseFile(port, runId, BuildResponse(passed, failed, skipped, selective));
+            if (!result.Test.IsSuite) { CollectResult(result, passed, failed, skipped, cases); return; }
+            if (result.Children != null)
+                foreach (var child in result.Children) CollectResultTree(child, passed, failed, skipped, cases);
+        }
+
+        internal static bool WriteResultsFile(int port, string runId, List<string> passed, List<string> failed, List<string> skipped, bool selective,
+            List<CaseResult> cases, ShardResult shard = null)
+        {
+            return WriteResponseFile(port, runId, BuildResponse(passed, failed, skipped, selective, cases, shard));
         }
 
         internal static bool WriteErrorResultsFile(int port, string runId, string code, string message)
@@ -652,10 +779,11 @@ namespace HeraAgent.TestRunner
             }
         }
 
-        internal static object BuildResponse(List<string> passed, List<string> failed, List<string> skipped, bool selective)
+        internal static object BuildResponse(List<string> passed, List<string> failed, List<string> skipped, bool selective,
+            List<CaseResult> cases, ShardResult shard = null)
         {
             var total = passed.Count + failed.Count + skipped.Count;
-            var summary = new
+            var summary = JObject.FromObject(new
             {
                 total,
                 passed  = passed.Count,
@@ -663,7 +791,10 @@ namespace HeraAgent.TestRunner
                 skipped = skipped.Count,
                 failures = failed,
                 passes   = passed,
-            };
+                cases = cases.OrderBy(item => item.FullName, StringComparer.Ordinal).ToArray(),
+                shard,
+            });
+            if (shard == null) summary.Remove("shard");
             if (failed.Count > 0)
                 return new ErrorResponse("TESTS_FAILED", $"{failed.Count} test(s) failed.", summary);
             // Zero tests under a selector means the selector matched nothing —

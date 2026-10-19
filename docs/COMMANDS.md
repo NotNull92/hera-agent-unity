@@ -1526,6 +1526,10 @@ hera-agent-unity test [flags]
 | `--category` | Comma-separated NUnit `[Category]` names | `""` |
 | `--assembly` | Comma-separated test assembly names (no `.dll`) | `""` |
 | `--limit` | `list` only: maximum tests returned | `200` |
+| `--format` | `json`, `junit`, or `nunit`; also supports resume | `json` |
+| `--output` | Artifact file (overwritten; parent directory must exist) | stdout |
+| `--shard-index` | One-based index; requires shard count | unset |
+| `--shard-count` | Positive Int32 partition count; requires index | unset |
 | `--resume` | Continue waiting for an existing `run_id` without starting tests again | `""` |
 
 ```bash
@@ -1589,6 +1593,32 @@ the connector preserves the legacy synchronous EditMode response, while
 PlayMode remains compatible through the legacy result file.
 
 ---
+
+**CI artifacts**: `test --format junit --output results.xml` and
+`test --format nunit --output results.xml` serialize sorted per-test
+`cases[]{full_name,status,duration_ms,message,stack_trace}`. Message and stack
+are only supplied for failures. Existing summary fields remain compatible.
+A failed test run still exits nonzero while producing XML. Pending, interrupted,
+and selector errors keep their JSON error envelope and do not produce XML.
+Summary-only older connectors produce a stderr warning, omit durations, and use
+explicit placeholders for skipped names; exact failure names may be ambiguous.
+`test --resume <run_id> --format junit --output results.xml` renders the stored
+result without rerunning it; without an explicit mode the suite is named
+`Unity tests` because older result files do not store the mode.
+
+**Sharding**: `test --shard-count 4 --shard-index 2` discovers the selected tests,
+sorts full names in ordinal order, and selects a balanced contiguous range.
+The first remainder shards get one extra test. Both positive Int32 values are
+required, with index no greater than count; violations return `INVALID_ARGUMENT`
+at the CLI. Sharded `--filter` accepts an exact full name or namespace/class
+prefix; categories and assemblies intersect the selection. Parameterized names
+containing commas are passed as individual names, never split on commas.
+Duplicate full names return `AMBIGUOUS_TEST_NAMES`. An empty partition returns
+`NO_TESTS_MATCHED`, with `shard:{index,count,selected:0}`, rather than a green
+build. Completed results echo the shard, including after domain reload or resume.
+Resume cannot change the saved partition. Run sharded CI jobs in separate Unity
+projects/processes; one Editor still rejects concurrent test runs.
+
 
 ## task
 

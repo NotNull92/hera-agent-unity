@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+  <testsuite name="EditMode &lt;&amp;&gt;" tests="3" failures="1" skipped="1" time="3.75">
+    <testcase classname="N.F" name="A(&#34;a.b&amp;,&lt;&gt;&#39;&#34;)" time="1.25">
+      <failure message="bad &lt;&amp;&gt; &#34;&#39;">line &lt;1&gt; &amp;&#xA;line 2</failure>
+    </testcase>
+    <testcase classname="N.F" name="B" time="1.25"></testcase>
+    <testcase classname="N.F" name="Z" time="1.25">
+      <skipped></skipped>
+    </testcase>
+  </testsuite>
+</testsuites>

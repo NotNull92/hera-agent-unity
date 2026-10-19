@@ -15,6 +15,10 @@ Options:
   --category <a,b>              Comma-separated NUnit [Category] names
   --assembly <a,b>              Comma-separated test assembly names (no .dll)
   --limit <n>                   list only: maximum tests returned (default 200)
+  --format <json|junit|nunit>   Result format (default json); also works with resume
+  --output <path>              Write the result artifact to a file (default stdout)
+  --shard-index <n>            One-based shard index; requires --shard-count
+  --shard-count <n>            Number of contiguous partitions; requires --shard-index
   --resume <run_id>             Keep waiting for an existing test run without
                                 starting the tests again
 
@@ -56,3 +60,26 @@ Examples:
   hera-agent-unity test cancel
   hera-agent-unity --port 8094 test --resume <run_id> --timeout 300000
 
+
+Artifacts and shards:
+  hera-agent-unity test --format junit --output results.xml
+  hera-agent-unity test --format nunit --output results.xml
+  hera-agent-unity test --shard-count 4 --shard-index 2 --format junit --output shard-2.xml
+
+Results include cases (full_name, status, duration_ms, and failure message/stack).
+Existing total/passed/failed/skipped/failures/passes fields remain available.
+XML sorts cases by full name and preserves a failing command exit code. Pending,
+interrupted, and selector errors remain JSON errors, without a misleading XML
+artifact. Output overwrites the named file; its parent directory must exist.
+Older connectors provide summary-only XML: durations are omitted, failure names
+may be ambiguous, and skipped names use explicit placeholders. A warning goes
+to stderr. Resume without --mode labels the XML suite "Unity tests".
+
+Shards sort selected full names using ordinal order, then divide into contiguous
+balanced ranges (the first remainder shards get one extra test). Both values
+must be positive Int32 integers and index must not exceed count. A shard with no
+tests returns NO_TESTS_MATCHED with shard {index,count,selected:0}; it is not a pass.
+Duplicate full names return AMBIGUOUS_TEST_NAMES instead of overlapping shards.
+Sharded --filter selects an exact full name or namespace/class prefix; names
+containing commas stay one name. --category and --assembly intersect the selection.
+Results echo shard {index,count,selected}. Resume cannot change the saved shard.

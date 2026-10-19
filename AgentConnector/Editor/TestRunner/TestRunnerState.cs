@@ -21,9 +21,9 @@ namespace HeraAgent.TestRunner
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
 
-        public static void MarkPending(int port, string runId, string filter, TestMode mode, bool selective)
+        public static void MarkPending(int port, string runId, string filter, TestMode mode, bool selective, RunTests.ShardResult shard = null)
         {
-            WritePending(port, runId, filter, mode == TestMode.EditMode ? "EditMode" : "PlayMode", selective, null);
+            WritePending(port, runId, filter, mode == TestMode.EditMode ? "EditMode" : "PlayMode", selective, null, shard);
         }
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace HeraAgent.TestRunner
         {
             if (string.IsNullOrEmpty(nunitGuid)) return;
             if (!TryReadPending(PendingFilePath(port, runId), out var pending)) return;
-            WritePending(port, runId, pending.Filter, pending.Mode, pending.Selective, nunitGuid);
+            WritePending(port, runId, pending.Filter, pending.Mode, pending.Selective, nunitGuid, pending.Shard);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace HeraAgent.TestRunner
             return found;
         }
 
-        static void WritePending(int port, string runId, string filter, string mode, bool selective, string nunitGuid)
+        static void WritePending(int port, string runId, string filter, string mode, bool selective, string nunitGuid, RunTests.ShardResult shard)
         {
             var pending = new
             {
@@ -70,6 +70,7 @@ namespace HeraAgent.TestRunner
                 filter = filter ?? "",
                 mode,
                 selective,
+                shard,
                 nunit_guid = nunitGuid ?? "",
                 owner_pid = HeraAgent.ProjectIdentity.CurrentProcessId,
                 project_id = HeraAgent.ProjectIdentity.CurrentId
@@ -163,17 +164,18 @@ namespace HeraAgent.TestRunner
                         continue;
                     }
 
-                    ReattachCallbacks(pending.Port, pending.RunId, pending.Selective);
+                    ReattachCallbacks(pending.Port, pending.RunId, pending.Selective, pending.Shard);
                 }
             }
             catch { }
         }
 
-        static void ReattachCallbacks(int port, string runId, bool selective)
+        static void ReattachCallbacks(int port, string runId, bool selective, RunTests.ShardResult shard)
         {
             var passed  = new List<string>();
             var failed  = new List<string>();
             var skipped = new List<string>();
+            var cases = new List<RunTests.CaseResult>();
 
             var api = ScriptableObject.CreateInstance<TestRunnerApi>();
             RunTests.TestCallbacks callbacks = null;
@@ -186,12 +188,13 @@ namespace HeraAgent.TestRunner
                 RunTests.DisposeApi(api, callbacks);
             };
             callbacks = new RunTests.TestCallbacks(
-                onResult: r => RunTests.CollectResult(r, passed, failed, skipped),
-                onFinished: _ =>
+                onResult: _ => { },
+                onFinished: result =>
                 {
                     if (completed) return;
                     completed = true;
-                    if (RunTests.WriteResultsFile(port, runId, passed, failed, skipped, selective))
+                    RunTests.CollectResultTree(result, passed, failed, skipped, cases);
+                    if (RunTests.WriteResultsFile(port, runId, passed, failed, skipped, selective, cases, shard))
                         ClearPending(port, runId);
                     cleanup();
                 }
@@ -240,6 +243,7 @@ namespace HeraAgent.TestRunner
                         ?? !string.IsNullOrEmpty(data["filter"]?.Value<string>()),
                     NunitGuid = data["nunit_guid"]?.Value<string>(),
                     OwnerPid = ownerPid,
+                    Shard = data["shard"]?.ToObject<RunTests.ShardResult>(),
                     State = data
                 };
                 return true;
@@ -282,6 +286,7 @@ namespace HeraAgent.TestRunner
             public string NunitGuid { get; set; }
             public int OwnerPid { get; set; }
             public JObject State { get; set; }
+            public RunTests.ShardResult Shard { get; set; }
         }
     }
 }

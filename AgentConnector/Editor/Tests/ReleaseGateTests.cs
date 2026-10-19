@@ -121,7 +121,11 @@ namespace HeraAgent.Tests
         public void ToolCatalog() => ToolCatalogTests.RunTests();
 
         [Test]
-        public void ToolContract() => ToolContractTests.RunTests();
+        public void ToolContract()
+        {
+            ToolContractTests.RunTests();
+            TestArtifactTests.RunTests();
+        }
 
         [Test]
         public void ToolDiscovery() => ToolDiscoveryTests.RunTests();

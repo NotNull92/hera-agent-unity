@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<test-run id="0" testcasecount="3" result="Failed" total="3" passed="1" failed="1" skipped="1" duration="3.75">
+  <test-suite id="0-0" fullname="EditMode &lt;&amp;&gt;" testcasecount="3" type="TestSuite" name="EditMode &lt;&amp;&gt;" result="Failed" total="3" passed="1" failed="1" skipped="1" duration="3.75">
+    <test-case id="0-1" name="A(&#34;a.b&amp;,&lt;&gt;&#39;&#34;)" fullname="N.F.A(&#34;a.b&amp;,&lt;&gt;&#39;&#34;)" result="Failed" duration="1.25">
+      <failure>
+        <message>bad &lt;&amp;&gt; &#34;&#39;</message>
+        <stack-trace>line &lt;1&gt; &amp;&#xA;line 2</stack-trace>
+      </failure>
+    </test-case>
+    <test-case id="0-2" name="B" fullname="N.F.B" result="Passed" duration="1.25"></test-case>
+    <test-case id="0-3" name="Z" fullname="N.F.Z" result="Skipped" duration="1.25"></test-case>
+  </test-suite>
+</test-run>

@@ -560,7 +560,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 | `editor launch \| restart \| play \| stop \| pause \| refresh` | Editor lifecycle | exact `--project`, `--hub-root` (bootstrap); `--wait` (play); `--compile`, `--force` (refresh) |
 | `menu "<path>"` | Execute menu item | (none) |
 | `screenshot` | Capture view, overlay canvases, isolated target, or inspect bounded Game View UI/3D physics metadata | `--view scene\|game`, `--overlay`, `--annotate_ui`, `--annotations_only`, `--annotate_physics`, `--physics_only`, `--physics_grid_size`, `--max_physics_hits`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
-| `test` | Run tests or resume an existing run | `--mode EditMode\|PlayMode`, `--filter <ns.class>`, `--resume <run_id>` |
+| `test` | Run tests, export CI artifacts, or resume a run | `--mode EditMode\|PlayMode`, `--filter <ns.class>`, `--resume <run_id>`, `--format json\|junit\|nunit`, `--output <path>`, paired `--shard-index` / `--shard-count` |
 | `task list` / `task status <task_id>` | Inspect durable test/package work without contacting Unity | `--project <full-path>` or `--port N` |
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
 | `reserialize [paths...]` | Force YAML reserialize | (no args = whole project) |
