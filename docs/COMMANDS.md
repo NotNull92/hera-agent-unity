@@ -586,7 +586,7 @@ project. The source must be an existing file, the destination must be under
 `Assets/` and must not already exist, and the response returns the resulting
 `guid` and `importer_type`. Every other action moves assets Unity already knows
 about. It exists because a caller with no filesystem tooling and no
-arbitrary-code permission — an MCP client on the compact default — otherwise has
+arbitrary-code permission — an agent restricted to declared tools — otherwise has
 no way to get a file the user already has on disk into the project.
 
 **Named camera**: `screenshot --camera <name>` renders through a temporary copy
@@ -1592,7 +1592,7 @@ PlayMode remains compatible through the legacy result file.
 
 ## task
 
-Inspect the same durable test and Package Manager state used by MCP Tasks,
+Inspect the same durable test and Package Manager state the tasks API tracks,
 without sending an HTTP request to Unity or waiting for a fresh heartbeat.
 
 ```bash
@@ -1603,7 +1603,7 @@ hera-agent-unity --project <full-path> task status <task_id>
 | Action | Description |
 |:---|:---|
 | `list` | List active pending tasks owned by the selected project and current port. Returns reusable opaque `task_id` values. |
-| `status <task_id>` | Return `working` or `completed` and include the durable result when available. Accepts IDs returned by either CLI `task list` or negotiated MCP Tasks. |
+| `status <task_id>` | Return `working` or `completed` and include the durable result when available. Accepts IDs returned by `task list` or by a durable test/package handle. |
 
 `task list` is intentionally an active-work discovery command. Unity removes a
 pending record after writing its result, so completed work may disappear from
