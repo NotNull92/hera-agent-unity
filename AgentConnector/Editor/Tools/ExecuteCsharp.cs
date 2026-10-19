@@ -74,6 +74,18 @@ namespace HeraAgent.Tools
                 return new ErrorResponse("MISSING_PARAM", "'code' required",
                     suggestions: new List<string> { "Pass code as first positional arg or --code <text>" });
 
+            var observation = new ExecJournal.Observation();
+            object response = null;
+            try
+            {
+                response = ExecuteRequest(p, code, observation);
+                return response;
+            }
+            finally { ExecJournal.Append(code, parameters?.Annotation<CommandRequestContext>()?.OperationId, observation, response); }
+        }
+
+        private static object ExecuteRequest(ToolParams p, string code, ExecJournal.Observation observation)
+        {
             var usingsToken = p.GetRaw("usings");
             var extraUsings = new List<string>();
             if (usingsToken != null)
@@ -95,6 +107,7 @@ namespace HeraAgent.Tools
             if (securityMode != "full" && securityMode != "restricted")
                 return new ErrorResponse("INVALID_ARGUMENT",
                     "'security_mode' must be 'full' or 'restricted'.");
+            observation.Mode = securityMode;
             var restricted = securityMode == "restricted";
 
             if (restricted)
@@ -105,7 +118,7 @@ namespace HeraAgent.Tools
             }
 
             var built = BuildSource(code, extraUsings);
-            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth, strict, restricted);
+            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth, strict, restricted, observation);
         }
 
         /// <summary>
@@ -133,9 +146,9 @@ namespace HeraAgent.Tools
             }
         }
 
-        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth, bool strict, bool restricted)
+        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth, bool strict, bool restricted, ExecJournal.Observation observation)
         {
-            var timings = new Dictionary<string, long>();
+            var timings = observation.Timings;
             string cacheKey = null;
             if (!noCache)
             {
@@ -163,6 +176,7 @@ namespace HeraAgent.Tools
                 timings["compile_ms"] = 0;
                 timings["load_ms"] = 0;
                 cacheState = 2;
+                observation.CompileCache = "memory_hit";
                 if (restricted)
                 {
                     var ilError = ValidateRestrictedIl(compiled);
@@ -181,6 +195,7 @@ namespace HeraAgent.Tools
             if (compiled == null && dllPath != null && File.Exists(dllPath))
             {
                 var cachedBytes = File.ReadAllBytes(dllPath);
+                observation.CompileCache = "disk_hit";
                 if (restricted)
                 {
                     var metadataError = ValidateRestrictedMetadata(cachedBytes);
@@ -224,6 +239,7 @@ namespace HeraAgent.Tools
 
             if (compiled == null)
             {
+                observation.CompileCache = "miss";
                 var compileSw = Stopwatch.StartNew();
                 var compileResult = CompileToBytes(source, userLineOffset, cscOverride, dotnetOverride, !noCache);
                 compileSw.Stop();

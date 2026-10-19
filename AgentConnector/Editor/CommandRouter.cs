@@ -363,6 +363,9 @@ namespace HeraAgent
                 object result;
                 if (handler.IsStatic)
                 {
+                    // Carry exec identity without adding a wire parameter or ambient mutable state.
+                    if (handler.DeclaringType == typeof(Tools.ExecuteCsharp) && requestContext != null)
+                        parameters.AddAnnotation(requestContext);
                     result = handler.Invoke(null, new object[] { parameters ?? new JObject() });
                 }
                 else

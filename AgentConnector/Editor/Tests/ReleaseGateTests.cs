@@ -76,7 +76,11 @@ namespace HeraAgent.Tests
         public void EntityIdCompat() => Assert.IsTrue(EntityIdCompatTests.RunAll());
 
         [Test]
-        public void ExecCompileCache() => ExecCompileCacheTests.RunTests();
+        public void ExecCompileCache()
+        {
+            ExecCompileCacheTests.RunTests();
+            ExecJournalTests.RunTests();
+        }
 
         [Test]
         public void ExecRestricted() => ExecRestrictedTests.RunTests();

@@ -224,6 +224,20 @@ hera-agent-unity exec "return Application.unityVersion;" --security-mode restric
 
 **Caching**: Compiled assemblies are cached in `Library/HeraAgentCache/` and held in memory. The cache key includes the source, reference-set hash, language version, and a versioned compiler/compilation fingerprint, so incompatible compiler inputs cannot reuse an old DLL. The first call per Unity session is the cold path (csc invocation); identical follow-up calls skip both compile and load. Cache invalidates automatically on assembly reload. `--no-cache` bypasses every exec cache read and write: it compiles against transient reference arguments, does not load or store cached assemblies, and does not persist a DLL — including with `--check`.
 
+**Local exec journal**: completed handler calls append metadata to
+`Library/HeraAgentCache/exec-journal.jsonl`: `schema_version` (1), `ts_ms`,
+`operation_id`, `code_sha256` (raw snippet UTF-8 SHA-256), `mode`, `compile_cache`
+(`memory_hit`, `disk_hit`, or `miss`), `compile_ms`, `execute_ms`, `outcome`, and
+`domain_epoch`. No source, return values, or exception messages are stored.
+`miss` means no cached assembly was used; a rejected/pre-compilation failure
+can have zero compile/execute time. Compile-only and `--no-cache` calls are
+included. Internal direct calls without request metadata have a null operation ID.
+After 1 MiB, rotation retains complete rows from the last 512 KiB via the shared
+file replacement helper. Write failures leave the exec response unchanged.
+Approval preflights, ledger replays, and compiler warmup add no rows. There is no
+journal query command; the file is separate from the approval/replay ledger.
+
+
 **Where exec is the intended answer, not a workaround**: nine commands in the
 official Unity CLI surface are served here rather than by a dedicated action —
 batch GameObject creation, script creation, `eval_file`, the authoring-root

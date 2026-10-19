@@ -20,6 +20,35 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## U3 / M6 — bounded exec journal (2026-10-19)
+
+- **Decision:** append local metadata after an exec handler completes, separate
+  from the approval/replay operation ledger. Store schema version 1, timestamp,
+  operation ID, raw-code SHA-256, mode, actual cache branch, compile/execute ms,
+  outcome code and domain epoch. No source, result or exception message.
+  Above 1 MiB, retain complete rows from the last 512 KiB via AtomicFile.
+  Best-effort journal failures never alter the exec response. No query command:
+  defer the second-stage read surface until analysis demonstrates a need.
+- **Wiring:** normalized request annotations carry the operation ID without a
+  wire field or ambient request state. Existing compiler/Invoke timings and
+  actual memory/disk/fresh branches supply observations. Preflight, ledger replay
+  and compiler warmup do not add rows; internal direct calls can have null IDs.
+- **Evidence:** four individually approved live calls returned the expected
+  integers and `ok`: miss (112 ms), memory_hit (0 ms), miss/restricted (116 ms),
+  then disk_hit (0 ms) after domain reload. Execute times rounded to 0 ms, not
+  claimed as zero-cost execution. All snippet hashes and operation IDs match.
+  No fifth exec. No script/assembly added: the three existing refs-*.rsp names
+  and byte contents were identical before/after reload; domain epoch changed.
+- **Gates:** fresh 6000.6.6f1 normal/testables/restored installation, production
+  rsp test sources 0, final console errors 0; suite 29 pass / 0 fail / 1 skipped.
+  Journal field/hash/privacy/error-outcome/rotation/write-failure tests pass.
+  Go vet/test/lint/format, guide sync, package/meta and runtime contract gates pass.
+  Compile/runtime failure rows were unit-tested, not additional live exec probes.
+- **Surface:** Connector 0.2.6 candidate; CLI v0.3.4 unchanged. Catalog unchanged
+  `cbbab9d6…`, 34 tools / 133 actions, 269,038 normalized bytes, 2,368-byte rules.
+  No new dependencies, tags or releases. Hard process termination can lose a
+  final journal row; this file is observational, not a replacement for the ledger.
+
 ## U2 / M5 — scratch IL post-processing (2026-10-19)
 
 | Result | Evidence and decision |

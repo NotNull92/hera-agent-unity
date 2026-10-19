@@ -59,3 +59,11 @@ Notes:
   - Leading 'using X;' directives in the code are auto-hoisted into the using
     block, so a normal multi-line file works as-is. Equivalent to --usings.
 
+
+Local journal: completed handler calls append metadata to
+Library/HeraAgentCache/exec-journal.jsonl (schema_version 1). It records code SHA-256,
+operation ID, security mode, actual cache path, compile/execute milliseconds,
+outcome code, and domain epoch; source, return values, and exception messages are
+excluded. Above 1 MiB, only complete rows from the last 512 KiB are retained.
+Journal write failures do not affect execution. --no-cache still writes metadata.
+Approval preflights, operation-ledger replays, and compiler warmup do not add rows.

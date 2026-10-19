@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (Connector 0.2.6; CLI unchanged at v0.3.4)
+
+- A bounded local exec journal records snippet hashes, operation IDs, security mode, actual cache path, compile/execute times, outcome codes, and domain epoch. Source, results, and exception messages are excluded; write failures do not affect execution.
+- Journal rotation keeps complete recent rows after 1 MiB. Approval, replay, wire responses, catalog metadata, and CLI commands remain unchanged.
+
 ### Fixed (Connector 0.2.5; CLI unchanged at v0.3.4)
 
 - Test shards now select the same cases as unsharded runs: ancestor suite names participate in the exact-and-regex name match; categories use case-sensitive regex matching, including inherited categories and `Uncategorized`. List selection is unchanged.
