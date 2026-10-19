@@ -14,7 +14,7 @@ namespace HeraAgent.Tools
         internal sealed class Observation
         {
             internal string Mode = "full";
-            internal string CompileCache = "miss";
+            internal string CompileCache = "none";
             internal readonly string DomainEpoch = ToolCatalogRuntime.DomainEpoch;
             internal readonly Dictionary<string, long> Timings = new Dictionary<string, long>();
         }

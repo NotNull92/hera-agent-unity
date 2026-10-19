@@ -14,6 +14,7 @@ namespace HeraAgent.Tests
             var directory = Path.Combine(Path.GetTempPath(), "hera-journal-" + Guid.NewGuid().ToString("N"));
             try
             {
+                Assert.AreEqual("none", new ExecJournal.Observation().CompileCache);
                 var observation = new ExecJournal.Observation { Mode = "restricted", CompileCache = "memory_hit" };
                 observation.Timings["compile_ms"] = 12;
                 observation.Timings["execute_ms"] = 3;

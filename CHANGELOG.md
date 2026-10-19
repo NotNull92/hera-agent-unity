@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.2.7; CLI unchanged at v0.3.4)
+
+- Exec journal entries rejected before compilation now use `compile_cache: none`, keeping rejection counts out of cache-miss statistics. Actual compilation and cache-hit paths are unchanged.
+
 ### Added (Connector 0.2.6; CLI unchanged at v0.3.4)
 
 - A bounded local exec journal records snippet hashes, operation IDs, security mode, actual cache path, compile/execute times, outcome codes, and domain epoch. Source, results, and exception messages are excluded; write failures do not affect execution.

@@ -227,10 +227,10 @@ hera-agent-unity exec "return Application.unityVersion;" --security-mode restric
 **Local exec journal**: completed handler calls append metadata to
 `Library/HeraAgentCache/exec-journal.jsonl`: `schema_version` (1), `ts_ms`,
 `operation_id`, `code_sha256` (raw snippet UTF-8 SHA-256), `mode`, `compile_cache`
-(`memory_hit`, `disk_hit`, or `miss`), `compile_ms`, `execute_ms`, `outcome`, and
+(`none`, `memory_hit`, `disk_hit`, or `miss`), `compile_ms`, `execute_ms`, `outcome`, and
 `domain_epoch`. No source, return values, or exception messages are stored.
-`miss` means no cached assembly was used; a rejected/pre-compilation failure
-can have zero compile/execute time. Compile-only and `--no-cache` calls are
+`none` means no compilation/cache path was entered (for example, source rejection);
+`miss` means fresh compilation was attempted. Cache hit rows can have zero compile time. Compile-only and `--no-cache` calls are
 included. Internal direct calls without request metadata have a null operation ID.
 After 1 MiB, rotation retains complete rows from the last 512 KiB via the shared
 file replacement helper. Write failures leave the exec response unchanged.

@@ -20,6 +20,17 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## U3 follow-up — distinguish no compilation from cache misses (2026-10-19)
+
+- Independent review passed U3 and identified that pre-compilation rejection was
+  counted as a miss. Connector 0.2.7 changes the initial cache observation to
+  `none`; only the actual fresh-compilation branch assigns `miss`. Existing
+  memory/disk paths are unchanged. The request annotation is null-safe.
+- Exact-source compilation and the ExecCompileCache release gate (including
+  journal tests and the new default-value assertion) pass. No additional live
+  exec was issued; the approved four-request matrix remains the U3 evidence.
+  CLI/versioned catalog surface is unchanged; the local journal enum gains `none`.
+
 ## U3 / M6 — bounded exec journal (2026-10-19)
 
 - **Decision:** append local metadata after an exec handler completes, separate
