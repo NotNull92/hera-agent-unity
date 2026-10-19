@@ -50,9 +50,8 @@ namespace HeraAgent
             public bool FailFast { get; set; } = true;
 
             // When true, wrap the whole batch in a single editor Undo group and
-            // revert it if any command fails. Only Undo-aware editor mutations
-            // (scene / GameObject / component edits) roll back — exec,
-            // AssetDatabase and file-system side effects are NOT transactional.
+            // revert it if any command fails. Preflight rejects operations whose
+            // safety contract does not declare non-destructive, Undo-covered work.
             public bool Atomic { get; set; }
         }
 
@@ -118,12 +117,54 @@ namespace HeraAgent
             {
                 var request = PrepareRequest(item.Command, item.Params);
                 prepared.Add(request);
-                if (request?.Safety?.RequiresConfirmation == true)
+                if (!options.Atomic && request?.Safety?.RequiresConfirmation == true)
                 {
                     return new ErrorResponse(
                         "APPROVAL_REQUIRED",
                         $"Batch item '{item.Command}' requires individual approval.");
                 }
+            }
+
+            if (options.Atomic)
+            {
+                var rejects = new List<object>();
+                for (var index = 0; index < commands.Count; index++)
+                {
+                    var request = prepared[index];
+                    string reason = null;
+                    if (request == null)
+                        reason = "unknown_tool";
+                    else if (request.Action == null
+                        ? request.Contract.Actions.Count > 0
+                        : !request.Contract.Actions.ContainsKey(request.Action))
+                        reason = "unknown_action";
+                    else
+                    {
+                        var safety = request.Safety ?? ResolveSafety(
+                            request.Contract, request.Action, commands[index].Params);
+                        if (safety.Destructive) reason = "destructive";
+                        else if (safety.MayReloadDomain) reason = "may_reload_domain";
+                        else if (!safety.Reversible) reason = "not_reversible";
+                    }
+                    if (reason != null)
+                        rejects.Add(new
+                        {
+                            index,
+                            tool = commands[index].Command,
+                            action = request?.Action ?? ExtractAction(commands[index].Params),
+                            reason,
+                        });
+                }
+                if (rejects.Count > 0)
+                    return new ErrorResponse("ATOMIC_UNSUPPORTED_ITEM",
+                        "Atomic batches require non-destructive, Undo-covered operations without domain reloads.",
+                        new { rejects });
+
+                // Approval cannot make an atomic-ineligible batch safe to execute.
+                for (var index = 0; index < prepared.Count; index++)
+                    if (prepared[index]?.Safety?.RequiresConfirmation == true)
+                        return new ErrorResponse("APPROVAL_REQUIRED",
+                            $"Batch item '{commands[index].Command}' requires individual approval.");
             }
 
             if (!await s_Lock.WaitAsync(s_LockTimeout))
@@ -138,8 +179,7 @@ namespace HeraAgent
             int failed = 0;
 
             // Atomic batches run inside one Undo group so the whole sequence can be
-            // reverted as a unit on failure. Caveat: only Undo-aware editor
-            // mutations roll back — exec / AssetDatabase / file effects do not.
+            // reverted as a unit on failure. Preflight excludes non-Undo work.
             int undoGroup = -1;
             if (options.Atomic)
             {

@@ -99,7 +99,7 @@ namespace HeraAgent.Tests
                         },
                     },
                 },
-                new CommandRouter.BatchOptions { Atomic = true }).GetAwaiter().GetResult();
+                new CommandRouter.BatchOptions()).GetAwaiter().GetResult();
 
             return s_BatchMutations == 0
                 && result is ErrorResponse error

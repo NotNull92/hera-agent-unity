@@ -14,7 +14,6 @@ namespace HeraAgent.Tools
         Description = "Capture a Scene/Game view or isolated target, with optional bounded uGUI, 3D physics, or Editor UI Toolkit metadata evidence.",
         Profiles = new[] { "core", "scene", "ui", "diagnostics", "testing" },
         RiskClass = HeraRiskClass.Write,
-        Reversible = true,
         ContractMode = ToolContractMode.Strict)]
     [HeraArgumentGroup(ToolArgumentGroupMode.AtMostOne, "target", "path", "instance_id")]
     [HeraArgumentGroup(

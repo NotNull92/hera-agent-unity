@@ -41,6 +41,14 @@ namespace HeraAgent.Tools
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "set_layer")]
     [HeraArgumentGroup(ToolArgumentGroupMode.AtLeastOne, "position", "rotation", "scale", Action = "set_transform")]
     [HeraArgumentGroup(ToolArgumentGroupMode.ExactlyOne, "instance_id", "path", "target", Action = "get_transform")]
+    [HeraActionSafety("create", Reversible = true)]
+    [HeraActionSafety("move", Reversible = true)]
+    [HeraActionSafety("set_parent", Reversible = true)]
+    [HeraActionSafety("set_active", Reversible = true)]
+    [HeraActionSafety("set_name", Reversible = true)]
+    [HeraActionSafety("set_transform", Reversible = true)]
+    [HeraActionSafety("set_tag", Reversible = true)]
+    [HeraActionSafety("set_layer", Reversible = true)]
     public static partial class ManageGameObject
     {
         private const string Vector3Schema =

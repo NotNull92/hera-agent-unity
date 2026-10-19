@@ -1,26 +1,38 @@
 # Active Development Handoff
 
 Current state (2026-10-19): **M1 and M2 are implemented; the support floor is now
-Unity 6.6 (`6000.6`).** Connector `0.2.1` (unreleased) requires `6000.6+`, M1 =
+Unity 6.6 (`6000.6`).** Connector `0.2.2` (unreleased) requires `6000.6+`, M1 =
 contract hardening plus MCP removal (CLI `v0.3.0`), M2 = catalog rebaseline (CLI
-`v0.3.1`). M3+ is not authorized. Per-release detail lives in `CHANGELOG.md`;
+`v0.3.1`). The selected order is fix B → M3 → O2; only fix B is in this train. Per-release detail lives in `CHANGELOG.md`;
 this file records only current state and what is open.
 
 Step 6 fix A is implemented for **CLI v0.3.2 / Connector 0.2.1**, without a tag
 or release: preserve integer literals in params/batch/flags, reject integers
 outside signed 64-bit range before conversion, and document process-scoped
 `instance_id` values. Persist `global_id` and explicitly re-resolve after restart.
-Atomic batch hardening (B), Reversible classification, and M3+ remain excluded.
+Atomic batch hardening (B) and Reversible classification follow in the next paragraph;
+M3 and O2 implementation remain outside this train.
 
-Implementation verification on a disposable `6000.6.6f1` project: 48/48 boundary
+Step 6 fix B is implemented for **CLI v0.3.3 / Connector 0.2.2**, without tags or
+releases. Atomic preflight rejects unknown or ineligible items before approval,
+locking, Undo groups, or execution. Twelve reviewed non-destructive actions
+declare Undo coverage; screenshot no longer claims reversibility. Non-atomic
+behavior and Undo group mechanics are unchanged. Implementation verification:
+six live criteria passed; EditMode suite 29 passed / 0 failed / 1 skipped;
+exact-source compile and Go/static gates passed. Independent review is separate.
+The catalog changes only 13 reversible flags, with 34 tools / 133 actions and
+2,368-byte compact rules unchanged. Its hash is now `93827d16…`; normalized
+catalog size is 268,402 B (−11 B).
+
+Fix A implementation verification on a disposable `6000.6.6f1` project: 48/48 boundary
 requests passed (40 `OBJECT_NOT_FOUND`, 8 `INVALID_ARGUMENT`, 0 `INTERNAL_ERROR`);
 Connector suite 28 passed / 0 failed / 1 skipped (Timeline package absent).
 Normal install and restored manifest contain no test sources in the production
 response file and no test assembly. Go/static gates and exact-source compilation
 passed. Independent review and its separate fixture pass are tracked separately;
 these implementation results do not substitute for that review.
-Catalog hash remains `3649a714…`, 34 tools / 133 actions. Compact rules increased
-91 B to 2,368 B; CLI summary is now 2,845 B, within the 2,500 B rules budget.
+Fix A kept catalog hash `3649a714…`, 34 tools / 133 actions. Compact rules increased
+91 B to 2,368 B, within the 2,500 B rules budget; CLI summary became 2,845 B.
 
 ## Step 6 queue (2026-10-17)
 
@@ -38,7 +50,10 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | Support floor | Done | Unity 6.6 (`6000.6`): `package.json` floor, `com.unity.ugui` declared, `instance_id` widened to 64-bit (EntityId `FromULong`/`ToULong`), two 6000.6 API updates |
 | Pre-6.6 cleanup | Done | Every version-gated `#if`, the reflected int ↔ EntityId bridge, the docs-bucket selection, the pitfalls min-docs filter and the 6000.0/6000.3 docs bundles are gone; the shipped docs corpus is rebuilt from the Unity 6.6 archive, so `Docs:` reports `6000.6` |
 | fix A | Done (candidate) | Integer literals survive `--params`, batch file/stdin, and numeric flags; the Connector rejects out-of-Int64 integers with `INVALID_ARGUMENT` and compares declared bounds without a double round-trip; `instance_id` is documented as Editor-process-scoped. Connector `0.2.1`, CLI `v0.3.2`. Independent verification on a separate fixture passed |
-| M3+ | Not authorized | Dispatch-delay reduction and the rest of §1 in the plan |
+| fix B | Done (candidate) | Atomic fail-closed preflight and 12 Undo-covered action declarations; screenshot reversible=false. CLI `v0.3.3`, Connector `0.2.2`; independent verification follows implementation |
+| M3 | Next, separate train | Selected next: 150 ms dispatch watchdog; not changed by fix B |
+| O2 | After M3, separate train | Argument hash normalization; not changed by fix B |
+| Other M3+ | Not authorized | Remaining items in §1 of the plan |
 
 **Compatibility for this release: `6000.6.6f1` is the single representative and
 the only verified Editor.** `6000.0`-`6000.5` are out of scope by decision (their

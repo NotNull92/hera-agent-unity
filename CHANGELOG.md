@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (CLI v0.3.3 / Connector 0.2.2)
+
+- Atomic batches now reject every ineligible item before approval, locking, or execution with `ATOMIC_UNSUPPORTED_ITEM` and indexed `data.rejects`. Eligibility requires declared reversible, non-destructive work without domain reloads; non-atomic behavior is unchanged.
+- Twelve GameObject/component/UI edit actions have reviewed Undo coverage. UI creation, duplication, selection changes, destructive removal, and file/asset writes remain excluded. Screenshot's tool-wide reversible claim is removed because its PNG writes cannot be undone.
+- Catalog rebaseline changes only 13 reversible flags (12 enabled, screenshot disabled): 34 tools / 133 actions and 2,368-byte compact rules remain unchanged. Batch help and dry-run wording explain the new eligibility requirement.
+
 ### Fixed (CLI v0.3.2 / Connector 0.2.1)
 
 - CLI `--params`, batch file/stdin, and numeric flags preserve integer values beyond JavaScript's safe-integer range. Signed 64-bit overflow remains numeric so the Connector can return `INVALID_ARGUMENT` instead of a misleading string type error.

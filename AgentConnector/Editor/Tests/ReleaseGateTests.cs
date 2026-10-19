@@ -21,6 +21,7 @@ namespace HeraAgent.Tests
             nameof(AssetConfigPersistence),
             nameof(AssetMutationPreflight),
             nameof(AtomicFile),
+            nameof(AtomicBatch),
             nameof(AnimationTimeline),
             nameof(BuildOptions),
             nameof(EditorUiCapture),
@@ -58,6 +59,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void AtomicFile() => AtomicFileTests.RunTests();
+
+        [Test]
+        public void AtomicBatch() => AtomicBatchTests.RunTests();
 
         [Test]
         public void AnimationTimeline() => AnimationTimelineToolTests.RunTests();

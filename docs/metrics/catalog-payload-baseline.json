@@ -1,8 +1,8 @@
 {
   "schema": "hera.catalog-payload-report/2",
-  "catalog_hash": "sha256:3649a7147a3f1847127f054a2d3926b26068821691cff1744a5c232be9f3aa93",
-  "input_bytes": 267973,
-  "normalized_catalog_bytes": 268413,
+  "catalog_hash": "sha256:93827d168bdacec5c78697b1821c5e938dc17ee34701f5e3f93af710bc3e240c",
+  "input_bytes": 267962,
+  "normalized_catalog_bytes": 268402,
   "tool_count": 34,
   "action_count": 133,
   "description_characters": 9940,
@@ -31,32 +31,32 @@
     {
       "name": "core",
       "tool_count": 8,
-      "normalized_contract_bytes": 73718
+      "normalized_contract_bytes": 73709
     },
     {
       "name": "diagnostics",
       "tool_count": 11,
-      "normalized_contract_bytes": 59965
+      "normalized_contract_bytes": 59966
     },
     {
       "name": "full",
       "tool_count": 32,
-      "normalized_contract_bytes": 263305
+      "normalized_contract_bytes": 263294
     },
     {
       "name": "scene",
       "tool_count": 11,
-      "normalized_contract_bytes": 108557
+      "normalized_contract_bytes": 108548
     },
     {
       "name": "testing",
       "tool_count": 6,
-      "normalized_contract_bytes": 69516
+      "normalized_contract_bytes": 69517
     },
     {
       "name": "ui",
       "tool_count": 7,
-      "normalized_contract_bytes": 102167
+      "normalized_contract_bytes": 102156
     }
   ],
   "largest_tools": [
@@ -68,7 +68,7 @@
     },
     {
       "name": "manage_gameobject",
-      "bytes": 28371,
+      "bytes": 28363,
       "action_count": 11,
       "description_characters": 190
     },
@@ -86,7 +86,7 @@
     },
     {
       "name": "manage_ui",
-      "bytes": 15140,
+      "bytes": 15138,
       "action_count": 4,
       "description_characters": 141
     },
@@ -104,7 +104,7 @@
     },
     {
       "name": "manage_components",
-      "bytes": 12128,
+      "bytes": 12126,
       "action_count": 5,
       "description_characters": 442
     },
@@ -125,19 +125,19 @@
     {
       "tool": "manage_ui",
       "action": "set_rect",
-      "bytes": 4234,
+      "bytes": 4233,
       "description_characters": 0
     },
     {
       "tool": "manage_ui",
       "action": "set_anchor",
-      "bytes": 4042,
+      "bytes": 4041,
       "description_characters": 0
     },
     {
       "tool": "manage_gameobject",
       "action": "set_transform",
-      "bytes": 3863,
+      "bytes": 3862,
       "description_characters": 0
     },
     {
@@ -267,20 +267,20 @@
   ],
   "normalized_catalog_rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-    "low_4_bytes_per_token": 67104,
-    "central_3_2_bytes_per_token": 83880,
-    "high_2_5_bytes_per_token": 107366
+    "low_4_bytes_per_token": 67101,
+    "central_3_2_bytes_per_token": 83876,
+    "high_2_5_bytes_per_token": 107361
   },
   "warnings": [
     "profile assets uses 51324 normalized bytes (warning budget 24000)",
-    "profile core uses 73718 normalized bytes (warning budget 24000)",
-    "profile diagnostics uses 59965 normalized bytes (warning budget 24000)",
-    "profile full uses 263305 normalized bytes (warning budget 24000)",
-    "profile scene uses 108557 normalized bytes (warning budget 24000)",
-    "profile testing uses 69516 normalized bytes (warning budget 24000)",
-    "profile ui uses 102167 normalized bytes (warning budget 24000)",
+    "profile core uses 73709 normalized bytes (warning budget 24000)",
+    "profile diagnostics uses 59966 normalized bytes (warning budget 24000)",
+    "profile full uses 263294 normalized bytes (warning budget 24000)",
+    "profile scene uses 108548 normalized bytes (warning budget 24000)",
+    "profile testing uses 69517 normalized bytes (warning budget 24000)",
+    "profile ui uses 102156 normalized bytes (warning budget 24000)",
     "tool input uses 35429 normalized bytes (warning budget 20000)",
-    "tool manage_gameobject uses 28371 normalized bytes (warning budget 20000)",
+    "tool manage_gameobject uses 28363 normalized bytes (warning budget 20000)",
     "tool manage_settings uses 24442 normalized bytes (warning budget 20000)"
   ]
 }

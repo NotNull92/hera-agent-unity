@@ -1,4 +1,4 @@
-Usage: hera-agent-unity batch [--file <path.json>] [--dry-run]
+Usage: hera-agent-unity batch [--file <path.json>] [--dry-run] [--atomic]
 
 Execute multiple commands in a single HTTP request to Unity. The whole
 batch round-trips together so the response stays atomic and ordered.
@@ -26,10 +26,18 @@ fail_fast:
   false  Execute every command regardless of individual failures.
 
 atomic:
-  Wrap the whole batch in one editor Undo group and revert it if any command
-  fails (all-or-nothing). CAVEAT: only Undo-aware editor mutations roll back —
-  scene / GameObject / component edits. exec, AssetDatabase and file-system
-  side effects are NOT transactional and will persist even after a revert.
+  Atomic accepts only non-destructive, Undo-covered scene edits; other work
+  is rejected before execution, including destructive delete/remove actions.
+  Only actions declared reversible, non-destructive, and unable to reload
+  the domain are eligible. If any item is ineligible or unknown, the whole
+  batch is rejected before execution with ATOMIC_UNSUPPORTED_ITEM and
+  data.rejects entries (zero-based index, tool, action, reason). This check
+  precedes approval; approval cannot make an ineligible batch atomic.
+  Eligible batches use one editor Undo group, reverted if any item fails.
+  Undo covers the declared Editor edits, not arbitrary script callbacks or
+  external side effects. Reads without a reversible declaration, exec,
+  asset/file writes, screenshots, and unreviewed actions are not eligible.
+  --dry-run only prints the plan; it does not validate atomic eligibility.
 
 Examples:
   hera-agent-unity batch --file ./play_and_test.json

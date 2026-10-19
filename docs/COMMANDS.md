@@ -1779,13 +1779,34 @@ Execute several commands in one HTTP round trip to Unity. The batch travels and
 returns together, so the response stays atomic and ordered.
 
 ```bash
-hera-agent-unity batch [--file <path.json>] [--dry-run]
+hera-agent-unity batch [--file <path.json>] [--dry-run] [--atomic]
 ```
 
 | Flag | Description | Default |
 |:---|:---|:---|
 | `--file` | JSON file describing the commands; stdin when omitted | |
 | `--dry-run` | Print the parsed plan without sending it to Unity | `false` |
+| `--atomic` | Require Undo-covered actions and revert their Undo group on any failure | `false` |
+
+Atomic accepts only non-destructive, Undo-covered scene edits; other work,
+including destructive delete/remove actions, is rejected before execution.
+Atomic mode also accepts `"options":{"atomic":true}` in the JSON plan. Before
+approval checks, locking, or execution, the Connector rejects the whole batch
+if any item is unknown or its resolved safety is not `reversible && !destructive
+&& !may_reload_domain`. The error is `ATOMIC_UNSUPPORTED_ITEM` with
+`data.rejects[{index,tool,action,reason}]`; indexes are zero-based. Reasons are
+`unknown_tool`, `unknown_action`, `destructive`, `may_reload_domain`, or
+`not_reversible` (the first applicable reason in that order). No item executes
+on this rejection. Eligible batches share one Undo group and revert on failure.
+
+The reviewed actions are GameObject `create`, `move`, `set_parent`, `set_active`,
+`set_name`, `set_transform`, `set_tag`, `set_layer`; component `add`, `set`; and UI
+`set_anchor`, `set_rect`. Other actions, including reads without a reversible
+declaration, are rejected. Undo covers these Editor edits; it does not make
+arbitrary script callbacks or external side effects transactional. Screenshots,
+asset/file writes, UI creation with automatic scaffolding, and selection changes
+are excluded. `--dry-run` prints a plan without validating this eligibility.
+Non-atomic batches retain their existing sequential and approval behavior.
 
 `batch` is for straight sequential execution. Conditional branching, passing
 data between steps, or anything resembling a workflow belongs in individual

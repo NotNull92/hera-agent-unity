@@ -389,7 +389,9 @@ namespace HeraAgent.Tests
             var inputActionSafety = input["metadata"]?["action_safety"] as JObject;
             return Expect(nameof(TestExternalResponseFieldsArePreserved),
                 tool.Properties().Select(property => property.Name).SequenceEqual(expected)
-                && componentActionSafety?.Count == 0
+                && componentActionSafety != null
+                && componentActionSafety.Properties().Select(property => property.Name)
+                    .SequenceEqual(new[] { "add", "set" })
                 && inputActionSafety?.Count == 0
                 && input["metadata"]?["safety"]?["requires_play_mode"]?.Value<bool>()
                     == false);

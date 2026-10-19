@@ -51,6 +51,8 @@ namespace HeraAgent.Tools
         Profiles = new[] { "ui" },
         RiskClass = HeraRiskClass.Write,
         ContractMode = ToolContractMode.Strict)]
+    [HeraActionSafety("set_anchor", Reversible = true)]
+    [HeraActionSafety("set_rect", Reversible = true)]
     public static class ManageUI
     {
         private const string Vector2Schema =

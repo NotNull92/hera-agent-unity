@@ -61,7 +61,7 @@ func batchCmd(ctx context.Context, args []string, runtime batchRuntime) error {
 	if dryRun {
 		header := fmt.Sprintf("Would execute %d command(s)", len(req.Commands))
 		if req.Options.Atomic {
-			header += " (atomic: revert all on any failure)"
+			header += " (atomic: Undo-covered items only; revert on failure)"
 		}
 		fmt.Println(tui.InfoPanel("War Council", header))
 		for i, cmd := range req.Commands {

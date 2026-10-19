@@ -62,6 +62,8 @@ namespace HeraAgent.Tools
         Action = "set",
         Path = "/type",
         Expected = "component_id or type with a GameObject target")]
+    [HeraActionSafety("add", Reversible = true)]
+    [HeraActionSafety("set", Reversible = true)]
     public static class ManageComponents
     {
         public class GameObjectTargetParameters
