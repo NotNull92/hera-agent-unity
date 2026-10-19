@@ -61,7 +61,7 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | Pre-6.6 cleanup | Done | Every version-gated `#if`, the reflected int ↔ EntityId bridge, the docs-bucket selection, the pitfalls min-docs filter and the 6000.0/6000.3 docs bundles are gone; the shipped docs corpus is rebuilt from the Unity 6.6 archive, so `Docs:` reports `6000.6` |
 | fix A | Done (candidate) | Integer literals survive `--params`, batch file/stdin, and numeric flags; the Connector rejects out-of-Int64 integers with `INVALID_ARGUMENT` and compares declared bounds without a double round-trip; `instance_id` is documented as Editor-process-scoped. Connector `0.2.1`, CLI `v0.3.2`. Independent verification on a separate fixture passed |
 | fix B | Done (candidate) | Atomic fail-closed preflight and 12 Undo-covered action declarations; screenshot reversible=false. CLI `v0.3.3`, Connector `0.2.2`; independent verification follows implementation |
-| M3 | Implemented candidate; independent verification pending | Connector `0.2.3` isolates bounded body byte reads from Unity context; no watchdog/tick or CLI changes. Measurements and rejected alternatives are in `docs/DECISION_LEDGER.md` |
+| M3 | Done (candidate); independent verification PASS | Connector `0.2.3` isolates bounded body byte reads from Unity context; no watchdog/tick or CLI changes. Measurements and rejected alternatives are in `docs/DECISION_LEDGER.md`. Independent verification was documentary: the raw before/after matrices were recomputed and matched the report, so no independent re-measurement is claimed |
 | O2 | After M3, separate train | Argument hash normalization; not changed by fix B |
 | Other M3+ | Not authorized | Remaining items in §1 of the plan |
 
@@ -148,6 +148,15 @@ Use `EditorUpdate.Once`; `EditorApplication.update` runs either way, as the
 heartbeat demonstrates every second.
 
 ## Open items
+
+- **Decided — no action: Unity's Input Manager deprecation notice (2026-10-19).**
+  Unity 6.6 logs "This project uses Input Manager, which is marked for
+  deprecation…" once per project load when the project keeps the legacy input
+  handler (`activeInputHandler: 0`). It is the Editor's own notice; Hera does not
+  change project input settings and the Connector declares no Input System
+  dependency. No supported setting silences it while keeping legacy input, so the
+  user chose to accept it: no product, project, or lab change.
+  See `docs/DECISION_LEDGER.md`.
 
 - **Pipeline parity claim audit (2026-08-18/19) is complete; its refuted claims
   are admission questions, not a queue.** Twelve claims about what Hera lacks

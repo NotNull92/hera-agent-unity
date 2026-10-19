@@ -342,3 +342,25 @@ The read was scene info; the write alternated one GameObject's position.
   package integrity, and catalog `--fail-on-change` pass. Catalog hash remains
   `93827d168bdacec5c78697b1821c5e938dc17ee34701f5e3f93af710bc3e240c`,
   34 tools / 133 actions, normalized 268,402 B, rules 2,368 B.
+
+## Input Manager deprecation notice — accepted, no action — 2026-10-19
+
+Unity 6.6 logs "This project uses Input Manager, which is marked for deprecation.
+To manage input in your project, use the Input System package instead." once per
+project load when the project keeps the legacy input handler
+(`activeInputHandler: 0`). Evidence: a 6.5 MB Editor log carries the line exactly
+once, immediately before `<RI> Initializing input.`; all six lab projects keep
+`activeInputHandler: 0` and none install `com.unity.inputsystem`, so the notice is
+the Editor's own and not a package or Hera message. Hera's launch path opens
+existing projects without touching input settings, and the Connector declares no
+Input System dependency and calls no legacy `Input` API.
+
+No supported setting silences the notice while the project keeps legacy input:
+the Editor's own Player-settings validation string requires the Input System
+package for "Input System Package (New)" or "Both", and no suppression preference
+or environment switch was found in the shipped Editor or its managed string heap.
+The available paths are therefore (a) accept the notice, (b) install the Input
+System package and set Active Input Handling to "Both" (legacy `Input` keeps
+working; build-profile overrides are a known remaining source of the notice), or
+(c) migrate to the Input System. The user chose (a): no product, project, or lab
+change, and no console suppression.
