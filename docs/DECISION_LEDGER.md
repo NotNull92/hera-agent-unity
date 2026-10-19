@@ -20,6 +20,29 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## U1 — shard selector parity (2026-10-19)
+
+- **Decision:** preserve unsharded run and list behavior. Shards use exact AND
+  regex matching over self/ancestor full names, case-sensitive category regexes
+  over original inherited categories (including `Uncategorized`), and
+  case-insensitive exact assembly names. Internal selection metadata is not serialized.
+- **Boundary:** sharded `!` exclusion selectors are rejected with
+  `INVALID_ARGUMENT`; reproducing exclusion filters is deferred until needed.
+  Invalid regexes and 100 ms regex match timeouts also fail before a test starts.
+- **Evidence:** 11 live selector rows (33 runs) have identical unsharded/shard
+  unions, disjoint shards, and selected counts equal to executed counts.
+  Parameterized method: 2 = 1+1; category regex: 2 = 1+1;
+  Uncategorized: 1 = 1+0. Partial/regex-only names and a metacharacter-bearing
+  exact case name match zero in both paths. Five invalid selector probes return
+  `INVALID_ARGUMENT`; list substring still returns its two matching cases.
+- **Gates:** fresh 6000.6.6f1 normal/testables/restored installation, production
+  response file with zero test sources, suite 29 passed / 0 failed / 1 skipped
+  (Timeline absent). Go vet/test/lint/format, guide sync, package validation,
+  and generated runtime contracts pass. No PlayMode rerun in this patch.
+- **Catalog:** unchanged `cbbab9d6…`, 34 tools / 133 actions, 269,038 normalized
+  bytes, 2,368-byte compact rules. No baseline regeneration needed.
+- **Versions:** unreleased Connector 0.2.5; CLI remains v0.3.4. No tags/releases.
+
 ## Step 6 M4 — test artifacts and deterministic shards (2026-10-19)
 
 - **Admission gate:** CI consumers need JUnit/NUnit XML with per-case outcomes and

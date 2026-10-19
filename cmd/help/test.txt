@@ -80,6 +80,12 @@ balanced ranges (the first remainder shards get one extra test). Both values
 must be positive Int32 integers and index must not exceed count. A shard with no
 tests returns NO_TESTS_MATCHED with shard {index,count,selected:0}; it is not a pass.
 Duplicate full names return AMBIGUOUS_TEST_NAMES instead of overlapping shards.
-Sharded --filter selects an exact full name or namespace/class prefix; names
-containing commas stay one name. --category and --assembly intersect the selection.
+Run and shard --filter require both an exact match and a regex match against
+self/ancestor suite full names. A parameterized method name selects its cases;
+a case name containing regex metacharacters can match nothing. List --filter
+remains a case-insensitive substring. Run categories are case-sensitive regexes
+(including inherited categories and Uncategorized); assemblies are case-insensitive
+exact names. List categories remain case-insensitive exact names. These selectors
+intersect. Shards reject ! exclusions, invalid regexes, and regex timeouts with
+INVALID_ARGUMENT. Names containing commas stay one testNames array element.
 Results echo shard {index,count,selected}. Resume cannot change the saved shard.

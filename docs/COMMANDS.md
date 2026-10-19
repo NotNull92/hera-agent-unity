@@ -1610,8 +1610,14 @@ result without rerunning it; without an explicit mode the suite is named
 sorts full names in ordinal order, and selects a balanced contiguous range.
 The first remainder shards get one extra test. Both positive Int32 values are
 required, with index no greater than count; violations return `INVALID_ARGUMENT`
-at the CLI. Sharded `--filter` accepts an exact full name or namespace/class
-prefix; categories and assemblies intersect the selection. Parameterized names
+at the CLI. Run and shard `--filter` require both an exact match and a regex match
+against self/ancestor suite full names. A parameterized method name selects its
+cases; a case name containing regex metacharacters can match nothing. Run categories
+are case-sensitive regexes, including inherited categories and `Uncategorized`;
+assemblies are case-insensitive exact names. These selectors intersect.
+`test list --filter` remains a case-insensitive substring, and list categories
+remain case-insensitive exact names. Shards reject `!` exclusion selectors,
+invalid regexes, and regex timeouts with `INVALID_ARGUMENT`. Parameterized names
 containing commas are passed as individual names, never split on commas.
 Duplicate full names return `AMBIGUOUS_TEST_NAMES`. An empty partition returns
 `NO_TESTS_MATCHED`, with `shard:{index,count,selected:0}`, rather than a green

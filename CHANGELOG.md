@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (Connector 0.2.5; CLI unchanged at v0.3.4)
+
+- Test shards now select the same cases as unsharded runs: ancestor suite names participate in the exact-and-regex name match; categories use case-sensitive regex matching, including inherited categories and `Uncategorized`. List selection is unchanged.
+- Shards reject exclusion selectors beginning with `!`, invalid regexes, and regex timeouts with `INVALID_ARGUMENT` before starting tests. Public result schemas and catalog metadata are unchanged.
+
 ### Added (CLI v0.3.4 / Connector 0.2.4)
 
 - Test results now include sorted per-test names, status, duration, and failure details while preserving summary fields. The final result tree supplies the same data after PlayMode domain reload.

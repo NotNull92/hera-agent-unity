@@ -17,6 +17,7 @@ namespace HeraAgent.Tests
                 .Select(assembly => assembly.GetType("HeraAgent.TestRunner.RunTests"))
                 .FirstOrDefault(type => type != null);
             Assert.NotNull(runner, "The test artifact gate requires the Test Framework connector.");
+            TestRunSelectors(runner);
             var partition = runner.GetMethod("PartitionNames", BindingFlags.Static | BindingFlags.NonPublic);
             var names = new[] { "F.Z", "F.A(1,2)", "F.C", "F.B", "F.D" };
             Func<int, int, string[]> split = (index, count) => (string[])partition.Invoke(null, new object[] { names, index, count });
@@ -81,6 +82,47 @@ namespace HeraAgent.Tests
             response = JObject.FromObject(build.Invoke(null, new object[] { passed, failed, skipped, true, cases, valid[1] }));
             Assert.AreEqual("NO_TESTS_MATCHED", response["code"].Value<string>());
             Assert.AreEqual(1, response["data"]["shard"]["index"].Value<int>());
+        }
+
+        static void TestRunSelectors(Type runner)
+        {
+            var entryType = runner.GetNestedType("TestEntry");
+            var entry = Activator.CreateInstance(entryType);
+            entryType.GetProperty("FullName").SetValue(entry, "Ns.C.M(1)");
+            entryType.GetProperty("Assembly").SetValue(entry, "Tests");
+            entryType.GetProperty("Categories").SetValue(entry, new[] { "Smoke" });
+            entryType.GetField("AncestorNames", BindingFlags.NonPublic | BindingFlags.Instance)
+                .SetValue(entry, new[] { "Ns", "Ns.C", "Ns.C.M", "Ns.C.M(1)" });
+            var rawCategories = entryType.GetField("RunCategories", BindingFlags.NonPublic | BindingFlags.Instance);
+            rawCategories.SetValue(entry, new[] { "Smoke", "Inherited" });
+            var build = runner.GetMethod("BuildRunSelector", BindingFlags.Static | BindingFlags.NonPublic);
+            Func<string, string[], string[], Delegate> selector = (filter, categories, assemblies) =>
+                (Delegate)build.Invoke(null, new object[] { filter, categories, assemblies });
+            Func<string, string[], string[], bool> matches = (filter, categories, assemblies) =>
+                (bool)selector(filter, categories, assemblies).DynamicInvoke(entry);
+            Assert.IsTrue(matches(null, null, null));
+            Assert.IsTrue(matches("Ns.C", null, null));
+            Assert.IsTrue(matches("Ns.C.M", null, null));
+            Assert.IsFalse(matches("Ns.C.M(1)", null, null));
+            Assert.IsFalse(matches("M", null, null));
+            Assert.IsFalse(matches(".*M.*", null, null));
+            Assert.IsFalse(matches("^Ns$", null, null));
+            Assert.IsTrue(matches(null, new[] { "Smo.*" }, new[] { "tests" }));
+            Assert.IsTrue(matches(null, new[] { "Inherited" }, null));
+            Assert.IsFalse(matches(null, new[] { "smoke" }, null));
+            Assert.IsFalse(matches(null, null, new[] { "Other" }));
+            rawCategories.SetValue(entry, new[] { "Uncategorized" });
+            Assert.IsTrue(matches(null, new[] { "Uncategorized" }, null));
+            foreach (var args in new object[][] {
+                new object[] { "[", null, null }, new object[] { null, new[] { "[" }, null },
+                new object[] { "!Ns.C", null, null }, new object[] { null, new[] { "!Smoke" }, null },
+                new object[] { null, null, new[] { "!Tests" } } })
+            {
+                var error = Assert.Throws<TargetInvocationException>(() => build.Invoke(null, args));
+                Assert.IsInstanceOf<ArgumentException>(error.InnerException);
+            }
+            CollectionAssert.AreEquivalent(new[] { "full_name", "assembly", "categories" },
+                JObject.FromObject(entry).Properties().Select(property => property.Name));
         }
 
         public static void Sample() { }

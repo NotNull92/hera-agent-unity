@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEditor.TestTools.TestRunner.Api;
@@ -131,6 +132,8 @@ namespace HeraAgent.TestRunner
             public string FullName { get; set; }
             public string Assembly { get; set; }
             public string[] Categories { get; set; }
+            internal string[] AncestorNames;
+            internal string[] RunCategories;
         }
 
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
@@ -226,6 +229,9 @@ namespace HeraAgent.TestRunner
         {
             if (TestRunnerState.HasPending(HttpServer.Port))
                 return new ErrorResponse("TEST_RUN_ALREADY_RUNNING", "A test run is already active.");
+            Func<TestEntry, bool> matches;
+            try { matches = BuildRunSelector(filter, categories, assemblies); }
+            catch (ArgumentException ex) { return new ErrorResponse("INVALID_ARGUMENT", ex.Message); }
             var api = ScriptableObject.CreateInstance<TestRunnerApi>();
             var entries = new List<TestEntry>();
             var done = false;
@@ -240,8 +246,12 @@ namespace HeraAgent.TestRunner
                 }
             }
             finally { Object.DestroyImmediate(api); }
-            var names = entries.Where(entry => MatchesRunSelectors(entry, filter, categories, assemblies))
-                .Select(entry => entry.FullName).ToArray();
+            string[] names;
+            try { names = entries.Where(matches).Select(entry => entry.FullName).ToArray(); }
+            catch (RegexMatchTimeoutException)
+            {
+                return new ErrorResponse("INVALID_ARGUMENT", "A shard selector exceeded the regular expression time limit.");
+            }
             if (names.Distinct(StringComparer.Ordinal).Count() != names.Length)
                 return new ErrorResponse("AMBIGUOUS_TEST_NAMES", "Selected tests have duplicate full names and cannot be partitioned safely.");
             var selected = PartitionNames(names, shard.Index, shard.Count);
@@ -252,11 +262,32 @@ namespace HeraAgent.TestRunner
             return StartTestRun(mode, filter, categories, assemblies, selected, shard);
         }
 
-        internal static bool MatchesRunSelectors(TestEntry entry, string filter, string[] categories, string[] assemblies)
+        internal static Func<TestEntry, bool> BuildRunSelector(string filter, string[] categories, string[] assemblies)
         {
-            if (!string.IsNullOrEmpty(filter) && !string.Equals(entry.FullName, filter, StringComparison.Ordinal)
-                && !(entry.FullName ?? "").StartsWith(filter + ".", StringComparison.Ordinal)) return false;
-            return MatchesSelectors(entry, null, categories, assemblies);
+            var selectors = (categories ?? Array.Empty<string>()).Concat(assemblies ?? Array.Empty<string>());
+            if ((!string.IsNullOrEmpty(filter) && filter.StartsWith("!", StringComparison.Ordinal))
+                || selectors.Any(value => value.StartsWith("!", StringComparison.Ordinal)))
+                throw new ArgumentException("Exclusion selectors beginning with '!' are not supported with shards.");
+            var timeout = TimeSpan.FromMilliseconds(100);
+            string exactGroup = null;
+            if (!string.IsNullOrEmpty(filter) && filter.StartsWith("^", StringComparison.Ordinal)
+                && filter.EndsWith("$", StringComparison.Ordinal) && filter.Length >= 2)
+            {
+                var inner = filter.Substring(1, filter.Length - 2);
+                if (Regex.Escape(inner) == inner) exactGroup = inner;
+            }
+            var group = string.IsNullOrEmpty(filter) || exactGroup != null ? null : new Regex(filter, RegexOptions.None, timeout);
+            var categoryPatterns = (categories ?? Array.Empty<string>())
+                .Select(value => new Regex(value, RegexOptions.None, timeout)).ToArray();
+            return entry =>
+            {
+                var names = entry.AncestorNames ?? new[] { entry.FullName };
+                if (!string.IsNullOrEmpty(filter) && (!names.Contains(filter, StringComparer.Ordinal)
+                    || !names.Any(name => exactGroup != null ? name == exactGroup : group.IsMatch(name)))) return false;
+                if (assemblies != null && assemblies.Length > 0 && !ContainsIgnoreCase(assemblies, entry.Assembly)) return false;
+                return categoryPatterns.Length == 0 || (entry.RunCategories ?? Array.Empty<string>())
+                    .Any(category => categoryPatterns.Any(pattern => pattern.IsMatch(category)));
+            };
         }
 
         // Any of --filter / --category / --assembly narrows the run. A narrowed
@@ -576,11 +607,12 @@ namespace HeraAgent.TestRunner
         // suite → cases. Only the assembly suite carries a usable identity, and
         // it reports the built .dll path, so it is reduced to the bare assembly
         // name that Filter.assemblyNames accepts.
-        static void Collect(ITestAdaptor node, string assembly, List<TestEntry> into)
+        static void Collect(ITestAdaptor node, string assembly, List<TestEntry> into, string[] ancestors = null)
         {
             if (node.IsTestAssembly)
                 assembly = Path.GetFileNameWithoutExtension(node.FullName);
 
+            var names = (ancestors ?? Array.Empty<string>()).Concat(new[] { node.FullName }).ToArray();
             if (!node.IsSuite)
             {
                 into.Add(new TestEntry
@@ -588,18 +620,18 @@ namespace HeraAgent.TestRunner
                     FullName = node.FullName,
                     Assembly = assembly,
                     Categories = RealCategories(node.Categories),
+                    AncestorNames = names,
+                    RunCategories = node.Categories ?? Array.Empty<string>(),
                 });
                 return;
             }
 
             if (node.Children == null) return;
             foreach (var child in node.Children)
-                Collect(child, assembly, into);
+                Collect(child, assembly, into, names);
         }
 
-        // Unity reports "Uncategorized" for a test with no [Category]. That is
-        // the framework's placeholder, not a name --category can select, so it
-        // is dropped rather than echoed back as if it were selectable.
+        // Preserve the list display convention; run selection retains Uncategorized.
         static string[] RealCategories(string[] categories)
         {
             if (categories == null || categories.Length == 0) return Array.Empty<string>();

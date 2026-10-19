@@ -1,9 +1,9 @@
 # Active Development Handoff
 
 Current state (2026-10-19): **M1 and M2 are implemented; the support floor is now
-Unity 6.6 (`6000.6`).** Connector `0.2.4` (unreleased) requires `6000.6+`, M1 =
+Unity 6.6 (`6000.6`).** Connector `0.2.5` (unreleased) requires `6000.6+`, M1 =
 contract hardening plus MCP removal (CLI `v0.3.0`), M2 = catalog rebaseline (CLI
-`v0.3.1`). Fix B and M3 are complete. The user approved M4 → M5 → M6 → M7 → M8 in order; the current train is M4. O2 remains deferred. Per-release detail lives in `CHANGELOG.md`;
+`v0.3.1`). Fix B and M3 are complete. The user approved U1 → U8 in order; U1 aligns shard selection after M4. O2 remains deferred. Per-release detail lives in `CHANGELOG.md`;
 this file records only current state and what is open.
 
 Step 6 fix A is implemented for **CLI v0.3.2 / Connector 0.2.1**, without a tag
@@ -44,11 +44,11 @@ and exact-source/Go/package/catalog gates passed. Catalog hash `93827d16…`,
 34 tools / 133 actions, and 2,368-byte rules remain unchanged. Independent
 documentary verification passed; no independent runtime remeasurement is claimed. O2 remains deferred.
 
-User direction for M4 (2026-10-19): contiguous balanced ranges are confirmed;
-only the dedicated M4 experiment Editor may be launched/stopped. OpenCode is
-excluded from further work and verification. Codex reports its own evidence
-directly; when M4 is finished, send the implementation/evidence handoff to the
-herdr Claude pane. Do not label self-verification as independent review.
+User direction (2026-10-19): OpenCode is excluded. Codex implements U1–U8 and
+reports each committed, pushed, CI-green item to Claude for independent review.
+Only dedicated disposable Editors may be launched/stopped. U3/U4 exec probes
+require separate approval of exact snippets immediately before execution.
+No tags/releases, user-project changes, O2, or Input Manager changes.
 
 ## Step 6 queue (2026-10-17)
 
@@ -68,11 +68,19 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | fix A | Done (candidate) | Integer literals survive `--params`, batch file/stdin, and numeric flags; the Connector rejects out-of-Int64 integers with `INVALID_ARGUMENT` and compares declared bounds without a double round-trip; `instance_id` is documented as Editor-process-scoped. Connector `0.2.1`, CLI `v0.3.2`. Independent verification on a separate fixture passed |
 | fix B | Done (candidate) | Atomic fail-closed preflight and 12 Undo-covered action declarations; screenshot reversible=false. CLI `v0.3.3`, Connector `0.2.2`; independent verification follows implementation |
 | M3 | Done (candidate); independent verification PASS | Connector `0.2.3` isolates bounded body byte reads from Unity context; no watchdog/tick or CLI changes. Measurements and rejected alternatives are in `docs/DECISION_LEDGER.md`. Independent verification was documentary: the raw before/after matrices were recomputed and matched the report, so no independent re-measurement is claimed |
-| M4 | Implemented; local gates PASS (candidate) | CLI v0.3.4 / Connector 0.2.4: cases, JUnit/NUnit artifacts, contiguous test shards; suite 29/0/1, shard union/disjointness/repeatability and PlayMode/resume PASS. Catalog +636 B, 34/133 unchanged; own verification, no independent review |
+| M4 | Implemented; local gates PASS (candidate) | CLI v0.3.4 / Connector 0.2.4: cases, JUnit/NUnit artifacts, contiguous test shards; suite 29/0/1, shard union/disjointness/repeatability and PlayMode/resume PASS. Catalog +636 B, 34/133 unchanged; independent static/evidence-recalculation review PASS; no independent live rerun |
 | M5 | Approved next; not started | ILPP stub experiment in a scratch fixture only |
 | M6 | Approved after M5; not started | exec usage journal; detailed scope to be finalized |
 | M7 | Approved after M6; not started | Transport token policy gate; detailed scope to be finalized |
 | M8 | Approved after M7; not started | PDB research tooling, not distributed |
+| U1 | Implemented; local gates PASS (candidate) | Connector 0.2.5 shard selector parity; unsharded/list unchanged |
+| U2 | Approved next | M5 ILPP scratch experiment only |
+| U3 | Approved after U2 | M6 bounded exec journal; four exec probes require approval |
+| U4 | Approved after U3 | Reproduce modal blocking first; one exec probe requires approval |
+| U5 | Approved after U4 | Review profile assignments, then CLI profile discovery |
+| U6 | Approved after U5 | M7 threat-model closure; no implementation |
+| U7 | Approved after U6 | M8 PDB research outside the repository |
+| U8 | Approved after U7 | Hub secondary install-path fallback |
 | O2 | Deferred | Argument hash normalization; not included in M4–M8 |
 
 **Compatibility for this release: `6000.6.6f1` is the single representative and
