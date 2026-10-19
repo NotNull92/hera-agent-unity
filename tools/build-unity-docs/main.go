@@ -15,7 +15,9 @@
 //	 "scriptreference_url":"ScriptReference/Rigidbody-mass.html","unity_version":"6000.6"}
 //
 // `name` is the filename without `.html` so the Connector's existing
-// query→candidate-filename mapping doubles as the dict lookup key.
+// query→candidate-filename mapping doubles as the dict lookup key. Member pages
+// whose heading Unity leaves empty (enum members, fields, operators) keep the
+// name as their title instead of being dropped.
 package main
 
 import (
@@ -49,7 +51,7 @@ func main() {
 	out := flag.String("out", "",
 		"Output JSONL path (e.g. AgentConnector/Editor/Data/unity_docs_6.0.jsonl).")
 	unityVersion := flag.String("unity-version", "",
-		"Unity version label to write into every entry (e.g. 6000.6). If empty, parse per page.")
+		"Unity version label to write into every entry (e.g. 6000.6). The builder fails when a page declares a different version. If empty, parse per page.")
 	flag.Parse()
 
 	if *in == "" || *out == "" {
@@ -84,6 +86,7 @@ func main() {
 func scanDir(srDir string, unityVersion string) ([]Entry, int, error) {
 	byName := make(map[string]Entry)
 	skipped := 0
+	var mismatched []string
 
 	err := filepath.WalkDir(srDir, func(path string, info os.DirEntry, walkErr error) error {
 		if walkErr != nil {
@@ -117,6 +120,11 @@ func scanDir(srDir string, unityVersion string) ([]Entry, int, error) {
 			skipped++
 			return nil
 		}
+		if unityVersion != "" {
+			if declared := pageVersion(body); declared != "" && normalizePageVersion(declared) != unityVersion {
+				mismatched = append(mismatched, fmt.Sprintf("%s (Unity %s)", info.Name(), declared))
+			}
+		}
 		byName[entry.Name] = entry
 		for _, linked := range parseLinkedMemberEntries(entry, body, unityVersion) {
 			if _, exists := byName[linked.Name]; exists {
@@ -128,6 +136,16 @@ func scanDir(srDir string, unityVersion string) ([]Entry, int, error) {
 	})
 	if err != nil {
 		return nil, 0, err
+	}
+	if len(mismatched) > 0 {
+		// The label written into every entry has to describe the corpus it was built from, and a
+		// page that declares a different Unity version is evidence that it does not.
+		shown := mismatched
+		if len(shown) > 5 {
+			shown = shown[:5]
+		}
+		return nil, skipped, fmt.Errorf("%d page(s) do not declare Unity %s: %s",
+			len(mismatched), unityVersion, strings.Join(shown, ", "))
 	}
 	entries := make([]Entry, 0, len(byName))
 	for _, entry := range byName {

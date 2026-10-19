@@ -30,6 +30,58 @@ func TestParseFallsBackToPageVersion(t *testing.T) {
 	}
 }
 
+func TestParseDerivesTitleFromNameWhenHeadingIsEmpty(t *testing.T) {
+	// Unity ships enum-member, field and operator pages with an empty <h1>; they still document a
+	// real API and their file name is the lookup key, so they must not be dropped.
+	body := `<h1 class="heading inherit">` + "\n" + `</h1>` +
+		`<h3>Description</h3><p>Selects driven property combining PositionX, PositionY and PositionZ.</p>` +
+		`Version: <b>Unity 6.6</b> (6000.6)`
+
+	entry, ok := parse("DrivenTransformProperties.Position", body, "6000.6")
+	if !ok {
+		t.Fatal("parse dropped a documented page with an empty heading")
+	}
+	if entry.Title != "DrivenTransformProperties.Position" {
+		t.Fatalf("expected the name as title, got %q", entry.Title)
+	}
+	if entry.Summary == "" {
+		t.Fatal("expected the description to survive")
+	}
+}
+
+func TestParseStillSkipsPagesWithoutTitleAndDescription(t *testing.T) {
+	body := `<h1 class="heading inherit"></h1>` + `Version: <b>Unity 6.6</b> (6000.6)`
+
+	if _, ok := parse("LeaveFeedback", body, "6000.6"); ok {
+		t.Fatal("expected a page with neither title nor description to stay skipped")
+	}
+}
+
+func TestNormalizePageVersion(t *testing.T) {
+	cases := map[string]string{
+		"6.6":    "6000.6",
+		"6.0":    "6000.0",
+		"6000.0": "6000.0",
+		"2022.3": "2022.3",
+		"":       "",
+	}
+	for input, want := range cases {
+		if got := normalizePageVersion(input); got != want {
+			t.Fatalf("normalizePageVersion(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestPageVersionReadsTheMarker(t *testing.T) {
+	body := `<h1 class="heading inherit">Rigidbody</h1>Version: <b>Unity 6.6</b> (6000.6)`
+	if got := pageVersion(body); got != "6.6" {
+		t.Fatalf("pageVersion = %q, want 6.6", got)
+	}
+	if got := pageVersion(`<h1 class="heading inherit">Rigidbody</h1>`); got != "" {
+		t.Fatalf("pageVersion on a page without a marker = %q, want empty", got)
+	}
+}
+
 func TestCleanTextNormalizesMemberDotSpacing(t *testing.T) {
 	text := cleanText(`GameObject <span>.</span> AddComponent`)
 	if text != "GameObject.AddComponent" {

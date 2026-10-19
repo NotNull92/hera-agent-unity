@@ -168,11 +168,18 @@ Follow-ups:
   minimum-docs filter, and the `unity_docs_6000.0`/`6000.3` bundles are removed:
   none of them is reachable below the `6000.6` floor, so keeping them compiled-out
   would only preserve unverified code. The shipped corpus was rebuilt from the
-  Unity 6.6 documentation archive (`unity_docs_6000.6`, 46,663 entries), so the
-  heartbeat and `status` now report `Docs: 6000.6` instead of falling back to the
-  6000.5 bucket.
+  Unity 6.6 documentation archive (`unity_docs_6000.6`, 46,830 entries; all 46,834
+  archive pages declare Unity 6.6 and the builder now verifies that against
+  `--unity-version` before writing), so the heartbeat and `status` report
+  `Docs: 6000.6` instead of falling back to the 6000.5 bucket. Two degenerate
+  pages stay unindexed: one member page that has neither heading nor description,
+  and the feedback stub.
 - Older Connectors still emit 32-bit ids; they belong to the `≤0.1.3` streams, so
   the two id widths never meet in one install.
+- The deleted pre-6.6 corpora are recoverable only from their own documentation
+  archives. The one on this workstation (`UnityDocumentation.zip`) is the Unity
+  **6.0** set, so it can rebuild a `unity_docs_6000.0` bundle but not 6000.3 or
+  6000.5; nobody needs them below the floor.
 
 
 

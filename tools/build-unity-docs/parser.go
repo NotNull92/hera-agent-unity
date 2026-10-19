@@ -47,14 +47,40 @@ func parse(name, body string, unityVersion string) (Entry, bool) {
 	}
 	if unityVersion != "" {
 		e.UnityVersion = unityVersion
-	} else if m := reVersion.FindStringSubmatch(body); m != nil {
-		e.UnityVersion = m[1]
+	} else if declared := pageVersion(body); declared != "" {
+		e.UnityVersion = declared
 	}
 
 	if e.Title == "" {
-		return e, false
+		// Unity ships member pages (enum members, fields, operators, some events) with an empty
+		// <h1> even though they document a real API. The file name is the path the lookup key
+		// uses, so it becomes the title; a page with no description either is a search or
+		// feedback stub and stays skipped.
+		if e.Summary == "" {
+			return e, false
+		}
+		e.Title = name
 	}
 	return e, true
+}
+
+// pageVersion returns the per-page "Unity X.Y" marker, or "" when the page carries none.
+func pageVersion(body string) string {
+	if m := reVersion.FindStringSubmatch(body); m != nil {
+		return m[1]
+	}
+	return ""
+}
+
+// normalizePageVersion maps the per-page marker onto the bucket label the entries carry:
+// "6.6" becomes "6000.6", while an already-bucketed "6000.0" or a pre-Unity-6 "2022.3" stays
+// as it is.
+func normalizePageVersion(pageVersion string) string {
+	parts := strings.SplitN(pageVersion, ".", 2)
+	if len(parts) == 2 && len(parts[0]) == 1 {
+		return "6000." + parts[1]
+	}
+	return pageVersion
 }
 
 func parseLinkedMemberEntries(parent Entry, body string, unityVersion string) []Entry {

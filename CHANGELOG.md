@@ -37,9 +37,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reflected `int` ↔ `EntityId` bridge, the docs-bucket selection and the pitfalls
   minimum-docs filter cannot be reached below the floor, so they were removed
   rather than kept compiled-out. The shipped ScriptReference corpus is rebuilt
-  from the Unity 6.6 documentation archive (`unity_docs_6000.6`, 46,663 entries,
+  from the Unity 6.6 documentation archive (`unity_docs_6000.6`, 46,830 entries,
   replacing the 6000.5 bundle and deleting the 6000.0/6000.3 ones), which also
-  makes the heartbeat and `status` report `Docs: 6000.6`.
+  makes the heartbeat and `status` report `Docs: 6000.6`. The builder now keeps
+  Unity's member pages whose `<h1>` is empty (enum members, fields, operators —
+  167 recovered here) by deriving the title from the API name, and it refuses to
+  write a corpus whose pages declare a different Unity version than the requested
+  label.
 
 ### Removed (CLI 0.3.0 — the MCP adapter is gone)
 
