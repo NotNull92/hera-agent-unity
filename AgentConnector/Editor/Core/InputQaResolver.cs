@@ -269,7 +269,7 @@ namespace HeraAgent
             var target = shaped["target"]?.ToString();
             if (!string.IsNullOrEmpty(target) && shaped["instance_id"] == null && shaped["path"] == null)
             {
-                if (int.TryParse(target, out var id)) shaped["instance_id"] = id;
+                if (long.TryParse(target, out var id)) shaped["instance_id"] = id;
                 else shaped["path"] = target;
             }
 

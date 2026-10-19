@@ -8,7 +8,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/NotNull92/hera-agent-unity?style=flat-square&logo=github&label=stars&color=181717)](https://github.com/NotNull92/hera-agent-unity/stargazers)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go](https://img.shields.io/badge/go-%5E1.25-00ADD8?style=flat-square&logo=go)](https://go.dev)
-[![Unity](https://img.shields.io/badge/unity-6000.0%2B-000000?style=flat-square&logo=unity)](https://unity.com)
+[![Unity](https://img.shields.io/badge/unity-6000.6%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
 # hera-agent-unity
@@ -237,13 +237,13 @@ Measured low-token baselines for `list --compact` are **about 93 estimated token
 
 ### Compatibility is checked across Unity generations
 
-Supported Unity versions are Unity 6+ (`6000.0` minimum), split into three compatibility buckets by compiler/API boundary. The release compile gate runs the Connector's exact source in a representative Editor per bucket:
+Supported Unity versions are Unity 6.6+ (`6000.6` minimum). The release compile gate installs the Connector's exact source as a normal UPM dependency in a disposable blank project of the representative Editor and requires a clean compile, a green release-gate suite, and zero console errors:
 
 | Bucket | Representative Editor | Last full-gate result |
 |:---|:---|:---:|
-| 6000.0 - 6000.2 | 6000.0.35f1 | PASS |
-| 6000.3 - 6000.4 | 6000.3.5f2 | PASS |
-| 6000.5+ | 6000.5.6f1 | PASS |
+| 6000.6+ | 6000.6.6f1 | PASS |
+
+The floor states what is actually verified. `6000.0`-`6000.5` were verified through Connector `0.1.3`; a project on those versions should stay on that release. `AgentConnector/package.json` carries the `6000.6` floor, so Package Manager refuses the new Connector on an older Editor instead of failing later at compile time.
 
 CLI and Connector versions are intentionally separate.
 
@@ -694,10 +694,9 @@ A long Test Runner job can outlive a normal request window. Hera stores durable 
 
 | Unity version | Status | Representative verification |
 |:---|:---|:---|
-| 6000.0 - 6000.2 | Supported | `6000.0.35f1` |
-| 6000.3 - 6000.4 | Supported | `6000.3.5f2` |
-| 6000.5+ | Supported | `6000.5.6f1` release gate |
-| Older than 6000.0 | Not supported | Minimum is Unity 6 (6000.0) |
+| 6000.6+ | Supported | `6000.6.6f1` release gate |
+| 6000.0 - 6000.5 | Not supported by this release | Stay on the last Connector verified for that stream (≤ `0.1.3`) |
+| Older than 6000.0 | Not supported | Minimum is Unity 6.6 (6000.6) |
 
 Version-specific behavior is checked against live Editors rather than assumed from one Unity version.
 
@@ -735,7 +734,7 @@ The npm publish is chained to the GitHub Release, so `npm install -g hera-agent-
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
 
-`v0.3.0` is a breaking release: the experimental MCP adapter is gone, so there is no `mcp` command and no `HERA_MCP_*` environment variable. In exchange, a failed request now declares how it can be retried (`retryable`, `state`, `retry_after_ms`) instead of leaving the CLI to guess from a dropped connection, and the heartbeat advertises the catalog schema hash so a matching catalog can be reused without another round-trip. Connector `0.2.0` carries the same contract. The live catalog exposes **34 tools / 133 actions**.
+`v0.3.0` is a breaking release: the experimental MCP adapter is gone, so there is no `mcp` command and no `HERA_MCP_*` environment variable. In exchange, a failed request now declares how it can be retried (`retryable`, `state`, `retry_after_ms`) instead of leaving the CLI to guess from a dropped connection, and the heartbeat advertises the catalog schema hash so a matching catalog can be reused without another round-trip. Connector `0.2.0` carries the same contract and requires **Unity 6.6 (`6000.6`)**; its `instance_id` values are 64-bit because 6000.6 removed the int-based EntityId conversions. The live catalog exposes **34 tools / 133 actions**.
 
 For release-by-release engineering detail, read [CHANGELOG.md](CHANGELOG.md) instead of treating the main README as a migration log.
 

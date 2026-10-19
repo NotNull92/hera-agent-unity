@@ -88,7 +88,7 @@ namespace HeraAgent.Tools
             public string Path { get; set; }
 
             [ToolParameter("InstanceID for isolated capture.", Required = false)]
-            public int InstanceId { get; set; }
+            public long InstanceId { get; set; }
 
             [ToolParameter(
                 "Isolated capture angles: iso, front, back, left, right, top, bottom; comma-separated.",
@@ -433,7 +433,9 @@ namespace HeraAgent.Tools
                 return main;
             }
 
-#if UNITY_6000_5_OR_NEWER
+#if UNITY_6000_6_OR_NEWER
+            var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include);
+#elif UNITY_6000_5_OR_NEWER
             var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 #else
             var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsSortMode.None);

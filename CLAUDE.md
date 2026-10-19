@@ -413,21 +413,19 @@ go test ./...
 ### Connector UPM 전체 호환 버전 릴리스 게이트
 
 Connector 코드, asmdef, 패키지 의존성, 테스트 소스 또는 `package.json`이
-바뀌면 한 Unity 버전에서의 성공만으로 검증 완료라고 기록하지 않는다. 현재
-지원 범위(`AgentConnector/package.json`의 최소 `6000.0`, README의
-Unity 6+)를 컴파일러/API 경계별로 나눈 다음 **세 버킷 전부** 확인한다:
+바뀌면 한 Unity 버전에서의 성공만으로 검증 완료라고 기록하지 않는다. 지원
+하한은 **Unity 6.6 (`6000.6`)** 이고(`AgentConnector/package.json`의 `unity` 필드가
+그 하한을 강제한다), 대표 에디터는 현재 하나다:
 
-1. `6000.0`–`6000.2`
-2. `6000.3`–`6000.4`
-3. `6000.5+`
+1. `6000.6+` — `6000.6.6f1`
 
-각 버킷에서 사용할 실제 대표 에디터 버전의 source of truth는
-`docs/UNITY_EDITOR_VERSION_INVENTORY.md`다. 인벤토리의 대표 버전을 최신화해야
-하면 먼저 갱신하고, 설치되지 않았거나 실행할 수 없는 버킷은 **PASS가 아니라
-BLOCKED**로 기록한다. 특정 버킷 하나(예: `6000.5`)만 확인하고 전체 호환 검증을
-통과했다고 표현하지 않는다.
+대표 에디터의 source of truth는 `docs/UNITY_EDITOR_VERSION_INVENTORY.md`다.
+인벤토리의 대표 버전을 최신화해야 하면 먼저 갱신하고, 설치되지 않았거나 실행할
+수 없는 대표는 **PASS가 아니라 BLOCKED**로 기록한다. 한 대표에서의 성공을 다른
+Unity 계열의 검증으로 표현하지 않는다. 컴파일러·API·패키지 전달 경계가 바뀌는
+계열이 나오면 대표를 추가한다(예: 6000.7은 6000.6에 없는 캡처 경로를 컴파일한다).
 
-각 버킷은 새 disposable blank project 또는 `Library`를 초기화한 disposable
+각 대표는 새 disposable blank project 또는 `Library`를 초기화한 disposable
 project에서 동일 Connector 후보를 일반 UPM dependency로 설치하여 다음을 모두
 확인한다:
 
@@ -441,6 +439,10 @@ project에서 동일 Connector 후보를 일반 UPM dependency로 설치하여 �
   `testables`를 남기지 않는다.
 - timeout, `compiling` 고착, Roslyn/csc 비정상 장기 실행은 재시도로 덮지 않고
   release-blocking failure로 기록한다.
+
+**blank project가 핵심이다.** 새 사용자가 시작하는 기본 템플릿이라, 커넥터가
+필요로 하지만 선언하지 않은 의존성이 여기서 드러난다 — 6000.6 템플릿에는
+`com.unity.ugui`가 없어서 이 게이트가 그 누락(컴파일 실패)을 잡았다.
 
 이 게이트는 Hera 저장소 개발자용이다. 아래 내용을 `doctor --agent-rules`,
 `AGENT.md`, `cmd/AGENT.md`, `examples/rules/`, UPM 사용 가이드 또는 기타

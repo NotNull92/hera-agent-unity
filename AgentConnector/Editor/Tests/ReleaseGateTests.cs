@@ -24,6 +24,7 @@ namespace HeraAgent.Tests
             nameof(AnimationTimeline),
             nameof(BuildOptions),
             nameof(EditorUiCapture),
+            nameof(EntityIdCompat),
             nameof(ExecCompileCache),
             nameof(ExecRestricted),
             nameof(HttpServerLifecycle),
@@ -65,6 +66,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void EditorUiCapture() => EditorUiCaptureTests.RunTests();
+
+        [Test]
+        public void EntityIdCompat() => Assert.IsTrue(EntityIdCompatTests.RunAll());
 
         [Test]
         public void ExecCompileCache() => ExecCompileCacheTests.RunTests();

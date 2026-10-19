@@ -16,7 +16,7 @@ The npm wrapper downloads the matching native binary from the GitHub release who
 - The heartbeat advertises the catalog schema hash, so a matching catalog is reused without another round-trip.
 - Breaking: the experimental MCP adapter was removed. There is no `mcp` command and no `HERA_MCP_*` environment variable; the CLI is the only agent surface.
 
-Connector **0.2.0** was verified on a disposable Unity `6000.5.6f1` project: the package compiles with **0** Console errors, the `ReleaseGateTests` suite is green, and the live catalog exposes **34 tools / 133 actions**. The `6000.0`-`6000.2` and `6000.3`-`6000.4` buckets were not run for this release.
+Connector **0.2.0** was verified on a disposable Unity `6000.6.6f1` project: the package compiles with zero warnings and zero Console errors, the `ReleaseGateTests` suite is green, and the live catalog exposes **34 tools / 133 actions**. `AgentConnector/package.json` carries the `6000.6` floor, so Package Manager refuses the package on an older Editor instead of failing later at compile time.
 
 Add the Unity Connector through Package Manager using the latest source:
 

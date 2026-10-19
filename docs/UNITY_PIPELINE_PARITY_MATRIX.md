@@ -32,7 +32,7 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `add_timeline_track` | covered | manage_timeline add_track |
 | `apply_prefab_overrides` | covered | manage_prefab apply |
 | `attach_script` | covered | manage_components add |
-| `audit` | conditional | 6000.0/6000.3 expose no Project Auditor assembly; 6000.5+ exposes `UnityEditor.ProjectAuditorModule` but none of the three fixtures has `com.unity.project-auditor-rules`, so no positive rules-enabled fixture exists |
+| `audit` | conditional | 6000.0/6000.3 expose no Project Auditor assembly and 6000.5+ exposes `UnityEditor.ProjectAuditorModule`, but no fixture — including the current `6000.6` representative — has `com.unity.project-auditor-rules`, so no positive rules-enabled fixture exists |
 | `audit_status` | conditional | same prerequisite evidence as `audit`; production code intentionally omitted until a rules-enabled fixture can prove non-empty modules/results |
 | `bake_lighting` | covered | bake start lighting |
 | `bake_navmesh` | covered | bake start navmesh |
@@ -44,7 +44,7 @@ The "Hera equivalent" column names the live catalog identity — `<tool> <action
 | `cancel_navmesh_bake` | covered | bake cancel navmesh |
 | `cancel_occlusion_bake` | covered | bake cancel occlusion |
 | `cancel_tests` | covered | run_tests cancel (CLI `test cancel`) |
-| `capture_editor_element` | covered | screenshot --editor_ui_only returns bounded UI Toolkit metadata; official PNG capture is compiled only for Unity 6000.7+, outside the current 6000.0/6000.3/6000.5+ matrix |
+| `capture_editor_element` | covered | screenshot --editor_ui_only returns bounded UI Toolkit metadata; official PNG capture is compiled only for Unity 6000.7+, outside the current `6000.6` representative |
 | `capture_game_view` | covered | screenshot --view game |
 | `capture_runtime_element` | excluded | runtime/hot-reload server expands locked Editor-only architecture |
 | `capture_scene_view` | covered | screenshot |

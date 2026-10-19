@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (Connector 0.2.0 — the support floor is Unity 6.6, and ids are 64-bit)
+
+- The Connector now requires **Unity 6.6 (`6000.6`)**, enforced by the `unity`
+  field in `AgentConnector/package.json`. A project on `6000.0`-`6000.5` should
+  stay on Connector `0.1.3`, the last release verified across the old three-bucket
+  matrix. The narrowing is deliberate: that matrix could no longer be run here,
+  and a partially verified range is not a compatibility claim.
+- The Connector now declares `com.unity.ugui` as a dependency. A blank `6000.6`
+  project template does not include uGUI, so a fresh install previously failed to
+  compile; the new representative caught it on the first run.
+- `instance_id` values are **64-bit**. Unity `6000.6` removed the int ↔ EntityId
+  conversions and turned the int-based lookup APIs into runtime stubs, so a 32-bit
+  id cannot resolve an object. The id now carries the full EntityId value
+  (`EntityId.FromULong`/`ToULong`) end to end. The JSON type stays `integer` and
+  every field name is unchanged, so a schema-driven caller needs no change — but
+  an id emitted by a `6000.6` Editor is larger than 32 bits.
+- Two `6000.6` API changes are handled without a compiled-out branch: the
+  obsolete-as-error `EntityId` conversion, and the deprecated
+  `FindObjectsByType(FindObjectsInactive, FindObjectsSortMode)` overload.
+- `EntityIdCompatTests` is part of `ReleaseGateTests` now. It asserts the id
+  round-trip for a scene object, a component, and a duplicate, plus the
+  unknown-id → null contract; the suite existed but had never run in the gate.
+- The payload baseline was regenerated with the new catalog: the id width is now
+  documented in a parameter description (normalized catalog −4 bytes) and the
+  canonical hash moved to `3649a714…`. Tools, actions, and tool-description
+  characters are unchanged.
+
 ### Removed (CLI 0.3.0 — the MCP adapter is gone)
 
 - The experimental, default-off, stdio-only MCP adapter was removed. There is no

@@ -67,7 +67,7 @@ namespace HeraAgent.Tools
         [Newtonsoft.Json.JsonObject(NamingStrategyType = typeof(Newtonsoft.Json.Serialization.SnakeCaseNamingStrategy))]
         public sealed class SelectionEntry
         {
-            public int InstanceId { get; set; }
+            public long InstanceId { get; set; }
             public string Name { get; set; }
             public string Kind { get; set; }
             public string Path { get; set; }
@@ -81,7 +81,7 @@ namespace HeraAgent.Tools
         public sealed class SelectionResult
         {
             public int Count { get; set; }
-            public int ActiveInstanceId { get; set; }
+            public long ActiveInstanceId { get; set; }
             public SelectionEntry[] Objects { get; set; }
         }
 

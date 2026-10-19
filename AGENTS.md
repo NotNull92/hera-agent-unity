@@ -730,22 +730,23 @@ agents collaborate to build one polished tool — one catches what the other mis
 ### 7.2 Connector UPM compatibility release gate (development only)
 
 Any change to Connector C# code, asmdefs, package dependencies, test sources, or
-`AgentConnector/package.json` requires a clean UPM-install compile check in **all
-supported compatibility buckets**, not only the Unity version where the bug was
-reported:
+`AgentConnector/package.json` requires a clean UPM-install compile check on every
+supported representative Editor, not only the Unity version where the bug was
+reported. The supported range starts at **Unity 6.6 (`6000.6`)**:
 
-1. `6000.0`–`6000.2`
-2. `6000.3`–`6000.4`
-3. `6000.5+`
+1. `6000.6+` — representative `6000.6.6f1`
 
 Use the exact representative Editor installations recorded in
 `docs/UNITY_EDITOR_VERSION_INVENTORY.md`; update that inventory first when the
-representative changes. A missing or unavailable bucket is **BLOCKED**, never a
-PASS, and evidence from one bucket must not be described as full compatibility.
+representative changes. A representative that cannot be run is **BLOCKED**, never
+a PASS, and evidence from one representative must not be described as verified
+compatibility for another Unity line. Add a representative when a Unity stream
+crosses a compiler, API, or package-delivery boundary — 6000.7 already compiles a
+capture path that 6000.6 does not.
 
-For every bucket, install the same Connector candidate as a normal UPM dependency
-in a new disposable blank project, or a disposable project whose `Library` was
-reset, then require all of the following:
+For every representative, install the same Connector candidate as a normal UPM
+dependency in a new disposable blank project, or a disposable project whose
+`Library` was reset, then require all of the following:
 
 - initial script compilation reaches `ready` within a bounded timeout;
 - `console --type error` reports zero compiler/package errors;

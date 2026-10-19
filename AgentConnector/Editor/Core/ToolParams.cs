@@ -32,6 +32,17 @@ namespace HeraAgent
             return int.TryParse(str, out var result) ? result : defaultValue;
         }
 
+        /// <summary>
+        /// 64-bit variant for identity values: Unity 6000.6 EntityIds exceed the 32-bit range, and
+        /// the tool schema still renders both widths as JSON <c>integer</c>.
+        /// </summary>
+        public long? GetLong(string key, long? defaultValue = null)
+        {
+            var str = GetString(key);
+            if (string.IsNullOrEmpty(str)) return defaultValue;
+            return long.TryParse(str, out var result) ? result : defaultValue;
+        }
+
         public float? GetFloat(string key, float? defaultValue = null)
         {
             var str = GetString(key);

@@ -108,7 +108,7 @@ for existing flows.
 - Strict schemas stay `string`/`integer`; only parameter descriptions and
   the shared resolution helpers change. Catalog baseline is regenerated for
   the description growth and reviewed.
-- `GlobalObjectId` APIs exist across all three supported buckets (Unity 6+);
+- `GlobalObjectId` APIs exist across the supported bucket (Unity 6.6+);
   the `*Slow` resolution cost is irrelevant at tool-call frequency.
 
 ### D6. Validation plan

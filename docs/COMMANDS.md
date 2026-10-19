@@ -896,7 +896,7 @@ GameObject (required for `add` / `list`, and for `remove` / `get` / `set` unless
 
 | Flag | Description |
 |:---|:---|
-| `--instance_id <N>`   | Preferred. Survives renames and reparenting. |
+| `--instance_id <N>`   | Preferred. Survives renames and reparenting. A 64-bit id: on Unity `6000.6+` it carries the full EntityId value, which is larger than 32 bits. |
 | `--path </Root/Child>` | Hierarchy path; fallback walk covers inactive subtrees. |
 
 Component:

@@ -7,18 +7,17 @@ version-specific accuracy. Regenerate the table with:
 powershell -ExecutionPolicy Bypass -File tools/unity-editor-inventory/inventory-unity-editors.ps1
 ```
 
-## Supported release-gate buckets
+## Supported release-gate representative
 
-Hera targets Unity 6+ (`6000.0` minimum). The release gate covers three
-buckets; representative Editors below. `2022.3.62f2` and `2023.2.22f1` remain
-in the inventory as historical rows only — they are outside the supported
-range.
+Hera targets **Unity 6.6+ (`6000.6` minimum)**, enforced by the `unity` field in
+`AgentConnector/package.json`. The release gate covers one representative Editor;
+`2022.3.62f2` and `2023.2.22f1` remain in the inventory as historical rows only,
+and `6000.5.6f1` is kept as the lower-boundary reference for the range that was
+supported through Connector `0.1.3`.
 
 | Bucket | Representative |
 |---|---|
-| `6000.0`–`6000.2` | `6000.0.35f1` |
-| `6000.3`–`6000.4` | `6000.3.5f2` |
-| `6000.5+` | `6000.5.6f1` |
+| `6000.6+` | `6000.6.6f1` |
 
 ## Current Inventory
 
@@ -27,20 +26,20 @@ Path token: `%UNITY_HUB_EDITOR%`
 Default resolver: `%ProgramFiles%\Unity\Hub\Editor` on Windows Unity Hub
 installs. Override the scanner with `-HubRoot` for non-default install roots.
 
-> **Regenerated 2026-10-17:** the `6000.0.35f1` and `6000.3.5f2` Editor folders
-> are gone from this workstation, so those two buckets are **BLOCKED** for any
-> Connector change until one editor per bucket is installed again. The `v0.3.0` /
-> Connector `0.2.0` release therefore carries `6000.5.6f1` evidence only, and that
-> must not be described as full three-bucket compatibility. Install a
-> representative for each bucket and re-run the scanner before claiming them.
+> **Regenerated 2026-10-19:** the support floor moved to `6000.6`, so
+> `6000.6.6f1` is the single release-gate representative. `6000.0.35f1` and
+> `6000.3.5f2` are gone from this workstation and are **out of scope** rather than
+> BLOCKED — projects on those streams stay on the last Connector verified for
+> them (`0.1.3`). `6000.5.6f1` is kept as the lower-boundary reference. The
+> `6000.6.6f1` representative is what the `v0.3.0` / Connector `0.2.0` release
+> carries, and it must not be described as compatibility for any other Unity line.
 
 | Unity | Editor | uGUI | TMP | Entities | Built-in packages | Primary csc.dll | Primary dotnet |
 |---|---:|---:|---:|---:|---:|---|---|
 | `2022.3.62f2` | yes | `1.0.0` |  |  | 59 | `%UNITY_HUB_EDITOR%\2022.3.62f2\Editor\Data\DotNetSdkRoslyn\csc.dll` | `%UNITY_HUB_EDITOR%\2022.3.62f2\Editor\Data\NetCoreRuntime\dotnet.exe` |
 | `2023.2.22f1` | yes | `2.0.0` | `5.0.0` |  | 62 | `%UNITY_HUB_EDITOR%\2023.2.22f1\Editor\Data\DotNetSdkRoslyn\csc.dll` | `%UNITY_HUB_EDITOR%\2023.2.22f1\Editor\Data\NetCoreRuntime\dotnet.exe` |
-| `6000.0.35f1` | no |  |  |  | 0 |  |  |
-| `6000.3.5f2` | no |  |  |  | 0 |  |  |
 | `6000.5.6f1` | yes | `2.5.0` | `5.0.0` | `6.5.0` | 85 | `%UNITY_HUB_EDITOR%\6000.5.6f1\Editor\Data\DotNetSdk\sdk\8.0.318\Roslyn\bincore\csc.dll` | `%UNITY_HUB_EDITOR%\6000.5.6f1\Editor\Data\DotNetSdk\dotnet.exe` |
+| `6000.6.6f1` | yes | `2.6.0` | `5.0.0` | `6.6.0` | 95 | `%UNITY_HUB_EDITOR%\6000.6.6f1\Editor\Data\DotNetSdk\sdk\8.0.318\Roslyn\bincore\csc.dll` | `%UNITY_HUB_EDITOR%\6000.6.6f1\Editor\Data\DotNetSdk\dotnet.exe` |
 
 ## Hera Implications
 
@@ -59,8 +58,25 @@ installs. Override the scanner with `-HubRoot` for non-default install roots.
    `DotNetSdk\sdk\<version>` layouts. Saved config paths that point inside a
    different Unity Editor install are ignored, while external SDK overrides
    remain valid.
+7. `6000.6.6f1` is the current representative and the first version whose blank
+   project template does **not** include `com.unity.ugui` (6000.5's does). The
+   Connector now declares that dependency itself; without it the package fails to
+   compile on a fresh 6000.6 project.
+8. `6000.6` also raises the `EntityId` API pressure on one of the two compile
+   boundaries this gate exists for: `EntityId.implicit operator EntityId(int)` is
+   obsolete-as-**error** (CS0619) where 6000.3-6000.5 only warned (CS0618), and
+   `Object.FindObjectsByType<T>(FindObjectsInactive, FindObjectsSortMode)` is
+   obsolete (CS0618). Both are handled without a compiled-out branch.
+9. The docs bundle does not need a `6000.6` file: `UnityVersionCompat` maps
+   `6000.6` to the `6000.5` bundle, confirmed live in the representative's
+   heartbeat (`docsVersion: 6000.5`).
 
 ## Completed Checks
+
+> Historical: the entries below ran under the three-bucket policy
+> (`6000.0.35f1` / `6000.3.5f2` / `6000.5.6f1`) that applied through Connector
+> `0.1.3`. From `0.2.0` the floor is `6000.6` and the gate runs on
+> `6000.6.6f1`.
 
 ### Connector 0.0.106 three-bucket gate (2026-08-13)
 

@@ -205,8 +205,8 @@ namespace HeraAgent
 
             if (token.Type == JTokenType.Integer)
             {
-                var obj = EntityIdCompat.ToObject(token.Value<int>());
-                return obj == null ? (null, $"no object for instance_id={token.Value<int>()}") : (obj, null);
+                var obj = EntityIdCompat.ToObject(token.Value<long>());
+                return obj == null ? (null, $"no object for instance_id={token.Value<long>()}") : (obj, null);
             }
 
             if (token.Type == JTokenType.String)
@@ -232,7 +232,7 @@ namespace HeraAgent
             {
                 if (jo["instance_id"] != null)
                 {
-                    int id = jo["instance_id"].Value<int>();
+                    long id = jo["instance_id"].Value<long>();
                     var obj = EntityIdCompat.ToObject(id);
                     return obj == null ? (null, $"no object for instance_id={id}") : (obj, null);
                 }

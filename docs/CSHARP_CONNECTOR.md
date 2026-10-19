@@ -30,7 +30,7 @@ AgentConnector/
     │   ├── ComponentTypeResolver.cs     # short/full component name → System.Type
     │   ├── HierarchyPath.cs             # Transform path build/find (inactive fallback)
     │   ├── TargetResolver.cs            # resolve GameObject/Component/Transform targets
-    │   ├── EntityIdCompat.cs            # Unity 6000.5 EntityId shim
+    │   ├── EntityIdCompat.cs            # 64-bit id bridge (EntityId shim)
     │   ├── GameObjectComponents.cs      # stable component name list helper
     │   ├── Levenshtein.cs               # edit distance for "did you mean"
     │   ├── UnityDocsStore.cs            # bundled ScriptReference lookup data
@@ -217,7 +217,7 @@ All tools now return stable `code` values. Branch on these rather than parsing `
 | `OBJECT_NOT_FOUND` | The supplied `instance_id` no longer points to a live object |
 | `NOT_A_GAMEOBJECT` | `instance_id` exists but is not a `GameObject` |
 | `NOT_A_COMPONENT` | `component_id` exists but is not a `Component` |
-| `INVALID_INSTANCE_ID` | `instance_id` could not be parsed as an integer |
+| `INVALID_INSTANCE_ID` | `instance_id` could not be parsed as a 64-bit integer |
 | `INVALID_COMPONENT_ID` | `component_id` could not be parsed as an integer |
 | `COMPONENT_NOT_FOUND` | Target GameObject does not have the requested component |
 | `COMPONENT_INDEX_OUT_OF_RANGE` | `index` exceeds the number of matching components |
@@ -436,7 +436,7 @@ Shared target resolution: `instance_id` (highest priority) or `path`, with optio
 
 ### EntityIdCompat.cs
 
-Unity 6000.5 renamed `InstanceIDToObject`/`GetInstanceID` to `EntityIdToObject`/`GetEntityId` and made the old API obsolete-as-error. This shim chooses the right API per compile-time Unity version and preserves the existing int-based `instance_id` contract.
+Unity 6000.3 renamed `InstanceIDToObject`/`GetInstanceID` to `EntityIdToObject`/`GetEntityId` and made the old API obsolete-as-error; `6000.6` then removed the `int` ↔ `EntityId` conversions entirely and turned the int-based lookups into runtime stubs. This shim picks the right path per compile-time Unity version: the full 64-bit id (`EntityId.FromULong`/`ToULong`) on `6000.6+`, the reflected int bridge on `6000.3`-`6000.5`, and `InstanceIDToObject` below that. `IdOf`/`ToObject` are the only place the id width is decided, so callers carry `long` without caring which branch is compiled.
 
 ### GameObjectComponents.cs
 

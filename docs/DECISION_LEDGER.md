@@ -115,6 +115,64 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 - Kept keep-alive and observer-cadence changes measurement-gated. See `docs/ARCHITECTURE_REFINEMENT_ROADMAP.md` and `docs/ARCHITECTURE_REFINEMENT_RESULT.md`.
 
 
+## Step 6 support floor — Unity 6.6 (`6000.6`) — 2026-10-19
+
+User decision: the supported range narrows from Unity 6+ to **Unity 6.6
+(`6000.6`)**. `6000.0`-`6000.5` are not supported by this release; a project on
+those versions stays on Connector `0.1.3`, the last release verified across the
+old three-bucket matrix.
+
+Why:
+- The three-bucket gate cannot run here any more: the `6000.0.35f1` and
+  `6000.3.5f2` Editor folders are gone, and a missing bucket is BLOCKED, never
+  PASS. A partially verified range is not a compatibility claim.
+- Unity's own tooling is version-partitioned too: `capture_editor_element` is
+  compiled only for 6000.7+, each Editor ships version-keyed compatibility
+  metadata (`com.unity.package-manager.metadata-6000.5` vs `-6000.6`), and
+  `com.unity.pipeline` resolves to different versions per stream. "One binary for
+  all of Unity 6" is not how the first-party tooling works either.
+- The first gate run on the new representative found three real boundaries at
+  once (below), which is the evidence that the boundary is real and that one
+  representative is enough to catch it.
+
+What the first `6000.6.6f1` run found:
+1. **Undeclared uGUI.** The blank 6000.6 project template does not include
+   `com.unity.ugui` (through 6000.5 it did), so the Connector failed to compile
+   on a fresh project. `AgentConnector/package.json` now declares
+   `com.unity.ugui: 2.6.0`. Measured: a lower request is promoted by the resolver
+   to the Editor's built-in version (`2.5.0` requested → `2.6.0` resolved).
+2. **EntityId lost its int conversions.** 6000.6 removed the `int ↔ EntityId`
+   implicit operators (CS0619) and turned the int-based lookup APIs into runtime
+   stubs (`NotImplementedException`). Measured: `ToULong=5497558152874`, low 32
+   bits `13990`, and only `EntityIdToObject(FromULong(full))` resolves. `instance_id`
+   is therefore **64-bit** end to end (`EntityIdCompat.IdOf`/`ToObject` take and
+   return `long`; `EntityId.FromULong`/`ToULong` are the bridge). The JSON type
+   stays `integer`, field names are unchanged, and the catalog hash is unchanged
+   because `SchemaUtility` renders int and long identically.
+3. **A deprecated overload.** `FindObjectsByType(FindObjectsInactive,
+   FindObjectsSortMode)` is obsolete in 6000.6 (CS0618). The repository compile
+   gate fails on warnings, so the new `FindObjectsByType(FindObjectsInactive)`
+   overload is used on 6000.6+.
+
+Evidence recorded in the same pass: compile with zero errors and zero warnings,
+`console --type error` zero, a normal-install response file with no `Editor/Tests`
+sources, a separately compiled `HeraAgent.Editor.Tests` (suite 27/27, one skip:
+no Timeline package in the blank fixture), and the served catalog verified at
+34 tools / 133 actions. The catalog hash moved to `3649a714…` because a parameter
+description now states the id width (normalized catalog −4 bytes, tool
+descriptions unchanged), and the baseline was regenerated with it.
+
+Follow-ups deliberately left out of this change:
+- The `#if UNITY_6000_3_OR_NEWER` / `UNITY_6000_5_OR_NEWER` lower branches are now
+  compiled-out code. Removing them needs its own change plus a 6000.6 re-run.
+- The `unity_docs_6000.0` and `unity_docs_6000.3` bundles are unused on 6000.6
+  (`UnityVersionCompat` maps 6000.6 to the 6000.5 bundle). Removing ~2.7 MB means
+  deleting the bundles and changing the fallback constant.
+- Older Connectors still emit 32-bit ids; they belong to the `≤0.1.3` streams, so
+  the two id widths never meet in one install.
+
+
+
 ## Step 6 M2 — catalog rebaseline (CLI v0.3.1) — 2026-10-17
 
 - **The payload metric follows the surface.** `mcp_compact` was deleted with the

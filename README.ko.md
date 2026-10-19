@@ -8,7 +8,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/NotNull92/hera-agent-unity?style=flat-square&logo=github&label=stars&color=181717)](https://github.com/NotNull92/hera-agent-unity/stargazers)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg?style=flat-square&color=blue)](LICENSE)
 [![Go](https://img.shields.io/badge/go-%5E1.25-00ADD8?style=flat-square&logo=go)](https://go.dev)
-[![Unity](https://img.shields.io/badge/unity-6000.0%2B-000000?style=flat-square&logo=unity)](https://unity.com)
+[![Unity](https://img.shields.io/badge/unity-6000.6%2B-000000?style=flat-square&logo=unity)](https://unity.com)
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-ff69b4?style=flat-square)]()
 
 # hera-agent-unity
@@ -239,13 +239,11 @@ Hera는 "AI니까 알아서 잘합니다" 같은 모호한 표현 대신 저장�
 
 ### 여러 Unity 세대에서 패키지 컴파일을 확인합니다
 
-지원 Unity 버전은 Unity 6+ (최소 `6000.0`)이며, 컴파일러/API 경계 기준 세 개의 호환 bucket으로 나눕니다. 릴리스 컴파일 게이트는 bucket별 대표 Editor에서 Connector의 동일 소스를 실행합니다.
+지원 Unity 버전은 Unity 6.6+ (최소 `6000.6`)입니다. 릴리스 컴파일 게이트는 대표 Editor의 disposable blank project에 Connector의 동일 소스를 일반 UPM dependency로 설치해 컴파일 무결, 릴리스 게이트 스위트 통과, 콘솔 오류 0을 확인합니다.
 
 | Bucket | 대표 Editor | 최근 전체 게이트 결과 |
 |:---|:---|:---:|
-| 6000.0 - 6000.2 | 6000.0.35f1 | PASS |
-| 6000.3 - 6000.4 | 6000.3.5f2 | PASS |
-| 6000.5+ | 6000.5.6f1 | PASS |
+| 6000.6+ | 6000.6.6f1 | PASS |
 
 CLI 버전과 Connector 버전은 의도적으로 따로 관리합니다.
 
@@ -698,10 +696,9 @@ Test Runner가 오래 걸리면 실행 상태를 파일에 남기므로 AI가 �
 
 | Unity 버전 | 상태 | 대표 검증 |
 |:---|:---|:---|
-| 6000.0 - 6000.2 | 지원 | `6000.0.35f1` |
-| 6000.3 - 6000.4 | 지원 | `6000.3.5f2` |
-| 6000.5+ | 지원 | `6000.5.6f1` 릴리스 게이트 |
-| 6000.0 미만 | 미지원 | 최소 Unity 6 (6000.0) |
+| 6000.6+ | 지원 | `6000.6.6f1` 릴리스 게이트 |
+| 6000.0 - 6000.5 | 이번 릴리스에서 미지원 | 그 계열에서 마지막으로 검증된 Connector(≤ `0.1.3`)를 사용하세요 |
+| 6000.0 미만 | 미지원 | 최소 Unity 6.6 (6000.6) |
 
 버전별 동작은 Unity 한 버전을 보고 추측하지 않고 실제 대표 Editor에서 확인합니다.
 
@@ -738,7 +735,7 @@ npm 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-u
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
 
-`v0.3.0`은 breaking 릴리스입니다. 실험적 MCP adapter가 제거되어 `mcp` 명령과 `HERA_MCP_*` 환경변수가 없습니다. 대신 실패한 요청이 재시도 가능 여부를 직접 선언하고(`retryable`, `state`, `retry_after_ms`) CLI가 끊긴 연결만 보고 추측하지 않으며, heartbeat가 catalog schema hash를 광고해 일치하는 카탈로그를 왕복 없이 재사용합니다. Connector `0.2.0`이 같은 계약을 제공합니다. 라이브 카탈로그는 **34 tools / 133 actions**를 노출합니다.
+`v0.3.0`은 breaking 릴리스입니다. 실험적 MCP adapter가 제거되어 `mcp` 명령과 `HERA_MCP_*` 환경변수가 없습니다. 대신 실패한 요청이 재시도 가능 여부를 직접 선언하고(`retryable`, `state`, `retry_after_ms`) CLI가 끊긴 연결만 보고 추측하지 않으며, heartbeat가 catalog schema hash를 광고해 일치하는 카탈로그를 왕복 없이 재사용합니다. Connector `0.2.0`이 같은 계약을 제공하고 **Unity 6.6 (`6000.6`)** 이상을 요구합니다. 6000.6이 int 기반 EntityId 변환을 제거해서 `instance_id` 값은 64비트입니다. 라이브 카탈로그는 **34 tools / 133 actions**를 노출합니다.
 
 릴리스별 기술 변경을 모두 보고 싶다면 메인 README보다 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
 

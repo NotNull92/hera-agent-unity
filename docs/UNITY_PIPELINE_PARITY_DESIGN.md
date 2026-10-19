@@ -57,13 +57,15 @@ A candidate ships only when all of these are true:
    can be stated precisely.
 4. A failing-first regression or feature test exists at the narrowest truthful
    boundary.
-5. The behavior compiles and runs on the applicable Unity 6000.0, 6000.3, and
-   6000.5 fixtures.
+5. The behavior compiles and runs on the representative Editor of the supported
+   range (`6000.6.6f1` today), and on any additional representative the change
+   crosses.
 6. Catalog growth remains bounded and the public guides are synchronized.
 
-Project Auditor is conditional: the 6000.5 fixture exposes the built-in module,
-but no current fixture contains a usable rules package. It does not ship until
-a positive audit result can be exercised; absence-only behavior is not enough.
+Project Auditor is conditional: the 6000.5 and 6000.6 representatives expose the
+built-in module, but no current fixture contains a usable rules package. It does
+not ship until a positive audit result can be exercised; absence-only behavior is
+not enough.
 
 ## Work waves
 
@@ -148,10 +150,9 @@ budget.
   268,417 B (262.1 KiB) unchanged; tool descriptions 9,940 characters against
   10,000; profiles unchanged. `--fail-on-change` accepts the regenerated baseline,
   and the only delta against the previous baseline is the new metric itself.
-- **Fixtures:** verified on Unity `6000.5.6f1`. `6000.0`-`6000.2` and
-  `6000.3`-`6000.4` are **BLOCKED** — their representative Editors are not
-  installed — and this rebaseline changes no connector code, so it adds no
-  bucket-specific risk.
+- **Fixtures:** M2 itself changed no connector code and was measured on the then
+  representative `6000.5.6f1`. The support floor then moved to `6000.6` (see the
+  ledger), and the Connector evidence for this release comes from `6000.6.6f1`.
 
 ## Verification and rollback
 
@@ -170,10 +171,10 @@ go run ./tools/validate-tool-catalog < captured live catalog
 ```
 
 Connector verification uses the exact-source compiler and package-test runner
-for Unity 6000.0, 6000.3, and 6000.5, then the installed CLI against all three
-live fixtures. Each mutation is tested on disposable scenes/assets and cleans
-up its own fixture. Console errors must be zero after every compile and at the
-final gate.
+for the representative of the supported range (`6000.6.6f1` today), then the
+installed CLI against that live fixture. Each mutation is tested on disposable
+scenes/assets and cleans up its own fixture. Console errors must be zero after
+every compile and at the final gate.
 
 No commit, tag, publish, package install, or external write is part of this
 implementation unless separately requested.
