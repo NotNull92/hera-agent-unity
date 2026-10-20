@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (CLI v0.3.6; Connector unchanged at 0.2.7)
+
+- `list --profiles` lists profile counts and `list --profile <name>` returns slim tool descriptions using the existing catalog cache. Unknown profiles include valid names in INVALID_ARGUMENT. Profile assignments and catalog contract remain unchanged.
+
 ### Fixed (CLI v0.3.5; Connector unchanged at 0.2.7)
 
 - Windows request timeouts and stale `status` now identify visible native Editor dialogs by PID and title. Error envelopes report `blocked_by_dialog` and explicit `retryable:false`, preserving unknown operation outcomes. No automatic dismissal or retry; other platforms retain existing behavior.

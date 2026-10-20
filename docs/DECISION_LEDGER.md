@@ -20,6 +20,39 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## U5 — cached profile discovery (2026-10-20)
+
+Admission gate:
+1. Failure: agents that do not know a tool name must read all 34 descriptions;
+   the normalized catalog is 269,038 B. No measured token-savings claim yet.
+2. Existing surface: list --names has no descriptions; --tool requires a name.
+   Profile memberships already exist; only CLI discovery filtering was missing.
+3. Contract: CLI-only filtering, unchanged catalog hash. Unknown profiles return
+   INVALID_ARGUMENT and valid_profiles rather than a successful empty result.
+4. Regression: Go unit tests and live catalog comparison for all eight profiles.
+5. Cost: two flags and one compact-guidance line, within the 2,500 B budget.
+6. Baseline: catalog unchanged; only measured rules/summary byte accounting moves.
+
+Review retained all 34 assignments. full has 32 ordinary tools; exec/menu are
+advanced-only. Profiles are discovery groups, not safety or authorization
+boundaries. Possible assets membership for manage_animation and a build group
+are deferred without measured discovery failures. No reclassification commit.
+Existing Registry.Load supplies native cached catalogs or legacy compact groups.
+Ordinary list stays unchanged; profile selectors cannot mix with other selectors.
+
+Validation: eight live profile outputs match name/description sets and counts
+(advanced 2, assets 9, core 8, diagnostics 11, full 32, scene 11, testing 6, ui 7).
+After priming, each debug trace has zero HTTP POSTs. Unknown profile lists all
+valid names; console errors 0. Unit tests cover slim sorting, invalid arguments,
+legacy compact, and a fresh registry loading disk cache with a failing sender.
+Go vet/test/lint/format, guide sync, package/runtime gates pass. CLI v0.3.6,
+Connector 0.2.7 unchanged. No tags/releases. Actual task/token benefit remains
+unmeasured; no tokenizer or fixed-task benchmark is claimed.
+
+Catalog hash cbbab9d6… and 34/133/269,038 B unchanged. Compact rules increase
+97 B: 2,368 → 2,465; CLI summary 2,845 → 2,942 B. Baseline changes only those
+byte counts and their rough estimates, not catalog/profile fields.
+
 ## U4 — native modal blocking diagnosis (2026-10-19)
 
 - Reproduction gate passed: one approved delayed DisplayDialog opened a visible

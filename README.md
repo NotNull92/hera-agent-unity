@@ -654,7 +654,7 @@ npx skills add NotNull92/hera-agent-unity --skill hera-agent-unity --agent codex
 hera-agent-unity doctor --agent-rules --compact >> AGENTS.md
 ```
 
-The compact default guidance is intentionally small. Its reviewed baseline is **2,368 UTF-8 bytes** and contains the important rules for bootstrap, targeting, approvals, safety, and verification. The full guide is available on demand.
+The compact default guidance is intentionally small. Its reviewed baseline is **2,465 UTF-8 bytes** and contains the important rules for bootstrap, targeting, approvals, safety, and verification. The full guide is available on demand.
 
 This repository also ships templates for Cursor, Copilot, AntiGravity, Continue, and other agent environments under [examples/rules](examples/rules).
 
@@ -724,7 +724,7 @@ typed execution, `exec` when no dedicated command exists.
 
 ## Current release
 
-The source tree contains the **unreleased CLI v0.3.5 / Connector 0.2.7 candidate**. CLI v0.3.4 / Connector 0.2.4 add JUnit/NUnit test artifacts and deterministic test sharding. Connector 0.2.3 reduces request-body I/O delays while retaining main-thread tool execution. It follows the unreleased v0.3.1 catalog rebaseline, v0.3.2 integer/identity fixes, and v0.3.3 atomic batch preflight for non-destructive, Undo-covered edits. None of these candidates has a tag or release.
+The source tree contains the **unreleased CLI v0.3.6 / Connector 0.2.7 candidate**. CLI v0.3.4 / Connector 0.2.4 add JUnit/NUnit test artifacts and deterministic test sharding. Connector 0.2.3 reduces request-body I/O delays while retaining main-thread tool execution. It follows the unreleased v0.3.1 catalog rebaseline, v0.3.2 integer/identity fixes, and v0.3.3 atomic batch preflight for non-destructive, Undo-covered edits. None of these candidates has a tag or release.
 
 - CLI / GitHub Release: **v0.3.0** with five native binaries
 - npm: **0.3.0** (`latest`)

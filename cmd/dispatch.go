@@ -157,6 +157,12 @@ func (runner unityCommandRunner) Run(
 			return nil, err
 		}
 		return &client.CommandResponse{Success: true}, nil
+	case "list":
+		if hasListProfileSelector(subArgs) {
+			registry := toolregistry.NewRegistry(toolregistry.RegistryOptions{})
+			return listProfilesCmd(ctx, runner.instance, subArgs, registry.Load)
+		}
+		return runLegacyToolCommand(category, subArgs, send)
 	case "call":
 		registry := toolregistry.NewRegistry(toolregistry.RegistryOptions{})
 		command := &callCommand{

@@ -76,8 +76,8 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | U1 | Done; independent static/evidence review PASS | Connector 0.2.5 shard selector parity; unsharded/list unchanged |
 | U2 | Done; independent evidence review PASS | Marker/reload confirmed; 425.85 ms off / 425.78 ms on, n=5 each; no product adoption |
 | U3 | Independent verification PASS; classification follow-up verified | Connector 0.2.7 distinguishes no-compilation from cache misses; four approved probes miss/memory_hit/miss/disk_hit, reload ref paths unchanged |
-| U4 | Implemented; local gates PASS (candidate) | CLI v0.3.5 native dialog diagnosis; one approved exec, opaque baseline timeout, explicit candidate state/title, recovery and 20/20 normal probes |
-| U5 | Approved after U4 | Review profile assignments, then CLI profile discovery |
+| U4 | Independent verification PASS | CLI v0.3.5 native dialog diagnosis; one approved exec, opaque baseline timeout, explicit candidate state/title, recovery and 20/20 normal probes |
+| U5 | Implemented; local gates PASS | CLI v0.3.6 cached profile discovery; all 34 assignments retained after review |
 | U6 | Approved after U5 | M7 threat-model closure; no implementation |
 | U7 | Approved after U6 | M8 PDB research outside the repository |
 | U8 | Approved after U7 | Hub secondary install-path fallback |

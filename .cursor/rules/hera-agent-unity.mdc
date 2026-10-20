@@ -308,6 +308,7 @@ When you can do something with a dedicated command, use it instead of `exec`. De
 | Run EditMode / PlayMode tests | `test [--mode PlayMode] [--filter ...]` | Filter by namespace, class, or full test name. |
 | Profiler hierarchy snapshot | `profiler hierarchy --depth N` | Sort by self/total/calls, filter by `--min ms`. |
 | Liveness probe (no Unity round-trip) | `ping` | Cheaper than `status` — heartbeat file only. |
+| Discover tools by task | `list --profiles` / `list --profile <name>` | Counts or name/description rows from the cached catalog. Profiles are discovery groups, not permissions; full excludes advanced-only exec/menu. |
 | List all tools | `list --compact` or `list --names` | 30s in-memory + on-disk cache. Both forms return a flat names array; use `list` only when you need one-line descriptions. |
 | Invoke a strict tool with typed JSON | `call <tool> --json '{...}'` or pipe JSON | Validates against the live strict schema before execution. Use `--validate-only` or `--explain` for no-execution checks. |
 | Run multiple commands in one HTTP round-trip | `batch --file <path.json>` or pipe JSON | Sequential. `fail_fast` on first error by default. |

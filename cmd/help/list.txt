@@ -7,6 +7,8 @@ For full per-tool detail (output_schema + metadata, including action_safety
 when a tool declares per-action safety) use --tool <name>.
 
 Options:
+  --profile <name>  Name + description for tools in one catalog profile
+  --profiles        Profile names and tool membership counts
   --names            Names only — flat JSON array (most token-efficient)
   --compact          Alias of --names for catalogue discovery
   --tool <name>      Full schema for a single tool
@@ -16,3 +18,8 @@ Examples:
   hera-agent-unity list --names
   hera-agent-unity list --compact
   hera-agent-unity list --tool exec
+
+Profile selectors cannot be mixed with other list selectors. Unknown profiles
+return INVALID_ARGUMENT with valid_profiles. Profiles are discovery groups, not
+permissions. full excludes advanced-only exec/menu. The CLI reuses its catalog
+cache; older Connectors without native profiles expose the legacy compact group.

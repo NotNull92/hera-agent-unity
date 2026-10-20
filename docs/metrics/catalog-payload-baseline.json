@@ -8,13 +8,13 @@
   "description_characters": 9940,
   "cli_summary": {
     "name_list_bytes": 477,
-    "agent_rules_bytes": 2368,
-    "total_bytes": 2845,
+    "agent_rules_bytes": 2465,
+    "total_bytes": 2942,
     "rough_token_estimates": {
       "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-      "low_4_bytes_per_token": 712,
-      "central_3_2_bytes_per_token": 890,
-      "high_2_5_bytes_per_token": 1138
+      "low_4_bytes_per_token": 736,
+      "central_3_2_bytes_per_token": 920,
+      "high_2_5_bytes_per_token": 1177
     }
   },
   "profiles": [

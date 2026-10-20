@@ -1701,6 +1701,13 @@ hera-agent-unity profiler enable
 
 ## list
 
+`list --profiles` returns profile-to-tool membership counts. `list --profile <name>`
+returns sorted name/description rows from the existing cached catalog. Unknown
+profiles return `INVALID_ARGUMENT` with `data.valid_profiles`; profile selectors
+cannot be mixed with other list selectors. Profiles do not grant permissions:
+`full` excludes `advanced`-only exec/menu. Old Connectors without native catalog
+profiles expose the legacy `compact` group. Ordinary list behavior is unchanged.
+
 List registered tools. Three detail levels, cheapest first — the per-tool
 parameter schema is the bulk of the bytes, so it's opt-in rather than dumped
 up front:

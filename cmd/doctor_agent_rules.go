@@ -128,6 +128,7 @@ const compactAgentRulesBody = "## Bootstrap\n\n" +
 	"2. `hera-agent-unity status`\n" +
 	"3. `hera-agent-unity list --compact`\n\n" +
 	"Confirm the selected project's full path before mutation. With no selector, Hera prefers a current-working-directory match and then the most recent live heartbeat. After selection, the normalized project path remains the identity across port changes. Use `--project <full-path>` when the task names a specific project.\n\n" +
+	"Use `list --profiles` for counts and `list --profile <name>` for task-scoped tool descriptions.\n\n" +
 	"## Working Rules\n\n" +
 	"1. Observe only the state needed for the current decision. Prefer dedicated tools and bounded projections such as `list --compact`, `find_gameobjects --ids`, `console --type error --lines 20`, and shallow `exec --depth 1`.\n" +
 	"2. Use dedicated commands before `exec`. For side-effecting `exec`, return `null` or nothing. Return primitive fields or instance IDs, never a full Unity object. Instance IDs are session-scoped; store `global_id` and re-resolve after an Editor restart.\n" +

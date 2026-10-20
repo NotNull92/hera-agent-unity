@@ -167,8 +167,8 @@ func TestExtractCompactAgentRules(t *testing.T) {
 	}
 
 	const (
-		compactAgentRulesBaselineUTF8Bytes = 2368
-		compactAgentRulesBaselineNewlines  = 28
+		compactAgentRulesBaselineUTF8Bytes = 2465
+		compactAgentRulesBaselineNewlines  = 30
 	)
 	if got := len([]byte(out)); got != compactAgentRulesBaselineUTF8Bytes {
 		t.Fatalf("compact rules UTF-8 bytes = %d, reviewed baseline = %d",
