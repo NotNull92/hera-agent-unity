@@ -20,6 +20,22 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## U6 / M7 — transport token closed without implementation (2026-10-20)
+
+Decision: closed without implementation. A bearer token stored in heartbeat
+files is readable by other processes running as the same OS user, so it cannot
+protect against that threat. Existing HttpServer Origin rejection prevents
+browser-origin requests from dispatching (HTTP_BROWSER_REQUEST_FORBIDDEN/403;
+OPTIONS returns before dispatch). This is browser-origin protection, not
+same-user process authentication; a native client can omit Origin.
+
+The residual benefit against other OS users is small for the current single-user
+development workstation scope and depends on file permissions. Reopen when an
+actual shared-machine requirement appears, such as multi-user development or
+shared CI runners. Then evaluate isolation, credentials and file ACLs together.
+No token, transport behavior, catalog, package version, or historical Step 6 plan
+is changed. Static evidence: AgentConnector/Editor/HttpServer.cs Origin branch.
+
 ## U5 — cached profile discovery (2026-10-20)
 
 Admission gate:

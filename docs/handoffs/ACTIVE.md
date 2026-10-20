@@ -71,14 +71,14 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | M4 | Implemented; local gates PASS (candidate) | CLI v0.3.4 / Connector 0.2.4: cases, JUnit/NUnit artifacts, contiguous test shards; suite 29/0/1, shard union/disjointness/repeatability and PlayMode/resume PASS. Catalog +636 B, 34/133 unchanged; independent static/evidence-recalculation review PASS; no independent live rerun |
 | M5 | Done via U2 | Scratch marker/reload PASS; no product adoption |
 | M6 | Implemented via U3 | Bounded metadata-only exec journal; no query surface |
-| M7 | Approved after M6; not started | Transport token policy gate; detailed scope to be finalized |
+| M7 | Closed without implementation via U6 | Same-user tokens do not isolate processes; reopen for real shared-machine requirements |
 | M8 | Approved after M7; not started | PDB research tooling, not distributed |
 | U1 | Done; independent static/evidence review PASS | Connector 0.2.5 shard selector parity; unsharded/list unchanged |
 | U2 | Done; independent evidence review PASS | Marker/reload confirmed; 425.85 ms off / 425.78 ms on, n=5 each; no product adoption |
 | U3 | Independent verification PASS; classification follow-up verified | Connector 0.2.7 distinguishes no-compilation from cache misses; four approved probes miss/memory_hit/miss/disk_hit, reload ref paths unchanged |
 | U4 | Independent verification PASS | CLI v0.3.5 native dialog diagnosis; one approved exec, opaque baseline timeout, explicit candidate state/title, recovery and 20/20 normal probes |
 | U5 | Implemented; local gates PASS | CLI v0.3.6 cached profile discovery; all 34 assignments retained after review |
-| U6 | Approved after U5 | M7 threat-model closure; no implementation |
+| U6 | Closed without implementation | Threat model and shared-machine reopening condition recorded; Origin protection retained |
 | U7 | Approved after U6 | M8 PDB research outside the repository |
 | U8 | Approved after U7 | Hub secondary install-path fallback |
 | O2 | Deferred | Argument hash normalization; not included in M4–M8 |
