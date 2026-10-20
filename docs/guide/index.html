@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="hera-agent-unity의 구조, 처리 흐름, 기능, 위험, 조합 아이디어, 시그니처를 판타지 RPG 공략집처럼 정리한 페이지">
+<meta name="description" content="hera-agent-unity의 구조, 처리 흐름, 기능, 위험, 조합 아이디어, 아티팩트를 판타지 RPG 공략집처럼 정리한 페이지">
 <title>Hera Unity Status</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Nanum+Myeongjo:wght@700;800&family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
@@ -373,7 +373,7 @@ footer a{color:var(--frost)}
 
   <!-- CH7 -->
   <section class="chapter" data-panel="sig" hidden>
-    <div class="chead"><span class="rune">Chapter VII · The Vault</span><h2>시그니처</h2>
+    <div class="chead"><span class="rune">Chapter VII · The Vault</span><h2>아티팩트</h2>
       <p class="lead">공식 Unity CLI와 비교했을 때 Hera만 가질 수 있는 유물이에요. 비교 기준은 우리가 조사한 공식 CLI 1.0.0-beta.13이에요.</p></div>
     <div class="factions">
       <div class="banner-cloth them"><span class="rune">Faction</span><h3>공식 Unity CLI</h3><p class="lead" style="font-size:13px">Unity가 직접 만든 범용 도구</p>
@@ -392,11 +392,11 @@ footer a{color:var(--frost)}
         </ul></div>
     </div>
     <div class="rule"><i></i></div>
-    <div class="chead"><span class="rune">Relics Held</span><h3>이미 가진 시그니처</h3></div>
+    <div class="chead"><span class="rune">Relics Held</span><h3>이미 가진 아티팩트</h3></div>
     <div class="vault" id="vaultHave"></div>
     <div class="chead"><span class="rune">Sealed Relics</span><h3>새로 넣을 만한 후보</h3></div>
     <div class="vault" id="vaultNew"></div>
-    <p class="footnote">새 시그니처는 저장소의 "외부 참고는 완전히 Hera화한 뒤에만" 원칙과 기능 추가 관문(실제 실패 근거 먼저)을 지켜야 해요. 처음엔 스킬로 시작하고, 반복해서 쓰이면 도구로 올리는 순서를 권해요.</p>
+    <p class="footnote">새 아티팩트는 저장소의 "외부 참고는 완전히 Hera화한 뒤에만" 원칙과 기능 추가 관문(실제 실패 근거 먼저)을 지켜야 해요. 처음엔 스킬로 시작하고, 반복해서 쓰이면 도구로 올리는 순서를 권해요.</p>
   </section>
 
   <footer>
@@ -413,7 +413,7 @@ let ART={};try{ART=JSON.parse(document.getElementById("art").textContent||"{}")}
 const pic=(key,alt,glyph,cls="")=>ART[key]?`<img ${cls?`class="${cls}"`:""} src="${ART[key]}" alt="${esc(alt)}" loading="lazy" decoding="async">`:(glyph?`<span class="glyph" aria-hidden="true">${esc(glyph)}</span>`:"");
 
 /* ---------- 챕터 메뉴 ---------- */
-const CH=[["map","월드맵","I"],["quest","퀘스트","II"],["skills","스킬 트리","III"],["danger","위험 지대","IV"],["grill","그릴링","V"],["craft","조합 공방","VI"],["sig","시그니처","VII"]];
+const CH=[["map","월드맵","I"],["quest","퀘스트","II"],["skills","스킬 트리","III"],["danger","위험 지대","IV"],["grill","그릴링","V"],["craft","조합 공방","VI"],["sig","아티팩트","VII"]];
 $(".menu").innerHTML=CH.map(([id,lbl,n])=>`<button class="tab" role="tab" data-ch="${id}"><span class="sig">${pic("sigil-"+id,"","✦")}</span><span class="lbl">${lbl}</span><span class="num rune">${n}</span></button>`).join("");
 
 /* ---------- CH1 월드맵 ---------- */
