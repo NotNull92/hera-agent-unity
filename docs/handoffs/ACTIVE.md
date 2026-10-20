@@ -1,10 +1,14 @@
 # Active Development Handoff
 
-Current state (2026-10-19): **M1 and M2 are implemented; the support floor is now
-Unity 6.6 (`6000.6`).** Connector `0.2.7` (unreleased) requires `6000.6+`, M1 =
-contract hardening plus MCP removal (CLI `v0.3.0`), M2 = catalog rebaseline (CLI
-`v0.3.1`). Fix B and M3 are complete. The user approved U1 → U8 in order; U1–U8 are implemented or closed as recorded below; U7 retains explicit native-behavior unknowns. O2 remains deferred. Per-release detail lives in `CHANGELOG.md`;
-this file records only current state and what is open.
+Current state (2026-10-20): **Released CLI `v0.3.11` (`0e9cf2a`) / Connector
+`0.2.9` (`connector-0.2.9` = `f51dd1c`); npm `latest` is `0.3.11`.** The support
+floor remains Unity 6.6 (`6000.6`). U1–U8 are complete; U7 retains explicit
+native-behavior unknowns. O2 numeric argument hashing (`6cf73bb`), package
+result-port waiting (`13a813d`), and PR #1 port-zero defenses (`4c18ae8`,
+`0a67010`) are implemented. Live heartbeat sampling did not reproduce port zero.
+The remaining optional cleanup of other projects' `%TEMP%` folders is deferred
+until the user works on those projects. Per-release detail lives in
+`CHANGELOG.md`; the paragraphs below preserve historical implementation records.
 
 Step 6 fix A is implemented for **CLI v0.3.2 / Connector 0.2.1**, without a tag
 or release: preserve integer literals in params/batch/flags, reject integers
