@@ -725,8 +725,8 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.3.8**, native binary 5종
-- npm: **0.3.8** (`latest`)
+- CLI / GitHub Release: **v0.3.9**, native binary 5종
+- npm: **0.3.9** (`latest`)
 - Unity Connector: **0.2.8** (`#connector-0.2.8`로 고정)
 - License: **Apache-2.0**
 
@@ -734,12 +734,13 @@ npm 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-u
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
 
-**v0.2.x에서 올리는 경우:** v0.3.8은 처음 배포되는 0.3 릴리스라서 `v0.3.0`의 breaking 변경도 함께 들어 있습니다. 실험적 MCP adapter가 제거되어 `mcp` 명령과 `HERA_MCP_*` 환경변수가 없습니다. 실패한 요청은 재시도 가능 여부를 직접 선언하고(`retryable`, `state`, `retry_after_ms`), heartbeat가 catalog schema hash를 광고해 일치하는 카탈로그를 왕복 없이 재사용합니다. Connector 0.2.x는 **Unity 6.6 (`6000.6`)** 이상을 요구하고 `instance_id` 값은 64비트입니다. 라이브 카탈로그는 **34 tools / 133 actions**를 노출합니다.
+**v0.2.x에서 올리는 경우:** v0.3.8이 처음 배포된 0.3 릴리스라서 `v0.3.0`의 breaking 변경도 함께 들어 있습니다. 실험적 MCP adapter가 제거되어 `mcp` 명령과 `HERA_MCP_*` 환경변수가 없습니다. 실패한 요청은 재시도 가능 여부를 직접 선언하고(`retryable`, `state`, `retry_after_ms`), heartbeat가 catalog schema hash를 광고해 일치하는 카탈로그를 왕복 없이 재사용합니다. Connector 0.2.x는 **Unity 6.6 (`6000.6`)** 이상을 요구하고 `instance_id` 값은 64비트입니다. 라이브 카탈로그는 **34 tools / 133 actions**를 노출합니다.
 
 v0.2.17 이후 새로 바뀐 것:
 
 | 버전 | 변경 |
 |---|---|
+| v0.3.9 | 도메인 리로드 중 heartbeat가 port 0을 보고해도 CLI가 마지막 유효 port로 재시도. |
 | v0.3.8 / 0.2.8 | 기본 응답 축소: `exec`는 `--depth 3` 이상을 명시하지 않으면 Unity Object를 `{name, type, instanceID}`로 반환(Transform 7,178 B → 70 B). `scene hierarchy`는 기본값인 `active`/`children`을 생략. 오류 응답의 중복 제안과 timings 제거. |
 | v0.3.7 | Windows Editor 실행 시 Unity Hub 보조 설치 폴더의 버전도 찾음. |
 | v0.3.6 | `list --profiles`, `list --profile <name>`으로 캐시된 카탈로그에서 작업별 도구 묶음 조회. |

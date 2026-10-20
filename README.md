@@ -724,8 +724,8 @@ typed execution, `exec` when no dedicated command exists.
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.8** with five native binaries
-- npm: **0.3.8** (`latest`)
+- CLI / GitHub Release: **v0.3.9** with five native binaries
+- npm: **0.3.9** (`latest`)
 - Unity Connector: **0.2.8** (pin with `#connector-0.2.8`)
 - License: **Apache-2.0**
 
@@ -733,12 +733,13 @@ The npm publish is chained to the GitHub Release, so `npm install -g hera-agent-
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
 
-**Upgrading from v0.2.x:** v0.3.8 is the first published 0.3 release, so it also carries the breaking `v0.3.0` changes. The experimental MCP adapter is gone: there is no `mcp` command and no `HERA_MCP_*` environment variable. A failed request now declares how it can be retried (`retryable`, `state`, `retry_after_ms`), and the heartbeat advertises the catalog schema hash so a matching catalog is reused without another round-trip. Connector 0.2.x requires **Unity 6.6 (`6000.6`)**, and its `instance_id` values are 64-bit. The live catalog exposes **34 tools / 133 actions**.
+**Upgrading from v0.2.x:** v0.3.8 was the first published 0.3 release, so it also carries the breaking `v0.3.0` changes. The experimental MCP adapter is gone: there is no `mcp` command and no `HERA_MCP_*` environment variable. A failed request now declares how it can be retried (`retryable`, `state`, `retry_after_ms`), and the heartbeat advertises the catalog schema hash so a matching catalog is reused without another round-trip. Connector 0.2.x requires **Unity 6.6 (`6000.6`)**, and its `instance_id` values are 64-bit. The live catalog exposes **34 tools / 133 actions**.
 
 What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
+| v0.3.9 | During a domain reload the CLI keeps retrying the last valid port instead of dialing port 0. |
 | v0.3.8 / 0.2.8 | Leaner default payloads: `exec` returns Unity Objects as `{name, type, instanceID}` unless `--depth 3`+ is explicit (a Transform drops from 7,178 B to 70 B); `scene hierarchy` omits default `active`/`children`; error envelopes drop duplicate hints and timings. |
 | v0.3.7 | Windows Editor launch also finds versions in the Unity Hub secondary install folder. |
 | v0.3.6 | `list --profiles` and `list --profile <name>` show task-scoped tool sets from the cached catalog. |

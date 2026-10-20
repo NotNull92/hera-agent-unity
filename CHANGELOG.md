@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed (CLI v0.3.9 candidate; Connector unchanged at 0.2.8)
+## [0.3.9] - 2026-10-20 (Connector unchanged at 0.2.8)
+
+### Fixed (CLI v0.3.9; Connector unchanged at 0.2.8)
 
 - When a domain-reload heartbeat reports port 0, wait for a valid port before declaring the Editor available and retain the last valid port for connection-error and retryable HTTP 503 retries.
 
