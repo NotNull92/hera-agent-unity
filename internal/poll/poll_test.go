@@ -134,7 +134,7 @@ func TestWaitForFile_FileAppears(t *testing.T) {
 	}
 
 	// Use a long timeout; the file already exists so it should return after one sleep (100ms).
-	got, err := WaitForFile(context.Background(), resultPath, 0, 5*time.Second, "test-op")
+	got, err := WaitForFile(context.Background(), resultPath, client.Instance{}, 5*time.Second, "test-op")
 	if err != nil {
 		t.Fatalf("WaitForFile error: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestWaitForFile_Timeout(t *testing.T) {
 	resultPath := filepath.Join(dir, "nonexistent.json")
 
 	start := time.Now()
-	_, err := WaitForFile(context.Background(), resultPath, 0, 100*time.Millisecond, "test-op")
+	_, err := WaitForFile(context.Background(), resultPath, client.Instance{}, 100*time.Millisecond, "test-op")
 	elapsed := time.Since(start)
 
 	if err == nil {
@@ -178,7 +178,7 @@ func TestWaitForFile_InvalidJSON(t *testing.T) {
 		t.Fatalf("write file: %v", err)
 	}
 
-	_, err := WaitForFile(context.Background(), resultPath, 0, 5*time.Second, "test-op")
+	_, err := WaitForFile(context.Background(), resultPath, client.Instance{}, 5*time.Second, "test-op")
 	if err == nil {
 		t.Fatal("expected error for invalid JSON")
 	}
@@ -196,7 +196,7 @@ func TestWaitForFile_ParseErrorIsWrapped(t *testing.T) {
 	resultPath := filepath.Join(dir, "bad.json")
 	_ = os.WriteFile(resultPath, []byte("{bad"), 0644)
 
-	_, err := WaitForFile(context.Background(), resultPath, 0, 5*time.Second, "my-op")
+	_, err := WaitForFile(context.Background(), resultPath, client.Instance{}, 5*time.Second, "my-op")
 	if err == nil {
 		t.Fatal("expected error")
 	}

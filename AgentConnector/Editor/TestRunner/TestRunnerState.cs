@@ -39,22 +39,22 @@ namespace HeraAgent.TestRunner
         }
 
         /// <summary>
-        /// Every pending run this Editor owns on the port, as
-        /// (run_id, nunit_guid) pairs. HasPending blocks on *any* record, so a
+        /// Every pending run owned by this project, with its dispatch port.
+        /// HasPending blocks on *any* record, so a
         /// cancel that cleared only one would leave the lock in place — an
         /// interrupted run can leave a record behind without an active run.
         /// </summary>
-        internal static List<KeyValuePair<string, string>> ListPending(int port)
+        internal static List<PendingRun> ListPending()
         {
-            var found = new List<KeyValuePair<string, string>>();
+            var found = new List<PendingRun>();
             try
             {
                 if (!Directory.Exists(RunTests.StatusDir)) return found;
-                foreach (var file in Directory.GetFiles(RunTests.StatusDir, $"test-pending-{port}-*.json"))
+                foreach (var file in Directory.GetFiles(RunTests.StatusDir, "test-pending-*-*.json"))
                 {
                     if (!TryReadPending(file, out var pending)) continue;
                     if (!OwnsCurrentProject(pending)) continue;
-                    found.Add(new KeyValuePair<string, string>(pending.RunId, pending.NunitGuid));
+                    found.Add(pending);
                 }
             }
             catch { }
@@ -92,13 +92,13 @@ namespace HeraAgent.TestRunner
             catch { }
         }
 
-        internal static bool HasPending(int port)
+        internal static bool HasPending()
         {
             try
             {
                 if (!Directory.Exists(RunTests.StatusDir)) return false;
 
-                foreach (var file in Directory.GetFiles(RunTests.StatusDir, $"test-pending-{port}-*.json"))
+                foreach (var file in Directory.GetFiles(RunTests.StatusDir, "test-pending-*-*.json"))
                 {
                     if (!TryReadPending(file, out var pending))
                     {
@@ -276,7 +276,7 @@ namespace HeraAgent.TestRunner
         static string PendingFilePath(int port, string runId) =>
             Path.Combine(RunTests.StatusDir, $"test-pending-{port}-{runId}.json");
 
-        sealed class PendingRun
+        internal sealed class PendingRun
         {
             public int Port { get; set; }
             public string RunId { get; set; }

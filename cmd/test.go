@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -87,7 +89,11 @@ func testCmd(ctx context.Context, args []string, send SendFunc, resolve instance
 			return nil, fmt.Errorf("resolve Unity Editor for test resume: %w", err)
 		}
 		fmt.Fprintf(os.Stderr, "Resuming Unity test run %s on port %d...\n", resumeRunID, inst.Port)
-		return pollTestResults(ctx, inst.Port, resumeRunID, timeout)
+		port, err := testResumePort(resumeRunID, inst.Port)
+		if err != nil {
+			return nil, err
+		}
+		return pollTestResults(ctx, *inst, port, resumeRunID, timeout)
 	}
 
 	mode := "EditMode"
@@ -114,6 +120,14 @@ func testCmd(ctx context.Context, args []string, send SendFunc, resolve instance
 		}
 	}
 
+	target := client.Instance{}
+	if resolve != nil {
+		inst, err := resolve()
+		if err != nil {
+			return nil, err
+		}
+		target = *inst
+	}
 	resp, err := sendRunTests(send, params)
 	if err != nil {
 		return nil, err
@@ -133,7 +147,8 @@ func testCmd(ctx context.Context, args []string, send SendFunc, resolve instance
 
 	fmt.Fprintf(os.Stderr, "%s tests running, waiting for results...\n", mode)
 
-	return pollTestResults(ctx, meta.Port, meta.RunID, timeout)
+	target.Port = meta.Port
+	return pollTestResults(ctx, target, meta.Port, meta.RunID, timeout)
 }
 
 // The connector only registers run_tests when the Unity Test Framework package
@@ -153,7 +168,7 @@ func sendRunTests(send SendFunc, params map[string]interface{}) (*client.Command
 	return resp, nil
 }
 
-func pollTestResults(ctx context.Context, port int, runID string, timeout time.Duration) (*client.CommandResponse, error) {
+func pollTestResults(ctx context.Context, target client.Instance, port int, runID string, timeout time.Duration) (*client.CommandResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -162,7 +177,7 @@ func pollTestResults(ctx context.Context, port int, runID string, timeout time.D
 		resultPath = paths.TestResultPath(port, runID)
 	}
 
-	resp, err := poll.WaitForFile(ctx, resultPath, port, timeout, "test results")
+	resp, err := poll.WaitForFile(ctx, resultPath, target, timeout, "test results")
 	if err == nil || runID == "" {
 		return resp, err
 	}
@@ -188,14 +203,44 @@ func pollTestResults(ctx context.Context, port int, runID string, timeout time.D
 		return nil, marshalErr
 	}
 
+	selector := fmt.Sprintf("--port %d", port)
+	if target.ProjectPath != "" {
+		selector = fmt.Sprintf(`--project "%s"`, target.ProjectPath)
+	}
 	return &client.CommandResponse{
 		Success: false,
 		Code:    "TEST_RUN_PENDING",
 		Message: "Unity has not written the test result yet. The test run is still pending; a stale heartbeat during Test Runner work does not by itself mean the Editor is unresponsive.",
 		Suggestions: []string{
-			fmt.Sprintf("Resume this same run without starting another test: hera-agent-unity --port %d test --resume %s --timeout <milliseconds>", port, runID),
+			fmt.Sprintf("Resume this same run without starting another test: hera-agent-unity %s test --resume %s --timeout <milliseconds>", selector, runID),
 			"Check the Unity process or port separately only if the pending run never produces a result.",
 		},
 		Data: data,
 	}, nil
+}
+
+// Pending and result may coexist for one dispatch port while completion is written.
+func testResumePort(runID string, fallback int) (int, error) {
+	ports := make(map[int]bool)
+	for _, prefix := range []string{"test-pending-", "test-results-"} {
+		matches, err := filepath.Glob(filepath.Join(paths.StatusDir(), prefix+"*-"+runID+".json"))
+		if err != nil {
+			return 0, err
+		}
+		for _, match := range matches {
+			raw := strings.TrimSuffix(strings.TrimPrefix(filepath.Base(match), prefix), "-"+runID+".json")
+			port, err := strconv.Atoi(raw)
+			if err != nil || port <= 0 {
+				continue
+			}
+			ports[port] = true
+		}
+	}
+	if len(ports) > 1 {
+		return 0, fmt.Errorf("ambiguous test run %q: records exist on multiple dispatch ports", runID)
+	}
+	for port := range ports {
+		return port, nil
+	}
+	return fallback, nil
 }

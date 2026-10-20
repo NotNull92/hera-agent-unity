@@ -209,10 +209,12 @@ approve automatically on the user's behalf: the `--yes` flag and
 approval summary and ask instead of adding them to a command yourself.
 
 **[Rule 15]** Treat `TEST_RUN_PENDING` as a slow Unity Test Runner result, not
-as proof that the Editor is unresponsive. The error data contains the exact
-`port` and `run_id`; continue the same run with `hera-agent-unity --port <port>
-test --resume <run_id> --timeout <milliseconds>`. Resume polls the durable
-result without sending `run_tests` again. A stale heartbeat can occur while
+as proof that the Editor is unresponsive. The error data contains the dispatch
+`port` and `run_id`; continue the same run with `hera-agent-unity --project
+"<full-path>" test --resume <run_id> --timeout <milliseconds>`. Resume finds the
+original dispatch port by run ID and polls the durable result without sending
+`run_tests` again, even when the Editor port changes. Use `--port` only when
+the project path is unavailable. A stale heartbeat can occur while
 Unity's main thread is busy recording test results, so check the pending run,
 the OS process, and port reachability before declaring the Editor lost. For an
 immediate, non-waiting check, use `task list` and retain its `task_id`, then use

@@ -18,9 +18,10 @@ import (
 // poll ~/.hera-agent-unity/status/package-result-PORT-JOBID.json the same
 // way cmd/test.go waits on PlayMode results.
 type packageRuntime struct {
-	Config  GlobalConfig
-	Send    SendFunc
-	Resolve instanceResolver
+	Instance client.Instance
+	Config   GlobalConfig
+	Send     SendFunc
+	Resolve  instanceResolver
 }
 
 func managePackagesCmd(
@@ -68,9 +69,11 @@ func managePackagesCmd(
 		port = inst.Port
 	}
 
-	return pollPackageJob(ctx, port, meta.JobID)
+	target := runtime.Instance
+	target.Port = port
+	return pollPackageJob(ctx, target, port, meta.JobID)
 }
 
-func pollPackageJob(ctx context.Context, port int, jobID string) (*client.CommandResponse, error) {
-	return poll.WaitForFile(ctx, paths.PackageResultPath(port, jobID), port, 10*time.Minute, fmt.Sprintf("package job %s", jobID))
+func pollPackageJob(ctx context.Context, target client.Instance, port int, jobID string) (*client.CommandResponse, error) {
+	return poll.WaitForFile(ctx, paths.PackageResultPath(port, jobID), target, 10*time.Minute, fmt.Sprintf("package job %s", jobID))
 }

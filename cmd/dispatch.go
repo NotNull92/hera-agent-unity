@@ -198,20 +198,34 @@ func (runner unityCommandRunner) Run(
 			Resolve: runner.resolve,
 		})
 	case "build":
-		resp, err = buildCmd(ctx, subArgs, send, runner.config.Timeout)
+		target := client.Instance{}
+		if runner.instance != nil {
+			target = *runner.instance
+		}
+		resp, err = buildCmd(ctx, subArgs, send, target, runner.config.Timeout)
 	case "test":
 		resp, err = testCmd(
 			ctx,
 			subArgs,
 			send,
-			runner.resolve,
+			func() (*client.Instance, error) {
+				if runner.instance != nil {
+					return runner.instance, nil
+				}
+				return runner.resolve()
+			},
 			runner.config.Timeout,
 		)
 	case "manage_packages":
+		target := client.Instance{}
+		if runner.instance != nil {
+			target = *runner.instance
+		}
 		resp, err = managePackagesCmd(ctx, subArgs, packageRuntime{
-			Config:  runner.config,
-			Send:    send,
-			Resolve: runner.resolve,
+			Instance: target,
+			Config:   runner.config,
+			Send:     send,
+			Resolve:  runner.resolve,
 		})
 	case "unity_docs":
 		resp, err = unityDocsCmd(subArgs, send)

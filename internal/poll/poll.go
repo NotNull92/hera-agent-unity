@@ -17,11 +17,11 @@ var ErrWaitTimeout = errors.New("async result wait timeout")
 // WaitForFile polls a filesystem result file until it appears, Unity stops,
 // or the timeout expires. It uses exponential backoff starting at 100 ms and
 // capping at 1.5 s to avoid burning I/O on long-running operations.
-func WaitForFile(ctx context.Context, resultPath string, port int, timeout time.Duration, opName string) (*client.CommandResponse, error) {
+func WaitForFile(ctx context.Context, resultPath string, target client.Instance, timeout time.Duration, opName string) (*client.CommandResponse, error) {
 	deadline := time.Now().Add(timeout)
 	const pidCheckEvery = 5 * time.Second
 	lastPidCheck := time.Now()
-	var lastPid int
+	lastPid := target.PID
 
 	interval := 100 * time.Millisecond
 	const maxInterval = 1500 * time.Millisecond
@@ -44,12 +44,17 @@ func WaitForFile(ctx context.Context, resultPath string, port int, timeout time.
 		}
 
 		// State check (cheap): instance writes "stopped" on graceful quit.
-		inst, statusErr := client.FindByPortFresh(port)
+		inst, statusErr := client.FindTargetFresh(target)
 		if statusErr == nil {
-			if inst.State == unitystate.Stopped {
-				return nil, fmt.Errorf("unity editor has stopped (port %d)", port)
+			if target.PID > 0 && inst.PID > 0 && inst.PID != target.PID {
+				return nil, &client.TargetRestartedError{Project: target.ProjectPath, PreviousPID: target.PID, CurrentPID: inst.PID, Port: inst.Port, State: inst.State}
 			}
-			lastPid = inst.PID
+			if inst.State == unitystate.Stopped {
+				return nil, fmt.Errorf("unity editor has stopped (port %d)", inst.Port)
+			}
+			if lastPid == 0 {
+				lastPid = inst.PID
+			}
 		}
 
 		// PID liveness (more expensive): catches the case where Unity crashed

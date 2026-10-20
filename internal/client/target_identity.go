@@ -192,3 +192,26 @@ func (c *Client) inspectTarget(project string, port int) (*Instance, error) {
 	}
 	return target, err
 }
+
+// FindTargetFresh follows an exact project identity, including stopped heartbeats.
+// Legacy targets without a project path retain port-based lookup.
+func FindTargetFresh(target Instance) (*Instance, error) {
+	if target.ProjectPath == "" {
+		return FindByPortFresh(target.Port)
+	}
+	instances, err := ScanInstancesFresh()
+	if err != nil {
+		return nil, err
+	}
+	var best *Instance
+	for i := range instances {
+		inst := &instances[i]
+		if projectPathsEqual(inst.ProjectPath, target.ProjectPath) && (best == nil || inst.Timestamp > best.Timestamp) {
+			best = inst
+		}
+	}
+	if best == nil {
+		return nil, fmt.Errorf("%w: %s", ErrProjectNotFound, target.ProjectPath)
+	}
+	return best, nil
+}

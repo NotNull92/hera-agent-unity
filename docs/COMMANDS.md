@@ -1568,7 +1568,7 @@ hera-agent-unity test --assembly MyGame.Tests
 hera-agent-unity test cancel
 
 # Resume a slow existing run; no second run_tests request is sent
-hera-agent-unity --port 8094 test --resume <run_id> --timeout 300000
+hera-agent-unity --project "<full-path>" test --resume <run_id> --timeout 300000
 ```
 
 **Selectors**: `--filter`, `--category`, and `--assembly` intersect. A run
@@ -1592,7 +1592,9 @@ already waiting on the run receives `TEST_RUN_CANCELLED`.
 
 **Test-run behavior**: Both modes start asynchronously and persist their final
 result to `~/.hera-agent-unity/status/test-results-<port>-<run_id>.json`. The CLI polls
-that file until completion for every `test` invocation; there is no `--wait`
+that file until completion for every `test` invocation. The filename keeps the
+dispatch port; resume finds it by `run_id` after a port change and rejects
+records on multiple dispatch ports as ambiguous. There is no `--wait`
 flag. Use the global `--timeout` to bound the wait. If that deadline arrives
 while the Connector's `test-pending-<port>-<run_id>.json` record still exists,
 the CLI returns the stable error code `TEST_RUN_PENDING` with the exact `port`

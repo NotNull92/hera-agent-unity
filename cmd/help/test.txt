@@ -32,12 +32,14 @@ rather than every name, so a large project cannot flood the response.
 
 Both EditMode and PlayMode tests start asynchronously. Their final results are
 written to ~/.hera-agent-unity/status/test-results-<port>-<run_id>.json; the CLI polls
-that file until completion (domain reload safe). There is no --wait flag.
+that file until completion (domain reload safe). The filename keeps the dispatch
+port; resume finds it by run_id even after the Editor changes ports. Multiple
+dispatch ports for one run_id fail as ambiguous. There is no --wait flag.
 If the wait reaches the global --timeout while the Connector's pending record
 still exists, the CLI returns code TEST_RUN_PENDING. This means the result is
 late, not that the Editor is unresponsive. Resume that exact run with a longer
 timeout; this does not send run_tests again:
-  hera-agent-unity --port <port> test --resume <run_id> --timeout 300000
+  hera-agent-unity --project "<full-path>" test --resume <run_id> --timeout 300000
 
 `test cancel` asks the test framework to stop the run and always clears the
 pending record, which is what releases TEST_RUN_ALREADY_RUNNING.
@@ -58,7 +60,7 @@ Examples:
   hera-agent-unity test --assembly MyGame.Tests
   hera-agent-unity test --filter MyNamespace.MyTests
   hera-agent-unity test cancel
-  hera-agent-unity --port 8094 test --resume <run_id> --timeout 300000
+  hera-agent-unity --project "<full-path>" test --resume <run_id> --timeout 300000
 
 
 Artifacts and shards:

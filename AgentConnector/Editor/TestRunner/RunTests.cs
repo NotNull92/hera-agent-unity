@@ -227,7 +227,7 @@ namespace HeraAgent.TestRunner
         private static async Task<object> StartShardedRun(TestMode mode, string filter, string[] categories,
             string[] assemblies, ShardResult shard)
         {
-            if (TestRunnerState.HasPending(HttpServer.Port))
+            if (TestRunnerState.HasPending())
                 return new ErrorResponse("TEST_RUN_ALREADY_RUNNING", "A test run is already active.");
             Func<TestEntry, bool> matches;
             try { matches = BuildRunSelector(filter, categories, assemblies); }
@@ -313,11 +313,10 @@ namespace HeraAgent.TestRunner
 
         private static Task<object> ExecuteLegacyEditMode(string filter, string[] categories, string[] assemblies)
         {
-            var port = HttpServer.Port;
-            if (TestRunnerState.HasPending(port))
+            if (TestRunnerState.HasPending())
             {
                 return Task.FromResult<object>(new ErrorResponse("TEST_RUN_ALREADY_RUNNING",
-                    $"A test run is already active for port {port}."));
+                    "A test run is already active for this project."));
             }
 
             var passed = new List<string>();
@@ -369,10 +368,10 @@ namespace HeraAgent.TestRunner
         {
             var port = HttpServer.Port;
 
-            if (TestRunnerState.HasPending(port))
+            if (TestRunnerState.HasPending())
             {
                 return new ErrorResponse("TEST_RUN_ALREADY_RUNNING",
-                    $"A test run is already active for port {port}.");
+                    "A test run is already active for this project.");
             }
 
             var runId = Guid.NewGuid().ToString("N");
@@ -657,8 +656,7 @@ namespace HeraAgent.TestRunner
             Idempotent = true)]
         public static object Cancel(JObject raw)
         {
-            var port = HttpServer.Port;
-            var pending = TestRunnerState.ListPending(port);
+            var pending = TestRunnerState.ListPending();
             if (pending.Count == 0)
                 return new SuccessResponse("No test run was active.", new { was_running = false });
 
@@ -666,8 +664,9 @@ namespace HeraAgent.TestRunner
             var cancelRequested = false;
             foreach (var entry in pending)
             {
-                var runId = entry.Key;
-                var nunitGuid = entry.Value;
+                var port = entry.Port;
+                var runId = entry.RunId;
+                var nunitGuid = entry.NunitGuid;
                 if (!string.IsNullOrEmpty(nunitGuid))
                 {
                     try
