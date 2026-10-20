@@ -5,6 +5,10 @@ Subcommands:
   restart             Stop only that project's heartbeat PID, then start it.
     --hub-root PATH   Unity Hub Editor root. Defaults to UNITY_HUB_EDITOR,
                       then the platform's standard Unity Hub install root.
+                      On Windows only, if that default lacks the version, try
+                      APPDATA/UnityHub/secondaryInstallPath.json (absolute JSON
+                      string). Explicit flag/env roots never fall back.
+                      Malformed/empty settings are ignored; macOS/Linux unchanged.
                       Both commands read ProjectSettings/ProjectVersion.txt,
                       launch normal Unity with UPM enabled, and wait for the
                       new process heartbeat. --port is not accepted.

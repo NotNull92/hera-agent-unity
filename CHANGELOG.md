@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (CLI v0.3.7; Connector unchanged at 0.2.7)
+
+- Windows Editor bootstrap now tries the Hub secondary installation path when the default root lacks the requested version. Explicit flag/environment roots keep priority; invalid settings are ignored and failures list attempted paths. Hub settings are never modified.
+
 ### Added (CLI v0.3.6; Connector unchanged at 0.2.7)
 
 - `list --profiles` lists profile counts and `list --profile <name>` returns slim tool descriptions using the existing catalog cache. Unknown profiles include valid names in INVALID_ARGUMENT. Profile assignments and catalog contract remain unchanged.

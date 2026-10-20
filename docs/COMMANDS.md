@@ -1966,3 +1966,13 @@ Use `hera-agent-unity list` to discover available tools.
 - [`GO_CLI.md`](GO_CLI.md) — Go CLI internals
 - [`CSHARP_CONNECTOR.md`](CSHARP_CONNECTOR.md) — C# connector internals
 - [`CUSTOM_TOOLS.md`](CUSTOM_TOOLS.md) — Writing custom tools
+
+### Windows Hub secondary installation path
+
+For `editor launch` / `editor restart`, explicit `--hub-root` wins over
+`UNITY_HUB_EDITOR`; neither falls back. With no explicit root, try the standard
+`%ProgramFiles%/Unity/Hub/Editor` first. Only when the requested executable is
+missing there, read `%APPDATA%/UnityHub/secondaryInstallPath.json` as one absolute
+JSON path string. Missing, malformed, empty or relative values are ignored.
+Failure lists attempted executable paths. No Hub settings are changed; macOS
+and Linux keep existing resolution behavior.

@@ -3,7 +3,7 @@
 Current state (2026-10-19): **M1 and M2 are implemented; the support floor is now
 Unity 6.6 (`6000.6`).** Connector `0.2.7` (unreleased) requires `6000.6+`, M1 =
 contract hardening plus MCP removal (CLI `v0.3.0`), M2 = catalog rebaseline (CLI
-`v0.3.1`). Fix B and M3 are complete. The user approved U1 → U8 in order; U1/U2 are complete; U3 adds the exec journal. O2 remains deferred. Per-release detail lives in `CHANGELOG.md`;
+`v0.3.1`). Fix B and M3 are complete. The user approved U1 → U8 in order; U1–U8 are implemented or closed as recorded below; U7 retains explicit native-behavior unknowns. O2 remains deferred. Per-release detail lives in `CHANGELOG.md`;
 this file records only current state and what is open.
 
 Step 6 fix A is implemented for **CLI v0.3.2 / Connector 0.2.1**, without a tag
@@ -72,15 +72,15 @@ measurement, and the 150 ms dispatch delay moved to M3.
 | M5 | Done via U2 | Scratch marker/reload PASS; no product adoption |
 | M6 | Implemented via U3 | Bounded metadata-only exec journal; no query surface |
 | M7 | Closed without implementation via U6 | Same-user tokens do not isolate processes; reopen for real shared-machine requirements |
-| M8 | Approved after M7; not started | PDB research tooling, not distributed |
+| M8 | Research complete via U7 | Matched public symbols; broader native behavior undetermined after analysis timeout |
 | U1 | Done; independent static/evidence review PASS | Connector 0.2.5 shard selector parity; unsharded/list unchanged |
 | U2 | Done; independent evidence review PASS | Marker/reload confirmed; 425.85 ms off / 425.78 ms on, n=5 each; no product adoption |
 | U3 | Independent verification PASS; classification follow-up verified | Connector 0.2.7 distinguishes no-compilation from cache misses; four approved probes miss/memory_hit/miss/disk_hit, reload ref paths unchanged |
 | U4 | Independent verification PASS | CLI v0.3.5 native dialog diagnosis; one approved exec, opaque baseline timeout, explicit candidate state/title, recovery and 20/20 normal probes |
 | U5 | Implemented; local gates PASS | CLI v0.3.6 cached profile discovery; all 34 assignments retained after review |
 | U6 | Closed without implementation | Threat model and shared-machine reopening condition recorded; Origin protection retained |
-| U7 | Approved after U6 | M8 PDB research outside the repository |
-| U8 | Approved after U7 | Hub secondary install-path fallback |
+| U7 | Research complete with unknowns | Matching PDB/PE symbols retained outside repo; no native function bodies claimed |
+| U8 | Implemented; local gates PASS | Windows default-root fallback to Hub secondary path; explicit flag/env preserved |
 | O2 | Deferred | Argument hash normalization; not included in M4–M8 |
 
 **Compatibility for this release: `6000.6.6f1` is the single representative and

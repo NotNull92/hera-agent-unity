@@ -20,6 +20,23 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## U8 — Windows Hub secondary installation root (2026-10-20)
+
+CLI v0.3.7 checks the Hub secondaryInstallPath.json only when no explicit root
+was provided and the standard Windows root lacks the requested executable.
+Flag overrides environment; explicit roots never fall back. A valid absolute
+JSON path string supplies the second candidate; malformed/empty/relative values
+are ignored. Failure names every executable candidate actually attempted.
+No Hub configuration is written and non-Windows resolution is unchanged.
+
+Ten Windows temp-directory cases cover valid fallback, default priority, missing
+secondary executable/both-path diagnostics, empty/malformed/wrong-type/relative
+settings, flag/environment priority, and missing explicit root without fallback.
+All pass, as do Go vet/test/lint/format, guide/package/runtime checks and pure-Go
+Linux/Darwin cross-builds. Initial cross-build with Windows CGO toolchain failed
+for missing target C headers; CGO_ENABLED=0 builds pass. Actual Hub settings and
+Editor processes were not used for this test. Connector/catalog/rules unchanged.
+
 ## U7 / M8 — PDB research closed with explicit unknowns (2026-10-20)
 
 Build-paired native PDB GUID/age and public symbol addresses confirm distinct

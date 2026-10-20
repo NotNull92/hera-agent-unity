@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -52,7 +53,8 @@ func readUnityProjectVersion(project string) (string, string, error) {
 }
 
 func resolveUnityExecutable(version, hubRoot string) (string, error) {
-	if strings.TrimSpace(hubRoot) == "" {
+	useDefault := strings.TrimSpace(hubRoot) == ""
+	if useDefault {
 		switch runtime.GOOS {
 		case "windows":
 			hubRoot = filepath.Join(os.Getenv("ProgramFiles"), "Unity", "Hub", "Editor")
@@ -73,8 +75,20 @@ func resolveUnityExecutable(version, hubRoot string) (string, error) {
 		executable = filepath.Join(hubRoot, version, "Editor", "Unity")
 	}
 	info, err := os.Stat(executable)
-	if err != nil || info.IsDir() {
-		return "", fmt.Errorf("unity %s is not installed at %s; pass --hub-root or set UNITY_HUB_EDITOR", version, executable)
+	if err == nil && !info.IsDir() {
+		return filepath.Clean(executable), nil
 	}
-	return filepath.Clean(executable), nil
+	attempted := []string{executable}
+	if useDefault && runtime.GOOS == "windows" && os.Getenv("APPDATA") != "" {
+		data, readErr := os.ReadFile(filepath.Join(os.Getenv("APPDATA"), "UnityHub", "secondaryInstallPath.json"))
+		var secondary string
+		if readErr == nil && json.Unmarshal(data, &secondary) == nil && strings.TrimSpace(secondary) != "" && filepath.IsAbs(secondary) {
+			executable = filepath.Join(secondary, version, "Editor", "Unity.exe")
+			attempted = append(attempted, executable)
+			if info, err := os.Stat(executable); err == nil && !info.IsDir() {
+				return filepath.Clean(executable), nil
+			}
+		}
+	}
+	return "", fmt.Errorf("unity %s is not installed at %s; pass --hub-root or set UNITY_HUB_EDITOR", version, strings.Join(attempted, ", "))
 }
