@@ -11,6 +11,8 @@ func enumerateEditorWindows(pid int) []editorWindow {
 	enumWindows := user32.NewProc("EnumWindows")
 	getPID := user32.NewProc("GetWindowThreadProcessId")
 	visible := user32.NewProc("IsWindowVisible")
+	enabled := user32.NewProc("IsWindowEnabled")
+	getOwner := user32.NewProc("GetWindow")
 	getClass := user32.NewProc("GetClassNameW")
 	getTitle := user32.NewProc("GetWindowTextW")
 	var result []editorWindow
@@ -26,12 +28,15 @@ func enumerateEditorWindows(pid int) []editorWindow {
 		}
 		var class [256]uint16
 		_, _, _ = getClass.Call(hwnd, uintptr(unsafe.Pointer(&class[0])), uintptr(len(class)))
-		if windows.UTF16ToString(class[:]) != "#32770" {
-			return 1
-		}
 		var title [1024]uint16
 		_, _, _ = getTitle.Call(hwnd, uintptr(unsafe.Pointer(&title[0])), uintptr(len(title)))
-		result = append(result, editorWindow{PID: int(owner), Class: "#32770", Title: windows.UTF16ToString(title[:]), Visible: true})
+		isEnabled, _, _ := enabled.Call(hwnd)
+		ownerHWND, _, _ := getOwner.Call(hwnd, 4) // GW_OWNER
+		result = append(result, editorWindow{
+			PID: int(owner), HWND: hwnd, Owner: ownerHWND,
+			Class: windows.UTF16ToString(class[:]), Title: windows.UTF16ToString(title[:]),
+			Visible: true, Enabled: isEnabled != 0,
+		})
 		return 1
 	})
 	_, _, _ = enumWindows.Call(callback, 0)

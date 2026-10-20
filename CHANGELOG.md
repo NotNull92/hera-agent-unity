@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- CLI: diagnose blocked Windows Editors from disabled and enabled visible windows, including custom and nested modals, without mistaking enabled progress windows for dialogs requiring user intervention.
+
 ### Docs
 
 - Guide: document the decision to retain Full Access as the `exec` default, clarify approval for execution versus compile-only checks and automatic approval, and describe Restricted API/IL limits and code-review responsibility. Severity lowered from high to mid.
