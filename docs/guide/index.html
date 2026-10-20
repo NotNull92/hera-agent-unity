@@ -302,7 +302,7 @@ footer a{color:var(--frost)}
     <div class="rule" style="width:min(420px,80%)"><i></i></div>
     <p class="sub">AI 모험가가 Unity라는 던전에 들어가 퀘스트를 수행하게 해 주는 장비, <b>hera-agent-unity</b>의 지도와 도감이에요. 1인 게임 회사 대표 시점으로 정리했어요.</p>
     <div class="sheet" aria-label="현재 버전">
-      <div class="stat"><span class="rune">CLI</span><b>v0.3.14</b></div>
+      <div class="stat"><span class="rune">CLI</span><b>v0.3.15</b></div>
       <div class="stat"><span class="rune">Connector</span><b>0.2.10</b></div>
       <div class="stat"><span class="rune">Tools · Actions</span><b>34 · 133</b></div>
       <div class="stat"><span class="rune">Unity</span><b>6000.6+</b></div>
@@ -415,7 +415,7 @@ footer a{color:var(--frost)}
 
   <footer>
     <div class="rule" style="width:min(320px,70%);margin:0 auto"><i></i></div>
-    <span>기준 버전: CLI <span class="mono">v0.3.14</span> / Connector <span class="mono">0.2.10</span> (2026-10-20). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실측·문서 근거가 있는 것만 넣었어요.</span>
+    <span>기준 버전: CLI <span class="mono">v0.3.15</span> / Connector <span class="mono">0.2.10</span> (2026-10-20). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실측·문서 근거가 있는 것만 넣었어요.</span>
   </footer>
 </div>
 
@@ -500,8 +500,8 @@ const EVENTS={
    note:"인수를 하나라도 바꾸면 서명이 맞지 않아 거절돼요."},
  reload:{name:"던전 리로드",hint:"컴파일로 던전 문이 잠깐 닫혀요",end:["warn","새 문으로 돌아서 완료"],log:[["ok","heartbeat: port 8090, ready"],["ok","인수 검사 통과"],["warn","503 RELOADING · retryable=true (아직 실행 안 됨)"],["warn","게시판 재확인: 포트가 8091로 바뀜 · 리로드 중 port 0은 무시"],["ok","재시도 가능한 요청(idempotent 또는 작업 기록 지원)만 새 포트로 재시도 · 성공"]],
    note:"실측에서 리로드마다 포트가 8090~8094로 바뀌었어요. 프로젝트 경로로 따라가니 문제없어요."},
- dialog:{name:"얼어붙은 던전",hint:"대화상자가 메인 스레드를 붙잡아요",end:["bad","퀘스트 보류: 사람이 대화상자를 닫아야 해요"],log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["bad","요청 시간 초과(기본 60초) · heartbeat도 3초 넘게 멈춤"],["warn","같은 PID의 Windows 대화상자 발견 → blocked_by_dialog, retryable=false"]],
-   note:"Windows 기본 대화상자만 알아봐요."},
+ dialog:{name:"얼어붙은 던전",hint:"대화상자가 메인 스레드를 붙잡아요",end:["bad","퀘스트 보류: 사람이 대화상자를 닫아야 해요"],log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["bad","요청 시간 초과(기본 60초) · heartbeat도 3초 넘게 멈춤"],["warn","같은 PID에 비활성 창과 활성 모달 창 발견 → blocked_by_dialog, retryable=false"]],
+   note:"Windows에서만 알아봐요. 저절로 끝나는 진행 창은 대화상자로 치지 않아요."},
  lost:{name:"사라진 전령",hint:"일은 끝났는데 응답이 끊겨요",end:["bad","결과 불명: 다시 보내지 않아요"],log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["ok","실행 완료(ledger에는 committed)"],["bad","응답 유실 → OPERATION_OUTCOME_UNKNOWN · 다시 보내지 않음"]],
    note:"실험에서 실제로 일어났어요. 작업은 끝났는데 응답만 사라졌어요. 그래서 '모르면 다시 보내지 않기'가 규칙이에요."}
 };
@@ -621,7 +621,7 @@ addEventListener("resize",drawLinks);
 const RISKS=[
  {k:"portkey",m:"문패 미믹",s:"lo",t:"포트가 바뀌어도 결과를 찾아요 (v0.3.14에서 처치)",p:"리로드로 포트가 바뀌면 test resume·실행 잠금·생존 확인이 옛 포트를 봤어요. 에셋 임포트 워커도 Hera를 켜서 같은 문패(heartbeat)를 덮어썼고요.",e:"일회용 프로젝트에서 포트를 강제로 옮겨 재현했고, 수정 뒤 원 호출·resume·중복 실행 거부·cancel이 모두 통과했어요. 워커의 Hera 서버 기동은 0건이에요.",f:"Connector 0.2.9 이하는 워커가 여전히 문패를 덮어쓰니 0.2.10으로 올려요."},
  {k:"gatekeeper",m:"외길의 돌거인",s:"mid",t:"문지기가 한 명이에요",p:"긴 exec나 빌드가 메인 스레드를 잡으면 다른 명령은 줄 서서 기다려요. AI 여러 개가 같은 Unity를 쓰면 체감돼요.",e:"단일 선택·직렬 실행은 잠긴 설계예요(CLAUDE.md).",f:"에이전트 한 명당 Unity 하나를 쓰는 운영 규칙으로 피해요."},
- {k:"dialog",m:"서리 거미줄 정령",s:"mid",t:"대화상자 감지는 Windows 기본형만",p:"커스텀 에디터 모달이나 macOS 대화상자는 여전히 원인 모를 시간 초과로 보여요.",e:"Windows 기본 대화상자(#32770 창)만 판정한다는 한계를 기록했어요.",f:"자주 뜨는 커스텀 모달이 있으면 그때 판정을 넓혀요."},
+ {k:"dialog",m:"서리 거미줄 정령",s:"lo",t:"커스텀 모달도 알아봐요 (v0.3.15에서 처치)",p:"Windows 기본 대화상자(#32770 창)만 봐서 ShowModal 같은 커스텀 모달은 원인 모를 시간 초과로 보였어요. 저절로 끝나는 진행 창은 거꾸로 사람이 닫아야 한다고 잘못 알렸고요.",e:"일회용 프로젝트에서 창 상황 7가지를 재현했어요. 수정 뒤 커스텀 모달과 겹친 모달은 제목까지 맞혔고, 진행 창·느린 import·정상 상태에서는 켜지지 않았어요.",f:"macOS·Linux에는 아직 모달 진단이 없어요. 드물게 제목이 입력기 같은 보조 창 이름으로 나올 수 있어요."},
  {k:"fullpower",m:"풀린 두루마리 악령",s:"mid",t:"exec 기본값은 전체 권한이에요 (의도된 설계)",p:"코드를 실행하는 exec는 Full Access와 restricted 모두 승인 대상이에요(--check는 컴파일만 해요). 다만 --yes/HERA_AGENT_APPROVE나 발급받은 승인 토큰을 쓰면 매번 질문이 뜨지는 않아요. Hera 터미널 승인 화면에는 실행 코드 본문이 표시되지 않으므로, 승인 전에 실제 코드를 확인해요.",e:"restricted는 UnityEditor API와 ldftn/ldvirtftn 등 함수 포인터 IL을 막아, 에디터 자동화나 delegate를 만드는 람다 코드가 거부될 수 있어요. Full Access 기본값과 restricted 선택 사용은 2026-08-10에 결정했고, 2026-10-20에 재확인했어요.",f:"승인 전에 실행될 코드 본문을 확인해요. 명령 인자로 넣은 코드가 에이전트 승인 화면에 보이는지는 도구·설정에 따라 달라요. --file이나 stdin을 쓰면 실제 전달 내용을 따로 확인해요. 허용된 플랫폼 API만 필요한 코드는 --security-mode restricted를 선택해요."},
  {k:"version",m:"계절을 타는 고목",s:"mid",t:"지원 Unity 대표가 하나예요",p:"6000.6.6f1에서만 전체 검사를 통과했어요. 다음 Unity에서 API가 바뀌면 새 대표 버전이 필요해요.",e:"UNITY_EDITOR_VERSION_INVENTORY.md",f:"새 Unity가 나오면 대표를 추가하고 게이트를 다시 돌려요."},
  {k:"stale",m:"낡은 소문 까마귀 떼",s:"mid",t:"문서와 실제가 어긋날 수 있어요",p:"AI 두 명이 문서를 보고 일을 넘겨받아요. 문서가 옛 상태면 이미 끝난 일을 다시 하거나 잘못 판단해요.",e:"개발 인계 문서(docs/handoffs/ACTIVE.md) 상단이 실제로 옛 상태였던 적이 있어요(2026-10-20 수정).",f:"배포할 때마다 상태 문단을 같이 고치는 습관을 들여요."},

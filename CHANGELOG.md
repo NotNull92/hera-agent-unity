@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.15] - 2026-10-20 (Connector unchanged at 0.2.10)
+
 ### Fixed
 
 - CLI: diagnose blocked Windows Editors from disabled and enabled visible windows, including custom and nested modals, without mistaking enabled progress windows for dialogs requiring user intervention.
@@ -14,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Docs
 
+- Guide: the blocking-dialog risk entry is marked fixed and describes the new modal detection.
 - Guide: document the decision to retain Full Access as the `exec` default, clarify approval for execution versus compile-only checks and automatic approval, and describe Restricted API/IL limits and code-review responsibility. Severity lowered from high to mid.
 
 ## [0.3.14] - 2026-10-20 (Connector 0.2.10)

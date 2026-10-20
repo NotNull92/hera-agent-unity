@@ -1,7 +1,10 @@
 # Active Development Handoff
 
-Current state (2026-10-20): **Released CLI `v0.3.14` / Connector `0.2.10`
-(`connector-0.2.10`); npm `latest` is `0.3.14`.** R1 port-identity lookups
+Current state (2026-10-20): **Released CLI `v0.3.15` / Connector `0.2.10`
+(`connector-0.2.10`); npm `latest` is `0.3.15`.** R3 modal diagnosis from
+window enabled state (`75ad690`) and live-PID restart checks (`f55af30`) passed
+live modal/progress-window scenarios (research report 34). Earlier, in
+`v0.3.14`, R1 port-identity lookups
 (`3bce49a`) and R1b import-worker guards (`591be1d`, `5116599`) passed a live
 port-move gate (research reports 30/31). Earlier: CLI `v0.3.11` / Connector `0.2.9`. The support
 floor remains Unity 6.6 (`6000.6`). U1–U8 are complete; U7 retains explicit
