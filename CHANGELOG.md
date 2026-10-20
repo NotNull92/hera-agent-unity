@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-10-20 (Connector 0.2.9)
+
 ### Changed (CLI v0.3.10; Connector 0.2.9)
 
 - `manage_ui create` with Game Feel UI Mode attaches the full juice recipe once per element type per Editor session; later creates of the same type get a one-line `game_feel` pointer.
