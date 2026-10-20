@@ -27,6 +27,15 @@ namespace HeraAgent.Tests
             allPassed &= ExpectTrue("suggestions available", GameFeelStore.SuggestSimilar("screenshake").Count > 0);
             allPassed &= ExpectTrue("index has categories", GameFeelStore.BuildIndex().Count >= 5);
 
+            UIJuiceGuide.ResetShownRecipesForTesting();
+            var first = UIJuiceGuide.ForElement("button", false);
+            var repeat = UIJuiceGuide.ForElement("Button", true);
+            allPassed &= ExpectTrue("first create carries the full recipe", first != null && first.Contains("Hover:"));
+            allPassed &= ExpectTrue("repeat create carries only the pointer",
+                first != null && repeat != null && !repeat.Contains("Hover:") && repeat.Contains("game_feel <topic>") && repeat.Length < first.Length / 4);
+            allPassed &= ExpectTrue("other elements still get their recipe", (UIJuiceGuide.ForElement("panel", false) ?? "").Contains("Golden rule"));
+            UIJuiceGuide.ResetShownRecipesForTesting();
+
             if (allPassed)
                 Debug.Log("[GameFeelStoreTests] ALL PASSED");
             else

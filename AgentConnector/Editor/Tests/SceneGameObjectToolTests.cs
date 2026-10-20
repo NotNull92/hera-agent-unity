@@ -96,6 +96,17 @@ namespace HeraAgent.Tests
                 Assert.IsNull(leaf["active"], "active:true is implied by omission");
                 Assert.IsNull(leaf["children"], "empty children are omitted");
 
+                child.AddComponent<BoxCollider>();
+                var listed = (JArray)RequireSuccess(ManageComponents.List(new JObject
+                {
+                    ["instance_id"] = EntityIdCompat.IdOf(child),
+                }))["components"];
+                var transformEntry = listed.First(c => c.Value<string>("type_short") == "Transform");
+                var colliderEntry = listed.First(c => c.Value<string>("type_short") == "BoxCollider");
+                Assert.IsNull(transformEntry["type"], "UnityEngine full names are implied by type_short");
+                Assert.IsNull(transformEntry["enabled"], "components without an enabled state omit it");
+                Assert.AreEqual(true, colliderEntry.Value<bool>("enabled"));
+
                 var target = new JObject { ["instance_id"] = EntityIdCompat.IdOf(child) };
                 RequireSuccess(ManageGameObject.SetTransform(Merge(target, new JObject
                 {

@@ -29,6 +29,7 @@ namespace HeraAgent.Tests
             nameof(ExecCompileCache),
             nameof(ExecRestricted),
             nameof(ExecSerializer),
+            nameof(GameFeelStore),
             nameof(HttpServerLifecycle),
             nameof(InputQa),
             nameof(OperationLedger),
@@ -88,6 +89,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void ExecSerializer() => ExecSerializerTests.RunTests();
+
+        [Test]
+        public void GameFeelStore() => GameFeelStoreTests.RunTests();
 
         [Test]
         public void HttpServerLifecycle() => HttpServerLifecycleTests.RunTests();

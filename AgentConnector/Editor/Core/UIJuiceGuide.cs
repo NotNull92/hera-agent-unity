@@ -89,8 +89,18 @@ namespace HeraAgent
             var key = element.ToLowerInvariant();
             if (!Recipes.TryGetValue(key, out var recipe)) return null;
 
+            // A screen creates many elements of one kind; repeating the full recipe each
+            // time costs ~1.5 KB per create. Static state resets on domain reload.
+            if (!s_ShownRecipes.Add(key))
+                return "[Hera] Game Feel UI Mode: the " + key + " recipe was attached to an earlier create in this Editor session. " +
+                    DeepLine(new[] { key }).TrimEnd('\n');
+
             return Header + recipe + "\n" + TweenLine(dotweenPreferred) + "\n" + DeepLine(new[] { key }) + Footer;
         }
+
+        static readonly HashSet<string> s_ShownRecipes = new HashSet<string>();
+
+        internal static void ResetShownRecipesForTesting() => s_ShownRecipes.Clear();
 
         /// <summary>
         const string Header = "[Hera] Game Feel UI Mode (Beta) is on — make this feel alive. Maximum output for minimum input.\n";

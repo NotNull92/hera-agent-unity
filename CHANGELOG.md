@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (CLI v0.3.10; Connector 0.2.9)
+
+- `manage_ui create` with Game Feel UI Mode attaches the full juice recipe once per element type per Editor session; later creates of the same type get a one-line `game_feel` pointer.
+- `manage_components` component shapes omit `type` when it is `UnityEngine.<type_short>` and omit `enabled` for components without an enabled state.
+- The compact agent rules drop sentences that repeated the Verification Mode section and `--help` guidance (2,465 B to 2,315 B).
+
 ## [0.3.9] - 2026-10-20 (Connector unchanged at 0.2.8)
 
 ### Fixed (CLI v0.3.9; Connector unchanged at 0.2.8)

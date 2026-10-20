@@ -949,13 +949,15 @@ Reference-field set is the one to study — every future `manage_*` reuses this 
 
 ### Return shapes
 
-`add` / `get` (full) — `{ instance_id, component: { component_id, type, type_short, enabled?, properties: { m_X: ..., ... } } }`
+`add` / `get` (full) — `{ instance_id, component: { component_id, type?, type_short, enabled?, properties: { m_X: ..., ... } } }`
+
+`type` (the full name) appears only when the component is outside the `UnityEngine` namespace; `enabled` only for components that have an enabled state.
 
 `get` (single property) / `set` — `{ instance_id, component_id, type, property, property_type, value }`
 
-`list` — `{ instance_id, components: [{ component_id, type, type_short, enabled? }, ...] }`
+`list` — `{ instance_id, components: [{ component_id, type?, type_short, enabled? }, ...] }`
 
-`remove` — `{ instance_id, removed: { component_id, type, type_short, enabled? } }`
+`remove` — `{ instance_id, removed: { component_id, type?, type_short, enabled? } }`
 
 ### Examples
 

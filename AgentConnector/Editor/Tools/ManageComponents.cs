@@ -513,24 +513,14 @@ namespace HeraAgent.Tools
 
         static object BuildComponentShape(Component comp, bool includeProperties)
         {
-            var compType = comp.GetType();
             if (!includeProperties)
-            {
-                return new
-                {
-                    component_id = EntityIdCompat.IdOf(comp),
-                    type = compType.FullName,
-                    type_short = compType.Name,
-                    enabled = TryGetEnabled(comp),
-                };
-            }
+                return ComponentHeader(comp);
             using var so = new SerializedObject(comp);
             return BuildComponentShape(comp, so, includeProperties: true);
         }
 
         static object BuildComponentShape(Component comp, SerializedObject so, bool includeProperties)
         {
-            var compType = comp.GetType();
             var properties = new Dictionary<string, object>();
             if (includeProperties)
             {
@@ -543,14 +533,25 @@ namespace HeraAgent.Tools
                     catch (Exception ex) { properties[iter.name] = new { read_error = ex.Message }; }
                 }
             }
-            return new
-            {
-                component_id = EntityIdCompat.IdOf(comp),
-                type = compType.FullName,
-                type_short = compType.Name,
-                enabled = TryGetEnabled(comp),
-                properties = (object)properties,
-            };
+            var shape = ComponentHeader(comp);
+            shape["properties"] = properties;
+            return shape;
+        }
+
+        // Most components live in UnityEngine, where the full name only repeats the
+        // short one; it is emitted when it adds a namespace. enabled is omitted for
+        // components that have no enabled state.
+        static Dictionary<string, object> ComponentHeader(Component comp)
+        {
+            var compType = comp.GetType();
+            var shape = new Dictionary<string, object> { ["component_id"] = EntityIdCompat.IdOf(comp) };
+            if (compType.FullName != "UnityEngine." + compType.Name)
+                shape["type"] = compType.FullName;
+            shape["type_short"] = compType.Name;
+            var enabled = TryGetEnabled(comp);
+            if (enabled.HasValue)
+                shape["enabled"] = enabled.Value;
+            return shape;
         }
 
         static bool? TryGetEnabled(Component comp)
