@@ -3,8 +3,11 @@ package client
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -311,18 +314,21 @@ func Test_ClientSend_preserves_unknown_outcome_for_ledger_mutation_timeout(t *te
 }
 
 func Test_ClientSend_reports_editor_restart_when_pid_changes_during_timeout(t *testing.T) {
+	child := exec.Command(os.Args[0], "-test.run=^$")
+	if err := child.Run(); err != nil {
+		t.Fatal(err)
+	}
 	// Given
 	writeInstanceFiles(t, map[string]Instance{
 		"target.json": {
 			State:       unitystate.Ready,
 			ProjectPath: "C:/Projects/test6.5",
 			Port:        8092,
-			PID:         200,
+			PID:         os.Getpid(),
 			Timestamp:   2000,
 		},
 	})
 	c := NewClient()
-	c.processDeadChecker = func(int) bool { return false }
 	c.httpClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
 		<-request.Context().Done()
 		return nil, request.Context().Err()
@@ -331,7 +337,7 @@ func Test_ClientSend_reports_editor_restart_when_pid_changes_during_timeout(t *t
 	// When
 	_, err := c.Send(
 		context.Background(),
-		&Instance{Port: 8090, ProjectPath: "C:/Projects/test6.5", PID: 100},
+		&Instance{Port: 8090, ProjectPath: "C:/Projects/test6.5", PID: child.Process.Pid},
 		"list",
 		nil,
 		10,
@@ -342,8 +348,51 @@ func Test_ClientSend_reports_editor_restart_when_pid_changes_during_timeout(t *t
 	if !errors.As(err, &restarted) {
 		t.Fatalf("error = %v, want *TargetRestartedError", err)
 	}
-	if restarted.PreviousPID != 100 || restarted.CurrentPID != 200 || restarted.Port != 8092 {
+	if restarted.PreviousPID != child.Process.Pid || restarted.CurrentPID != os.Getpid() || restarted.Port != 8092 {
 		t.Fatalf("restarted target = %#v", restarted)
+	}
+}
+
+func TestReloadTimeoutIgnoresLiveForeignPID(t *testing.T) {
+	for _, modal := range []bool{false, true} {
+		t.Run(fmt.Sprint(modal), func(t *testing.T) {
+			original := Instance{PID: os.Getpid(), Port: 8090, ProjectPath: "C:/Projects/worker", Timestamp: 1, State: "ready"}
+			worker := original
+			worker.PID, worker.Port, worker.Timestamp = os.Getppid(), 8092, time.Now().UnixMilli()
+			if worker.PID <= 0 || worker.PID == original.PID || IsProcessDead(worker.PID) {
+				t.Fatal("fixture requires a distinct live parent")
+			}
+			writeInstanceFiles(t, map[string]Instance{"target.json": worker})
+			c := NewClient()
+			c.enumerateWindows = func(pid int) []editorWindow {
+				if pid != original.PID {
+					t.Fatalf("probed worker PID %d instead of original %d", pid, original.PID)
+				}
+				if !modal {
+					return nil
+				}
+				return []editorWindow{
+					{PID: pid, HWND: 1, Visible: true},
+					{PID: pid, HWND: 2, Owner: 1, Enabled: true, Visible: true, Class: "UnityContainerWndClass", Title: "Original modal"},
+				}
+			}
+			c.httpClient = &http.Client{Transport: roundTripFunc(func(request *http.Request) (*http.Response, error) {
+				<-request.Context().Done()
+				return nil, request.Context().Err()
+			})}
+			_, err := c.Send(context.Background(), &original, "list", nil, 10)
+			var restarted *TargetRestartedError
+			var unresponsive *TargetUnresponsiveError
+			if errors.As(err, &restarted) || !errors.As(err, &unresponsive) {
+				t.Fatalf("want unresponsive live original, got %v", err)
+			}
+			if unresponsive.PID != original.PID || unresponsive.Project != original.ProjectPath || unresponsive.Port != original.Port {
+				t.Fatalf("reported foreign target: %#v", unresponsive)
+			}
+			if (unresponsive.State == "blocked_by_dialog") != modal || modal && unresponsive.DialogTitle != "Original modal" {
+				t.Fatalf("incorrect modal diagnosis: %#v", unresponsive)
+			}
+		})
 	}
 }
 

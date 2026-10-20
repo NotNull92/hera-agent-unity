@@ -107,7 +107,8 @@ func (c *Client) doWithReloadRetry(
 		if ctx.Err() != nil {
 			var timeoutErr error
 			if next != nil {
-				if inst.PID > 0 && next.PID > 0 && inst.PID != next.PID {
+				pidChanged := inst.PID > 0 && next.PID > 0 && inst.PID != next.PID
+				if pidChanged && c.IsProcessDead(inst.PID) {
 					timeoutErr = &TargetRestartedError{
 						Project:     next.ProjectPath,
 						PreviousPID: inst.PID,
@@ -117,15 +118,21 @@ func (c *Client) doWithReloadRetry(
 						Cause:       ctx.Err(),
 					}
 				} else {
+					observed := next
+					if pidChanged {
+						// Older connectors can overwrite the heartbeat with a worker.
+						// Diagnose the original live Editor, not the worker's windows.
+						observed = inst
+					}
 					unresponsive := &TargetUnresponsiveError{
-						Project: next.ProjectPath,
-						Port:    next.Port,
-						PID:     next.PID,
-						State:   next.State,
+						Project: observed.ProjectPath,
+						Port:    observed.Port,
+						PID:     observed.PID,
+						State:   observed.State,
 						Cause:   ctx.Err(),
 					}
 					if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-						if title, found := c.BlockingDialog(next); found {
+						if title, found := c.BlockingDialog(observed); found {
 							unresponsive.State = "blocked_by_dialog"
 							unresponsive.DialogTitle = title
 						}

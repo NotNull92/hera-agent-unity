@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - CLI: diagnose blocked Windows Editors from disabled and enabled visible windows, including custom and nested modals, without mistaking enabled progress windows for dialogs requiring user intervention.
+- CLI: report a changed heartbeat PID as an Editor restart only after confirming the original process exited; otherwise diagnose the original Editor.
 
 ### Docs
 
