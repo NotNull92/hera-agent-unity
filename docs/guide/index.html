@@ -157,7 +157,7 @@ a{color:var(--frost)}
 .d2-head{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
 .d2-head p{color:var(--muted);font-size:14px}
 .d2-grid-wrap{position:relative}
-.d2-grid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);row-gap:34px;column-gap:10px;z-index:1}
+.d2-grid{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));row-gap:34px;column-gap:10px;z-index:1}
 .d2-links{position:absolute;inset:0;width:100%;height:100%;z-index:0;overflow:visible}
 .d2-links line{stroke:rgba(201,164,92,.55);stroke-width:2}
 .d2-links line.on{stroke:var(--gold2);stroke-width:2.5}
@@ -170,7 +170,9 @@ a{color:var(--frost)}
 .skill .slot .glyph{font-family:var(--display);font-weight:800;font-size:24px;color:#cfd5da;text-shadow:0 0 6px rgba(127,196,201,.35)}
 .skill .lbl{display:flex;flex-direction:column;align-items:center;gap:1px;padding:3px 8px;background:#101317;border:1px solid var(--line);box-shadow:0 0 0 3px #101317}
 .skill .nm{font-family:var(--display);font-size:13.5px;color:var(--silver);text-align:center;line-height:1.3}
-.skill .id{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.skill .id{font-family:var(--mono);font-size:10.5px;color:var(--muted);overflow-wrap:anywhere;text-align:center}
+.skill .lbl{max-width:100%}
+.skill{min-width:0}
 .skill:hover .slot{border-color:#8c949b}
 .skill.on .slot{border-color:var(--gold);box-shadow:inset 0 0 0 2px #0b0d10,0 0 16px rgba(201,164,92,.55)}
 .skill.on .slot .glyph{color:var(--gold2)}
@@ -184,7 +186,7 @@ a{color:var(--frost)}
 .d2-tip section p{font-size:14.5px;line-height:1.7}
 .d2-tip .acts{display:flex;flex-wrap:wrap;gap:4px}
 .d2-tip .acts span{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line2);padding:1px 7px;color:var(--frost)}
-.d2-tip .pre a{color:var(--gold2);cursor:pointer;text-decoration:underline dotted}
+.d2-tip .pre .go{color:var(--gold2);text-decoration:underline dotted;padding:0;font-size:inherit}
 .spell{font-family:var(--mono);font-size:12.5px;background:rgba(5,7,11,.7);border:1px solid var(--line);padding:12px;overflow-x:auto;margin:0;color:#d6ecee;white-space:pre-wrap;overflow-wrap:anywhere}
 
 /* ---------- CH4 몬스터 도감 ---------- */
@@ -510,7 +512,7 @@ const TREES=[
   {t:"manage_prefab",n:"원형 주조",row:3,col:1,pre:["manage_components"],what:"씬 오브젝트를 프리팹으로 저장하고, 배치하고, 오버라이드를 보고 적용·되돌리기·풀기를 해요.",why:"반복해서 쓰는 오브젝트를 원본 하나로 관리해야 수정이 한 번에 퍼져요.",cmd:"hera-agent-unity manage_prefab create --source /Player --path Assets/Prefabs/Player.prefab",acts:"create, instantiate, add_component, remove_component, list_overrides, apply, revert, unpack"}]},
  {id:"artisan",n:"장인",r:"에셋과 패키지",d:"에셋 창고를 정리하고, 가져오기 설정과 머티리얼을 다듬고, 패키지를 들여와요.",skills:[
   {t:"detect_assets",n:"보물 감정",row:0,col:0,what:"설치된 서드파티 에셋 플러그인(DOTween 등)을 찾아 Hera 설정에 반영해요.",why:"AI가 프로젝트에 있는 도구를 알아야 그 도구에 맞는 코드를 써요.",cmd:"hera-agent-unity detect_assets",acts:""},
-  {t:"manage_assets",n:"창고 정리",row:0,col:1,what:"에셋 찾기, 의존 관계 보기, 폴더·ScriptableObject 만들기, 가져오기·복사·이동·삭제를 해요. Assets/ 안에서만 동작해요.",why:"경로를 하나 잘못 써도 참조가 깨져요. 정해진 동작으로만 다뤄서 안전해요.",cmd:"hera-agent-unity manage_assets find --type Texture2D --filter icon --limit 20",acts:"find, deps, mkdir, create, import, copy, move, delete"},
+  {t:"manage_assets",n:"창고 정리",row:0,col:1,what:"에셋 찾기와 의존 관계 보기는 프로젝트 전체(패키지 포함)를 대상으로 해요. 폴더·ScriptableObject 만들기, 가져오기·복사·이동·삭제 같은 쓰기 동작은 Assets/ 안에서만 해요.",why:"경로를 하나 잘못 써도 참조가 깨져요. 쓰기를 Assets/ 안의 정해진 동작으로만 해서 안전해요.",cmd:"hera-agent-unity manage_assets find --type Texture2D --filter icon --limit 20",acts:"find, deps, mkdir, create, import, copy, move, delete"},
   {t:"manage_packages",n:"상인 조합",row:0,col:2,what:"Package Manager 패키지를 조회·검색·추가·제거·임베드해요. 추가와 제거는 작업 번호를 받아 끝날 때까지 기다려요.",why:"필요한 패키지를 이 에디터가 받을 수 있는 버전으로 설치해요.",cmd:"hera-agent-unity manage_packages list",acts:"list, search, add, remove, embed"},
   {t:"manage_asset_import",n:"재료 손질",row:1,col:1,pre:["manage_assets"],what:"텍스처·모델·오디오의 가져오기 설정을 읽고, 하나씩 바꾼 뒤 다시 가져와요.",why:"압축·크기·읽기 설정이 빌드 용량과 성능을 좌우해요.",cmd:"hera-agent-unity manage_asset_import get --path Assets/Tex/icon.png",acts:"get, set"},
   {t:"describe_shader",n:"셰이더 해독",row:1,col:2,what:"셰이더가 가진 속성(이름·종류·범위)을 보거나 셰이더 이름을 검색해요.",why:"머티리얼을 고치기 전에 어떤 속성 이름(_BaseColor 등)이 있는지 알아야 해요.",cmd:"hera-agent-unity describe_shader --list --filter Lit",acts:""},
@@ -547,7 +549,7 @@ const TREES=[
   {t:"status",n:"정찰",row:0,col:1,what:"실행 중인 Unity의 프로젝트·포트·상태를 heartbeat로 확인해요.",why:"명령을 보내기 전에 어느 에디터가 살아 있는지 알아요.",cmd:"hera-agent-unity status",acts:""},
   {t:"list",n:"지도 펼치기",row:1,col:0,pre:["status"],what:"도구 이름(--names), 도구 하나의 스키마(--tool), 작업별 도구 묶음(--profile)을 보여 줘요.",why:"필요한 설명만 골라 읽어 토큰을 아껴요.",cmd:"hera-agent-unity list --profile core",acts:""},
   {t:"doctor",n:"의사의 진단",row:1,col:2,pre:["status"],what:"설치 상태를 진단하고(--json), AI에게 줄 규칙(--agent-rules --compact)을 출력해요.",why:"AI가 Hera를 처음 쓸 때 규칙을 한 번에 익혀요.",cmd:"hera-agent-unity doctor --agent-rules --compact",acts:""},
-  {t:"batch",n:"연속 주문",row:2,col:0,pre:["list"],what:"여러 명령을 한 번의 요청으로 순서대로 보내요. --dry-run으로 미리 보고, --atomic으로 한 묶음처럼 처리할 수 있어요.",why:"단순한 연속 작업의 왕복 횟수를 줄여요. 조건 분기가 필요하면 명령을 따로 보내요.",cmd:"hera-agent-unity batch --file steps.json --dry-run",acts:""},
+  {t:"batch",n:"연속 주문",row:2,col:0,pre:["list"],what:"여러 명령을 한 번의 요청으로 순서대로 보내요. --dry-run은 무엇을 보낼지 미리 보여 주기만 해요. --atomic은 되돌릴 수 있는(Undo가 되는) 비파괴 씬 편집만 한 묶음으로 처리하고, 다른 항목이 섞이면 실행 전에 거절해요.",why:"단순한 연속 작업의 왕복 횟수를 줄여요. 조건 분기가 필요하면 명령을 따로 보내요.",cmd:"hera-agent-unity batch --file steps.json --dry-run",acts:""},
   {t:"task",n:"원정 기록",row:2,col:2,pre:["doctor"],what:"오래 걸리는 테스트·패키지 작업의 상태와 결과를 Unity에 묻지 않고 확인해요.",why:"에디터가 리로드되거나 응답이 끊겨도 같은 작업을 다시 시작하지 않고 결과를 찾아요.",cmd:"hera-agent-unity task list",acts:"list, status"}]}
 ];
 let tree=0,skill=null;
@@ -580,7 +582,7 @@ function showSkill(t){
   const pres=(s.pre||[]).map(p=>c.skills.find(x=>x.t===p));
   const next=c.skills.filter(x=>(x.pre||[]).includes(t));
   document.querySelectorAll(".skill").forEach(b=>{b.classList.toggle("on",b.dataset.t===t);b.classList.toggle("pre",(s.pre||[]).includes(b.dataset.t))});
-  const link=x=>`<a data-go="${x.t}">${esc(x.n)}</a>`;
+  const link=x=>`<button class="go" data-go="${x.t}">${esc(x.n)}</button>`;
   $("#d2tip").innerHTML=`<div class="ttl"><span class="rune">${esc(c.n)} · ${TIERS[s.row]}</span><h3>${esc(s.n)}</h3><span class="mono">${esc(s.t)}</span></div>
    <div class="rule"><i></i></div>
    <section><h4>무엇을 하나요</h4><p>${esc(s.what)}</p></section>
@@ -649,7 +651,7 @@ const RECIPES=[
 const have=new Set(["editor play","input","screenshot"]);
 function renderForge(){
   $("#slots").innerHTML=INV.map(x=>`<button class="slot" aria-pressed="${have.has(x)}" data-i="${esc(x)}">${esc(x)}</button>`).join("");
-  document.querySelectorAll(".slot").forEach(b=>b.onclick=()=>{const k=b.dataset.i;have.has(k)?have.delete(k):have.add(k);renderForge();document.querySelector(`.slot[data-i="${CSS.escape(k)}"]`)?.focus()});
+  document.querySelectorAll("#slots .slot").forEach(b=>b.onclick=()=>{const k=b.dataset.i;have.has(k)?have.delete(k):have.add(k);renderForge();document.querySelector(`#slots .slot[data-i="${CSS.escape(k)}"]`)?.focus()});
   const list=RECIPES.map(r=>({...r,hit:r.need.filter(x=>have.has(x)).length})).sort((a,b)=>b.hit/b.need.length-a.hit/a.need.length||b.value-a.value);
   $("#recipes").innerHTML=list.map(r=>{const ready=r.hit===r.need.length;return `<article class="recipe ${r.hit===0?"dim":""} ${ready?"ready":""}">
     <div class="head"><h3>${esc(r.n)}</h3><span class="grade" aria-label="1인 회사 가치 ${r.value}/5">${"◆".repeat(r.value)}${"◇".repeat(5-r.value)}</span></div>
