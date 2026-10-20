@@ -79,7 +79,7 @@ func (c *Client) doWithReloadRetry(
 				if envelope.RetryAfterMs > 0 {
 					delay = time.Duration(envelope.RetryAfterMs) * time.Millisecond
 				}
-				if next, targetErr := c.inspectTarget(project, port); targetErr == nil && next != nil {
+				if next, targetErr := c.inspectTarget(project, port); targetErr == nil && next != nil && next.Port > 0 {
 					port = next.Port
 				}
 				select {

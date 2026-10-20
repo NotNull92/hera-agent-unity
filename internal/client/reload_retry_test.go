@@ -383,3 +383,32 @@ func jsonResponse(body string) *http.Response {
 		Body:          io.NopCloser(strings.NewReader(body)),
 	}
 }
+
+func Test_ClientSend_keeps_last_port_after_retryable_503_while_heartbeat_reports_port_zero(t *testing.T) {
+	writeInstanceFiles(t, map[string]Instance{
+		"target.json": {State: unitystate.Reloading, ProjectPath: "C:/Project", Port: 0, PID: 100, Timestamp: 1000},
+	})
+	originalDelay := reloadRetryDelay
+	reloadRetryDelay = time.Millisecond
+	t.Cleanup(func() { reloadRetryDelay = originalDelay })
+	var ports []string
+	c := NewClient()
+	c.processDeadChecker = func(int) bool { return false }
+	c.httpClient = &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		ports = append(ports, req.URL.Port())
+		if req.URL.Port() == "0" {
+			return nil, errors.New("dial tcp 127.0.0.1:0: connectex: The requested address is not valid in its context.")
+		}
+		if len(ports) == 1 {
+			return &http.Response{StatusCode: http.StatusServiceUnavailable, Header: http.Header{},
+				Body: io.NopCloser(strings.NewReader(`{"success":false,"code":"RELOADING","retryable":true,"state":"reloading","retry_after_ms":1}`))}, nil
+		}
+		return jsonResponse(`{"success":true,"message":"ok"}`), nil
+	})}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	response, err := c.Send(ctx, &Instance{Port: 8090, ProjectPath: "C:/Project", PID: 100, Features: []string{FeatureOperationLedgerV1}}, "manage_editor", nil, 2_000)
+	if err != nil || !response.Success || len(ports) != 2 || ports[1] != "8090" {
+		t.Fatalf("err=%v ports=%v, want 503 then a retry on 8090", err, ports)
+	}
+}
