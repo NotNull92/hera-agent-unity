@@ -8,7 +8,7 @@ import (
 	"syscall"
 )
 
-// checkProcessDead returns true only when the process is confirmed to not exist (ESRCH).
+// checkProcessDead recognizes both Go's ErrProcessDone and the OS ESRCH result.
 // Returns false for permission errors (EPERM) or any other transient failure,
 // meaning the instance file will be preserved.
 func checkProcessDead(pid int) bool {
@@ -24,8 +24,8 @@ func checkProcessDead(pid int) bool {
 	if errors.Is(err, syscall.EPERM) {
 		return false
 	}
-	// ESRCH means the process does not exist
-	if errors.Is(err, syscall.ESRCH) {
+	// Go converts ESRCH to ErrProcessDone on modern Unix process paths.
+	if errors.Is(err, os.ErrProcessDone) || errors.Is(err, syscall.ESRCH) {
 		return true
 	}
 	// Unknown error — be conservative, assume alive

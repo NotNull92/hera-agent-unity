@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- CLI: detect exited Unity processes on Linux and macOS when Go reports `os.ErrProcessDone`, restoring dead-heartbeat cleanup and async wait crash detection.
 - Async result waits (`test`, `build start --wait`, `manage_packages`) follow the selected Editor by project path and PID instead of the dispatch port, so a domain reload that moves the port no longer hides the result or attaches the wait to another Editor that took the old port. A heartbeat from a different PID ends the wait only after the original Editor process is confirmed dead.
 - `test --resume <run_id>` finds the run's original dispatch port from its pending/result record; the pending suggestion selects the Editor with `--project` instead of a port that may have moved.
 - Connector: the test-run lock (`TEST_RUN_ALREADY_RUNNING`) and `test cancel` see pending runs from every dispatch port owned by the project.
