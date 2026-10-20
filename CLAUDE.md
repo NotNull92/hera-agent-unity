@@ -506,7 +506,7 @@ Commit all unstaged changes before finishing. Unrelated changes should be commit
 "커밋하고 올려" 지시 시 아래를 한 번에 수행:
 
 1. Verification 전부 실행.
-2. 변경된 쪽 버전 갱신 (Connector `package.json` / CLI tag).
+2. 변경된 쪽 버전 갱신 (Connector `package.json` / CLI tag). 같은 커밋에서 `docs/guide/index.html`(공략집)의 기준 버전과 수치(버전, 도구·action 수, 측정값)도 이번 릴리스에 맞춘다. 포트폴리오 사이트가 이 파일을 릴리스 태그 기준으로 가져가므로 태그를 찍기 전에 반영해야 한다.
 3. 커밋 + push.
 4. main CI 통과 확인 (`gh run watch --exit-status`).
 5. CLI 변경 있으면 새 tag push — `release.yml`이 cross-build 5종(linux/darwin × amd64+arm64, windows amd64) + GitHub Release를 자동 생성.
@@ -514,7 +514,6 @@ Commit all unstaged changes before finishing. Unrelated changes should be commit
 7. `npm-publish.yml` 통과 확인. 워크플로는 릴리스 태그에서 버전을 유도해 `npm/package.json`·`npm/package-lock.json`에 써 넣으므로 손으로 bump할 필요가 없다. 실패하면 npm만 조용히 뒤처지고 GitHub Release는 정상으로 보이므로 반드시 확인한다.
 8. `go clean -cache -testcache`로 빌드/테스트 캐시 전부 정리.
 9. 전부 성공하면 `hera-agent-unity update`로 설치된 CLI 업데이트.
-10. `docs/guide/index.html`(공략집)의 기준 버전과 수치(버전, 도구·action 수, 측정값)가 이번 릴리스와 맞는지 확인한다. 포트폴리오 사이트는 이 파일을 릴리스 태그 기준으로 가져가므로, 바뀌었으면 같은 릴리스에 포함한다.
 
 > Release notes는 release.yml이 compare 링크만 자동 생성한다. 의미 있는 변경 요약이 필요하면 push 후 `gh release edit <tag> --notes "..."`로 보강.
 

@@ -94,7 +94,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 .log .t{color:var(--muted)} .log .ok{color:var(--teal)} .log .warn{color:var(--amber)} .log .bad{color:var(--red)}
 
 /* Skill tree */
-.classes{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.classes{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(230px,100%),1fr));gap:12px}
 .cls{text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px}
 .cls .role{font-size:12px;letter-spacing:.06em;color:var(--muted)}
 .cls .tools{display:flex;flex-wrap:wrap;gap:4px}
@@ -105,7 +105,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 
 /* Danger */
 .filters{display:flex;flex-wrap:wrap;gap:6px}
-.risks{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.risks{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:12px}
 .risk{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;border-left-width:5px}
 .risk.hi{border-left-color:var(--red)} .risk.mid{border-left-color:var(--amber)} .risk.lo{border-left-color:var(--teal)}
 .sev{font-size:11px;font-weight:700;letter-spacing:.08em;border-radius:4px;padding:2px 7px;align-self:flex-start}
@@ -132,7 +132,7 @@ summary{cursor:pointer;font-weight:500}
 .vs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:720px){.vs{grid-template-columns:1fr}}
 .vs ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
-.sig{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.sig{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(240px,100%),1fr));gap:12px}
 .card{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel);display:flex;flex-direction:column;gap:6px}
 .rank{font-family:var(--mono);font-size:12px;color:var(--gold)}
 .tag{font-size:11px;letter-spacing:.06em;color:var(--muted)}
@@ -250,7 +250,7 @@ footer a{color:var(--teal)}
         <ul>
           <li>Hub 기반 Editor 설치·프로젝트 관리</li>
           <li>빌드·파이프라인 중심 (<code>com.unity.pipeline</code>)</li>
-          <li>.NET NativeAOT + Rust로 만든 단일 실행 파일</li>
+          <li>단일 실행 파일 (바이너리 분석으로는 .NET NativeAOT와 Rust 구성 요소가 보여요. 공식 문서로 확인한 사실은 아니에요)</li>
           <li>대화상자 상태 감지(<code>STATUS_BLOCKED_BY_DIALOG</code>)도 있어요. 이건 Hera만의 차별점이 아니에요.</li>
         </ul></div>
       <div class="panel"><h3>Hera</h3><span class="tag">AI가 에디터 안에서 일하는 도구</span>
@@ -330,9 +330,9 @@ const EVENTS={
  normal:{at:-1,log:[["ok","heartbeat: RG 프로젝트, port 8090, ready"],["ok","인수 검사 통과 · 위험도 read_only"],["ok","입장 · 대기 0ms"],["ok","scene info 실행"],["ok","응답 221 B · 끝"]]},
  approval:{at:1,log:[["ok","heartbeat: port 8090, ready"],["warn","위험도 destructive → APPROVAL_REQUIRED, 토큰 발급"],["ok","같은 주문서 + --approve <token> 으로 재요청"],["ok","Connector가 실제 인수로 해시를 다시 계산해 서명 확인"],["ok","실행 · operation ledger에 기록 (재실행 방지)"]],
    note:"인수를 하나라도 바꾸면 서명이 맞지 않아 거절돼요."},
- reload:{at:2,log:[["ok","heartbeat: port 8090, ready"],["ok","인수 검사 통과"],["warn","503 RELOADING · retryable=true (아직 실행 안 됨)"],["warn","게시판 재확인: 포트가 8091로 바뀜 · 리로드 중 port 0은 무시"],["ok","idempotent 요청만 새 포트로 재시도 · 성공"]],
+ reload:{at:2,log:[["ok","heartbeat: port 8090, ready"],["ok","인수 검사 통과"],["warn","503 RELOADING · retryable=true (아직 실행 안 됨)"],["warn","게시판 재확인: 포트가 8091로 바뀜 · 리로드 중 port 0은 무시"],["ok","재시도 가능한 요청(idempotent 또는 작업 기록 지원)만 새 포트로 재시도 · 성공"]],
    note:"실측에서 리로드마다 포트가 8090~8094로 바뀌었어요. 프로젝트 경로로 따라가니 문제없어요."},
- dialog:{at:3,log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["bad","응답이 3초 안에 안 옴 · heartbeat도 멈춤"],["warn","같은 PID의 Windows 대화상자 발견 → blocked_by_dialog, retryable=false"]],
+ dialog:{at:3,log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["bad","요청 시간 초과(기본 60초) · heartbeat도 3초 넘게 멈춤"],["warn","같은 PID의 Windows 대화상자 발견 → blocked_by_dialog, retryable=false"]],
    note:"사람이 대화상자를 닫아야 해요. Windows 기본 대화상자만 알아봐요."},
  lost:{at:4,log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["ok","실행 완료(ledger에는 committed)"],["bad","응답 유실 → OPERATION_OUTCOME_UNKNOWN · 다시 보내지 않음"]],
    note:"U4 실험에서 실제로 일어났어요. 작업은 끝났는데 응답만 사라졌어요. 그래서 '모르면 다시 보내지 않기'가 규칙이에요."}
@@ -362,11 +362,11 @@ const CLASSES=[
  {n:"검증관",r:"증거 수집",t:["test","console","profiler","screenshot"],
   d:"'됐다'를 증거로 보여 줘요. 테스트는 JUnit/NUnit 출력과 나눠 돌리기를 지원해요.",c:"hera-agent-unity test --mode EditMode --format junit --output r.xml\nhera-agent-unity console --type error --lines 20\nhera-agent-unity screenshot --overlay"},
  {n:"플레이테스터",r:"직접 플레이",t:["editor","input"],
-  d:"플레이 모드에 들어가 키·마우스를 누르고 UI 클릭이 어디에 맞는지 확인해요.",c:"hera-agent-unity editor play --wait\nhera-agent-unity input ...\nhera-agent-unity editor stop --wait"},
+  d:"플레이 모드에 들어가 Unity 입력 시스템에 키·마우스 입력을 넣고, UI 클릭이 어디에 맞는지 확인해요. 운영체제 수준의 실제 마우스 클릭은 아니에요.",c:"hera-agent-unity editor play --wait\nhera-agent-unity input ...\nhera-agent-unity editor stop --wait"},
  {n:"연출가",r:"화면과 빌드",t:["manage_ui","manage_animation","manage_timeline","bake","build","manage_settings"],
   d:"UI, 애니메이션, 타임라인, 라이트 굽기, 빌드를 맡아요.",c:"hera-agent-unity manage_ui create --element button\nhera-agent-unity build start --wait"},
  {n:"현자",r:"내장 지식서",t:["game_feel","ui_slop","unity_docs","describe_type","find_method"],
-  d:"손맛 지식 67주제, UI 냄새 48종, 버전별 오프라인 문서를 찾아봐요. 토글과 상관없이 늘 쓸 수 있어요.",c:"hera-agent-unity game_feel screen_shake\nhera-agent-unity ui_slop check_ugui\nhera-agent-unity unity_docs Rigidbody.AddForce"},
+  d:"손맛 지식 67주제, UI 냄새 48종, 버전별 오프라인 문서를 찾아봐요. 토글과 상관없이 늘 쓸 수 있어요.",c:"hera-agent-unity game_feel screen_shake\nhera-agent-unity ui_slop low-contrast-text\nhera-agent-unity unity_docs Rigidbody.mass"},
  {n:"길잡이",r:"토큰과 규칙",t:["list","doctor","status","asset-config"],
   d:"도구 묶음(profile)으로 필요한 설명만 읽고, Ultra Hera로 검증 강도를 정해요.",c:"hera-agent-unity list --profiles\nhera-agent-unity list --profile core\nhera-agent-unity doctor --agent-rules --compact"}
 ];
@@ -434,10 +434,10 @@ renderCraft();
 
 /* ---------- CH7 시그니처 ---------- */
 const HAVE=[
- {t:"게임 감각이 내장된 조작",d:"UI를 만들면 그 요소의 손맛 레시피가 같이 와요. 범용 CLI의 영역이 아니에요.",k:"game_feel · ui_slop · manage_ui"},
+ {t:"게임 감각이 내장된 조작",d:"Game Feel UI 모드를 켜면, 요소 종류별로 처음 UI를 만들 때 그 요소의 손맛 레시피가 같이 와요. 범용 CLI의 영역이 아니에요.",k:"game_feel · ui_slop · manage_ui"},
  {t:"AI 실수 방지 장치",d:"인수에 묶인 승인 서명, 작업 번호로 재실행 방지, '모르면 다시 보내지 않기'.",k:"승인 · operation ledger"},
  {t:"검증 강도 다이얼",d:"Ultra Hera(Off/Light/Ultra)로 AI가 얼마나 꼼꼼히 확인할지 주입해요.",k:"doctor --agent-rules"},
- {t:"토큰 경제 설계",d:"도구 묶음, 짧은 기본 응답, 2.3 KB 규칙. 비용을 직접 내는 1인 개발자에게 바로 돈이에요.",k:"list --profile · exec 기본 70 B"}
+ {t:"토큰 경제 설계",d:"도구 묶음, 짧은 기본 응답, 2.3 KB 규칙. 비용을 직접 내는 1인 개발자에게 바로 돈이에요.",k:"list --profile · exec Transform 7,178→70 B"}
 ];
 const NEW=[
  {r:"추천 2",t:"Feel Score (손맛 점수)",d:"씬·프리팹을 game_feel 기준으로 채점해요. 버튼 피드백 유무, 흔들림 강도 옵션, 접근성 기준.",w:"지식서와 컴포넌트 조회가 같은 프로세스 안에 있어요.",c:"점수 기준은 Unity 실측으로 Hera화해야 해요."},
@@ -452,11 +452,12 @@ $("#sigNew").innerHTML=NEW.map(n=>`<div class="card"><span class="rank">${esc(n.
 const tabs=[...document.querySelectorAll(".tab")];
 function openCh(id){
   if(!tabs.some(t=>t.dataset.ch===id))id="map";
-  tabs.forEach(t=>t.setAttribute("aria-selected",t.dataset.ch===id));
+  tabs.forEach(t=>{const on=t.dataset.ch===id;t.setAttribute("aria-selected",on);t.tabIndex=on?0:-1});
   document.querySelectorAll("[data-panel]").forEach(p=>p.hidden=p.dataset.panel!==id);
   try{localStorage.setItem("hera-guide-ch",id)}catch(e){}
 }
-tabs.forEach(t=>t.onclick=()=>{openCh(t.dataset.ch);history.replaceState(null,"","#"+t.dataset.ch)});
+const pick=t=>{openCh(t.dataset.ch);try{history.replaceState(null,"","#"+t.dataset.ch)}catch(e){}};
+tabs.forEach((t,i)=>{t.onclick=()=>pick(t);t.onkeydown=e=>{const d=e.key==="ArrowRight"?1:e.key==="ArrowLeft"?-1:0;if(!d)return;e.preventDefault();const n=tabs[(i+d+tabs.length)%tabs.length];n.focus();pick(n)}});
 let start=(location.hash||"").slice(1);
 if(!start){try{start=localStorage.getItem("hera-guide-ch")||"map"}catch(e){start="map"}}
 openCh(start);
