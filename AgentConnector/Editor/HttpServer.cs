@@ -153,6 +153,7 @@ namespace HeraAgent
 
         static HttpServer()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
             Start();
             EditorApplication.quitting += Stop;
             AssemblyReloadEvents.beforeAssemblyReload += StopListener;

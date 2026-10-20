@@ -33,6 +33,7 @@ namespace HeraAgent
 
         static PackageJobState()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
 

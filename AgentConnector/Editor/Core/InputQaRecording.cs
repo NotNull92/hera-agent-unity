@@ -23,6 +23,7 @@ namespace HeraAgent
 
         static InputQaRecording()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
             EditorApplication.playModeStateChanged += state =>
             {
                 if (state == PlayModeStateChange.ExitingPlayMode)

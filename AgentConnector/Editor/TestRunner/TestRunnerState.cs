@@ -18,6 +18,7 @@ namespace HeraAgent.TestRunner
     {
         static TestRunnerState()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
             AssemblyReloadEvents.afterAssemblyReload += OnAfterAssemblyReload;
         }
 

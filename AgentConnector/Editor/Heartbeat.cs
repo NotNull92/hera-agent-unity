@@ -47,6 +47,7 @@ namespace HeraAgent
 
         static Heartbeat()
         {
+            if (AssetDatabase.IsAssetImportWorkerProcess()) return;
             EditorApplication.update += Tick;
             EditorApplication.quitting += Cleanup;
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
