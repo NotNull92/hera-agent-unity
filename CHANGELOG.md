@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed (CLI v0.3.11 candidate; Connector 0.2.9 unchanged)
+## [0.3.11] - 2026-10-20 (Connector unchanged at 0.2.9)
+
+### Fixed (CLI v0.3.11; Connector 0.2.9 unchanged)
 
 - Requests containing decimal/exponent numbers or integer `-0` use Unity's
   authoritative argument hash instead of a Go spelling-dependent hash. Wire

@@ -78,7 +78,7 @@ func TestWaitForAlive_FollowsResolverPortChange(t *testing.T) {
 	}
 }
 
-// The other half of the reload contract (Step 5 measured 20/20 reloads keeping the same
+// The other half of the reload contract (reloads may also rebind the
 // port): while the heartbeat keeps reporting the same port, waitForAlive must not churn the
 // target — the reloading window is polled but the resolved port never moves.
 func TestWaitForAlive_keepsPortWhileHeartbeatIsStable(t *testing.T) {

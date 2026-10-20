@@ -724,8 +724,8 @@ typed execution, `exec` when no dedicated command exists.
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.10** with five native binaries
-- npm: **0.3.10** (`latest`)
+- CLI / GitHub Release: **v0.3.11** with five native binaries
+- npm: **0.3.11** (`latest`)
 - Unity Connector: **0.2.9** (pin with `#connector-0.2.9`)
 - License: **Apache-2.0**
 
@@ -739,6 +739,7 @@ What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
+| v0.3.11 | Decimal/exponent arguments use Unity's argument hash; package jobs wait for a real result port. |
 | v0.3.10 / 0.2.9 | Game Feel UI recipes attach once per element type per Editor session; `manage_components` drops redundant `type`/`enabled` fields; compact agent rules shrink to 2,315 B. |
 | v0.3.9 | During a domain reload the CLI keeps retrying the last valid port instead of dialing port 0. |
 | v0.3.8 / 0.2.8 | Leaner default payloads: `exec` returns Unity Objects as `{name, type, instanceID}` unless `--depth 3`+ is explicit (a Transform drops from 7,178 B to 70 B); `scene hierarchy` omits default `active`/`children`; error envelopes drop duplicate hints and timings. |

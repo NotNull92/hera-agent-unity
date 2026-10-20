@@ -725,8 +725,8 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.3.10**, native binary 5종
-- npm: **0.3.10** (`latest`)
+- CLI / GitHub Release: **v0.3.11**, native binary 5종
+- npm: **0.3.11** (`latest`)
 - Unity Connector: **0.2.9** (`#connector-0.2.9`로 고정)
 - License: **Apache-2.0**
 
@@ -740,6 +740,7 @@ v0.2.17 이후 새로 바뀐 것:
 
 | 버전 | 변경 |
 |---|---|
+| v0.3.11 | 소수·지수 인수는 Unity 인수 해시 사용, 패키지 작업은 실제 결과 포트를 기다림. |
 | v0.3.10 / 0.2.9 | Game Feel UI 레시피를 Editor 세션에서 요소 종류별 1회만 첨부. `manage_components`의 중복 `type`/`enabled` 필드 생략. compact 에이전트 규칙 2,315 B로 축소. |
 | v0.3.9 | 도메인 리로드 중 heartbeat가 port 0을 보고해도 CLI가 마지막 유효 port로 재시도. |
 | v0.3.8 / 0.2.8 | 기본 응답 축소: `exec`는 `--depth 3` 이상을 명시하지 않으면 Unity Object를 `{name, type, instanceID}`로 반환(Transform 7,178 B → 70 B). `scene hierarchy`는 기본값인 `active`/`children`을 생략. 오류 응답의 중복 제안과 timings 제거. |
