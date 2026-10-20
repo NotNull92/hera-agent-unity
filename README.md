@@ -364,7 +364,7 @@ To pin an existing Connector tag:
 The current released Connector pin is:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.1.2
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.8
 ```
 
 ### Step 3. Open Unity and check the connection
@@ -724,18 +724,28 @@ typed execution, `exec` when no dedicated command exists.
 
 ## Current release
 
-The source tree contains the **unreleased CLI v0.3.7 / Connector 0.2.7 candidate**. CLI v0.3.4 / Connector 0.2.4 add JUnit/NUnit test artifacts and deterministic test sharding. Connector 0.2.3 reduces request-body I/O delays while retaining main-thread tool execution. It follows the unreleased v0.3.1 catalog rebaseline, v0.3.2 integer/identity fixes, and v0.3.3 atomic batch preflight for non-destructive, Undo-covered edits. None of these candidates has a tag or release.
-
-- CLI / GitHub Release: **v0.3.0** with five native binaries
-- npm: **0.3.0** (`latest`)
-- Unity Connector: **0.2.0**
+- CLI / GitHub Release: **v0.3.8** with five native binaries
+- npm: **0.3.8** (`latest`)
+- Unity Connector: **0.2.8** (pin with `#connector-0.2.8`)
 - License: **Apache-2.0**
 
 The npm publish is chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
 
 The two version numbers are separate on purpose. The CLI and the Unity package can evolve independently while keeping their compatibility contract explicit.
 
-`v0.3.0` is a breaking release: the experimental MCP adapter is gone, so there is no `mcp` command and no `HERA_MCP_*` environment variable. In exchange, a failed request now declares how it can be retried (`retryable`, `state`, `retry_after_ms`) instead of leaving the CLI to guess from a dropped connection, and the heartbeat advertises the catalog schema hash so a matching catalog can be reused without another round-trip. Connector `0.2.0` carries the same contract and requires **Unity 6.6 (`6000.6`)**; its `instance_id` values are 64-bit because 6000.6 removed the int-based EntityId conversions. The live catalog exposes **34 tools / 133 actions**.
+**Upgrading from v0.2.x:** v0.3.8 is the first published 0.3 release, so it also carries the breaking `v0.3.0` changes. The experimental MCP adapter is gone: there is no `mcp` command and no `HERA_MCP_*` environment variable. A failed request now declares how it can be retried (`retryable`, `state`, `retry_after_ms`), and the heartbeat advertises the catalog schema hash so a matching catalog is reused without another round-trip. Connector 0.2.x requires **Unity 6.6 (`6000.6`)**, and its `instance_id` values are 64-bit. The live catalog exposes **34 tools / 133 actions**.
+
+What's new since v0.2.17:
+
+| Version | Change |
+|---|---|
+| v0.3.8 / 0.2.8 | Leaner default payloads: `exec` returns Unity Objects as `{name, type, instanceID}` unless `--depth 3`+ is explicit (a Transform drops from 7,178 B to 70 B); `scene hierarchy` omits default `active`/`children`; error envelopes drop duplicate hints and timings. |
+| v0.3.7 | Windows Editor launch also finds versions in the Unity Hub secondary install folder. |
+| v0.3.6 | `list --profiles` and `list --profile <name>` show task-scoped tool sets from the cached catalog. |
+| v0.3.5 | A request stuck behind a native Editor dialog reports `blocked_by_dialog` with the dialog title (Windows). |
+| 0.2.5–0.2.7 | Test shards follow the same selector rules as unsharded runs; `exec` writes a metadata-only journal. |
+| v0.3.4 / 0.2.4 | `test --format junit\|nunit` artifacts and deterministic `--shard-index`/`--shard-count` splitting. |
+| v0.3.1–v0.3.3 | Catalog baseline measures the CLI; 64-bit id fixes; atomic batch preflight for Undo-covered edits. |
 
 For release-by-release engineering detail, read [CHANGELOG.md](CHANGELOG.md) instead of treating the main README as a migration log.
 

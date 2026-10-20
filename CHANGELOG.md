@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-10-20 (Connector 0.2.8)
+
+First published 0.3 release; it includes every 0.3.x candidate below.
+
 ### Changed (CLI v0.3.8; Connector 0.2.8)
 
 - `exec` keeps Unity Objects in the shallow `{name, type, instanceID}` form unless `--depth 3` or more is passed explicitly. Returning a Transform at the default depth dropped from 7,178 B to 69 B.

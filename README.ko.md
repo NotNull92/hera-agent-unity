@@ -366,7 +366,7 @@ Editor가 열리면 Connector가 자동으로 시작합니다.
 현재 릴리스 Connector를 고정하려면:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.1.2
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.8
 ```
 
 ### 3단계. Unity를 열고 연결 확인
@@ -725,18 +725,28 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 
 ## 현재 릴리스
 
-소스에는 **미출시 CLI v0.3.7 / Connector 0.2.7 후보**가 포함되어 있습니다. CLI v0.3.4 / Connector 0.2.4는 JUnit/NUnit 테스트 산출물과 결정적 샤딩을 추가합니다. Connector 0.2.3은 도구의 메인 스레드 실행을 유지하면서 요청 본문 I/O 지연을 줄입니다. 미출시 v0.3.1 카탈로그 기준선, v0.3.2 정수·identity 수정, v0.3.3의 비파괴·Undo 편집용 atomic 사전 검증에 이어지는 변경입니다. 이 후보들의 태그·릴리스는 발행하지 않았습니다.
-
-- CLI / GitHub Release: **v0.3.0**, native binary 5종
-- npm: **0.3.0** (`latest`)
-- Unity Connector: **0.2.0**
+- CLI / GitHub Release: **v0.3.8**, native binary 5종
+- npm: **0.3.8** (`latest`)
+- Unity Connector: **0.2.8** (`#connector-0.2.8`로 고정)
 - License: **Apache-2.0**
 
 npm 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-unity`와 GitHub 바이너리가 같은 버전을 유지합니다.
 
 두 버전 번호가 다른 것은 의도된 설계입니다. CLI와 Unity 패키지는 독립적으로 발전하며 호환 계약을 따로 관리합니다.
 
-`v0.3.0`은 breaking 릴리스입니다. 실험적 MCP adapter가 제거되어 `mcp` 명령과 `HERA_MCP_*` 환경변수가 없습니다. 대신 실패한 요청이 재시도 가능 여부를 직접 선언하고(`retryable`, `state`, `retry_after_ms`) CLI가 끊긴 연결만 보고 추측하지 않으며, heartbeat가 catalog schema hash를 광고해 일치하는 카탈로그를 왕복 없이 재사용합니다. Connector `0.2.0`이 같은 계약을 제공하고 **Unity 6.6 (`6000.6`)** 이상을 요구합니다. 6000.6이 int 기반 EntityId 변환을 제거해서 `instance_id` 값은 64비트입니다. 라이브 카탈로그는 **34 tools / 133 actions**를 노출합니다.
+**v0.2.x에서 올리는 경우:** v0.3.8은 처음 배포되는 0.3 릴리스라서 `v0.3.0`의 breaking 변경도 함께 들어 있습니다. 실험적 MCP adapter가 제거되어 `mcp` 명령과 `HERA_MCP_*` 환경변수가 없습니다. 실패한 요청은 재시도 가능 여부를 직접 선언하고(`retryable`, `state`, `retry_after_ms`), heartbeat가 catalog schema hash를 광고해 일치하는 카탈로그를 왕복 없이 재사용합니다. Connector 0.2.x는 **Unity 6.6 (`6000.6`)** 이상을 요구하고 `instance_id` 값은 64비트입니다. 라이브 카탈로그는 **34 tools / 133 actions**를 노출합니다.
+
+v0.2.17 이후 새로 바뀐 것:
+
+| 버전 | 변경 |
+|---|---|
+| v0.3.8 / 0.2.8 | 기본 응답 축소: `exec`는 `--depth 3` 이상을 명시하지 않으면 Unity Object를 `{name, type, instanceID}`로 반환(Transform 7,178 B → 70 B). `scene hierarchy`는 기본값인 `active`/`children`을 생략. 오류 응답의 중복 제안과 timings 제거. |
+| v0.3.7 | Windows Editor 실행 시 Unity Hub 보조 설치 폴더의 버전도 찾음. |
+| v0.3.6 | `list --profiles`, `list --profile <name>`으로 캐시된 카탈로그에서 작업별 도구 묶음 조회. |
+| v0.3.5 | 네이티브 Editor 대화상자에 막힌 요청이 대화상자 제목과 함께 `blocked_by_dialog`를 보고(Windows). |
+| 0.2.5–0.2.7 | 테스트 샤드가 일반 실행과 같은 selector 규칙을 따름. `exec`가 메타데이터만 담은 저널을 기록. |
+| v0.3.4 / 0.2.4 | `test --format junit\|nunit` 산출물과 결정적 `--shard-index`/`--shard-count` 분할. |
+| v0.3.1–v0.3.3 | CLI 기준 카탈로그 baseline, 64비트 id 수정, Undo 편집용 atomic batch 사전 검증. |
 
 릴리스별 기술 변경을 모두 보고 싶다면 메인 README보다 [CHANGELOG.md](CHANGELOG.md)를 참고하세요.
 
