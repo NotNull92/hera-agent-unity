@@ -20,6 +20,25 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## Payload trim 2 — repeated hints, component names, agent rules (2026-10-20)
+
+- **Decision:** with Game Feel UI Mode on, `manage_ui create` attaches the full
+  recipe once per element type per Editor session (static set, reset by domain
+  reload) and a one-line `game_feel` pointer afterwards; the injection layer and
+  its pure-string recipes stay as locked. `manage_components` omits `type` when it
+  equals `UnityEngine.<type_short>` and omits `enabled` for components without an
+  enabled state. Compact agent rules drop the Working Rule that repeated the
+  Verification Mode section and fold profile/help guidance into one rule; the
+  project-selection sentences stay because tests pin them.
+- **Evidence:** fresh 6000.6.6f1 project with the candidate installed from the
+  commit; normal install compile errors 0, test sources 0; testables suite 32 / 31 /
+  0 / 1 skipped (new `GameFeelStore` wrapper with recipe-dedupe assertions and
+  component-shape assertions in `SceneGameObject`); manifest restored. Live
+  `manage_components list` on the default camera: 245 B, 109 B less than the old
+  shape. Compact rules 2,465 → 2,315 B.
+- **Catalog:** contract unchanged (`6fbcd87a…`, 34 / 133); baseline CLI summary
+  updated for the rules size. Connector 0.2.9, CLI v0.3.10 candidates.
+
 ## Payload trim — default agent-facing outputs (2026-10-20)
 
 - **Failure prevented:** the default `exec` depth reflected every Unity Object in
