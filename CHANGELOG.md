@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-10-20 (Connector unchanged at 0.2.9)
+
 ### Docs
 
 - Added `docs/guide/index.html`, a standalone Korean guide to Hera's structure, request flow, tool families, known risks and workflow ideas. Release tags carry it so other sites can mirror a fixed version.

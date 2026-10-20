@@ -327,7 +327,7 @@ const BASE=[
  ["보상(결과)","짧은 일은 바로 응답, 긴 일은 번호표를 주고 게시판에 결과를 남겨요."]
 ];
 const EVENTS={
- normal:{at:-1,log:[["ok","heartbeat: RG 프로젝트, port 8090, ready"],["ok","인수 검사 통과 · 위험도 read_only"],["ok","입장 · 대기 0ms"],["ok","scene info 실행"],["ok","응답 221 B · 끝"]]},
+ normal:{at:-1,log:[["ok","heartbeat: RG 프로젝트, port 8090, ready"],["ok","인수 검사 통과 · 위험도 read_only"],["ok","입장 · 대기 없음(예시)"],["ok","scene info 실행"],["ok","응답(예: 221 B) · 끝"]]},
  approval:{at:1,log:[["ok","heartbeat: port 8090, ready"],["warn","위험도 destructive → APPROVAL_REQUIRED, 토큰 발급"],["ok","같은 주문서 + --approve <token> 으로 재요청"],["ok","Connector가 실제 인수로 해시를 다시 계산해 서명 확인"],["ok","실행 · operation ledger에 기록 (재실행 방지)"]],
    note:"인수를 하나라도 바꾸면 서명이 맞지 않아 거절돼요."},
  reload:{at:2,log:[["ok","heartbeat: port 8090, ready"],["ok","인수 검사 통과"],["warn","503 RELOADING · retryable=true (아직 실행 안 됨)"],["warn","게시판 재확인: 포트가 8091로 바뀜 · 리로드 중 port 0은 무시"],["ok","재시도 가능한 요청(idempotent 또는 작업 기록 지원)만 새 포트로 재시도 · 성공"]],
