@@ -26,3 +26,6 @@ PROGRESS.json
 
 # Daily work reports (local notes, not shared)
 docs/report/
+
+# Generated local control-room dashboard
+/control-room.html
