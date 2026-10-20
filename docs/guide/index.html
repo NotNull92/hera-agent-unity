@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="hera-agent-unity의 구조, 처리 흐름, 기능, 위험, 조합 아이디어, 시그니처를 게임 공략집처럼 정리한 페이지">
+<title>Hera 공략집</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 게임 공략집 — 상단 HUD(상태바) + 챕터 탭 + 챕터별 상호작용 판 */
+:root{
+  --bg:#EEF2F5; --panel:#FFFFFF; --ink:#13202B; --muted:#5B6B78; --line:#CBD5DD;
+  --gold:#C27A12; --gold-soft:#F6E4C3; --teal:#167A74; --teal-soft:#D3EEEB;
+  --red:#B8372F; --red-soft:#F5D9D6; --amber:#9A6B00; --amber-soft:#F4E9C8;
+  --display:"Black Han Sans","IBM Plex Sans KR",system-ui,sans-serif;
+  --body:"IBM Plex Sans KR",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E151C; --panel:#16212B; --ink:#E4ECF2; --muted:#93A4B2; --line:#2A3946;
+  --gold:#F0AA3E; --gold-soft:#3A2C14; --teal:#45C4B9; --teal-soft:#123532;
+  --red:#F07468; --red-soft:#3D1C19; --amber:#E6C25A; --amber-soft:#352C12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E151C; --panel:#16212B; --ink:#E4ECF2; --muted:#93A4B2; --line:#2A3946;
+  --gold:#F0AA3E; --gold-soft:#3A2C14; --teal:#45C4B9; --teal-soft:#123532;
+  --red:#F07468; --red-soft:#3D1C19; --amber:#E6C25A; --amber-soft:#352C12; color-scheme:dark}
+*{box-sizing:border-box}
+html{color-scheme:light}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{font-family:var(--display);font-weight:400;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.15}
+h2{font-size:24px} h3{font-size:18px}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--mono);font-size:.88em}
+code{background:var(--teal-soft);color:var(--ink);padding:1px 5px;border-radius:4px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* HUD */
+.hud{display:grid;grid-template-columns:1fr auto;gap:16px;align-items:end}
+.hud .sub{color:var(--muted);margin-top:6px}
+.stats{display:flex;flex-wrap:wrap;gap:8px}
+.stat{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 10px;min-width:92px}
+.stat b{display:block;font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;color:var(--muted);letter-spacing:.06em}
+@media (max-width:720px){.hud{grid-template-columns:1fr}}
+
+/* Chapter tabs */
+.tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:2px solid var(--line);padding-bottom:8px}
+.tab{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;display:flex;gap:8px;align-items:center}
+.tab .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab[aria-selected="true"] .n{color:var(--gold)}
+.chapter{display:flex;flex-direction:column;gap:16px}
+.lead{color:var(--muted)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px}
+
+/* World map */
+.map{display:grid;grid-template-columns:1fr 1.3fr;gap:16px}
+@media (max-width:820px){.map{grid-template-columns:1fr}}
+.zones{display:flex;flex-direction:column;gap:8px}
+.zone{text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:10px 12px;display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:center}
+.zone .ico{width:34px;height:34px;border-radius:6px;display:grid;place-items:center;font-family:var(--mono);font-weight:600;background:var(--teal-soft);color:var(--teal)}
+.zone.on{border-color:var(--gold);box-shadow:inset 3px 0 0 var(--gold)}
+.zone small{display:block;color:var(--muted)}
+.arrow{align-self:center;color:var(--muted);font-family:var(--mono);font-size:12px;padding-left:44px}
+.detail h3{margin-bottom:6px}
+.detail .kv{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;margin-top:12px}
+.detail .kv dt{color:var(--muted);font-size:13px}
+.detail .kv dd{margin:0;min-width:0}
+
+/* Quest */
+.quest{display:grid;grid-template-columns:1.1fr 1fr;gap:16px}
+@media (max-width:820px){.quest{grid-template-columns:1fr}}
+.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.step{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:8px 10px;border-radius:8px;border:1px solid transparent;opacity:.55;transition:opacity .25s,border-color .25s}
+.step .k{font-family:var(--mono);font-size:12px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--line)}
+.step.done{opacity:.85}.step.done .k{background:var(--teal-soft);color:var(--teal);border-color:var(--teal)}
+.step.now{opacity:1;border-color:var(--gold);background:var(--gold-soft)}
+.step.now .k{background:var(--gold);color:var(--bg);border-color:var(--gold)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:6px;padding:7px 14px}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 11px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--teal);color:var(--bg);border-color:var(--teal)}
+.log{font-family:var(--mono);font-size:13px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;min-height:220px;display:flex;flex-direction:column;gap:6px}
+.log .l{display:grid;grid-template-columns:52px 1fr;gap:8px}
+.log .t{color:var(--muted)} .log .ok{color:var(--teal)} .log .warn{color:var(--amber)} .log .bad{color:var(--red)}
+
+/* Skill tree */
+.classes{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.cls{text-align:left;border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.cls .role{font-size:12px;letter-spacing:.06em;color:var(--muted)}
+.cls .tools{display:flex;flex-wrap:wrap;gap:4px}
+.cls .tools span{font-family:var(--mono);font-size:11.5px;background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.cls.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold-soft)}
+.cast{margin-top:4px}
+.cast pre{font-family:var(--mono);font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;margin:8px 0 0}
+
+/* Danger */
+.filters{display:flex;flex-wrap:wrap;gap:6px}
+.risks{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.risk{border:1px solid var(--line);background:var(--panel);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;border-left-width:5px}
+.risk.hi{border-left-color:var(--red)} .risk.mid{border-left-color:var(--amber)} .risk.lo{border-left-color:var(--teal)}
+.sev{font-size:11px;font-weight:700;letter-spacing:.08em;border-radius:4px;padding:2px 7px;align-self:flex-start}
+.risk.hi .sev{background:var(--red-soft);color:var(--red)} .risk.mid .sev{background:var(--amber-soft);color:var(--amber)} .risk.lo .sev{background:var(--teal-soft);color:var(--teal)}
+.risk .ev{font-size:12.5px;color:var(--muted)}
+details{border-top:1px dashed var(--line);padding-top:8px}
+summary{cursor:pointer;font-weight:500}
+
+/* Crafting */
+.craft{display:grid;grid-template-columns:1fr 1.4fr;gap:16px}
+@media (max-width:820px){.craft{grid-template-columns:1fr}}
+.inv{display:flex;flex-wrap:wrap;gap:6px}
+.inv .chip{font-family:var(--mono);font-size:12px}
+.recipes{display:flex;flex-direction:column;gap:10px}
+.recipe{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--panel);display:flex;flex-direction:column;gap:6px;transition:opacity .2s}
+.recipe.dim{opacity:.35}
+.recipe .need{display:flex;flex-wrap:wrap;gap:4px}
+.recipe .need span{font-family:var(--mono);font-size:11.5px;border-radius:4px;padding:1px 6px;border:1px solid var(--line)}
+.recipe .need span.have{background:var(--teal-soft);border-color:var(--teal);color:var(--teal)}
+.recipe .meta{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--muted)}
+.stars{color:var(--gold);letter-spacing:2px}
+
+/* Signature */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:720px){.vs{grid-template-columns:1fr}}
+.vs ul{margin:8px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.sig{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.card{border:1px solid var(--line);border-radius:10px;padding:14px;background:var(--panel);display:flex;flex-direction:column;gap:6px}
+.rank{font-family:var(--mono);font-size:12px;color:var(--gold)}
+.tag{font-size:11px;letter-spacing:.06em;color:var(--muted)}
+.note{font-size:13px;color:var(--muted);border-left:3px solid var(--line);padding-left:10px}
+
+/* Grilling */
+.grill{display:flex;flex-direction:column;gap:10px}
+.q{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:12px 14px}
+.q ol{margin:8px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:4px}
+footer{color:var(--muted);font-size:12.5px;border-top:1px solid var(--line);padding-top:12px}
+footer a{color:var(--teal)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hud">
+    <div>
+      <h1>Hera 공략집</h1>
+      <p class="sub">AI 플레이어가 Unity라는 던전에서 퀘스트를 수행하게 해 주는 장비, <b>hera-agent-unity</b>를 1인 게임 회사 대표 시점으로 정리했어요.</p>
+    </div>
+    <div class="stats" aria-label="현재 버전 상태">
+      <div class="stat"><b>v0.3.12</b><span>CLI</span></div>
+      <div class="stat"><b>0.2.9</b><span>CONNECTOR</span></div>
+      <div class="stat"><b>34 / 133</b><span>도구 / ACTION</span></div>
+      <div class="stat"><b>6000.6+</b><span>UNITY</span></div>
+    </div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="챕터">
+    <button class="tab" role="tab" data-ch="map"><span class="n">CH1</span>월드맵</button>
+    <button class="tab" role="tab" data-ch="quest"><span class="n">CH2</span>퀘스트 진행</button>
+    <button class="tab" role="tab" data-ch="skills"><span class="n">CH3</span>스킬 트리</button>
+    <button class="tab" role="tab" data-ch="danger"><span class="n">CH4</span>위험 지대</button>
+    <button class="tab" role="tab" data-ch="grill"><span class="n">CH5</span>그릴링</button>
+    <button class="tab" role="tab" data-ch="craft"><span class="n">CH6</span>조합 공방</button>
+    <button class="tab" role="tab" data-ch="sig"><span class="n">CH7</span>시그니처</button>
+  </nav>
+
+  <!-- CH1 -->
+  <section class="chapter" data-panel="map">
+    <p class="lead">명령 하나가 지나가는 길이에요. 구역을 누르면 그 구역이 하는 일과 실제 이름이 나와요.</p>
+    <div class="map">
+      <div class="zones" id="zones"></div>
+      <div class="panel detail" id="zoneDetail" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- CH2 -->
+  <section class="chapter" data-panel="quest" hidden>
+    <p class="lead">명령 하나가 처리되는 한 턴을 직접 진행해 보세요. 이벤트를 고르면 중간에 사고가 났을 때 Hera가 어떻게 대응하는지 보여 줘요.</p>
+    <div class="quest">
+      <div class="panel">
+        <div class="controls" role="group" aria-label="이벤트">
+          <button class="chip" data-ev="normal" aria-pressed="true">평범한 턴</button>
+          <button class="chip" data-ev="approval" aria-pressed="false">봉인된 문(승인)</button>
+          <button class="chip" data-ev="reload" aria-pressed="false">던전 리로드</button>
+          <button class="chip" data-ev="dialog" aria-pressed="false">대화상자에 막힘</button>
+          <button class="chip" data-ev="lost" aria-pressed="false">응답 유실</button>
+        </div>
+        <ol class="steps" id="steps"></ol>
+        <div class="controls" style="margin-top:12px;margin-bottom:0">
+          <button class="btn" id="nextTurn">다음 단계 ▶</button>
+          <button class="btn ghost" id="resetTurn">처음부터</button>
+        </div>
+      </div>
+      <div class="log" id="log" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- CH3 -->
+  <section class="chapter" data-panel="skills" hidden>
+    <p class="lead">도구 34종을 직업 7개로 묶었어요. 직업을 누르면 대표 주문(명령)이 나와요.</p>
+    <div class="classes" id="classes"></div>
+    <div class="panel cast" id="cast" aria-live="polite"></div>
+  </section>
+
+  <!-- CH4 -->
+  <section class="chapter" data-panel="danger" hidden>
+    <p class="lead">실제 근거가 있는 위험만 모았어요. 심각도로 걸러 볼 수 있어요.</p>
+    <div class="filters" role="group" aria-label="심각도">
+      <button class="chip" data-sev="all" aria-pressed="true">전체</button>
+      <button class="chip" data-sev="hi" aria-pressed="false">높음</button>
+      <button class="chip" data-sev="mid" aria-pressed="false">중간</button>
+      <button class="chip" data-sev="lo" aria-pressed="false">낮음</button>
+    </div>
+    <div class="risks" id="risks"></div>
+  </section>
+
+  <!-- CH5 -->
+  <section class="chapter" data-panel="grill" hidden>
+    <p class="lead">다음 기능을 만들기 전에 집요하게 따져 볼 질문이에요. 펼쳐서 하위 질문을 확인하세요.</p>
+    <div class="grill" id="grill"></div>
+  </section>
+
+  <!-- CH6 -->
+  <section class="chapter" data-panel="craft" hidden>
+    <p class="lead">이미 가진 도구(재료)를 골라 보세요. 그 재료로 만들 수 있는 새 장비가 밝게 표시돼요. 대부분은 새 도구가 아니라 <b>에이전트 스킬(레시피 문서)</b>로 만들 수 있어 비용이 거의 들지 않아요.</p>
+    <div class="craft">
+      <div class="panel">
+        <h3>인벤토리</h3>
+        <p class="lead" style="font-size:13px;margin:4px 0 10px">눌러서 재료를 넣고 빼요</p>
+        <div class="inv" id="inv"></div>
+      </div>
+      <div class="recipes" id="recipes"></div>
+    </div>
+  </section>
+
+  <!-- CH7 -->
+  <section class="chapter" data-panel="sig" hidden>
+    <p class="lead">공식 Unity CLI와 비교했을 때 Hera만 가질 수 있는 것이에요. 비교 기준은 우리가 조사한 공식 CLI 1.0.0-beta.13이에요.</p>
+    <div class="vs">
+      <div class="panel"><h3>공식 Unity CLI</h3><span class="tag">Unity가 직접 만든 범용 도구</span>
+        <ul>
+          <li>Hub 기반 Editor 설치·프로젝트 관리</li>
+          <li>빌드·파이프라인 중심 (<code>com.unity.pipeline</code>)</li>
+          <li>.NET NativeAOT + Rust로 만든 단일 실행 파일</li>
+          <li>대화상자 상태 감지(<code>STATUS_BLOCKED_BY_DIALOG</code>)도 있어요. 이건 Hera만의 차별점이 아니에요.</li>
+        </ul></div>
+      <div class="panel"><h3>Hera</h3><span class="tag">AI가 에디터 안에서 일하는 도구</span>
+        <ul>
+          <li>씬·컴포넌트·UI·테스트를 AI가 직접 고치고 확인해요</li>
+          <li>게임 감각 지식서(<code>game_feel</code> 67주제, <code>ui_slop</code> 48종)를 조작 도구에 연결했어요</li>
+          <li>인수에 묶인 승인 서명과 작업 기록으로 AI 실수를 막아요</li>
+          <li>토큰 비용을 줄이는 응답 설계(도구 묶음, 짧은 기본값)</li>
+        </ul></div>
+    </div>
+    <h2>이미 가진 시그니처</h2>
+    <div class="sig" id="sigHave"></div>
+    <h2>새로 넣을 만한 시그니처 후보</h2>
+    <div class="sig" id="sigNew"></div>
+    <p class="note">새 시그니처는 저장소의 "외부 참고는 완전히 Hera화한 뒤에만" 원칙과 기능 추가 관문(실제 실패 근거 먼저)을 지켜야 해요. 처음엔 스킬로 시작하고, 반복해서 쓰이면 도구로 올리는 순서를 권해요.</p>
+  </section>
+
+  <footer>기준 버전: CLI <span class="mono">v0.3.12</span> / Connector <span class="mono">0.2.9</span> (2026-10-20). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실측·문서 근거가 있는 것만 넣었어요.</footer>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* ---------- CH1 월드맵 ---------- */
+const ZONES=[
+ {id:"player",ico:"P",name:"플레이어",sub:"AI 에이전트 · 당신의 터미널",
+  what:"주문서(명령)를 써요. 예: hera-agent-unity scene info",
+  real:"Claude, Codex, Cursor 같은 AI 에이전트 또는 사람",
+  why:"Hera는 AI의 일을 대신하지 않아요. AI가 Unity를 만질 손과 눈을 줘요."},
+ {id:"gate",ico:"G",name:"마을 관문",sub:"Go CLI · 실행 파일 하나",
+  what:"주문서 형식을 검사하고, 위험도를 매기고, 어느 던전(Unity)으로 갈지 정해요.",
+  real:"cmd/, internal/client · 런타임 의존성 0",
+  why:"설치가 바이너리 하나라 어떤 셸·AI에서도 불러 쓸 수 있어요."},
+ {id:"board",ico:"B",name:"게시판",sub:"~/.hera-agent-unity 파일들",
+  what:"던전이 1초마다 '나 살아 있음, 지금 N번 문'을 붙여요. 긴 작업 결과와 작업 기록도 여기 남아요.",
+  real:"instances/(heartbeat), status/(결과·operation ledger)",
+  why:"Unity가 리로드로 잠깐 문을 닫아도 상태가 사라지지 않아요."},
+ {id:"door",ico:"D",name:"던전 입구",sub:"Connector · HTTP 8090~8099",
+  what:"요청을 받아 한 줄로 세우고, 문지기가 한 번에 한 명만 들여보내요.",
+  real:"HttpServer, CommandRouter(120초 대기 잠금)",
+  why:"Unity는 메인 스레드에서만 안전하게 바뀌어요. 줄을 세워 충돌을 막아요."},
+ {id:"dungeon",ico:"U",name:"던전 본체",sub:"Unity 메인 스레드 · 도구 34종",
+  what:"실제 씬, 에셋, 플레이 모드, 테스트, 빌드가 여기서 일어나요.",
+  real:"[HeraTool] 34개 · action 133개",
+  why:"도구는 리플렉션으로 자동 등록돼요. 새 도구를 만들면 CLI가 자동으로 알아봐요."},
+ {id:"save",ico:"S",name:"세이브 포인트",sub:"operation ledger + 승인 서명",
+  what:"위험한 작업은 작업 번호로 기록하고, 인수에 묶인 서명이 있어야 실행해요.",
+  real:"ApprovalAuthority, OperationLedger",
+  why:"응답이 끊겨도 같은 삭제를 두 번 하지 않아요. AI가 인수를 몰래 바꿔도 거절돼요."}
+];
+const zonesEl=$("#zones"),zd=$("#zoneDetail");
+function showZone(id){
+  const z=ZONES.find(x=>x.id===id);
+  document.querySelectorAll(".zone").forEach(b=>b.classList.toggle("on",b.dataset.z===id));
+  zd.innerHTML=`<span class="tag">구역</span><h3>${esc(z.name)}</h3><p>${esc(z.what)}</p>
+   <dl class="kv"><dt>실제 이름</dt><dd class="mono">${esc(z.real)}</dd><dt>왜 이렇게?</dt><dd>${esc(z.why)}</dd></dl>`;
+}
+ZONES.forEach((z,i)=>{
+  const b=document.createElement("button");b.className="zone";b.dataset.z=z.id;
+  b.innerHTML=`<span class="ico">${z.ico}</span><span><b>${esc(z.name)}</b><small>${esc(z.sub)}</small></span>`;
+  b.onclick=()=>showZone(z.id);zonesEl.appendChild(b);
+  if(i<ZONES.length-1&&i!==1){const a=document.createElement("div");a.className="arrow";a.textContent=i===2?"↕ 상태를 읽고 써요":"↓";zonesEl.appendChild(a)}
+  if(i===1){const a=document.createElement("div");a.className="arrow";a.textContent="↓ localhost HTTP";zonesEl.appendChild(a)}
+});
+showZone("gate");
+
+/* ---------- CH2 퀘스트 ---------- */
+const BASE=[
+ ["던전 찾기","게시판의 heartbeat로 열린 Unity를 찾아요. 이름표는 프로젝트 경로, 문 번호(포트)는 그날그날 달라요."],
+ ["주문서 검사","도구 계약(스키마)으로 인수를 확인하고 위험도를 매겨요."],
+ ["입장","HTTP로 보내면 문지기가 한 명씩 메인 스레드에 들여보내요."],
+ ["전투(실행)","도구가 씬·에셋을 바꾸거나 정보를 읽어요."],
+ ["보상(결과)","짧은 일은 바로 응답, 긴 일은 번호표를 주고 게시판에 결과를 남겨요."]
+];
+const EVENTS={
+ normal:{at:-1,log:[["ok","heartbeat: RG 프로젝트, port 8090, ready"],["ok","인수 검사 통과 · 위험도 read_only"],["ok","입장 · 대기 0ms"],["ok","scene info 실행"],["ok","응답 221 B · 끝"]]},
+ approval:{at:1,log:[["ok","heartbeat: port 8090, ready"],["warn","위험도 destructive → APPROVAL_REQUIRED, 토큰 발급"],["ok","같은 주문서 + --approve <token> 으로 재요청"],["ok","Connector가 실제 인수로 해시를 다시 계산해 서명 확인"],["ok","실행 · operation ledger에 기록 (재실행 방지)"]],
+   note:"인수를 하나라도 바꾸면 서명이 맞지 않아 거절돼요."},
+ reload:{at:2,log:[["ok","heartbeat: port 8090, ready"],["ok","인수 검사 통과"],["warn","503 RELOADING · retryable=true (아직 실행 안 됨)"],["warn","게시판 재확인: 포트가 8091로 바뀜 · 리로드 중 port 0은 무시"],["ok","idempotent 요청만 새 포트로 재시도 · 성공"]],
+   note:"실측에서 리로드마다 포트가 8090~8094로 바뀌었어요. 프로젝트 경로로 따라가니 문제없어요."},
+ dialog:{at:3,log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["bad","응답이 3초 안에 안 옴 · heartbeat도 멈춤"],["warn","같은 PID의 Windows 대화상자 발견 → blocked_by_dialog, retryable=false"]],
+   note:"사람이 대화상자를 닫아야 해요. Windows 기본 대화상자만 알아봐요."},
+ lost:{at:4,log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["ok","실행 완료(ledger에는 committed)"],["bad","응답 유실 → OPERATION_OUTCOME_UNKNOWN · 다시 보내지 않음"]],
+   note:"U4 실험에서 실제로 일어났어요. 작업은 끝났는데 응답만 사라졌어요. 그래서 '모르면 다시 보내지 않기'가 규칙이에요."}
+};
+let ev="normal",turn=-1;
+const stepsEl=$("#steps"),logEl=$("#log");
+function renderSteps(){
+  stepsEl.innerHTML=BASE.map((s,i)=>`<li class="step ${i<turn?"done":i===turn?"now":""}"><span class="k">${i+1}</span><span><b>${s[0]}</b><br><span style="font-size:13.5px">${s[1]}</span></span></li>`).join("");
+  const E=EVENTS[ev];
+  logEl.innerHTML=`<div class="l"><span class="t">이벤트</span><span>${esc(document.querySelector(`[data-ev="${ev}"]`).textContent)}</span></div>`+
+   E.log.slice(0,turn+1).map((l,i)=>`<div class="l"><span class="t">턴 ${i+1}</span><span class="${l[0]}">${esc(l[1])}</span></div>`).join("")+
+   (turn>=BASE.length-1&&E.note?`<div class="l"><span class="t">교훈</span><span>${esc(E.note)}</span></div>`:"")+
+   (turn<0?`<div class="l"><span class="t">대기</span><span>“다음 단계”를 눌러 진행하세요.</span></div>`:"");
+  $("#nextTurn").disabled=turn>=BASE.length-1;
+}
+document.querySelectorAll("[data-ev]").forEach(b=>b.onclick=()=>{ev=b.dataset.ev;turn=-1;document.querySelectorAll("[data-ev]").forEach(x=>x.setAttribute("aria-pressed",x===b));renderSteps()});
+$("#nextTurn").onclick=()=>{if(turn<BASE.length-1){turn++;renderSteps()}};
+$("#resetTurn").onclick=()=>{turn=-1;renderSteps()};
+renderSteps();
+
+/* ---------- CH3 스킬 트리 ---------- */
+const CLASSES=[
+ {n:"건축가",r:"기본 조작",t:["scene","manage_gameobject","manage_components","manage_prefab","manage_assets","manage_material"],
+  d:"씬과 에셋을 직접 만들고 고쳐요.",c:"hera-agent-unity find_gameobjects --name Player --ids\nhera-agent-unity manage_components list --path \"Main Camera\""},
+ {n:"마법사",r:"즉석 코드",t:["exec"],
+  d:"C#을 즉석에서 컴파일해 실행해요. 컴파일 캐시, 제한 모드(restricted), 메타데이터만 남기는 기록장이 있어요. Unity 객체는 기본적으로 {name,type,instanceID}로 짧게 돌려줘요.",c:"hera-agent-unity exec \"return Application.dataPath;\"\nhera-agent-unity exec --security-mode restricted \"return 6*7;\""},
+ {n:"검증관",r:"증거 수집",t:["test","console","profiler","screenshot"],
+  d:"'됐다'를 증거로 보여 줘요. 테스트는 JUnit/NUnit 출력과 나눠 돌리기를 지원해요.",c:"hera-agent-unity test --mode EditMode --format junit --output r.xml\nhera-agent-unity console --type error --lines 20\nhera-agent-unity screenshot --overlay"},
+ {n:"플레이테스터",r:"직접 플레이",t:["editor","input"],
+  d:"플레이 모드에 들어가 키·마우스를 누르고 UI 클릭이 어디에 맞는지 확인해요.",c:"hera-agent-unity editor play --wait\nhera-agent-unity input ...\nhera-agent-unity editor stop --wait"},
+ {n:"연출가",r:"화면과 빌드",t:["manage_ui","manage_animation","manage_timeline","bake","build","manage_settings"],
+  d:"UI, 애니메이션, 타임라인, 라이트 굽기, 빌드를 맡아요.",c:"hera-agent-unity manage_ui create --element button\nhera-agent-unity build start --wait"},
+ {n:"현자",r:"내장 지식서",t:["game_feel","ui_slop","unity_docs","describe_type","find_method"],
+  d:"손맛 지식 67주제, UI 냄새 48종, 버전별 오프라인 문서를 찾아봐요. 토글과 상관없이 늘 쓸 수 있어요.",c:"hera-agent-unity game_feel screen_shake\nhera-agent-unity ui_slop check_ugui\nhera-agent-unity unity_docs Rigidbody.AddForce"},
+ {n:"길잡이",r:"토큰과 규칙",t:["list","doctor","status","asset-config"],
+  d:"도구 묶음(profile)으로 필요한 설명만 읽고, Ultra Hera로 검증 강도를 정해요.",c:"hera-agent-unity list --profiles\nhera-agent-unity list --profile core\nhera-agent-unity doctor --agent-rules --compact"}
+];
+const clsEl=$("#classes"),castEl=$("#cast");
+function showClass(i){
+  document.querySelectorAll(".cls").forEach((b,j)=>b.classList.toggle("on",j===i));
+  const c=CLASSES[i];
+  castEl.innerHTML=`<span class="tag">${esc(c.r)}</span><h3>${esc(c.n)}</h3><p>${esc(c.d)}</p><pre>${esc(c.c)}</pre>`;
+}
+CLASSES.forEach((c,i)=>{const b=document.createElement("button");b.className="cls";
+  b.innerHTML=`<span class="role">${esc(c.r)}</span><h3>${esc(c.n)}</h3><span class="tools">${c.t.map(x=>`<span>${esc(x)}</span>`).join("")}</span>`;
+  b.onclick=()=>showClass(i);clsEl.appendChild(b)});
+showClass(0);
+
+/* ---------- CH4 위험 지대 ---------- */
+const RISKS=[
+ {s:"mid",t:"결과 게시판 키가 포트 번호예요",p:"패키지 작업 도중 리로드로 포트가 바뀌고 응답에 원래 포트가 없으면, 결과 파일을 못 찾을 수 있어요.",e:"실측에서 리로드 중 포트가 8090→8094로 바뀌는 것을 확인했고, 이 경우의 복구 한계를 기록해 두었어요.",f:"결과 키를 포트 대신 프로젝트 해시로 바꾸는 방안이 있지만, 실제 실패가 나오면 다뤄요."},
+ {s:"mid",t:"문지기가 한 명이에요",p:"긴 exec나 빌드가 메인 스레드를 잡으면 다른 명령은 줄 서서 기다려요. AI 여러 개가 같은 Unity를 쓰면 체감돼요.",e:"단일 선택·직렬 실행은 잠긴 설계예요(CLAUDE.md).",f:"에이전트 한 명당 Unity 하나를 쓰는 운영 규칙으로 피해요."},
+ {s:"mid",t:"대화상자 감지는 Windows 기본형만",p:"커스텀 에디터 모달이나 macOS 대화상자는 여전히 원인 모를 시간 초과로 보여요.",e:"U4 한계 기록(#32770 창만 판정).",f:"자주 뜨는 커스텀 모달이 있으면 그때 판정을 넓혀요."},
+ {s:"hi",t:"exec 기본값이 전체 권한이에요",p:"승인을 받긴 하지만, 승인된 코드는 파일·네트워크까지 무엇이든 할 수 있어요. 승인 버튼을 습관적으로 누르면 위험해요.",e:"Full Access가 기본, restricted는 직접 켜야 해요(COMMANDS.md).",f:"프로젝트별로 restricted를 기본으로 하는 설정을 검토할 만해요(그릴링 3번)."},
+ {s:"mid",t:"지원 Unity 대표가 하나예요",p:"6000.6.6f1에서만 전체 검사를 통과했어요. 다음 Unity에서 API가 바뀌면 새 대표 버전이 필요해요.",e:"UNITY_EDITOR_VERSION_INVENTORY.md",f:"새 Unity가 나오면 대표를 추가하고 게이트를 다시 돌려요."},
+ {s:"mid",t:"문서와 실제가 어긋날 수 있어요",p:"AI 두 명이 문서를 보고 일을 넘겨받아요. 문서가 옛 상태면 이미 끝난 일을 다시 하거나 잘못 판단해요.",e:"개발 인계 문서(docs/handoffs/ACTIVE.md) 상단이 실제로 옛 상태였던 적이 있어요(2026-10-20 수정).",f:"배포할 때마다 상태 문단을 같이 고치는 습관을 들여요."},
+ {s:"lo",t:"Game Feel 안내는 리로드 전까지 1회",p:"새 AI 대화를 시작해도 같은 Unity 세션이면 레시피 전문이 다시 안 나와요.",e:"토큰 절약 2차의 의도된 한계(COMMANDS.md에 기록).",f:"필요하면 game_feel <topic>으로 다시 봐요."},
+ {s:"lo",t:"아주 큰 정수 인수",p:"Int64를 넘는 정수는 CLI가 해시를 계산해요. Unity와 계산이 다르면 거절될 수 있어요(안전한 쪽으로 실패).",e:"교차 검증에서 비차단 소견으로 기록했어요.",f:"실사용 가능성이 낮아요. 실패 보고가 오면 다뤄요."}
+];
+const risksEl=$("#risks");
+function renderRisks(f){
+  risksEl.innerHTML=RISKS.filter(r=>f==="all"||r.s===f).map(r=>`<article class="risk ${r.s}"><span class="sev">${{hi:"높음",mid:"중간",lo:"낮음"}[r.s]}</span><h3>${esc(r.t)}</h3><p>${esc(r.p)}</p><span class="ev">근거: ${esc(r.e)}</span><details><summary>대응</summary><p style="margin-top:6px">${esc(r.f)}</p></details></article>`).join("");
+}
+document.querySelectorAll("[data-sev]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-sev]").forEach(x=>x.setAttribute("aria-pressed",x===b));renderRisks(b.dataset.sev)});
+renderRisks("all");
+
+/* ---------- CH5 그릴링 ---------- */
+const GRILL=[
+ {t:"Hera는 무엇이 아닌가?",p:"도구 34종, action 133개. 1인 회사에서는 '만들 수 있다'가 '만들어야 한다'를 이기기 쉬워요.",
+  q:["다음 기능을 막아 줄 실제 실패 사례 3개를 적을 수 있나요?","그 기능을 exec나 기존 action 조합으로 못 푸는 이유는?","새 기능이 늘리는 토큰 비용(카탈로그·규칙)은 얼마인가요?"]},
+ {t:"누구를 위한 도구인가: 내부용 vs 공개 제품",p:"npm 배포와 외부 PR까지 받는 지금은 이미 공개 제품이에요.",
+  q:["하위 호환을 몇 버전까지 지킬 건가요?","외부 이슈·PR에 응답할 시간을 주당 얼마나 쓸 수 있나요?","내 게임 개발 시간이 Hera 유지보수에 잠식되면 어디서 끊나요?"]},
+ {t:"exec 전체 권한을 계속 기본값으로 둘까?",p:"편의와 안전의 균형 문제예요.",
+  q:["승인 프롬프트를 실제로 읽고 누르고 있나요?","restricted로 안 되는 일이 하루에 몇 번 나오나요?","프로젝트별 기본값 설정이 필요한가요, 전역이면 충분한가요?"]},
+ {t:"Unity 버전을 어디까지 따라갈까?",p:"지원 하한은 6000.6, 검증 대표는 하나예요.",
+  q:["내 게임이 쓰는 Unity 버전과 Hera 대표 버전이 같나요?","새 Unity가 나오면 며칠 안에 게이트를 돌릴 수 있나요?"]}
+];
+$("#grill").innerHTML=GRILL.map((g,i)=>`<div class="q"><details ${i===0?"open":""}><summary>${esc(g.t)}</summary><p style="margin-top:6px">${esc(g.p)}</p><ol>${g.q.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></details></div>`).join("");
+
+/* ---------- CH6 조합 공방 ---------- */
+const INV=["editor play","input","screenshot","console","test","find_gameobjects","manage_components","game_feel","ui_slop","scene","manage_settings","build","profiler","exec 기록장"];
+const RECIPES=[
+ {n:"자동 플레이테스트 순찰",need:["editor play","input","screenshot","console","test"],v:"QA 인력 없이 매일 핵심 경로(메뉴→플레이→결과)가 깨졌는지 확인하고 스크린샷·오류 리포트를 남겨요.",form:"스킬 + CI",value:5},
+ {n:"주스 감사 (Juice Audit)",need:["find_gameobjects","manage_components","game_feel","ui_slop"],v:"버튼·팝업을 훑어 피드백이 빠진 곳을 목록으로 보여 줘요. 출시 전 손맛 점검표예요.",form:"스킬",value:4},
+ {n:"스토어 스크린샷 키트",need:["scene","screenshot","manage_settings"],v:"itch·Steam 페이지용 해상도별 캡처를 한 번에 만들어요.",form:"스킬",value:3},
+ {n:"출시 전 체크",need:["test","console","build","profiler"],v:"빌드→테스트→오류 0→성능 예산을 한 흐름으로 확인해요.",form:"스킬 + CI",value:4},
+ {n:"씬 변경 비교",need:["scene","find_gameobjects"],v:"AI가 씬을 고친 뒤 의도한 곳만 바뀌었는지 hierarchy 전후를 비교해요.",form:"스킬",value:3},
+ {n:"AI 실수 분석",need:["exec 기록장"],v:"AI가 자주 실패하는 코드 패턴과 컴파일 캐시 적중률을 보고 규칙을 고쳐요.",form:"스크립트",value:2}
+];
+const have=new Set(["editor play","input","screenshot"]);
+const invEl=$("#inv"),recEl=$("#recipes");
+function renderCraft(){
+  invEl.innerHTML=INV.map(x=>`<button class="chip" aria-pressed="${have.has(x)}" data-i="${esc(x)}">${esc(x)}</button>`).join("");
+  invEl.querySelectorAll("button").forEach(b=>b.onclick=()=>{const k=b.dataset.i;have.has(k)?have.delete(k):have.add(k);renderCraft()});
+  const sorted=RECIPES.map(r=>({...r,hit:r.need.filter(x=>have.has(x)).length})).sort((a,b)=>b.hit/b.need.length-a.hit/a.need.length||b.value-a.value);
+  recEl.innerHTML=sorted.map(r=>`<article class="recipe ${r.hit===0?"dim":""}"><h3>${esc(r.n)}</h3><div class="need">${r.need.map(x=>`<span class="${have.has(x)?"have":""}">${esc(x)}</span>`).join("")}</div><p>${esc(r.v)}</p><div class="meta"><span>재료 ${r.hit}/${r.need.length}</span><span>형태: ${esc(r.form)}</span><span>1인 회사 가치 <span class="stars">${"★".repeat(r.value)}${"☆".repeat(5-r.value)}</span></span></div></article>`).join("");
+}
+renderCraft();
+
+/* ---------- CH7 시그니처 ---------- */
+const HAVE=[
+ {t:"게임 감각이 내장된 조작",d:"UI를 만들면 그 요소의 손맛 레시피가 같이 와요. 범용 CLI의 영역이 아니에요.",k:"game_feel · ui_slop · manage_ui"},
+ {t:"AI 실수 방지 장치",d:"인수에 묶인 승인 서명, 작업 번호로 재실행 방지, '모르면 다시 보내지 않기'.",k:"승인 · operation ledger"},
+ {t:"검증 강도 다이얼",d:"Ultra Hera(Off/Light/Ultra)로 AI가 얼마나 꼼꼼히 확인할지 주입해요.",k:"doctor --agent-rules"},
+ {t:"토큰 경제 설계",d:"도구 묶음, 짧은 기본 응답, 2.3 KB 규칙. 비용을 직접 내는 1인 개발자에게 바로 돈이에요.",k:"list --profile · exec 기본 70 B"}
+];
+const NEW=[
+ {r:"추천 2",t:"Feel Score (손맛 점수)",d:"씬·프리팹을 game_feel 기준으로 채점해요. 버튼 피드백 유무, 흔들림 강도 옵션, 접근성 기준.",w:"지식서와 컴포넌트 조회가 같은 프로세스 안에 있어요.",c:"점수 기준은 Unity 실측으로 Hera화해야 해요."},
+ {r:"추천 1",t:"플레이 녹화와 회귀 비교",d:"input 시퀀스를 기록해 두고 다음 빌드에서 재생해 스크린샷·콘솔을 비교해요.",w:"input QA 백엔드가 이미 있어요.",c:"새 action이 생기면 기능 추가 관문 대상이에요."},
+ {r:"추천 3",t:"Studio Memory",d:"exec 기록장과 테스트 결과로 '이 프로젝트에서 AI가 자주 틀리는 것'을 규칙으로 돌려줘요.",w:"기록장이 이미 메타데이터만 안전하게 남겨요.",c:"코드 원문을 남기지 않는 원칙을 지켜야 해요."},
+ {r:"보너스",t:"한국어 조판 품질 검사",d:"한글 폰트 대체, 줄바꿈, 자간 같은 UI 문제를 잡아요.",w:"ui_slop에 이미 hangul-font-fallback-jump 같은 항목이 있어요.",c:"설명문은 영어로 쓰는 규칙은 유지해요."}
+];
+$("#sigHave").innerHTML=HAVE.map(h=>`<div class="card"><span class="tag">보유</span><h3>${esc(h.t)}</h3><p>${esc(h.d)}</p><span class="mono" style="color:var(--teal);font-size:12px">${esc(h.k)}</span></div>`).join("");
+$("#sigNew").innerHTML=NEW.map(n=>`<div class="card"><span class="rank">${esc(n.r)}</span><h3>${esc(n.t)}</h3><p>${esc(n.d)}</p><p style="font-size:13px"><b>왜 Hera만:</b> ${esc(n.w)}</p><p class="note">${esc(n.c)}</p></div>`).join("");
+
+/* ---------- 탭 ---------- */
+const tabs=[...document.querySelectorAll(".tab")];
+function openCh(id){
+  if(!tabs.some(t=>t.dataset.ch===id))id="map";
+  tabs.forEach(t=>t.setAttribute("aria-selected",t.dataset.ch===id));
+  document.querySelectorAll("[data-panel]").forEach(p=>p.hidden=p.dataset.panel!==id);
+  try{localStorage.setItem("hera-guide-ch",id)}catch(e){}
+}
+tabs.forEach(t=>t.onclick=()=>{openCh(t.dataset.ch);history.replaceState(null,"","#"+t.dataset.ch)});
+let start=(location.hash||"").slice(1);
+if(!start){try{start=localStorage.getItem("hera-guide-ch")||"map"}catch(e){start="map"}}
+openCh(start);
+</script>
+</body>
+</html>
