@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.14] - 2026-10-20 (Connector 0.2.10)
+
+### Fixed
+
+- Async result waits (`test`, `build start --wait`, `manage_packages`) follow the selected Editor by project path and PID instead of the dispatch port, so a domain reload that moves the port no longer hides the result or attaches the wait to another Editor that took the old port. A heartbeat from a different PID ends the wait only after the original Editor process is confirmed dead.
+- `test --resume <run_id>` finds the run's original dispatch port from its pending/result record; the pending suggestion selects the Editor with `--project` instead of a port that may have moved.
+- Connector: the test-run lock (`TEST_RUN_ALREADY_RUNNING`) and `test cancel` see pending runs from every dispatch port owned by the project.
+- Connector: Asset Import Worker processes no longer start the HTTP listener, heartbeat, or package/test/input-recording recovery hooks. Workers previously overwrote the project heartbeat with their own PID and occupied ports in the 8090–8099 range. Older Connectors keep that behavior; update to 0.2.10.
+
 ## [0.3.13] - 2026-10-20 (Connector unchanged at 0.2.9)
 
 ### Docs

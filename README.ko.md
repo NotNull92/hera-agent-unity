@@ -366,7 +366,7 @@ Editor가 열리면 Connector가 자동으로 시작합니다.
 현재 릴리스 Connector를 고정하려면:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.9
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.10
 ```
 
 ### 3단계. Unity를 열고 연결 확인
@@ -725,9 +725,9 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.3.13**, native binary 5종
-- npm: **0.3.13** (`latest`)
-- Unity Connector: **0.2.9** (`#connector-0.2.9`로 고정)
+- CLI / GitHub Release: **v0.3.14**, native binary 5종
+- npm: **0.3.14** (`latest`)
+- Unity Connector: **0.2.10** (`#connector-0.2.10`로 고정)
 - License: **Apache-2.0**
 
 npm 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-unity`와 GitHub 바이너리가 같은 버전을 유지합니다.
@@ -740,6 +740,7 @@ v0.2.17 이후 새로 바뀐 것:
 
 | 버전 | 변경 |
 |---|---|
+| v0.3.14 / 0.2.10 | domain reload로 Editor 포트가 바뀌어도 대기 명령과 `test --resume`이 원래 결과를 찾음. 테스트 실행 잠금과 `test cancel`이 어느 포트의 실행이든 인식. 에셋 임포트 워커에서 Connector가 켜지지 않아 heartbeat 덮어쓰기·포트 점유가 사라짐. Connector도 0.2.10으로 올리세요. |
 | v0.3.13 | 공략집 페이지를 "Hera Unity Status"로 새 단장: 처리 순서 지도, 도구별 설명이 있는 스킬 트리, 위험 도감, 내장 그림. CLI·Connector 동작 변경 없음. |
 | v0.3.12 | 독립 공략집 페이지(`docs/guide/index.html`) 추가. CLI·Connector 동작 변경 없음. |
 | v0.3.11 | 소수·지수 인수는 Unity 인수 해시 사용, 패키지 작업은 실제 결과 포트를 기다림. |
