@@ -203,8 +203,12 @@ asynchronous handle. If the CLI deadline expires while that record remains,
 the CLI reports `TEST_RUN_PENDING` rather than treating a stale heartbeat as
 proof that Unity is unresponsive. `test --resume <run_id>` bypasses the normal
 fresh-heartbeat readiness wait, polls the same run-scoped result, and does not
-send another `run_tests` mutation. Project/port discovery still selects the
-Editor identity, so a resume cannot silently move to another open project.
+send another `run_tests` mutation. Result filenames keep the dispatch port;
+resume finds that port by run ID across pending/result files and rejects
+matches on multiple ports. Project selection supplies the identity for
+liveness checks, not a result-ownership check: use a run ID from the selected
+project. While waiting, exact normalized project path and the selected PID
+track the Editor across port changes; a different PID fails as restarted.
 
 The standalone `task list` and `task status <task_id>` commands read this same
 file bus without entering the normal Unity HTTP readiness path. `task list`
