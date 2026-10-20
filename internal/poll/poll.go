@@ -46,10 +46,17 @@ func WaitForFile(ctx context.Context, resultPath string, target client.Instance,
 		// State check (cheap): instance writes "stopped" on graceful quit.
 		inst, statusErr := client.FindTargetFresh(target)
 		if statusErr == nil {
-			if target.PID > 0 && inst.PID > 0 && inst.PID != target.PID {
-				return nil, &client.TargetRestartedError{Project: target.ProjectPath, PreviousPID: target.PID, CurrentPID: inst.PID, Port: inst.Port, State: inst.State}
-			}
-			if inst.State == unitystate.Stopped {
+			if target.PID > 0 && inst.PID != target.PID {
+				// Older connectors also publish import-worker heartbeats for this
+				// project. A different PID (even stopped) cannot prove a restart.
+				lastPidCheck = time.Now()
+				if client.IsProcessDead(target.PID) {
+					if inst.PID > 0 {
+						return nil, &client.TargetRestartedError{Project: target.ProjectPath, PreviousPID: target.PID, CurrentPID: inst.PID, Port: inst.Port, State: inst.State}
+					}
+					return nil, fmt.Errorf("unity editor process %d is no longer running", target.PID)
+				}
+			} else if inst.State == unitystate.Stopped {
 				return nil, fmt.Errorf("unity editor has stopped (port %d)", inst.Port)
 			}
 			if lastPid == 0 {
