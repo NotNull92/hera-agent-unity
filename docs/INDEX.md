@@ -41,6 +41,7 @@ so the CLI remains the single agent surface and the single protocol path.
 |:---|:---|:---|
 | [`INDEX.md`](INDEX.md) | This file — project overview | Starting here |
 | [`DISTRIBUTION_CHANNELS.md`](DISTRIBUTION_CHANNELS.md) | CLI, UPM/OpenUPM, npm, Codex, mirror, and candidate distribution status | Preparing, expanding, or auditing a release channel |
+| [`STORE_ASSETS.md`](STORE_ASSETS.md) | Logo and store thumbnail files, provenance, upload status | Replacing brand images or uploading to a store |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System architecture, data flow, state machine | You need the big picture |
 | [`GO_CLI.md`](GO_CLI.md) | Go CLI code structure, entry point, command dispatch | Modifying Go code |
 | [`CSHARP_CONNECTOR.md`](CSHARP_CONNECTOR.md) | C# Unity side — HttpServer, CommandRouter, ToolDiscovery | Modifying C# code |
