@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs
+
+- The guide page (`docs/guide/index.html`) is now "Hera Unity Status": a dark fantasy-RPG layout with a region map, quest journal, skill trees that explain what each tool does and why, a bestiary of known risks, and embedded artwork. Content is unchanged except that the playback signature candidate now notes that `input` already records and replays.
+
 ## [0.3.12] - 2026-10-20 (Connector unchanged at 0.2.9)
 
 ### Docs
