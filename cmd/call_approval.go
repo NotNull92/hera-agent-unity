@@ -101,7 +101,9 @@ func approvalMismatches(
 	}{
 		{"tool", claims.Tool == request.tool.Name},
 		{"action", claims.Action == request.action},
-		{"arguments", claims.ArgumentsHash == argumentsHash},
+		// An empty local hash delegates floating-number canonicalization to
+		// Unity. It still verifies the signed token against the actual params.
+		{"arguments", argumentsHash == "" || claims.ArgumentsHash == argumentsHash},
 		{"risk_class", claims.RiskClass == request.safety.RiskClass},
 		{"project", claims.ProjectID == request.catalog.ProjectID},
 		{"operation_id", operationID == "" || claims.OperationID == operationID},

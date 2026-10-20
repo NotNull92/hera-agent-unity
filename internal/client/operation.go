@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"unicode"
 	"unicode/utf16"
 
@@ -51,7 +52,7 @@ func ParseOperationID(value string) (OperationID, error) {
 type RequestMeta struct {
 	ProtocolVersion string      `json:"protocol_version,omitempty"`
 	OperationID     OperationID `json:"operation_id"`
-	ArgumentsHash   string      `json:"arguments_hash"`
+	ArgumentsHash   string      `json:"arguments_hash,omitempty"`
 	ApprovalToken   *string     `json:"approval_token"`
 	ClientKind      string      `json:"client_kind"`
 	CatalogHash     string      `json:"catalog_hash,omitempty"`
@@ -102,11 +103,46 @@ func argumentsHash(params any) (string, error) {
 	if err := encoder.Encode(params); err != nil {
 		return "", fmt.Errorf("marshal arguments for hash: %w", err)
 	}
+	// Newtonsoft parses decimal/exponent tokens as doubles, then Mono formats
+	// them differently from Go. The Connector already computes the authoritative
+	// hash when this optional field is absent; integer -0 also normalizes to 0.
+	decoder := json.NewDecoder(bytes.NewReader(encoded.Bytes()))
+	decoder.UseNumber()
+	var value any
+	if err := decoder.Decode(&value); err != nil {
+		return "", fmt.Errorf("decode arguments for hash: %w", err)
+	}
+	if requiresUnityArgumentsHash(value) {
+		return "", nil
+	}
 	digest := sha256.Sum256(bytes.TrimSpace(encoded.Bytes()))
 	return "sha256:" + hex.EncodeToString(digest[:]), nil
 }
 
+// ArgumentsHash returns an empty hash for floating JSON numbers or -0: only the
+// Connector can reproduce its runtime's numeric parsing and canonicalization.
+// Its approval and operation-ledger checks still bind the actual arguments.
 func ArgumentsHash(params any) (string, error) { return argumentsHash(params) }
+
+func requiresUnityArgumentsHash(value any) bool {
+	switch value := value.(type) {
+	case json.Number:
+		return value == "-0" || strings.ContainsAny(value.String(), ".eE")
+	case map[string]any:
+		for _, item := range value {
+			if requiresUnityArgumentsHash(item) {
+				return true
+			}
+		}
+	case []any:
+		for _, item := range value {
+			if requiresUnityArgumentsHash(item) {
+				return true
+			}
+		}
+	}
+	return false
+}
 
 func hasFeature(instance *Instance, feature string) bool {
 	for _, candidate := range instance.Features {

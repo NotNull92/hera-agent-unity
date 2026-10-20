@@ -16,6 +16,7 @@ namespace HeraAgent.Tests
             var passed = true;
             passed &= Run(nameof(TestDestructiveOperationCannotRunWithoutApproval), TestDestructiveOperationCannotRunWithoutApproval);
             passed &= Run(nameof(TestApprovalBindsArgumentsHash), TestApprovalBindsArgumentsHash);
+            passed &= Run(nameof(TestApprovalBindsUnityNumericHashWithoutClientHash), TestApprovalBindsUnityNumericHashWithoutClientHash);
             passed &= Run(nameof(TestExpiredApprovalRejected), TestExpiredApprovalRejected);
             passed &= Run(nameof(TestApprovalSingleUse), TestApprovalSingleUse);
             passed &= Run(nameof(TestBatchCannotBypassApproval), TestBatchCannotBypassApproval);
@@ -54,6 +55,30 @@ namespace HeraAgent.Tests
             return !decision.Execute
                 && decision.Response is ErrorResponse error
                 && error.code == "APPROVAL_MISMATCH";
+        }
+
+        static bool TestApprovalBindsUnityNumericHashWithoutClientHash()
+        {
+            using var fixture = new ApprovalFixture();
+            var original = fixture.Context("op_numeric_hash_1", JObject.Parse("{\"n\":1e2}"));
+            var equivalent = fixture.Context("op_numeric_hash_1", JObject.Parse("{\"n\":100.0}"));
+            var grant = fixture.Authority.Issue(fixture.Binding(original));
+            var changed = fixture.Context("op_numeric_hash_1", JObject.Parse("{\"n\":101.0}"), grant.Token);
+            var decision = fixture.Ledger.Begin(changed, "fixture", "delete", fixture.Destructive);
+            var rejected = original.ArgumentsHash == equivalent.ArgumentsHash
+                && !string.IsNullOrEmpty(original.ArgumentsHash)
+                && !decision.Execute
+                && decision.Response is ErrorResponse error
+                && error.code == "APPROVAL_MISMATCH";
+            var approved = fixture.Context("op_numeric_hash_1", JObject.Parse("{\"n\":100.0}"), grant.Token);
+            if (!rejected || !fixture.Ledger.Begin(approved, "fixture", "delete", fixture.Destructive).Execute)
+                return false;
+            fixture.Ledger.Commit(approved, new SuccessResponse("done"));
+            var replay = fixture.Ledger.Begin(approved, "fixture", "delete", fixture.Destructive);
+            var collision = fixture.Ledger.Begin(changed, "fixture", "delete", fixture.Destructive);
+            return !replay.Execute && replay.Response is JObject
+                && !collision.Execute && collision.Response is ErrorResponse conflict
+                && conflict.code == "OPERATION_CONFLICT";
         }
 
         static bool TestExpiredApprovalRejected()

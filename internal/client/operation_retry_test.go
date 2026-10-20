@@ -212,3 +212,50 @@ func TestLegacyConnectorDisablesMutationRetry(t *testing.T) {
 		t.Fatalf("request count = %d, want 1", requests)
 	}
 }
+
+func TestArgumentsHashDefersUnityNumericCanonicalization(t *testing.T) {
+	for _, literal := range []string{"1.0", "1e2", "1e-5", "-0", "-0.0", "5e-324", "1.7976931348623157e308"} {
+		t.Run(literal, func(t *testing.T) {
+			hash, err := argumentsHash(map[string]any{"nested": []any{map[string]any{"n": json.Number(literal)}}})
+			if err != nil || hash != "" {
+				t.Fatalf("hash=%q err=%v", hash, err)
+			}
+		})
+	}
+	for _, literal := range []string{"0", "100", "9007199254740993", "9223372036854775807", "-9223372036854775808"} {
+		hash, err := argumentsHash(map[string]any{"n": json.Number(literal)})
+		digest := sha256.Sum256([]byte(`{"n":` + literal + `}`))
+		if err != nil || hash != "sha256:"+hex.EncodeToString(digest[:]) {
+			t.Fatalf("%s hash=%q err=%v", literal, hash, err)
+		}
+	}
+	if _, err := argumentsHash(map[string]any{"n": json.Number("bad")}); err == nil {
+		t.Fatal("invalid number accepted")
+	}
+}
+
+func TestFloatingRequestOmitsOnlyOptionalHash(t *testing.T) {
+	var got struct {
+		Params json.RawMessage            `json:"params"`
+		Meta   map[string]json.RawMessage `json:"meta"`
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Error(err)
+		}
+		_ = json.NewEncoder(w).Encode(CommandResponse{Success: true})
+	}))
+	defer server.Close()
+	parsed, _ := url.Parse(server.URL)
+	port, _ := strconv.Atoi(parsed.Port())
+	_, err := DefaultClient.SendWithOptions(context.Background(), &Instance{Port: port}, "fixture", map[string]any{"n": json.Number("1e2")}, 1000, SendOptions{OperationID: "op_float_test", ApprovalToken: "test-token"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, present := got.Meta["arguments_hash"]; present {
+		t.Fatal("Unity must compute the hash")
+	}
+	if string(got.Params) != `{"n":1e2}` || string(got.Meta["approval_token"]) != `"test-token"` || string(got.Meta["operation_id"]) != `"op_float_test"` {
+		t.Fatalf("request=%+v", got)
+	}
+}

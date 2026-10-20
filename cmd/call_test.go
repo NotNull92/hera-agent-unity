@@ -498,3 +498,21 @@ func testApprovalPreflight() *client.ApprovalPreflight {
 		},
 	}
 }
+
+func TestDelegatedArgumentsHashKeepsOtherApprovalChecks(t *testing.T) {
+	request := callApprovalRequest{catalog: &toolregistry.Catalog{ProjectID: "project"}, tool: toolregistry.Tool{Name: "fixture"}, action: "change", safety: toolregistry.Safety{RiskClass: "write"}}
+	claims := policy.ApprovalClaims{Tool: "fixture", Action: "change", ProjectID: "project", RiskClass: "write", OperationID: "op_delegate_1", ArgumentsHash: "sha256:unity"}
+	if got := approvalMismatches(claims, request, "", "op_delegate_1"); len(got) != 0 {
+		t.Fatalf("delegation mismatches=%v", got)
+	}
+	claims.ProjectID = "other"
+	got := approvalMismatches(claims, request, "", "op_delegate_1")
+	if len(got) != 1 || got[0] != "project" {
+		t.Fatalf("project check lost: %v", got)
+	}
+	claims.ProjectID = "project"
+	got = approvalMismatches(claims, request, "sha256:changed", "op_delegate_1")
+	if len(got) != 1 || got[0] != "arguments" {
+		t.Fatalf("integer hash check lost: %v", got)
+	}
+}
