@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/assets/hera_logo.png" width="50%" alt="hera-agent-unity">
+<img src="docs/assets/hera_unity_logo.png" width="420" alt="hera-agent-unity logo">
 
 <br>
 
