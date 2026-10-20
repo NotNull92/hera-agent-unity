@@ -127,7 +127,7 @@ var go = GameObject.Find("Canvas");
 return new { name = go.name, instanceID = go.GetInstanceID() };
 ```
 
-Default `--depth` is `3` for plain values, but Unity Objects anywhere in the result stay in the shallow form `{name, type, instanceID}`. Pass `--depth 3` (or more) explicitly only when you have a specific reason to inspect a Unity Object's reflected property tree.
+Default `--depth` is `3` for plain values, but Unity Objects reached within that depth stay in the shallow form `{name, type, instanceID}` (values past the depth limit are strings, as before). Pass `--depth 3` (or more) explicitly only when you have a specific reason to inspect a Unity Object's reflected property tree.
 
 **[Rule 3]** Branch on the `code` field of error responses, not on the message text. Messages get tweaked across versions; `code` is the stable enum-like contract.
 

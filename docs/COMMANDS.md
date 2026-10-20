@@ -300,7 +300,7 @@ hera-agent-unity scene <action> [target] [flags]
 | `list` | List scenes registered in Build Settings. |
 | `set_active <path\|name>` | Make one loaded scene active. |
 | `close <path\|name>` | Unload a loaded scene. Cannot close the only loaded scene. |
-| `hierarchy` | Dump the GameObject tree of every loaded scene (or one subtree) as nested nodes with instance_id and name. `active` appears only as `false`, and `children` only when non-empty. |
+| `hierarchy` | Dump the GameObject tree of every loaded scene (or one subtree) as nested nodes with instance_id and name. `active` appears only as `false` (`activeSelf`); `children` is omitted for leaves and at a `--depth` cutoff. |
 
 ### Flags
 

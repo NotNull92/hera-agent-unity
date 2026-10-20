@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed (CLI v0.3.8; Connector 0.2.8)
 
 - `exec` keeps Unity Objects in the shallow `{name, type, instanceID}` form unless `--depth 3` or more is passed explicitly. Returning a Transform at the default depth dropped from 7,178 B to 69 B.
-- `scene hierarchy` omits `active` when true and `children` when empty.
+- `scene hierarchy` omits `active` when `activeSelf` is true and `children` when a node has no listed children (a leaf or a `--depth` cutoff).
 - `UNKNOWN_COMMAND` lists close names once, in `data.did_you_mean`.
 - Error envelopes no longer include `timings`; `--verbose` still prints them.
 
