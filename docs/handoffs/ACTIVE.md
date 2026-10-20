@@ -259,3 +259,13 @@ heartbeat demonstrates every second.
   `SchemaUtility` refuses recursive DTO graphs by design, so it is either open
   `object[]` children or `$ref` support. `exec` stays undeclared on purpose:
   its payload is user-code-shaped and an open schema is the truthful one.
+
+## 2026-10-20 user override: O2 and remaining port work
+
+The user lifted the O2 hold: follow Unity numeric canonicalization. CLI v0.3.11
+candidate delegates decimal/exponent and negative-zero argument hashing to the
+Connector while retaining its authoritative approval/ledger checks. The package
+port-zero fallback now waits for a positive port without resending mutations.
+Disposable heartbeat sampling did not reproduce port zero; no Connector source
+fix was made. Connector remains 0.2.9. Earlier O2 holds above are historical.
+Other projects' TEMP cleanup is still on hold. No tags/releases in this train.

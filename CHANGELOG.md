@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed (CLI v0.3.11 candidate; Connector 0.2.9 unchanged)
+
+- Requests containing decimal/exponent numbers or integer `-0` use Unity's
+  authoritative argument hash instead of a Go spelling-dependent hash. Wire
+  literals remain unchanged; signed approval bindings and operation-ledger
+  conflicts are still checked by the Connector against the actual arguments.
+- Package jobs with missing/zero result ports wait for a positive heartbeat port
+  within the configured timeout instead of polling a port-zero result file.
+  The package mutation is sent only once; explicit result ports remain unchanged.
+
 ## [0.3.10] - 2026-10-20 (Connector 0.2.9)
 
 ### Changed (CLI v0.3.10; Connector 0.2.9)

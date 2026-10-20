@@ -625,3 +625,37 @@ System package and set Active Input Handling to "Both" (legacy `Input` keeps
 working; build-profile overrides are a known remaining source of the notice), or
 (c) migrate to the Input System. The user chose (a): no product, project, or lab
 change, and no console suppression.
+
+## O2 numeric hash authority and package port fallback — 2026-10-20
+
+User authorized O2 to follow Unity, disposable port-zero heartbeat sampling,
+and investigation/fix of the package result-key fallback. Other projects' TEMP
+cleanup remains deferred. CLI v0.3.11 candidate; no tag/release, Connector
+production code and version remain 0.2.9.
+
+- Decimal/exponent JSON tokens and integer negative zero omit the optional
+  client `arguments_hash`. Unity computes the canonical hash from the actual
+  arguments, as it already does for every request. The typed CLI skips only its
+  unsigned local argument-hash comparison when that hash is unavailable; other
+  claim checks remain. Connector signature/argument binding, single-use approval,
+  ledger replay and conflict checks are unchanged. No new feature, round trip,
+  catalog key, coercion, or wire literal rewrite.
+- A Go G15/G17 approximation disagreed with installed Unity Mono + package
+  Newtonsoft on 10/2,020 deterministic numeric samples. Emulation was rejected.
+  Live read-only profiler requests: baseline hash mismatch for 5/8 literals,
+  candidate 0/8; all candidates reached `PROFILER_NO_DATA` (the fixture has no
+  capture), not a successful profiler capture. Integers retain their exact hash.
+- A package-job regression reproduced a timeout while polling port zero.
+  Reusing `WaitForAlive` fixes it without resending the mutation. Explicit result
+  ports bypass resolution; cancellation and persistent zero remain bounded.
+  A missing result port followed by an actual port change cannot reconstruct
+  the original job key; that pre-existing ambiguity is not solved by this guard.
+- Three play/stop cycles plus a compile refresh yielded 1,264 heartbeat samples
+  over 19.625 s, 11 observed epochs, 484 `reloading` samples, no port-zero sample.
+  This does not disprove the short-lived race. Existing port-zero defenses stay.
+- Go tests/vet, package integrity, guide sync and Unity EditMode wrappers passed
+  (31 passed, 0 failed, 1 skipped: Timeline absent). The final numeric approval
+  test additionally passed alone, proving changed arguments are denied, equivalent
+  numbers accepted, replay retained, and changed-argument operation conflicts.
+  Evidence is kept outside the repo under research `phase2/evidence/remaining/`;
+  detailed limitations are in `reports/26-remaining-items-verification.md`.
