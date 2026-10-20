@@ -83,8 +83,7 @@ a{color:var(--frost)}
 .chead{display:flex;flex-direction:column;gap:6px}
 
 /* ---------- CH1 월드맵 ---------- */
-.atlas{display:grid;grid-template-columns:1.55fr 1fr;gap:18px;align-items:start}
-@media (max-width:900px){.atlas{grid-template-columns:1fr}}
+.atlas{display:grid;grid-template-columns:1fr;gap:16px;align-items:start}
 .mapstage{position:relative;aspect-ratio:3/2;max-width:100%;border:1px solid var(--line2);overflow:hidden;
   background:
     radial-gradient(60% 50% at 30% 70%,rgba(143,176,122,.10),transparent 70%),
@@ -100,7 +99,22 @@ a{color:var(--frost)}
   background:radial-gradient(circle,rgba(13,15,18,.85) 55%,rgba(13,15,18,.4));border:1px solid var(--line2);transition:transform .2s,box-shadow .2s}
 .marker .pin img{width:86%;height:86%;object-fit:contain}
 .marker .pin .glyph{font-family:var(--rune);font-weight:700;color:var(--gold2);font-size:clamp(14px,2vw,18px)}
-.marker .nm{font-family:var(--display);font-size:clamp(11px,1.5vw,14px);color:#f1efe8;text-shadow:0 1px 3px #000,0 0 8px #000;white-space:nowrap}
+.marker .nm{display:flex;flex-direction:column;align-items:center;padding:2px 8px;background:rgba(10,12,15,.82);border:1px solid var(--line2);line-height:1.25}
+.marker .nm b{font-size:clamp(11px,1.45vw,14px);color:#fff;font-weight:700;white-space:nowrap}
+.marker .nm small{font-family:var(--display);font-size:clamp(9.5px,1.15vw,11.5px);color:var(--gold2);white-space:nowrap}
+.marker .no{position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:700 12px var(--mono);color:#0b0d10;background:var(--gold2);box-shadow:0 0 0 2px #0b0d10}
+.marker .pin{position:relative}
+.edge{position:absolute;transform:translate(-50%,-50%);z-index:1;font-size:clamp(9.5px,1.2vw,12px);color:#0b0d10;background:rgba(230,200,134,.92);padding:1px 7px;border-radius:2px;white-space:nowrap;font-weight:700;pointer-events:none}
+.rail{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:12px}
+@media (max-width:760px){.rail{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.step{position:relative;text-align:left;padding:8px 10px 9px;border:1px solid var(--line);background:rgba(20,24,29,.8);display:flex;flex-direction:column;gap:2px;min-width:0}
+.step .n{font:700 11px var(--mono);color:var(--gold2)}
+.step b{font-size:13.5px;color:var(--silver);line-height:1.35}
+.step code{font-size:11px;color:var(--frost);overflow-wrap:anywhere}
+.step .in{font-size:11.5px;color:var(--muted)}
+.step.on{border-color:var(--gold);background:rgba(201,164,92,.12)}
+.step:not(:last-child)::after{content:"▸";position:absolute;right:-9px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:12px;z-index:1}
+@media (max-width:760px){.step::after{display:none}}
 .marker:hover .pin,.marker.on .pin{transform:scale(1.08);box-shadow:0 0 0 2px var(--gold),0 0 22px rgba(201,164,92,.55)}
 .lore{display:flex;flex-direction:column;gap:10px}
 .lore .kv{display:grid;grid-template-columns:96px 1fr;gap:8px 12px;margin:4px 0 0}
@@ -300,13 +314,13 @@ footer a{color:var(--frost)}
   <!-- CH1 -->
   <section class="chapter" data-panel="map">
     <div class="chead"><span class="rune">Chapter I · The Realm</span><h2>월드맵</h2>
-      <p class="lead">명령 하나가 지나가는 길이에요. 지도의 지역을 누르면 그곳의 기록이 펼쳐져요.</p></div>
+      <p class="lead">명령 하나가 1번부터 6번까지 이 길을 따라 처리되고, 응답은 같은 길로 돌아와요. 번호나 지역을 누르면 그 단계가 하는 일이 펼쳐져요.</p></div>
     <div class="atlas">
       <div>
         <div class="mapstage" id="mapstage">
           <svg viewBox="0 0 100 66.667" preserveAspectRatio="none" aria-hidden="true"><path class="trail" id="trail"/></svg>
         </div>
-        <div class="legend" style="margin-top:10px"><span>점선은 명령이 지나가는 길</span><span>게시판은 모든 지역이 읽고 써요</span></div>
+        <div class="rail" id="rail" role="group" aria-label="처리 순서"></div>
       </div>
       <article class="frame lore" id="lore" aria-live="polite"></article>
     </div>
@@ -418,53 +432,59 @@ $(".menu").innerHTML=CH.map(([id,lbl,n])=>`<button class="tab" role="tab" data-c
 
 /* ---------- CH1 월드맵 ---------- */
 const ZONES=[
- {id:"player",x:12,y:80,name:"모험가 야영지",sub:"AI 에이전트 · 당신의 터미널",
-  what:"주문서(명령)를 써요. 예: hera-agent-unity scene info",
+ {id:"player",x:12,y:80,name:"모험가 야영지",role:"명령 작성",comp:"AI 에이전트",edge:"",
+  what:"AI 에이전트(또는 사람)가 주문서, 즉 명령을 써요. 예: hera-agent-unity scene info",
   real:"Claude, Codex, Cursor 같은 AI 에이전트 또는 사람",
   why:"Hera는 AI의 일을 대신하지 않아요. AI가 Unity를 만질 손과 눈을 줘요."},
- {id:"gate",x:28,y:58,name:"관문 성채",sub:"Go CLI · 실행 파일 하나",
-  what:"주문서 형식을 검사하고, 위험도를 매기고, 어느 던전(Unity)으로 갈지 정해요.",
+ {id:"gate",x:28,y:58,name:"관문 성채",role:"CLI 검사",comp:"Go CLI",edge:"명령",
+  what:"CLI가 명령 형식과 인수를 검사하고, 위험도를 매기고, 어느 Unity로 보낼지 정해요.",
   real:"cmd/, internal/client · 런타임 의존성 0",
-  why:"설치가 바이너리 하나라 어떤 셸·AI에서도 불러 쓸 수 있어요."},
- {id:"board",x:46,y:70,name:"게시판 마을",sub:"~/.hera-agent-unity 파일들",
-  what:"던전이 1초마다 '나 살아 있음, 지금 N번 문'을 붙여요. 긴 작업 결과와 작업 기록도 여기 남아요.",
-  real:"instances/(heartbeat), status/(결과·operation ledger)",
-  why:"Unity가 리로드로 잠깐 문을 닫아도 상태가 사라지지 않아요."},
- {id:"door",x:58,y:44,name:"던전 입구",sub:"Connector · HTTP 8090~8099",
-  what:"요청을 받아 한 줄로 세우고, 문지기가 한 번에 한 명만 들여보내요.",
-  real:"HttpServer, CommandRouter(120초 대기 잠금)",
+  why:"설치가 실행 파일 하나라 어떤 셸·AI에서도 불러 쓸 수 있어요."},
+ {id:"board",x:46,y:70,name:"게시판 마을",role:"대상 확인",comp:"heartbeat 파일",edge:"대상 찾기",
+  what:"Unity가 1초마다 '살아 있음, 지금 N번 포트'를 파일에 적어요. CLI는 이걸 읽고 보낼 곳을 정해요. 긴 작업 결과와 작업 기록도 이 파일 영역에 남아요.",
+  real:"~/.hera-agent-unity/instances(heartbeat), status(결과·작업 기록)",
+  why:"Unity가 리로드로 잠깐 연결을 닫아도 상태가 사라지지 않고, 포트가 바뀌어도 프로젝트 경로로 따라가요."},
+ {id:"door",x:58,y:44,name:"던전 입구",role:"요청 접수",comp:"Connector (HTTP)",edge:"HTTP 요청",
+  what:"Unity 안의 Connector가 localhost HTTP로 요청을 받아 한 줄로 세우고, 한 번에 하나씩 들여보내요.",
+  real:"HttpServer, CommandRouter(최대 120초 대기 잠금) · 포트 8090~8099",
   why:"Unity는 메인 스레드에서만 안전하게 바뀌어요. 줄을 세워 충돌을 막아요."},
- {id:"dungeon",x:76,y:30,name:"깊은 던전",sub:"Unity 메인 스레드 · 도구 34종",
-  what:"실제 씬, 에셋, 플레이 모드, 테스트, 빌드가 여기서 일어나요.",
+ {id:"dungeon",x:76,y:30,name:"깊은 던전",role:"실행",comp:"Unity 메인 스레드",edge:"차례대로",
+  what:"도구가 실제로 씬·에셋을 바꾸거나, 플레이·테스트·빌드를 하거나, 정보를 읽어요.",
   real:"[HeraTool] 34개 · action 133개",
   why:"도구는 리플렉션으로 자동 등록돼요. 새 도구를 만들면 CLI가 자동으로 알아봐요."},
- {id:"save",x:88,y:62,name:"세이브 석상",sub:"operation ledger + 승인 서명",
-  what:"위험한 작업은 작업 번호로 기록하고, 인수에 묶인 서명이 있어야 실행해요.",
+ {id:"save",x:88,y:62,name:"세이브 석상",role:"승인·기록",comp:"승인 서명 + 작업 기록",edge:"결과 기록",
+  what:"위험한 작업은 인수에 묶인 승인 서명이 있어야 실행되고, 작업 번호로 결과를 기록해요.",
   real:"ApprovalAuthority, OperationLedger",
-  why:"응답이 끊겨도 같은 삭제를 두 번 하지 않아요. AI가 인수를 몰래 바꿔도 거절돼요."}
+  why:"응답이 끊겨도 같은 작업을 두 번 실행하지 않아요. AI가 인수를 몰래 바꿔도 거절돼요."}
 ];
 (function buildMap(){
   const st=$("#mapstage");
   if(ART["map-world"])st.insertAdjacentHTML("afterbegin",`<img class="bg" src="${ART["map-world"]}" alt="" decoding="async">`);
   const H=66.667,pts=ZONES.map(z=>[z.x,z.y*H/100]);
   let d=`M${pts[0][0]} ${pts[0][1]}`;
-  for(let i=1;i<pts.length;i++){const [x0,y0]=pts[i-1],[x1,y1]=pts[i];const cx=(x0+x1)/2,cy=Math.min(y0,y1)-4;d+=` Q${cx} ${cy} ${x1} ${y1}`}
+  for(let i=1;i<pts.length;i++){
+    const [x0,y0]=pts[i-1],[x1,y1]=pts[i];const cx=(x0+x1)/2,cy=Math.min(y0,y1)-4;d+=` Q${cx} ${cy} ${x1} ${y1}`;
+  }
   $("#trail").setAttribute("d",d);
-  ZONES.forEach(z=>{
+  ZONES.forEach((z,i)=>{
     const b=document.createElement("button");b.className="marker";b.dataset.z=z.id;
-    b.style.left=z.x+"%";b.style.top=z.y+"%";b.setAttribute("aria-label",z.name+" 기록 보기");
-    b.innerHTML=`<span class="pin">${pic("region-"+z.id,"",z.name.slice(0,1))}</span><span class="nm">${esc(z.name)}</span>`;
+    b.style.left=z.x+"%";b.style.top=z.y+"%";b.setAttribute("aria-label",`${i+1}단계 ${z.role}: ${z.name}`);
+    b.innerHTML=`<span class="pin">${pic("region-"+z.id,"",z.name.slice(0,1))}<span class="no">${i+1}</span></span><span class="nm"><b>${esc(z.role)}</b><small>${esc(z.name)}</small></span>`;
     b.onclick=()=>showZone(z.id);st.appendChild(b);
   });
+  $("#rail").innerHTML=ZONES.map((z,i)=>`<button class="step" data-step="${z.id}"><span class="n">STEP ${i+1}</span><b>${esc(z.role)}</b><code>${esc(z.comp)}</code>${z.edge?`<span class="in">받는 것: ${esc(z.edge)}</span>`:`<span class="in">시작</span>`}</button>`).join("");
+  document.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>showZone(b.dataset.step));
 })();
 function showZone(id){
-  const z=ZONES.find(x=>x.id===id);
+  const i=ZONES.findIndex(x=>x.id===id),z=ZONES[i];
   document.querySelectorAll(".marker").forEach(b=>b.classList.toggle("on",b.dataset.z===id));
-  $("#lore").innerHTML=`<span class="rune">Region Record</span><h3>${esc(z.name)}</h3><span class="lead" style="font-size:13px">${esc(z.sub)}</span>
+  document.querySelectorAll("[data-step]").forEach(b=>b.classList.toggle("on",b.dataset.step===id));
+  $("#lore").innerHTML=`<span class="rune">Step ${i+1} / ${ZONES.length} · ${esc(z.name)}</span><h3>${i+1}. ${esc(z.role)}</h3><span class="lead" style="font-size:13px">${esc(z.comp)}</span>
    <div class="rule"><i></i></div><p>${esc(z.what)}</p>
-   <dl class="kv"><dt>실제 이름</dt><dd class="mono">${esc(z.real)}</dd><dt>왜 이렇게?</dt><dd>${esc(z.why)}</dd></dl>`;
+   <dl class="kv"><dt>실제 이름</dt><dd class="mono">${esc(z.real)}</dd><dt>왜 이렇게?</dt><dd>${esc(z.why)}</dd></dl>
+   ${i<ZONES.length-1?`<p class="lead" style="font-size:13px">다음 → ${i+2}. ${esc(ZONES[i+1].role)}</p>`:`<p class="lead" style="font-size:13px">응답은 같은 길을 따라 1번으로 돌아가요.</p>`}`;
 }
-showZone("gate");
+showZone("player");
 
 /* ---------- CH2 퀘스트 ---------- */
 const BASE=[
