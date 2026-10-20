@@ -1,8 +1,8 @@
 {
   "schema": "hera.catalog-payload-report/2",
-  "catalog_hash": "sha256:cbbab9d699ee8e6b7c7ec3f456bebba0ed51c2081e6f11b95cfcf6acfabe565a",
-  "input_bytes": 268598,
-  "normalized_catalog_bytes": 269038,
+  "catalog_hash": "sha256:6fbcd87a7c2bee63f1918a32f3d4668d77b5265acc00d2cce2bcd47e3bf6d1ed",
+  "input_bytes": 268680,
+  "normalized_catalog_bytes": 269120,
   "tool_count": 34,
   "action_count": 133,
   "description_characters": 9940,
@@ -21,7 +21,7 @@
     {
       "name": "advanced",
       "tool_count": 2,
-      "normalized_contract_bytes": 4834
+      "normalized_contract_bytes": 4916
     },
     {
       "name": "assets",
@@ -267,9 +267,9 @@
   ],
   "normalized_catalog_rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-    "low_4_bytes_per_token": 67260,
-    "central_3_2_bytes_per_token": 84075,
-    "high_2_5_bytes_per_token": 107616
+    "low_4_bytes_per_token": 67280,
+    "central_3_2_bytes_per_token": 84100,
+    "high_2_5_bytes_per_token": 107648
   },
   "warnings": [
     "profile assets uses 51324 normalized bytes (warning budget 24000)",

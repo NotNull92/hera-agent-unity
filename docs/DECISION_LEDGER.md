@@ -20,6 +20,28 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## Payload trim — default agent-facing outputs (2026-10-20)
+
+- **Failure prevented:** the default `exec` depth reflected every Unity Object in
+  a result. Returning one Transform cost 7,178 B, against 69 B in the shallow
+  form the agent rules already recommend. Scene hierarchy leaves repeated
+  `"active":true,"children":[]`, and error envelopes repeated timings and
+  close-name lists.
+- **Decision:** Unity Objects stay `{name, type, instanceID}` unless
+  `--depth 3`+ is explicit; plain values keep the depth-3 default, so anonymous
+  results with vectors are unchanged (195 B live). Hierarchy writes `active` only
+  when false and `children` only when non-empty. `UNKNOWN_COMMAND` keeps close
+  names in `data.did_you_mean` only. CLI error envelopes drop `timings`;
+  `--verbose` prints them.
+- **Evidence:** fresh 6000.6.6f1 project, candidate installed from the commit;
+  normal install compile errors 0, test sources 0; testables suite 31 / 30 / 0 /
+  1 skipped (new `ExecSerializer` wrapper and the hierarchy assertions pass);
+  manifest restored byte-for-byte. Live: default Transform 70 B, explicit depth 3
+  7,181 B, hierarchy 277 → 221 B for two leaves, unknown command 233 → 184 B.
+- **Catalog:** only the exec `depth` description changed: `cbbab9d6…` →
+  `6fbcd87a…`, 34 tools / 133 actions, normalized +82 B; compact rules unchanged.
+- **Versions:** Connector 0.2.8, CLI v0.3.8 candidates. No tags or releases.
+
 ## U8 — Windows Hub secondary installation root (2026-10-20)
 
 CLI v0.3.7 checks the Hub secondaryInstallPath.json only when no explicit root
