@@ -20,6 +20,19 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## U7 / M8 — PDB research closed with explicit unknowns (2026-10-20)
+
+Build-paired native PDB GUID/age and public symbol addresses confirm distinct
+modal-loop/update-bridge and EntityId lookup/validity entry points. U4's specific
+native dialog stalls the ordinary heartbeat/request pump; prior four restart
+raw-ID collisions remain direct evidence for session-scoped identity. Symbols
+alone do not establish all-modal update behavior, allocator generations or the
+native validity predicate. REA native default analysis exceeded its 300-second
+call limit; no function body/call graph is claimed. Those internal questions
+remain undetermined. Research scripts/evidence stay outside the product tree;
+no binaries, tooling, catalog changes or implementation adopted. Reopen only for
+a concrete debugging need with a PDB-aware, adequately bounded analysis setup.
+
 ## U6 / M7 — transport token closed without implementation (2026-10-20)
 
 Decision: closed without implementation. A bearer token stored in heartbeat
