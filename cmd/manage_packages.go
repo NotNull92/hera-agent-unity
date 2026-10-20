@@ -61,7 +61,7 @@ func managePackagesCmd(
 
 	port := meta.Port
 	if port == 0 {
-		inst, err := runtime.Resolve()
+		inst, err := runtime.Config.Wait("manage_packages").WaitForAlive(ctx, runtime.Resolve)
 		if err != nil {
 			return nil, err
 		}
