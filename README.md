@@ -724,8 +724,8 @@ typed execution, `exec` when no dedicated command exists.
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.12** with five native binaries
-- npm: **0.3.12** (`latest`)
+- CLI / GitHub Release: **v0.3.13** with five native binaries
+- npm: **0.3.13** (`latest`)
 - Unity Connector: **0.2.9** (pin with `#connector-0.2.9`)
 - License: **Apache-2.0**
 
@@ -739,6 +739,7 @@ What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
+| v0.3.13 | The guide page becomes "Hera Unity Status": a request-flow map, skill trees that explain each tool, a risk bestiary and embedded artwork. No CLI or Connector behavior change. |
 | v0.3.12 | Adds the standalone Hera guide page (`docs/guide/index.html`); no CLI or Connector behavior change. |
 | v0.3.11 | Decimal/exponent arguments use Unity's argument hash; package jobs wait for a real result port. |
 | v0.3.10 / 0.2.9 | Game Feel UI recipes attach once per element type per Editor session; `manage_components` drops redundant `type`/`enabled` fields; compact agent rules shrink to 2,315 B. |
