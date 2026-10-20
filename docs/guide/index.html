@@ -157,7 +157,7 @@ a{color:var(--frost)}
 .d2-head{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
 .d2-head p{color:var(--muted);font-size:14px}
 .d2-grid-wrap{position:relative}
-.d2-grid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);row-gap:22px;column-gap:10px;z-index:1}
+.d2-grid{position:relative;display:grid;grid-template-columns:repeat(3,1fr);row-gap:34px;column-gap:10px;z-index:1}
 .d2-links{position:absolute;inset:0;width:100%;height:100%;z-index:0;overflow:visible}
 .d2-links line{stroke:rgba(201,164,92,.55);stroke-width:2}
 .d2-links line.on{stroke:var(--gold2);stroke-width:2.5}
@@ -168,6 +168,7 @@ a{color:var(--frost)}
 .skill .slot{width:64px;height:64px;display:grid;place-items:center;position:relative;
   background:linear-gradient(145deg,#3a3f45,#1b1f24 60%,#121518);border:2px solid #555c63;box-shadow:inset 0 0 0 2px #0b0d10,inset 0 0 14px rgba(0,0,0,.8)}
 .skill .slot .glyph{font-family:var(--display);font-weight:800;font-size:24px;color:#cfd5da;text-shadow:0 0 6px rgba(127,196,201,.35)}
+.skill .lbl{display:flex;flex-direction:column;align-items:center;gap:1px;padding:3px 8px;background:#101317;border:1px solid var(--line);box-shadow:0 0 0 3px #101317}
 .skill .nm{font-family:var(--display);font-size:13.5px;color:var(--silver);text-align:center;line-height:1.3}
 .skill .id{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
 .skill:hover .slot{border-color:#8c949b}
@@ -559,7 +560,7 @@ function showTree(i){
   $("#d2head").innerHTML=`<span class="rune">${esc(c.r)} · ${c.skills.length} Skills</span><h3>${esc(c.n)}</h3><p>${esc(c.d)}</p>`;
   const rows=Math.max(...c.skills.map(s=>s.row))+1;let h="";
   for(let r=0;r<rows;r++){h+=`<div class="tier" style="grid-row:${r*2+1}">${TIERS[r]}</div>`;
-    c.skills.filter(s=>s.row===r).forEach(s=>{h+=`<button class="skill" data-t="${s.t}" style="grid-row:${r*2+2};grid-column:${s.col+1}"><span class="slot">${pic("skill-"+s.t,"",s.n.slice(0,1))}</span><span class="nm">${esc(s.n)}</span><span class="id">${esc(s.t)}</span></button>`})}
+    c.skills.filter(s=>s.row===r).forEach(s=>{h+=`<button class="skill" data-t="${s.t}" style="grid-row:${r*2+2};grid-column:${s.col+1}"><span class="slot">${pic("skill-"+s.t,"",s.n.slice(0,1))}</span><span class="lbl"><span class="nm">${esc(s.n)}</span><span class="id">${esc(s.t)}</span></span></button>`})}
   $("#d2grid").innerHTML=h;
   document.querySelectorAll(".skill").forEach(b=>b.onclick=()=>showSkill(b.dataset.t));
   showSkill(c.skills[0].t);
@@ -567,7 +568,7 @@ function showTree(i){
 function drawLinks(){
   const c=TREES[tree],wrap=$(".d2-grid-wrap"),svg=$("#d2links");if(!wrap||wrap.offsetParent===null)return;
   const box=wrap.getBoundingClientRect();svg.setAttribute("viewBox",`0 0 ${box.width} ${box.height}`);
-  const at=t=>{const el=wrap.querySelector(`.skill[data-t="${t}"] .slot`).getBoundingClientRect();return {x:el.left-box.left+el.width/2,top:el.top-box.top,bot:el.bottom-box.top}};
+  const at=t=>{const btn=wrap.querySelector(`.skill[data-t="${t}"]`),el=btn.querySelector(".slot").getBoundingClientRect(),all=btn.getBoundingClientRect();return {x:el.left-box.left+el.width/2,top:el.top-box.top,bot:all.bottom-box.top}};
   let g="";c.skills.forEach(s=>(s.pre||[]).forEach(p=>{const a=at(p),b=at(s.t);const on=skill===s.t||skill===p?"on":"";
     const x1=a.x,y1=a.bot+2,x2=b.x,y2=b.top-4,ang=Math.atan2(y2-y1,x2-x1),L=9;
     const p1=[x2-L*Math.cos(ang-0.45),y2-L*Math.sin(ang-0.45)],p2=[x2-L*Math.cos(ang+0.45),y2-L*Math.sin(ang+0.45)];
