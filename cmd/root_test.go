@@ -3,6 +3,7 @@ package cmd
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
@@ -228,5 +229,13 @@ func TestDialogResponsePreservesOutcome(t *testing.T) {
 	}
 	if operationOutcomeResponse(&client.TargetUnresponsiveError{State: "ready"}) != nil {
 		t.Fatal("changed ordinary timeout")
+	}
+}
+
+func TestErrorEnvelopeOmitsTimings(t *testing.T) {
+	resp := &client.CommandResponse{Code: "UNKNOWN_COMMAND", Message: "x", Timings: map[string]int64{"total_ms": 4}}
+	out := captureStderr(t, func() { (&ResponsePrinter{}).Print(resp, "scene") })
+	if strings.Contains(out, "timings") || !strings.Contains(out, "UNKNOWN_COMMAND") || resp.Timings == nil {
+		t.Fatalf("envelope=%s caller timings=%v", out, resp.Timings)
 	}
 }

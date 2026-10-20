@@ -245,24 +245,16 @@ namespace HeraAgent.Tools
                 }
             }
 
-            if (includeComponents)
+            // Leaves and active nodes dominate large scenes, so their default fields are omitted.
+            var node = new Dictionary<string, object>
             {
-                return new
-                {
-                    instance_id = EntityIdCompat.IdOf(go),
-                    name = go.name,
-                    active = go.activeSelf,
-                    components = componentNames,
-                    children,
-                };
-            }
-            return new
-            {
-                instance_id = EntityIdCompat.IdOf(go),
-                name = go.name,
-                active = go.activeSelf,
-                children,
+                ["instance_id"] = EntityIdCompat.IdOf(go),
+                ["name"] = go.name,
             };
+            if (!go.activeSelf) node["active"] = false;
+            if (includeComponents) node["components"] = componentNames;
+            if (children.Count > 0) node["children"] = children;
+            return node;
         }
 
         [HeraAction(

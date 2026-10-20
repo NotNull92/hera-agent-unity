@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (CLI v0.3.8; Connector 0.2.8)
+
+- `exec` keeps Unity Objects in the shallow `{name, type, instanceID}` form unless `--depth 3` or more is passed explicitly. Returning a Transform at the default depth dropped from 7,178 B to 69 B.
+- `scene hierarchy` omits `active` when true and `children` when empty.
+- `UNKNOWN_COMMAND` lists close names once, in `data.did_you_mean`.
+- Error envelopes no longer include `timings`; `--verbose` still prints them.
+
 ### Fixed (CLI v0.3.7; Connector unchanged at 0.2.7)
 
 - Windows Editor bootstrap now tries the Hub secondary installation path when the default root lacks the requested version. Explicit flag/environment roots keep priority; invalid settings are ignored and failures list attempted paths. Hub settings are never modified.

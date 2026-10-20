@@ -256,11 +256,14 @@ func (rp *ResponsePrinter) Print(resp *client.CommandResponse, category string) 
 		// styled boxes. Human commands keep the styled panel for terminal
 		// readability.
 		if !isHumanCommand(category) {
+			// Timings reach the agent only through --verbose (printTimings).
+			envelope := *resp
+			envelope.Timings = nil
 			var b []byte
 			if rp.shouldCompactJSON(category) {
-				b, _ = json.Marshal(resp)
+				b, _ = json.Marshal(envelope)
 			} else {
-				b, _ = json.MarshalIndent(resp, "", "  ")
+				b, _ = json.MarshalIndent(envelope, "", "  ")
 			}
 			fmt.Fprintln(os.Stderr, string(b))
 			return

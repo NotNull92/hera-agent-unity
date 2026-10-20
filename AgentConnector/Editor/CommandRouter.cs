@@ -304,15 +304,12 @@ namespace HeraAgent
             if (handler == null)
             {
                 var similar = ToolDiscovery.SuggestSimilarCommands(command);
-                var suggestionList = new List<string>();
-                foreach (var s in similar) suggestionList.Add($"Did you mean '{s}'?");
-                suggestionList.Add("Run 'hera-agent-unity list --names' to see all tools");
-
+                // Close names travel once, in data.did_you_mean.
                 return new ErrorResponse(
                     code: "UNKNOWN_COMMAND",
                     message: $"Unknown command: {command}",
                     data: similar.Count > 0 ? new { did_you_mean = similar } : null,
-                    suggestions: suggestionList);
+                    suggestions: new List<string> { "Run 'hera-agent-unity list --names' to see all tools" });
             }
 
             ToolValidationResult validation;

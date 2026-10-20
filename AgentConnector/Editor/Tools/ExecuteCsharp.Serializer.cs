@@ -33,7 +33,7 @@ namespace HeraAgent.Tools
             public string message;
         }
 
-        private static object Invoke(Assembly compiled, Dictionary<string, long> timings, string stacktraceMode, int depth, bool strict)
+        private static object Invoke(Assembly compiled, Dictionary<string, long> timings, string stacktraceMode, int depth, bool expandUnityObjects, bool strict)
         {
             var method = compiled.GetType("__CliDynamic")?.GetMethod("Execute");
             if (method == null)
@@ -82,7 +82,7 @@ namespace HeraAgent.Tools
             timings["execute_ms"] = execSw.ElapsedMilliseconds;
 
             var serSw = Stopwatch.StartNew();
-            var serialized = Serialize(result, 0, depth,
+            var serialized = Serialize(result, 0, depth, expandUnityObjects,
                 new HashSet<object>(ReferenceEqualityComparer.Instance));
             serSw.Stop();
             timings["serialize_ms"] = serSw.ElapsedMilliseconds;
@@ -165,7 +165,7 @@ namespace HeraAgent.Tools
             return sb.ToString();
         }
 
-        private static object Serialize(object obj, int depth, int maxDepth, HashSet<object> visited)
+        private static object Serialize(object obj, int depth, int maxDepth, bool expandUnityObjects, HashSet<object> visited)
         {
             if (obj == null) return null;
             if (depth > maxDepth) return obj.ToString();
@@ -174,14 +174,14 @@ namespace HeraAgent.Tools
             if (type.IsEnum) return obj.ToString();
             if (type.Name.StartsWith("FixedString")) return obj.ToString();
 
-            if (maxDepth <= 2 && obj is UnityEngine.Object unityObject)
+            if ((maxDepth <= 2 || !expandUnityObjects) && obj is UnityEngine.Object unityObject)
                 return SerializeShallowUnityObject(unityObject, type);
 
             if (obj is IDictionary dict)
             {
                 var r = new Dictionary<string, object>();
                 foreach (DictionaryEntry e in dict)
-                    r[e.Key.ToString()] = Serialize(e.Value, depth + 1, maxDepth, visited);
+                    r[e.Key.ToString()] = Serialize(e.Value, depth + 1, maxDepth, expandUnityObjects, visited);
                 return r;
             }
 
@@ -199,7 +199,7 @@ namespace HeraAgent.Tools
                 foreach (var item in enumerable)
                 {
                     if (count >= limit) { truncated = true; break; }
-                    list.Add(Serialize(item, depth + 1, maxDepth, visited));
+                    list.Add(Serialize(item, depth + 1, maxDepth, expandUnityObjects, visited));
                     count++;
                 }
                 if (truncated)
@@ -229,12 +229,12 @@ namespace HeraAgent.Tools
                 {
                     if (m is FieldInfo f)
                     {
-                        try { r[f.Name] = Serialize(f.GetValue(obj), depth + 1, maxDepth, visited); }
+                        try { r[f.Name] = Serialize(f.GetValue(obj), depth + 1, maxDepth, expandUnityObjects, visited); }
                         catch (Exception ex) { r[f.Name] = $"<error: {ex.GetType().Name}>"; }
                     }
                     else if (m is PropertyInfo prop)
                     {
-                        try { r[prop.Name] = Serialize(prop.GetValue(obj), depth + 1, maxDepth, visited); }
+                        try { r[prop.Name] = Serialize(prop.GetValue(obj), depth + 1, maxDepth, expandUnityObjects, visited); }
                         catch (Exception ex)
                         {
                             var inner = ex is TargetInvocationException tie ? tie.InnerException ?? tie : ex;

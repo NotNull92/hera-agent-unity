@@ -195,7 +195,7 @@ echo '<code>' | hera-agent-unity exec [flags]
 | `--dotnet` | Path to dotnet runtime | Auto-detected |
 | `--no-cache` | Bypass exec caches; do not read or write cached assemblies or disk DLLs | `false` |
 | `--security-mode` | `full` preserves unrestricted access; `restricted` enables source, pre-load metadata, and post-load IL validation | `full` |
-| `--depth` | Maximum returned object-graph depth. At depths `1` and `2`, every `UnityEngine.Object` is the compact `{name, type, instanceID}` shape; depth `3` (default) and above reflect its public members. | `3` (max `8`) |
+| `--depth` | Maximum returned object-graph depth. Every `UnityEngine.Object` is the compact `{name, type, instanceID}` shape unless `--depth 3` or more is passed explicitly; only then are its public members reflected. Plain values use depth `3` by default. | `3` (max `8`) |
 
 ```bash
 # Basic execution
@@ -218,7 +218,7 @@ hera-agent-unity exec "return Application.unityVersion;" --security-mode restric
 
 **Note**: Use `return` for output. Use `return null;` for void operations.
 
-**Return-size control**: Prefer `--depth 1` or `--depth 2` when returning a `GameObject`, `Transform`, `Component`, or other `UnityEngine.Object`. Both depths preserve only its name, runtime type, and instance ID; use depth `3` only when the reflected member graph is required.
+**Return-size control**: Prefer `--depth 1` or `--depth 2` when returning a `GameObject`, `Transform`, `Component`, or other `UnityEngine.Object`. Both depths preserve only its name, runtime type, and instance ID; pass `--depth 3` explicitly only when the reflected member graph is required.
 
 **Restricted mode**: `--security-mode restricted` is an explicit defense-in-depth mode. It rejects dangerous source constructs before compilation, rejects native interop and non-platform assembly references from compiled metadata before loading, and validates actual IL call targets after loading but before `Execute()`. File, network, process, reflection, threading, dynamic-loading, `UnityEditor`, and user/third-party assembly access are denied. Returned `UnityEngine.Object` values are forced to the shallow depth-2 shape. The normal arbitrary-code permission, approval, operation ledger, and strict tool contract still apply; Restricted does not replace them. Full Access remains the default for compatibility.
 
@@ -300,7 +300,7 @@ hera-agent-unity scene <action> [target] [flags]
 | `list` | List scenes registered in Build Settings. |
 | `set_active <path\|name>` | Make one loaded scene active. |
 | `close <path\|name>` | Unload a loaded scene. Cannot close the only loaded scene. |
-| `hierarchy` | Dump the GameObject tree of every loaded scene (or one subtree) as nested nodes with instance_id, name, and active state. |
+| `hierarchy` | Dump the GameObject tree of every loaded scene (or one subtree) as nested nodes with instance_id and name. `active` appears only as `false`, and `children` only when non-empty. |
 
 ### Flags
 

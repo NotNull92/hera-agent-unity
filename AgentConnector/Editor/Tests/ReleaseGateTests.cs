@@ -28,6 +28,7 @@ namespace HeraAgent.Tests
             nameof(EntityIdCompat),
             nameof(ExecCompileCache),
             nameof(ExecRestricted),
+            nameof(ExecSerializer),
             nameof(HttpServerLifecycle),
             nameof(InputQa),
             nameof(OperationLedger),
@@ -84,6 +85,9 @@ namespace HeraAgent.Tests
 
         [Test]
         public void ExecRestricted() => ExecRestrictedTests.RunTests();
+
+        [Test]
+        public void ExecSerializer() => ExecSerializerTests.RunTests();
 
         [Test]
         public void HttpServerLifecycle() => HttpServerLifecycleTests.RunTests();

@@ -61,7 +61,7 @@ namespace HeraAgent.Tools
                 SchemaJson = "{\"type\":\"string\",\"enum\":[\"full\",\"restricted\"]}")]
             public string SecurityMode { get; set; }
 
-            [ToolParameter("Max object graph depth in serialized return value (default 3, max 8).")]
+            [ToolParameter("Max object graph depth in serialized return value (default 3, max 8). Unity objects stay {name, type, instanceID} unless depth 3+ is passed explicitly.")]
             public int Depth { get; set; }
         }
 
@@ -102,7 +102,10 @@ namespace HeraAgent.Tools
             var noCache = p.GetBool("no_cache") || p.GetBool("nocache") || p.GetBool("no-cache");
             var stacktrace = (p.Get("stacktrace") ?? "user").ToLowerInvariant();
             var strict = p.GetBool("strict");
-            var depth = ClampDepth(p.GetInt("depth") ?? 0);
+            var requestedDepth = p.GetInt("depth") ?? 0;
+            var depth = ClampDepth(requestedDepth);
+            // Reflecting a Unity object costs KBs per value; only an explicit depth asks for it.
+            var expandUnityObjects = requestedDepth >= 3;
             var securityMode = (p.Get("security_mode") ?? p.Get("security-mode") ?? "full").ToLowerInvariant();
             if (securityMode != "full" && securityMode != "restricted")
                 return new ErrorResponse("INVALID_ARGUMENT",
@@ -118,7 +121,7 @@ namespace HeraAgent.Tools
             }
 
             var built = BuildSource(code, extraUsings);
-            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth, strict, restricted, observation);
+            return CompileAndExecute(built.Source, built.UserCodeLineOffset, cscOverride, dotnetOverride, compileOnly, noCache, stacktrace, depth, expandUnityObjects, strict, restricted, observation);
         }
 
         /// <summary>
@@ -146,7 +149,7 @@ namespace HeraAgent.Tools
             }
         }
 
-        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth, bool strict, bool restricted, ExecJournal.Observation observation)
+        private static object CompileAndExecute(string source, int userLineOffset, string cscOverride, string dotnetOverride, bool compileOnly, bool noCache, string stacktraceMode, int depth, bool expandUnityObjects, bool strict, bool restricted, ExecJournal.Observation observation)
         {
             var timings = observation.Timings;
             string cacheKey = null;
@@ -311,7 +314,7 @@ namespace HeraAgent.Tools
             }
 
             timings["cache"] = cacheState;
-            var result = Invoke(compiled, timings, stacktraceMode, depth, strict);
+            var result = Invoke(compiled, timings, stacktraceMode, depth, expandUnityObjects, strict);
             ResponseTimings.Merge(result, timings);
 
             // For --no-cache we own the ALC and must unload it. Serialize already

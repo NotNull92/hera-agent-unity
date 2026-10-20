@@ -19,6 +19,10 @@ namespace HeraAgent.Tests
                 allPassed &= ExpectShallow("GameObject depth 2", go, 2);
                 allPassed &= ExpectShallow("Transform depth 1", go.transform, 1);
                 allPassed &= ExpectShallow("Transform depth 2", go.transform, 2);
+                allPassed &= ExpectShallow("Transform default depth", go.transform, 0);
+                var listed = ExecuteCsharp.SerializeForTesting(new[] { go }, 0) as List<object>;
+                allPassed &= Expect("GameObject in default-depth list stays shallow",
+                    listed?[0] is Dictionary<string, object> item && item.Count == 3);
 
                 var destroyed = new GameObject("Hera_DestroyedExecSerializer_Test");
                 UnityEngine.Object.DestroyImmediate(destroyed);

@@ -15,8 +15,8 @@ Options:
   --no-cache           Bypass exec caches: force a fresh compile without reading
                        or writing cached assemblies or disk DLLs.
   --depth <n>          Max object graph depth in the serialized return value
-                       (default 3, max 8). Depths 1–2 collapse Unity Objects to
-                       {name, type, instanceID} for the leanest payload.
+                       (default 3, max 8). Unity Objects stay {name, type,
+                       instanceID} unless --depth 3 or more is passed explicitly.
   --check              Compile-only: validate syntax/types and return without
                        executing. Useful for dry-run validation before a real
                        exec — no side effects, no Invoke. Returns success on

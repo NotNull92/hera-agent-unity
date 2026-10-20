@@ -20,7 +20,7 @@ namespace HeraAgent.Tools
 
         internal static object SerializeForTesting(object obj, int maxDepth)
         {
-            return Serialize(obj, 0, ClampDepth(maxDepth),
+            return Serialize(obj, 0, ClampDepth(maxDepth), maxDepth >= 3,
                 new HashSet<object>(ReferenceEqualityComparer.Instance));
         }
     }

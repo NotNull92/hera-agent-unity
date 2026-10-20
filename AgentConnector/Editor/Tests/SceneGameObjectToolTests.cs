@@ -89,6 +89,13 @@ namespace HeraAgent.Tests
                 parent.SetActive(false);
                 Assert.IsTrue(EditorSceneManager.SaveScene(SceneManager.GetActiveScene()));
 
+                var tree = RequireSuccess(ManageScene.Hierarchy(new JObject { ["root"] = "Parent" }))["root"];
+                Assert.AreEqual(false, tree.Value<bool>("active"));
+                var leaf = tree["children"][0];
+                Assert.AreEqual("InactiveChild", leaf.Value<string>("name"));
+                Assert.IsNull(leaf["active"], "active:true is implied by omission");
+                Assert.IsNull(leaf["children"], "empty children are omitted");
+
                 var target = new JObject { ["instance_id"] = EntityIdCompat.IdOf(child) };
                 RequireSuccess(ManageGameObject.SetTransform(Merge(target, new JObject
                 {
