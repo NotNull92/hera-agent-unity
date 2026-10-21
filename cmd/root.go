@@ -104,6 +104,9 @@ func operationOutcomeResponse(err error) *client.CommandResponse {
 		data["dialog_title"] = unresponsive.DialogTitle
 		response.Message += "; a modal Editor dialog is blocking the main thread; a person must close it"
 	}
+	if unknown != nil && unknown.OperationID != "" {
+		response.Message += fmt.Sprintf(`; check it with: hera-agent-unity --project "%s" task status %s`, unknown.Project, unknown.OperationID)
+	}
 	response.Data, _ = json.Marshal(data)
 	return response
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 func baseDir() string {
@@ -38,4 +39,8 @@ func LegacyTestResultPath(port int) string {
 
 func PackageResultPath(port int, jobID string) string {
 	return filepath.Join(baseDir(), "status", fmt.Sprintf("package-result-%d-%s.json", port, jobID))
+}
+
+func OperationsDir(projectID string) string {
+	return filepath.Join(StatusDir(), "operations", strings.ReplaceAll(projectID, ":", "_"))
 }

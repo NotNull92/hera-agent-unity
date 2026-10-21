@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/NotNull92/hera-agent-unity/internal/paths"
@@ -13,9 +14,10 @@ import (
 )
 
 type taskCLI struct {
-	store  *taskbridge.Store
-	port   int
-	output io.Writer
+	operationsDir string
+	store         *taskbridge.Store
+	port          int
+	output        io.Writer
 }
 
 type taskView struct {
@@ -40,9 +42,10 @@ func taskCmd(config GlobalConfig, args []string) error {
 		return fmt.Errorf("identify Unity project for durable tasks: %w", err)
 	}
 	return (taskCLI{
-		store:  taskbridge.New(paths.StatusDir(), projectID),
-		port:   inst.Port,
-		output: os.Stdout,
+		store:         taskbridge.New(paths.StatusDir(), projectID),
+		operationsDir: paths.OperationsDir(projectID),
+		port:          inst.Port,
+		output:        os.Stdout,
 	}).Run(args)
 }
 
@@ -68,7 +71,10 @@ func (command taskCLI) Run(args []string) error {
 		}{Tasks: views})
 	case "status":
 		if len(args) != 2 {
-			return fmt.Errorf("usage: hera-agent-unity task status <task_id>")
+			return fmt.Errorf("usage: hera-agent-unity task status <task_id|op_id>")
+		}
+		if strings.HasPrefix(args[1], "op_") {
+			return command.operationStatus(args[1])
 		}
 		task, err := command.store.Get(args[1])
 		if err != nil {
