@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="hera-agent-unity의 구조, 처리 흐름, 기능, 위험, 조합 아이디어, 아티팩트를 판타지 RPG 공략집처럼 정리한 페이지">
+<meta name="description" content="hera-agent-unity의 구조, 처리 흐름, 기능, 위험, 결정, 조합 아이디어, 아티팩트를 판타지 RPG 공략집처럼 정리한 페이지">
 <title>Hera Unity Status</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Nanum+Myeongjo:wght@700;800&family=IBM+Plex+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <style>
-/* Layout: 한 장의 어두운 북방 판타지 화면. 상단 문장 + 챕터 문장 메뉴, 챕터마다 고유한 무대(지도·일지·별자리·도감·시험·대장간·보물고) */
+/* Layout: 한 장의 어두운 북방 판타지 화면. 상단 문장 + 챕터 문장 메뉴, 챕터마다 고유한 무대(지도·일지·별자리·도감·시험·대장간·보물고·법전) */
 :root{
   --void:#0b0d10; --stone:#14181d; --slate:#1d232a; --slate2:#262d35;
   --line:rgba(217,221,226,.18); --line2:rgba(217,221,226,.34);
@@ -66,7 +66,7 @@ a{color:var(--frost)}
 .stat b{font-family:var(--mono);font-size:17px;color:var(--gold2);font-variant-numeric:tabular-nums}
 
 /* ---------- 챕터 메뉴 ---------- */
-.menu{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
+.menu{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
 .tab{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;color:var(--muted);position:relative;transition:color .2s}
 .tab .sig{width:34px;height:34px;display:grid;place-items:center;opacity:.6;transition:opacity .2s,filter .2s}
 .tab .sig img{width:30px;height:30px}
@@ -242,6 +242,15 @@ a{color:var(--frost)}
 .scroll li::marker{color:var(--gold);font-family:var(--rune)}
 .tally{font-size:13px;color:var(--muted)}
 .tally b{color:var(--gold2);font-family:var(--mono)}
+.trials .empty{border:1px dashed var(--line2);padding:18px;color:var(--muted);font-size:14px}
+
+/* ---------- CH8 법전 ---------- */
+.laws{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:14px}
+.law{display:flex;flex-direction:column;gap:8px;border-top:3px solid var(--gold)}
+.law .meta{font-family:var(--rune);font-size:11px;letter-spacing:.14em;color:var(--gold2)}
+.law dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:13px}
+.law dt{color:var(--dim)}
+.law dd{margin:0;color:var(--muted);overflow-wrap:anywhere}
 
 /* ---------- CH6 대장간 ---------- */
 .forge{position:relative;border:1px solid var(--line2);overflow:hidden;padding:18px;
@@ -368,7 +377,7 @@ footer a{color:var(--frost)}
   <!-- CH5 -->
   <section class="chapter" data-panel="grill" hidden>
     <div class="chead"><span class="rune">Chapter V · Trials of the Sage</span><h2>그릴링</h2>
-      <p class="lead">다음 기능을 만들기 전에 현자가 내는 시험이에요. 봉인을 풀면 하위 질문이 나와요.</p></div>
+      <p class="lead">중요한 결정을 내리기 전에 답해 봐야 할 질문이에요. 봉인을 풀면 세부 질문이 나와요. 결정이 나면 VIII 법전으로 옮기고 여기서는 지워요.</p></div>
     <p class="tally" id="tally"></p>
     <div class="trials" id="trials"></div>
   </section>
@@ -413,6 +422,13 @@ footer a{color:var(--frost)}
     <p class="footnote">새 아티팩트는 저장소의 "외부 참고는 완전히 Hera화한 뒤에만" 원칙과 기능 추가 관문(실제 실패 근거 먼저)을 지켜야 해요. 처음엔 스킬로 시작하고, 반복해서 쓰이면 도구로 올리는 순서를 권해요.</p>
   </section>
 
+  <!-- CH8 -->
+  <section class="chapter" data-panel="law" hidden>
+    <div class="chead"><span class="rune">Chapter VIII · The Codex</span><h2>법전</h2>
+      <p class="lead">그릴링에서 정한 결정이에요. 자세한 원문은 저장소 문서에 있고, 여기에는 짧은 요약과 링크만 둬요. 결정을 바꾸려면 V 그릴링에 새 질문을 올려요.</p></div>
+    <div class="laws" id="laws"></div>
+  </section>
+
   <footer>
     <div class="rule" style="width:min(320px,70%);margin:0 auto"><i></i></div>
     <span>기준 버전: CLI <span class="mono">v0.3.19</span> / Connector <span class="mono">0.2.10</span> (2026-10-21). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실측·문서 근거가 있는 것만 넣었어요.</span>
@@ -427,7 +443,7 @@ let ART={};try{ART=JSON.parse(document.getElementById("art").textContent||"{}")}
 const pic=(key,alt,glyph,cls="")=>ART[key]?`<img ${cls?`class="${cls}"`:""} src="${ART[key]}" alt="${esc(alt)}" loading="lazy" decoding="async">`:(glyph?`<span class="glyph" aria-hidden="true">${esc(glyph)}</span>`:"");
 
 /* ---------- 챕터 메뉴 ---------- */
-const CH=[["map","월드맵","I"],["quest","퀘스트","II"],["skills","스킬 트리","III"],["danger","위험 지대","IV"],["grill","그릴링","V"],["craft","조합 공방","VI"],["sig","아티팩트","VII"]];
+const CH=[["map","월드맵","I"],["quest","퀘스트","II"],["skills","스킬 트리","III"],["danger","위험 지대","IV"],["grill","그릴링","V"],["craft","조합 공방","VI"],["sig","아티팩트","VII"],["law","법전","VIII"]];
 $(".menu").innerHTML=CH.map(([id,lbl,n])=>`<button class="tab" role="tab" data-ch="${id}"><span class="sig">${pic("sigil-"+id,"","✦")}</span><span class="lbl">${lbl}</span><span class="num rune">${n}</span></button>`).join("");
 
 /* ---------- CH1 월드맵 ---------- */
@@ -638,22 +654,51 @@ document.querySelectorAll("[data-sev]").forEach(b=>b.onclick=()=>{document.query
 renderBeasts("all");
 
 /* ---------- CH5 현자의 시험 ---------- */
-const GRILL=[
- {t:"Hera는 무엇이 아닌가? → 여섯 가지를 공개",p:"2026-10-21에 정했어요. AI가 아니고, 게임 런타임 도구가 아니고(Editor 전용), 두 번째 프로토콜과 실시간 채널이 없고, 에디터 여러 개를 함께 다루지 않고, 샌드박스도 아니에요. 새 기능은 재현된 실패가 있어야 들어오고, 상시 규칙은 2,560 B 안에 둬요.",
-  q:["다음 기능을 막아 줄 실제 실패 사례 3개를 적을 수 있나요?","그 기능을 exec나 기존 action 조합으로 못 푸는 이유는?","새 기능이 늘리는 토큰 비용(카탈로그·규칙)은 얼마인가요?"]},
- {t:"누구를 위한 도구인가: 내부용 vs 공개 제품 → 공개 제품",p:"2026-10-21에 정했어요. 내 게임에 매일 쓰며 고치는 공개 제품이에요. 기능 제거는 한 마이너 이상 예고한 뒤 마이너 버전에서만 해요. 이슈와 PR은 2주, 보안 제보는 1주 안에 첫 응답해요. 작업은 내 게임의 실패, 보안 제보, 재현된 버그에서만 시작하고, 크런치 중에는 보안과 데이터 손실만 고쳐요.",
-  q:["하위 호환을 몇 버전까지 지킬 건가요?","외부 이슈·PR에 응답할 시간을 주당 얼마나 쓸 수 있나요?","내 게임 개발 시간이 Hera 유지보수에 잠식되면 어디서 끊나요?"]},
- {t:"exec 전체 권한을 계속 기본값으로 둘까? → 둔다",p:"2026-10-20에 Full Access 기본값을 유지하기로 재확인했어요. restricted는 UnityEditor API를 제한하므로 필요한 작업에서 선택해 써요. 실행 요청은 두 모드 모두 승인 대상이지만 자동 승인에서는 질문이 생략되므로, 코드 검토 책임은 남아요.",
-  q:["승인할 때 실행될 코드를 실제로 읽고 있나요?","bypass 모드로 돌릴 때 exec를 누가 확인하나요?","실제 사고가 한 번이라도 나오면 승인 화면에 코드를 보여주는 기능을 다시 검토할 건가요?"]},
- {t:"Unity 버전을 어디까지 따라갈까? → 내 게임 계열 기준",p:"2026-10-21에 정했어요. 대표는 내 게임이 쓰는 6000.6이에요. 새 계열은 정식 릴리스 후 2주 안에 대표로 추가해 게이트를 돌리고, 통과 전에는 '확인 중'으로 적어요. 크런치 중이면 미뤄요. 하한은 게임이 옮겨 가거나 옛 계열이 수정을 막을 때만, 한 마이너 전에 예고하고 올려요.",
-  q:["내 게임이 쓰는 Unity 버전과 Hera 대표 버전이 같나요?","새 Unity가 나오면 며칠 안에 게이트를 돌릴 수 있나요?"]}
-];
-const NUM=["I","II","III","IV"];
+const GRILL=[];
+const NUM=["I","II","III","IV","V","VI"];
 $("#trials").innerHTML=GRILL.map((g,i)=>`<details class="scroll"><summary><span class="seal">${NUM[i]}</span><span><h3>${esc(g.t)}</h3><span class="lead" style="font-size:13px">${esc(g.p)}</span></span><span class="state">봉인됨</span></summary>
   <div class="inner"><ol>${g.q.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div></details>`).join("");
-function tally(){const ds=[...document.querySelectorAll(".scroll")];ds.forEach(d=>d.querySelector(".state").textContent=d.open?"봉인 해제":"봉인됨");
+if(!GRILL.length)$("#trials").innerHTML=`<p class="empty">지금 남은 질문이 없어요. 지난 결정은 VIII 법전에 있어요. 새로 정할 일이 생기면 여기에 질문을 올려요.</p>`;
+function tally(){const ds=[...document.querySelectorAll(".scroll")];if(!ds.length){$("#tally").hidden=true;return}ds.forEach(d=>d.querySelector(".state").textContent=d.open?"봉인 해제":"봉인됨");
   $("#tally").innerHTML=`봉인을 푼 시험 <b>${ds.filter(d=>d.open).length}</b> / ${ds.length}`}
 document.querySelectorAll(".scroll").forEach(d=>d.addEventListener("toggle",tally));tally();
+
+/* ---------- CH8 법전 ---------- */
+const DOC=(path,label)=>({href:"https://github.com/NotNull92/hera-agent-unity/blob/main/"+path,label});
+const LAW=[
+ {t:"새 기능은 실제로 겪은 문제가 있어야 만들어요",from:"시험 I",d:"2026-10-21",
+  rule:"새 기능을 넣으려면 세 가지가 필요해요. 그 기능이 막아 줄 문제를 실제로 다시 일으켜 본 기록, 지금 있는 명령으로는 풀 수 없는 이유, 그 문제가 다시 생기지 않는지 확인하는 테스트예요.",
+  doc:[DOC("CONTRIBUTING.md","CONTRIBUTING"),DOC("CLAUDE.md#feature-admission-gate","기능 입장 게이트")]},
+ {t:"Hera가 하지 않는 일 여섯 가지",from:"시험 I",d:"2026-10-21",
+  rule:"Hera는 스스로 생각하는 AI가 아니에요. 완성된 게임 안에서는 돌지 않고 Unity 에디터에서만 써요. 명령을 받는 길은 CLI 하나뿐이고, 진행 상황을 실시간으로 보내 주지 않아요. 명령 하나로 Unity 창 여러 개를 함께 움직이지 않아요. 위험한 코드를 막아 주는 안전 상자도 아니에요.",
+  doc:[DOC("README.md#what-hera-is-not","README: What Hera is not")]},
+ {t:"기본 규칙 글은 2,560바이트까지",from:"시험 I",d:"2026-10-21",
+  rule:"AI에게 함께 전달되는 짧은 규칙 글은 기본 설정(Light 모드)에서 2,560바이트를 넘지 않게 해요. 넘으면 새 문장을 넣기 전에 있던 문장을 줄여요. 테스트가 이 기본 설정의 길이를 자동으로 검사해요. 도구 개수와 긴 설명서에는 제한이 없어요.",
+  doc:[DOC("cmd/doctor_test.go","TestCompactAgentRulesByteBudget")]},
+ {t:"내 게임을 만들며 매일 쓰는 공개 도구예요",from:"시험 II",d:"2026-10-21",
+  rule:"누구나 쓸 수 있게 공개했고, 만든 사람이 자기 게임을 만들며 매일 써요. 일은 세 경우에만 시작해요. 내 게임을 만들다 문제가 생겼을 때, 보안 문제를 제보받았을 때, 다른 사람이 알려 준 버그를 직접 다시 일으켜 확인했을 때예요. 새 기능 요청은 그때까지 기다려요.",
+  doc:[DOC("CONTRIBUTING.md#what-starts-work","CONTRIBUTING: What starts work")]},
+ {t:"게임 마감이 가장 먼저예요",from:"시험 II · IV",d:"2026-10-21",
+  rule:"게임 마감에 몰린 기간에는 보안 문제와 데이터가 사라지는 버그만 고쳐요. 다른 제보에는 '확인했어요'라고만 답해요. 새 Unity 버전 검사도 마감 뒤로 미루고, 그동안은 '확인 중'이라고 적어 둬요.",
+  doc:[DOC("CONTRIBUTING.md#response-targets","CONTRIBUTING"),DOC("README.md#unity-versions","README: Unity versions")]},
+ {t:"첫 답장 목표는 2주, 보안 제보는 1주",from:"시험 II",d:"2026-10-21",
+  rule:"이슈(GitHub에 올라온 제보와 요청)와 코드 제안에는 2주 안에, 보안 제보에는 1주 안에 처음 답하는 것이 목표예요. 언제까지 고치겠다는 약속은 하지 않아요. 다른 사람이 보낸 코드는 그대로 합치거나, 보낸 사람 이름을 남기고 새로 만들어요.",
+  doc:[DOC("CONTRIBUTING.md#response-targets","CONTRIBUTING"),DOC("SECURITY.md#response-target","SECURITY")]},
+ {t:"기능을 없애기 전에 미리 알려요",from:"시험 II",d:"2026-10-21",
+  rule:"버전 번호는 당분간 0.으로 시작해요. 명령, 옵션, 출력 내용, 오류 코드를 없애기 전에는 적어도 중간 버전 한 번 동안 경고를 띄우고 변경 기록에 적어요. 실제로 없애는 건 중간 버전을 올릴 때(0.3 → 0.4)만 하고, 작은 수정 버전(0.3.1 → 0.3.2)에서는 하지 않아요.",
+  doc:[DOC("CONTRIBUTING.md#compatibility","CONTRIBUTING: Compatibility")]},
+ {t:"exec의 기본값은 계속 모든 권한이에요",from:"시험 III",d:"2026-10-20",
+  rule:"exec는 AI가 쓴 C# 코드를 Unity 에디터에서 바로 실행하는 명령이에요. 기본으로 에디터의 모든 기능을 쓸 수 있게 둬요. 기능을 줄인 제한 모드(restricted)는 필요할 때 골라 써요. 어느 쪽이든 실행 전에 승인을 받고, 승인하는 사람이 코드를 읽어 봐야 해요.",
+  doc:[DOC("README.md#what-hera-is-not","README: Not a sandbox")]},
+ {t:"검사하는 Unity 버전은 내 게임을 따라가요",from:"시험 IV",d:"2026-10-21",
+  rule:"지금 내 게임은 Unity 6000.6을 쓰고, Hera도 6000.6.6f1로 검사해요. 6000.7 같은 새 큰 버전이 정식으로 나오면 2주 안에 그 버전도 검사 목록에 넣고 검사해요. 2주 안에 검사하는 규칙은 이런 새 큰 버전에 적용돼요. 작은 수정판마다 검사해야 한다는 뜻은 아니에요. 검사를 통과하기 전에는 '확인 중'이라고 적고, 게임 마감 기간이면 검사를 미뤄요. 시험판(알파, 베타)은 검사하지 않아요.",
+  doc:[DOC("README.md#unity-versions","README: Unity versions")]},
+ {t:"가장 낮은 지원 버전은 이유가 있을 때만 올려요",from:"시험 IV",d:"2026-10-21",
+  rule:"Hera가 지원하는 가장 낮은 Unity 버전은 지금 6000.6이에요. 이 기준은 내 게임이 더 새로운 큰 버전으로 옮겼거나, 옛 버전 때문에 꼭 필요한 수정을 못 할 때만 올려요. 올리기 전에 중간 버전 한 번 동안 README와 변경 기록으로 미리 알리고, 실제로는 Connector(Unity 안에 설치하는 Hera 패키지)의 중간 버전을 올릴 때(예: 0.2 → 0.3) 바꿔요. 옛 Unity를 쓰는 사람도 계속 쓸 수 있게, 옛 버전을 지원한 마지막 Connector 태그를 README에 적어요. 설치 주소 끝에 그 태그(#connector-버전)를 붙이면 그 버전에 머물 수 있어요.",
+  doc:[DOC("README.md#unity-versions","README: Unity versions")]}
+];
+$("#laws").innerHTML=LAW.map(l=>`<article class="law frame"><span class="meta">${esc(l.from)} · ${esc(l.d)}</span><h3>${esc(l.t)}</h3><p class="lead" style="font-size:13.5px">${esc(l.rule)}</p>
+  <dl><dt>자세히</dt><dd>${l.doc.map(x=>`<a href="${esc(x.href)}">${esc(x.label)}</a>`).join(" · ")}</dd></dl></article>`).join("");
 
 /* ---------- CH6 대장간 ---------- */
 if(ART["forge"])$("#forge").insertAdjacentHTML("afterbegin",`<img class="bg" src="${ART["forge"]}" alt="" decoding="async">`);
