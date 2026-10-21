@@ -1,11 +1,11 @@
 Usage: hera-agent-unity task <action>
 
-Inspect durable Unity test and Package Manager work without sending an HTTP
+Inspect durable Unity test, Package Manager work, and operation results without sending an HTTP
 request to the Editor or waiting for a fresh heartbeat.
 
 Actions:
   list                       List active tasks for the selected project and port
-  status <task_id>           Read one task's current durable state and result
+  status <task_id|op_id>     Read one task or operation's durable state and result
 
 `task list` discovers project-owned pending records and returns reusable opaque
 task_id values. Keep a task_id if you need the completed result: after Unity
@@ -16,6 +16,19 @@ Use --project with the full project path when multiple Editors are open. These
 commands read local durable state only; they do not start, repeat, cancel, or
 otherwise mutate Unity work.
 
+`task status <op_id>` reads the selected project's local operation ledger. Its
+statuses are received, running, committed, failed, responded, outcome_unknown,
+and not_recorded. Only committed, failed, and responded include the stored
+result. responded records the server's response-write state, not proof that a
+CLI received it.
+
+not_recorded cannot distinguish a queued request, a request that never arrived,
+or a record cleaned up after retention (24 hours, or 7 days for outcome_unknown).
+Wait until the Editor is ready, check again, and re-read the target state before
+resending. outcome_unknown also requires re-reading the target state. This
+lookup does not replay work; malformed records and unsupported schemas fail.
+
 Examples:
   hera-agent-unity --project <full-path> task list
   hera-agent-unity --project <full-path> task status <task_id>
+  hera-agent-unity --project <full-path> task status <op_id>

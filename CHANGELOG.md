@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- CLI: `task status <op_id>` reads the selected project's operation ledger without contacting Unity, and unknown-outcome errors include the lookup command.
+
 ## [0.3.16] - 2026-10-21 (Connector unchanged at 0.2.10)
 
 ### Docs

@@ -555,7 +555,7 @@ Or sidestep `--params` entirely for simple values by splitting the keys: `--prop
 
 ### 4.16 One Editor runs one command at a time
 
-Each Editor executes one Hera command at a time. A command sent while another one holds the Editor waits in a queue. If the CLI timeout expires first, the CLI returns `OPERATION_OUTCOME_UNKNOWN`, but the queued command is not cancelled: it still runs once the Editor is free. While the Editor is busy, `status` reports only a stale heartbeat and `ping` reports not alive; neither says that another command is running. Give each agent its own Editor. After `OPERATION_OUTCOME_UNKNOWN`, wait until `status` reports ready, then re-read the target state before deciding whether to send the mutation again.
+Each Editor executes one Hera command at a time. A command sent while another one holds the Editor waits in a queue. If the CLI timeout expires first, the CLI returns `OPERATION_OUTCOME_UNKNOWN`, but the queued command is not cancelled: it still runs once the Editor is free. While the Editor is busy, `status` reports only a stale heartbeat and `ping` reports not alive; neither says that another command is running. Give each agent its own Editor. After `OPERATION_OUTCOME_UNKNOWN`, use `hera-agent-unity --project "<full-path>" task status <operation_id>` to check the recorded result. If it reports `not_recorded`, wait until `status` reports ready, check again, and re-read the target state before deciding whether to send the mutation again.
 
 ---
 
@@ -573,7 +573,7 @@ Each Editor executes one Hera command at a time. A command sent while another on
 | `menu "<path>"` | Execute menu item | (none) |
 | `screenshot` | Capture view, overlay canvases, isolated target, or inspect bounded Game View UI/3D physics metadata | `--view scene\|game`, `--overlay`, `--annotate_ui`, `--annotations_only`, `--annotate_physics`, `--physics_only`, `--physics_grid_size`, `--max_physics_hits`, `--isolated`, `--target`, `--angles`, `--width`, `--height`, `--output_path` |
 | `test` | Run tests, export CI artifacts, or resume a run | `--mode EditMode\|PlayMode`, `--filter <ns.class>`, `--resume <run_id>`, `--format json\|junit\|nunit`, `--output <path>`, paired `--shard-index` / `--shard-count` |
-| `task list` / `task status <task_id>` | Inspect durable test/package work without contacting Unity | `--project <full-path>` or `--port N` |
+| `task list` / `task status <task_id or op_id>` | Inspect durable test/package work or an operation result without contacting Unity | `--project <full-path>` or `--port N` |
 | `profiler hierarchy` | Profiler sample | `--depth`, `--root`, `--frames`, `--min ms`, `--sort total\|self\|calls` |
 | `reserialize [paths...]` | Force YAML reserialize | (no args = whole project) |
 | `log "<msg>"` | Write to Unity console | `--level log\|warning\|error` |

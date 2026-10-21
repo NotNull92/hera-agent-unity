@@ -1646,12 +1646,13 @@ projects/processes; one Editor still rejects concurrent test runs.
 
 ## task
 
-Inspect the same durable test and Package Manager state the tasks API tracks,
+Inspect durable test and Package Manager state, or a recorded operation result,
 without sending an HTTP request to Unity or waiting for a fresh heartbeat.
 
 ```bash
 hera-agent-unity --project <full-path> task list
 hera-agent-unity --project <full-path> task status <task_id>
+hera-agent-unity --project <full-path> task status <op_id>
 ```
 
 | Action | Description |
@@ -1664,6 +1665,19 @@ pending record after writing its result, so completed work may disappear from
 subsequent lists. Keep the returned `task_id`; `task status` can still resolve
 the matching result after the pending record is gone. Both actions are local,
 read-only, and project-scoped. They do not start, repeat, or cancel Unity work.
+
+`task status <op_id>` reads the selected project's local operation ledger. Its
+statuses are received, running, committed, failed, responded, outcome_unknown,
+and not_recorded. Only committed, failed, and responded include the stored
+result. responded records the server's response-write state, not proof that a
+CLI received it.
+
+not_recorded cannot distinguish a queued request, a request that never arrived,
+or a record cleaned up after retention (24 hours, or 7 days for outcome_unknown).
+Wait until the Editor is ready, check again, and re-read the target state before
+resending. outcome_unknown also requires re-reading the target state. This
+lookup does not replay work; malformed records and unsupported schemas fail.
+
 
 ---
 
