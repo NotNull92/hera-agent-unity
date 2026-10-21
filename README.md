@@ -699,6 +699,11 @@ A long Test Runner job can outlive a normal request window. Hera stores durable 
 
 Version-specific behavior is checked against live Editors rather than assumed from one Unity version.
 
+- Representative Editors follow the Unity series used by the author's game: currently 6000.6, represented by `6000.6.6f1`.
+- Within two weeks of a new series' stable release, add a representative and run the Connector release gate; alpha and beta releases are not tracked. Until the gate passes, mark that series **Checking**.
+- Game crunch takes priority: defer these checks during crunch and leave the series **Checking**.
+- Raise the minimum only when the game moves to a new series or an actual case shows the old series blocking a necessary fix. Announce it one minor release ahead in this README and CHANGELOG, raise it in a Connector minor release, and list the last Connector tag supporting the old series here so users can pin `#connector-X.Y.Z`.
+
 ---
 
 ## One agent surface: the CLI
@@ -719,6 +724,19 @@ execution core, so it never unlocked a Unity capability the CLI did not already
 have, and keeping a second protocol surface meant a second discovery, approval,
 and result path to maintain. Use the CLI directly: `list` to discover, `call` for
 typed execution, `exec` when no dedicated command exists.
+
+---
+
+## What Hera is not
+
+- **Not AI:** the coding agent makes decisions; Hera provides access to the Editor.
+- **Not a game runtime tool:** the Connector is Editor-only (`HeraAgent.asmdef` includes only `Editor`).
+- **No second protocol:** the CLI is the only agent surface; there is no MCP adapter or separate persistent or relay server alongside it.
+- **No real-time channel:** Hera does not provide a real-time agent communication channel.
+- **No multi-Editor control in one command:** each command targets one Editor; use `--project` to select it when several are open.
+- **Not a sandbox:** `exec` defaults to Full Access; Restricted is one layer of defense.
+
+New features require a reproduced failure. See [Contributing](CONTRIBUTING.md).
 
 ---
 

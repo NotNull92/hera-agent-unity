@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Docs
+
+- Document contribution, response, compatibility, and Unity version policies, plus "What Hera is not".
+
 ## [0.3.18] - 2026-10-21 (Connector unchanged at 0.2.10)
 
 ### Docs

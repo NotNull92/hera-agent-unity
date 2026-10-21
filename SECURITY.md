@@ -6,6 +6,10 @@ Please report suspected vulnerabilities privately through [GitHub Security Advis
 
 Include the affected version, operating system, Unity version, reproduction steps, and potential impact. Please do not open a public issue until a fix or mitigation is available.
 
+## Response target
+
+The target for a first response to a security report is one week, not a deadline for a fix. Security fixes continue during game crunch.
+
 ## Scope
 
 Hera Agent Unity listens on localhost and executes Editor actions requested by the local CLI. Reports involving unintended remote access, command authorization boundaries, sensitive data exposure, installer integrity, or unsafe Editor mutations are in scope.

@@ -294,7 +294,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 2. **Existing surface reuse** — 기존 tool의 action/flag, 기존 projection, `exec`, 또는 on-demand skill로 해결할 수 없는 이유를 기록한다. 기존 action으로 자연스럽게 흡수할 수 있으면 새 top-level tool을 만들지 않는다.
 3. **Contract and safety** — strict input/output schema, action safety, approval·ledger 영향, Unity 버전 경계를 함께 수정한다.
 4. **Regression evidence** — 실패 재현 테스트와 수정 후 회귀 테스트를 추가하고, Unity 동작이면 disposable Editor에서 live evidence를 남긴다.
-5. **Surface cost** — tool/action 수, profile payload, compact agent-rules baseline, 신규 의존성과 배포 크기 변화를 기록한다.
+5. **Surface cost** — tool/action 수, profile payload, compact agent-rules baseline, 신규 의존성과 배포 크기 변화를 기록한다. compact agent-rules의 Light 모드는 2,560 B 예산 안에 둔다. 넘으면 기존 문장을 줄여 자리를 만든다. `cmd/doctor_test.go`의 `TestCompactAgentRulesByteBudget`이 `len(CompactAgentRulesText(assetconfig.LoopEngineeringLight))`로 강제한다. 도구 수·전체 AGENT.md에는 상한이 없다.
 6. **Reviewed baseline** — live built-in catalog가 바뀌면 `docs/metrics/catalog-payload-baseline.json`을 의도적으로 재생성하고 같은 리뷰에서 승인한다. baseline 변경 없이 계약을 조용히 키우지 않는다.
 
 카탈로그 비교 명령:
@@ -424,8 +424,19 @@ Connector 코드, asmdef, 패키지 의존성, 테스트 소스 또는 `package.
 대표 에디터의 source of truth는 `docs/UNITY_EDITOR_VERSION_INVENTORY.md`다.
 인벤토리의 대표 버전을 최신화해야 하면 먼저 갱신하고, 설치되지 않았거나 실행할
 수 없는 대표는 **PASS가 아니라 BLOCKED**로 기록한다. 한 대표에서의 성공을 다른
-Unity 계열의 검증으로 표현하지 않는다. 컴파일러·API·패키지 전달 경계가 바뀌는
-계열이 나오면 대표를 추가한다(예: 6000.7은 6000.6에 없는 캡처 경로를 컴파일한다).
+Unity 계열의 검증으로 표현하지 않는다.
+
+대표는 작성자의 게임이 쓰는 계열을 따른다(현재 6000.6, 대표 `6000.6.6f1`).
+새 계열이 정식 릴리스되면 2주 안에 대표로 추가하고 Connector 릴리스 게이트를
+실행한다. 알파·베타는 추적하지 않는다. 통과 전에는 README 표에 Checking
+(한국어판 확인 중)으로 표시한다. **크런치 규칙이 우선한다:** 게임 크런치 중에는
+검사를 미루고 해당 계열을 Checking으로 남긴다. 계열별 경계도 검증한다
+(예: 6000.7은 6000.6에 없는 캡처 경로를 컴파일한다).
+
+하한은 게임이 새 계열로 옮겼거나 옛 계열이 필요한 수정을 막는 실제 사례가 있을
+때만 올린다. 한 마이너 전에 README·CHANGELOG로 예고하고, Connector 마이너
+버전에서 올린다. 옛 계열을 지원한 마지막 Connector 태그를 README에 적어
+`#connector-X.Y.Z`로 고정할 수 있게 한다.
 
 각 대표는 새 disposable blank project 또는 `Library`를 초기화한 disposable
 project에서 동일 Connector 후보를 일반 UPM dependency로 설치하여 다음을 모두

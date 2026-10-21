@@ -398,3 +398,11 @@ func TestResolveSymlink(t *testing.T) {
 		}
 	})
 }
+
+func TestCompactAgentRulesByteBudget(t *testing.T) {
+	size := len(CompactAgentRulesText(assetconfig.LoopEngineeringLight))
+	if size > 2560 {
+		t.Fatalf("compact agent-rules: %d bytes exceeds budget of 2560 bytes", size)
+	}
+	t.Logf("compact agent-rules: %d / 2560 bytes", size)
+}
