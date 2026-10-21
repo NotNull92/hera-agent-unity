@@ -732,7 +732,7 @@ typed execution, `exec` when no dedicated command exists.
 - **Not AI:** the coding agent makes decisions; Hera provides access to the Editor.
 - **Not a game runtime tool:** the Connector is Editor-only (`HeraAgent.asmdef` includes only `Editor`).
 - **No second protocol:** the CLI is the only agent surface; there is no MCP adapter or separate persistent or relay server alongside it.
-- **No real-time channel:** Hera does not provide a real-time agent communication channel.
+- **No real-time channel:** every call is one request and one response; there are no progress streams or push notifications.
 - **No multi-Editor control in one command:** each command targets one Editor; use `--project` to select it when several are open.
 - **Not a sandbox:** `exec` defaults to Full Access; Restricted is one layer of defense.
 
