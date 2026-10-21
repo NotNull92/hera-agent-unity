@@ -548,6 +548,10 @@ bash equivalent: same pattern — single-quoted outer is the safe form, no `\"` 
 
 Or sidestep `--params` entirely for simple values by splitting the keys: `--property m_CenterOfMass --value 0,1,0` ships the same Vector3 through the scalar-friendly flag (comma strings are accepted alongside JSON arrays for Vector2/3/4, Quaternion, Color, Vector2Int, Vector3Int). Reserve `--params` for nested envelopes that the scalar flags cannot represent — `{"value": {"asset_path": "..."}}`, `{"value": {"instance_id": -12345}}`, deeply-nested arrays.
 
+### 4.16 One Editor runs one command at a time
+
+Each Editor executes one Hera command at a time. A command sent while another one holds the Editor waits in a queue. If the CLI timeout expires first, the CLI returns `OPERATION_OUTCOME_UNKNOWN`, but the queued command is not cancelled: it still runs once the Editor is free. While the Editor is busy, `status` reports only a stale heartbeat and `ping` reports not alive; neither says that another command is running. Give each agent its own Editor. After `OPERATION_OUTCOME_UNKNOWN`, wait until `status` reports ready, then re-read the target state before deciding whether to send the mutation again.
+
 ---
 
 ## 5. Reference (skim on demand)
