@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Docs
 
-- Guide: the risk bestiary drops the two fixed entries (port-keyed result lookups and blocking-modal detection).
+- Guide: the risk bestiary drops the two fixed entries (port-keyed result lookups and blocking-modal detection) and their portraits.
 
 ## [0.3.17] - 2026-10-21 (Connector unchanged at 0.2.10)
 
