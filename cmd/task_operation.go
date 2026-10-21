@@ -33,7 +33,12 @@ func (command taskCLI) operationStatus(id string) error {
 	view := operationView{OperationID: id, Kind: "operation", Status: "not_recorded"}
 	if errors.Is(err, os.ErrNotExist) {
 		view.StatusMessage = "The operation may still be queued, may not have arrived, or may have been cleaned up after retention (24 hours, or 7 days for outcome_unknown); these cannot be distinguished, so check again after the Editor is ready."
-		return json.NewEncoder(command.output).Encode(view)
+		return json.NewEncoder(command.output).Encode(map[string]string{
+			"operation_id":   view.OperationID,
+			"kind":           view.Kind,
+			"status":         view.Status,
+			"status_message": view.StatusMessage,
+		})
 	}
 	if err != nil {
 		return fmt.Errorf("read operation record: %w", err)

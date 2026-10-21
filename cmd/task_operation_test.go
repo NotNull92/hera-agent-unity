@@ -47,6 +47,16 @@ func TestTaskOperationStatus(t *testing.T) {
 			if string(got["status"]) != fmt.Sprintf("%q", state) || string(got["kind"]) != `"operation"` || string(got["operation_id"]) != fmt.Sprintf("%q", id) {
 				t.Fatalf("output: %s", out.Bytes())
 			}
+			if state == "not_recorded" {
+				for _, key := range []string{"tool", "action", "idempotent"} {
+					if _, ok := got[key]; ok {
+						t.Errorf("not_recorded must omit %s: %s", key, out.Bytes())
+					}
+				}
+				if len(got) != 4 {
+					t.Errorf("not_recorded must have exactly four fields: %s", out.Bytes())
+				}
+			}
 			terminal := state == "committed" || state == "responded" || state == "failed"
 			if terminal {
 				if string(got["result"]) != response {
