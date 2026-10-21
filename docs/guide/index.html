@@ -302,7 +302,7 @@ footer a{color:var(--frost)}
     <div class="rule" style="width:min(420px,80%)"><i></i></div>
     <p class="sub">AI 모험가가 Unity라는 던전에 들어가 퀘스트를 수행하게 해 주는 장비, <b>hera-agent-unity</b>의 지도와 도감이에요. 1인 게임 회사 대표 시점으로 정리했어요.</p>
     <div class="sheet" aria-label="현재 버전">
-      <div class="stat"><span class="rune">CLI</span><b>v0.3.18</b></div>
+      <div class="stat"><span class="rune">CLI</span><b>v0.3.19</b></div>
       <div class="stat"><span class="rune">Connector</span><b>0.2.10</b></div>
       <div class="stat"><span class="rune">Tools · Actions</span><b>34 · 133</b></div>
       <div class="stat"><span class="rune">Unity</span><b>6000.6+</b></div>
@@ -415,7 +415,7 @@ footer a{color:var(--frost)}
 
   <footer>
     <div class="rule" style="width:min(320px,70%);margin:0 auto"><i></i></div>
-    <span>기준 버전: CLI <span class="mono">v0.3.18</span> / Connector <span class="mono">0.2.10</span> (2026-10-21). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실측·문서 근거가 있는 것만 넣었어요.</span>
+    <span>기준 버전: CLI <span class="mono">v0.3.19</span> / Connector <span class="mono">0.2.10</span> (2026-10-21). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실측·문서 근거가 있는 것만 넣었어요.</span>
   </footer>
 </div>
 
@@ -639,13 +639,13 @@ renderBeasts("all");
 
 /* ---------- CH5 현자의 시험 ---------- */
 const GRILL=[
- {t:"Hera는 무엇이 아닌가?",p:"도구 34종, action 133개. 1인 회사에서는 '만들 수 있다'가 '만들어야 한다'를 이기기 쉬워요.",
+ {t:"Hera는 무엇이 아닌가? → 여섯 가지를 공개",p:"2026-10-21에 정했어요. AI가 아니고, 게임 런타임 도구가 아니고(Editor 전용), 두 번째 프로토콜과 실시간 채널이 없고, 에디터 여러 개를 함께 다루지 않고, 샌드박스도 아니에요. 새 기능은 재현된 실패가 있어야 들어오고, 상시 규칙은 2,560 B 안에 둬요.",
   q:["다음 기능을 막아 줄 실제 실패 사례 3개를 적을 수 있나요?","그 기능을 exec나 기존 action 조합으로 못 푸는 이유는?","새 기능이 늘리는 토큰 비용(카탈로그·규칙)은 얼마인가요?"]},
- {t:"누구를 위한 도구인가: 내부용 vs 공개 제품",p:"npm 배포와 외부 PR까지 받는 지금은 이미 공개 제품이에요.",
+ {t:"누구를 위한 도구인가: 내부용 vs 공개 제품 → 공개 제품",p:"2026-10-21에 정했어요. 내 게임에 매일 쓰며 고치는 공개 제품이에요. 기능 제거는 한 마이너 이상 예고한 뒤 마이너 버전에서만 해요. 이슈와 PR은 2주, 보안 제보는 1주 안에 첫 응답해요. 작업은 내 게임의 실패, 보안 제보, 재현된 버그에서만 시작하고, 크런치 중에는 보안과 데이터 손실만 고쳐요.",
   q:["하위 호환을 몇 버전까지 지킬 건가요?","외부 이슈·PR에 응답할 시간을 주당 얼마나 쓸 수 있나요?","내 게임 개발 시간이 Hera 유지보수에 잠식되면 어디서 끊나요?"]},
  {t:"exec 전체 권한을 계속 기본값으로 둘까? → 둔다",p:"2026-10-20에 Full Access 기본값을 유지하기로 재확인했어요. restricted는 UnityEditor API를 제한하므로 필요한 작업에서 선택해 써요. 실행 요청은 두 모드 모두 승인 대상이지만 자동 승인에서는 질문이 생략되므로, 코드 검토 책임은 남아요.",
   q:["승인할 때 실행될 코드를 실제로 읽고 있나요?","bypass 모드로 돌릴 때 exec를 누가 확인하나요?","실제 사고가 한 번이라도 나오면 승인 화면에 코드를 보여주는 기능을 다시 검토할 건가요?"]},
- {t:"Unity 버전을 어디까지 따라갈까?",p:"지원 하한은 6000.6, 검증 대표는 하나예요.",
+ {t:"Unity 버전을 어디까지 따라갈까? → 내 게임 계열 기준",p:"2026-10-21에 정했어요. 대표는 내 게임이 쓰는 6000.6이에요. 새 계열은 정식 릴리스 후 2주 안에 대표로 추가해 게이트를 돌리고, 통과 전에는 '확인 중'으로 적어요. 크런치 중이면 미뤄요. 하한은 게임이 옮겨 가거나 옛 계열이 수정을 막을 때만, 한 마이너 전에 예고하고 올려요.",
   q:["내 게임이 쓰는 Unity 버전과 Hera 대표 버전이 같나요?","새 Unity가 나오면 며칠 안에 게이트를 돌릴 수 있나요?"]}
 ];
 const NUM=["I","II","III","IV"];

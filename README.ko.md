@@ -743,8 +743,8 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.3.18**, native binary 5종
-- npm: **0.3.18** (`latest`)
+- CLI / GitHub Release: **v0.3.19**, native binary 5종
+- npm: **0.3.19** (`latest`)
 - Unity Connector: **0.2.10** (`#connector-0.2.10`로 고정)
 - License: **Apache-2.0**
 
@@ -758,6 +758,7 @@ v0.2.17 이후 새로 바뀐 것:
 
 | 버전 | 변경 |
 |---|---|
+| v0.3.19 | 공개 제품 정책 문서화: [CONTRIBUTING.md](CONTRIBUTING.md)(작업 계기, 응답 목표, 호환 정책), 보안 제보 1주 응답 목표, "Hera가 아닌 것", 새 Unity 계열을 따라가는 방법. CLI 동작·Connector 변경 없음. |
 | v0.3.18 | 공략집 페이지에서 해결된 위험 두 개(포트 기준 결과 조회, 모달 감지)와 그 그림을 제거. CLI 동작·Connector 변경 없음. |
 | v0.3.17 | `task status <op_id>`로 `OPERATION_OUTCOME_UNKNOWN`이 난 명령이 실제로 실행됐는지 확인. 로컬 실행 기록을 읽으므로 Editor가 막혀 있어도 바로 답하고, 시간 초과 메시지가 이 확인 명령을 알려 줌. Connector 변경 없음. |
 | v0.3.16 | 에이전트 가이드(`doctor --agent-rules`)에 "Editor 하나는 명령을 하나씩 실행" 항목 추가: CLI 시간 초과로 포기한 명령도 나중에 실행되므로 에이전트마다 Editor를 따로 쓰고, 재전송 전에 대상 상태를 다시 읽기. CLI 동작·Connector 변경 없음. |

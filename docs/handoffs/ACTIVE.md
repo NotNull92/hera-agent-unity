@@ -1,8 +1,9 @@
 # Active Development Handoff
 
-Current state (2026-10-21): **Released CLI `v0.3.18` / Connector `0.2.10`
-(`connector-0.2.10`); npm `latest` is `0.3.18`.** v0.3.18 only removes the
-fixed risks from the guide bestiary. v0.3.17 added read-only
+Current state (2026-10-21): **Released CLI `v0.3.19` / Connector `0.2.10`
+(`connector-0.2.10`); npm `latest` is `0.3.19`.** v0.3.19 documents the
+public-product policies (CONTRIBUTING.md, response targets, non-goals, Unity
+line policy). v0.3.18 removed the fixed risks from the guide bestiary. v0.3.17 added read-only
 `task status <op_id>` over the Connector operation ledger (research report 36).
 v0.3.16 added the agent-guide
 pitfall for queued commands that run after a CLI timeout (research report 35).
