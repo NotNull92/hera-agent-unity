@@ -1,7 +1,9 @@
 # Active Development Handoff
 
-Current state (2026-10-21): **Released CLI `v0.3.16` / Connector `0.2.10`
-(`connector-0.2.10`); npm `latest` is `0.3.16`.** v0.3.16 adds the agent-guide
+Current state (2026-10-21): **Released CLI `v0.3.17` / Connector `0.2.10`
+(`connector-0.2.10`); npm `latest` is `0.3.17`.** v0.3.17 adds read-only
+`task status <op_id>` over the Connector operation ledger (research report 36).
+v0.3.16 added the agent-guide
 pitfall for queued commands that run after a CLI timeout (research report 35).
 In `v0.3.15`, R3 modal diagnosis from
 window enabled state (`75ad690`) and live-PID restart checks (`f55af30`) passed

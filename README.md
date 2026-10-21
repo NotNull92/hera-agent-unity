@@ -724,8 +724,8 @@ typed execution, `exec` when no dedicated command exists.
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.16** with five native binaries
-- npm: **0.3.16** (`latest`)
+- CLI / GitHub Release: **v0.3.17** with five native binaries
+- npm: **0.3.17** (`latest`)
 - Unity Connector: **0.2.10** (pin with `#connector-0.2.10`)
 - License: **Apache-2.0**
 
@@ -739,6 +739,7 @@ What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
+| v0.3.17 | `task status <op_id>` shows whether a command that ended in `OPERATION_OUTCOME_UNKNOWN` actually ran. It reads the local operation record, so it answers immediately even while the Editor is blocked; the timeout message now names this command. No Connector change. |
 | v0.3.16 | The agent guide (`doctor --agent-rules`) adds "one Editor runs one command at a time": a command abandoned by a CLI timeout still runs later, so give each agent its own Editor and re-read the target before resending. No CLI behavior or Connector change. |
 | v0.3.15 | On Windows, a timeout explains custom and nested Editor modals (with the window title), and progress windows that close by themselves are no longer reported as dialogs a person must close. A heartbeat from another live process no longer counts as an Editor restart. No Connector change. |
 | v0.3.14 / 0.2.10 | Async waits and `test --resume` keep finding the original result after a domain reload moves the Editor port; the test-run lock and `test cancel` see runs from any port. Asset import workers no longer start the Connector, so they cannot overwrite the project heartbeat or take ports. Update the Connector to 0.2.10 as well. |

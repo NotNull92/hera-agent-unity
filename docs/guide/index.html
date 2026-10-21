@@ -302,7 +302,7 @@ footer a{color:var(--frost)}
     <div class="rule" style="width:min(420px,80%)"><i></i></div>
     <p class="sub">AI 모험가가 Unity라는 던전에 들어가 퀘스트를 수행하게 해 주는 장비, <b>hera-agent-unity</b>의 지도와 도감이에요. 1인 게임 회사 대표 시점으로 정리했어요.</p>
     <div class="sheet" aria-label="현재 버전">
-      <div class="stat"><span class="rune">CLI</span><b>v0.3.16</b></div>
+      <div class="stat"><span class="rune">CLI</span><b>v0.3.17</b></div>
       <div class="stat"><span class="rune">Connector</span><b>0.2.10</b></div>
       <div class="stat"><span class="rune">Tools · Actions</span><b>34 · 133</b></div>
       <div class="stat"><span class="rune">Unity</span><b>6000.6+</b></div>
@@ -415,7 +415,7 @@ footer a{color:var(--frost)}
 
   <footer>
     <div class="rule" style="width:min(320px,70%);margin:0 auto"><i></i></div>
-    <span>기준 버전: CLI <span class="mono">v0.3.16</span> / Connector <span class="mono">0.2.10</span> (2026-10-21). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실측·문서 근거가 있는 것만 넣었어요.</span>
+    <span>기준 버전: CLI <span class="mono">v0.3.17</span> / Connector <span class="mono">0.2.10</span> (2026-10-21). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실측·문서 근거가 있는 것만 넣었어요.</span>
   </footer>
 </div>
 
@@ -620,7 +620,7 @@ addEventListener("resize",drawLinks);
 /* ---------- CH4 몬스터 도감 ---------- */
 const RISKS=[
  {k:"portkey",m:"문패 미믹",s:"lo",t:"포트가 바뀌어도 결과를 찾아요 (v0.3.14에서 처치)",p:"리로드로 포트가 바뀌면 test resume·실행 잠금·생존 확인이 옛 포트를 봤어요. 에셋 임포트 워커도 Hera를 켜서 같은 문패(heartbeat)를 덮어썼고요.",e:"일회용 프로젝트에서 포트를 강제로 옮겨 재현했고, 수정 뒤 원 호출·resume·중복 실행 거부·cancel이 모두 통과했어요. 워커의 Hera 서버 기동은 0건이에요.",f:"Connector 0.2.9 이하는 워커가 여전히 문패를 덮어쓰니 0.2.10으로 올려요."},
- {k:"gatekeeper",m:"외길의 돌거인",s:"mid",t:"문지기가 한 명이에요",p:"긴 exec나 빌드가 메인 스레드를 잡으면 다른 명령은 줄 서서 기다려요. 기다리다 CLI가 먼저 포기해도 그 명령은 취소되지 않고 나중에 실행돼요.",e:"일회용 프로젝트에서 90초 차단 중 보낸 수정이 CLI가 포기하고 67초 뒤에 실제로 실행됐어요(2/2회). status와 ping은 다른 명령이 도는지 알려 주지 않아요.",f:"에이전트 한 명당 Unity 하나를 써요. '결과 모름'이 나오면 ready를 기다렸다가 대상 상태를 다시 읽고 재전송을 정해요."},
+ {k:"gatekeeper",m:"외길의 돌거인",s:"mid",t:"문지기가 한 명이에요",p:"긴 exec나 빌드가 메인 스레드를 잡으면 다른 명령은 줄 서서 기다려요. 기다리다 CLI가 먼저 포기해도 그 명령은 취소되지 않고 나중에 실행돼요.",e:"일회용 프로젝트에서 90초 차단 중 보낸 수정이 CLI가 포기하고 67초 뒤에 실제로 실행됐어요(2/2회). status와 ping은 다른 명령이 도는지 알려 주지 않아요.",f:"에이전트 한 명당 Unity 하나를 써요. '결과 모름'이 나오면 task status로 기록을 확인하고, 기록이 없으면 ready를 기다렸다가 대상 상태를 다시 읽고 재전송을 정해요."},
  {k:"dialog",m:"서리 거미줄 정령",s:"lo",t:"커스텀 모달도 알아봐요 (v0.3.15에서 처치)",p:"Windows 기본 대화상자(#32770 창)만 봐서 ShowModal 같은 커스텀 모달은 원인 모를 시간 초과로 보였어요. 저절로 끝나는 진행 창은 거꾸로 사람이 닫아야 한다고 잘못 알렸고요.",e:"일회용 프로젝트에서 창 상황 7가지를 재현했어요. 수정 뒤 커스텀 모달과 겹친 모달은 제목까지 맞혔고, 진행 창·느린 import·정상 상태에서는 켜지지 않았어요.",f:"macOS·Linux에는 아직 모달 진단이 없어요. 드물게 제목이 입력기 같은 보조 창 이름으로 나올 수 있어요."},
  {k:"fullpower",m:"풀린 두루마리 악령",s:"mid",t:"exec 기본값은 전체 권한이에요 (의도된 설계)",p:"코드를 실행하는 exec는 Full Access와 restricted 모두 승인 대상이에요(--check는 컴파일만 해요). 다만 --yes/HERA_AGENT_APPROVE나 발급받은 승인 토큰을 쓰면 매번 질문이 뜨지는 않아요. Hera 터미널 승인 화면에는 실행 코드 본문이 표시되지 않으므로, 승인 전에 실제 코드를 확인해요.",e:"restricted는 UnityEditor API와 ldftn/ldvirtftn 등 함수 포인터 IL을 막아, 에디터 자동화나 delegate를 만드는 람다 코드가 거부될 수 있어요. Full Access 기본값과 restricted 선택 사용은 2026-08-10에 결정했고, 2026-10-20에 재확인했어요.",f:"승인 전에 실행될 코드 본문을 확인해요. 명령 인자로 넣은 코드가 에이전트 승인 화면에 보이는지는 도구·설정에 따라 달라요. --file이나 stdin을 쓰면 실제 전달 내용을 따로 확인해요. 허용된 플랫폼 API만 필요한 코드는 --security-mode restricted를 선택해요."},
  {k:"version",m:"계절을 타는 고목",s:"mid",t:"지원 Unity 대표가 하나예요",p:"6000.6.6f1에서만 전체 검사를 통과했어요. 다음 Unity에서 API가 바뀌면 새 대표 버전이 필요해요.",e:"UNITY_EDITOR_VERSION_INVENTORY.md",f:"새 Unity가 나오면 대표를 추가하고 게이트를 다시 돌려요."},
