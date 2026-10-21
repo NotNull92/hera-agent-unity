@@ -309,7 +309,7 @@ footer a{color:var(--frost)}
     <span class="rune">Unity Editor · Agent Field Manual</span>
     <h1>Hera Unity Status</h1>
     <div class="rule" style="width:min(420px,80%)"><i></i></div>
-    <p class="sub">AI 모험가가 Unity라는 던전에 들어가 퀘스트를 수행하게 해 주는 장비, <b>hera-agent-unity</b>의 지도와 도감이에요. 1인 게임 회사 대표 시점으로 정리했어요.</p>
+    <p class="sub"><b>hera-agent-unity</b>는 AI가 Unity 에디터를 직접 보고 고칠 수 있게 해 주는 도구예요. 이 페이지는 그 구조, 기능, 위험, 결정을 게임 공략집처럼 정리했어요. 1인 게임 회사 대표의 눈으로 썼어요.</p>
     <div class="sheet" aria-label="현재 버전">
       <div class="stat"><span class="rune">CLI</span><b>v0.3.19</b></div>
       <div class="stat"><span class="rune">Connector</span><b>0.2.10</b></div>
@@ -323,7 +323,7 @@ footer a{color:var(--frost)}
   <!-- CH1 -->
   <section class="chapter" data-panel="map">
     <div class="chead"><span class="rune">Chapter I · The Realm</span><h2>월드맵</h2>
-      <p class="lead">Unity로 보내는 일반 요청이 1번부터 6번까지 처리되는 순서예요. status·task처럼 CLI 안에서 끝나는 명령이나, 오류·승인 대기로 멈춘 요청은 실행까지 가지 않을 수 있어요. 번호나 지역을 누르면 그 단계가 하는 일이 펼쳐져요.</p></div>
+      <p class="lead">AI가 보낸 명령이 Unity에서 처리되는 순서예요. 1번부터 6번까지 차례로 지나가요. status나 task처럼 Unity에 묻지 않고 CLI 안에서 끝나는 명령은 중간에 끝나요. 오류가 나거나 승인을 기다리는 명령도 실행까지 가지 않을 수 있어요. 번호나 지역을 누르면 그 단계가 하는 일을 볼 수 있어요.</p></div>
     <div class="atlas">
       <div>
         <div class="mapstage" id="mapstage">
@@ -338,7 +338,7 @@ footer a{color:var(--frost)}
   <!-- CH2 -->
   <section class="chapter" data-panel="quest" hidden>
     <div class="chead"><span class="rune">Chapter II · Quest Journal</span><h2>퀘스트 진행</h2>
-      <p class="lead">명령 한 턴을 직접 진행해 보세요. 왼쪽에서 퀘스트를 고르면 도중에 사고가 났을 때 Hera가 어떻게 대응하는지 전투 기록으로 보여 줘요.</p></div>
+      <p class="lead">명령 하나가 처리되는 과정을 한 단계씩 따라가 보세요. 왼쪽에서 상황을 고르면, 중간에 문제가 생겼을 때 Hera가 어떻게 하는지 기록으로 보여 줘요.</p></div>
     <div class="journal">
       <div class="frame"><span class="rune">Quests</span><div class="qlist" id="qlist" role="group" aria-label="퀘스트"></div></div>
       <div class="frame"><span class="rune">Objectives</span><h3 id="qtitle"></h3><ol class="objectives" id="objectives"></ol>
@@ -350,7 +350,7 @@ footer a{color:var(--frost)}
   <!-- CH3 -->
   <section class="chapter" data-panel="skills" hidden>
     <div class="chead"><span class="rune">Chapter III · Skill Trees</span><h2>스킬 트리</h2>
-      <p class="lead">도구 34종과 CLI 명령을 여덟 직업의 스킬 트리로 나눴어요. 직업을 고르고 스킬 칸을 누르면, 그 스킬이 무엇을 하고 왜 필요한지 설명이 나와요. 화살표는 먼저 익히면 좋은 스킬이에요.</p></div>
+      <p class="lead">도구 34개와 CLI 명령을 여덟 직업으로 나눴어요. 직업을 고르고 칸을 누르면 그 기능이 무엇을 하고 왜 필요한지 나와요. 화살표는 먼저 알아 두면 좋은 기능을 가리켜요.</p></div>
     <div class="d2-classes" id="d2classes" role="tablist" aria-label="직업"></div>
     <div class="d2">
       <div class="frame d2-board">
@@ -364,7 +364,7 @@ footer a{color:var(--frost)}
   <!-- CH4 -->
   <section class="chapter" data-panel="danger" hidden>
     <div class="chead"><span class="rune">Chapter IV · Bestiary</span><h2>위험 지대</h2>
-      <p class="lead">실제 근거가 있는 위험만 몬스터로 기록했어요. 위협 등급으로 걸러 볼 수 있어요.</p></div>
+      <p class="lead">실제 근거가 있는 위험만 몬스터로 적었어요. 위험한 정도에 따라 골라 볼 수 있어요.</p></div>
     <div class="filters" role="group" aria-label="위협 등급">
       <button class="chip" data-sev="all" aria-pressed="true">모든 위협</button>
       <button class="chip" data-sev="hi" aria-pressed="false">위험</button>
@@ -385,7 +385,7 @@ footer a{color:var(--frost)}
   <!-- CH6 -->
   <section class="chapter" data-panel="craft" hidden>
     <div class="chead"><span class="rune">Chapter VI · The Forge</span><h2>조합 공방</h2>
-      <p class="lead">이미 가진 도구가 재료예요. 재료를 모루에 올리면 만들 수 있는 장비가 달아올라요. 대부분은 새 도구가 아니라 에이전트 스킬(레시피 문서)로 만들 수 있어 비용이 거의 들지 않아요.</p></div>
+      <p class="lead">이미 있는 도구가 재료예요. 재료를 고르면 그 재료로 만들 수 있는 것이 위로 올라와요. 대부분은 새 도구를 만들 필요 없이 AI에게 주는 작업 설명서(스킬)만 쓰면 돼서 비용이 거의 들지 않아요.</p></div>
     <div class="forge" id="forge">
       <div class="forge-grid">
         <div><span class="rune">Inventory</span><h3>재료</h3><div class="slots" id="slots" role="group" aria-label="재료"></div></div>
@@ -397,21 +397,21 @@ footer a{color:var(--frost)}
   <!-- CH7 -->
   <section class="chapter" data-panel="sig" hidden>
     <div class="chead"><span class="rune">Chapter VII · The Vault</span><h2>아티팩트</h2>
-      <p class="lead">공식 Unity CLI와 비교했을 때 Hera만 가질 수 있는 유물이에요. 비교 기준은 우리가 조사한 공식 CLI 1.0.0-beta.13이에요.</p></div>
+      <p class="lead">우리가 조사한 공식 Unity CLI 1.0.0-beta.13과 비교해서, Hera만의 특징과 앞으로 만들 만한 기능을 정리했어요.</p></div>
     <div class="factions">
       <div class="banner-cloth them"><span class="rune">Faction</span><h3>공식 Unity CLI</h3><p class="lead" style="font-size:13px">Unity가 직접 만든 범용 도구</p>
         <ul>
-          <li>Hub 기반 Editor 설치·프로젝트 관리</li>
-          <li>빌드·파이프라인 중심 (<code>com.unity.pipeline</code>)</li>
-          <li>단일 실행 파일 (바이너리 분석으로는 .NET NativeAOT와 Rust 구성 요소가 보여요. 공식 문서로 확인한 사실은 아니에요)</li>
-          <li>대화상자 상태 감지(<code>STATUS_BLOCKED_BY_DIALOG</code>)도 있어요. 이건 Hera만의 차별점이 아니에요.</li>
+          <li>Unity Hub로 에디터를 설치하고 프로젝트를 관리해요</li>
+          <li>빌드와 자동화 흐름(파이프라인)이 중심이에요 (<code>com.unity.pipeline</code>)</li>
+          <li>실행 파일 하나로 되어 있어요. 파일을 분석해 보면 .NET NativeAOT와 Rust로 만든 부분이 보여요. 공식 문서로 확인한 사실은 아니에요</li>
+          <li>Unity가 대화상자에 막혔는지 알아보는 기능(<code>STATUS_BLOCKED_BY_DIALOG</code>)도 있어요. 그래서 이건 Hera만의 장점이 아니에요.</li>
         </ul></div>
       <div class="banner-cloth us"><span class="rune">Faction</span><h3>Hera</h3><p class="lead" style="font-size:13px">AI가 에디터 안에서 일하는 도구</p>
         <ul>
-          <li>씬·컴포넌트·UI·테스트를 AI가 직접 고치고 확인해요</li>
-          <li>게임 감각 지식서(<code>game_feel</code> 67주제, <code>ui_slop</code> 48종)를 조작 도구에 연결했어요</li>
-          <li>인수에 묶인 승인 서명과 작업 기록으로 AI 실수를 막아요</li>
-          <li>토큰 비용을 줄이는 응답 설계(도구 묶음, 짧은 기본값)</li>
+          <li>씬, 컴포넌트, UI, 테스트를 AI가 직접 고치고 확인해요</li>
+          <li>게임 손맛 지식(<code>game_feel</code> 67주제)과 UI 품질 기준(<code>ui_slop</code> 48가지)을 편집 도구와 연결했어요</li>
+          <li>명령 값과 묶인 승인 서명과 작업 기록으로 AI의 실수를 막아요</li>
+          <li>AI가 읽는 분량(토큰)을 줄이도록 응답을 설계했어요(도구 묶음, 짧은 기본 응답)</li>
         </ul></div>
     </div>
     <div class="rule"><i></i></div>
@@ -419,7 +419,7 @@ footer a{color:var(--frost)}
     <div class="vault" id="vaultHave"></div>
     <div class="chead"><span class="rune">Sealed Relics</span><h3>새로 제작할 만한 아티팩트</h3></div>
     <div class="vault" id="vaultNew"></div>
-    <p class="footnote">새 아티팩트는 저장소의 "외부 참고는 완전히 Hera화한 뒤에만" 원칙과 기능 추가 관문(실제 실패 근거 먼저)을 지켜야 해요. 처음엔 스킬로 시작하고, 반복해서 쓰이면 도구로 올리는 순서를 권해요.</p>
+    <p class="footnote">새 아티팩트를 만들 때는 두 규칙을 지켜요. 밖에서 참고한 아이디어는 Hera에 맞게 완전히 새로 만든 뒤에만 넣어요. 새 기능은 실제로 겪은 문제가 있어야 만들어요(VIII 법전). 처음에는 스킬로 시작하는 것을 권해요. 자주 쓰이더라도 새 도구로 넣으려면 VIII 법전의 새 기능 조건을 먼저 확인해요.</p>
   </section>
 
   <!-- CH8 -->
@@ -431,7 +431,7 @@ footer a{color:var(--frost)}
 
   <footer>
     <div class="rule" style="width:min(320px,70%);margin:0 auto"><i></i></div>
-    <span>기준 버전: CLI <span class="mono">v0.3.19</span> / Connector <span class="mono">0.2.10</span> (2026-10-21). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실측·문서 근거가 있는 것만 넣었어요.</span>
+    <span>기준 버전: CLI <span class="mono">v0.3.19</span> / Connector <span class="mono">0.2.10</span> (2026-10-21). 원본: <a href="https://github.com/NotNull92/hera-agent-unity/blob/main/docs/guide/index.html">hera-agent-unity/docs/guide</a>. 위험과 제안은 실제로 재 본 결과나 문서 근거가 있는 것만 넣었어요.</span>
   </footer>
 </div>
 
@@ -449,29 +449,29 @@ $(".menu").innerHTML=CH.map(([id,lbl,n])=>`<button class="tab" role="tab" data-c
 /* ---------- CH1 월드맵 ---------- */
 const ZONES=[
  {id:"player",x:12,y:80,name:"모험가 야영지",role:"명령 작성",comp:"AI 에이전트",edge:"",
-  what:"AI 에이전트(또는 사람)가 주문서, 즉 명령을 써요. 예: hera-agent-unity scene info",
+  what:"AI 에이전트(또는 사람)가 명령을 써요. 예: hera-agent-unity scene info",
   real:"Claude, Codex, Cursor 같은 AI 에이전트 또는 사람",
-  why:"Hera는 AI의 일을 대신하지 않아요. AI가 Unity를 만질 손과 눈을 줘요."},
+  why:"Hera가 AI 대신 생각하지는 않아요. AI가 Unity를 직접 보고 고칠 수 있게 길을 열어 줘요."},
  {id:"gate",x:28,y:58,name:"관문 성채",role:"CLI 검사",comp:"Go CLI",edge:"명령",
-  what:"CLI가 명령 형식과 인수를 검사하고, 위험도를 매기고, 어느 Unity로 보낼지 정해요.",
-  real:"cmd/, internal/client · 런타임 의존성 0",
-  why:"설치가 실행 파일 하나라 어떤 셸·AI에서도 불러 쓸 수 있어요."},
+  what:"CLI(명령줄 프로그램)가 명령의 모양과 값이 맞는지 검사해요. 위험한 명령인지 표시하고, 어느 Unity로 보낼지 정해요.",
+  real:"cmd/, internal/client · 따로 설치할 프로그램 없음",
+  why:"설치할 것은 실행 파일 하나뿐이에요. 그래서 어떤 터미널이나 AI 도구에서도 부를 수 있어요."},
  {id:"board",x:46,y:70,name:"게시판 마을",role:"대상 확인",comp:"heartbeat 파일",edge:"대상 찾기",
-  what:"Unity가 1초마다 '살아 있음, 지금 N번 포트'를 파일에 적어요. CLI는 이걸 읽고 보낼 곳을 정해요. 긴 작업 결과와 작업 기록도 이 파일 영역에 남아요.",
+  what:"Unity는 1초마다 '켜져 있어요, 지금 몇 번 포트(연결 번호)를 써요'라는 내용을 파일에 적어요. 이 파일을 heartbeat라고 불러요. CLI는 이 파일을 읽고 명령을 보낼 곳을 정해요. 오래 걸린 작업의 결과와 작업 기록도 파일로 남아요. heartbeat는 instances 폴더에, 결과와 작업 기록은 status 폴더에 있어요.",
   real:"~/.hera-agent-unity/instances(heartbeat), status(결과·작업 기록)",
-  why:"Unity가 리로드로 잠깐 연결을 닫아도 상태가 사라지지 않고, 포트가 바뀌어도 프로젝트 경로로 따라가요."},
+  why:"Unity가 코드를 다시 불러오느라 잠깐 연결을 끊어도 기록은 파일에 남아 있어요. 포트 번호가 바뀌어도 프로젝트 폴더 경로로 같은 Unity를 다시 찾아요."},
  {id:"door",x:58,y:44,name:"던전 입구",role:"접수·사전 검사",comp:"Connector (HTTP)",edge:"HTTP 요청",
-  what:"Unity 안의 Connector가 localhost HTTP로 요청을 받아 한 줄로 세워요. 실행 전에 위험한 작업은 인수에 묶인 승인 서명을 확인하고, 작업 기록이 필요한 작업은 시작을 먼저 기록해요.",
+  what:"Unity 안에 설치된 Connector(Hera 패키지)가 같은 컴퓨터 안의 HTTP 연결로 명령을 받아 한 줄로 세워요. 위험한 작업이면 실행 전에 승인 서명을 확인해요. 이 서명은 명령에 들어간 값과 묶여 있어요. 기록이 필요한 작업은 시작했다는 사실을 먼저 적어 둬요.",
   real:"HttpServer, CommandRouter(최대 120초 대기 잠금), ApprovalAuthority, OperationLedger · 포트 8090~8099",
-  why:"Unity는 메인 스레드에서만 안전하게 바뀌어요. 줄을 세워 충돌을 막고, AI가 인수를 몰래 바꾼 위험 작업은 실행 전에 거절해요."},
+  why:"Unity는 메인 스레드(작업을 처리하는 통로 하나)에서만 안전하게 바뀌어요. 그래서 명령을 한 줄로 세워 서로 부딪히지 않게 해요. 승인을 받은 뒤 AI가 값을 몰래 바꾸면 서명이 맞지 않아 실행 전에 거절돼요."},
  {id:"dungeon",x:76,y:30,name:"깊은 던전",role:"실행",comp:"Unity 메인 스레드",edge:"차례대로",
-  what:"도구가 실제로 씬·에셋을 바꾸거나, 플레이·테스트·빌드를 하거나, 정보를 읽어요.",
-  real:"[HeraTool] 34개 · action 133개",
-  why:"도구는 리플렉션으로 자동 등록돼요. 새 도구를 만들면 CLI가 자동으로 알아봐요."},
+  what:"도구가 실제로 일을 해요. 씬이나 에셋을 바꾸거나, 게임을 플레이하거나, 테스트와 빌드를 돌리거나, 정보를 읽어요.",
+  real:"[HeraTool] 도구 34개 · 세부 동작(action) 133개",
+  why:"도구는 Hera가 자동으로 찾아서 등록해요. 새 도구를 만들면 CLI를 따로 고치지 않아도 바로 알아봐요."},
  {id:"save",x:88,y:62,name:"세이브 석상",role:"결과 기록",comp:"작업 기록 (operation ledger)",edge:"실행 결과",
-  what:"작업 기록이 적용되는 작업은 실행 결과를 작업 번호로 저장해요. 단순 읽기처럼 기록이 필요 없는 요청은 이 단계를 건너뛰어요.",
+  what:"기록을 남기는 작업은 실행 결과를 작업 번호와 함께 저장해요. 정보를 읽기만 하는 요청처럼 기록이 필요 없는 요청은 이 단계를 건너뛰어요.",
   real:"OperationLedger",
-  why:"응답이 끊겨도 같은 작업 번호로 결과를 찾을 수 있어서, 같은 작업을 두 번 실행하지 않아요."}
+  why:"응답이 중간에 사라져도 작업 번호로 결과를 다시 찾을 수 있어요. 그래서 같은 작업을 모르고 두 번 실행하지 않아요."}
 ];
 (function buildMap(){
   const st=$("#mapstage");
@@ -504,22 +504,22 @@ showZone("player");
 
 /* ---------- CH2 퀘스트 ---------- */
 const BASE=[
- ["던전 찾기","게시판의 heartbeat로 열린 Unity를 찾아요. 이름표는 프로젝트 경로, 문 번호(포트)는 그날그날 달라요."],
- ["주문서 검사","도구 계약(스키마)으로 인수를 확인하고 위험도를 매겨요."],
- ["입장","HTTP로 보내면 문지기가 한 명씩 메인 스레드에 들여보내요."],
- ["전투(실행)","도구가 씬·에셋을 바꾸거나 정보를 읽어요."],
- ["보상(결과)","짧은 일은 바로 응답, 긴 일은 번호표를 주고 게시판에 결과를 남겨요."]
+ ["던전 찾기","heartbeat 파일을 읽고 열려 있는 Unity를 찾아요. 프로젝트 폴더 경로로 찾고, 포트 번호는 그때그때 바뀔 수 있어요."],
+ ["주문서 검사","도구마다 정해진 입력 규칙(스키마)으로 값이 맞는지 확인하고, 위험한 명령인지 표시해요."],
+ ["입장","명령을 HTTP로 보내면 Connector가 메인 스레드에 하나씩 들여보내요."],
+ ["전투(실행)","도구가 씬이나 에셋을 바꾸거나 정보를 읽어요."],
+ ["보상(결과)","빨리 끝나는 일은 바로 답해요. 오래 걸리는 일은 작업 번호를 주고, 결과를 파일에 남겨요."]
 ];
 const EVENTS={
- normal:{name:"평범한 턴",hint:"아무 사고 없는 한 턴",end:["ok","퀘스트 완료"],log:[["ok","heartbeat: 프로젝트 확인, port 8090, ready"],["ok","인수 검사 통과 · 위험도 read_only"],["ok","입장 · 대기 없음(예시)"],["ok","scene info 실행"],["ok","응답(예: 221 B) · 끝"]]},
- approval:{name:"봉인된 문",hint:"위험한 작업에는 승인이 필요해요",end:["ok","봉인 해제, 퀘스트 완료"],log:[["ok","heartbeat: port 8090, ready"],["warn","위험도 destructive → APPROVAL_REQUIRED, 토큰 발급"],["ok","같은 주문서 + --approve <token> 으로 재요청"],["ok","Connector가 실제 인수로 해시를 다시 계산해 서명 확인"],["ok","실행 · operation ledger에 기록 (재실행 방지)"]],
-   note:"인수를 하나라도 바꾸면 서명이 맞지 않아 거절돼요."},
- reload:{name:"던전 리로드",hint:"컴파일로 던전 문이 잠깐 닫혀요",end:["warn","새 문으로 돌아서 완료"],log:[["ok","heartbeat: port 8090, ready"],["ok","인수 검사 통과"],["warn","503 RELOADING · retryable=true (아직 실행 안 됨)"],["warn","게시판 재확인: 포트가 8091로 바뀜 · 리로드 중 port 0은 무시"],["ok","재시도 가능한 요청(idempotent 또는 작업 기록 지원)만 새 포트로 재시도 · 성공"]],
-   note:"실측에서 리로드마다 포트가 8090~8094로 바뀌었어요. 프로젝트 경로로 따라가니 문제없어요."},
- dialog:{name:"얼어붙은 던전",hint:"대화상자가 메인 스레드를 붙잡아요",end:["bad","퀘스트 보류: 사람이 대화상자를 닫아야 해요"],log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["bad","요청 시간 초과(기본 60초) · heartbeat도 3초 넘게 멈춤"],["warn","같은 PID에 비활성 창과 활성 모달 창 발견 → blocked_by_dialog, retryable=false"]],
-   note:"Windows에서만 알아봐요. 저절로 끝나는 진행 창은 대화상자로 치지 않아요."},
- lost:{name:"사라진 전령",hint:"일은 끝났는데 응답이 끊겨요",end:["bad","결과 불명: 다시 보내지 않아요"],log:[["ok","heartbeat: port 8090"],["ok","인수 검사 통과"],["ok","입장"],["ok","실행 완료(ledger에는 committed)"],["bad","응답 유실 → OPERATION_OUTCOME_UNKNOWN · 다시 보내지 않음"]],
-   note:"실험에서 실제로 일어났어요. 작업은 끝났는데 응답만 사라졌어요. 그래서 '모르면 다시 보내지 않기'가 규칙이에요."}
+ normal:{name:"평범한 턴",hint:"아무 문제 없이 끝나는 경우",end:["ok","퀘스트 완료"],log:[["ok","heartbeat 확인: 프로젝트 맞음, 포트 8090, 준비됨(ready)"],["ok","값 검사 통과 · 읽기만 하는 명령(read_only)"],["ok","입장 · 기다리는 명령 없음(예시)"],["ok","scene info 실행"],["ok","응답 도착(예: 221바이트) · 끝"]]},
+ approval:{name:"봉인된 문",hint:"위험한 작업은 승인을 받아야 해요",end:["ok","봉인 해제, 퀘스트 완료"],log:[["ok","heartbeat 확인: 포트 8090, 준비됨"],["warn","되돌리기 어려운 명령(destructive) → 승인 필요(APPROVAL_REQUIRED), 승인 토큰 발급"],["ok","같은 명령에 --approve <토큰>을 붙여 다시 보냄"],["ok","Connector가 실제 값으로 서명을 다시 계산해 맞는지 확인"],["ok","실행 · 작업 기록에 남김(두 번 실행 방지)"]],
+   note:"값을 하나라도 바꾸면 서명이 맞지 않아 거절돼요."},
+ reload:{name:"던전 리로드",hint:"코드를 다시 불러오느라 Unity가 잠깐 연결을 닫아요",end:["warn","새 포트로 다시 보내서 완료"],log:[["ok","heartbeat 확인: 포트 8090, 준비됨"],["ok","값 검사 통과"],["warn","503 RELOADING · 다시 시도해도 됨(retryable=true) · 아직 실행 안 됨"],["warn","heartbeat 다시 확인: 포트가 8091로 바뀜 · 다시 불러오는 동안 보이는 포트 0은 무시"],["ok","다시 보내도 안전한 요청(여러 번 해도 결과가 같거나 작업 기록이 있는 요청)만 새 포트로 다시 보냄 · 성공"]],
+   note:"실제로 재 보니 다시 불러올 때마다 포트가 8090~8094 사이에서 바뀌었어요. 프로젝트 폴더 경로로 찾기 때문에 문제없어요."},
+ dialog:{name:"얼어붙은 던전",hint:"Unity에 뜬 창(대화상자)이 메인 스레드를 막아요",end:["bad","퀘스트 보류: 사람이 대화상자를 닫아야 해요"],log:[["ok","heartbeat 확인: 포트 8090"],["ok","값 검사 통과"],["ok","입장"],["bad","기다리는 시간(기본 60초)을 넘김 · heartbeat도 3초 넘게 멈춤"],["warn","같은 Unity 프로세스에서 비활성 창과 앞에 뜬 창(모달)을 발견 → 대화상자에 막힘(blocked_by_dialog), 다시 보내도 소용없음(retryable=false)"]],
+   note:"Windows에서만 알아봐요. 진행 막대 창처럼 저절로 닫히는 창은 대화상자로 치지 않아요."},
+ lost:{name:"사라진 전령",hint:"일은 끝났는데 응답만 사라져요",end:["bad","결과 모름: 다시 보내지 않아요"],log:[["ok","heartbeat 확인: 포트 8090"],["ok","값 검사 통과"],["ok","입장"],["ok","실행 완료(작업 기록에는 committed)"],["bad","응답 사라짐 → 결과 모름(OPERATION_OUTCOME_UNKNOWN) · 다시 보내지 않음"]],
+   note:"실험에서 실제로 일어났어요. 작업은 끝났는데 응답만 사라졌어요. 그래서 결과를 모르면 다시 보내지 않는 게 규칙이에요. 대신 응답에 나온 작업 번호(op_로 시작하는 operation_id)를 task status에 넣어 기록을 확인해요."}
 };
 let ev="normal",turn=-1;
 $("#qlist").innerHTML=Object.entries(EVENTS).map(([k,e])=>`<button class="qitem" data-ev="${k}" aria-pressed="${k===ev}">${esc(e.name)}<small>${esc(e.hint)}</small></button>`).join("");
@@ -540,53 +540,53 @@ renderQuest();
 
 /* ---------- CH3 스킬 트리 ---------- */
 const TREES=[
- {id:"builder",n:"건축가",r:"씬과 오브젝트",d:"씬을 열고, 대상을 찾고, 오브젝트와 컴포넌트를 정확한 속성 경로로 고쳐요.",skills:[
-  {t:"scene",n:"씬 장악",row:0,col:0,what:"씬 정보 보기, 만들기, 열기, 저장, 전환과 오브젝트 계층 트리 조회를 해요.",why:"어느 씬에서 일하는지 먼저 확인하고, 바꾼 결과를 저장해야 작업이 남아요.",cmd:"hera-agent-unity scene info",acts:"info, create, load, save, save_all, list, set_active, close, hierarchy"},
-  {t:"find_gameobjects",n:"탐색의 눈",row:0,col:2,what:"열린 씬에서 이름·태그·레이어·컴포넌트·경로로 오브젝트를 찾아요. 기본 응답은 {instance_id, name}뿐이라 짧아요.",why:"무엇을 고치든 대상을 정확히 찾는 게 먼저예요. 짧은 응답이라 토큰도 아껴요.",cmd:"hera-agent-unity find_gameobjects --name Player",acts:""},
-  {t:"manage_gameobject",n:"형상 빚기",row:1,col:1,pre:["scene","find_gameobjects"],what:"오브젝트를 만들고, 지우고, 복제하고, 위치·부모·활성·이름·태그·레이어를 바꿔요.",why:"exec 코드 없이 정해진 계약으로 오브젝트를 다뤄서 실수가 줄어요.",cmd:"hera-agent-unity manage_gameobject create --name Player",acts:"create, destroy, duplicate, move, set_transform, set_parent, set_active, set_name, set_tag, set_layer, get_transform"},
-  {t:"manage_components",n:"부품 장착",row:2,col:1,pre:["manage_gameobject"],what:"오브젝트의 컴포넌트를 추가·제거·조회하고, 속성을 하나씩 바꿔요.",why:"Inspector에서 손으로 하던 설정을 AI가 정확한 속성 경로로 바꾸고, 다시 읽어 확인할 수 있어요.",cmd:"hera-agent-unity manage_components add --path /Player --type Rigidbody",acts:"add, remove, list, get, set"},
-  {t:"manage_prefab",n:"원형 주조",row:3,col:1,pre:["manage_components"],what:"씬 오브젝트를 프리팹으로 저장하고, 배치하고, 오버라이드를 보고 적용·되돌리기·풀기를 해요.",why:"반복해서 쓰는 오브젝트를 원본 하나로 관리해야 수정이 한 번에 퍼져요.",cmd:"hera-agent-unity manage_prefab create --source /Player --path Assets/Prefabs/Player.prefab",acts:"create, instantiate, add_component, remove_component, list_overrides, apply, revert, unpack"}]},
- {id:"artisan",n:"장인",r:"에셋과 패키지",d:"에셋 창고를 정리하고, 가져오기 설정과 머티리얼을 다듬고, 패키지를 들여와요.",skills:[
-  {t:"detect_assets",n:"보물 감정",row:0,col:0,what:"설치된 서드파티 에셋 플러그인(DOTween 등)을 찾아 Hera 설정에 반영해요.",why:"AI가 프로젝트에 있는 도구를 알아야 그 도구에 맞는 코드를 써요.",cmd:"hera-agent-unity detect_assets",acts:""},
-  {t:"manage_assets",n:"창고 정리",row:0,col:1,what:"에셋 찾기와 의존 관계 보기는 프로젝트 전체(패키지 포함)를 대상으로 해요. 폴더·ScriptableObject 만들기, 가져오기·복사·이동·삭제 같은 쓰기 동작은 Assets/ 안에서만 해요.",why:"경로를 하나 잘못 써도 참조가 깨져요. 쓰기를 Assets/ 안의 정해진 동작으로만 해서 안전해요.",cmd:"hera-agent-unity manage_assets find --type Texture2D --filter icon --limit 20",acts:"find, deps, mkdir, create, import, copy, move, delete"},
-  {t:"manage_packages",n:"상인 조합",row:0,col:2,what:"Package Manager 패키지를 조회·검색·추가·제거·임베드해요. 추가와 제거는 작업 번호를 받아 끝날 때까지 기다려요.",why:"필요한 패키지를 이 에디터가 받을 수 있는 버전으로 설치해요.",cmd:"hera-agent-unity manage_packages list",acts:"list, search, add, remove, embed"},
-  {t:"manage_asset_import",n:"재료 손질",row:1,col:1,pre:["manage_assets"],what:"텍스처·모델·오디오의 가져오기 설정을 읽고, 하나씩 바꾼 뒤 다시 가져와요.",why:"압축·크기·읽기 설정이 빌드 용량과 성능을 좌우해요.",cmd:"hera-agent-unity manage_asset_import get --path Assets/Tex/icon.png",acts:"get, set"},
-  {t:"describe_shader",n:"셰이더 해독",row:1,col:2,what:"셰이더가 가진 속성(이름·종류·범위)을 보거나 셰이더 이름을 검색해요.",why:"머티리얼을 고치기 전에 어떤 속성 이름(_BaseColor 등)이 있는지 알아야 해요.",cmd:"hera-agent-unity describe_shader --list --filter Lit",acts:""},
-  {t:"reserialize",n:"재봉인",row:2,col:0,pre:["manage_asset_import"],what:"에셋을 강제로 다시 직렬화해요. 경로를 주지 않으면 프로젝트 전체가 대상이에요.",why:"Unity 버전을 올린 뒤 에셋 파일을 현재 형식으로 맞춰요.",cmd:"hera-agent-unity reserialize Assets/Scenes/Main.unity",acts:""},
-  {t:"manage_material",n:"색 입히기",row:2,col:2,pre:["describe_shader"],what:"머티리얼을 만들고, 셰이더와 속성 값을 읽고 바꿔요.",why:"색과 질감을 코드 없이 정확한 속성 이름으로 조정해요.",cmd:"hera-agent-unity manage_material create --path Assets/Mats/Player.mat --shader \"Universal Render Pipeline/Lit\"",acts:"create, get, set, set_shader"}]},
- {id:"mage",n:"마법사",r:"즉석 코드와 탐구",d:"로드된 코드를 조사하고, 전용 도구가 없는 일은 C# 주문으로 직접 해결해요.",skills:[
-  {t:"list_assemblies",n:"서고 목록",row:0,col:0,what:"지금 에디터에 로드된 어셈블리(패키지·프로젝트·서드파티)를 보여 줘요.",why:"exec 코드를 쓰기 전에 어떤 라이브러리를 쓸 수 있는지 확인해요.",cmd:"hera-agent-unity list_assemblies --filter Unity",acts:""},
-  {t:"describe_type",n:"형태 해부",row:0,col:1,what:"타입의 종류·부모·인터페이스·공개 멤버와 알려진 Unity 함정을 보여 줘요.",why:"exec 코드에서 시그니처·네임스페이스 실수를 미리 막아요.",cmd:"hera-agent-unity describe_type UnityEditor.AssetDatabase --members methods --limit 30",acts:""},
-  {t:"find_method",n:"주문 탐색",row:0,col:2,what:"로드된 어셈블리 전체에서 메서드 이름을 찾아 선언 타입과 시그니처를 보여 줘요.",why:"'Refresh 비슷한 거'처럼 이름만 어렴풋할 때 정확한 API를 찾아요.",cmd:"hera-agent-unity find_method \"Refresh\" --namespace UnityEditor --limit 20",acts:""},
-  {t:"exec",n:"즉석 주문",row:1,col:1,pre:["list_assemblies","describe_type","find_method"],what:"C# 코드를 즉석에서 컴파일해 에디터 안에서 실행해요. 컴파일 캐시, 제한 모드(restricted), 메타데이터 기록장이 있어요. Unity 객체는 기본적으로 {name, type, instanceID}로 짧게 돌려줘요.",why:"전용 도구가 없는 일도 처리하는 만능 열쇠예요. 대신 기본이 전체 권한이라 위험한 코드는 승인을 받아요.",cmd:"hera-agent-unity exec \"return 1+1;\"\nhera-agent-unity exec --security-mode restricted \"return 6*7;\"",acts:""},
-  {t:"menu",n:"메뉴 호출",row:2,col:0,what:"Unity 메뉴 항목을 경로로 실행하거나, 메뉴 목록을 찾아봐요.",why:"메뉴로만 열리는 기능을 AI가 직접 실행해요.",cmd:"hera-agent-unity menu list --filter Assets",acts:"list"},
-  {t:"refresh_unity",n:"재컴파일",row:2,col:2,what:"에셋을 새로 고치고, 필요하면 스크립트 컴파일까지 요청해요. CLI에서는 editor refresh로 불러요.",why:"코드를 바꾼 뒤 컴파일이 끝나야 다음 명령이 바뀐 코드를 봐요.",cmd:"hera-agent-unity editor refresh --compile",acts:""}]},
- {id:"warden",n:"검증관",r:"증거 수집",d:"'됐다'를 말로 하지 않고 콘솔·테스트·캡처·측정값으로 보여 줘요.",skills:[
-  {t:"console",n:"전장 기록",row:0,col:0,what:"Unity 콘솔 로그를 종류와 줄 수로 걸러 읽거나 지워요.",why:"작업을 끝냈다고 하기 전에 오류가 0건인지 확인해요.",cmd:"hera-agent-unity console --lines 20 --type error",acts:""},
-  {t:"log",n:"표식 남기기",row:0,col:2,what:"Unity 콘솔에 메시지를 남겨요. 컴파일이 없어서 exec보다 빨라요.",why:"작업 구간마다 표식을 남겨 로그를 나눠 보기 쉬워요.",cmd:"hera-agent-unity log \"checkpoint\" --level warning",acts:""},
-  {t:"run_tests",n:"시련의 장",row:1,col:1,pre:["console"],what:"EditMode·PlayMode 테스트를 돌려요. 목록 확인, 취소, JUnit/NUnit 출력, 나눠 돌리기를 지원해요. CLI에서는 test로 불러요.",why:"바뀐 코드가 기존 동작을 깨지 않았다는 걸 자동으로 증명해요.",cmd:"hera-agent-unity test --mode PlayMode",acts:"list, cancel"},
-  {t:"screenshot",n:"기억 각인",row:2,col:0,what:"Scene·Game 뷰나 특정 대상을 캡처하고, uGUI·물리·UI Toolkit 정보를 겹쳐 남겨요.",why:"눈으로 봐야 아는 결과를 증거로 남겨요.",cmd:"hera-agent-unity screenshot --view game",acts:""},
-  {t:"profiler",n:"기력 측정",row:2,col:2,pre:["run_tests"],what:"프로파일러를 켜고 끄고, 계층별 시간과 렌더·메모리·프레임 통계를 뽑아요.",why:"느려진 곳을 추측하지 않고 숫자로 찾아요.",cmd:"hera-agent-unity profiler hierarchy",acts:"hierarchy, enable, disable, status, clear, stats"}]},
- {id:"scout",n:"플레이테스터",r:"직접 플레이",d:"플레이 모드에 들어가 실제 조작을 흉내 내고, 조작 흐름을 기록하고 다시 돌려요.",skills:[
-  {t:"manage_editor",n:"전장 진입",row:0,col:1,what:"플레이 모드 진입·정지·일시정지와 태그·레이어·선택·활성 도구를 다뤄요. CLI에서는 editor play처럼 불러요.",why:"실제로 플레이해 봐야 아는 문제가 있어요. --wait로 진입이 끝날 때까지 기다려요.",cmd:"hera-agent-unity editor play --wait",acts:"play, stop, pause, focus, set_active_tool, add_tag, remove_tag, add_layer, remove_layer, get_tags_layers, get_selection, set_selection"},
-  {t:"input",n:"환영의 손",row:1,col:1,pre:["manage_editor"],what:"uGUI 이벤트(클릭·드래그·스크롤·제출)와 Input System 키보드·마우스 입력을 합성하고, 입력 순서를 기록하고 다시 재생해요.",why:"사람 없이 버튼이 실제로 눌리는지, 조작 흐름이 이어지는지 확인해요. 운영체제 수준의 실제 클릭은 아니에요.",cmd:"hera-agent-unity input state",acts:"click, drag, inspect, keyboard, mouse, pointer_down, pointer_up, record, replay, scroll, sequence, state, submit"}]},
- {id:"bard",n:"연출가",r:"화면·연출·빌드",d:"UI와 애니메이션, 컷신, 조명과 프로젝트 설정을 다듬고 출시물을 만들어요.",skills:[
-  {t:"manage_ui",n:"깃발 세우기",row:0,col:0,what:"Canvas·EventSystem까지 갖춰 uGUI 요소를 만들고, RectTransform 앵커와 크기를 조정해요.",why:"UI 뼈대를 빠르게 세우고, 세부 속성은 부품 장착(manage_components)으로 이어가요.",cmd:"hera-agent-unity manage_ui create --element button --name PlayBtn --content Play",acts:"create, get_rect, set_anchor, set_rect"},
-  {t:"manage_animation",n:"춤의 악보",row:0,col:1,what:"AnimationClip 커브와 AnimatorController(파라미터·레이어·상태·전이)를 만들어요.",why:"exec 보일러플레이트 없이 애니메이션 에셋을 만들어요.",cmd:"hera-agent-unity manage_animation create_clip --path Assets/Anim/Bob.anim --frame_rate 60 --loop true",acts:"create_clip, set_curve, remove_curve, get_clip, create_controller, add_parameter, add_layer, add_state, add_transition, get_controller"},
-  {t:"bake",n:"빛 굽기",row:0,col:2,what:"라이트맵·내비메시·오클루전을 굽고, 상태를 보고, 취소하거나 지워요.",why:"조명과 길찾기 데이터는 구워야 게임에 반영돼요.",cmd:"hera-agent-unity bake start --area lighting",acts:"start, status, cancel, clear"},
-  {t:"manage_timeline",n:"서사 편찬",row:1,col:1,pre:["manage_animation"],what:"Timeline 에셋을 만들고 트랙과 클립을 검증해서 넣어요. 패키지가 없으면 PACKAGE_NOT_INSTALLED로 알려요.",why:"컷신과 연출 순서를 코드 없이 짜요.",cmd:"hera-agent-unity manage_timeline create --params '{\"path\":\"Assets/Cinematics/Intro.playable\",\"frame_rate\":60}'",acts:"create, add_track, add_clip, get"},
-  {t:"manage_settings",n:"왕국 법전",row:1,col:2,what:"물리·시간·품질·플레이어·오디오·그래픽·입력·라이트·내비메시 설정을 영역별로 읽고, 준 값만 바꿔요. 미리보기(dry_run)를 지원해요.",why:"프로젝트 설정 실수는 찾기 어려워요. 바뀐 값만 보고해서 확인이 쉬워요.",cmd:"hera-agent-unity manage_settings get_physics",acts:"get_<영역>, set_<영역>"},
-  {t:"build",n:"원정 출정",row:2,col:2,pre:["manage_settings"],what:"현재 타깃으로 플레이어 빌드를 만들고, 빌드 씬과 설정을 관리해요. 빌드 중엔 에디터가 멈추니 결과는 파일로 받아요.",why:"출시물을 직접 만들고, 결과·크기·첫 오류를 짧게 보고받아요.",cmd:"hera-agent-unity build start --wait",acts:"start, status, get_settings, set_settings, add_scene, remove_scene, list_targets"}]},
- {id:"sage",n:"현자",r:"내장 지식서",d:"인터넷 없이도 이 Unity 버전의 문서와 손맛·UI 품질 기준을 찾아봐요. 토글과 상관없이 늘 쓸 수 있어요.",skills:[
-  {t:"unity_docs",n:"고서 열람",row:0,col:0,what:"이 Unity 버전의 ScriptReference를 오프라인으로 찾아 제목·시그니처·요약을 250~400바이트로 돌려줘요.",why:"AI가 기억에 기대지 않고, 이 버전에 그 API가 있는지 확인해요.",cmd:"hera-agent-unity unity_docs Rigidbody",acts:""},
-  {t:"game_feel",n:"손맛의 비전",row:0,col:1,what:"게임 감각 지식 67주제를 찾아봐요. 구체적인 수치(px·초·%)와 Unity 어디에 적용하는지 알려 줘요.",why:"타격감과 조작감을 감으로 정하지 않고, 검증된 값에서 시작해요.",cmd:"hera-agent-unity game_feel screen_shake",acts:""},
-  {t:"ui_slop",n:"흉물 판별",row:0,col:2,what:"UI 품질 문제 48종을 찾아봐요. 대부분은 씬에서 실제로 잴 수 있는 판정 기준이에요.",why:"AI가 만든 UI의 흔한 어색함을 기준을 갖고 고쳐요.",cmd:"hera-agent-unity ui_slop low-contrast-text",acts:""}]},
- {id:"guide",n:"길잡이",r:"CLI 기본기",d:"Unity 도구가 아니라 CLI 자체 명령이에요. 대상을 확인하고, 필요한 설명만 읽고, 긴 작업을 추적해요.",skills:[
-  {t:"status",n:"정찰",row:0,col:1,what:"실행 중인 Unity의 프로젝트·포트·상태를 heartbeat로 확인해요.",why:"명령을 보내기 전에 어느 에디터가 살아 있는지 알아요.",cmd:"hera-agent-unity status",acts:""},
-  {t:"list",n:"지도 펼치기",row:1,col:0,pre:["status"],what:"도구 이름(--names), 도구 하나의 스키마(--tool), 작업별 도구 묶음(--profile)을 보여 줘요.",why:"필요한 설명만 골라 읽어 토큰을 아껴요.",cmd:"hera-agent-unity list --profile core",acts:""},
-  {t:"doctor",n:"의사의 진단",row:1,col:2,pre:["status"],what:"설치 상태를 진단하고(--json), AI에게 줄 규칙(--agent-rules --compact)을 출력해요.",why:"AI가 Hera를 처음 쓸 때 규칙을 한 번에 익혀요.",cmd:"hera-agent-unity doctor --agent-rules --compact",acts:""},
-  {t:"batch",n:"연속 주문",row:2,col:0,pre:["list"],what:"여러 명령을 한 번의 요청으로 순서대로 보내요. --dry-run은 무엇을 보낼지 미리 보여 주기만 해요. --atomic은 되돌릴 수 있는(Undo가 되는) 비파괴 씬 편집만 한 묶음으로 처리하고, 다른 항목이 섞이면 실행 전에 거절해요.",why:"단순한 연속 작업의 왕복 횟수를 줄여요. 조건 분기가 필요하면 명령을 따로 보내요.",cmd:"hera-agent-unity batch --file steps.json --dry-run",acts:""},
-  {t:"task",n:"원정 기록",row:2,col:2,pre:["doctor"],what:"오래 걸리는 테스트·패키지 작업의 상태와 결과를 Unity에 묻지 않고 확인해요.",why:"에디터가 리로드되거나 응답이 끊겨도 같은 작업을 다시 시작하지 않고 결과를 찾아요.",cmd:"hera-agent-unity task list",acts:"list, status"}]}
+ {id:"builder",n:"건축가",r:"씬과 오브젝트",d:"씬을 열고, 고칠 오브젝트를 찾고, 오브젝트와 그 부품(컴포넌트)의 값을 정확히 바꿔요.",skills:[
+  {t:"scene",n:"씬 장악",row:0,col:0,what:"씬 정보를 보고, 씬을 만들고, 열고, 저장하고, 바꿔요. 씬 안의 오브젝트 구조(계층 트리)도 보여 줘요.",why:"어느 씬에서 일하는지 먼저 확인해야 해요. 바꾼 뒤 저장해야 작업이 남아요.",cmd:"hera-agent-unity scene info",acts:"info, create, load, save, save_all, list, set_active, close, hierarchy"},
+  {t:"find_gameobjects",n:"탐색의 눈",row:0,col:2,what:"열린 씬에서 이름, 태그, 레이어, 컴포넌트, 경로로 오브젝트를 찾아요. 기본으로는 번호(instance_id)와 이름만 돌려줘서 응답이 짧아요.",why:"무엇을 고치든 고칠 대상을 정확히 찾는 게 먼저예요. 응답이 짧아서 AI가 읽는 분량(토큰)도 아껴요.",cmd:"hera-agent-unity find_gameobjects --name Player",acts:""},
+  {t:"manage_gameobject",n:"형상 빚기",row:1,col:1,pre:["scene","find_gameobjects"],what:"오브젝트를 만들고, 지우고, 복제해요. 위치, 부모, 켜짐과 꺼짐, 이름, 태그, 레이어도 바꿔요.",why:"exec 코드를 쓰지 않고 정해진 방식으로 오브젝트를 다뤄서 실수가 줄어요.",cmd:"hera-agent-unity manage_gameobject create --name Player",acts:"create, destroy, duplicate, move, set_transform, set_parent, set_active, set_name, set_tag, set_layer, get_transform"},
+  {t:"manage_components",n:"부품 장착",row:2,col:1,pre:["manage_gameobject"],what:"오브젝트에 컴포넌트(Rigidbody 같은 부품)를 붙이고, 떼고, 살펴보고, 값을 하나씩 바꿔요.",why:"Inspector 창(선택한 오브젝트의 값을 보여 주는 창)에서 손으로 하던 설정을 AI가 정확한 이름의 값으로 바꾸고, 다시 읽어서 확인할 수 있어요.",cmd:"hera-agent-unity manage_components add --path /Player --type Rigidbody",acts:"add, remove, list, get, set"},
+  {t:"manage_prefab",n:"원형 주조",row:3,col:1,pre:["manage_components"],what:"씬의 오브젝트를 프리팹(다시 쓰는 원본)으로 저장하고 배치해요. 원본과 달라진 부분(오버라이드)을 보고, 원본에 반영하거나, 되돌리거나, 원본과의 연결을 풀어요.",why:"자주 쓰는 오브젝트를 원본 하나로 관리하면, 원본을 고칠 때 연결된 오브젝트에도 반영돼요. 각 오브젝트에서 따로 바꾼 값은 예외예요.",cmd:"hera-agent-unity manage_prefab create --source /Player --path Assets/Prefabs/Player.prefab",acts:"create, instantiate, add_component, remove_component, list_overrides, apply, revert, unpack"}]},
+ {id:"artisan",n:"장인",r:"에셋과 패키지",d:"에셋(이미지, 모델, 소리 같은 파일)을 정리하고, 가져오기 설정과 머티리얼을 다듬고, 패키지를 설치해요.",skills:[
+  {t:"detect_assets",n:"보물 감정",row:0,col:0,what:"설치된 외부 에셋 플러그인(DOTween 등)을 찾아 Hera 설정에 반영해요.",why:"프로젝트에 어떤 도구가 있는지 AI가 알아야 그 도구에 맞는 코드를 써요.",cmd:"hera-agent-unity detect_assets",acts:""},
+  {t:"manage_assets",n:"창고 정리",row:0,col:1,what:"에셋 찾기와 의존 관계(어떤 파일이 어떤 파일을 쓰는지) 보기는 패키지까지 포함한 프로젝트 전체에서 해요. 폴더나 ScriptableObject(데이터를 담는 에셋) 만들기, 가져오기, 복사, 이동, 삭제처럼 파일을 바꾸는 일은 Assets/ 폴더 안에서만 해요.",why:"경로를 하나만 잘못 써도 다른 파일과의 연결이 끊어져요. 파일을 바꾸는 일은 Assets/ 안에서 정해진 동작으로만 해서 안전해요.",cmd:"hera-agent-unity manage_assets find --type Texture2D --filter icon --limit 20",acts:"find, deps, mkdir, create, import, copy, move, delete"},
+  {t:"manage_packages",n:"상인 조합",row:0,col:2,what:"Package Manager의 패키지를 보고, 찾고, 설치하고, 지우고, 프로젝트 안으로 복사(embed)해요. 설치와 삭제는 작업 번호를 받아 끝날 때까지 기다려요.",why:"필요한 패키지를 이 에디터에 맞는 버전으로 설치해요.",cmd:"hera-agent-unity manage_packages list",acts:"list, search, add, remove, embed"},
+  {t:"manage_asset_import",n:"재료 손질",row:1,col:1,pre:["manage_assets"],what:"텍스처, 모델, 소리 파일을 가져오는 설정을 읽고, 하나씩 바꾼 뒤 다시 가져와요.",why:"압축, 크기, 읽기 설정에 따라 게임 용량과 속도가 달라져요.",cmd:"hera-agent-unity manage_asset_import get --path Assets/Tex/icon.png",acts:"get, set"},
+  {t:"describe_shader",n:"셰이더 해독",row:1,col:2,what:"셰이더(물체를 그리는 방법)가 가진 값의 이름, 종류, 범위를 보거나 셰이더 이름을 검색해요.",why:"머티리얼을 고치기 전에 어떤 값 이름(_BaseColor 등)이 있는지 알아야 해요.",cmd:"hera-agent-unity describe_shader --list --filter Lit",acts:""},
+  {t:"reserialize",n:"재봉인",row:2,col:0,pre:["manage_asset_import"],what:"에셋 파일을 지금 Unity 형식으로 강제로 다시 저장해요. 경로를 주지 않으면 프로젝트 전체가 대상이에요.",why:"Unity 버전을 올린 뒤 에셋 파일을 새 형식에 맞춰요.",cmd:"hera-agent-unity reserialize Assets/Scenes/Main.unity",acts:""},
+  {t:"manage_material",n:"색 입히기",row:2,col:2,pre:["describe_shader"],what:"머티리얼(물체의 색과 질감 설정)을 만들고, 셰이더와 값을 읽고 바꿔요.",why:"색과 질감을 코드 없이 정확한 값 이름으로 조정해요.",cmd:"hera-agent-unity manage_material create --path Assets/Mats/Player.mat --shader \"Universal Render Pipeline/Lit\"",acts:"create, get, set, set_shader"}]},
+ {id:"mage",n:"마법사",r:"즉석 코드와 탐구",d:"지금 불러온 코드를 살펴보고, 전용 도구가 없는 일은 C# 코드를 직접 실행해서 해결해요.",skills:[
+  {t:"list_assemblies",n:"서고 목록",row:0,col:0,what:"지금 에디터에 불러온 코드 묶음(어셈블리)을 보여 줘요. 패키지, 프로젝트, 외부 라이브러리가 모두 들어가요.",why:"exec 코드를 쓰기 전에 어떤 라이브러리를 쓸 수 있는지 확인해요.",cmd:"hera-agent-unity list_assemblies --filter Unity",acts:""},
+  {t:"describe_type",n:"형태 해부",row:0,col:1,what:"클래스 같은 타입의 종류, 부모, 인터페이스(지켜야 할 기능 목록), 공개된 기능과 Unity에서 알려진 함정을 보여 줘요.",why:"exec 코드에서 함수 모양이나 네임스페이스(이름이 속한 묶음)를 잘못 쓰는 실수를 미리 막아요.",cmd:"hera-agent-unity describe_type UnityEditor.AssetDatabase --members methods --limit 30",acts:""},
+  {t:"find_method",n:"주문 탐색",row:0,col:2,what:"불러온 코드 전체에서 메서드(함수) 이름을 찾아, 어느 타입에 있고 어떤 모양인지 보여 줘요.",why:"'Refresh 비슷한 거'처럼 이름이 흐릿하게만 기억날 때 정확한 API를 찾아요.",cmd:"hera-agent-unity find_method \"Refresh\" --namespace UnityEditor --limit 20",acts:""},
+  {t:"exec",n:"즉석 주문",row:1,col:1,pre:["list_assemblies","describe_type","find_method"],what:"C# 코드를 그 자리에서 컴파일해서 에디터 안에서 실행해요. 같은 코드와 같은 컴파일 환경의 결과가 남아 있으면 다시 컴파일하지 않고 써요. 기능을 줄인 제한 모드(restricted)와, 코드 원문 없이 실행 정보만 남기는 기록장도 있어요. Unity 오브젝트는 기본으로 이름, 종류, 번호(instanceID)만 짧게 돌려줘요.",why:"전용 도구가 없는 일도 처리할 수 있어요. 대신 기본값이 모든 권한이라 실행 전에 승인을 받아요.",cmd:"hera-agent-unity exec \"return 1+1;\"\nhera-agent-unity exec --security-mode restricted \"return 6*7;\"",acts:""},
+  {t:"menu",n:"메뉴 호출",row:2,col:0,what:"Unity 메뉴 항목을 경로로 실행하거나, 메뉴 목록을 찾아봐요.",why:"메뉴로만 열 수 있는 기능을 AI가 직접 실행해요.",cmd:"hera-agent-unity menu list --filter Assets",acts:"list"},
+  {t:"refresh_unity",n:"재컴파일",row:2,col:2,what:"에셋을 새로 읽어 들이고, 필요하면 스크립트 컴파일까지 요청해요. CLI에서는 editor refresh로 불러요.",why:"코드를 바꾼 뒤 컴파일이 끝나야 다음 명령이 바뀐 코드로 동작해요.",cmd:"hera-agent-unity editor refresh --compile",acts:""}]},
+ {id:"warden",n:"검증관",r:"증거 수집",d:"'다 됐어요'를 말로만 하지 않고 콘솔, 테스트, 화면 캡처, 측정값으로 보여 줘요.",skills:[
+  {t:"console",n:"전장 기록",row:0,col:0,what:"Unity 콘솔 로그를 종류와 줄 수로 골라 읽거나 지워요.",why:"다 됐다고 말하기 전에 오류가 0건인지 확인해요.",cmd:"hera-agent-unity console --lines 20 --type error",acts:""},
+  {t:"log",n:"표식 남기기",row:0,col:2,what:"Unity 콘솔에 메시지를 남겨요. 컴파일이 필요 없어서 exec보다 빨라요.",why:"작업 단계마다 표시를 남겨 두면 로그를 나눠 보기 쉬워요.",cmd:"hera-agent-unity log \"checkpoint\" --level warning",acts:""},
+  {t:"run_tests",n:"시련의 장",row:1,col:1,pre:["console"],what:"EditMode, PlayMode 테스트를 돌려요. 테스트 목록 보기, 취소, JUnit·NUnit 형식 결과 파일, 일부만 골라 돌리기를 지원해요. CLI에서는 test로 불러요.",why:"바꾼 코드가 원래 되던 기능을 망가뜨리지 않았는지 자동으로 확인해요.",cmd:"hera-agent-unity test --mode PlayMode",acts:"list, cancel"},
+  {t:"screenshot",n:"기억 각인",row:2,col:0,what:"Scene 뷰, Game 뷰, 특정 대상을 캡처하고, uGUI·물리·UI Toolkit 정보를 그림 위에 겹쳐 표시해요.",why:"눈으로 봐야 알 수 있는 결과를 증거로 남겨요.",cmd:"hera-agent-unity screenshot --view game",acts:""},
+  {t:"profiler",n:"기력 측정",row:2,col:2,pre:["run_tests"],what:"프로파일러(성능 측정기)를 켜고 끄고, 어느 부분에 시간이 얼마나 걸렸는지와 렌더링·메모리·프레임 통계를 뽑아요.",why:"느려진 곳을 짐작하지 않고 숫자로 찾아요.",cmd:"hera-agent-unity profiler hierarchy",acts:"hierarchy, enable, disable, status, clear, stats"}]},
+ {id:"scout",n:"플레이테스터",r:"직접 플레이",d:"플레이 모드에 들어가 실제 조작을 흉내 내고, 조작 순서를 기록했다가 다시 돌려요.",skills:[
+  {t:"manage_editor",n:"전장 진입",row:0,col:1,what:"플레이 모드를 시작하고, 멈추고, 일시정지해요. 태그, 레이어, 선택한 오브젝트, 사용 중인 편집 도구도 다뤄요. CLI에서는 editor play처럼 불러요.",why:"직접 플레이해 봐야 알 수 있는 문제가 있어요. --wait를 붙이면 플레이 모드가 완전히 시작될 때까지 기다려요.",cmd:"hera-agent-unity editor play --wait",acts:"play, stop, pause, focus, set_active_tool, add_tag, remove_tag, add_layer, remove_layer, get_tags_layers, get_selection, set_selection"},
+  {t:"input",n:"환영의 손",row:1,col:1,pre:["manage_editor"],what:"uGUI 이벤트(클릭, 드래그, 스크롤, 제출)와 Input System 키보드·마우스 입력을 만들어 넣어요. 입력 순서를 기록했다가 다시 재생할 수도 있어요.",why:"사람 없이도 버튼이 실제로 눌리는지, 조작이 끝까지 이어지는지 확인해요. 실제 마우스를 움직이는 운영체제 수준의 클릭은 아니에요.",cmd:"hera-agent-unity input state",acts:"click, drag, inspect, keyboard, mouse, pointer_down, pointer_up, record, replay, scroll, sequence, state, submit"}]},
+ {id:"bard",n:"연출가",r:"화면·연출·빌드",d:"UI, 애니메이션, 컷신, 조명, 프로젝트 설정을 다듬고 게임 실행 파일을 만들어요.",skills:[
+  {t:"manage_ui",n:"깃발 세우기",row:0,col:0,what:"Canvas와 EventSystem까지 갖춰서 uGUI 요소를 만들고, RectTransform의 기준점(앵커)과 크기를 맞춰요.",why:"UI의 뼈대를 빨리 세우고, 자세한 값은 manage_components(부품 장착)로 이어서 바꿔요.",cmd:"hera-agent-unity manage_ui create --element button --name PlayBtn --content Play",acts:"create, get_rect, set_anchor, set_rect"},
+  {t:"manage_animation",n:"춤의 악보",row:0,col:1,what:"AnimationClip의 움직임 곡선(커브)과 AnimatorController(파라미터, 레이어, 상태, 상태 사이의 전환)를 만들어요.",why:"반복되는 exec 코드를 쓰지 않고 애니메이션 에셋을 만들어요.",cmd:"hera-agent-unity manage_animation create_clip --path Assets/Anim/Bob.anim --frame_rate 60 --loop true",acts:"create_clip, set_curve, remove_curve, get_clip, create_controller, add_parameter, add_layer, add_state, add_transition, get_controller"},
+  {t:"bake",n:"빛 굽기",row:0,col:2,what:"라이트맵(미리 계산한 조명), 내비메시(길찾기 지도), 오클루전(가려진 물체 숨기기) 데이터를 굽고, 진행 상태를 보고, 취소하거나 지워요.",why:"조명과 길찾기 데이터는 미리 계산(굽기)해야 게임에 반영돼요.",cmd:"hera-agent-unity bake start --area lighting",acts:"start, status, cancel, clear"},
+  {t:"manage_timeline",n:"서사 편찬",row:1,col:1,pre:["manage_animation"],what:"Timeline 에셋을 만들고, 트랙과 클립을 확인한 뒤 넣어요. Timeline 패키지가 없으면 PACKAGE_NOT_INSTALLED로 알려 줘요.",why:"컷신과 연출 순서를 코드 없이 짜요.",cmd:"hera-agent-unity manage_timeline create --params '{\"path\":\"Assets/Cinematics/Intro.playable\",\"frame_rate\":60}'",acts:"create, add_track, add_clip, get"},
+  {t:"manage_settings",n:"왕국 법전",row:1,col:2,what:"물리, 시간, 품질, 플레이어, 오디오, 그래픽, 입력, 조명, 내비메시 설정을 영역별로 읽어요. 바꿀 때는 지정한 값만 바꾸고, 바꾸기 전에 미리보기(dry_run)도 할 수 있어요.",why:"프로젝트 설정 실수는 나중에 찾기 어려워요. 바뀐 값만 알려 줘서 확인하기 쉬워요.",cmd:"hera-agent-unity manage_settings get_physics",acts:"get_<영역>, set_<영역>"},
+  {t:"build",n:"원정 출정",row:2,col:2,pre:["manage_settings"],what:"지금 선택한 플랫폼으로 게임 실행 파일을 만들고, 빌드에 넣을 씬과 빌드 설정을 관리해요. 빌드하는 동안 에디터가 멈추기 때문에 결과는 파일로 받아요.",why:"출시할 파일을 직접 만들고, 결과·크기·첫 오류를 짧게 보고받아요.",cmd:"hera-agent-unity build start --wait",acts:"start, status, get_settings, set_settings, add_scene, remove_scene, list_targets"}]},
+ {id:"sage",n:"현자",r:"내장 지식서",d:"인터넷 없이도 이 Unity 버전의 문서와 손맛·UI 품질 기준을 찾아봐요. 설정에서 켜고 끄는 것과 상관없이 늘 쓸 수 있어요.",skills:[
+  {t:"unity_docs",n:"고서 열람",row:0,col:0,what:"이 Unity 버전의 스크립트 문서(ScriptReference)를 인터넷 없이 찾아서, 제목·함수 모양·요약을 250~400바이트로 짧게 돌려줘요.",why:"AI가 기억에만 기대지 않고, 이 버전에 그 API가 정말 있는지 확인해요.",cmd:"hera-agent-unity unity_docs Rigidbody",acts:""},
+  {t:"game_feel",n:"손맛의 비전",row:0,col:1,what:"게임 손맛 지식 67주제를 찾아봐요. 구체적인 숫자(px, 초, %)와 Unity의 어디에 적용하는지 알려 줘요.",why:"타격감과 조작감을 느낌으로만 정하지 않고, 검증된 값에서 시작해요.",cmd:"hera-agent-unity game_feel screen_shake",acts:""},
+  {t:"ui_slop",n:"흉물 판별",row:0,col:2,what:"UI 품질 문제 48가지를 찾아봐요. 대부분은 씬에서 실제로 재 볼 수 있는 판단 기준이 있어요.",why:"AI가 만든 UI에서 자주 보이는 어색한 점을 기준에 맞춰 고쳐요.",cmd:"hera-agent-unity ui_slop low-contrast-text",acts:""}]},
+ {id:"guide",n:"길잡이",r:"CLI 기본기",d:"Unity 안의 도구가 아니라 CLI가 직접 처리하는 명령이에요. 연결할 Unity를 확인하고, 필요한 설명만 읽고, 오래 걸리는 작업을 추적해요.",skills:[
+  {t:"status",n:"정찰",row:0,col:1,what:"실행 중인 Unity의 프로젝트, 포트, 상태를 heartbeat 파일로 확인해요.",why:"명령을 보내기 전에 어느 에디터가 켜져 있는지 알 수 있어요.",cmd:"hera-agent-unity status",acts:""},
+  {t:"list",n:"지도 펼치기",row:1,col:0,pre:["status"],what:"도구 이름 목록(--names), 도구 하나의 입력 규칙(--tool), 작업 종류별 도구 묶음(--profile)을 보여 줘요.",why:"필요한 설명만 골라 읽어서 토큰을 아껴요.",cmd:"hera-agent-unity list --profile core",acts:""},
+  {t:"doctor",n:"의사의 진단",row:1,col:2,pre:["status"],what:"설치가 잘 됐는지 검사하고(--json), AI에게 줄 사용 규칙(--agent-rules --compact)을 출력해요.",why:"AI가 Hera를 처음 쓸 때 규칙을 한 번에 익혀요.",cmd:"hera-agent-unity doctor --agent-rules --compact",acts:""},
+  {t:"batch",n:"연속 주문",row:2,col:0,pre:["list"],what:"여러 명령을 한 번의 요청으로 순서대로 보내요. --dry-run은 무엇을 보낼지 미리 보여 주기만 해요. --atomic은 Hera가 Undo로 되돌릴 수 있다고 정한 씬 편집만 하나로 묶어요. 오브젝트나 부품을 지우는 명령, 코드를 다시 불러올 수 있는 명령이 섞여 있으면 실행 전에 거절해요.",why:"단순하게 이어지는 작업은 주고받는 횟수를 줄여요. 앞의 결과에 따라 다음 일을 바꿔야 하면 명령을 따로 보내요.",cmd:"hera-agent-unity batch --file steps.json --dry-run",acts:""},
+  {t:"task",n:"원정 기록",row:2,col:2,pre:["doctor"],what:"오래 걸리는 테스트·패키지 작업과 결과를 모르는 명령(작업 번호가 op_로 시작)의 상태와 결과를 Unity에 묻지 않고 확인해요. 기록이 없으면 not_recorded라고 알려 줘요.",why:"에디터가 코드를 다시 불러오거나 응답이 끊겨도, 같은 작업을 다시 시작하지 않고 결과를 찾아요.",cmd:"hera-agent-unity task list\nhera-agent-unity task status op_...",acts:"list, status"}]}
 ];
 let tree=0,skill=null;
 const TIERS=["I · 기본","II · 응용","III · 숙련","IV · 달인"];
@@ -635,12 +635,12 @@ addEventListener("resize",drawLinks);
 
 /* ---------- CH4 몬스터 도감 ---------- */
 const RISKS=[
- {k:"gatekeeper",m:"외길의 돌거인",s:"mid",t:"문지기가 한 명이에요",p:"긴 exec나 빌드가 메인 스레드를 잡으면 다른 명령은 줄 서서 기다려요. 기다리다 CLI가 먼저 포기해도 그 명령은 취소되지 않고 나중에 실행돼요.",e:"일회용 프로젝트에서 90초 차단 중 보낸 수정이 CLI가 포기하고 67초 뒤에 실제로 실행됐어요(2/2회). status와 ping은 다른 명령이 도는지 알려 주지 않아요.",f:"에이전트 한 명당 Unity 하나를 써요. '결과 모름'이 나오면 task status로 기록을 확인하고, 기록이 없으면 ready를 기다렸다가 대상 상태를 다시 읽고 재전송을 정해요."},
- {k:"fullpower",m:"풀린 두루마리 악령",s:"mid",t:"exec 기본값은 전체 권한이에요 (의도된 설계)",p:"코드를 실행하는 exec는 Full Access와 restricted 모두 승인 대상이에요(--check는 컴파일만 해요). 다만 --yes/HERA_AGENT_APPROVE나 발급받은 승인 토큰을 쓰면 매번 질문이 뜨지는 않아요. Hera 터미널 승인 화면에는 실행 코드 본문이 표시되지 않으므로, 승인 전에 실제 코드를 확인해요.",e:"restricted는 UnityEditor API와 ldftn/ldvirtftn 등 함수 포인터 IL을 막아, 에디터 자동화나 delegate를 만드는 람다 코드가 거부될 수 있어요. Full Access 기본값과 restricted 선택 사용은 2026-08-10에 결정했고, 2026-10-20에 재확인했어요.",f:"승인 전에 실행될 코드 본문을 확인해요. 명령 인자로 넣은 코드가 에이전트 승인 화면에 보이는지는 도구·설정에 따라 달라요. --file이나 stdin을 쓰면 실제 전달 내용을 따로 확인해요. 허용된 플랫폼 API만 필요한 코드는 --security-mode restricted를 선택해요."},
- {k:"version",m:"계절을 타는 고목",s:"mid",t:"지원 Unity 대표가 하나예요",p:"6000.6.6f1에서만 전체 검사를 통과했어요. 다음 Unity에서 API가 바뀌면 새 대표 버전이 필요해요.",e:"UNITY_EDITOR_VERSION_INVENTORY.md",f:"새 Unity가 나오면 대표를 추가하고 게이트를 다시 돌려요."},
- {k:"stale",m:"낡은 소문 까마귀 떼",s:"mid",t:"문서와 실제가 어긋날 수 있어요",p:"AI 두 명이 문서를 보고 일을 넘겨받아요. 문서가 옛 상태면 이미 끝난 일을 다시 하거나 잘못 판단해요.",e:"개발 인계 문서(docs/handoffs/ACTIVE.md) 상단이 실제로 옛 상태였던 적이 있어요(2026-10-20 수정).",f:"배포할 때마다 상태 문단을 같이 고치는 습관을 들여요."},
- {k:"oncerecipe",m:"한 번만 말하는 메아리",s:"lo",t:"Game Feel 안내는 리로드 전까지 1회",p:"새 AI 대화를 시작해도 같은 Unity 세션이면 레시피 전문이 다시 안 나와요.",e:"토큰 절약의 의도된 한계예요(COMMANDS.md에 기록).",f:"필요하면 game_feel <topic>으로 다시 봐요."},
- {k:"bignum",m:"큰 수 삼키는 두꺼비",s:"lo",t:"아주 큰 정수 인수",p:"Int64를 넘는 정수는 CLI가 해시를 계산해요. Unity와 계산이 다르면 거절될 수 있어요(안전한 쪽으로 실패).",e:"교차 검증에서 비차단 소견으로 기록했어요.",f:"실사용 가능성이 낮아요. 실패 보고가 오면 다뤄요."}
+ {k:"gatekeeper",m:"외길의 돌거인",s:"mid",t:"명령은 한 번에 하나씩만 처리돼요",p:"오래 걸리는 exec나 빌드가 메인 스레드를 쓰고 있으면, 다른 명령은 줄을 서서 기다려요. 기다리다 CLI가 먼저 포기해도 그 명령은 취소되지 않고 나중에 실행돼요.",e:"테스트용 프로젝트에서 Unity를 90초 동안 붙잡아 두고 다른 수정 명령을 보냈어요. CLI는 포기했지만 그 명령은 67초 뒤에 실제로 실행됐어요(2번 중 2번). status와 ping은 다른 명령이 실행 중인지 알려 주지 않아요.",f:"AI 하나에 Unity 하나를 써요. '결과 모름'이 나오면 task status로 기록을 확인해요. 기록이 없으면 Unity가 준비될 때까지 기다린 뒤, 바꾸려던 대상을 다시 읽고 다시 보낼지 정해요."},
+ {k:"fullpower",m:"풀린 두루마리 악령",s:"mid",t:"exec 기본값은 모든 권한이에요 (일부러 정한 설계)",p:"코드를 실행하는 exec는 모든 권한 모드든 제한 모드(restricted)든 승인을 받아야 해요. 컴파일만 하는 --check는 예외예요. 하지만 --yes, HERA_AGENT_APPROVE, 미리 받은 승인 토큰을 쓰면 매번 묻지 않아요. Hera의 터미널 승인 화면에는 실행할 코드가 보이지 않아요. 그래서 승인하기 전에 코드를 직접 확인해야 해요.",e:"제한 모드는 UnityEditor 기능과, 함수 포인터를 만드는 코드(ldftn/ldvirtftn)를 막아요. 그래서 에디터 자동화 코드나, 함수를 값처럼 넘기는 코드(delegate, 람다)가 거절될 수 있어요. 모든 권한을 기본값으로 두고 제한 모드는 골라 쓰기로 2026-08-10에 정했고, 2026-10-20에 다시 확인했어요.",f:"승인하기 전에 실행될 코드를 읽어요. 명령에 직접 넣은 코드가 AI 도구의 승인 화면에 보이는지는 도구와 설정마다 달라요. --file이나 stdin(다른 프로그램에서 흘려 넣는 입력)으로 코드를 넘기면 실제로 넘어간 내용을 따로 확인해요. 제한 모드에서 허용된 기능만 쓰는 코드라면 --security-mode restricted를 골라요."},
+ {k:"version",m:"계절을 타는 고목",s:"mid",t:"검사하는 Unity 버전이 하나예요",p:"전체 검사는 6000.6.6f1에서만 통과했어요. 다음 Unity에서 기능이 바뀌면 그 버전도 검사해야 해요.",e:"UNITY_EDITOR_VERSION_INVENTORY.md",f:"6000.7 같은 새 큰 버전이 정식으로 나오면 2주 안에 검사 목록에 넣고 검사를 다시 돌려요. 게임 마감 기간에는 미뤄요. 자세한 규칙은 VIII 법전에 있어요."},
+ {k:"stale",m:"낡은 소문 까마귀 떼",s:"mid",t:"문서와 실제 상태가 다를 수 있어요",p:"AI 두 명(Claude와 Codex)이 문서를 보고 일을 이어받아요. 문서가 옛날 상태면 이미 끝난 일을 다시 하거나 잘못 판단해요.",e:"개발 인계 문서(docs/handoffs/ACTIVE.md) 맨 위가 실제로 옛날 상태였던 적이 있어요(2026-10-20에 고침).",f:"릴리스할 때마다 상태 문단도 같이 고쳐요."},
+ {k:"oncerecipe",m:"한 번만 말하는 메아리",s:"lo",t:"손맛 안내는 Unity가 코드를 다시 불러오기 전까지 한 번만 나와요",p:"새 AI 대화를 시작해도 같은 Unity 세션이면 레시피 전체가 다시 나오지 않아요.",e:"토큰을 아끼려고 일부러 둔 한계예요(COMMANDS.md에 적혀 있어요).",f:"필요하면 game_feel <주제>로 다시 봐요."},
+ {k:"bignum",m:"큰 수 삼키는 두꺼비",s:"lo",t:"아주 큰 정수 값",p:"Int64로 담을 수 있는 가장 큰 수(약 922경)보다 큰 정수를 넣어도, CLI가 명령 내용을 확인하는 값(해시)을 계산해요. 이 값이 Unity 쪽 계산과 다르면 명령이 거절될 수 있어요. 다른 값으로 실행되지 않고 거절되는 쪽이라 안전해요.",e:"교차 검증에서 '막을 정도는 아닌 소견'으로 기록했어요.",f:"실제로 쓸 일은 거의 없어요. 실패 제보가 오면 다뤄요."}
 ];
 const SEV={hi:["위험",3],mid:["경계",2],lo:["경미",1]};
 function renderBeasts(f){
@@ -704,12 +704,12 @@ $("#laws").innerHTML=LAW.map(l=>`<article class="law frame"><span class="meta">$
 if(ART["forge"])$("#forge").insertAdjacentHTML("afterbegin",`<img class="bg" src="${ART["forge"]}" alt="" decoding="async">`);
 const INV=["editor play","input","screenshot","console","test","find_gameobjects","manage_components","game_feel","ui_slop","scene","manage_settings","build","profiler","exec 기록장"];
 const RECIPES=[
- {n:"자동 플레이테스트 순찰",need:["editor play","input","screenshot","console","test"],v:"QA 인력 없이 매일 핵심 경로(메뉴→플레이→결과)가 깨졌는지 확인하고 스크린샷·오류 리포트를 남겨요.",form:"스킬 + CI",value:5},
- {n:"주스 감사 (Juice Audit)",need:["find_gameobjects","manage_components","game_feel","ui_slop"],v:"버튼·팝업을 훑어 피드백이 빠진 곳을 목록으로 보여 줘요. 출시 전 손맛 점검표예요.",form:"스킬",value:4},
- {n:"스토어 스크린샷 키트",need:["scene","screenshot","manage_settings"],v:"itch·Steam 페이지용 해상도별 캡처를 한 번에 만들어요.",form:"스킬",value:3},
- {n:"출시 전 체크",need:["test","console","build","profiler"],v:"빌드→테스트→오류 0→성능 예산을 한 흐름으로 확인해요.",form:"스킬 + CI",value:4},
- {n:"씬 변경 비교",need:["scene","find_gameobjects"],v:"AI가 씬을 고친 뒤 의도한 곳만 바뀌었는지 hierarchy 전후를 비교해요.",form:"스킬",value:3},
- {n:"AI 실수 분석",need:["exec 기록장"],v:"AI가 자주 실패하는 코드 패턴과 컴파일 캐시 적중률을 보고 규칙을 고쳐요.",form:"스크립트",value:2}
+ {n:"자동 플레이테스트 순찰",need:["editor play","input","screenshot","console","test"],v:"QA 담당자 없이도 매일 중요한 흐름(메뉴 → 플레이 → 결과)이 깨졌는지 확인하고, 스크린샷과 오류 보고를 남겨요.",form:"스킬 + 자동 검사(CI)",value:5},
+ {n:"주스 감사 (Juice Audit)",need:["find_gameobjects","manage_components","game_feel","ui_slop"],v:"버튼과 팝업을 훑어보고 반응(피드백)이 빠진 곳을 목록으로 보여 줘요. 출시 전에 쓰는 손맛 점검표예요.",form:"스킬",value:4},
+ {n:"스토어 스크린샷 키트",need:["scene","screenshot","manage_settings"],v:"itch.io나 Steam 페이지에 올릴 캡처를 해상도별로 한 번에 만들어요.",form:"스킬",value:3},
+ {n:"출시 전 체크",need:["test","console","build","profiler"],v:"빌드 → 테스트 → 오류 0건 → 성능 기준 확인을 한 흐름으로 해요.",form:"스킬 + 자동 검사(CI)",value:4},
+ {n:"씬 변경 비교",need:["scene","find_gameobjects"],v:"AI가 씬을 고친 뒤, 고치려던 곳만 바뀌었는지 오브젝트 구조(hierarchy)를 고치기 전과 후로 비교해요.",form:"스킬",value:3},
+ {n:"AI 실수 분석",need:["exec 기록장"],v:"AI가 자주 틀리는 코드 모양과, 전에 컴파일한 결과를 다시 쓴 비율을 보고 규칙을 고쳐요.",form:"스크립트",value:2}
 ];
 const have=new Set(["editor play","input","screenshot"]);
 function renderForge(){
@@ -726,16 +726,16 @@ renderForge();
 
 /* ---------- CH7 보물고 ---------- */
 const HAVE=[
- {k:"feel",t:"게임 감각이 내장된 조작",d:"Game Feel UI 모드를 켜면, 요소 종류별로 처음 UI를 만들 때 그 요소의 손맛 레시피가 같이 와요. 범용 CLI의 영역이 아니에요.",key:"game_feel · ui_slop · manage_ui"},
- {k:"ward",t:"AI 실수 방지 장치",d:"인수에 묶인 승인 서명, 작업 번호로 재실행 방지, '모르면 다시 보내지 않기'.",key:"승인 · operation ledger"},
- {k:"dial",t:"검증 강도 다이얼",d:"Ultra Hera(Off/Light/Ultra)로 AI가 얼마나 꼼꼼히 확인할지 주입해요.",key:"doctor --agent-rules"},
- {k:"coin",t:"토큰 경제 설계",d:"도구 묶음, 짧은 기본 응답, 2.3 KB 규칙. 비용을 직접 내는 1인 개발자에게 바로 돈이에요.",key:"list --profile · exec Transform 7,178→70 B"}
+ {k:"feel",t:"게임 손맛이 들어 있는 편집 도구",d:"Game Feel UI 모드를 켜면, 어떤 종류의 UI를 처음 만들 때 그 UI에 맞는 손맛 레시피를 같이 알려 줘요. 범용 CLI가 하는 일이 아니에요.",key:"game_feel · ui_slop · manage_ui"},
+ {k:"ward",t:"AI 실수를 막는 장치",d:"명령 값과 묶인 승인 서명, 작업 번호로 같은 작업을 두 번 실행하지 않기, 결과를 모르면 다시 보내지 않기가 있어요.",key:"승인 · operation ledger"},
+ {k:"dial",t:"검증 강도 조절",d:"Ultra Hera 설정(Off/Light/Ultra)으로 AI가 얼마나 꼼꼼히 확인할지 정해서 규칙에 넣어 줘요.",key:"doctor --agent-rules"},
+ {k:"coin",t:"토큰 절약 설계",d:"도구 묶음, 짧은 기본 응답, 2.3KB 규칙 글이 있어요. AI 사용료를 직접 내는 1인 개발자에게는 바로 돈이에요.",key:"list --profile · exec Transform 7,178→70 B"}
 ];
 const NEW=[
- {k:"replay",r:"추천 1",t:"플레이 회귀 비교",d:"input의 기존 record·replay로 같은 조작을 다음 빌드에서 다시 돌리고, 스크린샷·콘솔 결과를 이전과 비교해요.",w:"입력 기록과 재생은 이미 있어요. 남은 건 결과 비교예요.",c:"비교 동작을 새 action으로 만들면 기능 추가 관문 대상이에요. 먼저 스킬로 시작해요."},
- {k:"score",r:"추천 2",t:"Feel Score (손맛 점수)",d:"씬·프리팹을 game_feel 기준으로 채점해요. 버튼 피드백 유무, 흔들림 강도 옵션, 접근성 기준.",w:"지식서와 컴포넌트 조회가 같은 프로세스 안에 있어요.",c:"점수 기준은 Unity 실측으로 Hera화해야 해요."},
- {k:"memory",r:"추천 3",t:"Studio Memory",d:"exec 기록장과 테스트 결과로 '이 프로젝트에서 AI가 자주 틀리는 것'을 규칙으로 돌려줘요.",w:"기록장이 이미 메타데이터만 안전하게 남겨요.",c:"코드 원문을 남기지 않는 원칙을 지켜야 해요."},
- {k:"hangul",r:"보너스",t:"한국어 조판 품질 검사",d:"한글 폰트 대체, 줄바꿈, 자간 같은 UI 문제를 잡아요.",w:"ui_slop에 이미 hangul-font-fallback-jump 같은 항목이 있어요.",c:"설명문은 영어로 쓰는 규칙은 유지해요."}
+ {k:"replay",r:"추천 1",t:"플레이 회귀 비교",d:"input의 기록·재생 기능으로 같은 조작을 다음 빌드에서 다시 돌리고, 스크린샷과 콘솔 결과를 지난번과 비교해요.",w:"입력 기록과 재생은 이미 있어요. 남은 건 결과 비교예요.",c:"비교 기능을 새 동작(action)으로 만들면 새 기능 규칙(VIII 법전)을 거쳐야 해요. 먼저 스킬로 시작해요."},
+ {k:"score",r:"추천 2",t:"Feel Score (손맛 점수)",d:"씬과 프리팹을 game_feel 기준으로 채점해요. 버튼 반응이 있는지, 화면 흔들림 세기를 고르는 옵션이 있는지, 접근성 기준을 지키는지 봐요.",w:"손맛 지식과 컴포넌트 조회가 같은 프로그램 안에 있어요.",c:"점수 기준은 Unity에서 직접 재 보고 Hera에 맞게 새로 만들어야 해요."},
+ {k:"memory",r:"추천 3",t:"Studio Memory",d:"exec 기록장과 테스트 결과로 '이 프로젝트에서 AI가 자주 틀리는 것'을 찾아 규칙으로 돌려줘요.",w:"기록장은 이미 코드 원문 없이 실행 정보만 안전하게 남겨요.",c:"코드 원문을 남기지 않는다는 원칙을 지켜야 해요."},
+ {k:"hangul",r:"보너스",t:"한국어 조판 품질 검사",d:"한글 폰트가 다른 폰트로 바뀌어 보이는 문제, 줄바꿈, 글자 간격 같은 UI 문제를 잡아요.",w:"ui_slop에 이미 hangul-font-fallback-jump 같은 항목이 있어요.",c:"설명문은 영어로 쓴다는 규칙은 그대로 지켜요."}
 ];
 $("#vaultHave").innerHTML=HAVE.map(h=>`<article class="frame relic"><div class="pedestal">${pic("relic-"+h.k,h.t,"✧")}</div><span class="rank">Held</span><h3>${esc(h.t)}</h3><p>${esc(h.d)}</p><span class="key">${esc(h.key)}</span></article>`).join("");
 $("#vaultNew").innerHTML=NEW.map(n=>`<article class="frame relic sealed"><div class="pedestal">${pic("relic-"+n.k,n.t,"✧")}</div><span class="rank">${esc(n.r)}</span><h3>${esc(n.t)}</h3><p>${esc(n.d)}</p><p class="why"><b>왜 Hera만:</b> ${esc(n.w)}</p><p class="note">${esc(n.c)}</p></article>`).join("");
