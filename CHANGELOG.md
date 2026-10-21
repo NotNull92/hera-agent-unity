@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.16] - 2026-10-21 (Connector unchanged at 0.2.10)
+
 ### Docs
 
 - Agent guide: explain that one Editor runs one command at a time and a queued command abandoned by a CLI timeout still runs later; recommend a separate Editor per agent and checking target state before resending.

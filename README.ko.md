@@ -725,8 +725,8 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.3.15**, native binary 5종
-- npm: **0.3.15** (`latest`)
+- CLI / GitHub Release: **v0.3.16**, native binary 5종
+- npm: **0.3.16** (`latest`)
 - Unity Connector: **0.2.10** (`#connector-0.2.10`로 고정)
 - License: **Apache-2.0**
 
@@ -740,6 +740,7 @@ v0.2.17 이후 새로 바뀐 것:
 
 | 버전 | 변경 |
 |---|---|
+| v0.3.16 | 에이전트 가이드(`doctor --agent-rules`)에 "Editor 하나는 명령을 하나씩 실행" 항목 추가: CLI 시간 초과로 포기한 명령도 나중에 실행되므로 에이전트마다 Editor를 따로 쓰고, 재전송 전에 대상 상태를 다시 읽기. CLI 동작·Connector 변경 없음. |
 | v0.3.15 | Windows에서 시간 초과 시 직접 만든 모달과 겹친 모달도 창 제목과 함께 알려 줌. 저절로 닫히는 진행 창은 더 이상 사람이 닫아야 하는 대화상자로 보고하지 않음. 살아 있는 다른 프로세스의 heartbeat를 Editor 재시작으로 오인하지 않음. Connector 변경 없음. |
 | v0.3.14 / 0.2.10 | domain reload로 Editor 포트가 바뀌어도 대기 명령과 `test --resume`이 원래 결과를 찾음. 테스트 실행 잠금과 `test cancel`이 어느 포트의 실행이든 인식. 에셋 임포트 워커에서 Connector가 켜지지 않아 heartbeat 덮어쓰기·포트 점유가 사라짐. Connector도 0.2.10으로 올리세요. |
 | v0.3.13 | 공략집 페이지를 "Hera Unity Status"로 새 단장: 처리 순서 지도, 도구별 설명이 있는 스킬 트리, 위험 도감, 내장 그림. CLI·Connector 동작 변경 없음. |

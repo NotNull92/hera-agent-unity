@@ -1,7 +1,9 @@
 # Active Development Handoff
 
-Current state (2026-10-20): **Released CLI `v0.3.15` / Connector `0.2.10`
-(`connector-0.2.10`); npm `latest` is `0.3.15`.** R3 modal diagnosis from
+Current state (2026-10-21): **Released CLI `v0.3.16` / Connector `0.2.10`
+(`connector-0.2.10`); npm `latest` is `0.3.16`.** v0.3.16 adds the agent-guide
+pitfall for queued commands that run after a CLI timeout (research report 35).
+In `v0.3.15`, R3 modal diagnosis from
 window enabled state (`75ad690`) and live-PID restart checks (`f55af30`) passed
 live modal/progress-window scenarios (research report 34). Earlier, in
 `v0.3.14`, R1 port-identity lookups
