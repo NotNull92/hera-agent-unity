@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.20] - 2026-10-21 (Connector unchanged at 0.2.10)
+
+### Docs
+
+- Guide: a new decisions chapter collects the settled trials, the open trials list is cleared, and every explanation is rewritten in plain language.
+
 ## [0.3.19] - 2026-10-21 (Connector unchanged at 0.2.10)
 
 ### Docs

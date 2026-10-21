@@ -1,7 +1,8 @@
 # Active Development Handoff
 
-Current state (2026-10-21): **Released CLI `v0.3.19` / Connector `0.2.10`
-(`connector-0.2.10`); npm `latest` is `0.3.19`.** v0.3.19 documents the
+Current state (2026-10-21): **Released CLI `v0.3.20` / Connector `0.2.10`
+(`connector-0.2.10`); npm `latest` is `0.3.20`.** v0.3.20 adds the guide
+decisions chapter and rewrites the guide in plain language. v0.3.19 documented the
 public-product policies (CONTRIBUTING.md, response targets, non-goals, Unity
 line policy). v0.3.18 removed the fixed risks from the guide bestiary. v0.3.17 added read-only
 `task status <op_id>` over the Connector operation ledger (research report 36).

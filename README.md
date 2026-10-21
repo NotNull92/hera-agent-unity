@@ -742,8 +742,8 @@ New features require a reproduced failure. See [Contributing](CONTRIBUTING.md).
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.19** with five native binaries
-- npm: **0.3.19** (`latest`)
+- CLI / GitHub Release: **v0.3.20** with five native binaries
+- npm: **0.3.20** (`latest`)
 - Unity Connector: **0.2.10** (pin with `#connector-0.2.10`)
 - License: **Apache-2.0**
 
@@ -757,6 +757,7 @@ What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
+| v0.3.20 | The guide page adds a decisions chapter (VIII) that collects the settled policies, and its explanations are rewritten in plain language. No CLI behavior or Connector change. |
 | v0.3.19 | Public-product policies: [CONTRIBUTING.md](CONTRIBUTING.md) (what starts work, response targets, compatibility), a one-week security response target, "What Hera is not", and how Hera follows new Unity releases. No CLI behavior or Connector change. |
 | v0.3.18 | The guide page drops the two fixed risks (port-keyed result lookups, blocking-modal detection) and their artwork. No CLI behavior or Connector change. |
 | v0.3.17 | `task status <op_id>` shows whether a command that ended in `OPERATION_OUTCOME_UNKNOWN` actually ran. It reads the local operation record, so it answers immediately even while the Editor is blocked; the timeout message now names this command. No Connector change. |
