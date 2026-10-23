@@ -29,7 +29,8 @@ Actions:
                                   Copy one asset file.
   move --path <src> --new_path <dst>
                                   Move or rename one asset file.
-  delete --path <asset-or-folder>  Delete one asset file or folder.
+  delete --path <asset-or-folder>  Moves one asset file or folder to the OS trash.
+                                  Failure never falls back to permanent deletion.
                                   Refuses to delete Assets itself.
 
 Deps flags:

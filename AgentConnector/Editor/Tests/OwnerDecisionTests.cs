@@ -63,5 +63,21 @@ namespace HeraAgent.Tests
             finally { AssetDatabase.DeleteAsset(root); }
         }
 
+        [Test]
+        public void DeleteMovesAssetToTrash()
+        {
+            var path = "Assets/HeraTrash-" + Guid.NewGuid().ToString("N") + ".mat";
+            AssetDatabase.CreateAsset(new Material(Shader.Find("Unlit/Color")), path);
+            try
+            {
+                var result = ManageAssets.HandleCommand(new JObject { ["action"] = "delete", ["path"] = path }) as SuccessResponse;
+                Assert.IsNotNull(result);
+                StringAssert.Contains("trash", result.message.ToLowerInvariant());
+                Assert.IsNull(AssetDatabase.LoadMainAssetAtPath(path));
+                Assert.IsFalse(File.Exists(path));
+            }
+            finally { if (File.Exists(path)) AssetDatabase.DeleteAsset(path); }
+        }
+
     }
 }

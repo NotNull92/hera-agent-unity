@@ -32,7 +32,7 @@ namespace HeraAgent.Tools
         Expected = "filter or type")]
     [HeraTool(
         Name = "manage_assets",
-        Description = "Compact AssetDatabase operations: find, deps, mkdir, create, import, copy, move, delete. create instantiates a ScriptableObject subclass as an Assets/ .asset (optional initial field values via --params '{\"properties\":{...}}'). deps answers both dependency directions — forward is what an asset uses, reverse is what uses it, which is the question to ask before delete or move. Mutating paths are constrained to Assets/.",
+        Description = "Compact AssetDatabase operations: find, deps, mkdir, create, import, copy, move, delete. create instantiates a ScriptableObject subclass as an Assets/ .asset (optional initial field values via --params '{\"properties\":{...}}'). deps answers both dependency directions — forward is what an asset uses, reverse is what uses it, which is the question to ask before delete or move. Delete moves to the OS trash. Mutating paths are constrained to Assets/.",
         Destructive = true,
         MayReloadDomain = true,
         Examples = new[]
@@ -674,11 +674,11 @@ namespace HeraAgent.Tools
             if (AssetDatabase.LoadMainAssetAtPath(path) == null && !AssetDatabase.IsValidFolder(path))
                 return new ErrorResponse("ASSET_NOT_FOUND", $"No asset or folder at '{path}'.");
 
-            if (!AssetDatabase.DeleteAsset(path))
-                return new ErrorResponse("ASSET_DELETE_FAILED", $"Unity could not delete '{path}'.");
+            if (!AssetDatabase.MoveAssetToTrash(path))
+                return new ErrorResponse("ASSET_DELETE_FAILED", $"[Hera] I couldn't move '{path}' to the OS trash; I left it in place.");
 
             AssetDatabase.Refresh();
-            return new SuccessResponse("Asset deleted", new { path });
+            return new SuccessResponse("Asset moved to the OS trash", new { path });
         }
 
         private static string BuildQuery(string filter, string type)
