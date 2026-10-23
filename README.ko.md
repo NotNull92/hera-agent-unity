@@ -364,7 +364,7 @@ Editor가 열리면 Connector가 자동으로 시작합니다.
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-<version>"
 ```
 
-Connector 0.2.13 릴리스 후 사용할 고정 주소:
+현재 릴리스 Connector를 고정하려면:
 
 ```text
 https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.13
@@ -744,9 +744,9 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.3.22**, native binary 5종
-- npm: **0.3.22** (`latest`)
-- Unity Connector: **0.2.13** (릴리스 예정, `#connector-0.2.13`로 고정)
+- CLI / GitHub Release: **v0.3.23**, native binary 5종
+- npm: **0.3.23** (`latest`)
+- Unity Connector: **0.2.13** (`#connector-0.2.13`로 고정)
 - License: **Apache-2.0**
 
 npm 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-unity`와 GitHub 바이너리가 같은 버전을 유지합니다.
@@ -759,7 +759,7 @@ v0.2.17 이후 새로 바뀐 것:
 
 | 버전 | 변경 |
 |---|---|
-| Connector 0.2.13 | legacy NavMesh 변경은 활성 Scene을 미저장 상태로 표시하고 다른 에셋은 저장하지 않습니다. 변경을 유지하려면 Scene을 저장하세요. Play Mode 중 변경은 거부합니다. |
+| v0.3.23 / 0.2.13 | legacy NavMesh 변경은 활성 Scene을 미저장 상태로 표시하고 다른 에셋은 저장하지 않습니다. 변경을 유지하려면 Scene을 저장하세요. Play Mode 중 변경은 거부합니다. CLI 동작 변경 없음. Connector도 0.2.13으로 올리세요. |
 | v0.3.22 / 0.2.12 | 에셋 편집은 고친 에셋 파일만 저장하고, manage_assets delete는 OS 휴지통으로 이동합니다. list --tool --action으로 필요한 action만 조회하며, 도구 설명과 compact Light 규칙의 전체 출력이 짧아졌습니다. Connector도 0.2.12로 올리세요. |
 | v0.3.21 / 0.2.11 | Windows PATH 원형을 보존하며 정리, uninstall이 실제 상태 폴더 삭제, update가 SHA-256 검증. 도구 JSON은 항상 compact(`--compact-json`은 호환용), help 주제 9개 추가. 헤라 도구 자신의 실패가 콘솔 오류로 남지 않고 반복 힌트 축약, Restricted exec의 스크린샷·프로파일러 파일 쓰기 차단. Connector도 0.2.11로 올리세요. |
 | v0.3.20 | 공략집에 결정을 모은 VIII 법전 탭 추가, 설명을 쉬운 말로 다시 씀. CLI 동작·Connector 변경 없음. |

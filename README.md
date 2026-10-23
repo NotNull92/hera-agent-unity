@@ -362,7 +362,7 @@ To pin an existing Connector tag:
 "com.notnull92.hera-agent-unity": "https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-<version>"
 ```
 
-After Connector 0.2.13 is released, pin it with:
+The current released Connector pin is:
 
 ```text
 https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.13
@@ -743,9 +743,9 @@ New features require a reproduced failure. See [Contributing](CONTRIBUTING.md).
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.22** with five native binaries
-- npm: **0.3.22** (`latest`)
-- Unity Connector: **0.2.13** (release pending; pin with `#connector-0.2.13`)
+- CLI / GitHub Release: **v0.3.23** with five native binaries
+- npm: **0.3.23** (`latest`)
+- Unity Connector: **0.2.13** (pin with `#connector-0.2.13`)
 - License: **Apache-2.0**
 
 The npm publish is chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
@@ -758,7 +758,7 @@ What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
-| Connector 0.2.13 | Legacy NavMesh changes mark the active scene dirty without saving unrelated assets. Save the scene to keep them; writes during Play Mode are rejected. |
+| v0.3.23 / 0.2.13 | Legacy NavMesh changes mark the active scene dirty without saving unrelated assets. Save the scene to keep them; writes during Play Mode are rejected. No CLI behavior change. Update the Connector to 0.2.13. |
 | v0.3.22 / 0.2.12 | Asset edits save only changed asset files; manage_assets delete moves to the OS trash. Query one action with list --tool --action. Shorter tool descriptions and a budget for the complete compact Light rules output. Update the Connector to 0.2.12 as well. |
 | v0.3.21 / 0.2.11 | Windows PATH cleanup preserves its original form; uninstall removes the actual state folder; update verifies SHA-256. Tool JSON stays compact (`--compact-json` is for compatibility), with nine more help topics. Hera's own tool failures no longer add console errors, repeated hints are shorter, and Restricted exec blocks screenshot and profiler file writes. Update the Connector to 0.2.11 as well. |
 | v0.3.20 | The guide page adds a decisions chapter (VIII) that collects the settled policies, and its explanations are rewritten in plain language. No CLI behavior or Connector change. |
