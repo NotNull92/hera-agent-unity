@@ -139,7 +139,7 @@ namespace HeraAgent.Tools
                 return new SuccessResponse("Console cleared.");
             }
 
-            var type = p.Get("type", "error,warning,log").ToLower();
+            var type = p.Get("type", "error,warning,log").ToLowerInvariant();
             var types = type.Split(',').Select(t => t.Trim()).Where(t => t.Length > 0).ToList();
 
             if (!TryGetNonNegativeInt(p, "lines", p.GetRaw("lines") == null ? "count" : null, 20,
@@ -147,7 +147,7 @@ namespace HeraAgent.Tools
                 return new ErrorResponse("INVALID_PARAM", countError);
 
             int? count = requestedCount == 0 ? null : requestedCount;
-            string stacktrace = p.Get("stacktrace", "user").ToLower();
+            string stacktrace = p.Get("stacktrace", "user").ToLowerInvariant();
             if (!TryGetNonNegativeInt(p, "since", null, 0, out var since, out var sinceError))
                 return new ErrorResponse("INVALID_PARAM", sinceError);
 

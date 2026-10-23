@@ -66,6 +66,9 @@ namespace HeraAgent.Tools
     [HeraActionSafety("set", Reversible = true)]
     public static class ManageComponents
     {
+        // Topic hints reset with the Editor domain.
+        private static readonly HashSet<string> s_ShownHints = new HashSet<string>();
+
         public class GameObjectTargetParameters
         {
             [ToolParameter("Target GameObject by InstanceID.")]
@@ -252,6 +255,8 @@ namespace HeraAgent.Tools
             if (!HeraSettings.GameFeelMode) return resp;
             var topics = GameFeelTopicsFor(type.Name);
             if (topics == null) return resp;
+            if (!s_ShownHints.Add(type.FullName + ":game_feel:" + topics[0]))
+                return resp.AppendHint($"[Hera] See `game_feel {topics[0]}` (hint shown earlier).");
             return resp.AppendHint(
                 $"[Hera] Game Feel Mode (Beta) is on — before wiring feel/feedback for this {type.Name}, " +
                 $"run `game_feel {topics[0]}`" +
@@ -286,6 +291,8 @@ namespace HeraAgent.Tools
             if (!HeraSettings.UiSlopMode) return resp;
             var tells = UiSlopTellsFor(type.Name);
             if (tells == null) return resp;
+            if (!s_ShownHints.Add(type.FullName + ":ui_slop:" + tells[0]))
+                return resp.AppendHint($"[Hera] See `ui_slop {tells[0]}` (hint shown earlier).");
             return resp.AppendHint(
                 $"[Hera] Unity De-slop Mode (Beta) is on — for this {type.Name}, " +
                 $"run `ui_slop {tells[0]}`" +

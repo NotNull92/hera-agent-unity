@@ -1,11 +1,11 @@
 {
   "schema": "hera.catalog-payload-report/2",
-  "catalog_hash": "sha256:6fbcd87a7c2bee63f1918a32f3d4668d77b5265acc00d2cce2bcd47e3bf6d1ed",
-  "input_bytes": 268680,
-  "normalized_catalog_bytes": 269120,
+  "catalog_hash": "sha256:4e595ed337f22af12094681e7bb084e2b4e61e6a3a4ddb49144a2514d968544c",
+  "input_bytes": 268661,
+  "normalized_catalog_bytes": 269101,
   "tool_count": 34,
   "action_count": 133,
-  "description_characters": 9940,
+  "description_characters": 9921,
   "cli_summary": {
     "name_list_bytes": 477,
     "agent_rules_bytes": 2315,
@@ -36,12 +36,12 @@
     {
       "name": "diagnostics",
       "tool_count": 11,
-      "normalized_contract_bytes": 60602
+      "normalized_contract_bytes": 60583
     },
     {
       "name": "full",
       "tool_count": 32,
-      "normalized_contract_bytes": 263930
+      "normalized_contract_bytes": 263911
     },
     {
       "name": "scene",
@@ -267,15 +267,15 @@
   ],
   "normalized_catalog_rough_token_estimates": {
     "assumption": "rough JSON estimate only; use provider usage/tokenizer for billing decisions",
-    "low_4_bytes_per_token": 67280,
-    "central_3_2_bytes_per_token": 84100,
-    "high_2_5_bytes_per_token": 107648
+    "low_4_bytes_per_token": 67276,
+    "central_3_2_bytes_per_token": 84095,
+    "high_2_5_bytes_per_token": 107641
   },
   "warnings": [
     "profile assets uses 51324 normalized bytes (warning budget 24000)",
     "profile core uses 73709 normalized bytes (warning budget 24000)",
-    "profile diagnostics uses 60602 normalized bytes (warning budget 24000)",
-    "profile full uses 263930 normalized bytes (warning budget 24000)",
+    "profile diagnostics uses 60583 normalized bytes (warning budget 24000)",
+    "profile full uses 263911 normalized bytes (warning budget 24000)",
     "profile scene uses 108548 normalized bytes (warning budget 24000)",
     "profile testing uses 70153 normalized bytes (warning budget 24000)",
     "profile ui uses 102156 normalized bytes (warning budget 24000)",

@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Connector 0.2.11: keep routed failures out of the console unless debug logging is enabled, normalize console filters across cultures, report test recovery write failures, and block screenshot/profiler file APIs in Restricted exec.
+
 - CLI: preserve raw Windows PATH values and registry types during legacy cleanup; uninstall the actual state directory, report shell configuration write failures, and preserve same-file installs.
 - CLI: verify release SHA-256 checksums before replacing the executable and clean up incomplete update downloads.
 
 ### Changed
+
+- Connector 0.2.11: shorten repeated hints per domain, narrow obsolete API suppressions, and describe the actual Unity documentation response fields.
 
 - CLI: tool JSON output is always compact; `--compact-json` and `HERA_AGENT_COMPACT_JSON` remain accepted for compatibility.
 - Help: document nine additional tool topics and correct console defaults, bundled documentation counts, and response fields.

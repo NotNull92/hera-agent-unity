@@ -6,8 +6,6 @@ using UnityEditor.AI;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-#pragma warning disable CS0618
-
 namespace HeraAgent.Tools
 {
     [HeraActionContract("get_graphics", typeof(ManageSettings.EmptyParameters), ResultType = typeof(ManageSettings.GraphicsResult), RiskClass = HeraRiskClass.ReadOnly)]
@@ -329,7 +327,10 @@ namespace HeraAgent.Tools
 
         private static object GetNavMesh()
         {
+            // Legacy scene NavMesh settings have no non-obsolete replacement.
+#pragma warning disable CS0618
             var settings = NavMeshBuilder.navMeshSettingsObject;
+#pragma warning restore CS0618
             if (settings == null)
                 return new SuccessResponse("Legacy NavMesh settings unavailable.", new NavMeshResult { Available = false });
             using (var serialized = new SerializedObject(settings))
@@ -351,7 +352,10 @@ namespace HeraAgent.Tools
 
         private static object SetNavMesh(ToolParams parameters)
         {
+            // Legacy scene NavMesh settings have no non-obsolete replacement.
+#pragma warning disable CS0618
             var settings = NavMeshBuilder.navMeshSettingsObject;
+#pragma warning restore CS0618
             if (settings == null)
                 return new ErrorResponse("NAVMESH_SETTINGS_UNAVAILABLE", "Could not access the legacy NavMesh settings object.");
             using (var serialized = new SerializedObject(settings))

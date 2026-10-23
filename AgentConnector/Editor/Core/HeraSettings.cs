@@ -75,8 +75,11 @@ namespace HeraAgent
             get { Refresh(); return s_defaultDotnetPath; }
         }
 
+        internal static string s_ConfigPathOverride;
+
         private static string ConfigPath()
         {
+            if (s_ConfigPathOverride != null) return s_ConfigPathOverride;
             var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             return Path.Combine(home, ".hera-agent-unity", "asset-config.json");
         }

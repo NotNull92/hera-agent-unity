@@ -263,6 +263,7 @@ namespace HeraAgent.Tools
                    name == "System.Delegate" || name == "System.GC" || name == "System.Type" ||
                    name == "System.Runtime.CompilerServices.Unsafe" ||
                    name == "System.Runtime.CompilerServices.RuntimeHelpers" ||
+                   name == "UnityEngine.ScreenCapture" || name == "UnityEngine.Profiling.Profiler" ||
                    name == "UnityEngine.PlayerPrefs" || name == "UnityEngine.WWW" ||
                    name == "UnityEngine.Microphone" || name == "UnityEngine.WebCamTexture" ||
                    name == "UnityEngine.LocationService";

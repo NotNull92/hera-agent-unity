@@ -55,6 +55,9 @@ namespace HeraAgent.Tools
     [HeraActionSafety("set_rect", Reversible = true)]
     public static class ManageUI
     {
+        // Topic hints reset with the Editor domain.
+        private static readonly HashSet<string> s_ShownHints = new HashSet<string>();
+
         private const string Vector2Schema =
             @"{""oneOf"":[{""type"":""string"",""pattern"":""^\\s*[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?\\s*,\\s*[+-]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?\\s*$""},{""type"":""array"",""minItems"":2,""maxItems"":2,""items"":{""type"":""number""}},{""type"":""object"",""required"":[""x"",""y""],""properties"":{""x"":{""type"":""number""},""y"":{""type"":""number""}},""additionalProperties"":false}]}";
 
@@ -315,6 +318,8 @@ namespace HeraAgent.Tools
             if (!HeraSettings.UiSlopMode) return resp;
             var tells = UiSlopTellsFor(element);
             if (tells == null) return resp;
+            if (!s_ShownHints.Add(element + ":ui_slop:" + tells[0]))
+                return resp.AppendHint($"[Hera] See `ui_slop {tells[0]}` (hint shown earlier).");
             return resp.AppendHint(
                 $"[Hera] Unity De-slop Mode (Beta) is on — for this {element}, " +
                 $"run `ui_slop {tells[0]}`" +

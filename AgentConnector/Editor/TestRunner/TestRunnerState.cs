@@ -80,7 +80,10 @@ namespace HeraAgent.TestRunner
             {
                 HeraAgent.AtomicFile.WriteAllText(PendingFilePath(port, runId), JsonConvert.SerializeObject(pending));
             }
-            catch { }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogWarning($"[Hera] I couldn't write the pending test record: {ex.Message}");
+            }
         }
 
         public static void ClearPending(int port, string runId)
@@ -168,7 +171,10 @@ namespace HeraAgent.TestRunner
                     ReattachCallbacks(pending.Port, pending.RunId, pending.Selective, pending.Shard);
                 }
             }
-            catch { }
+            catch (System.Exception ex)
+            {
+                UnityEngine.Debug.LogWarning($"[Hera] I couldn't recover pending test callbacks after reload: {ex.Message}");
+            }
         }
 
         static void ReattachCallbacks(int port, string runId, bool selective, RunTests.ShardResult shard)

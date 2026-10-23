@@ -411,7 +411,7 @@ namespace HeraAgent
             catch (Exception ex)
             {
                 var inner = ex.InnerException ?? ex;
-                UnityEngine.Debug.LogException(inner);
+                DebugLogging.LogError(command, inner);
                 string code = usedAction ? "TOOL_ACTION_FAILED" : "TOOL_FAILED";
                 string suffix = usedAction ? $":{action}" : "";
                 return Commit(new ErrorResponse(code, $"{command}{suffix} failed: {inner.Message}"));

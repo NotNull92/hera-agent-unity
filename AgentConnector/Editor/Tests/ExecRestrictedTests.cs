@@ -31,6 +31,10 @@ namespace HeraAgent.Tests
                 Restricted("return Newtonsoft.Json.Linq.JObject.Parse(\"{}\").Count;")), "EXEC_RESTRICTED_METADATA_DENIED");
             allPassed &= ExpectCode("restricted IL", ExecuteCsharp.HandleCommand(
                 Restricted("Console.WriteLine(\"blocked\"); return null;")), "EXEC_RESTRICTED_IL_DENIED");
+            allPassed &= ExpectCode("restricted screenshot I/O", ExecuteCsharp.HandleCommand(
+                Restricted("UnityEngine.ScreenCapture.CaptureScreenshot(\"hera-probe.png\");")), "EXEC_RESTRICTED_IL_DENIED");
+            allPassed &= ExpectCode("restricted profiler I/O", ExecuteCsharp.HandleCommand(
+                Restricted("UnityEngine.Profiling.Profiler.logFile = \"hera-probe.raw\";")), "EXEC_RESTRICTED_IL_DENIED");
 
             if (allPassed)
                 Debug.Log("[ExecRestrictedTests] ALL PASSED");
