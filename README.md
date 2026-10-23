@@ -364,7 +364,7 @@ To pin an existing Connector tag:
 The current released Connector pin is:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.10
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.11
 ```
 
 ### Step 3. Open Unity and check the connection
@@ -742,9 +742,9 @@ New features require a reproduced failure. See [Contributing](CONTRIBUTING.md).
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.20** with five native binaries
-- npm: **0.3.20** (`latest`)
-- Unity Connector: **0.2.10** (pin with `#connector-0.2.10`)
+- CLI / GitHub Release: **v0.3.21** with five native binaries
+- npm: **0.3.21** (`latest`)
+- Unity Connector: **0.2.11** (pin with `#connector-0.2.11`)
 - License: **Apache-2.0**
 
 The npm publish is chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
@@ -757,6 +757,7 @@ What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
+| v0.3.21 / 0.2.11 | Windows PATH cleanup preserves its original form; uninstall removes the actual state folder; update verifies SHA-256. Tool JSON stays compact (`--compact-json` is for compatibility), with nine more help topics. Hera failures no longer add console errors, repeated hints are shorter, and Restricted exec blocks screenshot and profiler file writes. Update the Connector to 0.2.11 as well. |
 | v0.3.20 | The guide page adds a decisions chapter (VIII) that collects the settled policies, and its explanations are rewritten in plain language. No CLI behavior or Connector change. |
 | v0.3.19 | Public-product policies: [CONTRIBUTING.md](CONTRIBUTING.md) (what starts work, response targets, compatibility), a one-week security response target, "What Hera is not", and how Hera follows new Unity releases. No CLI behavior or Connector change. |
 | v0.3.18 | The guide page drops the two fixed risks (port-keyed result lookups, blocking-modal detection) and their artwork. No CLI behavior or Connector change. |

@@ -366,7 +366,7 @@ Editor가 열리면 Connector가 자동으로 시작합니다.
 현재 릴리스 Connector를 고정하려면:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.10
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.11
 ```
 
 ### 3단계. Unity를 열고 연결 확인
@@ -743,9 +743,9 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.3.20**, native binary 5종
-- npm: **0.3.20** (`latest`)
-- Unity Connector: **0.2.10** (`#connector-0.2.10`로 고정)
+- CLI / GitHub Release: **v0.3.21**, native binary 5종
+- npm: **0.3.21** (`latest`)
+- Unity Connector: **0.2.11** (`#connector-0.2.11`로 고정)
 - License: **Apache-2.0**
 
 npm 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-unity`와 GitHub 바이너리가 같은 버전을 유지합니다.
@@ -758,6 +758,7 @@ v0.2.17 이후 새로 바뀐 것:
 
 | 버전 | 변경 |
 |---|---|
+| v0.3.21 / 0.2.11 | Windows PATH 원형을 보존하며 정리, uninstall이 실제 상태 폴더 삭제, update가 SHA-256 검증. 도구 JSON은 항상 compact(`--compact-json`은 호환용), help 주제 9개 추가. 헤라 자신의 실패가 콘솔 오류로 남지 않고 반복 힌트 축약, Restricted exec의 스크린샷·프로파일러 파일 쓰기 차단. Connector도 0.2.11로 올리세요. |
 | v0.3.20 | 공략집에 결정을 모은 VIII 법전 탭 추가, 설명을 쉬운 말로 다시 씀. CLI 동작·Connector 변경 없음. |
 | v0.3.19 | 공개 제품 정책 문서화: [CONTRIBUTING.md](CONTRIBUTING.md)(작업 계기, 응답 목표, 호환 정책), 보안 제보 1주 응답 목표, "Hera가 아닌 것", 새 Unity 계열을 따라가는 방법. CLI 동작·Connector 변경 없음. |
 | v0.3.18 | 공략집 페이지에서 해결된 위험 두 개(포트 기준 결과 조회, 모달 감지)와 그 그림을 제거. CLI 동작·Connector 변경 없음. |
