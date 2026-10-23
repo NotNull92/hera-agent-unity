@@ -12,3 +12,8 @@ Examples:
   hera-agent-unity ui_slop unscaled-spacing-ladder
   hera-agent-unity ui_slop tmp-italic
   hera-agent-unity ui_slop low-contrast-text
+
+Areas A-E cover decoration, layout/RectTransform/containers, spacing, typography
+and color. check is the measured uGUI predicate (or explicit visual/semantic
+judgment); fix is the repair. exception protects functional inventory slots and
+interactive surfaces. borrow is a quantitative target when supplied, else null.

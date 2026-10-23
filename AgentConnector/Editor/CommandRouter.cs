@@ -494,6 +494,13 @@ namespace HeraAgent
 
         static object HandleList(JObject parameters)
         {
+            var action = parameters?["action"]?.ToString();
+            if (action != null && (string.IsNullOrWhiteSpace(action)
+                || string.IsNullOrWhiteSpace(parameters?["tool"]?.ToString())
+                || parameters?["catalog"]?.Value<bool>() == true
+                || parameters?["names"]?.Value<bool>() == true
+                || parameters?["compact"]?.Value<bool>() == true))
+                return new ErrorResponse("INVALID_ARGUMENT", "[Hera] I need --tool <name> with --action <action>, without other list selectors.");
             var catalog = parameters?["catalog"]?.Type == JTokenType.Boolean
                 && parameters["catalog"].Value<bool>();
             if (catalog)
@@ -520,7 +527,8 @@ namespace HeraAgent
             var tool = parameters?["tool"]?.ToString();
             if (!string.IsNullOrEmpty(tool))
             {
-                var schema = ToolDiscovery.GetToolSchema(tool);
+                var schema = ToolDiscovery.GetToolSchema(tool, action);
+                if (schema is ErrorResponse actionError) return actionError;
                 if (schema == null)
                     return new ErrorResponse("UNKNOWN_TOOL",
                         $"Tool not found: {tool}",

@@ -9,7 +9,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "manage_packages",
-        Description = "Unity Package Manager control. Actions: list and search (synchronous), add / remove / embed (asynchronous — return a job_id, poll the package-result file for completion). search matches the registry by substring and reports the versions this Editor accepts, so an identifier can be confirmed before add spends a domain reload. add accepts any Client.Add identifier: 'com.unity.x' registry name, 'com.unity.x@1.2.3' pinned version, 'https://github.com/.../repo.git[?path=...]' git URL, or 'file:..' local path. Avoids manifest.json hand-edits.",
+        Description = "List/search Unity packages; add/remove/embed asynchronously via job_id and completion polling. Search reports Editor-compatible versions. Add accepts registry names, pinned versions, git URLs or file paths; no manifest edits needed.",
         Examples = new[]
         {
             "manage_packages list",

@@ -542,6 +542,9 @@ hera-agent-unity manage_packages embed com.unity.test-framework
 
 ## manage_assets
 
+`manage_assets delete --path <asset>` moves to the OS trash. Failure returns an error
+without permanent deletion; destructive approval still applies.
+
 **Durable handles** (all asset tools): any `--path` that names an asset which
 already exists also accepts `guid:<32hex>`, `guid:<32hex>:<fileId>` for one
 object inside a container, or a `GlobalObjectId_V1-…` string — the same grammar
@@ -1734,7 +1737,7 @@ cannot be mixed with other list selectors. Profiles do not grant permissions:
 `full` excludes `advanced`-only exec/menu. Old Connectors without native catalog
 profiles expose the legacy `compact` group. Ordinary list behavior is unchanged.
 
-List registered tools. Three detail levels, cheapest first — the per-tool
+List registered tools. Choose the smallest useful detail level — the per-tool
 parameter schema is the bulk of the bytes, so it's opt-in rather than dumped
 up front:
 
@@ -1743,6 +1746,7 @@ up front:
 | `list --names` | flat array of tool names only | cheapest discovery |
 | `list --compact` | same as `list --names` | compact catalogue discovery from agents or scripts (the AGENTS.md bootstrap runs this) |
 | `list` | `{name, description}` per tool, no schema | you want a one-line hint per tool |
+| `list --tool <name> --action <action>` | selected action schema, output and safety | you know the action you need |
 | `list --tool <name>` | full parameter + output schema + metadata + action descriptors for one tool | you're about to call that tool |
 
 ```bash
@@ -1750,6 +1754,7 @@ hera-agent-unity list --compact
 hera-agent-unity list --names
 hera-agent-unity list
 hera-agent-unity list --tool exec
+hera-agent-unity list --tool input --action click
 ```
 
 Useful for discovering custom tools added to the project.

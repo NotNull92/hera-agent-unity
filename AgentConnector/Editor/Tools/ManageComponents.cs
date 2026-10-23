@@ -12,7 +12,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "manage_components",
-        Description = "Component CRUD on a target GameObject: add, remove, list, get (all properties or one), set (one property). Property paths are raw SerializedProperty paths (m_Name, m_LocalScale.x, m_Materials.Array.data[0]). Reference fields accept an InstanceID, an asset path, or a {instance_id|asset_path} envelope. Establishes the property-set pattern reused by every future manage_* tool (material, animation, vfx, scriptable objects, prefab properties).",
+        Description = "Add/remove/list/get/set GameObject components. Use raw SerializedProperty paths. Object references accept instance IDs, asset paths or {instance_id|asset_path} envelopes. Read the target properties before setting them.",
         Examples = new[]
         {
             "manage_components add --path /Player --type Rigidbody",

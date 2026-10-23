@@ -336,7 +336,7 @@ namespace HeraAgent
         /// Full schema for a single tool — returned by `list --tool &lt;name&gt;`.
         /// Includes parameters schema, output schema, and metadata. Null if not found.
         /// </summary>
-        public static object GetToolSchema(string toolName)
+        public static object GetToolSchema(string toolName, string actionName = null)
         {
             foreach (var (name, type, attr) in EnumerateTools())
             {
@@ -345,6 +345,37 @@ namespace HeraAgent
                 var toolMeta = GetToolMetadata(type);
                 var contract = ToolContractRegistry.Get(name);
                 var strictDefault = contract?.Mode == ToolContractMode.Strict;
+                if (!string.IsNullOrWhiteSpace(actionName))
+                {
+                    actionName = actionName.ToLowerInvariant();
+                    var selected = contract?.Actions.Values.FirstOrDefault(action =>
+                        action.Name == actionName || action.Aliases.Contains(actionName, StringComparer.Ordinal));
+                    if (selected == null)
+                    {
+                        var expected = contract?.Actions.Keys.OrderBy(value => value, StringComparer.Ordinal).ToArray()
+                            ?? Array.Empty<string>();
+                        return new ErrorResponse("UNKNOWN_ACTION", $"[Hera] I can't find action '{actionName}' on '{name}'.",
+                            new { expected, actual = actionName, did_you_mean = expected
+                                .Where(value => Levenshtein.Distance(actionName, value) <= 2).Take(3).ToArray() });
+                    }
+                    var entry = ToolCatalogBuilder.BuildEntry(contract).Actions.First(action => action.Name == selected.Name);
+                    return new
+                    {
+                        name,
+                        action = selected.Name,
+                        description = entry.Description,
+                        aliases = entry.Aliases,
+                        schema = entry.InputSchema,
+                        output_schema = entry.OutputSchema,
+                        metadata = new
+                        {
+                            safety = entry.Safety,
+                            main_thread_required = true,
+                            reload_window = CommandRouter.IsReloadExempt(name) ? "allowed" : "deferred",
+                        },
+                    };
+                }
+
                 return new
                 {
                     name,

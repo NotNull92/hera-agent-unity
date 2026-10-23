@@ -13,3 +13,10 @@ Examples:
   hera-agent-unity game_feel unity_frame_loops
   hera-agent-unity game_feel ui_bar
   hera-agent-unity game_feel ethics_checklist
+
+Topics supply px/seconds/percent/Hz parameters and Unity implementation sites
+(Update/FixedUpdate/LateUpdate, Rigidbody interpolation, timeScale, Selectable
+transitions and Canvas rebuild cost). Categories cover theory, techniques,
+per-element UI feedback, ethics, anti-patterns, checklists and workflows.
+Honest Juice keeps presentation intensity proportional to real achievement;
+apply the ethics and accessibility constraints with the implementation.

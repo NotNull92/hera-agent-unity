@@ -79,5 +79,34 @@ namespace HeraAgent.Tests
             finally { if (File.Exists(path)) AssetDatabase.DeleteAsset(path); }
         }
 
+        [Test]
+        public async Task ActionDiscoveryIsScoped()
+        {
+            var response = await CommandRouter.Dispatch("list", new JObject { ["tool"] = "input", ["action"] = "click" }) as SuccessResponse;
+            Assert.IsNotNull(response);
+            var data = JObject.FromObject(response.data);
+            Assert.AreEqual("click", data.Value<string>("action"));
+            Assert.IsNull(data["actions"]);
+            Assert.IsTrue(JToken.DeepEquals(ToolContractRegistry.Get("input").Actions["click"].InputSchema, data["schema"]));
+            Assert.IsNotNull(data["metadata"]?["safety"]);
+            Assert.Less(data.ToString(Newtonsoft.Json.Formatting.None).Length, 8000);
+        }
+
+        [Test]
+        public async Task ActionDiscoveryRejectsUnknownAndUnscopedSelectors()
+        {
+            var invalid = await CommandRouter.Dispatch("list", new JObject { ["tool"] = "input", ["action"] = "clik" }) as ErrorResponse;
+            Assert.AreEqual("UNKNOWN_ACTION", invalid?.code);
+            StringAssert.Contains("click", JObject.FromObject(invalid).ToString());
+            var unscoped = await CommandRouter.Dispatch("list", new JObject { ["action"] = "click" }) as ErrorResponse;
+            Assert.AreEqual("INVALID_ARGUMENT", unscoped?.code);
+        }
+
+        [Test]
+        public void LongDescriptionsStayBounded()
+        {
+            foreach (var name in new[] { "game_feel", "ui_slop", "manage_prefab", "manage_packages", "manage_components", "find_gameobjects" })
+                Assert.LessOrEqual(JObject.FromObject(ToolDiscovery.GetToolSchema(name)).Value<string>("description").Length, 300, name);
+        }
     }
 }

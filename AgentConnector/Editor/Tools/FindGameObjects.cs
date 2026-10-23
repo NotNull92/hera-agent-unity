@@ -11,7 +11,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "find_gameobjects",
-        Description = "Search loaded-scene GameObjects with filters (name substring, exact tag, layer name or index, component type, hierarchy path glob) and built-in pagination. Returns lean entries {instance_id, name} by default; pass --fields, --ids, or --names to control payload size. Prefer this over `exec` for any 'list/find/count GameObjects with X' question — it scales without serializing the whole hierarchy and respects inactive subtrees by default.",
+        Description = "Find loaded-scene GameObjects by name, tag, layer, component or hierarchy glob, including inactive subtrees by default. Results default to {instance_id,name}; use pagination and --fields/--ids/--names to bound output instead of serializing the hierarchy.",
         Profiles = new[] { "core", "scene" },
         RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict,

@@ -12,12 +12,14 @@ Options:
   --names            Names only — flat JSON array (most token-efficient)
   --compact          Alias of --names for catalogue discovery
   --tool <name>      Full schema for a single tool
+  --action <name>    With --tool: only this action's schema, result and safety
 
 Examples:
   hera-agent-unity list
   hera-agent-unity list --names
   hera-agent-unity list --compact
   hera-agent-unity list --tool exec
+  hera-agent-unity list --tool input --action click
 
 Profile selectors cannot be mixed with other list selectors. Unknown profiles
 return INVALID_ARGUMENT with valid_profiles. Profiles are discovery groups, not

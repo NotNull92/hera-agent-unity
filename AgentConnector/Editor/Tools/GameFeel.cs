@@ -5,7 +5,7 @@ namespace HeraAgent.Tools
 {
     [HeraTool(
         Name = "game_feel",
-        Description = "Look up a Game Feel / Juice design topic from the connector-bundled knowledge base. Returns { key, category, title, body } with concrete, implementation-ready parameters (px, seconds, %, Hz), the Unity site each one applies at (Update vs FixedUpdate vs LateUpdate, Rigidbody.interpolation, Time.timeScale, Selectable transitions, Canvas rebuild cost), and the ethical/accessibility constraints built in — presentation intensity must honestly match real achievement (Honest Juice). Categories: theory (feel stack, control feel, input response, forgiveness, frame loops, session arc), technique (easing, deformation, particles, shake, hit stop, knockback, camera, sound, haptics, lighting, intensity ladder), ui (per-element feedback specs, attention states, cognitive load, hierarchy, choice symmetry, accessibility), ethics, anti_pattern, checklist, workflow. No topic (or 'list') returns the bucketed topic index, ethics first. Always available; Game Feel Mode (Beta) additionally makes other tools point at these topics via agent_hint.",
+        Description = "Query bundled game-feel topics for concrete parameters, Unity implementation sites, ethics and accessibility. No topic (or list) returns the categorized index, ethics first. Always available; Game Feel Mode adds hints to other tools.",
         Profiles = new[] { "ui" },
         RiskClass = HeraRiskClass.ReadOnly,
         ContractMode = ToolContractMode.Strict,

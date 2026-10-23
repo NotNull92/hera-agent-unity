@@ -52,3 +52,16 @@ func TestRunLegacyToolCommandWrapsTransportError(t *testing.T) {
 		t.Fatalf("error=%v", err)
 	}
 }
+
+func TestListActionSelectorPassesThrough(t *testing.T) {
+	_, err := runLegacyToolCommand("list", []string{"--tool", "input", "--action", "click"}, func(command string, raw interface{}) (*client.CommandResponse, error) {
+		params := raw.(map[string]interface{})
+		if command != "list" || params["tool"] != "input" || params["action"] != "click" {
+			t.Fatalf("%s: %#v", command, params)
+		}
+		return &client.CommandResponse{Success: true}, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}

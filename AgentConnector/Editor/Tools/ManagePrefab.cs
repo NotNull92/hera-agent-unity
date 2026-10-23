@@ -22,7 +22,7 @@ namespace HeraAgent.Tools
         Expected = "source or instance_id")]
     [HeraTool(
         Name = "manage_prefab",
-        Description = "Prefab asset and instance operations. Asset side: create (save a scene GameObject as a prefab — saving from a prefab instance produces a Variant, reported as asset_type), instantiate, add_component / remove_component (headless edit via PrefabUtility.LoadPrefabContents — no prefab stage, no scene side effects; --child targets a descendant instead of the root). Instance side: list_overrides shows how a scene instance differs from its asset, apply pushes those differences into the asset, revert discards them, unpack breaks the link. Instance actions resolve --target to its outermost prefab instance root and report which root they used.",
+        Description = "Create or instantiate prefab assets; add/remove components without scene edits. Create from an instance makes a Variant. Inspect/apply/revert overrides or unpack instances; instance actions use the outermost prefab root. Use --child for a descendant.",
         Examples = new[]
         {
             "manage_prefab create --source /Player --path Assets/Prefabs/Player.prefab",
