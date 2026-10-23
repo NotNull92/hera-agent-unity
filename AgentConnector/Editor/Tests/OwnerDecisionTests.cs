@@ -66,6 +66,7 @@ namespace HeraAgent.Tests
         [Test]
         public void DeleteMovesAssetToTrash()
         {
+            // shortcut: leaves one small .mat in the OS trash per run, replace when Unity offers an isolated trash target.
             var path = "Assets/HeraTrash-" + Guid.NewGuid().ToString("N") + ".mat";
             AssetDatabase.CreateAsset(new Material(Shader.Find("Unlit/Color")), path);
             try
@@ -100,6 +101,21 @@ namespace HeraAgent.Tests
             StringAssert.Contains("click", JObject.FromObject(invalid).ToString());
             var unscoped = await CommandRouter.Dispatch("list", new JObject { ["action"] = "click" }) as ErrorResponse;
             Assert.AreEqual("INVALID_ARGUMENT", unscoped?.code);
+        }
+
+        [Test]
+        public async Task ActionDiscoveryIgnoresNonBooleanSelectors()
+        {
+            foreach (var selector in new[] { "names", "catalog", "compact" })
+            {
+                var parameters = new JObject { ["tool"] = "input", ["action"] = "click", [selector] = "x" };
+                var response = await CommandRouter.Dispatch("list", parameters);
+                Assert.IsInstanceOf<SuccessResponse>(response, JObject.FromObject(response).ToString());
+                Assert.AreEqual("click", JObject.FromObject(((SuccessResponse)response).data).Value<string>("action"));
+                parameters[selector] = true;
+                var conflict = await CommandRouter.Dispatch("list", parameters) as ErrorResponse;
+                Assert.AreEqual("INVALID_ARGUMENT", conflict?.code, selector);
+            }
         }
 
         [Test]

@@ -494,16 +494,13 @@ namespace HeraAgent
 
         static object HandleList(JObject parameters)
         {
+            bool Selected(string key) => parameters?[key]?.Type == JTokenType.Boolean && parameters[key].Value<bool>();
             var action = parameters?["action"]?.ToString();
             if (action != null && (string.IsNullOrWhiteSpace(action)
                 || string.IsNullOrWhiteSpace(parameters?["tool"]?.ToString())
-                || parameters?["catalog"]?.Value<bool>() == true
-                || parameters?["names"]?.Value<bool>() == true
-                || parameters?["compact"]?.Value<bool>() == true))
+                || Selected("catalog") || Selected("names") || Selected("compact")))
                 return new ErrorResponse("INVALID_ARGUMENT", "[Hera] I need --tool <name> with --action <action>, without other list selectors.");
-            var catalog = parameters?["catalog"]?.Type == JTokenType.Boolean
-                && parameters["catalog"].Value<bool>();
-            if (catalog)
+            if (Selected("catalog"))
             {
                 var schemaVersion = parameters?["schema_version"]?.ToString();
                 if (!string.Equals(
@@ -539,11 +536,7 @@ namespace HeraAgent
                 return new SuccessResponse($"Tool: {tool}", schema);
             }
 
-            var namesOnly = parameters?["names"]?.Type == JTokenType.Boolean
-                && parameters["names"].Value<bool>();
-            var compact = parameters?["compact"]?.Type == JTokenType.Boolean
-                && parameters["compact"].Value<bool>();
-            if (namesOnly || compact)
+            if (Selected("names") || Selected("compact"))
                 return new SuccessResponse("Available tools", ToolDiscovery.GetToolNames());
 
             return new SuccessResponse("Available tools", ToolDiscovery.GetToolSummaries());
