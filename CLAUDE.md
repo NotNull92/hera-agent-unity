@@ -129,13 +129,10 @@ internal/assetconfig/ # Asset plugin configuration persistence
                       # (assets + game_feel_mode + game_feel_ui_mode + loopEngineeringMode)
 internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
 internal/paths/       # Single source of truth for ~/.hera-agent-unity/** file-bus paths
-internal/resultstore/ # Durable async job results behind `task`
 internal/taskbridge/  # Durable task bridge over the same results
 internal/unitystate/  # Heartbeat parsing and editor-state predicates
 internal/unityprocess/ # Windows child-process environment repair shared by the
                       # editor launcher and the disposable benchmark fixture
-internal/telemetry/   # Opt-in local counters
-internal/logutil/     # Shared log helpers
 tools/build-unity-docs/ # One-shot maintainer Go script: Documentation/en/ScriptReference
                         # → unity_docs_<ver>.jsonl(.gz)(.bytes). Run per Unity version.
 tools/build-game-feel-docs/ # game_feel.jsonl (checked-in source of truth: Unity-derived

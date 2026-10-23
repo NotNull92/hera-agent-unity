@@ -1,0 +1,47 @@
+Usage: hera-agent-unity manage_ui <action> [options]
+
+uGUI authoring with Canvas/EventSystem scaffolding plus get_rect, set_anchor, and set_rect. Element property edits stay in manage_components.
+
+Options:
+  --action <value>
+    Action: create, get_rect, set_anchor, set_rect
+  --element <value>
+    create: element kind — canvas, panel, image, button, text, empty.
+  --name <value>
+    create: name for the new element (default = element kind capitalised).
+  --content <value>
+    create: text/label string for text & button elements.
+  --text <value>
+    create: text engine override — 'tmp' or 'legacy'. Default: TMP when the package is present, else legacy Text.
+  --parent <value>
+    Parent by hierarchy path or InstanceID. create: defaults to an existing/auto-created Canvas. Target (get_rect/set_*) uses instance_id or path instead.
+  --instance_id <value>
+    Target by InstanceID (get_rect/set_anchor/set_rect).
+  --path <value>
+    Target by hierarchy path '/Canvas/Child' (get_rect/set_anchor/set_rect).
+  --preset <value>
+    set_anchor: named preset — top-left, top-center, top-right, middle-left, middle-center, middle-right, bottom-left, bottom-center, bottom-right, top-stretch, middle-stretch, bottom-stretch, stretch-left, stretch-center, stretch-right, stretch (full). Alternative to anchor_min/anchor_max.
+  --anchor_min <value>
+    set_anchor: raw anchorMin 'x,y' (alternative to preset).
+  --anchor_max <value>
+    set_anchor: raw anchorMax 'x,y' (alternative to preset).
+  --snap <value>
+    set_anchor: snap to the preset (reset offsets to 0 / fill, move pivot to match — Unity's Alt+Shift click). Default false = keep the rect visually fixed.
+  --anchored_position <value>
+    set_rect: anchoredPosition 'x,y'.
+  --size_delta <value>
+    set_rect: sizeDelta 'x,y'.
+  --pivot <value>
+    set_anchor/set_rect: pivot 'x,y'.
+  --offset_min <value>
+    set_rect: offsetMin 'x,y' (left/bottom).
+  --offset_max <value>
+    set_rect: offsetMax 'x,y' (right/top).
+
+Examples:
+  hera-agent-unity manage_ui create --element button --name PlayBtn --content Play
+  hera-agent-unity manage_ui create --element text --name Title --content Hello --text legacy
+  hera-agent-unity manage_ui get_rect --path /Canvas/PlayBtn
+  hera-agent-unity manage_ui set_anchor --path /Canvas/Title --preset top-center
+  hera-agent-unity manage_ui set_anchor --path /Canvas/Bg --preset stretch --snap true
+  hera-agent-unity manage_ui set_rect --path /Canvas/Title --anchored_position 0,-40 --size_delta 300,60

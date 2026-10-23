@@ -1,0 +1,19 @@
+Usage: hera-agent-unity describe_type <type> [options]
+
+Describe a type loaded in the Unity Editor: kind, base, interfaces, public members, and known Unity pitfalls. Use this before writing exec code that touches a specific type to avoid signature/namespace mistakes.
+
+Options:
+  --type <value>
+    Type name — either full ('UnityEditor.EditorApplication') or simple ('EditorApplication'). Full names preferred.
+  --members <value>
+    Which members to include: 'methods' (default), 'properties', 'fields', 'events', or 'all'.
+  --include_private <value>
+    Include private/internal/protected members. Default false.
+  --limit <value>
+    Maximum members returned per category. Default 30. Anything over truncates with a note.
+
+Examples:
+  hera-agent-unity describe_type UnityEditor.EditorApplication
+  hera-agent-unity describe_type GameObject --members all
+  hera-agent-unity describe_type AssetDatabase --members methods --limit 50
+  hera-agent-unity describe_type EditorApplication --include_private true

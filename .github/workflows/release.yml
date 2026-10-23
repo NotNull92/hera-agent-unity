@@ -79,8 +79,13 @@ jobs:
         with:
           merge-multiple: true
 
+      - name: Generate checksums
+        run: sha256sum hera-agent-unity-* > SHA256SUMS
+
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
-          files: hera-agent-unity-*
+          files: |
+            hera-agent-unity-*
+            SHA256SUMS

@@ -61,10 +61,7 @@ func (runner standaloneRunner) Run(
 		if bootstrapErr != nil {
 			return true, bootstrapErr
 		}
-		(&ResponsePrinter{
-			Quiet:       runner.config.Quiet,
-			CompactJSON: runner.config.CompactJSON,
-		}).Print(resp, category)
+		(&ResponsePrinter{}).Print(resp, category)
 		if !resp.Success {
 			return true, ErrCommandFailed
 		}

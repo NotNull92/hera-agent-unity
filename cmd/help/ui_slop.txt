@@ -1,0 +1,14 @@
+Usage: hera-agent-unity ui_slop [id] [options]
+
+Look up a bundled Unity UI-slop tell, returning id, area, severity, tell, check, exception, fix, borrow and deep_topic. Omit the id or use list for the area-grouped index.
+
+Options:
+  --id <value>
+    Tell id (box-in-box, unscaled-spacing-ladder, tmp-italic, low-contrast-text, ...). Omit or pass 'list' for the taxonomy index.
+
+Examples:
+  hera-agent-unity ui_slop
+  hera-agent-unity ui_slop box-in-box
+  hera-agent-unity ui_slop unscaled-spacing-ladder
+  hera-agent-unity ui_slop tmp-italic
+  hera-agent-unity ui_slop low-contrast-text

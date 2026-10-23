@@ -1,0 +1,24 @@
+Usage: hera-agent-unity manage_material <action> [options]
+
+Material asset CRUD: create (with a shader), get (shader + property values), set (one shader property), set_shader (swap the shader). Property names are shader property names (_BaseColor, _Metallic, _MainTex) — run describe_shader first to discover them. Values reuse the manage_components forms: '1,0,0,1' or '#RRGGBB' for colors, a number for floats, 'x,y,z,w' for vectors, and an asset path or InstanceID for textures.
+
+Options:
+  --action <value>
+    Action: create, get, set, set_shader.
+  --path <value>
+    Material asset path (Assets/.../Name.mat), or a durable handle for an existing material. create needs a plain path.
+  --shader <value>
+    Shader name. Required for create and set_shader (e.g. 'Universal Render Pipeline/Lit').
+  --property <value>
+    Shader property name for set / single get (e.g. _BaseColor, _Metallic, _MainTex).
+  --value <value>
+    Value for set. Color: '1,0,0,1' or '#RRGGBB'. Float: a number. Vector: 'x,y,z,w'. Texture: asset path or InstanceID.
+  --limit <value>
+    get (all properties): max properties returned. Default 60.
+
+Examples:
+  hera-agent-unity manage_material create --path Assets/Mats/Player.mat --shader "Universal Render Pipeline/Lit"
+  hera-agent-unity manage_material get --path Assets/Mats/Player.mat
+  hera-agent-unity manage_material set --path Assets/Mats/Player.mat --property _BaseColor --value 1,0,0,1
+  hera-agent-unity manage_material set --path Assets/Mats/Player.mat --property _MainTex --value Assets/Tex/skin.png
+  hera-agent-unity manage_material set_shader --path Assets/Mats/Player.mat --shader Unlit/Color

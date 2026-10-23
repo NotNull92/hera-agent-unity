@@ -1,0 +1,15 @@
+Usage: hera-agent-unity game_feel [topic] [options]
+
+Look up a bundled Game Feel topic, returning key, category, title and body. Omit the topic or use list for the category-grouped index.
+
+Options:
+  --topic <value>
+    Topic key (screen_shake, hit_stop, tweening_easing, honest_juice, ethics_checklist, ...). Omit or pass 'list' for the topic index.
+
+Examples:
+  hera-agent-unity game_feel
+  hera-agent-unity game_feel screen_shake
+  hera-agent-unity game_feel control_feel
+  hera-agent-unity game_feel unity_frame_loops
+  hera-agent-unity game_feel ui_bar
+  hera-agent-unity game_feel ethics_checklist

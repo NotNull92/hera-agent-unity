@@ -17,7 +17,6 @@ func BaseDir() string {
 
 func InstancesDir() string     { return filepath.Join(BaseDir(), "instances") }
 func StatusDir() string        { return filepath.Join(BaseDir(), "status") }
-func ResultsDir() string       { return filepath.Join(BaseDir(), "results") }
 func AssetConfigPath() string  { return filepath.Join(BaseDir(), "asset-config.json") }
 func VersionCheckPath() string { return filepath.Join(BaseDir(), "version-check.json") }
 

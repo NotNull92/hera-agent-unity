@@ -3,14 +3,11 @@ package policy
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"slices"
 
 	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
-
-var ErrApprovalRequired = errors.New("operation requires approval")
 
 type safetyCondition struct {
 	Const any `json:"const"`
@@ -48,13 +45,6 @@ func Resolve(tool toolregistry.Tool, params map[string]any) (string, toolregistr
 		return actionName, matched.Safety, nil
 	}
 	return actionName, fallback, nil
-}
-
-func EnforceNative(safety toolregistry.Safety) error {
-	if safety.RequiresConfirmation {
-		return ErrApprovalRequired
-	}
-	return nil
 }
 
 func safetyRuleMatches(rule toolregistry.SafetyRule, params map[string]any) (bool, int, error) {

@@ -14,7 +14,6 @@ type GlobalConfig struct {
 	Verbose     bool
 	Quiet       bool
 	Debug       bool
-	CompactJSON bool
 	Narrate     bool
 	AutoApprove bool
 }
@@ -48,7 +47,7 @@ func parseGlobalConfig(args []string) (GlobalConfig, []string, error) {
 	flags.BoolVar(&config.Verbose, "verbose", envBool("HERA_AGENT_VERBOSE"), "Print progress + per-phase timings to stderr")
 	flags.BoolVar(&config.Quiet, "quiet", envBool("HERA_AGENT_QUIET"), "Suppress decorative progress messages")
 	flags.BoolVar(&config.Debug, "debug", envBool("HERA_AGENT_DEBUG"), "Print HTTP request and response details")
-	flags.BoolVar(&config.CompactJSON, "compact-json", envBool("HERA_AGENT_COMPACT_JSON"), "Output compact JSON")
+	flags.Bool("compact-json", false, "Accepted for compatibility; tool output is always compact")
 	flags.BoolVar(&config.Narrate, "narrate", envBool("HERA_AGENT_NARRATE"), "Narrate wait progress")
 	flags.BoolVar(&config.AutoApprove, "yes", envBool("HERA_AGENT_APPROVE"), "Answer approval preflights without prompting")
 	if err := flags.Parse(flagArgs); err != nil {

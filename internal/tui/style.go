@@ -17,7 +17,6 @@ const (
 	ColorText      = "#F5F1E8" // Cream
 	ColorMuted     = "#6B6B6B" // Charcoal
 	ColorBorder    = "#2C2C3A" // Deep Navy
-	ColorAccent    = "#4A6741" // Sage
 )
 
 // Base styles
@@ -34,10 +33,7 @@ var (
 	InfoStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorInfo))
 	SuccessStyle     = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(ColorSuccess))
 	MutedStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorMuted))
-	AccentStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color(ColorAccent))
-	BoldStyle        = lipgloss.NewStyle().Bold(true)
 	HelpSectionStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(ColorSecondary))
-	HelpUsageStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color(ColorPrimary))
 )
 
 // Status dot colors

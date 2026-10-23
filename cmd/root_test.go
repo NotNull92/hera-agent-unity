@@ -239,3 +239,23 @@ func TestErrorEnvelopeOmitsTimings(t *testing.T) {
 		t.Fatalf("envelope=%s caller timings=%v", out, resp.Timings)
 	}
 }
+
+func TestToolOutputAlwaysCompact(t *testing.T) {
+	for _, flag := range []string{"", "--compact-json"} {
+		for _, env := range []string{"0", "1"} {
+			t.Setenv("HERA_AGENT_COMPACT_JSON", env)
+			args := []string{"scene"}
+			if flag != "" {
+				args = append(args, flag)
+			}
+			if _, _, err := parseGlobalConfig(args); err != nil {
+				t.Fatal(err)
+			}
+			resp := &client.CommandResponse{Success: true, Data: json.RawMessage("{\n  \"value\": 1\n}")}
+			out := captureDoctorStdout(t, func() error { (&ResponsePrinter{}).Print(resp, "scene"); return nil })
+			if out != "{\"value\":1}\n" {
+				t.Fatalf("flag=%s env=%s output=%q", flag, env, out)
+			}
+		}
+	}
+}

@@ -275,7 +275,7 @@ Global Options:
   --quiet             Suppress decorative progress messages (env: HERA_AGENT_QUIET)
   --debug             Print HTTP request/response bodies + discovery info
                       to stderr (env: HERA_AGENT_DEBUG)
-  --compact-json      Emit JSON without indentation — smaller AI payloads
+  --compact-json                Accepted for compatibility; tool output is always compact
                       (env: HERA_AGENT_COMPACT_JSON)
   --narrate           Print waitForAlive/waitForReady progress even on
                       tool commands (env: HERA_AGENT_NARRATE)

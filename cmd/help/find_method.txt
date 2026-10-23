@@ -1,0 +1,21 @@
+Usage: hera-agent-unity find_method <pattern> [options]
+
+Search method names across loaded assemblies by substring. Returns declaring type and signature (the signature includes the static modifier and return type). Useful when you remember 'something with Refresh' but not the exact class.
+
+Options:
+  --pattern <value>
+    Case-insensitive substring of the method name.
+  --namespace <value>
+    Restrict to types whose namespace starts with this prefix. Example: 'UnityEditor'.
+  --limit <value>
+    Maximum results. Default 50.
+  --include_private <value>
+    Include private/internal/protected methods. Default false.
+  --group_by_type <value>
+    Group hits by declaring type (default true — smaller payload). Set false for legacy flat list.
+
+Examples:
+  hera-agent-unity find_method Refresh
+  hera-agent-unity find_method GetActiveScene --namespace UnityEditor
+  hera-agent-unity find_method Find --limit 20
+  hera-agent-unity find_method GetComponent --group_by_type false

@@ -83,8 +83,6 @@ func batchCmd(ctx context.Context, args []string, runtime batchRuntime) error {
 		return err
 	}
 
-	compact := runtime.Config.CompactJSON || !isHumanCommand("batch")
-	quiet := runtime.Config.Quiet
 	if resp.Code != "" {
 		encoded, marshalErr := json.Marshal(resp)
 		if marshalErr != nil {
@@ -94,21 +92,9 @@ func batchCmd(ctx context.Context, args []string, runtime batchRuntime) error {
 		return ErrCommandFailed
 	}
 
-	for i, result := range resp.Results {
-		if compact {
-			b, _ := json.Marshal(result)
-			fmt.Println(string(b))
-			continue
-		}
-		status := "OK"
-		if !result.Success {
-			status = "FAIL"
-		}
-		if quiet {
-			fmt.Printf("[%d/%d] %s: %s\n", i+1, len(resp.Results), status, result.Message)
-		} else {
-			fmt.Printf("%s %s %s\n", tui.Progress(i+1, len(resp.Results)), tui.StatusBadge(status), result.Message)
-		}
+	for _, result := range resp.Results {
+		b, _ := json.Marshal(result)
+		fmt.Println(string(b))
 	}
 
 	if resp.Failed > 0 {

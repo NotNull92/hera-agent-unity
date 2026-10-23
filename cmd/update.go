@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -97,6 +100,28 @@ func updateCmd(args []string) error {
 	}
 	defer func() { _ = os.Remove(tmpFile) }()
 
+	var checksumURL string
+	for _, candidate := range release.Assets {
+		if candidate.Name == "SHA256SUMS" {
+			checksumURL = candidate.BrowserDownloadURL
+			break
+		}
+	}
+	if checksumURL == "" {
+		return fmt.Errorf("release is missing SHA256SUMS")
+	}
+	sums, err := githubAPIClient.Get(checksumURL)
+	if err != nil {
+		return fmt.Errorf("download checksums: %w", err)
+	}
+	defer sums.Body.Close()
+	if sums.StatusCode != http.StatusOK {
+		return fmt.Errorf("checksum download returned %d", sums.StatusCode)
+	}
+	if err := verifyChecksum(tmpFile, asset.Name, sums.Body); err != nil {
+		return err
+	}
+
 	if err := os.Chmod(tmpFile, 0755); err != nil {
 		return fmt.Errorf("chmod failed: %w", err)
 	}
@@ -167,7 +192,7 @@ func sweepBackups(dir string) {
 	}
 	for _, e := range entries {
 		name := e.Name()
-		if !strings.HasPrefix(name, "hera-agent-unity") || !strings.HasSuffix(name, ".bak") {
+		if !strings.HasPrefix(name, "hera-agent-unity") || (!strings.HasSuffix(name, ".bak") && !strings.HasSuffix(name, ".tmp")) {
 			continue
 		}
 		path := filepath.Join(dir, name)
@@ -188,16 +213,57 @@ func download(url string, targetDir string) (string, error) {
 		return "", fmt.Errorf("download returned %d", resp.StatusCode)
 	}
 
-	tmp, err := os.CreateTemp(targetDir, "hera-agent-unity-update-*")
+	tmp, err := os.CreateTemp(targetDir, "hera-agent-unity-update-*.tmp")
 	if err != nil {
 		return "", err
 	}
-	defer tmp.Close()
-
 	if _, err := io.Copy(tmp, resp.Body); err != nil {
+		_ = tmp.Close()
+		_ = os.Remove(tmp.Name())
+		return "", err
+	}
+	if err := tmp.Close(); err != nil {
 		_ = os.Remove(tmp.Name())
 		return "", err
 	}
 
 	return tmp.Name(), nil
+}
+
+func verifyChecksum(path, name string, sums io.Reader) error {
+	scanner := bufio.NewScanner(sums)
+	var expected []byte
+	for scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) != 2 || strings.TrimPrefix(fields[1], "*") != name {
+			continue
+		}
+		if expected != nil {
+			return fmt.Errorf("duplicate checksum for %s", name)
+		}
+		digest, err := hex.DecodeString(fields[0])
+		if err != nil || len(digest) != sha256.Size {
+			return fmt.Errorf("invalid checksum for %s", name)
+		}
+		expected = digest
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("read checksums: %w", err)
+	}
+	if expected == nil {
+		return fmt.Errorf("SHA256SUMS has no checksum for %s", name)
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return err
+	}
+	if !strings.EqualFold(hex.EncodeToString(hash.Sum(nil)), hex.EncodeToString(expected)) {
+		return fmt.Errorf("checksum mismatch for %s", name)
+	}
+	return nil
 }

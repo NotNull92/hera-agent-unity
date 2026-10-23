@@ -3,6 +3,9 @@ package cmd
 import (
 	"errors"
 	"io/fs"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -55,6 +58,16 @@ func TestHelpTopicsExistForRoutedCommands(t *testing.T) {
 
 func TestHelpFilesAreReachableTopics(t *testing.T) {
 	routed := map[string]bool{
+		"describe_type":       true,
+		"find_method":         true,
+		"list_assemblies":     true,
+		"describe_shader":     true,
+		"manage_material":     true,
+		"manage_asset_import": true,
+		"manage_ui":           true,
+		"game_feel":           true,
+		"ui_slop":             true,
+
 		"bake":              true,
 		"build":             true,
 		"batch":             true,
@@ -137,5 +150,35 @@ func TestGeneralHelpMakesTimeoutUnitsUnambiguous(t *testing.T) {
 	help := string(data)
 	if !strings.Contains(help, "--timeout 120000") || !strings.Contains(help, "2 minutes") {
 		t.Fatal("general help must include a concrete millisecond timeout example")
+	}
+}
+
+func TestRoutedToolHelp(t *testing.T) {
+	// Generic dispatch accepts every HeraTool name; specialized routes also have aliases.
+	files, err := filepath.Glob("../AgentConnector/Editor/Tools/*.cs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	name := regexp.MustCompile(`(?s)\[HeraTool\(\s*Name\s*=\s*"([^"]+)"`)
+	aliases := map[string]string{"execute_csharp": "exec", "read_console": "console", "manage_scene": "scene", "manage_editor": "manage_editor", "execute_menu_item": "menu", "editor_screenshot": "screenshot", "reserialize_assets": "reserialize", "manage_profiler": "profiler", "log_to_console": "log", "refresh_unity": "editor", "detect_assets": "asset-config"}
+	for _, file := range files {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			t.Fatal(err)
+		}
+		match := name.FindSubmatch(data)
+		if match == nil {
+			continue
+		}
+		topic := string(match[1])
+		if alias, ok := aliases[topic]; ok {
+			topic = alias
+		}
+		if topic == "asset-config" {
+			continue
+		} // Dedicated help renderer.
+		if _, err := helpFS.ReadFile("help/" + topic + ".txt"); err != nil {
+			t.Errorf("%s: %v", topic, err)
+		}
 	}
 }

@@ -14,7 +14,6 @@ import (
 	"strings"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
-	"github.com/NotNull92/hera-agent-unity/internal/tui"
 )
 
 var Version = "dev"
@@ -68,21 +67,9 @@ func isHumanCommand(category string) bool {
 	return ok
 }
 
-// ResponsePrinter holds output-configuration state so that print logic can be
-// tested without mutating package-level flag variables.
-type ResponsePrinter struct {
-	Quiet       bool
-	CompactJSON bool
-}
+// ResponsePrinter emits tool responses as compact JSON.
+type ResponsePrinter struct{}
 
-func (rp *ResponsePrinter) shouldCompactJSON(category string) bool {
-	return rp.CompactJSON || !isHumanCommand(category)
-}
-
-// isUserCodeDiagnostic reports whether a structured error code describes a
-// failure in the user's C# snippet rather than a hera-agent-unity or
-// environment failure. Used to reframe the CLI output prefix so snippet
-// failures don't read as tool failures.
 func operationOutcomeResponse(err error) *client.CommandResponse {
 	var unknown *client.OperationOutcomeUnknownError
 	var unresponsive *client.TargetUnresponsiveError
@@ -109,17 +96,6 @@ func operationOutcomeResponse(err error) *client.CommandResponse {
 	}
 	response.Data, _ = json.Marshal(data)
 	return response
-}
-
-func isUserCodeDiagnostic(code string) bool {
-	switch code {
-	case "EXEC_COMPILE_ERROR",
-		"EXEC_RUNTIME_ERROR",
-		"EXEC_LOGGED_ERROR",
-		"EXEC_COMPILE_TIMEOUT":
-		return true
-	}
-	return false
 }
 
 func Execute(ctx context.Context) error {
@@ -150,7 +126,7 @@ func Execute(ctx context.Context) error {
 	if category == "test" {
 		testOutput, err = parseTestOptions(subArgs)
 		if err != nil {
-			(&ResponsePrinter{CompactJSON: true}).Print(&client.CommandResponse{Code: "INVALID_ARGUMENT", Message: err.Error()}, category)
+			(&ResponsePrinter{}).Print(&client.CommandResponse{Code: "INVALID_ARGUMENT", Message: err.Error()}, category)
 			return ErrCommandFailed
 		}
 	}
@@ -191,19 +167,13 @@ func Execute(ctx context.Context) error {
 	}).Run(ctx, category, subArgs)
 	if err != nil {
 		if outcome := operationOutcomeResponse(err); outcome != nil {
-			(&ResponsePrinter{
-				Quiet:       config.Quiet,
-				CompactJSON: config.CompactJSON,
-			}).Print(outcome, category)
+			(&ResponsePrinter{}).Print(outcome, category)
 			return ErrCommandFailed
 		}
 		return err
 	}
 
-	printer := &ResponsePrinter{
-		Quiet:       config.Quiet,
-		CompactJSON: config.CompactJSON,
-	}
+	printer := &ResponsePrinter{}
 	written := false
 	if category == "test" {
 		written, err = writeTestOutput(resp, testOutput, os.Stdout, os.Stderr)
@@ -254,61 +224,11 @@ func printTimings(resp *client.CommandResponse) {
 
 func (rp *ResponsePrinter) Print(resp *client.CommandResponse, category string) {
 	if !resp.Success {
-		// AI-target commands: emit a plain JSON error envelope to stderr so
-		// the agent can parse code / suggestions / data without scraping
-		// styled boxes. Human commands keep the styled panel for terminal
-		// readability.
-		if !isHumanCommand(category) {
-			// Timings reach the agent only through --verbose (printTimings).
-			envelope := *resp
-			envelope.Timings = nil
-			var b []byte
-			if rp.shouldCompactJSON(category) {
-				b, _ = json.Marshal(envelope)
-			} else {
-				b, _ = json.MarshalIndent(envelope, "", "  ")
-			}
-			fmt.Fprintln(os.Stderr, string(b))
-			return
-		}
-
-		msg := resp.Message
-		if msg == "" {
-			msg = "unknown error"
-		}
-		if resp.Code != "" {
-			if isUserCodeDiagnostic(resp.Code) {
-				msg = fmt.Sprintf("[user-code %s] %s", resp.Code, msg)
-			} else {
-				msg = fmt.Sprintf("[%s] %s", resp.Code, msg)
-			}
-		}
-		hasDetails := len(resp.Data) > 0 && string(resp.Data) != "null"
-		var suggestions string
-		if len(resp.Suggestions) > 0 {
-			suggestions = "\n\nSuggestions:\n- " + strings.Join(resp.Suggestions, "\n- ")
-		}
-		if rp.Quiet {
-			if hasDetails {
-				fmt.Fprintf(os.Stderr, "%s\n%s%s\n", msg, string(resp.Data), suggestions)
-			} else {
-				fmt.Fprintln(os.Stderr, msg+suggestions)
-			}
-		} else {
-			body := msg + suggestions
-			if hasDetails {
-				body = fmt.Sprintf("%s\n\nDetails:\n%s%s", msg, string(resp.Data), suggestions)
-			}
-			fmt.Fprintln(os.Stderr, tui.ErrorPanel("Failed", body))
-		}
-		if resp.Retryable {
-			state := resp.State
-			if state == "" {
-				state = "not ready"
-			}
-			fmt.Fprintf(os.Stderr,
-				"hint: transient (editor state: %s) — the command was not executed; retry the same request\n", state)
-		}
+		// Timings are emitted separately only with --verbose.
+		envelope := *resp
+		envelope.Timings = nil
+		b, _ := json.Marshal(envelope)
+		fmt.Fprintln(os.Stderr, string(b))
 		return
 	}
 
@@ -325,15 +245,11 @@ func (rp *ResponsePrinter) Print(resp *client.CommandResponse, category string) 
 				return
 			}
 		}
-		if rp.shouldCompactJSON(category) {
-			fmt.Println(string(resp.Data))
+		var compact bytes.Buffer
+		if err := json.Compact(&compact, resp.Data); err == nil {
+			fmt.Println(compact.String())
 		} else {
-			var buf bytes.Buffer
-			if err := json.Indent(&buf, resp.Data, "", "  "); err == nil {
-				fmt.Println(buf.String())
-			} else {
-				fmt.Println(string(resp.Data))
-			}
+			fmt.Println(string(resp.Data))
 		}
 	} else if resp.Message != "" {
 		fmt.Println(resp.Message)

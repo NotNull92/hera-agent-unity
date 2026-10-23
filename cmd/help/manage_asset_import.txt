@@ -1,0 +1,19 @@
+Usage: hera-agent-unity manage_asset_import <action> [options]
+
+Read or change an asset's import settings via its AssetImporter (TextureImporter, ModelImporter, AudioImporter, …). get dumps the importer's serialized properties (or one); set writes one and reimports. Property paths are raw SerializedProperty paths (m_TextureType, m_sRGBTexture, m_MipMapMode) — same convention as manage_components. get with no --property first to discover them.
+
+Options:
+  --action <value>
+    Action: get, set.
+  --path <value>
+    Asset path (Assets/.../file.ext), or a durable handle for an existing asset.
+  --property <value>
+    SerializedProperty path on the importer (m_TextureType, m_sRGBTexture, …). get: omit to dump all. set: required.
+  --value <value>
+    Value for set. Scalars via --value; complex shapes via --params '{"value":...}'.
+
+Examples:
+  hera-agent-unity manage_asset_import get --path Assets/Tex/icon.png
+  hera-agent-unity manage_asset_import get --path Assets/Tex/icon.png --property m_sRGBTexture
+  hera-agent-unity manage_asset_import set --path Assets/Tex/icon.png --property m_sRGBTexture --value 0
+  hera-agent-unity manage_asset_import set --path Assets/Tex/icon.png --property m_EnableMipMap --value false

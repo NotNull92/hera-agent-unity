@@ -1,0 +1,19 @@
+Usage: hera-agent-unity list_assemblies  [options]
+
+List assemblies loaded in the current Unity Editor AppDomain. AI agents call this to find which Unity packages, project assemblies, and third-party libraries are available before writing exec code.
+
+Options:
+  --filter <value>
+    Case-insensitive substring filter on assembly name.
+  --include_system <value>
+    Include System.*, mscorlib, netstandard etc. Default false because AI agents rarely need them.
+  --include_version <value>
+    Return {name, version} objects instead of bare name strings. Default false — most assemblies report 0.0.0.0, so the version is dropped to roughly halve the payload.
+  --include_location <value>
+    Include each assembly's DLL location (full path), implies version. Default false — most AI agents don't need them.
+
+Examples:
+  hera-agent-unity list_assemblies
+  hera-agent-unity list_assemblies --filter Unity.Entities
+  hera-agent-unity list_assemblies --include_version true
+  hera-agent-unity list_assemblies --include_location true
