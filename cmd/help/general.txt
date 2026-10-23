@@ -113,7 +113,7 @@ Documentation:
                                                   Query: Rigidbody | Rigidbody.mass |
                                                   Rigidbody.AddForce | Vector3.zero |
                                                   UnityEditor.AssetDatabase.Refresh.
-                                                  Returns title/signature/summary/manual_url.
+                                                  Returns title/signature/summary plus version fields.
                                                   Data ships inside the UPM package — no
                                                   docs folder on your machine required.
 
@@ -275,7 +275,7 @@ Global Options:
   --quiet             Suppress decorative progress messages (env: HERA_AGENT_QUIET)
   --debug             Print HTTP request/response bodies + discovery info
                       to stderr (env: HERA_AGENT_DEBUG)
-  --compact-json                Accepted for compatibility; tool output is always compact
+  --compact-json      Accepted for compatibility; tool output is always compact
                       (env: HERA_AGENT_COMPACT_JSON)
   --narrate           Print waitForAlive/waitForReady progress even on
                       tool commands (env: HERA_AGENT_NARRATE)

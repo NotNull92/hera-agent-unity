@@ -460,7 +460,7 @@ Owns a `BundleStore<Entry>` over `game_feel_1.0.jsonl.gz.bytes` (67 topics), key
 
 ### UiSlopStore.cs
 
-Owns a `BundleStore<Entry>` over `ui_slop_1.0.jsonl.gz.bytes` (49 Unity UI-slop tells), keyed by tell id. Adds the area-grouped index (A→E, the fixed fix order) and `CheckFor(id)`, which returns the uGUI predicate.
+Owns a `BundleStore<Entry>` over `ui_slop_1.0.jsonl.gz.bytes` (48 Unity UI-slop tells), keyed by tell id. Adds the area-grouped index (A→E, the fixed fix order) and `CheckFor(id)`, which returns the uGUI predicate.
 
 ### UnityPitfalls.cs
 

@@ -45,8 +45,6 @@ internal/
     paths.go               # hera state/config path helpers
   unitystate/
     state.go               # Unity state constants
-  logutil/
-    suppress.go            # log suppression helpers
 ```
 
 ---

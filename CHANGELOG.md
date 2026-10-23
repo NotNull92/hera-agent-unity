@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- CLI: preserve raw Windows PATH values and registry types during legacy cleanup; uninstall the actual state directory, report shell configuration write failures, and preserve same-file installs.
+- CLI: verify release SHA-256 checksums before replacing the executable and clean up incomplete update downloads.
+
+### Changed
+
+- CLI: tool JSON output is always compact; `--compact-json` and `HERA_AGENT_COMPACT_JSON` remain accepted for compatibility.
+- Help: document nine additional tool topics and correct console defaults, bundled documentation counts, and response fields.
+
+### Removed
+
+- Unused MCP SDK dependencies, result storage, telemetry, logging helpers, and unused policy/path exports.
+
 ## [0.3.20] - 2026-10-21 (Connector unchanged at 0.2.10)
 
 ### Docs

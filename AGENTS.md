@@ -107,7 +107,7 @@ new GameObject("X");
 
 > Caveat: `return;` (no value) still does NOT compile because `Execute()` returns `object`. Write `return null;` for early exits, or `throw new Exception("...")` for hard failures (see Rule 8).
 
-> The CLI emits compact JSON automatically for non-human commands (anything outside `install/uninstall/status/update/doctor`). Pass `--compact-json` or set `HERA_AGENT_COMPACT_JSON=1` to force compact on a TTY too.
+> The CLI emits compact JSON automatically for non-human commands (anything outside `install/uninstall/status/update/doctor`). `--compact-json` and `HERA_AGENT_COMPACT_JSON` are accepted for compatibility and have no effect.
 
 > Full Access remains the `exec` default. Add `--security-mode restricted` only when the snippet can stay within platform APIs and should be denied file, network, process, reflection, native, threading, `UnityEditor`, and project-assembly access. Restricted mode is defense in depth; arbitrary-code permission, approval, the operation ledger, and the strict contract still apply.
 
@@ -630,7 +630,7 @@ Most have a `--flag` equivalent (column 2).
 | `HERA_AGENT_TIMEOUT_MS=N` | `--timeout N` (default 60000) |
 | `HERA_AGENT_QUIET=1` | `--quiet` |
 | `HERA_AGENT_DEBUG=1` | `--debug` |
-| `HERA_AGENT_COMPACT_JSON=1` | `--compact-json` |
+| `HERA_AGENT_COMPACT_JSON=1` | accepted for compatibility; no effect |
 | `HERA_AGENT_VERBOSE=1` | `--verbose` |
 | `HERA_AGENT_NARRATE=1` | `--narrate` |
 | `HERA_AGENT_NO_PATH_CHECK=1` | Silence per-command PATH-mismatch warning (useful from wrapper binaries). |

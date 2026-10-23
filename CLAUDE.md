@@ -79,7 +79,7 @@ Unity 실행 기능을 추가할 때도 기존 코어 모델 안에서 풀 것: 
 ## Structure
 
 ```
-cmd/                  # Go CLI — thin passthrough layer
+cmd/                  # Go CLI — commands, install/update, approval, and waiting
   root.go             # Entry point, flag/arg parsing, humanCategories, response printing
   dispatch.go         # Standalone vs Unity-backed command routing
   call.go             # Strict typed-tool validation/explain/dispatch
@@ -129,7 +129,7 @@ internal/assetconfig/ # Asset plugin configuration persistence
                       # (assets + game_feel_mode + game_feel_ui_mode + loopEngineeringMode)
 internal/tui/         # Terminal UI helpers: style.go, assetconfig.go (bubbletea), detect.go
 internal/paths/       # Single source of truth for ~/.hera-agent-unity/** file-bus paths
-internal/taskbridge/  # Durable task bridge over the same results
+internal/taskbridge/  # Durable task bridge over Unity test/package status files
 internal/unitystate/  # Heartbeat parsing and editor-state predicates
 internal/unityprocess/ # Windows child-process environment repair shared by the
                       # editor launcher and the disposable benchmark fixture
@@ -385,7 +385,7 @@ Light Mode의 목표는 "틀린 상태로 끝내지 않기"다. PlayMode, screen
 
 ### Why Additional Unit Tests Are Not Added
 
-**Go-side code is a thin passthrough layer.** All business logic lives in the C# connector. The Go CLI's job is limited to:
+**The Go CLI handles commands and self-management (installation, updates, approval, and waiting); Unity logic lives in the C# connector.** Its responsibilities include:
 
 - Parsing CLI arguments (`root.go`) — covered by `root_test.go`
 - HTTP dispatch to localhost — mocking Unity's response format is meaningless; the real value is in how C# handles the request
