@@ -291,7 +291,7 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
 2. **Existing surface reuse** — 기존 tool의 action/flag, 기존 projection, `exec`, 또는 on-demand skill로 해결할 수 없는 이유를 기록한다. 기존 action으로 자연스럽게 흡수할 수 있으면 새 top-level tool을 만들지 않는다.
 3. **Contract and safety** — strict input/output schema, action safety, approval·ledger 영향, Unity 버전 경계를 함께 수정한다.
 4. **Regression evidence** — 실패 재현 테스트와 수정 후 회귀 테스트를 추가하고, Unity 동작이면 disposable Editor에서 live evidence를 남긴다.
-5. **Surface cost** — tool/action 수, profile payload, compact agent-rules baseline, 신규 의존성과 배포 크기 변화를 기록한다. compact agent-rules의 Light 모드는 2,560 B 예산 안에 둔다. 넘으면 기존 문장을 줄여 자리를 만든다. `cmd/doctor_test.go`의 `TestCompactAgentRulesByteBudget`이 `len(CompactAgentRulesText(assetconfig.LoopEngineeringLight))`로 강제한다. 도구 수·전체 AGENT.md에는 상한이 없다.
+5. **Surface cost** — tool/action 수, profile payload, compact agent-rules baseline, 신규 의존성과 배포 크기 변화를 기록한다. compact agent-rules의 Light 모드는 모든 감지 자산·guidance 모드·format frontmatter를 포함한 출력 전체를 2,560 B 예산 안에 둔다. 넘으면 기존 문장을 줄여 자리를 만든다. `cmd/doctor_test.go`의 `TestCompactAgentRulesByteBudget`이 격리된 temp 홈의 최악 설정에서 `extractCompactAgentRules` 전체 UTF-8 출력 길이로 강제한다. 도구 수·전체 AGENT.md에는 상한이 없다.
 6. **Reviewed baseline** — live built-in catalog가 바뀌면 `docs/metrics/catalog-payload-baseline.json`을 의도적으로 재생성하고 같은 리뷰에서 승인한다. baseline 변경 없이 계약을 조용히 키우지 않는다.
 
 카탈로그 비교 명령:

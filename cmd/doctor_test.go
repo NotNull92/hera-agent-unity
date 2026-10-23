@@ -1,8 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -167,7 +169,7 @@ func TestExtractCompactAgentRules(t *testing.T) {
 	}
 
 	const (
-		compactAgentRulesBaselineUTF8Bytes = 2315
+		compactAgentRulesBaselineUTF8Bytes = 1929
 		compactAgentRulesBaselineNewlines  = 28
 	)
 	if got := len([]byte(out)); got != compactAgentRulesBaselineUTF8Bytes {
@@ -191,7 +193,7 @@ func TestBuildAssetPreferenceAgentRules_UsesEnabledMetadata(t *testing.T) {
 		}
 	}
 	compact := buildAssetPreferenceAgentRules(assets, true)
-	if !strings.Contains(compact, "odin_inspector") || !strings.Contains(compact, assets[0].DocURL) {
+	if !strings.Contains(compact, "odin_inspector") || strings.Contains(compact, assets[0].DocURL) {
 		t.Fatalf("compact asset preference rules = %q", compact)
 	}
 
@@ -399,10 +401,57 @@ func TestResolveSymlink(t *testing.T) {
 	})
 }
 
+// The budget covers the complete Light output, including opt-ins and format headers.
 func TestCompactAgentRulesByteBudget(t *testing.T) {
-	size := len(CompactAgentRulesText(assetconfig.LoopEngineeringLight))
-	if size > 2560 {
-		t.Fatalf("compact agent-rules: %d bytes exceeds budget of 2560 bytes", size)
+	if os.Getenv("HERA_RULES_BUDGET_CHILD") != "1" {
+		child := exec.Command(os.Args[0], "-test.run=^TestCompactAgentRulesByteBudget$", "-test.v")
+		child.Env = append(os.Environ(), "HERA_RULES_BUDGET_CHILD=1")
+		output, err := child.CombinedOutput()
+		t.Log(string(output))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return
 	}
-	t.Logf("compact agent-rules: %d / 2560 bytes", size)
+
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	assets := assetconfig.DefaultAssets()
+	for i := range assets {
+		assets[i].Enabled = true
+		assets[i].Installed = true
+	}
+	cfg := assetconfig.AssetConfig{Assets: assets, LoopEngineeringMode: assetconfig.LoopEngineeringLight,
+		GameFeelMode: true, GameFeelUIMode: true, UISlopMode: true}
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := filepath.Join(home, ".hera-agent-unity")
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "asset-config.json"), data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, format := range []string{"markdown", "cursor", "antigravity", "skill"} {
+		t.Run(format, func(t *testing.T) {
+			out := extractCompactAgentRules(format)
+			for _, asset := range assets {
+				if !strings.Contains(out, asset.ID) {
+					t.Errorf("missing %s", asset.ID)
+				}
+			}
+			for _, tool := range []string{"game_feel", "ui_slop"} {
+				if !strings.Contains(out, tool) {
+					t.Errorf("missing %s", tool)
+				}
+			}
+			if len(out) > 2560 {
+				t.Fatalf("complete compact Light output: %d bytes exceeds 2560", len(out))
+			}
+			t.Logf("complete compact Light output: %d / 2560 bytes", len(out))
+		})
+	}
 }

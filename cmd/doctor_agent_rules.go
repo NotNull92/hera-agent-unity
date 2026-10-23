@@ -66,10 +66,10 @@ func extractCompactAgentRules(format string) string {
 	if gameFeel || uiSlop {
 		out.WriteString("\n## Enabled Guidance\n\n")
 		if gameFeel {
-			out.WriteString("- Game Feel Mode is ON. Query `game_feel` for measured parameters and ethics constraints before implementing player-facing feedback.\n")
+			out.WriteString("- `game_feel`: query parameters and ethics before player-facing feedback.\n")
 		}
 		if uiSlop {
-			out.WriteString("- Unity De-slop Mode is ON. Query `ui_slop` and re-measure the live uGUI target before and after each fix.\n")
+			out.WriteString("- `ui_slop`: query checks; measure live uGUI before and after fixes.\n")
 		}
 	}
 	return out.String()
@@ -85,7 +85,7 @@ func CompactAgentRulesText(mode assetconfig.LoopEngineeringMode) string {
 	var out strings.Builder
 	out.WriteString("# hera-agent-unity - Compact Project Rules\n\n")
 	out.WriteString("> Emitted by `hera-agent-unity doctor --agent-rules --compact`. ")
-	out.WriteString("Load the full guide only when needed: https://github.com/NotNull92/hera-agent-unity/blob/main/AGENT.md\n\n")
+	out.WriteString("Detail: `doctor --agent-rules` without --compact.\n\n")
 	out.WriteString(compactAgentRulesBody)
 	out.WriteString("\n")
 	out.WriteString(buildCompactUltraHeraAgentRules(mode))
@@ -105,16 +105,19 @@ func buildAssetPreferenceAgentRules(assets []assetconfig.AssetEntry, compact boo
 
 	var out strings.Builder
 	out.WriteString("## Enabled Asset Preferences\n\n")
+	if compact {
+		out.WriteString("Prefer installed assets; API/docs: `asset-config --json`.\n")
+	}
 	if !compact {
 		out.WriteString("Hera Settings marks these assets as preferred. Verify that an asset is installed before using its APIs.\n\n")
 	}
 	for _, asset := range enabled {
 		if compact {
-			out.WriteString("- `" + asset.ID + "`: prefer " + asset.Name + " when installed")
+			out.WriteString("- `" + asset.ID + "` (if installed)")
 		} else {
 			out.WriteString("- **" + asset.Name + "** (`" + asset.ID + "`): " + asset.Description)
 		}
-		if asset.DocURL != "" {
+		if !compact && asset.DocURL != "" {
 			out.WriteString(" Documentation: " + asset.DocURL)
 		}
 		out.WriteString("\n")
@@ -123,20 +126,20 @@ func buildAssetPreferenceAgentRules(assets []assetconfig.AssetEntry, compact boo
 }
 
 const compactAgentRulesBody = "## Bootstrap\n\n" +
-	"When Hera is first used in a session, or the target Editor is uncertain, run these commands in order:\n\n" +
+	"At session start or when the target is uncertain, run in order:\n\n" +
 	"1. `hera-agent-unity doctor --json`\n" +
 	"2. `hera-agent-unity status`\n" +
 	"3. `hera-agent-unity list --compact`\n\n" +
 	"Confirm the selected project's full path before mutation. With no selector, Hera prefers a current-working-directory match and then the most recent live heartbeat. After selection, the normalized project path remains the identity across port changes. Use `--project <full-path>` when the task names a specific project.\n\n" +
 	"## Working Rules\n\n" +
-	"1. Observe only the state needed for the current decision. Prefer dedicated tools and bounded projections such as `list --compact`, `find_gameobjects --ids`, and `console --type error --lines 20`.\n" +
-	"2. Use dedicated commands before `exec`. For side-effecting `exec`, return `null` or nothing. Return primitive fields or instance IDs, never a full Unity object. Instance IDs are session-scoped; store `global_id` and re-resolve after an Editor restart.\n" +
-	"3. Branch on stable error `code` values. Do not scrape message wording.\n" +
-	"4. Do not claim a mutation succeeded from the request alone; verify it as the Verification Mode section below requires.\n" +
+	"1. Read only needed state. Bound output with `list --compact`, `find_gameobjects --ids`, and `console --type error --lines 20`.\n" +
+	"2. Prefer dedicated tools over `exec`. Mutating exec returns null/nothing; reads return primitives/IDs, never Unity objects. Instance IDs expire on restart; store `global_id` and re-resolve.\n" +
+	"3. Branch on error `code`, not message wording.\n" +
+	"4. Verify mutations using the Verification Mode below before claiming success.\n" +
 	"5. Never blindly resend a mutation after timeout or response loss. Preserve the operation ID and follow `OPERATION_OUTCOME_UNKNOWN`, target-restart, target-loss, and port-mismatch evidence.\n" +
 	"6. For `APPROVAL_REQUIRED`, repeat the identical request with the returned `--approve <token>`. Do not change project, tool, action, arguments, or operation ID.\n" +
 	"7. Treat `TEST_RUN_PENDING` as durable work. Resume the same run or use `task list` and `task status`; do not start the test mutation again.\n" +
-	"8. Load detail on demand with `list --profile <name>`, `list --tool <name>`, or `<command> --help` instead of loading every schema up front.\n"
+	"8. Discover with `list --names`; load `list --tool <name> --action <action>` or `<command> --help` on demand.\n"
 
 func buildCompactUltraHeraAgentRules(mode assetconfig.LoopEngineeringMode) string {
 	switch assetconfig.NormalizeLoopEngineeringMode(string(mode)) {
@@ -147,7 +150,7 @@ func buildCompactUltraHeraAgentRules(mode assetconfig.LoopEngineeringMode) strin
 	case assetconfig.LoopEngineeringLight:
 		fallthrough
 	default:
-		return "## Verification Mode\n\nCurrent Ultra Hera setting: `light`. After each mutation, verify compile or state, inspect console errors, and re-read the changed target. Retry only after classifying the failure, normally at most one or two repair passes. Report short evidence.\n"
+		return "## Verification Mode\n\nCurrent Ultra Hera setting: `light`. After mutations: verify compile/state, check console errors, re-read the target. Classify failures before 1-2 repair passes; report evidence.\n"
 	}
 }
 
