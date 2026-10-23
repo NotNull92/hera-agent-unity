@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
 using UnityEditor.AI;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 namespace HeraAgent.Tools
 {
@@ -369,11 +371,15 @@ namespace HeraAgent.Tools
                 StageSerializedFloat(parameters, changes, serialized, "min_region_area", NavMinRegionArea, value => value >= 0, "must be >= 0");
                 StageVoxelSize(parameters, changes, serialized);
                 StageSerializedBool(parameters, changes, serialized, "manual_voxel_size", NavManualVoxelSize);
+                if (!changes.DryRun && changes.Applied.Count > 0 && EditorApplication.isPlayingOrWillChangePlaymode)
+                    return new ErrorResponse("SCENE_PLAY_MODE", "[Hera] I can't change scene NavMesh settings during Play Mode or a Play Mode transition; stop Play Mode first.");
+                var scene = SceneManager.GetActiveScene();
                 var response = changes.Commit("navmesh");
                 if (!changes.DryRun && changes.Applied.Count > 0)
                 {
                     serialized.ApplyModifiedPropertiesWithoutUndo();
-                    AssetDatabase.SaveAssets();
+                    EditorSceneManager.MarkSceneDirty(scene);
+                    ((SuccessResponse)response).AppendHint("[Hera] I changed the active scene's NavMesh settings; save the scene to keep them.");
                 }
                 return response;
             }

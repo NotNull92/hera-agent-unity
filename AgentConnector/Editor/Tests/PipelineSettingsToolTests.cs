@@ -202,6 +202,7 @@ namespace HeraAgent.Tests
                 var restoreNav = new SerializedObject(navSettings);
                 restoreNav.FindProperty("m_BuildSettings.agentRadius").floatValue = originalRadius;
                 restoreNav.ApplyModifiedPropertiesWithoutUndo();
+                Assert.AreEqual(originalRadius, ReadNavRadius(navSettings));
                 AssetDatabase.SaveAssets();
                 if (originalSetup.Any(entry => entry.isLoaded && !string.IsNullOrEmpty(entry.path)))
                     EditorSceneManager.RestoreSceneManagerSetup(originalSetup);
