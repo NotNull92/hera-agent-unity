@@ -60,9 +60,9 @@ hera-agent-unity는 Claude(Claude Code)와 Codex가 **협업해서 개발**하�
 - **양방향/스트리밍 채널 없음**: 단발성 호출이 디폴트. "lock 점유자 보여달라", "진행률 스트림", "실시간 알림" 같은 제안은 모델 밖.
 - **다중 에디터 발견 + 단일 선택 모델** 🔒: 한 머신의 여러 Unity heartbeat를 발견할 수 있지만 각 CLI 명령은 한 에디터만 선택한다. 프로젝트의 정규화된 절대경로가 안정적인 정체성이고 `port`는 `8090`–`8099`에서 재시작/domain reload 때 바뀔 수 있는 임시 연결 정보다. `--project`는 exact match 우선, legacy substring은 유일할 때만 허용하며 모호하면 실패한다. `--project`와 `--port`를 함께 주면 같은 heartbeat를 가리켜야 한다. 전송 실패/timeout 때는 fresh heartbeat로 port 재사용·PID 변경·target 소실을 다시 확인하고, idempotent 또는 operation-ledger-backed 작업만 재시도한다. 여러 에디터 broadcast/fan-out은 모델 밖이다.
 - **출력 비대칭은 명령별로 분리** — 세 부류:
-  - **표준 envelope tool 명령** (`call`, `exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, `manage_animation`, `manage_settings`, `bake`, `build`, `input`, `task`, `game_feel`, `ui_slop`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
+  - **표준 envelope tool 명령** (`call`, `exec`, `editor`, `console`, `scene`, `menu`, `screenshot`, `reserialize`, `test`, `profiler`, `list`, `describe_type`, `find_method`, `list_assemblies`, `batch`, `log`, `manage_gameobject`, `find_gameobjects`, `manage_components`, `manage_packages`, `unity_docs`, `describe_shader`, `manage_material`, `manage_prefab`, `manage_asset_import`, `manage_assets`, `manage_ui`, `manage_animation`, `manage_timeline`, `manage_settings`, `bake`, `build`, `input`, `task`, `game_feel`, `ui_slop`, custom tools): 성공/실패 응답은 **compact JSON** 으로 통일 — AI agent 가 소비. 박스 drawing / ANSI escape / 한국어 banner 금지. `humanCategories` 화이트리스트(`cmd/root.go`)에 없으면 자동으로 compact + stderr 장식 억제.
   - `test --format junit|nunit` is an explicit CI artifact output exception: XML goes to stdout or `--output`; test failures still exit nonzero. Default JSON behavior is unchanged.
-  - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`, `help`, `version` + 별칭): `humanCategories` 화이트리스트 등재. `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
+  - **human 명령** (`install`, `uninstall`, `status`, `update`, `doctor`는 `humanCategories` 화이트리스트 등재; `help`, `version` + 별칭은 `cmd/dispatch.go`에서 standalone 처리). `tui.ErrorPanel` / `BoxAccent` / banner / `printUpdateNotice` 유지.
   - **자체 출력 경로 명령** (`asset-config`, `ping`): `printResponse` 를 거치지 않고 직접 출력. `asset-config` 는 기본 styled + `--json` 로 AI 모드. `ping` 은 단일 라인 `port=N alive=N state=... age_ms=N`. `doctor` 도 human 카테고리지만 `--json` / `--agent-rules` 분기 별도.
   - "tool 에러도 인간이 읽는다"는 가정은 audience reality와 어긋남 (실제로 tool 호출 = AI). 새 명령 추가 시 `humanCategories` 등재 여부가 출력 모드를 결정한다.
 
@@ -89,6 +89,7 @@ cmd/                  # Go CLI — commands, install/update, approval, and waiti
   editor_bootstrap.go # pre-discovery exact-project launch/restart + heartbeat wait
   editor_install.go   # project Unity version + Hub Editor resolution
   test.go             # test command (EditMode/PlayMode result polling via pollResultFile)
+  test_output.go      # test --format junit|nunit XML rendering + --output
   internal/poll/      # (extracted from cmd/) shared pollResultFile file-bus poller
                       # w/ exponential backoff (100ms→1.5s) + state/PID liveness (test + packages)
   status.go           # status + ping + waitForAlive/waitForState/waitForReady
@@ -102,13 +103,16 @@ cmd/                  # Go CLI — commands, install/update, approval, and waiti
   build.go            # build start --wait: file-bus poll with a 15-minute floor,
                       # because BuildPipeline.BuildPlayer blocks the main thread
   task.go             # durable test/package job inspection without contacting Unity
+  task_operation.go   # task status <op_id>: operation-ledger lookup from disk
   send.go             # command send path shared by dispatch and call
   discovery.go        # instance selection from heartbeats (--project / --port)
   help.go             # go:embed help/*.txt topic printer
   call_approval.go    # approval-token preflight and --approve replay
-  call_safety.go      # risk-class projection for call
   call_tty.go         # interactive confirmation when stdin is a TTY (+ --yes)
   legacy_approval.go  # approval handling on the legacy passthrough path
+  legacy_tool.go      # legacy dynamic CLI syntax + custom-tool passthrough boundary
+  list_profiles.go    # list --profile selector
+  stdin.go            # piped-stdin detection/reading
   doctor_agent_rules.go # --agent-rules sections (Ultra Hera loop text lives here)
   editor_process.go   # PID liveness + stop helpers (+ _unix/_windows variants)
   unity_docs.go       # thin passthrough — connector ships its own data set
@@ -133,6 +137,8 @@ internal/taskbridge/  # Durable task bridge over Unity test/package status files
 internal/unitystate/  # Heartbeat parsing and editor-state predicates
 internal/unityprocess/ # Windows child-process environment repair shared by the
                       # editor launcher and the disposable benchmark fixture
+internal/protocol/    # contracts_gen.go — generated from contracts/runtime-contracts.json
+internal/docbundle/   # Shared JSONL validate + gzip writer for the build-*-docs tools
 tools/build-unity-docs/ # One-shot maintainer Go script: Documentation/en/ScriptReference
                         # → unity_docs_<ver>.jsonl(.gz)(.bytes). Run per Unity version.
 tools/build-game-feel-docs/ # game_feel.jsonl (checked-in source of truth: Unity-derived
@@ -143,6 +149,12 @@ tools/build-ui-slop-docs/ # ui_slop.jsonl (checked-in source of truth: Unity UI-
                           # taxonomy, 48 uGUI tells across areas A–E)
                           # → validate + gzip → Data/ui_slop_1.0.jsonl.gz.bytes.
 tools/validate-tool-catalog/ # Maintainer validator for catalog files/stdin and strict schemas
+tools/catalog-payload-report/ # Catalog payload measurement + baseline compare (--fail-on-change)
+tools/generate-runtime-contracts/ # runtime-contracts.json → Go/C# generated constants (--check)
+tools/sync-agent-guides/ # AGENTS.md → AGENT.md / cmd/AGENT.md / tool derivatives (--check)
+tools/validate-connector-package/ # Connector .meta presence + asmdef reference checks
+tools/unity-editor-inventory/ # PowerShell: record Hub editor layouts for compatibility
+tools/verify-unity-package/ # PowerShell: exact-source compile + package test / compat matrix
 AgentConnector/       # C# Unity Editor package (UPM) — package.json holds version
   Editor/
     HttpServer.cs     # [InitializeOnLoad] HttpListener + queue + main-thread pump
@@ -196,6 +208,10 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       # safety metadata flags on [HeraTool] and per-action
                       # [HeraActionSafety] (shown only by list --tool, not
                       # list --compact),
+                      # ToolContractRegistry + ToolCatalogBuilder + ToolContract*
+                      # (normalized tool contract registry and catalog),
+                      # ApprovalAuthority/ApprovalPolicy (approval bindings)
+                      # + OperationLedger (per-operation durable outcome),
     Tools/            # Tool implementations (auto-registered via [HeraTool]).
                       # 34 [HeraTool] classes (33 here + RunTests in TestRunner/).
                       # Name= explicit unless noted
@@ -237,7 +253,8 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       #   optional via reflection → PACKAGE_NOT_INSTALLED when absent).
                       # Editor-workflow queue (all shipped):
                       #   manage_settings ManageSettings v0.0.96 (physics/time/
-                      #     quality/player/audio get+set; dry_run previews are
+                      #     quality/player/audio/graphics/input/lighting/navmesh
+                      #     get+set; dry_run previews are
                       #     downgraded to ReadOnly by a HeraSafetyRule, writes are
                       #     approval-gated; omitted fields stay unchanged).
                       #   bake Bake v0.0.97 (lighting / built-in scene NavMesh /
@@ -248,6 +265,9 @@ AgentConnector/       # C# Unity Editor package (UPM) — package.json holds ver
                       #   build Build v0.0.98 (Player build + Build Settings;
                       #     BuildPipeline.BuildPlayer blocks the main thread, so the
                       #     report goes over the file bus like test — see cmd/build.go).
+                      # Input QA: input InputTool (uGUI EventSystem click/drag/
+                      #   scroll/submit + optional Input System keyboard/mouse,
+                      #   sequence, record/replay; backends live in Core/InputQa*).
                       # Later action additions on existing tools: run_tests list/cancel
                       #   and --category/--assembly (v0.0.99), manage_prefab
                       #   list_overrides/apply/revert/unpack + --child (v0.0.100),
