@@ -397,6 +397,8 @@ hera-agent-unity bake clear --area navmesh
 
 Read and change project settings by area. `set_*` applies only the fields you pass, previews with `"dry_run": true` (approval-free), reports `{applied, skipped}` with per-field reasons, and otherwise requires the approval-token flow because settings changes are project-wide and not undoable.
 
+Writes by `set_player`, `set_audio`, `set_graphics`, `set_input`, and `set_navmesh` use Unity's project-wide save, so other unsaved asset edits are written too.
+
 ```bash
 hera-agent-unity manage_settings <action> [--params '{...}']
 ```
@@ -444,6 +446,8 @@ calls do this, and `dry_run` reports it before anything changes. Changing
 Both apply to the active build target, named in the response as `build_target`.
 
 Related: `manage_editor get_tags_layers` lists tags and named layers before `add_tag` / `add_layer` / `manage_gameobject set_tag`.
+
+`manage_editor` writes by `add_tag`, `remove_tag`, `add_layer`, and `remove_layer` use Unity's project-wide save, so other unsaved asset edits are written too.
 
 `manage_editor focus` focuses one already loaded Editor window. Pass exactly one
 of `--type <exact type or full type name>` or `--title <exact title>`; zero or
