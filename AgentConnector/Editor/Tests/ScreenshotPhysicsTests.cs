@@ -117,12 +117,27 @@ namespace HeraAgent.Tests
                     ["physics_layer_mask"] = 1 << fixture.target.layer,
                 }) as SuccessResponse;
                 var data = response == null ? null : JObject.FromObject(response.data);
-                return Expect(
-                    nameof(TestClusterResultsAreTruncatedAfterGrouping),
-                    data?.Value<int>("physics_annotation_count") == 1
+                var passed = data?.Value<int>("physics_annotation_count") == 1
                     && data.Value<int>("physics_annotations_total") == 2
                     && data.Value<bool>("physics_annotations_truncated")
-                    && data.Value<int>("physics_annotations_limit") == 1);
+                    && data.Value<int>("physics_annotations_limit") == 1;
+                if (!passed)
+                {
+                    var camera = Camera.main;
+                    var rect = camera != null ? camera.pixelRect : new Rect();
+                    var diagnostic = new JObject
+                    {
+                        ["response"] = data,
+                        ["game_view_width"] = data?["coordinate_spaces"]?["input"]?["width"],
+                        ["game_view_height"] = data?["coordinate_spaces"]?["input"]?["height"],
+                        ["camera_pixel_rect"] = camera != null
+                            ? new JArray(rect.x, rect.y, rect.width, rect.height) : null,
+                    };
+                    Debug.LogError("[FAIL] " + nameof(TestClusterResultsAreTruncatedAfterGrouping)
+                        + ": " + diagnostic.ToString(Newtonsoft.Json.Formatting.None));
+                    return false;
+                }
+                return Expect(nameof(TestClusterResultsAreTruncatedAfterGrouping), true);
             }
             finally
             {
