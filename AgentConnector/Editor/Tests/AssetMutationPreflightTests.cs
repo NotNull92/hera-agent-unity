@@ -124,7 +124,6 @@ namespace HeraAgent.Tests
             finally
             {
                 AssetDatabase.DeleteAsset(root);
-                AssetDatabase.SaveAssets();
             }
 
             if (allPassed)

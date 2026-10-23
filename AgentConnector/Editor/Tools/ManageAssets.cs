@@ -516,7 +516,8 @@ namespace HeraAgent.Tools
             }
 
             AssetDatabase.CreateAsset(instance, path);
-            AssetDatabase.SaveAssets();
+            EditorUtility.SetDirty(instance);
+            AssetDatabase.SaveAssetIfDirty(instance);
             AssetDatabase.Refresh();
 
             var guid = AssetDatabase.AssetPathToGUID(path);

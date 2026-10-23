@@ -186,7 +186,8 @@ namespace HeraAgent.Tools
 
             var mat = new Material(shader);
             AssetDatabase.CreateAsset(mat, path);
-            AssetDatabase.SaveAssets();
+            EditorUtility.SetDirty(mat);
+            AssetDatabase.SaveAssetIfDirty(mat);
 
             return new SuccessResponse($"Created material at {path}", new
             {
@@ -261,7 +262,7 @@ namespace HeraAgent.Tools
                 return new ErrorResponse("VALUE_PARSE_ERROR", $"Could not set {property}: {err}");
 
             EditorUtility.SetDirty(mat);
-            AssetDatabase.SaveAssets();
+            AssetDatabase.SaveAssetIfDirty(mat);
 
             return new SuccessResponse($"Set {mat.name}.{property}", new
             {
@@ -287,7 +288,7 @@ namespace HeraAgent.Tools
 
             mat.shader = shader;
             EditorUtility.SetDirty(mat);
-            AssetDatabase.SaveAssets();
+            AssetDatabase.SaveAssetIfDirty(mat);
 
             return new SuccessResponse($"Set {mat.name} shader to {shader.name}", new
             {

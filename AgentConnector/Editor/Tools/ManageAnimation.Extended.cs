@@ -87,7 +87,7 @@ namespace HeraAgent.Tools
             var keysRemoved = curve.length;
             AnimationUtility.SetEditorCurve(clip, binding, null);
             EditorUtility.SetDirty(clip);
-            AssetDatabase.SaveAssets();
+            AssetDatabase.SaveAssetIfDirty(clip);
 
             return new SuccessResponse("Curve removed", new
             {
@@ -124,7 +124,7 @@ namespace HeraAgent.Tools
             layers[index].blendingMode = blending;
             controller.layers = layers;
             EditorUtility.SetDirty(controller);
-            AssetDatabase.SaveAssets();
+            AssetDatabase.SaveAssetIfDirty(controller);
 
             return new SuccessResponse("Layer added", new
             {

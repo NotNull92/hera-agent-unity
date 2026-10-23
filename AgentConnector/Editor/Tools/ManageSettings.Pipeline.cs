@@ -320,7 +320,7 @@ namespace HeraAgent.Tools
             if (!changes.DryRun && changes.Applied.Count > 0)
             {
                 EditorUtility.SetDirty(settings);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(settings);
             }
             return response;
         }

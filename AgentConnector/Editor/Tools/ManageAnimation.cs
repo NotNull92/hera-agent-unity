@@ -324,7 +324,8 @@ namespace HeraAgent.Tools
                 AnimationUtility.SetAnimationClipSettings(clip, settings);
             }
             AssetDatabase.CreateAsset(clip, path);
-            AssetDatabase.SaveAssets();
+            EditorUtility.SetDirty(clip);
+            AssetDatabase.SaveAssetIfDirty(clip);
             AssetDatabase.Refresh();
 
             return new SuccessResponse("Clip created", new
@@ -372,7 +373,7 @@ namespace HeraAgent.Tools
             var relativePath = p.Get("relative_path", "") ?? "";
             clip.SetCurve(relativePath, type, property, curve);
             EditorUtility.SetDirty(clip);
-            AssetDatabase.SaveAssets();
+            AssetDatabase.SaveAssetIfDirty(clip);
 
             return new SuccessResponse("Curve set", new
             {
@@ -395,7 +396,8 @@ namespace HeraAgent.Tools
             var ctrl = AnimatorController.CreateAnimatorControllerAtPath(path);
             if (ctrl == null)
                 return new ErrorResponse("ASSET_CREATE_FAILED", $"Unity could not create an AnimatorController at '{path}'.");
-            AssetDatabase.SaveAssets();
+            EditorUtility.SetDirty(ctrl);
+            AssetDatabase.SaveAssetIfDirty(ctrl);
             AssetDatabase.Refresh();
 
             return new SuccessResponse("Controller created", new
@@ -432,7 +434,8 @@ namespace HeraAgent.Tools
                 }
             }
             ctrl.AddParameter(param);
-            AssetDatabase.SaveAssets();
+            EditorUtility.SetDirty(ctrl);
+            AssetDatabase.SaveAssetIfDirty(ctrl);
 
             return new SuccessResponse("Parameter added", new
             {
@@ -476,7 +479,7 @@ namespace HeraAgent.Tools
                 sm.defaultState = state;
 
             EditorUtility.SetDirty(ctrl);
-            AssetDatabase.SaveAssets();
+            AssetDatabase.SaveAssetIfDirty(ctrl);
 
             return new SuccessResponse("State added", new
             {
@@ -518,7 +521,7 @@ namespace HeraAgent.Tools
             }
 
             EditorUtility.SetDirty(ctrl);
-            AssetDatabase.SaveAssets();
+            AssetDatabase.SaveAssetIfDirty(ctrl);
 
             return new SuccessResponse("Transition added", new
             {

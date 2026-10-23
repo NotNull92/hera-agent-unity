@@ -136,7 +136,7 @@ namespace HeraAgent.Tools
                 SetFrameRate(timeline, timelineType, frameRate);
                 AssetDatabase.CreateAsset(timeline, path);
                 EditorUtility.SetDirty(timeline);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(timeline);
                 AssetDatabase.ImportAsset(path);
                 return new SuccessResponse("Timeline created", new
                 {
@@ -267,7 +267,7 @@ namespace HeraAgent.Tools
                 if (created == null)
                     return new ErrorResponse("TIMELINE_TRACK_CREATE_FAILED", $"Unity did not create track '{name}'.");
                 EditorUtility.SetDirty(timeline);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(timeline);
                 return new SuccessResponse("Timeline track added", new
                 {
                     path,
@@ -364,7 +364,7 @@ namespace HeraAgent.Tools
                 var name = p.Get("name");
                 if (!string.IsNullOrEmpty(name)) SetProperty(clip, "displayName", name);
                 EditorUtility.SetDirty(timeline);
-                AssetDatabase.SaveAssets();
+                AssetDatabase.SaveAssetIfDirty(timeline);
                 return new SuccessResponse("Timeline clip added", new
                 {
                     path,
