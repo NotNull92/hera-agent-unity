@@ -1267,6 +1267,12 @@ bounded by `max_annotations`, and report total/skipped/truncated counts. An
 active `EventSystem` is required. Isolated capture cannot be combined with UI
 annotation.
 
+Physics grids and annotation bounds stay inside `Camera.main.pixelRect`.
+Coordinates remain absolute within the full camera rendering surface, including
+the viewport offset; image Y coordinates are flipped against that surface height.
+The reported dimensions come from the camera surface, or its target texture,
+rather than a possibly different `Screen` size.
+
 Editor UI metadata mode traverses one loaded UI Toolkit window and returns each
 element's exact hierarchy path, visibility, enabled state, and finite layout
 rectangle. It does not capture pixels and rejects all pixel/evidence/isolated

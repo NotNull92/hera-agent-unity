@@ -107,8 +107,15 @@ namespace HeraAgent.Tools
             var (queryTriggers, queryName, queryError) = ParseQueryTriggers(parameters);
             if (queryError != null) return (null, queryError);
 
-            var width = Mathf.Max(1, Screen.width);
-            var height = Mathf.Max(1, Screen.height);
+            var viewport = camera.pixelRect;
+            if (viewport.width <= 0f || viewport.height <= 0f)
+                return (null, new ErrorResponse("SCREENSHOT_PHYSICS_CAMERA_UNAVAILABLE",
+                    "[Hera] I need a Camera with a non-empty pixel rectangle to collect 3D physics evidence."));
+            // Keep screen coordinates absolute even when the camera occupies only part of its surface.
+            var width = camera.targetTexture != null ? camera.targetTexture.width
+                : Mathf.Max(1, Mathf.RoundToInt(viewport.width / camera.rect.width));
+            var height = camera.targetTexture != null ? camera.targetTexture.height
+                : Mathf.Max(1, Mathf.RoundToInt(viewport.height / camera.rect.height));
             var clusters = new Dictionary<long, PhysicsCluster>();
             var raysHit = 0;
             Physics.SyncTransforms();
@@ -118,8 +125,8 @@ namespace HeraAgent.Tools
                 for (var column = 0; column < gridSize; column++)
                 {
                     var inputPoint = new Vector2(
-                        (column + 0.5f) * width / gridSize,
-                        (row + 0.5f) * height / gridSize);
+                        viewport.xMin + (column + 0.5f) * viewport.width / gridSize,
+                        viewport.yMin + (row + 0.5f) * viewport.height / gridSize);
                     var ray = camera.ScreenPointToRay(inputPoint);
                     if (!Physics.Raycast(
                         ray,
@@ -171,14 +178,14 @@ namespace HeraAgent.Tools
             };
 
             foreach (var cluster in ordered.Take(maxResults))
-                result.elements.Add(CreatePhysicsAnnotation(cluster, gridSize, width, height));
+                result.elements.Add(CreatePhysicsAnnotation(cluster, gridSize, viewport, height));
             return (result, null);
         }
 
         private static ScreenshotPhysicsAnnotation CreatePhysicsAnnotation(
             PhysicsCluster cluster,
             int gridSize,
-            int width,
+            Rect viewport,
             int height)
         {
             var centroid = new Vector2(
@@ -188,12 +195,12 @@ namespace HeraAgent.Tools
                 .OrderBy(sample => (sample.inputPoint - centroid).sqrMagnitude)
                 .ThenBy(sample => sample.hit.distance)
                 .First();
-            var halfCellWidth = width / (gridSize * 2f);
-            var halfCellHeight = height / (gridSize * 2f);
-            var minX = Mathf.Clamp(cluster.samples.Min(sample => sample.inputPoint.x) - halfCellWidth, 0f, width);
-            var minY = Mathf.Clamp(cluster.samples.Min(sample => sample.inputPoint.y) - halfCellHeight, 0f, height);
-            var maxX = Mathf.Clamp(cluster.samples.Max(sample => sample.inputPoint.x) + halfCellWidth, 0f, width);
-            var maxY = Mathf.Clamp(cluster.samples.Max(sample => sample.inputPoint.y) + halfCellHeight, 0f, height);
+            var halfCellWidth = viewport.width / (gridSize * 2f);
+            var halfCellHeight = viewport.height / (gridSize * 2f);
+            var minX = Mathf.Clamp(cluster.samples.Min(sample => sample.inputPoint.x) - halfCellWidth, viewport.xMin, viewport.xMax);
+            var minY = Mathf.Clamp(cluster.samples.Min(sample => sample.inputPoint.y) - halfCellHeight, viewport.yMin, viewport.yMax);
+            var maxX = Mathf.Clamp(cluster.samples.Max(sample => sample.inputPoint.x) + halfCellWidth, viewport.xMin, viewport.xMax);
+            var maxY = Mathf.Clamp(cluster.samples.Max(sample => sample.inputPoint.y) + halfCellHeight, viewport.yMin, viewport.yMax);
             var gameObject = cluster.collider.gameObject;
 
             return new ScreenshotPhysicsAnnotation

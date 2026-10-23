@@ -19,6 +19,7 @@ namespace HeraAgent.Tests
             allPassed &= TestCameraCullingMaskConstrainsRequestedLayers();
             allPassed &= TestPhysicsOnlyRejectsPngArgumentsBeforeCapture();
             allPassed &= TestPhysicsBoundsAreStrict();
+            allPassed &= TestPhysicsGridStaysInsideCameraViewport();
 
             if (allPassed)
                 Debug.Log("[ScreenshotPhysicsTests] ALL PASSED");
@@ -211,6 +212,65 @@ namespace HeraAgent.Tests
                 && invalidGrid.Error?.code == "INVALID_ARGUMENT"
                 && invalidHits.Error?.code == "INVALID_ARGUMENT"
                 && invalidDistance.Error?.code == "INVALID_ARGUMENT");
+        }
+
+        private static bool TestPhysicsGridStaysInsideCameraViewport()
+        {
+            var passed = true;
+            foreach (var useTexture in new[] { false, true })
+            {
+                var fixture = CreateFixture();
+                RenderTexture texture = null;
+                try
+                {
+                    if (useTexture)
+                    {
+                        texture = new RenderTexture(320, 180, 16);
+                        fixture.camera.targetTexture = texture;
+                    }
+                    else fixture.camera.rect = new Rect(0.25f, 0.25f, 0.5f, 0.5f);
+                    var response = EditorScreenshot.HandleCommand(new JObject
+                    {
+                        ["physics_only"] = true, ["physics_grid_size"] = 3,
+                        ["physics_layer_mask"] = 1 << fixture.target.layer,
+                    }) as SuccessResponse;
+                    var data = response == null ? null : JObject.FromObject(response.data);
+                    var annotation = (data?["physics_annotations"] as JArray)?.FirstOrDefault();
+                    var rect = fixture.camera.pixelRect;
+                    var fullWidth = useTexture ? 320 : Mathf.RoundToInt(rect.width / fixture.camera.rect.width);
+                    var fullHeight = useTexture ? 180 : Mathf.RoundToInt(rect.height / fixture.camera.rect.height);
+                    var bounds = annotation?["input_bounds"]?.ToObject<float[]>();
+                    var imageBounds = annotation?["image_bounds"]?.ToObject<float[]>();
+                    passed &= Expect("PhysicsViewport_" + (useTexture ? "targetTexture" : "offsetRect"),
+                        data?["physics_raycast"]?.Value<int>("rays_hit") == 9
+                        && bounds != null && imageBounds != null
+                        && Mathf.Abs(bounds[0] - rect.xMin) < 0.01f
+                        && Mathf.Abs(bounds[1] - rect.yMin) < 0.01f
+                        && Mathf.Abs(bounds[2] - rect.xMax) < 0.01f
+                        && Mathf.Abs(bounds[3] - rect.yMax) < 0.01f
+                        && Mathf.Abs(imageBounds[0] - rect.xMin) < 0.01f
+                        && Mathf.Abs(imageBounds[1] - (fullHeight - rect.yMax)) < 0.01f
+                        && Mathf.Abs(imageBounds[2] - rect.xMax) < 0.01f
+                        && Mathf.Abs(imageBounds[3] - (fullHeight - rect.yMin)) < 0.01f
+                        && data["coordinate_spaces"]["input"].Value<int>("width") == fullWidth
+                        && data["coordinate_spaces"]["image"].Value<int>("height") == fullHeight);
+                }
+                finally
+                {
+                    fixture.camera.targetTexture = null;
+                    if (texture != null) Object.DestroyImmediate(texture);
+                    fixture.Dispose();
+                }
+            }
+            var emptyFixture = CreateFixture();
+            try
+            {
+                emptyFixture.camera.rect = new Rect(0f, 0f, 0f, 1f);
+                var response = EditorScreenshot.HandleCommand(new JObject { ["physics_only"] = true }) as ErrorResponse;
+                passed &= Expect("PhysicsViewport_empty", response?.code == "SCREENSHOT_PHYSICS_CAMERA_UNAVAILABLE");
+            }
+            finally { emptyFixture.Dispose(); }
+            return passed;
         }
 
         private static PhysicsFixture CreateFixture()
