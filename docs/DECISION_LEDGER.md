@@ -20,6 +20,29 @@ Read this ledger only when a proposed change overlaps an existing decision or wh
 > new explicit approval.
 
 
+## Documented limits kept as documentation (2026-10-23)
+
+- **L1 — project-wide save on 8 settings writes:** `manage_settings`
+  `set_player`/`set_audio`/`set_graphics`/`set_input` and `manage_editor`
+  `add_tag`/`remove_tag`/`add_layer`/`remove_layer` keep `AssetDatabase.SaveAssets()`,
+  which also saves unrelated dirty assets. The help text and `docs/COMMANDS.md`
+  warn about it. Research report 42 tested 36 cells on 6000.6.6f1, and no narrow
+  method persisted. `SaveAssetIfDirty` with an Object or a GUID left the file
+  unchanged and the value was lost on restart. `SaveToSerializedFileAndForget` raised
+  "already persistent" errors. The clone variant was stopped by a "Moving file
+  failed" modal. The owner rejected an `also_saved` response field, a dry-run or
+  approval warning, refusing the write while other assets are dirty, and a new
+  search for save APIs. Reopen only on a real report of a user losing an unsaved
+  asset this way, or on a new candidate API that passes the same 4 criteria.
+- **L2 — unmeasured OS-trash failure:** `manage_assets delete` stays as it is.
+  When `MoveAssetToTrash` fails, it returns `ASSET_DELETE_FAILED`, leaves the
+  file in place, and never falls back to a permanent delete, so the path cannot
+  lose data. The owner rejected building a no-trash environment to reproduce the
+  failure. Not checked, and optional: whether restoring from the OS trash also
+  restores the `.meta`. A missing `.meta` gives the asset a new GUID and breaks
+  references.
+
+
 ## Payload trim 2 — repeated hints, component names, agent rules (2026-10-20)
 
 - **Decision:** with Game Feel UI Mode on, `manage_ui create` attaches the full
