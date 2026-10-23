@@ -11,7 +11,8 @@
   "allowUnsafeCode": false,
   "overrideReferences": true,
   "precompiledReferences": [
-    "Newtonsoft.Json.dll"
+    "Newtonsoft.Json.dll",
+    "nunit.framework.dll"
   ],
   "autoReferenced": true,
   "defineConstraints": [],

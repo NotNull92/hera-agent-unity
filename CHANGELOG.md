@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Connector 0.2.11: reference NUnit explicitly so the editor test assembly compiles when package testables are enabled.
+
 - Connector 0.2.11: keep routed failures out of the console unless debug logging is enabled, normalize console filters across cultures, report test recovery write failures, and block screenshot/profiler file APIs in Restricted exec.
 
 - CLI: preserve raw Windows PATH values and registry types during legacy cleanup; uninstall the actual state directory, report shell configuration write failures, and preserve same-file installs.
