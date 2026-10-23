@@ -6,3 +6,4 @@ go.sum text eol=lf
 *.yml text eol=lf
 *.md text eol=lf
 *.mdc text eol=lf
+cmd/testdata/update/* text eol=lf
