@@ -227,6 +227,7 @@ Hera avoids vague "AI magic" claims. The repository keeps concrete measurements 
 Measured low-token baselines for `list --compact` are **about 93 estimated tokens** across the tested Unity versions. `find_gameobjects --ids` measured **49 to 55 estimated tokens** in the retained cross-version fixtures.
 
 | Unity Editor | `list --compact` | `find_gameobjects --ids` |
+| `list --tool <name> --action <action>` | Read only the selected action parameters, result and safety. |
 |:---|---:|---:|
 | 2022.3.62f2 | **93 T** | **54 T** |
 | 2023.2.22f1 | **93 T** | **54 T** |
@@ -364,7 +365,7 @@ To pin an existing Connector tag:
 The current released Connector pin is:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.11
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.12
 ```
 
 ### Step 3. Open Unity and check the connection
@@ -607,7 +608,7 @@ You do not need to memorize these. They are here so you can understand the surfa
 | `find_gameobjects` | Search the loaded Scene hierarchy. |
 | `manage_gameobject` | Create and edit GameObjects. |
 | `manage_components` | Read, add, remove, or modify Components. |
-| `manage_assets` | Work with project assets under `Assets/`, bring in a file from outside the project, and trace what an asset uses or what still uses it. |
+| `manage_assets` | Work with project assets under `Assets/`, bring in a file from outside the project, and trace dependencies. delete moves to the OS trash. |
 | `manage_prefab` | Create, instantiate, and edit prefab assets, and apply, revert, or unpack an instance's overrides. |
 | `manage_animation` | Author AnimationClips and AnimatorController state machines, and read them back. |
 | `manage_timeline` | Create and inspect optional Timeline assets, tracks, and clips without taking a package dependency. |
@@ -742,9 +743,9 @@ New features require a reproduced failure. See [Contributing](CONTRIBUTING.md).
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.21** with five native binaries
-- npm: **0.3.21** (`latest`)
-- Unity Connector: **0.2.11** (pin with `#connector-0.2.11`)
+- CLI / GitHub Release: **v0.3.22** with five native binaries
+- npm: **0.3.22** (`latest`)
+- Unity Connector: **0.2.12** (pin with `#connector-0.2.12`)
 - License: **Apache-2.0**
 
 The npm publish is chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
@@ -757,6 +758,7 @@ What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
+| v0.3.22 / 0.2.12 | Asset edits save only changed asset files; manage_assets delete moves to the OS trash. Query one action with list --tool --action. Shorter tool descriptions and a budget for the complete compact Light rules output. Update the Connector to 0.2.12 as well. |
 | v0.3.21 / 0.2.11 | Windows PATH cleanup preserves its original form; uninstall removes the actual state folder; update verifies SHA-256. Tool JSON stays compact (`--compact-json` is for compatibility), with nine more help topics. Hera's own tool failures no longer add console errors, repeated hints are shorter, and Restricted exec blocks screenshot and profiler file writes. Update the Connector to 0.2.11 as well. |
 | v0.3.20 | The guide page adds a decisions chapter (VIII) that collects the settled policies, and its explanations are rewritten in plain language. No CLI behavior or Connector change. |
 | v0.3.19 | Public-product policies: [CONTRIBUTING.md](CONTRIBUTING.md) (what starts work, response targets, compatibility), a one-week security response target, "What Hera is not", and how Hera follows new Unity releases. No CLI behavior or Connector change. |

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- CLI: `list --tool <name> --action <action>` returns only the selected action schema, result and safety.
+
+### Changed
+
+- Connector 0.2.12: save edited asset files individually; `manage_assets delete` moves to the OS trash without a permanent-delete fallback.
+- Shorter descriptions for six tools; compact Light rules fit 2,560 bytes including enabled asset guidance and format headers.
+
 ### Fixed
 
 - Connector 0.2.11: keep physics screenshot samples and bounds inside the camera viewport and report coordinates against its rendering surface, including clipped viewports. Reject combined UI and physics annotations when their surface sizes differ.
