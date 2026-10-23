@@ -46,6 +46,14 @@ type githubAsset struct {
 }
 
 func updateCmd(args []string) error {
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("cannot locate current binary: %w", err)
+	}
+	return updateFromRelease(args, repoAPI, exe)
+}
+
+func updateFromRelease(args []string, apiURL, exe string) error {
 	parsedParams, _, err := buildParams(args, nil)
 	if err != nil {
 		return err
@@ -54,7 +62,7 @@ func updateCmd(args []string) error {
 
 	fmt.Println("Checking for updates...")
 
-	release, err := fetchLatestRelease()
+	release, err := fetchRelease(apiURL)
 	if err != nil {
 		return fmt.Errorf("failed to check for updates: %w", err)
 	}
@@ -78,10 +86,6 @@ func updateCmd(args []string) error {
 		return fmt.Errorf("no binary found for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
 
-	exe, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("cannot locate current binary: %w", err)
-	}
 	exe, err = filepath.EvalSymlinks(exe)
 	if err != nil {
 		return fmt.Errorf("cannot resolve binary path: %w", err)
@@ -153,7 +157,11 @@ func updateCmd(args []string) error {
 }
 
 func fetchLatestRelease() (*githubRelease, error) {
-	resp, err := githubAPIClient.Get(repoAPI)
+	return fetchRelease(repoAPI)
+}
+
+func fetchRelease(apiURL string) (*githubRelease, error) {
+	resp, err := githubAPIClient.Get(apiURL)
 	if err != nil {
 		return nil, err
 	}
