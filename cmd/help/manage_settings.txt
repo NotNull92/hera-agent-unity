@@ -4,8 +4,10 @@ Read and change project settings by area. get_<area> returns the full
 snapshot; set_<area> applies only the fields you pass (omitted fields stay
 untouched) and reports {applied, skipped, dry_run}.
 
-Writes by set_player, set_audio, set_graphics, set_input, and set_navmesh use
+Writes by set_player, set_audio, set_graphics, and set_input use
 Unity's project-wide save, so other unsaved asset edits are written too.
+set_navmesh marks the active scene dirty; save the scene to keep the change.
+NavMesh writes are unavailable during Play Mode or its transitions; dry_run is allowed.
 
 Actions:
   get_physics / set_physics     gravity [x,y,z], default_solver_iterations,

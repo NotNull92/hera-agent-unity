@@ -397,7 +397,9 @@ hera-agent-unity bake clear --area navmesh
 
 Read and change project settings by area. `set_*` applies only the fields you pass, previews with `"dry_run": true` (approval-free), reports `{applied, skipped}` with per-field reasons, and otherwise requires the approval-token flow because settings changes are project-wide and not undoable.
 
-Writes by `set_player`, `set_audio`, `set_graphics`, `set_input`, and `set_navmesh` use Unity's project-wide save, so other unsaved asset edits are written too.
+Writes by `set_player`, `set_audio`, `set_graphics`, and `set_input` use Unity's project-wide save, so other unsaved asset edits are written too.
+
+`set_navmesh` marks the active scene dirty without saving it or unrelated assets; save the scene to keep the change (choose a path for an Untitled scene). Writes are unavailable during Play Mode or its transitions; `dry_run` is allowed.
 
 ```bash
 hera-agent-unity manage_settings <action> [--params '{...}']
