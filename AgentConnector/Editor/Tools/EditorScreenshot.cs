@@ -291,6 +291,12 @@ namespace HeraAgent.Tools
                     if (collected.error != null) return collected.error;
                     physicsAnnotations = collected.annotations;
                 }
+                if (annotations != null && physicsAnnotations != null
+                    && (annotations.game_view_width != physicsAnnotations.game_view_width
+                        || annotations.game_view_height != physicsAnnotations.game_view_height))
+                    return new ErrorResponse(
+                        "SCREENSHOT_EVIDENCE_SURFACE_CONFLICT",
+                        "[Hera] I can't combine uGUI and physics annotations from different rendering surface sizes.");
                 if (annotationsOnly || physicsOnly)
                 {
                     object evidenceResponse = new SuccessResponse(

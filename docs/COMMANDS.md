@@ -1267,6 +1267,8 @@ bounded by `max_annotations`, and report total/skipped/truncated counts. An
 active `EventSystem` is required. Isolated capture cannot be combined with UI
 annotation.
 
+Combined UI and physics annotations require matching rendering surface sizes;
+otherwise the command returns `SCREENSHOT_EVIDENCE_SURFACE_CONFLICT` before PNG work.
 Physics grids and annotation bounds stay inside `Camera.main.pixelRect`.
 Coordinates remain absolute within the full camera rendering surface, including
 the viewport offset; image Y coordinates are flipped against that surface height.

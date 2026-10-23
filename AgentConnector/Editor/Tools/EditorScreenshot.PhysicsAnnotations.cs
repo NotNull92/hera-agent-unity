@@ -108,14 +108,18 @@ namespace HeraAgent.Tools
             if (queryError != null) return (null, queryError);
 
             var viewport = camera.pixelRect;
-            if (viewport.width <= 0f || viewport.height <= 0f)
+            var rect = camera.rect;
+            var visibleWidth = Mathf.Min(rect.xMax, 1f) - Mathf.Max(rect.xMin, 0f);
+            var visibleHeight = Mathf.Min(rect.yMax, 1f) - Mathf.Max(rect.yMin, 0f);
+            if (viewport.width <= 0f || viewport.height <= 0f
+                || (camera.targetTexture == null && (visibleWidth <= 0f || visibleHeight <= 0f)))
                 return (null, new ErrorResponse("SCREENSHOT_PHYSICS_CAMERA_UNAVAILABLE",
                     "[Hera] I need a Camera with a non-empty pixel rectangle to collect 3D physics evidence."));
             // Keep screen coordinates absolute even when the camera occupies only part of its surface.
             var width = camera.targetTexture != null ? camera.targetTexture.width
-                : Mathf.Max(1, Mathf.RoundToInt(viewport.width / camera.rect.width));
+                : Mathf.Max(1, Mathf.RoundToInt(viewport.width / visibleWidth));
             var height = camera.targetTexture != null ? camera.targetTexture.height
-                : Mathf.Max(1, Mathf.RoundToInt(viewport.height / camera.rect.height));
+                : Mathf.Max(1, Mathf.RoundToInt(viewport.height / visibleHeight));
             var clusters = new Dictionary<long, PhysicsCluster>();
             var raysHit = 0;
             Physics.SyncTransforms();

@@ -52,7 +52,8 @@ origin with Y down. Physics evidence requires an active Camera tagged
 MainCamera, samples only the nearest visible 3D Collider per grid point, and
 clusters results by collider. The grid and bounds stay inside camera.pixelRect;
 coordinates remain absolute within the camera render surface. Metadata-only
-modes reject PNG output/overwrite options. Physics2D colliders are not included.
+modes reject PNG output/overwrite options. Combined UI and physics evidence
+requires matching rendering surface sizes. Physics2D colliders are not included.
 
 Examples:
   hera-agent-unity screenshot

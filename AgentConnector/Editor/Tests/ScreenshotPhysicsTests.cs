@@ -20,6 +20,7 @@ namespace HeraAgent.Tests
             allPassed &= TestPhysicsOnlyRejectsPngArgumentsBeforeCapture();
             allPassed &= TestPhysicsBoundsAreStrict();
             allPassed &= TestPhysicsGridStaysInsideCameraViewport();
+            allPassed &= TestCombinedEvidenceRequiresMatchingSurfaces();
 
             if (allPassed)
                 Debug.Log("[ScreenshotPhysicsTests] ALL PASSED");
@@ -217,9 +218,11 @@ namespace HeraAgent.Tests
         private static bool TestPhysicsGridStaysInsideCameraViewport()
         {
             var passed = true;
-            foreach (var useTexture in new[] { false, true })
+            foreach (var mode in new[] { "offsetRect", "targetTexture", "outsideRect" })
             {
                 var fixture = CreateFixture();
+                var useTexture = mode == "targetTexture";
+                var fullRect = fixture.camera.pixelRect;
                 RenderTexture texture = null;
                 try
                 {
@@ -228,7 +231,8 @@ namespace HeraAgent.Tests
                         texture = new RenderTexture(320, 180, 16);
                         fixture.camera.targetTexture = texture;
                     }
-                    else fixture.camera.rect = new Rect(0.25f, 0.25f, 0.5f, 0.5f);
+                    else fixture.camera.rect = mode == "outsideRect"
+                        ? new Rect(0.5f, 0.5f, 1f, 1f) : new Rect(0.25f, 0.25f, 0.5f, 0.5f);
                     var response = EditorScreenshot.HandleCommand(new JObject
                     {
                         ["physics_only"] = true, ["physics_grid_size"] = 3,
@@ -237,11 +241,11 @@ namespace HeraAgent.Tests
                     var data = response == null ? null : JObject.FromObject(response.data);
                     var annotation = (data?["physics_annotations"] as JArray)?.FirstOrDefault();
                     var rect = fixture.camera.pixelRect;
-                    var fullWidth = useTexture ? 320 : Mathf.RoundToInt(rect.width / fixture.camera.rect.width);
-                    var fullHeight = useTexture ? 180 : Mathf.RoundToInt(rect.height / fixture.camera.rect.height);
+                    var fullWidth = useTexture ? 320 : Mathf.RoundToInt(fullRect.width);
+                    var fullHeight = useTexture ? 180 : Mathf.RoundToInt(fullRect.height);
                     var bounds = annotation?["input_bounds"]?.ToObject<float[]>();
                     var imageBounds = annotation?["image_bounds"]?.ToObject<float[]>();
-                    passed &= Expect("PhysicsViewport_" + (useTexture ? "targetTexture" : "offsetRect"),
+                    passed &= Expect("PhysicsViewport_" + mode,
                         data?["physics_raycast"]?.Value<int>("rays_hit") == 9
                         && bounds != null && imageBounds != null
                         && Mathf.Abs(bounds[0] - rect.xMin) < 0.01f
@@ -271,6 +275,48 @@ namespace HeraAgent.Tests
             }
             finally { emptyFixture.Dispose(); }
             return passed;
+        }
+
+        private static bool TestCombinedEvidenceRequiresMatchingSurfaces()
+        {
+            var fixture = CreateFixture();
+            var existing = Resources.FindObjectsOfTypeAll<UnityEngine.EventSystems.EventSystem>()
+                .Where(system => system != null && system.gameObject.scene.IsValid())
+                .ToDictionary(system => system, system => system.enabled);
+            foreach (var system in existing.Keys) system.enabled = false;
+            var eventSystem = new GameObject("!HeraPhysicsEventSystem");
+            eventSystem.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            RenderTexture texture = null;
+            try
+            {
+                var passed = true;
+                foreach (var matching in new[] { false, true })
+                {
+                    texture = new RenderTexture(Mathf.Max(1, Screen.width) + (matching ? 0 : 17),
+                        Mathf.Max(1, Screen.height), 16);
+                    fixture.camera.targetTexture = texture;
+                    var response = EditorScreenshot.HandleCommand(new JObject
+                    {
+                        ["physics_only"] = true, ["annotate_ui"] = true,
+                        ["physics_layer_mask"] = 1 << fixture.target.layer,
+                    });
+                    passed &= Expect("CombinedEvidence_" + (matching ? "matching" : "mismatch"),
+                        matching ? response is SuccessResponse
+                            : (response as ErrorResponse)?.code == "SCREENSHOT_EVIDENCE_SURFACE_CONFLICT");
+                    fixture.camera.targetTexture = null;
+                    Object.DestroyImmediate(texture);
+                    texture = null;
+                }
+                return passed;
+            }
+            finally
+            {
+                fixture.camera.targetTexture = null;
+                if (texture != null) Object.DestroyImmediate(texture);
+                Object.DestroyImmediate(eventSystem);
+                foreach (var entry in existing) if (entry.Key != null) entry.Key.enabled = entry.Value;
+                fixture.Dispose();
+            }
         }
 
         private static PhysicsFixture CreateFixture()
