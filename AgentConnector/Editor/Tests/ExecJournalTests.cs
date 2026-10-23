@@ -19,7 +19,7 @@ namespace HeraAgent.Tests
                 observation.Timings["compile_ms"] = 12;
                 observation.Timings["execute_ms"] = 3;
                 var response = new SuccessResponse("private-response", "private-result");
-                ExecJournal.Append("abc", "op_journal_test", observation, response, directory);
+                ExecJournal.Append("private-source", "op_journal_test", observation, response, directory);
                 var path = Path.Combine(directory, "exec-journal.jsonl");
                 var text = File.ReadAllText(path);
                 var row = JObject.Parse(text);
@@ -29,7 +29,7 @@ namespace HeraAgent.Tests
                 Assert.AreEqual(1, row["schema_version"].Value<int>());
                 Assert.Greater(row["ts_ms"].Value<long>(), 0);
                 Assert.AreEqual("op_journal_test", row["operation_id"].Value<string>());
-                Assert.AreEqual("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", row["code_sha256"].Value<string>());
+                Assert.AreEqual("831a93071a15afdd34c7ad86d5e00071639c24bffcddf1e1d6b53b8666417820", row["code_sha256"].Value<string>());
                 Assert.AreEqual("restricted", row["mode"].Value<string>());
                 Assert.AreEqual("memory_hit", row["compile_cache"].Value<string>());
                 Assert.AreEqual(12, row["compile_ms"].Value<long>());
@@ -37,7 +37,6 @@ namespace HeraAgent.Tests
                 Assert.AreEqual(observation.DomainEpoch, row["domain_epoch"].Value<string>());
                 Assert.AreEqual("ok", row["outcome"].Value<string>());
                 Assert.IsFalse(text.Contains("private-"));
-                Assert.IsFalse(text.Contains("abc"));
                 foreach (var code in new[] { "EXEC_COMPILE_ERROR", "EXEC_RUNTIME_ERROR" })
                     ExecJournal.Append("secret-source", "op_error_test", observation, new ErrorResponse(code, "secret-message"), directory);
                 var errors = File.ReadAllLines(path).Skip(1).Select(line => JObject.Parse(line)).ToArray();
@@ -45,7 +44,7 @@ namespace HeraAgent.Tests
                 Assert.IsFalse(File.ReadAllText(path).Contains("secret-"));
 
                 File.WriteAllText(path, string.Concat(Enumerable.Repeat(text, ExecJournal.MaxBytes / text.Length + 2)));
-                ExecJournal.Append("abc", "op_last_test", observation, response, directory);
+                ExecJournal.Append("private-source", "op_last_test", observation, response, directory);
                 Assert.LessOrEqual(new FileInfo(path).Length, ExecJournal.MaxBytes / 2);
                 var retained = File.ReadAllLines(path).Select(line => JObject.Parse(line)).ToArray();
                 Assert.Greater(retained.Length, 0);
@@ -54,7 +53,7 @@ namespace HeraAgent.Tests
 
                 var blocker = Path.Combine(directory, "not-a-directory");
                 File.WriteAllText(blocker, "keep");
-                Assert.DoesNotThrow(() => ExecJournal.Append("abc", "op_failure_test", observation, response, blocker));
+                Assert.DoesNotThrow(() => ExecJournal.Append("private-source", "op_failure_test", observation, response, blocker));
                 Assert.AreEqual("keep", File.ReadAllText(blocker));
                 Assert.AreEqual("private-response", response.message);
                 Assert.AreEqual("private-result", response.data);
