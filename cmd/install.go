@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -114,6 +113,9 @@ func cleanupLegacyInstall(currentExe string) {
 }
 
 func copyFile(src, dst string) error {
+	if sameFile(resolveSymlink(src), resolveSymlink(dst)) {
+		return nil
+	}
 	in, err := os.Open(src)
 	if err != nil {
 		return err
@@ -130,91 +132,6 @@ func copyFile(src, dst string) error {
 		return err
 	}
 	return out.Close()
-}
-
-func addToPATH(installDir string) error {
-	if runtime.GOOS == "windows" {
-		return addToPATHWindows(installDir)
-	}
-	return addToPATHUnix(installDir)
-}
-
-// addToPATHWindows does NOT register installDir — WindowsApps is already on the
-// default user PATH. Its only job is to scrub legacy entries (variants of
-// %LOCALAPPDATA%\hera-agent-unity and %LOCALAPPDATA%\unity-agent-cli-pro,
-// including \\-double-backslash variants and duplicates from earlier buggy
-// installs). Matching is done by case-insensitive suffix on the basename so
-// `System.IO.Path` normalisation failures cannot leave stale entries behind.
-func addToPATHWindows(_ string) error {
-	return scrubLegacyUserPATH()
-}
-
-// scrubLegacyUserPATH rewrites the current user's PATH, dropping any entry
-// whose basename (after backslash normalisation) matches hera-agent-unity or
-// unity-agent-cli-pro. Empty entries are also discarded. Idempotent.
-func scrubLegacyUserPATH() error {
-	script := `
-$p = [Environment]::GetEnvironmentVariable("Path", "User")
-if (-not $p) { return }
-$legacy = @('hera-agent-unity','unity-agent-cli-pro')
-$filtered = @()
-foreach ($entry in ($p -split ';')) {
-    $trimmed = $entry.Trim()
-    if (-not $trimmed) { continue }
-    $norm = $trimmed -replace '\\+','\' -replace '\\$',''
-    $leaf = Split-Path -Leaf $norm
-    $skip = $false
-    foreach ($name in $legacy) {
-        if ([string]::Equals($leaf, $name, [System.StringComparison]::OrdinalIgnoreCase)) {
-            $skip = $true
-            break
-        }
-    }
-    if (-not $skip) { $filtered += $trimmed }
-}
-$new = $filtered -join ';'
-if ($new -ne $p) { [Environment]::SetEnvironmentVariable("Path", $new, "User") }
-`
-	cmd := exec.Command("powershell.exe", "-NoProfile", "-Command", script)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
-}
-
-func addToPATHUnix(installDir string) error {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return err
-	}
-
-	exportLine := fmt.Sprintf(`export PATH="%s:$PATH"`, installDir)
-
-	// Update .bashrc
-	bashrc := filepath.Join(home, ".bashrc")
-	_ = appendLineIfNotExists(bashrc, exportLine)
-
-	// Update .zshrc if exists
-	zshrc := filepath.Join(home, ".zshrc")
-	if _, err := os.Stat(zshrc); err == nil {
-		_ = appendLineIfNotExists(zshrc, exportLine)
-	}
-
-	return nil
-}
-
-func appendLineIfNotExists(path, line string) error {
-	data, _ := os.ReadFile(path)
-	content := string(data)
-	if strings.Contains(content, line) {
-		return nil
-	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	_, err = f.WriteString(line + "\n")
-	return err
 }
 
 func printInstallHeader() {

@@ -19,7 +19,7 @@ Editor Control:
   editor refresh --compile      Recompile scripts and wait until done
 
 Console:
-  console                       Read error & warning logs (default)
+  console                       Read error, warning & log entries (default: 20)
   console --lines 20            Limit to N entries
   console --type error,warning,log   Filter by log types (comma-separated)
   console --stacktrace full     Stack trace: none, user (default), full

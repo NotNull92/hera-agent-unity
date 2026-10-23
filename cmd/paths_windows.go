@@ -5,7 +5,6 @@ package cmd
 import (
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -19,16 +18,4 @@ func legacyInstallDir() (string, error) {
 		return "", errors.New("LOCALAPPDATA must be an absolute path")
 	}
 	return filepath.Join(root, "hera-agent-unity"), nil
-}
-
-// runPowerShellWithArgs invokes powershell.exe with -Command "<script>" and
-// the supplied positional args. The script can reference $args[0], $args[1],
-// etc. to read them.
-func runPowerShellWithArgs(script string, args ...string) error {
-	psArgs := []string{"-Command", script}
-	psArgs = append(psArgs, args...)
-	cmd := exec.Command("powershell.exe", psArgs...)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
 }

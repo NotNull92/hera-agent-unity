@@ -8,34 +8,8 @@ import (
 	"path/filepath"
 )
 
-func removeFromPATH(installDir string) error {
-	// installDir is %LOCALAPPDATA%\Microsoft\WindowsApps — a Windows-managed
-	// directory that's on the default user PATH. Removing it would break every
-	// Store-app alias on the system. Leave it alone.
-	//
-	// Only legacy hera-agent-unity PATH entries (from pre-WindowsApps installs)
-	// need cleanup.
-	legacyDir, err := legacyInstallDir()
-	if err != nil {
-		return nil
-	}
-	// Verify the legacy directory actually exists before trying to clean PATH.
-	if _, err := os.Stat(legacyDir); os.IsNotExist(err) {
-		return nil
-	}
-	// Use a single-line script so -Command treats the entire expression as one
-	// statement. Multi-line strings cause PowerShell to parse subsequent lines as
-	// separate commands, producing "GetFullPath" and "CommandNotFound" errors.
-	script := `$legacy = $args[0]; if (-not $legacy) { exit 0 }; $norm = [System.IO.Path]::GetFullPath($legacy).TrimEnd('\'); $p = [Environment]::GetEnvironmentVariable("Path", "User"); $entries = if ($p) { $p -split ';' } else { @() }; $filtered = $entries | Where-Object { if (-not $_) { return $false }; try { return ([System.IO.Path]::GetFullPath($_).TrimEnd('\')) -ne $norm } catch { return $true } }; $new = $filtered -join ';'; if ($new -ne $p) { [Environment]::SetEnvironmentVariable("Path", $new, "User") }`
-	if err := runPowerShellWithArgs(script, legacyDir); err != nil {
-		return err
-	}
-
-	// Update current session for good measure
-	currentPath := os.Getenv("PATH")
-	newCurrentPath := removePathEntry(currentPath, legacyDir)
-	_ = os.Setenv("PATH", newCurrentPath)
-	return nil
+func removeFromPATH(_ string) error {
+	return scrubLegacyUserPATH()
 }
 
 func removeBinaryAndDir(exe, installDir string) (deferred bool, err error) {

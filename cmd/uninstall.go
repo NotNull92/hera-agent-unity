@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/NotNull92/hera-agent-unity/internal/paths"
 	"github.com/NotNull92/hera-agent-unity/internal/tui"
 )
 
@@ -38,9 +39,9 @@ func uninstallCmd() error {
 
 	// Step 3: Remove config directory
 	if cfgErr := removeConfigDir(); cfgErr != nil {
-		printUninstallWarn("Config directory", cfgErr)
+		printUninstallWarn("State directory", cfgErr)
 	} else {
-		printUninstallDone("Removed config directory")
+		printUninstallDone("Removed state directory ~/.hera-agent-unity")
 	}
 
 	// Step 4: Remove from PATH
@@ -66,32 +67,10 @@ func uninstallCmd() error {
 }
 
 func removeConfigDir() error {
-	home, err := os.UserHomeDir()
-	if err != nil {
+	if _, err := os.UserHomeDir(); err != nil {
 		return err
 	}
-	var cfgDir string
-	if runtime.GOOS == "windows" {
-		cfgDir = filepath.Join(home, "AppData", "Roaming", "hera-agent-unity")
-	} else {
-		cfgDir = filepath.Join(home, ".config", "hera-agent-unity")
-	}
-	if _, err := os.Stat(cfgDir); os.IsNotExist(err) {
-		return nil
-	}
-	return os.RemoveAll(cfgDir)
-}
-
-func removePathEntry(pathList, entry string) string {
-	parts := strings.Split(pathList, string(os.PathListSeparator))
-	var out []string
-	for _, p := range parts {
-		if strings.TrimSpace(p) == entry {
-			continue
-		}
-		out = append(out, p)
-	}
-	return strings.Join(out, string(os.PathListSeparator))
+	return os.RemoveAll(paths.BaseDir())
 }
 
 func promptConfirm(msg string) (bool, error) {

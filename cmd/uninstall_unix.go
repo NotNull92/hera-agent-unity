@@ -57,3 +57,15 @@ func removeBinaryAndDir(exe, installDir string) (deferred bool, err error) {
 	}
 	return false, nil
 }
+
+func removePathEntry(pathList, entry string) string {
+	parts := strings.Split(pathList, string(os.PathListSeparator))
+	var out []string
+	for _, p := range parts {
+		if strings.TrimSpace(p) == entry {
+			continue
+		}
+		out = append(out, p)
+	}
+	return strings.Join(out, string(os.PathListSeparator))
+}
