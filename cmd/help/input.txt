@@ -119,3 +119,7 @@ Input QA:
     update. Manual mode requires your own InputSystem.Update() pump; Hera does
     not pump it or change input policy. No update yields INPUTSYSTEM_INVOCATION_FAILED;
     pause/exit use the existing Play Mode errors. Failed waits leave no pending apply.
+    Sequence/replay group instantaneous steps connected by settle_frames=0
+    into one configured input update. press/click remain group boundaries.
+    Nonzero settle counts remain Editor updates, including recording gaps;
+    they do not promise player-frame timing.

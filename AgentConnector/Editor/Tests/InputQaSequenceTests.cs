@@ -98,6 +98,26 @@ namespace HeraAgent.Tests
                 error == null
                 && plan?.Steps.Count == 2
                 && plan.TotalHoldMs == 0);
+            var (grouped, groupError) = InputQaSequence.Parse(SequenceRequest(new JArray(
+                KeyboardStep("leftshift", "down"),
+                KeyboardStep("a", "down"),
+                new JObject { ["action"] = "mouse", ["mode"] = "scroll", ["scroll_delta"] = "0,3", ["settle_frames"] = 1 },
+                KeyboardStep("a", "up"),
+                KeyboardStep("leftshift", "up"))));
+            allPassed &= ExpectTrue("zero-settle chord stays in one group before a nonzero gap",
+                groupError == null && InputQaSequence.GroupEnd(grouped.Steps, 0) == 2
+                && InputQaSequence.GroupEnd(grouped.Steps, 3) == 4);
+
+            var (pulses, pulseError) = InputQaSequence.Parse(SequenceRequest(new JArray(
+                KeyboardStep("leftshift", "down"),
+                KeyboardStep("a", "press"),
+                new JObject { ["action"] = "mouse", ["mode"] = "click", ["settle_frames"] = 0, ["hold_ms"] = 20 },
+                KeyboardStep("leftshift", "up"))));
+            allPassed &= ExpectTrue("press and click keep their hold/release boundaries at settle zero",
+                pulseError == null && InputQaSequence.GroupEnd(pulses.Steps, 0) == 0
+                && InputQaSequence.GroupEnd(pulses.Steps, 1) == 1
+                && InputQaSequence.GroupEnd(pulses.Steps, 2) == 2
+                && InputQaSequence.GroupEnd(pulses.Steps, 3) == 3);
             return allPassed;
         }
 

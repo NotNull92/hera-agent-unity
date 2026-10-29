@@ -474,6 +474,8 @@ Keyboard, mouse, bounded sequence, recording capture, and replay require Play Mo
 
 Input System response values describe the player-side state at the end of the input update that applied the request's last change, preserved through `settle_frames`. `press`/`click` report the release update (`pressed_after=false`); `down` reports true. Each change waits up to 2000 ms for its configured update. Manual mode requires your project's own `InputSystem.Update()` pump; Hera does not pump it or change input policy. A missing update returns `INPUTSYSTEM_INVOCATION_FAILED`, while pause/exit use their existing Play Mode errors. This branch's implementation is awaiting the remaining [verification gates](docs/handoffs/scene-save-and-inputsystem-readback-20261029.md).
 
+Sequence and replay group consecutive instantaneous steps connected by `settle_frames=0` into one configured player input update, applying them in order and capturing once. `press`/`click` are group boundaries and keep their hold/release behavior. Nonzero settle counts still mean Editor updates, including the gaps loaded from recordings; they do not promise player-frame timing.
+
 ### Automate repetitive Scene work
 
 `scene save` rejects a dirty untitled Scene with `SCENE_UNSAVED` instead of opening a Save dialog. Save it once from the Editor, or create it with `scene create <Assets/...unity>` before editing. A clean Scene remains a no-op. Explicit generic `menu`/`exec` calls can still open modal dialogs.

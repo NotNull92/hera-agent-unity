@@ -333,6 +333,8 @@ Useful when you're not sure a refactor compiles before issuing a destructive cal
 
 Input System response values are the player-side state at the end of the input update that applied the request's last change, preserved through `settle_frames`. `press`/`click` report the release update (`pressed_after=false`); `down` reports true. Each change waits at most 2000 ms for its configured Dynamic, Fixed, or Manual update. Manual mode needs the project's own `InputSystem.Update()` pump; Hera does not pump it or change input policy. No matching update returns `INPUTSYSTEM_INVOCATION_FAILED`; pause/exit return their existing Play Mode errors. Failed waits leave no pending apply.
 
+Sequence and replay group consecutive instantaneous steps connected by `settle_frames=0` into one configured player input update, applying them in order and capturing once. `press`/`click` are group boundaries and keep their hold/release behavior. Nonzero settle counts still mean Editor updates, including the gaps loaded from recordings; they do not promise player-frame timing.
+
 The typed `scene save` rejects dirty untitled scenes with `SCENE_UNSAVED`; save them once from the Editor or create them with an asset path. Generic `menu` and `exec` can still open explicitly requested modal dialogs and block requests until a person closes them.
 
 **Building a uGUI reference layout** — use `manage_ui create`, `manage_ui set_anchor`, `manage_ui set_rect`, and `manage_components` in small verified batches. Use `screenshot --overlay` after each material layout pass. Keep fill bars start-anchored, center text within its container, and use real project art or an explicitly labeled placeholder for bespoke visuals.

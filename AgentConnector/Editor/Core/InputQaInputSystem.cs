@@ -362,6 +362,82 @@ namespace HeraAgent
             }
         }
 
+        internal static async Task<(int applied, ErrorResponse error)> ApplySequenceGroup(
+            IReadOnlyList<InputQaOptions> steps, int start, int end, CancellationToken cancellationToken)
+        {
+            var api = Api.TryCreate(out var reason);
+            if (api == null) return (0, Unavailable(reason));
+            var playModeError = ValidatePlayMode();
+            if (playModeError != null) return (0, playModeError);
+
+            int applied = 0;
+            ErrorResponse failure = null;
+            try
+            {
+                var changes = new List<Func<ErrorResponse>>(end - start + 1);
+                for (var index = start; index <= end; index++)
+                    changes.Add(PrepareSequenceChange(api, steps[index]));
+                await api.ApplyOnNextConfiguredUpdate(() =>
+                {
+                    foreach (var change in changes)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        failure = change();
+                        if (failure != null) throw new InvalidOperationException(failure.message);
+                        applied++;
+                    }
+                }, cancellationToken);
+                await EditorUpdate.Wait(steps[end].SettleFrames, 0, cancellationToken);
+                return (applied, null);
+            }
+            catch (OperationCanceledException) { return (applied, Cancelled()); }
+            catch (Exception ex) { return (applied, failure ?? ValidatePlayMode() ?? InvocationFailure(ex)); }
+        }
+
+        private static Func<ErrorResponse> PrepareSequenceChange(Api api, InputQaOptions step)
+        {
+            if (step.Action == "keyboard")
+            {
+                if (!TryResolveKey(api, step.Key, out var key, out var canonicalKey))
+                    throw new InvalidOperationException($"[Hera] I couldn't resolve key '{step.Key}'.");
+                var control = api.KeyboardIndexer.GetValue(api.Keyboard, new[] { key });
+                bool down = step.Mode == "down";
+                return () =>
+                {
+                    if (down && HeldKeys.Contains(canonicalKey)) return AlreadyHeld("key", canonicalKey);
+                    if (!down && !HeldKeys.Contains(canonicalKey)) return NotHeld("key", canonicalKey);
+                    api.SetButton(control, down);
+                    if (down) HeldKeys.Add(canonicalKey);
+                    else HeldKeys.Remove(canonicalKey);
+                    return null;
+                };
+            }
+
+            string mode = step.Mode;
+            if (mode == "move" || mode == "delta" || mode == "scroll")
+            {
+                var control = api.GetMouseControl(mode == "move" ? "position" : mode);
+                var value = mode == "move" ? step.Position.Value
+                    : mode == "delta" ? step.Delta.Value : step.ScrollDelta.Value;
+                return () => { api.SetVector(control, value); return null; };
+            }
+
+            var buttonName = ButtonName(step.Button);
+            var button = api.GetMouseControl(buttonName + "Button");
+            var position = step.Position.HasValue ? api.GetMouseControl("position") : null;
+            bool buttonDown = mode == "down";
+            return () =>
+            {
+                if (buttonDown && HeldMouseButtons.Contains(buttonName)) return AlreadyHeld("mouse button", buttonName);
+                if (!buttonDown && !HeldMouseButtons.Contains(buttonName)) return NotHeld("mouse button", buttonName);
+                if (step.Position.HasValue) api.SetVector(position, step.Position.Value);
+                api.SetButton(button, buttonDown);
+                if (buttonDown) HeldMouseButtons.Add(buttonName);
+                else HeldMouseButtons.Remove(buttonName);
+                return null;
+            };
+        }
+
         private static ErrorResponse ValidatePlayMode()
         {
             if (!Application.isPlaying || !EditorApplication.isPlayingOrWillChangePlaymode)
@@ -809,8 +885,13 @@ namespace HeraAgent
                 CancellationToken cancellationToken)
             {
                 return ApplyOnNextConfiguredUpdate(
-                    () => SetValue(control, value, typeof(Vector2)),
+                    () => SetVector(control, value),
                     cancellationToken);
+            }
+
+            internal void SetVector(object control, Vector2 value)
+            {
+                SetValue(control, value, typeof(Vector2));
             }
 
             private void SetValue(object control, object value, Type valueType)
@@ -852,7 +933,7 @@ namespace HeraAgent
                 }
             }
 
-            private Task<InputQaPhysicalSnapshot> ApplyOnNextConfiguredUpdate(
+            internal Task<InputQaPhysicalSnapshot> ApplyOnNextConfiguredUpdate(
                 Action apply,
                 CancellationToken cancellationToken)
             {

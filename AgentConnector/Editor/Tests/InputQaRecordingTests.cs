@@ -32,6 +32,18 @@ namespace HeraAgent.Tests
                     && plan.Steps[1].SettleFrames == 2
                     && plan.TotalAwaitedFrames == 4);
 
+                var sameFrame = Path.Combine(directory, "same-frame.json");
+                Write(sameFrame, Recording(new JArray(
+                    Keyboard(0, "a", "down"),
+                    new JObject { ["frame"] = 0, ["action"] = "mouse", ["mode"] = "scroll", ["scroll_delta"] = "0,3" },
+                    Keyboard(1, "a", "up"))));
+                var (sameFramePlan, sameFrameError, _) = InputQaReplay.Load(sameFrame);
+                allPassed &= ExpectTrue("recorded zero-gap events share one apply group",
+                    sameFrameError == null && sameFramePlan.Steps[0].SettleFrames == 0
+                    && sameFramePlan.Steps[1].SettleFrames == 1
+                    && InputQaSequence.GroupEnd(sameFramePlan.Steps, 0) == 1
+                    && InputQaSequence.GroupEnd(sameFramePlan.Steps, 2) == 2);
+
                 var unsupported = Path.Combine(directory, "unsupported.json");
                 var unsupportedRoot = Recording(new JArray(MouseMove(0, "1,2")));
                 unsupportedRoot["schema"] = "hera.input-recording/2";

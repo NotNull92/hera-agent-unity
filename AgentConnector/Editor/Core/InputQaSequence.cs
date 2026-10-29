@@ -77,29 +77,41 @@ namespace HeraAgent
             activeSource = source;
             try
             {
-                for (var index = 0; index < plan.Steps.Count; index++)
+                for (var index = 0; index < plan.Steps.Count;)
                 {
-                    var step = plan.Steps[index];
-                    step.CancellationToken = source.Token;
-                    var response = await ExecuteStep(step);
-                    if (response is ErrorResponse error)
+                    int end = GroupEnd(plan.Steps, index);
+                    int applied;
+                    ErrorResponse error;
+                    if (IsPulse(plan.Steps[index]))
                     {
-                        failedIndex = index;
+                        var step = plan.Steps[index];
+                        step.CancellationToken = source.Token;
+                        var response = await ExecuteStep(step);
+                        error = response as ErrorResponse;
+                        if (error == null && !(response is SuccessResponse))
+                            error = new ErrorResponse("INPUT_SEQUENCE_INVALID_RESULT",
+                                "[Hera] I received an unknown response type from an input sequence step.");
+                        applied = error == null ? 1 : 0;
+                    }
+                    else
+                    {
+                        (applied, error) = await InputQaInputSystem.ApplySequenceGroup(
+                            plan.Steps, index, end, source.Token);
+                    }
+
+                    for (var offset = 0; offset < applied; offset++)
+                    {
+                        if (includeStepSummaries)
+                            summaries.Add(StepSummary(index + offset, plan.Steps[index + offset]));
+                        completed++;
+                    }
+                    if (error != null)
+                    {
+                        failedIndex = Math.Min(index + applied, end);
                         failure = error;
                         break;
                     }
-                    if (!(response is SuccessResponse))
-                    {
-                        failedIndex = index;
-                        failure = new ErrorResponse(
-                            "INPUT_SEQUENCE_INVALID_RESULT",
-                            "[Hera] I received an unknown response type from an input sequence step.");
-                        break;
-                    }
-
-                    if (includeStepSummaries)
-                        summaries.Add(StepSummary(index, step));
-                    completed++;
+                    index = end + 1;
                 }
             }
             catch (OperationCanceledException)
@@ -161,6 +173,21 @@ namespace HeraAgent
             return new SuccessResponse(
                 action == "replay" ? "Input replay" : "Input sequence",
                 result);
+        }
+
+        internal static int GroupEnd(IReadOnlyList<InputQaOptions> steps, int start)
+        {
+            int end = start;
+            if (IsPulse(steps[start])) return end;
+            while (end + 1 < steps.Count && steps[end].SettleFrames == 0 && !IsPulse(steps[end + 1]))
+                end++;
+            return end;
+        }
+
+        private static bool IsPulse(InputQaOptions step)
+        {
+            var mode = step.Mode ?? (step.Action == "keyboard" ? "press" : "click");
+            return mode == "press" || mode == "click";
         }
 
         private static Task<object> ExecuteStep(InputQaOptions step)
