@@ -56,6 +56,10 @@ namespace HeraAgent.Tests
             foreach (var state in new[] { ResultState.Success, ResultState.Failure, ResultState.Ignored, ResultState.Inconclusive })
             {
                 var test = new TestMethod(new MethodWrapper(typeof(TestArtifactTests), nameof(Sample)));
+#if UNITY_2022_3
+                // Test Framework 1.1 resolves inherited categories through the parent fixture.
+                new TestSuite("ArtifactFixture").Add(test);
+#endif
                 var result = test.MakeTestResult();
                 result.SetResult(state, "message <&>", "stack <line>");
                 result.Duration = 0.125;
