@@ -365,7 +365,7 @@ To pin an existing Connector tag:
 The current released Connector pin is:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.13
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.14
 ```
 
 ### Step 3. Open Unity and check the connection
@@ -749,9 +749,9 @@ New features require a reproduced failure. See [Contributing](CONTRIBUTING.md).
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.23** with five native binaries
-- npm: **0.3.23** (`latest`)
-- Unity Connector: **0.2.13** (pin with `#connector-0.2.13`)
+- CLI / GitHub Release: **v0.3.24** with five native binaries
+- npm: **0.3.24** (`latest`)
+- Unity Connector: **0.2.14** (pin with `#connector-0.2.14`)
 - License: **Apache-2.0**
 
 The npm publish is chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
@@ -764,6 +764,7 @@ What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
+| v0.3.24 / 0.2.14 | `scene save` returns `SCENE_UNSAVED` for a dirty untitled scene instead of opening a Save dialog. Input System keyboard/mouse responses report the player-side state, scroll and delta reach the player for one frame, `settle_frames=0` sequence/replay steps apply in the same update, and a missing player update fails within 2000 ms with a focus/Run In Background hint. Help and agent rules updated. Update the Connector to 0.2.14 as well. |
 | v0.3.23 / 0.2.13 | Legacy NavMesh changes mark the active scene dirty without saving unrelated assets. Save the scene to keep them; writes during Play Mode are rejected. No CLI behavior change. Update the Connector to 0.2.13. |
 | v0.3.22 / 0.2.12 | Asset edits save only changed asset files; manage_assets delete moves to the OS trash. Query one action with list --tool --action. Shorter tool descriptions and a budget for the complete compact Light rules output. Update the Connector to 0.2.12 as well. |
 | v0.3.21 / 0.2.11 | Windows PATH cleanup preserves its original form; uninstall removes the actual state folder; update verifies SHA-256. Tool JSON stays compact (`--compact-json` is for compatibility), with nine more help topics. Hera's own tool failures no longer add console errors, repeated hints are shorter, and Restricted exec blocks screenshot and profiler file writes. Update the Connector to 0.2.11 as well. |
