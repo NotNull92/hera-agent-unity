@@ -70,6 +70,17 @@ Every Input System keyboard/mouse state change (key down/up, button down/up, pos
 
 **sequence / record / replay:** they share the helper. Each step's capture comes from its apply update, so no extra sampling update is added; replay's recorded frame gaps (`Core/InputQaReplay.cs:134`, last step settle 0) and the recorder's per-update records (`Core/InputQaRecording.cs:312-339`) must not gain duplicates or extra gaps.
 
+### D5. Preserve zero-settle groups in sequence and replay
+
+Approved by the user through the requester on 2026-10-29 after the same-frame replay regression was measured: recorded gaps `[0, 1]` became `[1, 1]` with per-step natural-update waits. Apply this correction to the common sequence/replay executor; standalone keyboard/mouse behavior is unchanged.
+
+- Consecutive instantaneous steps connected by `settle_frames=0` form one group. Apply them in order in one natural configured update's `onBeforeUpdate`, and capture once in that update's `onAfterUpdate` through the existing apply/capture helper.
+- **User clarification:** `press` and `click` are group boundaries, even with settle 0. Preserve their existing down/hold/release behavior instead of collapsing a pulse into one update.
+- Between groups, preserve the existing `settle_frames` meaning: Editor updates. Replay still maps recorded frame differences to those waits; do not silently redefine them as player-frame waits.
+- Deadline, cancellation, Play Mode exit, pause and callback cleanup complete once per group. Track ownership only for steps actually applied, clean up owned controls through the existing sequence cleanup, and leave no late apply.
+- Keep the schema, error codes and response fields unchanged. Do not introduce a separate replay protocol or executor.
+- Verify same-frame replay gaps `[0, 1]`; a zero-settle shift+A down and scroll group observed in the same player frame; the equivalent two-key baseline sequence on D0 main; existing input/testables suites; and no new warnings against main. Include pulse-boundary coverage.
+
 ## Verification
 
 Record commands, exit codes, logs, Unity/package versions, the exported SHA, CLI path and the Input System settings (`updateMode`, `editorInputBehaviorInPlayMode`, `backgroundBehavior`, `runInBackground`, Game view focus) for each probe run. Do not change global Input System policy to make a test pass.
