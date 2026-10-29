@@ -77,7 +77,7 @@ Record commands, exit codes, logs, Unity/package versions, the exported SHA, CLI
 1. Go checks per `CLAUDE.md` (real-path `TMPDIR` on macOS; default-`TMPDIR` symlink failures already exist on `main`).
 2. Install the exported commit SHA (not the working tree) as a `file:` package in fresh blank projects.
 3. **D0 baseline** on the unpatched SHA (6000.6.6f1 + 1.20.0): update-type/frame log; scroll and delta observed or not.
-4. **6000.6.6f1 gate:** normal install 0 errors / 0 warnings, ready, console 0; testables suite green with a non-zero count; catalog compare unchanged.
+4. **6000.6.6f1 gate:** normal install: Hera assemblies 0 errors, 0 CS warnings, and no new warnings (incl. Unity analyzer UAC*) versus the main baseline at the same Editor; pre-existing UAC warnings recorded; ready; testables suite green with a non-zero count; catalog compare unchanged.
 5. **Probe matrix after the fix** (6000.6.6f1 + 1.20.0, activeInputHandler Both, Dynamic):
    - key `down` → probe `a=True`, response `pressed_after: true`; `up` → `False`/`false`; `press` → probe sees down then up.
    - move `(320,200)` → probe and response equal; click → probe down then up, response consistent.
