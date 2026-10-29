@@ -321,10 +321,10 @@ func printAssetConfigHelp() {
 	fmt.Print(`Usage: hera-agent-unity asset-config [subcommand]
 
 Interactive TUI:
-  asset-config developer-mode [on|off]  Allow requests on unsupported Unity 2022.3 (machine-global)
   asset-config                  Launch interactive checkbox UI (Space to toggle)
 
 Subcommands:
+  developer-mode [on|off]       Allow requests on unsupported Unity 2022.3 (machine-global)
   list, ls                      List all assets and their state
   enable <id>                   Enable an asset
   disable <id>                  Disable an asset

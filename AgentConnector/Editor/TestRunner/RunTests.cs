@@ -366,6 +366,9 @@ namespace HeraAgent.TestRunner
 #if !HERA_TEST_FRAMEWORK_CANCEL_API
         // Markers only cover runs whose completion callback still lives in this domain.
         private static readonly HashSet<string> s_ActiveRuns = new HashSet<string>();
+
+        internal static void MarkActive(string runId) => s_ActiveRuns.Add(runId);
+        internal static void UnmarkActive(string runId) => s_ActiveRuns.Remove(runId);
 #endif
 
         private static object StartTestRun(TestMode mode, string filter, string[] categories, string[] assemblies,
@@ -406,7 +409,7 @@ namespace HeraAgent.TestRunner
                 if (cleanedUp) return;
                 cleanedUp = true;
 #if !HERA_TEST_FRAMEWORK_CANCEL_API
-                s_ActiveRuns.Remove(runId);
+                UnmarkActive(runId);
 #endif
                 DisposeApi(api, callbacks);
             };
@@ -429,7 +432,7 @@ namespace HeraAgent.TestRunner
 
                 api.RegisterCallbacks(callbacks);
 #if !HERA_TEST_FRAMEWORK_CANCEL_API
-                s_ActiveRuns.Add(runId);
+                MarkActive(runId);
 #endif
                 // Execute returns NUnit's own run guid — the only handle
                 // CancelTestRun accepts. Persist it so `test cancel` still works
