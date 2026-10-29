@@ -269,3 +269,12 @@ func TestProviderErrorKeepsCodeThroughCatalogWrappers(t *testing.T) {
 		t.Fatalf("lost provider error: %#v", response)
 	}
 }
+
+func TestApprovalRejectionKeepsEnvelope(t *testing.T) {
+	original := client.CommandResponse{Success: false, Code: "DEVELOPER_MODE_REQUIRED", Message: "Enable Developer Mode"}
+	err := fmt.Errorf("preflight: %w", &client.ApprovalRejectedError{Response: original})
+	response := operationOutcomeResponse(err)
+	if response == nil || response.Code != original.Code || response.Message != original.Message || response.Success {
+		t.Fatalf("lost approval rejection: %#v", response)
+	}
+}

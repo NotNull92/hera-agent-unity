@@ -72,6 +72,10 @@ func isHumanCommand(category string) bool {
 type ResponsePrinter struct{}
 
 func operationOutcomeResponse(err error) *client.CommandResponse {
+	var rejected *client.ApprovalRejectedError
+	if errors.As(err, &rejected) {
+		return &rejected.Response
+	}
 	var provider *toolregistry.ProviderError
 	if errors.As(err, &provider) {
 		return &client.CommandResponse{Success: false, Code: provider.Code, Message: provider.Message}
