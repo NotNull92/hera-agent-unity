@@ -256,7 +256,7 @@ uGUI 의존성은 Editor 내장 버전으로 해석됩니다. package.json의 �
 |:---|:---|:---:|
 | 6000.6+ | 6000.6.6f1 | PASS |
 
-Connector 0.3.0(`925e020`)은 필수 6000.6.6f1 게이트를 독립 검증으로 통과했습니다. 일반/testables 설치 오류·경고 0, 카탈로그 변경 0이며 테스트는 48 통과·0 실패·1 건너뜀(빈 템플릿에 Timeline 미설치)입니다. [게이트 증거](docs/handoffs/unity-2022-3-independent-gates-20261029.md).
+Connector 0.3.0(`925e020`)은 필수 6000.6.6f1 게이트를 독립 검증으로 통과했습니다. 일반/testables 설치 오류·경고 0, 카탈로그 변경 0이며 테스트는 48 통과·0 실패·1 건너뜀(빈 템플릿에 Timeline 미설치)입니다. [게이트 증거](docs/handoffs/unity-2022-3-independent-gates-20261029.md). 0.2.14의 scene save·Input System 수정을 함께 담은 릴리스 0.3.0도 다시 통과했습니다. 6000.6.6f1에서 오류 0, 새 경고 0, 카탈로그 변경 0, 49 통과·0 실패·1 Timeline 건너뜀이고, 2022.3.62f2 Developer Mode에서 52/52 통과와 같은 입력 전달을 확인했습니다. [릴리스 증거](docs/handoffs/merged-main-0.3.0-verification-20261029.md).
 
 CLI 버전과 Connector 버전은 의도적으로 따로 관리합니다.
 
@@ -379,7 +379,7 @@ Editor가 열리면 Connector가 자동으로 시작합니다.
 현재 릴리스 Connector를 고정하려면:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.14
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.3.0
 ```
 
 ### 3단계. Unity를 열고 연결 확인
@@ -763,9 +763,9 @@ CLI를 그대로 사용하세요. 탐색은 `list`, typed 실행은 `call`, 전�
 
 ## 현재 릴리스
 
-- CLI / GitHub Release: **v0.3.24**, native binary 5종
-- npm: **0.3.24** (`latest`)
-- Unity Connector: **0.2.14** (`#connector-0.2.14`로 고정)
+- CLI / GitHub Release: **v0.3.25**, native binary 5종
+- npm: **0.3.25** (`latest`)
+- Unity Connector: **0.3.0** (`#connector-0.3.0`로 고정)
 - License: **Apache-2.0**
 
 npm 배포는 GitHub Release에 연쇄되어 있어 `npm install -g hera-agent-unity`와 GitHub 바이너리가 같은 버전을 유지합니다.
@@ -778,6 +778,7 @@ v0.2.17 이후 새로 바뀐 것:
 
 | 버전 | 변경 |
 |---|---|
+| v0.3.25 / 0.3.0 | Unity 2022.3용 opt-in Developer Mode: Connector가 2022.3.62f2에서 컴파일되며, `asset-config developer-mode on` 또는 Hera Settings로 켜기 전까지 요청을 `DEVELOPER_MODE_REQUIRED`로 거부합니다. Unity 6.6+ 동작은 그대로이며 계속 정식 지원 계열입니다. Connector도 0.3.0으로 올리세요. |
 | v0.3.24 / 0.2.14 | `scene save`는 변경된 무제 Scene에 저장 창을 띄우지 않고 `SCENE_UNSAVED`를 반환합니다. Input System 키보드·마우스 응답은 플레이어 쪽 상태를 반환하고, scroll·delta는 플레이어에 한 프레임 전달되며, `settle_frames=0`인 sequence·replay 단계는 같은 업데이트에 적용됩니다. 플레이어 업데이트가 없으면 2000 ms 안에 포커스·Run In Background 안내와 함께 실패합니다. help와 agent rules 갱신. Connector도 0.2.14로 올리세요. |
 | v0.3.23 / 0.2.13 | legacy NavMesh 변경은 활성 Scene을 미저장 상태로 표시하고 다른 에셋은 저장하지 않습니다. 변경을 유지하려면 Scene을 저장하세요. Play Mode 중 변경은 거부합니다. CLI 동작 변경 없음. Connector도 0.2.13으로 올리세요. |
 | v0.3.22 / 0.2.12 | 에셋 편집은 고친 에셋 파일만 저장하고, manage_assets delete는 OS 휴지통으로 이동합니다. list --tool --action으로 필요한 action만 조회하며, 도구 설명과 compact Light 규칙의 전체 출력이 짧아졌습니다. Connector도 0.2.12로 올리세요. |

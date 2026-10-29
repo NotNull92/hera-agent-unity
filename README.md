@@ -254,7 +254,7 @@ Supported Unity versions are Unity 6.6+ (`6000.6` minimum). The release compile 
 |:---|:---|:---:|
 | 6000.6+ | 6000.6.6f1 | PASS |
 
-Connector 0.3.0 at `925e020` passed the required 6000.6.6f1 gate independently: clean normal/testables imports, unchanged catalog, and 48 tests passed with 0 failed and 1 Timeline skip in the blank template. [Gate evidence](docs/handoffs/unity-2022-3-independent-gates-20261029.md).
+Connector 0.3.0 at `925e020` passed the required 6000.6.6f1 gate independently: clean normal/testables imports, unchanged catalog, and 48 tests passed with 0 failed and 1 Timeline skip in the blank template. [Gate evidence](docs/handoffs/unity-2022-3-independent-gates-20261029.md). The released 0.3.0, which also carries the 0.2.14 scene save and Input System fixes, passed again: on 6000.6.6f1, 0 errors, no new warnings, unchanged catalog, 49 passed / 0 failed / 1 Timeline skip; on 2022.3.62f2 with Developer Mode on, 52/52 with the same input delivery. [Release evidence](docs/handoffs/merged-main-0.3.0-verification-20261029.md).
 
 Unity 6.6+ remains the supported line. Connector 0.3.0 also compiles on Unity 2022.3 behind the opt-in Developer Mode gate below. Its uGUI dependency resolves to the Editor's built-in version; the compile-time allow-list rejects other Editor lines. The package minimum alone does not enforce this boundary for git installs.
 
@@ -377,7 +377,7 @@ To pin an existing Connector tag:
 The current released Connector pin is:
 
 ```text
-https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.2.14
+https://github.com/NotNull92/hera-agent-unity.git?path=AgentConnector#connector-0.3.0
 ```
 
 ### Step 3. Open Unity and check the connection
@@ -762,9 +762,9 @@ New features require a reproduced failure. See [Contributing](CONTRIBUTING.md).
 
 ## Current release
 
-- CLI / GitHub Release: **v0.3.24** with five native binaries
-- npm: **0.3.24** (`latest`)
-- Unity Connector: **0.2.14** (pin with `#connector-0.2.14`)
+- CLI / GitHub Release: **v0.3.25** with five native binaries
+- npm: **0.3.25** (`latest`)
+- Unity Connector: **0.3.0** (pin with `#connector-0.3.0`)
 - License: **Apache-2.0**
 
 The npm publish is chained to the GitHub Release, so `npm install -g hera-agent-unity` and the GitHub binaries stay in step.
@@ -777,6 +777,7 @@ What's new since v0.2.17:
 
 | Version | Change |
 |---|---|
+| v0.3.25 / 0.3.0 | Opt-in Developer Mode for Unity 2022.3: the Connector compiles on 2022.3.62f2 and refuses requests with `DEVELOPER_MODE_REQUIRED` until you run `asset-config developer-mode on` or enable it in Hera Settings. Unity 6.6+ behavior is unchanged and remains the supported line. Update the Connector to 0.3.0 as well. |
 | v0.3.24 / 0.2.14 | `scene save` returns `SCENE_UNSAVED` for a dirty untitled scene instead of opening a Save dialog. Input System keyboard/mouse responses report the player-side state, scroll and delta reach the player for one frame, `settle_frames=0` sequence/replay steps apply in the same update, and a missing player update fails within 2000 ms with a focus/Run In Background hint. Help and agent rules updated. Update the Connector to 0.2.14 as well. |
 | v0.3.23 / 0.2.13 | Legacy NavMesh changes mark the active scene dirty without saving unrelated assets. Save the scene to keep them; writes during Play Mode are rejected. No CLI behavior change. Update the Connector to 0.2.13. |
 | v0.3.22 / 0.2.12 | Asset edits save only changed asset files; manage_assets delete moves to the OS trash. Query one action with list --tool --action. Shorter tool descriptions and a budget for the complete compact Light rules output. Update the Connector to 0.2.12 as well. |
