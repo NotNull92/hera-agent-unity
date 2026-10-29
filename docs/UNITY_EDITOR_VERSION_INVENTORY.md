@@ -16,7 +16,9 @@ Hera supports **Unity 6.6+**. Connector 0.3.0 also allows **Unity 2022.3** in op
 | `6000.6+` | `6000.6.6f1` |
 | `2022.3` (Developer Mode, unsupported) | `2022.3.62f2` |
 
-The Developer Mode verification also uses available `6000.6.7f1` for regression evidence. This does not replace the required `6000.6.6f1` gate, which is BLOCKED when that Editor is not installed.
+The required `6000.6.6f1` gate is **PASS** for Connector `0.3.0` candidate `925e020`, independently verified on macOS arm64 on 2026-10-29. Normal and testables imports were clean; the suite passed 48 tests with 0 failures and 1 Timeline skip in the blank template. The separate 2022.3.62f2 package-present suite passed 51/51 with TMP 3.0.7, Timeline 1.7.7, Input System 1.14.0 and AI Navigation 1.1.6. Input delivery matched the same probe on 6000.6.6f1 + Input System 1.20.0. [Detailed evidence](handoffs/unity-2022-3-independent-gates-20261029.md).
+
+Earlier `6000.6.7f1` results remain supplementary regression evidence; it is no longer installed on the verifier's machine. The required representative remains `6000.6.6f1`.
 
 ## Current Inventory
 

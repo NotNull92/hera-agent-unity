@@ -2,6 +2,8 @@
 
 Status: **FINAL v2** (v1 reviewed read-only by Codex: ITERATE; all required items resolved below).
 
+Verification update (2026-10-29): candidate `925e020` independently passed the required 6000.6.6f1 gate and the named 2022.3 package paths. [Evidence and version scope](handoffs/unity-2022-3-independent-gates-20261029.md) supersede the initial environment limitations below; the design and opt-in support policy are unchanged.
+
 ## Goal
 
 Let the Connector install, compile and run in **Unity 2022.3** (representative
@@ -42,7 +44,7 @@ Static facts come from reference sets and metadata. Runtime facts are named as s
 | F11 | 2022.3 defines include `UNITY_2022_3`, `UNITY_2022_3_62`, `UNITY_2022_3_OR_NEWER`, and no `UNITY_6000_*`. 6000.6.7f1 defines include `UNITY_2022_3_OR_NEWER`, `UNITY_6000_0_OR_NEWER` … `UNITY_6000_6_OR_NEWER`, but **not** `UNITY_2022_3`. | Both Bee rsp files |
 | F12 | `unity_docs` returns `docs_version` (the corpus version, `6000.6`). Its `unity_version` field is the entry's documentation version, **not** the running Editor's version. The real Editor version is in `status`/heartbeat (`cmd/status.go`). | `Tools/UnityDocs.cs:83-95` |
 
-Unverified on 2022.3 (packages not installed during measurement): TextMeshPro (`com.unity.textmeshpro`), Timeline, Input System, AI Navigation.
+At the initial measurement these packages were absent. Subsequent independent verification passed the named paths with TMP 3.0.7, Timeline 1.7.7, Input System 1.14.0 and AI Navigation 1.1.6 on 2022.3.62f2; see the evidence update above.
 
 ## Design
 
@@ -142,7 +144,7 @@ Keep each site's existing `Include`/`Exclude` value and its generic or non-gener
   - Add a support row for `2022.3` — Developer Mode (opt-in, unsupported, representative `2022.3.62f2`).
   - Replace the claim that Package Manager refuses older Editors with what actually happens: the ugui requirement and the D2 compile boundary stop unsupported lines.
   - Add a short Developer Mode section: how to enable it and that it is machine-global.
-  - List what is unverified or limited there: TMP, Timeline, Input System, AI Navigation; `unity_docs` answers from the `6000.6` corpus, so compare with the Editor version in `status`; `run_tests cancel` cannot stop an active run on test-framework < 1.4.0.
+  - List the verified versions and paths for TMP, Timeline, Input System and AI Navigation without claiming every package feature. Retain the limits: `unity_docs` answers from the `6000.6` corpus, so compare with the Editor version in `status`; `run_tests cancel` cannot stop an active run on test-framework < 1.4.0.
 - `CLAUDE.md`: correct the line saying the `unity` field enforces the floor. Add a 2022.3.62f2 Developer Mode pass to the connector release gate **in addition to** the 6000.6 representative pass. Keep it developer-only.
 - `docs/UNITY_EDITOR_VERSION_INVENTORY.md`: add 2022.3.62f2 as the Developer Mode representative. The 6000.6 representative stays `6000.6.6f1`. Do not change it in this work.
 - `CHANGELOG.md`. In `AGENTS.md`, add **user-facing** Developer Mode guidance only (do not copy the developer release gate). Then run `go run ./tools/sync-agent-guides` and `--check`.
@@ -172,7 +174,7 @@ Record every command, exit code, Unity version, CLI binary path and exported SHA
    - Separate `testables` project: `HeraAgent.Editor.Tests` compiles and the Hera EditMode tests run with a non-zero test count, all green.
 5. **6000.6 regression:**
    - 6000.6.7f1 blank project: 0 errors, 0 warnings, TestRunner built, Hera release-gate suite green with a non-zero count, `developer_mode` ON/OFF has no effect, the Settings window does not write the key.
-   - The required representative **6000.6.6f1 is not installed** on the measuring Mac. Record its gate as **BLOCKED**, separate from the 6000.6.7f1 PASS. Do not reword the gate around it.
+   - The required representative **6000.6.6f1 gate is PASS**, independently verified on `925e020`. Keep it separate from the historical 6000.6.7f1 supplementary regression pass; the representative was not changed.
 6. **Catalog (6000.6.7f1, same package set as the baseline run):** `hera-agent-unity --project <proj> list --catalog --schema_version hera.tool-catalog/1 > catalog.json`, then `go run ./tools/catalog-payload-report --catalog catalog.json --compare docs/metrics/catalog-payload-baseline.json --fail-on-change`. Expected: no change (hash and payload). Any change → stop and report.
 7. **2022.3 live matrix** (CLI built from the branch into a scratch path; the installed CLI untouched; `--project` pinned):
    - Gate: cold and warm catalog cache × raw `list`, strict `call`, a legacy command, `batch`. OFF → envelope with `code: DEVELOPER_MODE_REQUIRED` and no side effects. ON → works without an Editor restart. ON → OFF → refused again.

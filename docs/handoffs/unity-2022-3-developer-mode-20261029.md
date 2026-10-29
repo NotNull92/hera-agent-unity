@@ -2,7 +2,7 @@
 
 Follow-up: [PlayMode reload cancellation correction and live regression evidence](unity-2022-3-developer-mode-crossreview-20261029.md).
 
-Implementation complete. **Release gate remains BLOCKED:** the required Unity 6000.6.6f1 representative is not installed. Available-editor checks passed; this is not a release approval.
+Implementation complete. **Required 6000.6.6f1 gate: PASS**, independently verified on candidate `925e020` after the original implementation checks. The selected 2022.3 package paths also passed. See the [independent gate and package evidence](unity-2022-3-independent-gates-20261029.md); original execution logs and counts below remain historical evidence, not a release authorization.
 
 ## Candidate and environment
 
@@ -24,7 +24,7 @@ Implementation complete. **Release gate remains BLOCKED:** the required Unity 60
 | 4. 2022.3 normal install | PASS | UPM resolves with uGUI 1.0.0; 0 CS errors/warnings; production rsp has 0 Tests sources; no HeraAgent.Editor.Tests DLL in normal install. Locked list/call/legacy/batch return DEVELOPER_MODE_REQUIRED; ON reaches ready and console errors 0. |
 | 4. 2022.3 TestRunner/testables | PASS with optional skip | TestRunner compiles with 1.1.33. Final `tests-2022.3.62f2.xml`: **51 total, 50 passed, 0 failed, 1 skipped**. Only AnimationTimeline skips because Timeline is absent. New ID and gate tests pass. |
 | 5. 6000.6.7f1 regression | PASS with optional skip | 0 CS errors/warnings, TestRunner built. Final `tests-6000.6.7f1.xml`: **49 total, 48 passed, 0 failed, 1 skipped** (same missing Timeline). ON and OFF both allow scene queries. Settings save leaves developer_mode untouched. |
-| 5. Required 6000.6.6f1 | BLOCKED | Not installed. The representative was neither changed nor substituted. |
+| 5. Required 6000.6.6f1 | PASS | Independent verification on `925e020`: clean normal/testables imports, unchanged catalog, 48 passed / 0 failed / 1 Timeline skip. See [follow-up evidence](unity-2022-3-independent-gates-20261029.md). The representative was not substituted. |
 | 6. Catalog | PASS | `catalog-compare.json`: no contract/payload growth or change, review_required=false. Hash `sha256:5d966c220de01b8642658e74c5e6b7950165332294c633db37508ab2bf6dd18e`. Baseline not regenerated. Normal 6.6 catalog exposes 34 tools. |
 | 7. Cold/warm gate | PASS | Cold and warm list, strict call, legacy and batch refuse dispatched requests. Cached list --profiles works locally. Strict exec warm-cache approval rejection now also retains its JSON code; no token is issued while locked. |
 | 7. Settings | PASS | CLI→2022.3 UI toggle→OFF save→ON save; unknown key preserved. 6.6 UI has no toggle and preserves the shared value on save. `settings-ui22.out`, `settings-ui66.out`, `settings-readback22.out`. UI Toolkit state/callback verification, not physical OS clicks. |
@@ -64,7 +64,7 @@ The approval/catalog error envelope fixes preserve codes instead of reclassifyin
 
 **사용자 승인(범위 한정):** the requester relayed the user's explicit authorization to replay APPROVAL_REQUIRED only for scratch-project settings UI state/save, instance-ID reads, 20 `return 1;` calls, and operation-ID retry QA. Each approved call repeated the original request with the returned single-use `--approve` token. No `--yes` flag was used. The first probe was left unapproved until that authorization arrived. Tokens are redacted from the repository appendix; raw local evidence retains the preflight and execution records.
 
-Remaining limits: required 6000.6.6f1 gate BLOCKED; Timeline test skipped on both available Editors; installed TMP, Timeline, Input System and AI Navigation paths on 2022.3 remain unverified. No claim for other Unity lines, physical OS clicks, or real packet loss. Developer Mode is unsupported opt-in, not a new supported Unity series. Cross-review by the requester is still required before release.
+The required 6000.6.6f1 gate and the named 2022.3 package paths now have independent PASS evidence. The original blank-template Timeline skips above are retained; the later package-present 2022.3 suite passed 51/51 without skips. See [verified versions and paths](unity-2022-3-independent-gates-20261029.md). No claim is made for other Unity lines, physical OS clicks, real packet loss or every feature of those packages. Developer Mode remains unsupported opt-in, not a new supported Unity series. Recording this evidence does not authorize release.
 
 ## Local commit sequence
 

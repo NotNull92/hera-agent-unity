@@ -1,6 +1,6 @@
 # Developer Mode cross-review follow-up — PlayMode reload cancellation
 
-Both requested findings are fixed and the targeted regression checks pass. The required Unity 6000.6.6f1 release gate remains BLOCKED because that Editor is not installed; no release approval is claimed.
+Both requested findings are fixed and the targeted regression checks pass. The required Unity 6000.6.6f1 release gate subsequently received an independent **PASS** on candidate `925e020`; see the [representative and package verification](unity-2022-3-independent-gates-20261029.md). No release approval is claimed.
 
 ## Candidate
 
@@ -55,7 +55,7 @@ No additional synthetic EditMode test was added: the regression is exercised dir
 
 All owned Editor processes and import workers were closed. The shared configuration was backed up before enabling Developer Mode and restored byte-for-byte with original metadata: SHA-256 `99214cadfcfb5a2cec44164074cbb980de8ede9bd27f97425975dcaeac86e3ab`. `cleanup.json` records zero remaining owned Unity processes. The installed global CLI was untouched. No exec approvals were needed for this follow-up; no push, tag or release was performed.
 
-The unavailable 6000.6.6f1 representative remains BLOCKED. Prior optional-package and physical-input limitations remain unchanged. The requester should cross-review this correction before release.
+The required 6000.6.6f1 gate and selected 2022.3 optional-package paths subsequently passed independent verification; [versions and scope](unity-2022-3-independent-gates-20261029.md) supersede the earlier missing-Editor and unverified-package status. Physical-input limitations remain unchanged. This report records verification, not release authorization.
 
 ## Unity/CLI command journal
 

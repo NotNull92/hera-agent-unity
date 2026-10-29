@@ -242,7 +242,7 @@ Connector 0.3.0 compiles on Unity 2022.3, but dispatched requests are refused by
 
 The setting applies to every Unity 2022.3 project on this machine. Unity 6.6+ ignores it. A missing file/key defaults to off; malformed or locked configuration reads keep the last good value until a successful refresh. Changes need no domain reload. Status and ping still work while locked; cached local-only catalog queries and validation can also succeed, but dispatched requests are refused.
 
-This is an unsupported opt-in line. TMP, Timeline, Input System and AI Navigation on 2022.3 remain unverified. `unity_docs` uses the 6000.6 corpus: both its `unity_version` and `docs_version` describe documentation, so compare them with the Editor version in `status`. With test-framework older than 1.4.0, cancel cannot stop a run whose callback is active in this domain; it preserves its pending record until completion. Stale records without an active callback can still be released.
+This is an unsupported opt-in line. On 2022.3.62f2, scoped paths for TMP 3.0.7, Timeline 1.7.7, Input System 1.14.0 and AI Navigation 1.1.6 passed independent verification; the package-present Hera suite passed 51/51. Keyboard and mouse delivery matched the same probe on 6000.6.6f1 with Input System 1.20.0. See [versions, paths and evidence](docs/handoffs/unity-2022-3-independent-gates-20261029.md). `unity_docs` uses the 6000.6 corpus: both its `unity_version` and `docs_version` describe documentation, so compare them with the Editor version in `status`. With test-framework older than 1.4.0, cancel cannot stop a run whose callback is active in this domain; it preserves its pending record until completion. Stale records without an active callback can still be released.
 
 All other Editor lines (including 2023.x and 6000.0–6000.5) hit an explicit `#error`. This stops normal project compilation, and other compiler errors may appear alongside it. Remove the package or use one of the two allowed lines.
 
@@ -253,6 +253,8 @@ Supported Unity versions are Unity 6.6+ (`6000.6` minimum). The release compile 
 | Bucket | Representative Editor | Last full-gate result |
 |:---|:---|:---:|
 | 6000.6+ | 6000.6.6f1 | PASS |
+
+Connector 0.3.0 at `925e020` passed the required 6000.6.6f1 gate independently: clean normal/testables imports, unchanged catalog, and 48 tests passed with 0 failed and 1 Timeline skip in the blank template. [Gate evidence](docs/handoffs/unity-2022-3-independent-gates-20261029.md).
 
 Unity 6.6+ remains the supported line. Connector 0.3.0 also compiles on Unity 2022.3 behind the opt-in Developer Mode gate below. Its uGUI dependency resolves to the Editor's built-in version; the compile-time allow-list rejects other Editor lines. The package minimum alone does not enforce this boundary for git installs.
 
