@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -7,6 +8,7 @@ using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
 
 namespace HeraAgent.Tests
@@ -83,8 +85,20 @@ namespace HeraAgent.Tests
             }
         }
 
+#if UNITY_2022_3
+        [UnityTest]
+        public IEnumerator GatePrecedesCatalogApprovalAndMutation()
+        {
+            var task = GatePrecedesCatalogApprovalAndMutationAsync();
+            while (!task.IsCompleted) yield return null;
+            task.GetAwaiter().GetResult();
+        }
+
+        private async Task GatePrecedesCatalogApprovalAndMutationAsync()
+#else
         [Test]
         public async Task GatePrecedesCatalogApprovalAndMutation()
+#endif
         {
             var previous = HeraSettings.s_ConfigPathOverride;
             var path = Path.Combine(Path.GetTempPath(), "hera-developer-gate-" + Guid.NewGuid().ToString("N") + ".json");
