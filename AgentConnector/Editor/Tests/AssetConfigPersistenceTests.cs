@@ -64,7 +64,7 @@ namespace HeraAgent.Tests
             {
                 File.WriteAllText(path,
                     "{\"game_feel_ui_mode\":true,\"game_feel_mode\":true,"
-                    + "\"ui_slop_mode\":true,"
+                    + "\"ui_slop_mode\":true,\"developer_mode\":true,"
                     + "\"defaultCscPath\":\"csc-one\",\"defaultDotnetPath\":\"dotnet-one\","
                     + "\"assets\":[{\"id\":\"dotween\",\"enabled\":true}]}");
                 File.SetLastWriteTimeUtc(path, initialStamp);
@@ -74,6 +74,7 @@ namespace HeraAgent.Tests
                 var initialPassed = initial.GameFeelUiMode
                     && initial.GameFeelMode
                     && initial.UiSlopMode
+                    && initial.DeveloperMode
                     && initial.DotweenPreferred
                     && initial.DefaultCscPath == "csc-one"
                     && initial.DefaultDotnetPath == "dotnet-one";
@@ -83,6 +84,7 @@ namespace HeraAgent.Tests
                 HeraSettings.RefreshForTests(path, now.AddSeconds(1));
                 var afterFailure = HeraSettings.SnapshotForTests();
                 var preserved = afterFailure.GameFeelUiMode
+                    && afterFailure.DeveloperMode
                     && afterFailure.DefaultCscPath == "csc-one";
 
                 File.WriteAllText(path,
@@ -100,6 +102,7 @@ namespace HeraAgent.Tests
                 var recoveredPassed = !recovered.GameFeelUiMode
                     && !recovered.GameFeelMode
                     && !recovered.UiSlopMode
+                    && !recovered.DeveloperMode
                     && !recovered.DotweenPreferred
                     && recovered.DefaultCscPath == "csc-two"
                     && recovered.DefaultDotnetPath == "dotnet-two";
@@ -108,6 +111,7 @@ namespace HeraAgent.Tests
                 HeraSettings.RefreshForTests(path, now.AddSeconds(2));
                 var missing = HeraSettings.SnapshotForTests();
                 var missingDefaults = !missing.GameFeelUiMode
+                    && !missing.DeveloperMode
                     && missing.DefaultCscPath == null
                     && missing.DefaultDotnetPath == null;
 

@@ -251,7 +251,7 @@ namespace HeraAgent
         }
 
 #if UNITY_2022_3
-        static ErrorResponse DeveloperModeRequired() => new ErrorResponse(
+        internal static ErrorResponse DeveloperModeRequired() => new ErrorResponse(
             "DEVELOPER_MODE_REQUIRED",
             "[Hera] I'm installed in Unity 2022.3, which I only serve in Developer Mode. Turn it on in Hera Settings or run `hera-agent-unity asset-config developer-mode on`, then retry.");
 #endif
