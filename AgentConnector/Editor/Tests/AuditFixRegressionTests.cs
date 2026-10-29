@@ -105,6 +105,28 @@ namespace HeraAgent.Tests
             }
         }
 
+        [Test]
+        public void InputSystemTimeoutPreservesMessageAndOtherFailuresKeepPrefix()
+        {
+            var method = typeof(InputQaInputSystem).GetMethod("InvocationFailure", PrivateStatic);
+            Assert.IsNotNull(method);
+            const string timeoutMessage = "[Hera] I timed out waiting for a player input update.";
+            foreach (var error in new Exception[]
+            {
+                new TimeoutException(timeoutMessage),
+                new TargetInvocationException(new TimeoutException(timeoutMessage)),
+            })
+            {
+                var response = (ErrorResponse)method.Invoke(null, new object[] { error });
+                Assert.AreEqual("INPUTSYSTEM_INVOCATION_FAILED", response.code);
+                Assert.AreEqual(timeoutMessage, response.message);
+            }
+            var other = (ErrorResponse)method.Invoke(null,
+                new object[] { new InvalidOperationException("fixture failure") });
+            Assert.AreEqual("INPUTSYSTEM_INVOCATION_FAILED", other.code);
+            Assert.AreEqual("Input System rejected the synthesized event: fixture failure", other.message);
+        }
+
         static void CheckHint(Type owner, string methodName, object target, string topic)
         {
             ClearHints(owner);

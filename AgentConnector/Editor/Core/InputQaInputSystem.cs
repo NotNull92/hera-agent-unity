@@ -663,7 +663,7 @@ namespace HeraAgent
             var inner = Unwrap(exception);
             return new ErrorResponse(
                 "INPUTSYSTEM_INVOCATION_FAILED",
-                "Input System rejected the synthesized event: " + inner.Message);
+                inner is TimeoutException ? inner.Message : "Input System rejected the synthesized event: " + inner.Message);
         }
 
         private static Exception Unwrap(Exception exception)
@@ -978,7 +978,7 @@ namespace HeraAgent
                         Finish(null, new InvalidOperationException("[Hera] I stopped waiting because Play Mode is inactive or paused."));
                     else if (clock.ElapsedMilliseconds >= ApplyDeadlineMs)
                         Finish(null, new TimeoutException(
-                            $"[Hera] I couldn't observe a configured player input update within {ApplyDeadlineMs} ms (updateMode={UpdateMode?.GetValue(Settings)})."));
+                            $"[Hera] I couldn't observe a configured player input update within {ApplyDeadlineMs} ms (updateMode={UpdateMode?.GetValue(Settings)}); Unity's player loop stops when Unity is unfocused and Run In Background is off. I need you to focus the Unity window or enable Player Settings > Resolution and Presentation > Run In Background; Manual mode requires your project's InputSystem.Update() pump."));
                 }
 
                 void Before()
