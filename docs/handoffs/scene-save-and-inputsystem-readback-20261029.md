@@ -122,3 +122,18 @@ Final scene commands and fixture state are retained under `completion/logs/finis
 - All Editors started for this task are now closed. The requester closed the previously retained PID 80362 during handoff; the final completion PIDs 83764 and 84679 were stopped only after verifying their exact scratch project paths. Other-session Unity projects, including the protected assignment project, were not targeted.
 - `completion/logs/final-cleanup.json` confirms asset-config SHA-256 **99214cadfcfb5a2cec44164074cbb980de8ede9bd27f97425975dcaeac86e3ab** and installed CLI SHA-256 **06590d528b79d10051a13202e8558fc21f453e7c32ae2fd3bb6d62e2bd4c2a33**, unchanged from the original snapshot. Neither required restoration because neither was modified.
 - Local commits only; no push, tag, release or self-update. Scratch exports, scripts and logs remain available for independent review. UAC removal is **별도 작업**.
+
+
+## Minimal diagnostic follow-up — PASS
+
+Latest verified implementation: **`eb6ceeb122376b33ec1171477bf16483fd8c542f`**, Connector **0.2.14** unchanged. The timeout now explains unfocused Unity with Run In Background off, the focus/settings remedies, and the Manual update pump. TimeoutException messages retain their text without the misleading event-rejection prefix; other exceptions keep the existing prefix. Dirty untitled scene messages no longer quote an empty name. Error codes, response fields, the 2000 ms deadline, application/wait logic and input policy are unchanged. README/help/canonical and generated guides include the background condition.
+
+Evidence is retained under `minimal/` in the same external bundle:
+
+- **Go PASS:** `go-checks/01.json`–`06.json`: gofmt -l (empty), lint run, lint fmt diff, real-path TMPDIR go test, generated-guide check and package validator.
+- **Exact exported SHA / Unity PASS:** fresh 6000.6.6f1 project with Input System 1.20.0 and testables; errors 0, CS warnings 0, main-relative new warnings 0 (`logs/warning-diff.json`). Existing warnings remain separate work.
+- **EditMode PASS:** 49 total / 48 passed / 0 failed / 1 optional Timeline skip (`logs/07-tests.json`). The added test checks direct and wrapped TimeoutException messages and preserves the non-timeout prefix without relying on live focus.
+- **Catalog PASS:** the baseline hash remains `sha256:5d966c220de01b8642658e74c5e6b7950165332294c633db37508ab2bf6dd18e`, with no contract change (`logs/catalog-report.json`).
+- **Live PASS:** dirty untitled save contains no empty-name quotes (`logs/08-dirty-save.json`); focused scroll response remains (0,3) and the player probe observes it (`logs/10-scroll.json`, `player-scroll.txt`). Console errors remain 0.
+- **Background message verification:** no naturally inactive-app condition occurred during this pass. The approved EditMode test substitutes for that live case; application focus and Run In Background were not changed to provoke a timeout.
+- **Cleanup PASS:** the owned Editor exited and both global configuration and installed CLI hashes remain unchanged (`logs/final-checks.json`). Other-session Unity projects were not targeted. No push, tag or release. Unity 2022.3 remains deferred.
