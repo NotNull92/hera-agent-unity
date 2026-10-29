@@ -1,5 +1,7 @@
 # Unity 2022.3 Developer Mode — implementation evidence
 
+Follow-up: [PlayMode reload cancellation correction and live regression evidence](unity-2022-3-developer-mode-crossreview-20261029.md).
+
 Implementation complete. **Release gate remains BLOCKED:** the required Unity 6000.6.6f1 representative is not installed. Available-editor checks passed; this is not a release approval.
 
 ## Candidate and environment
