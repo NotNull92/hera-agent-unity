@@ -151,6 +151,9 @@ namespace HeraAgent.Editor
             InitializeCategoryStates();
 
             BuildToolbar();
+#if UNITY_2022_3
+            BuildDeveloperModeSection();
+#endif
             BuildUltraHeraSection();
             BuildGameFeelModeSection();
             BuildGameFeelUiModeSection();

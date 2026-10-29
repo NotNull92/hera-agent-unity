@@ -131,7 +131,7 @@ Keep each site's existing `Include`/`Exclude` value and its generic or non-gener
 
 ### D6. Tests — `AgentConnector/Editor/Tests/`
 
-- Seven files use 6000.6-only APIs (`EntityIdCompatTests`, `ReleaseGateTests`, `AtomicBatchTests`, `ExecSerializerTests`, `SceneGameObjectToolTests`, `ScreenshotAnnotationTests`, `ScreenshotPhysicsTests`). Branch only the expected-id computation per line. Do not delete coverage.
+- Existing tests already use `EntityIdCompat`; keep their portable expectations unchanged. Add the 2022.3 edge cases, gate tests and temporary-config fixture below. If a live 2022.3 test fails specifically because it asserts 64-bit EntityId semantics, branch only that assertion with `UNITY_6000_6_OR_NEWER` and record the evidence. Do not delete coverage.
 - Add 2022.3 cases: `EntityIdCompat` round-trip for positive, negative and `0` ids, a destroyed object, and `int` boundary ± 1 as `long` → `null`. Developer Mode gate: locked → `DEVELOPER_MODE_REQUIRED` with no side effect, unlocked → dispatch.
 - The new gate must not break existing dispatch tests on 2022.3. A fixture sets `HeraSettings` to a temp config with `developer_mode: true` and restores it (`s_ConfigPathOverride` exists). Isolate the OFF tests.
 - `HeraAgent.Editor.Tests` compiles in a 2022.3 `testables` pass with test-framework 1.1.33, and on 6000.6 with 1.8.0.

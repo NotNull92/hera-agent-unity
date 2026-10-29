@@ -93,6 +93,12 @@ After a successful bootstrap, you may proceed to whatever the user actually want
 
 ---
 
+## Unity 2022.3 Developer Mode
+
+Connector 0.3.0 allows Unity 2022.3 only after machine-global opt-in: Hera Settings → Developer Mode, or `hera-agent-unity asset-config developer-mode on`. Use `off` to disable it. While locked, dispatched requests return `DEVELOPER_MODE_REQUIRED`; status/ping and cached local-only queries still work. Unity 6.6+ ignores the setting.
+
+Unity 2022.3 is unsupported. TMP, Timeline, Input System and AI Navigation remain unverified there. `unity_docs` uses the 6000.6 corpus; compare its documentation version with the real Editor version in `status`. With test-framework older than 1.4.0, cancel keeps an active run pending until completion. Other Editor lines stop project compilation at an explicit version error.
+
 ## 1. Quick Rules (must-follow)
 
 Numbered so you can grep "[Rule N]" when in doubt.

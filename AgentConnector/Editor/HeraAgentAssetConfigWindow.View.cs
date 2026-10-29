@@ -12,6 +12,26 @@ namespace HeraAgent.Editor
 {
     public partial class HeraAgentAssetConfigWindow : EditorWindow
     {
+#if UNITY_2022_3
+        private void BuildDeveloperModeSection()
+        {
+            var toggle = new Toggle("Developer Mode (Unity 2022.3)")
+            {
+                name = "developer-mode",
+                value = _config?.developer_mode ?? false,
+                tooltip = "Allow Hera requests on every Unity 2022.3 project on this machine. Unsupported; off by default."
+            };
+            toggle.RegisterValueChangedCallback(evt =>
+            {
+                if (_config == null) return;
+                _config.developer_mode = evt.newValue;
+                SaveConfig();
+            });
+            _root.Add(toggle);
+            _root.Add(new Label("Machine-global opt-in for unsupported Unity 2022.3; Unity 6.6+ is unaffected."));
+        }
+#endif
+
         private void BuildToolbar()
         {
             var toolbar = new Toolbar();

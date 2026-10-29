@@ -10,10 +10,13 @@ import (
 )
 
 func TestAssetConfigModel_QuitSavesChangesBeforeClosing(t *testing.T) {
-	cfg := &assetconfig.AssetConfig{Assets: assetconfig.DefaultAssets()}
+	cfg := &assetconfig.AssetConfig{Assets: assetconfig.DefaultAssets(), DeveloperMode: true}
 	saveCalls := 0
 	m := newAssetConfigModel(cfg, func(got *assetconfig.AssetConfig) error {
 		saveCalls++
+		if !got.DeveloperMode {
+			t.Fatal("developer mode was lost on TUI save")
+		}
 		if !got.Assets[0].Enabled {
 			t.Fatal("expected changed assets to be saved")
 		}

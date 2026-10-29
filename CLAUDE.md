@@ -433,10 +433,12 @@ go test ./...
 
 Connector 코드, asmdef, 패키지 의존성, 테스트 소스 또는 `package.json`이
 바뀌면 한 Unity 버전에서의 성공만으로 검증 완료라고 기록하지 않는다. 지원
-하한은 **Unity 6.6 (`6000.6`)** 이고(`AgentConnector/package.json`의 `unity` 필드가
-그 하한을 강제한다), 대표 에디터는 현재 하나다:
+정식 지원 하한은 **Unity 6.6 (`6000.6`)** 이다. Connector의 전처리 allow-list는
+6000.6+와 opt-in 2022.3만 허용한다. package.json의 최소 값만으로 git 설치를
+차단한다고 가정하지 않는다. 기존 지원 대표와 별도 Developer Mode 대표는 다음과 같다:
 
-1. `6000.6+` — `6000.6.6f1`
+1. `6000.6+` — `6000.6.6f1` (기존 필수 게이트 유지)
+2. `2022.3` — `2022.3.62f2` (Developer Mode, 별도 검증; 정식 지원 아님)
 
 대표 에디터의 source of truth는 `docs/UNITY_EDITOR_VERSION_INVENTORY.md`다.
 인벤토리의 대표 버전을 최신화해야 하면 먼저 갱신하고, 설치되지 않았거나 실행할

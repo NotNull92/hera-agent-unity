@@ -112,6 +112,9 @@ namespace HeraAgent
         /// </summary>
         public static async Task<object> DispatchBatch(List<BatchCommandItem> commands, BatchOptions options)
         {
+#if UNITY_2022_3
+            if (!HeraSettings.DeveloperMode) return DeveloperModeRequired();
+#endif
             var prepared = new List<PreparedRequest>(commands.Count);
             foreach (var item in commands)
             {
@@ -247,6 +250,12 @@ namespace HeraAgent
             return null;
         }
 
+#if UNITY_2022_3
+        static ErrorResponse DeveloperModeRequired() => new ErrorResponse(
+            "DEVELOPER_MODE_REQUIRED",
+            "[Hera] I'm installed in Unity 2022.3, which I only serve in Developer Mode. Turn it on in Hera Settings or run `hera-agent-unity asset-config developer-mode on`, then retry.");
+#endif
+
         static async Task<object> DispatchInternal(
             string command,
             JObject parameters,
@@ -258,7 +267,12 @@ namespace HeraAgent
                 var protocolError = requestContext.ValidateProtocol();
                 if (protocolError != null)
                     return protocolError;
-
+            }
+#if UNITY_2022_3
+            if (!HeraSettings.DeveloperMode) return DeveloperModeRequired();
+#endif
+            if (requestContext != null)
+            {
                 var catalogError = requestContext.ValidateCatalog();
                 if (catalogError != null)
                     return catalogError;

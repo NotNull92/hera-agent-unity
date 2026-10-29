@@ -803,3 +803,28 @@ func TestCategoryNamesAndOrder(t *testing.T) {
 		}
 	}
 }
+
+func TestDeveloperModeRoundTripPreservesExtensions(t *testing.T) {
+	withTempHome(t)
+	cfg, err := Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg.extra = map[string]json.RawMessage{"future_setting": json.RawMessage(`{"keep":true}`)}
+	if err := Save(cfg); err != nil {
+		t.Fatal(err)
+	}
+	for _, enabled := range []bool{true, false} {
+		if _, err := SetDeveloperMode(enabled); err != nil {
+			t.Fatal(err)
+		}
+		got, err := Load()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var extension map[string]bool
+		if err := json.Unmarshal(got.extra["future_setting"], &extension); err != nil || !extension["keep"] || got.DeveloperMode != enabled {
+			t.Fatalf("lost setting or extension: %+v", got)
+		}
+	}
+}

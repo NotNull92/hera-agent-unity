@@ -332,6 +332,9 @@ namespace HeraAgent.TestRunner
             {
                 if (cleanedUp) return;
                 cleanedUp = true;
+#if !HERA_TEST_FRAMEWORK_CANCEL_API
+                s_ActiveRuns.Remove(runId);
+#endif
                 DisposeApi(api, callbacks);
             };
 
@@ -362,6 +365,11 @@ namespace HeraAgent.TestRunner
                     $"Unable to start EditMode tests: {ex.Message}"));
             }
         }
+
+#if !HERA_TEST_FRAMEWORK_CANCEL_API
+        // Markers only cover runs whose completion callback still lives in this domain.
+        private static readonly HashSet<string> s_ActiveRuns = new HashSet<string>();
+#endif
 
         private static object StartTestRun(TestMode mode, string filter, string[] categories, string[] assemblies,
             string[] selectedNames = null, ShardResult shard = null)
@@ -400,6 +408,9 @@ namespace HeraAgent.TestRunner
             {
                 if (cleanedUp) return;
                 cleanedUp = true;
+#if !HERA_TEST_FRAMEWORK_CANCEL_API
+                s_ActiveRuns.Remove(runId);
+#endif
                 DisposeApi(api, callbacks);
             };
 
@@ -420,6 +431,9 @@ namespace HeraAgent.TestRunner
                 );
 
                 api.RegisterCallbacks(callbacks);
+#if !HERA_TEST_FRAMEWORK_CANCEL_API
+                s_ActiveRuns.Add(runId);
+#endif
                 // Execute returns NUnit's own run guid — the only handle
                 // CancelTestRun accepts. Persist it so `test cancel` still works
                 // after the PlayMode domain reload.
@@ -660,12 +674,19 @@ namespace HeraAgent.TestRunner
             if (pending.Count == 0)
                 return new SuccessResponse("No test run was active.", new { was_running = false });
 
+#if !HERA_TEST_FRAMEWORK_CANCEL_API
+            if (pending.Any(entry => s_ActiveRuns.Contains(entry.RunId)))
+                return new SuccessResponse(
+                    "[Hera] I can't stop a running test on this test-framework version; it will finish and record its own result.",
+                    new { was_running = true, run_ids = pending.Select(entry => entry.RunId).ToArray(), nunit_cancel_requested = false });
+#endif
             var runIds = new List<string>();
             var cancelRequested = false;
             foreach (var entry in pending)
             {
                 var port = entry.Port;
                 var runId = entry.RunId;
+#if HERA_TEST_FRAMEWORK_CANCEL_API
                 var nunitGuid = entry.NunitGuid;
                 if (!string.IsNullOrEmpty(nunitGuid))
                 {
@@ -679,6 +700,7 @@ namespace HeraAgent.TestRunner
                     }
                 }
 
+#endif
                 if (WriteErrorResultsFile(port, runId, "TEST_RUN_CANCELLED", "The test run was cancelled."))
                     TestRunnerState.ClearPending(port, runId);
                 runIds.Add(runId);

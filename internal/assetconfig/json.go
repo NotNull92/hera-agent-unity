@@ -53,6 +53,7 @@ func (cfg *AssetConfig) UnmarshalJSON(data []byte) error {
 		GameFeelUIMode      bool                `json:"game_feel_ui_mode"`
 		GameFeelMode        bool                `json:"game_feel_mode"`
 		UISlopMode          bool                `json:"ui_slop_mode"`
+		DeveloperMode       bool                `json:"developer_mode"`
 		DefaultCscPath      string              `json:"defaultCscPath"`
 		DefaultDotnetPath   string              `json:"defaultDotnetPath"`
 	}
@@ -73,6 +74,7 @@ func (cfg *AssetConfig) UnmarshalJSON(data []byte) error {
 		GameFeelUIMode:      fields.GameFeelUIMode,
 		GameFeelMode:        fields.GameFeelMode,
 		UISlopMode:          fields.UISlopMode,
+		DeveloperMode:       fields.DeveloperMode,
 		DefaultCscPath:      fields.DefaultCscPath,
 		DefaultDotnetPath:   fields.DefaultDotnetPath,
 		extra:               extra,
@@ -86,6 +88,7 @@ func (cfg AssetConfig) MarshalJSON() ([]byte, error) {
 		"loopEngineeringMode": cfg.LoopEngineeringMode,
 		"game_feel_ui_mode":   cfg.GameFeelUIMode,
 		"game_feel_mode":      cfg.GameFeelMode, "ui_slop_mode": cfg.UISlopMode,
+		"developer_mode": cfg.DeveloperMode,
 	}, map[string]string{
 		"defaultCscPath":    cfg.DefaultCscPath,
 		"defaultDotnetPath": cfg.DefaultDotnetPath,
@@ -114,7 +117,7 @@ func deleteKnownAssetEntryFields(root map[string]json.RawMessage) {
 }
 
 func deleteKnownAssetConfigFields(root map[string]json.RawMessage) {
-	for _, key := range []string{"version", "assets", "loopEngineeringMode", "ui_system", "game_feel_ui_mode", "game_feel_mode", "ui_slop_mode", "defaultCscPath", "defaultDotnetPath", "ui_juicy_mode"} {
+	for _, key := range []string{"version", "assets", "loopEngineeringMode", "ui_system", "game_feel_ui_mode", "game_feel_mode", "ui_slop_mode", "developer_mode", "defaultCscPath", "defaultDotnetPath", "ui_juicy_mode"} {
 		delete(root, key)
 	}
 }

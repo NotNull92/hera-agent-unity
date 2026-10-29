@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Connector 0.3.0: opt-in Developer Mode for Unity 2022.3, controlled by Hera Settings or `asset-config developer-mode on|off`; Unity 6.6+ remains supported and unchanged.
+
 - CLI: `list --tool <name> --action <action>` returns only the selected action schema, result and safety.
 
 ### Changed

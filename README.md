@@ -236,6 +236,16 @@ Measured low-token baselines for `list --compact` are **about 93 estimated token
 
 `T` is a simple `ceil(UTF-8 bytes / 4)` estimate for Hera's CLI payload only. It is not provider billing telemetry. Full methodology: [token-reduction benchmark](docs/benchmarks/token-reduction/README.md).
 
+### Developer Mode on Unity 2022.3
+
+Connector 0.3.0 compiles on Unity 2022.3, but dispatched requests are refused by default with `DEVELOPER_MODE_REQUIRED`. Enable **Developer Mode (Unity 2022.3)** in Hera Settings or run `hera-agent-unity asset-config developer-mode on`; use `off` to disable it. `asset-config developer-mode` shows the value and `asset-config --json` includes `developer_mode` (read-only).
+
+The setting applies to every Unity 2022.3 project on this machine. Unity 6.6+ ignores it. A missing file/key defaults to off; malformed or locked configuration reads keep the last good value until a successful refresh. Changes need no domain reload. Status and ping still work while locked; cached local-only catalog queries and validation can also succeed, but dispatched requests are refused.
+
+This is an unsupported opt-in line. TMP, Timeline, Input System and AI Navigation on 2022.3 remain unverified. `unity_docs` uses the 6000.6 corpus: both its `unity_version` and `docs_version` describe documentation, so compare them with the Editor version in `status`. With test-framework older than 1.4.0, cancel cannot stop a run whose callback is active in this domain; it preserves its pending record until completion. Stale records without an active callback can still be released.
+
+All other Editor lines (including 2023.x and 6000.0–6000.5) hit an explicit `#error`. This stops normal project compilation, and other compiler errors may appear alongside it. Remove the package or use one of the two allowed lines.
+
 ### Compatibility is checked across Unity generations
 
 Supported Unity versions are Unity 6.6+ (`6000.6` minimum). The release compile gate installs the Connector's exact source as a normal UPM dependency in a disposable blank project of the representative Editor and requires a clean compile, a green release-gate suite, and zero console errors:
@@ -244,7 +254,7 @@ Supported Unity versions are Unity 6.6+ (`6000.6` minimum). The release compile 
 |:---|:---|:---:|
 | 6000.6+ | 6000.6.6f1 | PASS |
 
-The floor states what is actually verified: a single representative Editor, with no compatibility claim for any other Unity line. `AgentConnector/package.json` carries the `6000.6` floor, so Package Manager refuses the Connector on an older Editor instead of failing later at compile time.
+Unity 6.6+ remains the supported line. Connector 0.3.0 also compiles on Unity 2022.3 behind the opt-in Developer Mode gate below. Its uGUI dependency resolves to the Editor's built-in version; the compile-time allow-list rejects other Editor lines. The package minimum alone does not enforce this boundary for git installs.
 
 CLI and Connector versions are intentionally separate.
 
@@ -696,7 +706,8 @@ A long Test Runner job can outlive a normal request window. Hera stores durable 
 | Unity version | Status | Representative verification |
 |:---|:---|:---|
 | 6000.6+ | Supported | `6000.6.6f1` release gate |
-| Older than 6000.6 | Not supported | Minimum is Unity 6.6 (6000.6) |
+| 2022.3 | Developer Mode (opt-in, unsupported) | Representative `2022.3.62f2`; separate verification |
+| Other Editor lines | Not supported | Explicit compile-time error |
 
 Version-specific behavior is checked against live Editors rather than assumed from one Unity version.
 

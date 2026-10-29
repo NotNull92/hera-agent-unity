@@ -9,13 +9,14 @@ powershell -ExecutionPolicy Bypass -File tools/unity-editor-inventory/inventory-
 
 ## Supported release-gate representative
 
-Hera targets **Unity 6.6+ (`6000.6` minimum)**, enforced by the `unity` field in
-`AgentConnector/package.json`. The release gate covers the single representative
-below, and the scanner's default version list contains only that Editor.
+Hera supports **Unity 6.6+**. Connector 0.3.0 also allows **Unity 2022.3** in opt-in Developer Mode. The compile-time allow-list enforces these two lines; the package minimum is not an install gate for every git URL. The scanner's default list still targets the supported representative.
 
 | Bucket | Representative |
 |---|---|
 | `6000.6+` | `6000.6.6f1` |
+| `2022.3` (Developer Mode, unsupported) | `2022.3.62f2` |
+
+The Developer Mode verification also uses available `6000.6.7f1` for regression evidence. This does not replace the required `6000.6.6f1` gate, which is BLOCKED when that Editor is not installed.
 
 ## Current Inventory
 

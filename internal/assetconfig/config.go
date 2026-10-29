@@ -55,7 +55,8 @@ type AssetConfig struct {
 	// `doctor --agent-rules` injects the unity-deslop discipline and connector
 	// tool responses point agents at the bundled ui_slop taxonomy (static visual
 	// slop: layout, spacing, typography, color) via agent_hint.
-	UISlopMode bool `json:"ui_slop_mode"`
+	UISlopMode    bool `json:"ui_slop_mode"`
+	DeveloperMode bool `json:"developer_mode"`
 
 	// DefaultCscPath/DefaultDotnetPath are shared by the Hera Settings window and CLI.
 	DefaultCscPath    string `json:"defaultCscPath,omitempty"`
@@ -366,6 +367,19 @@ func LoadGameFeelModeNoCreate() bool {
 		return false
 	}
 	return cfg.GameFeelMode
+}
+
+// SetDeveloperMode allows requests on unsupported Unity 2022.3 editors.
+func SetDeveloperMode(enabled bool) (*AssetConfig, error) {
+	cfg, err := Load()
+	if err != nil {
+		return nil, err
+	}
+	cfg.DeveloperMode = enabled
+	if err := Save(cfg); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 // SetUISlopMode sets the Unity De-slop Mode (Beta) flag and persists it.
