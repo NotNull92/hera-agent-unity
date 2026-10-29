@@ -59,6 +59,7 @@ namespace HeraAgent.Tests
 #if UNITY_2022_3
                 // Test Framework 1.1 resolves inherited categories through the parent fixture.
                 new TestSuite("ArtifactFixture").Add(test);
+                test.Properties.Set("platform", "EditMode");
 #endif
                 var result = test.MakeTestResult();
                 result.SetResult(state, "message <&>", "stack <line>");
