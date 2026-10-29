@@ -338,6 +338,10 @@ namespace HeraAgent.Tools
                 });
             }
 
+            if (string.IsNullOrEmpty(scene.path))
+                return new ErrorResponse("SCENE_UNSAVED",
+                    $"[Hera] I can't save the untitled scene '{scene.name}': it has no asset path, and saving it would open Unity's Save dialog. Save it once from the Editor, or create scenes with `hera-agent-unity scene create <Assets/...unity>` before editing.");
+
             bool ok = EditorSceneManager.SaveScene(scene);
             if (!ok)
                 return new ErrorResponse("SCENE_SAVE_FAILED", $"Failed to save scene: {scene.name}");

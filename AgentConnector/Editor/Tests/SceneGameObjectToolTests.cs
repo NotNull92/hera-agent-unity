@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.IO;
 using HeraAgent.Tools;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -69,9 +70,23 @@ namespace HeraAgent.Tests
                 Assert.IsFalse(baseScene.isDirty || additiveScene.isDirty);
 
                 var untitled = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+                SceneManager.SetActiveScene(untitled);
+                Assert.IsFalse(untitled.isDirty);
+                Assert.IsFalse(RequireSuccess(ManageScene.Save(new JObject())).Value<bool>("saved"));
                 EditorSceneManager.MarkSceneDirty(untitled);
+                RequireError(ManageScene.Save(new JObject()), "SCENE_UNSAVED");
+                Assert.IsTrue(untitled.isDirty);
+
+                var savedBytes = File.ReadAllBytes(basePath);
+                var unsavedObject = new GameObject("UnsavedChange");
+                SceneManager.MoveGameObjectToScene(unsavedObject, baseScene);
+                EditorSceneManager.MarkSceneDirty(baseScene);
                 RequireError(ManageScene.SaveAll(new JObject()), "SCENE_UNSAVED");
+                Assert.IsTrue(untitled.isDirty && baseScene.isDirty);
+                CollectionAssert.AreEqual(savedBytes, File.ReadAllBytes(basePath), "save_all must not partially save");
                 Assert.IsTrue(EditorSceneManager.CloseScene(untitled, true));
+                Assert.IsTrue(RequireSuccess(ManageScene.Save(new JObject { ["path"] = basePath })).Value<bool>("saved"));
+                Assert.IsFalse(baseScene.isDirty);
 
                 RequireSuccess(ManageScene.Create(new JObject
                 {
