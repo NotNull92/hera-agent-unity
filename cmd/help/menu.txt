@@ -24,3 +24,4 @@ Notes:
     built-in menus (e.g. File/Save) carry no attribute and are not enumerated,
     but can still be executed by path.
   - File/Quit is blocked for safety.
+  - Menus can open modal dialogs and block requests until a person closes them.

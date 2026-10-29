@@ -12,6 +12,8 @@ namespace HeraAgent
     internal static class InputQaInputSystem
     {
         private const string InputSystemAssembly = "Unity.InputSystem";
+        // Allows slow editor frames without waiting indefinitely for an unpumped Manual update.
+        internal const int ApplyDeadlineMs = 2000;
         private static readonly HashSet<string> HeldKeys =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> HeldMouseButtons =
@@ -151,6 +153,7 @@ namespace HeraAgent
                     $"Keyboard control '{canonicalKey}' is unavailable.");
 
             var mode = options.Mode ?? "press";
+            InputQaPhysicalSnapshot snapshot = null;
             try
             {
                 switch (mode)
@@ -158,10 +161,10 @@ namespace HeraAgent
                     case "press":
                         if (HeldKeys.Contains(canonicalKey))
                             return AlreadyHeld("key", canonicalKey);
-                        await api.ApplyButton(control, true, options.CancellationToken);
-                        HeldKeys.Add(canonicalKey);
                         try
                         {
+                            snapshot = await api.ApplyButton(control, true, options.CancellationToken,
+                                () => HeldKeys.Add(canonicalKey));
                             await EditorUpdate.Wait(
                                 1,
                                 options.HoldMs,
@@ -169,24 +172,30 @@ namespace HeraAgent
                         }
                         finally
                         {
-                            if (options.CancellationToken.IsCancellationRequested)
-                                api.SetButton(control, false);
-                            else
-                                await api.ApplyButton(control, false, CancellationToken.None);
-                            HeldKeys.Remove(canonicalKey);
+                            if (HeldKeys.Contains(canonicalKey))
+                            {
+                                if (options.CancellationToken.IsCancellationRequested || ValidatePlayMode() != null)
+                                {
+                                    api.SetButton(control, false);
+                                    HeldKeys.Remove(canonicalKey);
+                                }
+                                else
+                                    snapshot = await api.ApplyButton(control, false, CancellationToken.None,
+                                        () => HeldKeys.Remove(canonicalKey));
+                            }
                         }
                         break;
                     case "down":
                         if (HeldKeys.Contains(canonicalKey))
                             return AlreadyHeld("key", canonicalKey);
-                        await api.ApplyButton(control, true, options.CancellationToken);
-                        HeldKeys.Add(canonicalKey);
+                        snapshot = await api.ApplyButton(control, true, options.CancellationToken,
+                            () => HeldKeys.Add(canonicalKey));
                         break;
                     case "up":
                         if (!HeldKeys.Contains(canonicalKey))
                             return NotHeld("key", canonicalKey);
-                        await api.ApplyButton(control, false, options.CancellationToken);
-                        HeldKeys.Remove(canonicalKey);
+                        snapshot = await api.ApplyButton(control, false, options.CancellationToken,
+                            () => HeldKeys.Remove(canonicalKey));
                         break;
                     default:
                         return InvalidMode("keyboard", mode, "press, down, or up");
@@ -203,7 +212,7 @@ namespace HeraAgent
                     action = "keyboard",
                     mode,
                     key = canonicalKey,
-                    pressed_after = api.IsPressed(control),
+                    pressed_after = snapshot.Keys[canonicalKey],
                     held_by_hera = HeldKeys.Contains(canonicalKey),
                 });
             }
@@ -213,7 +222,7 @@ namespace HeraAgent
             }
             catch (Exception ex)
             {
-                return InvocationFailure(ex);
+                return ValidatePlayMode() ?? InvocationFailure(ex);
             }
         }
 
@@ -233,6 +242,7 @@ namespace HeraAgent
             var mode = options.Mode ?? "click";
             var buttonName = ButtonName(options.Button);
             var button = api.GetMouseControl(buttonName + "Button");
+            InputQaPhysicalSnapshot snapshot = null;
             try
             {
                 switch (mode)
@@ -240,7 +250,7 @@ namespace HeraAgent
                     case "move":
                         if (!options.Position.HasValue)
                             return MissingVector("position", "mouse move");
-                        await api.ApplyVector(
+                        snapshot = await api.ApplyVector(
                             api.GetMouseControl("position"),
                             options.Position.Value,
                             options.CancellationToken);
@@ -248,7 +258,7 @@ namespace HeraAgent
                     case "delta":
                         if (!options.Delta.HasValue)
                             return MissingVector("delta", "mouse delta");
-                        await api.ApplyVector(
+                        snapshot = await api.ApplyVector(
                             api.GetMouseControl("delta"),
                             options.Delta.Value,
                             options.CancellationToken);
@@ -256,23 +266,23 @@ namespace HeraAgent
                     case "scroll":
                         if (!options.ScrollDelta.HasValue)
                             return MissingVector("scroll_delta", "mouse scroll");
-                        await api.ApplyVector(
+                        snapshot = await api.ApplyVector(
                             api.GetMouseControl("scroll"),
                             options.ScrollDelta.Value,
                             options.CancellationToken);
                         break;
                     case "click":
                         if (options.Position.HasValue)
-                            await api.ApplyVector(
+                            snapshot = await api.ApplyVector(
                                 api.GetMouseControl("position"),
                                 options.Position.Value,
                                 options.CancellationToken);
                         if (HeldMouseButtons.Contains(buttonName))
                             return AlreadyHeld("mouse button", buttonName);
-                        await api.ApplyButton(button, true, options.CancellationToken);
-                        HeldMouseButtons.Add(buttonName);
                         try
                         {
+                            snapshot = await api.ApplyButton(button, true, options.CancellationToken,
+                                () => HeldMouseButtons.Add(buttonName));
                             await EditorUpdate.Wait(
                                 1,
                                 options.HoldMs,
@@ -280,34 +290,40 @@ namespace HeraAgent
                         }
                         finally
                         {
-                            if (options.CancellationToken.IsCancellationRequested)
-                                api.SetButton(button, false);
-                            else
-                                await api.ApplyButton(button, false, CancellationToken.None);
-                            HeldMouseButtons.Remove(buttonName);
+                            if (HeldMouseButtons.Contains(buttonName))
+                            {
+                                if (options.CancellationToken.IsCancellationRequested || ValidatePlayMode() != null)
+                                {
+                                    api.SetButton(button, false);
+                                    HeldMouseButtons.Remove(buttonName);
+                                }
+                                else
+                                    snapshot = await api.ApplyButton(button, false, CancellationToken.None,
+                                        () => HeldMouseButtons.Remove(buttonName));
+                            }
                         }
                         break;
                     case "down":
                         if (options.Position.HasValue)
-                            await api.ApplyVector(
+                            snapshot = await api.ApplyVector(
                                 api.GetMouseControl("position"),
                                 options.Position.Value,
                                 options.CancellationToken);
                         if (HeldMouseButtons.Contains(buttonName))
                             return AlreadyHeld("mouse button", buttonName);
-                        await api.ApplyButton(button, true, options.CancellationToken);
-                        HeldMouseButtons.Add(buttonName);
+                        snapshot = await api.ApplyButton(button, true, options.CancellationToken,
+                            () => HeldMouseButtons.Add(buttonName));
                         break;
                     case "up":
                         if (options.Position.HasValue)
-                            await api.ApplyVector(
+                            snapshot = await api.ApplyVector(
                                 api.GetMouseControl("position"),
                                 options.Position.Value,
                                 options.CancellationToken);
                         if (!HeldMouseButtons.Contains(buttonName))
                             return NotHeld("mouse button", buttonName);
-                        await api.ApplyButton(button, false, options.CancellationToken);
-                        HeldMouseButtons.Remove(buttonName);
+                        snapshot = await api.ApplyButton(button, false, options.CancellationToken,
+                            () => HeldMouseButtons.Remove(buttonName));
                         break;
                     default:
                         return InvalidMode(
@@ -329,10 +345,10 @@ namespace HeraAgent
                     button = mode == "click" || mode == "down" || mode == "up"
                         ? buttonName
                         : null,
-                    position = api.ReadVector(api.GetMouseControl("position")),
-                    delta = api.ReadVector(api.GetMouseControl("delta")),
-                    scroll = api.ReadVector(api.GetMouseControl("scroll")),
-                    pressed_after = button == null ? (bool?)null : api.IsPressed(button),
+                    position = new[] { snapshot.Position.x, snapshot.Position.y },
+                    delta = new[] { snapshot.Delta.x, snapshot.Delta.y },
+                    scroll = new[] { snapshot.Scroll.x, snapshot.Scroll.y },
+                    pressed_after = button == null ? (bool?)null : snapshot.MouseButtons[buttonName],
                     held_by_hera = HeldMouseButtons.Contains(buttonName),
                 });
             }
@@ -342,13 +358,13 @@ namespace HeraAgent
             }
             catch (Exception ex)
             {
-                return InvocationFailure(ex);
+                return ValidatePlayMode() ?? InvocationFailure(ex);
             }
         }
 
         private static ErrorResponse ValidatePlayMode()
         {
-            if (!Application.isPlaying)
+            if (!Application.isPlaying || !EditorApplication.isPlayingOrWillChangePlaymode)
                 return new ErrorResponse(
                     "INPUTSYSTEM_PLAY_MODE_REQUIRED",
                     "Input System synthesis requires Play Mode.");
@@ -625,7 +641,7 @@ namespace HeraAgent
             internal InputQaPhysicalSnapshot Capture()
             {
                 var snapshot = new InputQaPhysicalSnapshot();
-                foreach (var keyName in keyNames)
+                foreach (var keyName in api.Keyboard == null ? Array.Empty<string>() : keyNames)
                 {
                     var key = Enum.Parse(api.KeyType, keyName);
                     var control = api.KeyboardIndexer.GetValue(api.Keyboard, new[] { key });
@@ -684,7 +700,6 @@ namespace HeraAgent
             private MethodInfo StateEventFrom { get; set; }
             private MethodInfo WriteValueIntoEvent { get; set; }
             private MethodInfo ChangeDeviceState { get; set; }
-            private MethodInfo UpdateInputSystem { get; set; }
             private EventInfo BeforeUpdate { get; set; }
             private EventInfo AfterUpdate { get; set; }
             private PropertyInfo CurrentUpdateType { get; set; }
@@ -692,7 +707,6 @@ namespace HeraAgent
             private object ConfiguredUpdateType { get; set; }
             private object Settings { get; set; }
             private PropertyInfo UpdateMode { get; set; }
-            private object ExplicitUpdateMode { get; set; }
 
             internal string ConfiguredUpdateTypeName => ConfiguredUpdateType?.ToString()?.ToLowerInvariant();
 
@@ -719,7 +733,6 @@ namespace HeraAgent
                 var from = FindStateEventFrom(stateEventType);
                 var write = FindWriteValueIntoEvent(controlExtensionsType);
                 var change = FindChangeDeviceState(inputStateType);
-                var update = FindNoArgumentMethod(inputSystemType, "Update", PublicStatic);
                 var beforeUpdate = FindEvent(inputSystemType, "onBeforeUpdate");
                 var afterUpdate = FindEvent(inputSystemType, "onAfterUpdate");
                 var currentUpdateType = FindProperty(
@@ -732,12 +745,11 @@ namespace HeraAgent
                 var configuredUpdateType = ResolveConfiguredUpdateType(
                     updateType,
                     settings,
-                    updateMode,
-                    out var explicitUpdateMode);
+                    updateMode);
                 if (keyboardType == null || mouseType == null || keyType == null
                     || updateType == null || eventPtrType == null || allocatorType == null
                     || from == null || write == null || change == null
-                    || update == null || beforeUpdate == null || afterUpdate == null
+                    || beforeUpdate == null || afterUpdate == null
                     || currentUpdateType == null
                     || indexer == null || configuredUpdateType == null)
                 {
@@ -756,7 +768,6 @@ namespace HeraAgent
                     StateEventFrom = from,
                     WriteValueIntoEvent = write,
                     ChangeDeviceState = change,
-                    UpdateInputSystem = update,
                     BeforeUpdate = beforeUpdate,
                     AfterUpdate = afterUpdate,
                     CurrentUpdateType = currentUpdateType,
@@ -764,7 +775,6 @@ namespace HeraAgent
                     ConfiguredUpdateType = configuredUpdateType,
                     Settings = settings,
                     UpdateMode = updateMode,
-                    ExplicitUpdateMode = explicitUpdateMode,
                 };
             }
 
@@ -778,17 +788,22 @@ namespace HeraAgent
                 SetValue(control, pressed ? 1f : 0f, typeof(float));
             }
 
-            internal Task ApplyButton(
+            internal Task<InputQaPhysicalSnapshot> ApplyButton(
                 object control,
                 bool pressed,
-                CancellationToken cancellationToken)
+                CancellationToken cancellationToken,
+                Action onApplied = null)
             {
                 return ApplyOnNextConfiguredUpdate(
-                    () => SetButton(control, pressed),
+                    () =>
+                    {
+                        SetButton(control, pressed);
+                        onApplied?.Invoke();
+                    },
                     cancellationToken);
             }
 
-            internal Task ApplyVector(
+            internal Task<InputQaPhysicalSnapshot> ApplyVector(
                 object control,
                 Vector2 value,
                 CancellationToken cancellationToken)
@@ -837,80 +852,95 @@ namespace HeraAgent
                 }
             }
 
-            private Task ApplyOnNextConfiguredUpdate(
+            private Task<InputQaPhysicalSnapshot> ApplyOnNextConfiguredUpdate(
                 Action apply,
                 CancellationToken cancellationToken)
             {
                 if (cancellationToken.IsCancellationRequested)
-                    return Task.FromCanceled(cancellationToken);
+                    return Task.FromCanceled<InputQaPhysicalSnapshot>(cancellationToken);
 
-                var source = new TaskCompletionSource<bool>();
+                var source = new TaskCompletionSource<InputQaPhysicalSnapshot>();
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                var context = SynchronizationContext.Current;
+                var sampler = new InputQaRecordingSource(this);
                 CancellationTokenRegistration registration = default;
-                var completionState = 0;
-                Action callback = null;
-                callback = () =>
-                {
-                    var current = CurrentUpdateType.GetValue(null);
-                    if (!UpdateTypeMatches(current, ConfiguredUpdateType))
-                        return;
+                bool finished = false;
+                bool applied = false;
 
-                    BeforeUpdate.RemoveEventHandler(null, callback);
+                void Finish(InputQaPhysicalSnapshot snapshot, Exception error)
+                {
+                    if (finished) return;
+                    finished = true;
+                    BeforeUpdate.RemoveEventHandler(null, (Action)Before);
+                    sampler.Dispose();
+                    EditorApplication.update -= Check;
+                    EditorApplication.pauseStateChanged -= Paused;
+                    EditorApplication.playModeStateChanged -= PlayChanged;
+                    AssemblyReloadEvents.beforeAssemblyReload -= Reload;
                     registration.Dispose();
-                    if (Interlocked.CompareExchange(ref completionState, 1, 0) != 0)
-                        return;
+                    if (error is OperationCanceledException)
+                        source.TrySetCanceled(cancellationToken);
+                    else if (error != null)
+                        source.TrySetException(error);
+                    else
+                        source.TrySetResult(snapshot);
+                }
+
+                void Check()
+                {
+                    if (finished) return;
+                    if (cancellationToken.IsCancellationRequested)
+                        Finish(null, new OperationCanceledException(cancellationToken));
+                    else if (ValidatePlayMode() != null)
+                        Finish(null, new InvalidOperationException("[Hera] I stopped waiting because Play Mode is inactive or paused."));
+                    else if (clock.ElapsedMilliseconds >= ApplyDeadlineMs)
+                        Finish(null, new TimeoutException(
+                            $"[Hera] I couldn't observe a configured player input update within {ApplyDeadlineMs} ms (updateMode={UpdateMode?.GetValue(Settings)})."));
+                }
+
+                void Before()
+                {
+                    Check();
+                    if (finished || applied || !IsConfiguredUpdate()) return;
                     try
                     {
                         apply();
-                        source.TrySetResult(true);
+                        applied = true;
+                        BeforeUpdate.RemoveEventHandler(null, (Action)Before);
                     }
-                    catch (Exception ex)
-                    {
-                        source.TrySetException(Unwrap(ex));
-                    }
-                };
+                    catch (Exception ex) { Finish(null, Unwrap(ex)); }
+                }
 
-                BeforeUpdate.AddEventHandler(null, callback);
-                registration = cancellationToken.Register(() =>
+                void After()
                 {
-                    if (Interlocked.CompareExchange(ref completionState, 2, 0) == 0)
-                        source.TrySetCanceled(cancellationToken);
-                });
+                    if (finished || !applied) return;
+                    try { Finish(sampler.Capture(), null); }
+                    catch (Exception ex) { Finish(null, Unwrap(ex)); }
+                }
+
+                void Paused(PauseState state) { if (state == PauseState.Paused) Check(); }
+                void PlayChanged(PlayModeStateChange state)
+                {
+                    if (state == PlayModeStateChange.ExitingPlayMode)
+                        Finish(null, new InvalidOperationException("[Hera] I stopped waiting because Play Mode is exiting."));
+                }
+                void Reload() { Finish(null, new InvalidOperationException("[Hera] I stopped waiting before assembly reload.")); }
+
                 try
                 {
-                    RunExplicitUpdate();
-                    if (!source.Task.IsCompleted)
-                        EditorApplication.QueuePlayerLoopUpdate();
+                    BeforeUpdate.AddEventHandler(null, (Action)Before);
+                    sampler.Subscribe(After);
+                    EditorApplication.update += Check;
+                    EditorApplication.pauseStateChanged += Paused;
+                    EditorApplication.playModeStateChanged += PlayChanged;
+                    AssemblyReloadEvents.beforeAssemblyReload += Reload;
+                    // Unity subscriptions and state must only be touched on its main thread.
+                    registration = cancellationToken.Register(() => context?.Post(_ => Check(), null));
+                    Check();
+                    if (!finished) EditorApplication.QueuePlayerLoopUpdate();
                 }
-                catch (Exception ex)
-                {
-                    BeforeUpdate.RemoveEventHandler(null, callback);
-                    registration.Dispose();
-                    if (Interlocked.CompareExchange(ref completionState, 3, 0) == 0)
-                        source.TrySetException(Unwrap(ex));
-                }
+                catch (Exception ex) { Finish(null, Unwrap(ex)); }
                 return source.Task;
-            }
-
-            private void RunExplicitUpdate()
-            {
-                var original = UpdateMode?.GetValue(Settings);
-                if (UpdateMode != null && ExplicitUpdateMode != null
-                    && !Equals(original, ExplicitUpdateMode))
-                {
-                    UpdateMode.SetValue(Settings, ExplicitUpdateMode);
-                }
-                try
-                {
-                    UpdateInputSystem.Invoke(null, null);
-                }
-                finally
-                {
-                    if (UpdateMode != null && original != null
-                        && !Equals(original, ExplicitUpdateMode))
-                    {
-                        UpdateMode.SetValue(Settings, original);
-                    }
-                }
             }
 
             internal bool IsPressed(object control)
@@ -950,14 +980,6 @@ namespace HeraAgent
                 return read != null && read.Invoke(control, null) is Vector2 value
                     ? value
                     : Vector2.zero;
-            }
-
-            internal float[] ReadVector(object control)
-            {
-                if (control == null)
-                    return null;
-                var value = ReadVectorValue(control);
-                return new[] { value.x, value.y };
             }
 
             private static Type Resolve(string fullName)
@@ -1036,8 +1058,7 @@ namespace HeraAgent
             private static object ResolveConfiguredUpdateType(
                 Type updateType,
                 object settings,
-                PropertyInfo updateMode,
-                out object explicitUpdateMode)
+                PropertyInfo updateMode)
             {
                 var selected = "Dynamic";
                 var mode = updateMode?.GetValue(settings)?.ToString();
@@ -1050,15 +1071,6 @@ namespace HeraAgent
                     selected = "Fixed";
                 }
 
-                explicitUpdateMode = updateMode == null
-                    ? null
-                    : Enum.Parse(
-                        updateMode.PropertyType,
-                        selected == "Manual"
-                            ? "ProcessEventsManually"
-                            : selected == "Fixed"
-                                ? "ProcessEventsInFixedUpdate"
-                                : "ProcessEventsInDynamicUpdate");
                 return Enum.Parse(updateType, selected);
             }
 

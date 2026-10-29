@@ -110,3 +110,12 @@ Input QA:
     Neither backend is physical OS click QA. If Computer Use cannot acquire Unity
     screenshot state, physical coordinate-click QA can still be BLOCKED while a
     Unity-level input command PASSes.
+
+  Input System readback:
+    Values are the player-side state at the end of the input update that applied
+    this request's last change, preserved through settle_frames. press/click
+    report the release update (pressed_after=false); down reports true.
+    Each change waits up to 2000 ms for the configured Dynamic, Fixed, or Manual
+    update. Manual mode requires your own InputSystem.Update() pump; Hera does
+    not pump it or change input policy. No update yields INPUTSYSTEM_INVOCATION_FAILED;
+    pause/exit use the existing Play Mode errors. Failed waits leave no pending apply.
