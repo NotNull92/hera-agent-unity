@@ -8,6 +8,7 @@ using HeraAgent.Tools;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace HeraAgent.Tests
 {
@@ -15,8 +16,20 @@ namespace HeraAgent.Tests
     {
         const BindingFlags PrivateStatic = BindingFlags.Static | BindingFlags.NonPublic;
 
+#if UNITY_2022_3
+        [UnityTest]
+        public IEnumerator RouterFailureDoesNotLogException()
+        {
+            var task = RouterFailureDoesNotLogExceptionAsync();
+            while (!task.IsCompleted) yield return null;
+            task.GetAwaiter().GetResult();
+        }
+
+        private async Task RouterFailureDoesNotLogExceptionAsync()
+#else
         [Test]
         public async Task RouterFailureDoesNotLogException()
+#endif
         {
             ToolDiscovery.FindDefaultHandler("describe_type");
             var tools = (IDictionary)typeof(ToolDiscovery).GetField("s_Tools", PrivateStatic).GetValue(null);
@@ -82,6 +95,7 @@ namespace HeraAgent.Tests
         {
             var tempDirectory = Path.Combine(Path.GetTempPath(), "hera-hint-test-" + Guid.NewGuid().ToString("N"));
             var configPath = Path.Combine(tempDirectory, "asset-config.json");
+            var previousConfigPath = HeraSettings.s_ConfigPathOverride;
             try
             {
                 HeraSettings.s_ConfigPathOverride = configPath;
@@ -96,7 +110,7 @@ namespace HeraAgent.Tests
             }
             finally
             {
-                HeraSettings.s_ConfigPathOverride = null;
+                HeraSettings.s_ConfigPathOverride = previousConfigPath;
                 HeraSettings.ResetForTests();
                 ClearHints(typeof(ManageComponents));
                 ClearHints(typeof(ManageUI));

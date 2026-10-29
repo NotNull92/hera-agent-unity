@@ -434,7 +434,11 @@ namespace HeraAgent.Tools
                 return main;
             }
 
+#if UNITY_6000_6_OR_NEWER
             var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include);
+#else
+            var cameras = UnityEngine.Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+#endif
             var names = new List<string>();
             foreach (var candidate in cameras)
             {
@@ -504,7 +508,11 @@ namespace HeraAgent.Tools
             string outputPath,
             bool overwrite)
         {
+#if UNITY_6000_6_OR_NEWER
             var allCanvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude);
+#else
+            var allCanvases = UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#endif
             var targets = new List<Canvas>();
             foreach (var canvas in allCanvases)
             {

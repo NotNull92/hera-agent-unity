@@ -302,9 +302,15 @@ namespace HeraAgent.Tools
                 var target = p.Get("target");
                 if (string.IsNullOrWhiteSpace(target))
                 {
+#if UNITY_6000_6_OR_NEWER
                     return UnityEngine.Object.FindObjectsByType(
                         SurfaceType,
                         UnityEngine.FindObjectsInactive.Include);
+#else
+                    return UnityEngine.Object.FindObjectsByType(
+                        SurfaceType,
+                        UnityEngine.FindObjectsInactive.Include, UnityEngine.FindObjectsSortMode.None);
+#endif
                 }
 
                 var (transform, resolveError) = TargetResolver.ResolveTransform(target);

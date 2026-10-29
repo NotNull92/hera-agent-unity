@@ -24,9 +24,16 @@ namespace HeraAgent
         private static bool s_gameFeelUiMode;
         private static bool s_gameFeelMode;
         private static bool s_uiSlopMode;
+        private static bool s_developerMode;
         private static bool s_dotweenPreferred;
         private static string s_defaultCscPath;
         private static string s_defaultDotnetPath;
+
+        /// <summary>Allows requests on Unity 2022.3. False when unset.</summary>
+        public static bool DeveloperMode
+        {
+            get { Refresh(); return s_developerMode; }
+        }
 
         /// <summary>Game Feel UI Mode (Beta) toggle. False when unset.</summary>
         public static bool GameFeelUiMode
@@ -188,7 +195,8 @@ namespace HeraAgent
                 root.Value<bool?>("ui_slop_mode") ?? false,
                 dotween,
                 root.Value<string>("defaultCscPath"),
-                root.Value<string>("defaultDotnetPath"));
+                root.Value<string>("defaultDotnetPath"),
+                root.Value<bool?>("developer_mode") ?? false);
         }
 
         private static void Publish(HeraSettingsSnapshot snapshot)
@@ -196,6 +204,7 @@ namespace HeraAgent
             s_gameFeelUiMode = snapshot.GameFeelUiMode;
             s_gameFeelMode = snapshot.GameFeelMode;
             s_uiSlopMode = snapshot.UiSlopMode;
+            s_developerMode = snapshot.DeveloperMode;
             s_dotweenPreferred = snapshot.DotweenPreferred;
             s_defaultCscPath = snapshot.DefaultCscPath;
             s_defaultDotnetPath = snapshot.DefaultDotnetPath;
@@ -209,7 +218,8 @@ namespace HeraAgent
                 s_uiSlopMode,
                 s_dotweenPreferred,
                 s_defaultCscPath,
-                s_defaultDotnetPath);
+                s_defaultDotnetPath,
+                s_developerMode);
         }
 
         private static void ResetDefaults()
@@ -220,7 +230,8 @@ namespace HeraAgent
                 false,
                 false,
                 null,
-                null));
+                null,
+                false));
         }
 
         private static void ResetCacheState()
@@ -250,7 +261,8 @@ namespace HeraAgent
             bool uiSlopMode,
             bool dotweenPreferred,
             string defaultCscPath,
-            string defaultDotnetPath)
+            string defaultDotnetPath,
+            bool developerMode = false)
         {
             GameFeelUiMode = gameFeelUiMode;
             GameFeelMode = gameFeelMode;
@@ -258,11 +270,13 @@ namespace HeraAgent
             DotweenPreferred = dotweenPreferred;
             DefaultCscPath = defaultCscPath;
             DefaultDotnetPath = defaultDotnetPath;
+            DeveloperMode = developerMode;
         }
 
         internal bool GameFeelUiMode { get; }
         internal bool GameFeelMode { get; }
         internal bool UiSlopMode { get; }
+        internal bool DeveloperMode { get; }
         internal bool DotweenPreferred { get; }
         internal string DefaultCscPath { get; }
         internal string DefaultDotnetPath { get; }

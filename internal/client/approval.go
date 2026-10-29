@@ -8,6 +8,15 @@ import (
 	"time"
 )
 
+// ApprovalRejectedError preserves the Connector envelope before a tool is dispatched.
+type ApprovalRejectedError struct {
+	Response CommandResponse
+}
+
+func (err *ApprovalRejectedError) Error() string {
+	return fmt.Sprintf("approval preflight rejected: %s: %s", err.Response.Code, err.Response.Message)
+}
+
 type ApprovalSummary struct {
 	Tool            string      `json:"tool"`
 	Action          string      `json:"action,omitempty"`
@@ -82,7 +91,7 @@ func (c *Client) PreflightApproval(
 		return nil, fmt.Errorf("decode approval preflight envelope: %w", err)
 	}
 	if statusCode != http.StatusOK || !envelope.Success {
-		return nil, fmt.Errorf("approval preflight rejected: %s: %s", envelope.Code, envelope.Message)
+		return nil, &ApprovalRejectedError{Response: envelope}
 	}
 	var preflight ApprovalPreflight
 	if err := json.Unmarshal(envelope.Data, &preflight); err != nil {

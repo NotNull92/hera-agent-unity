@@ -297,7 +297,13 @@ namespace HeraAgent
                 object r;
                 if (item.ApprovalRequest != null)
                 {
+#if UNITY_2022_3
+                    r = !HeraSettings.DeveloperMode
+                        ? CommandRouter.DeveloperModeRequired()
+                        : ApprovalPolicy.Preflight(item.ApprovalRequest);
+#else
                     r = ApprovalPolicy.Preflight(item.ApprovalRequest);
+#endif
                 }
                 else if (item.IsBatch)
                 {

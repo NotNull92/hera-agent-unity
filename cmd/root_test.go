@@ -2,11 +2,13 @@ package cmd
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
 
 func mockSend(wantCmd string, t *testing.T) (SendFunc, *map[string]interface{}) {
@@ -257,5 +259,22 @@ func TestToolOutputAlwaysCompact(t *testing.T) {
 				t.Fatalf("flag=%s env=%s output=%q", flag, env, out)
 			}
 		}
+	}
+}
+
+func TestProviderErrorKeepsCodeThroughCatalogWrappers(t *testing.T) {
+	err := fmt.Errorf("load tool registry: %w", &toolregistry.ProviderError{Code: "DEVELOPER_MODE_REQUIRED", Message: "Enable Developer Mode"})
+	response := operationOutcomeResponse(err)
+	if response == nil || response.Success || response.Code != "DEVELOPER_MODE_REQUIRED" || response.Message != "Enable Developer Mode" {
+		t.Fatalf("lost provider error: %#v", response)
+	}
+}
+
+func TestApprovalRejectionKeepsEnvelope(t *testing.T) {
+	original := client.CommandResponse{Success: false, Code: "DEVELOPER_MODE_REQUIRED", Message: "Enable Developer Mode"}
+	err := fmt.Errorf("preflight: %w", &client.ApprovalRejectedError{Response: original})
+	response := operationOutcomeResponse(err)
+	if response == nil || response.Code != original.Code || response.Message != original.Message || response.Success {
+		t.Fatalf("lost approval rejection: %#v", response)
 	}
 }

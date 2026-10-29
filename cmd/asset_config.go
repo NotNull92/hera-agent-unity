@@ -53,6 +53,8 @@ func assetConfigCmd(args []string) error {
 		return assetConfigGameFeel(subArgs)
 	case "gamefeel-ui", "juicy": // "juicy" kept as a backward-compat alias (UI mode)
 		return assetConfigGameFeelUI(subArgs)
+	case "developer-mode":
+		return assetConfigBoolFlag(subArgs, "developer-mode", "developer_mode", func(cfg *assetconfig.AssetConfig) bool { return cfg.DeveloperMode }, assetconfig.SetDeveloperMode)
 	case "uislop":
 		return assetConfigUISlop(subArgs)
 	case "set-csc":
@@ -322,6 +324,7 @@ Interactive TUI:
   asset-config                  Launch interactive checkbox UI (Space to toggle)
 
 Subcommands:
+  developer-mode [on|off]       Allow requests on unsupported Unity 2022.3 (machine-global)
   list, ls                      List all assets and their state
   enable <id>                   Enable an asset
   disable <id>                  Disable an asset
@@ -403,6 +406,7 @@ func jsonOutputForAIConfig(cfg *assetconfig.AssetConfig) ([]byte, error) {
 		"game_feel_mode":        cfg.GameFeelMode,
 		"game_feel_ui_mode":     cfg.GameFeelUIMode,
 		"ui_slop_mode":          cfg.UISlopMode,
+		"developer_mode":        cfg.DeveloperMode,
 		"dotween_preferred":     dotweenPreferred,
 	}, "", "  ")
 }

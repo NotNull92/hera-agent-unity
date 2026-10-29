@@ -238,6 +238,16 @@ Hera는 "AI니까 알아서 잘합니다" 같은 모호한 표현 대신 저장�
 
 `T`는 Hera CLI 출력의 UTF-8 바이트를 `ceil(bytes / 4)`로 계산한 단순 추정치입니다. AI 서비스의 실제 과금 토큰을 뜻하지 않습니다. 측정 방법: [token-reduction benchmark](docs/benchmarks/token-reduction/README.md).
 
+### Unity 2022.3 Developer Mode
+
+Connector 0.3.0은 2022.3에서 컴파일되지만 기본적으로 전달된 요청을 `DEVELOPER_MODE_REQUIRED`로 거부합니다. Hera Settings의 **Developer Mode (Unity 2022.3)** 또는 `hera-agent-unity asset-config developer-mode on`으로 켭니다. `off`로 끄고, 인자 없이 현재 값을 조회합니다. `asset-config --json`은 읽기 전용이며 `developer_mode`를 포함합니다.
+
+이 설정은 머신의 모든 2022.3 프로젝트에 적용되며 6000.6+에는 영향을 주지 않습니다. 파일/키가 없으면 off, 잠김/손상 시 마지막 정상 값을 유지하고 다시 읽습니다. 도메인 리로드 없이 적용됩니다. 잠겨도 status/ping과 캐시만 사용하는 로컬 조회·검증은 가능하지만 Unity로 전달된 요청은 거부됩니다.
+
+2022.3은 미지원 opt-in 계열입니다. 2022.3.62f2에서 TMP 3.0.7, Timeline 1.7.7, Input System 1.14.0, AI Navigation 1.1.6의 명시된 경로가 독립 검증을 통과했고, 패키지 설치 상태의 Hera 스위트는 51/51 통과했습니다. 키보드·마우스 전달은 6000.6.6f1 + Input System 1.20.0의 동일 probe와 동등했습니다. [버전·검증 경로·증거](docs/handoffs/unity-2022-3-independent-gates-20261029.md)를 참고하세요. `unity_docs`의 두 버전 필드는 모두 문서 버전이며 코퍼스는 6000.6입니다. 실제 Editor 버전은 `status`와 비교하세요. test-framework 1.4.0 미만에서 현재 도메인에 콜백이 남아 있는 테스트는 취소하지 않고 완료까지 pending을 유지합니다. 활성 콜백이 없는 오래된 기록은 해제할 수 있습니다.
+
+uGUI 의존성은 Editor 내장 버전으로 해석됩니다. package.json의 최소 버전만으로 git 설치를 차단하지 않습니다. 2023.x와 6000.0–6000.5 등 그 외 계열은 명시적 `#error`로 프로젝트 정상 컴파일을 중단하며 다른 오류도 함께 나올 수 있습니다. 패키지를 제거하거나 허용된 계열을 사용하세요.
+
 ### 여러 Unity 세대에서 패키지 컴파일을 확인합니다
 
 지원 Unity 버전은 Unity 6.6+ (최소 `6000.6`)입니다. 릴리스 컴파일 게이트는 대표 Editor의 disposable blank project에 Connector의 동일 소스를 일반 UPM dependency로 설치해 컴파일 무결, 릴리스 게이트 스위트 통과, 콘솔 오류 0을 확인합니다.
@@ -245,6 +255,8 @@ Hera는 "AI니까 알아서 잘합니다" 같은 모호한 표현 대신 저장�
 | Bucket | 대표 Editor | 최근 전체 게이트 결과 |
 |:---|:---|:---:|
 | 6000.6+ | 6000.6.6f1 | PASS |
+
+Connector 0.3.0(`925e020`)은 필수 6000.6.6f1 게이트를 독립 검증으로 통과했습니다. 일반/testables 설치 오류·경고 0, 카탈로그 변경 0이며 테스트는 48 통과·0 실패·1 건너뜀(빈 템플릿에 Timeline 미설치)입니다. [게이트 증거](docs/handoffs/unity-2022-3-independent-gates-20261029.md).
 
 CLI 버전과 Connector 버전은 의도적으로 따로 관리합니다.
 
@@ -704,7 +716,8 @@ Test Runner가 오래 걸리면 실행 상태를 파일에 남기므로 AI가 �
 | Unity 버전 | 상태 | 대표 검증 |
 |:---|:---|:---|
 | 6000.6+ | 지원 | `6000.6.6f1` 릴리스 게이트 |
-| 6000.6 미만 | 미지원 | 최소 Unity 6.6 (6000.6) |
+| 2022.3 | Developer Mode (명시적 활성화, 미지원) | 대표 `2022.3.62f2`, 별도 검증 |
+| 그 외 계열 | 미지원 | 명시적 컴파일 오류 |
 
 버전별 동작은 Unity 한 버전을 보고 추측하지 않고 실제 대표 Editor에서 확인합니다.
 

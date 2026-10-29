@@ -5,18 +5,27 @@
     "HeraAgent.Editor",
     "UnityEditor.TestRunner"
   ],
-  "includePlatforms": ["Editor"],
+  "includePlatforms": [
+    "Editor"
+  ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
   "overrideReferences": false,
   "precompiledReferences": [],
   "autoReferenced": true,
-  "defineConstraints": ["UNITY_TEST_FRAMEWORK"],
+  "defineConstraints": [
+    "UNITY_TEST_FRAMEWORK"
+  ],
   "versionDefines": [
     {
       "name": "com.unity.test-framework",
       "expression": "1.0.0",
       "define": "UNITY_TEST_FRAMEWORK"
+    },
+    {
+      "name": "com.unity.test-framework",
+      "expression": "1.4.0",
+      "define": "HERA_TEST_FRAMEWORK_CANCEL_API"
     }
   ],
   "noEngineReferences": false

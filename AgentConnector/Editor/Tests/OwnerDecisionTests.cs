@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace HeraAgent.Tests
 {
@@ -80,8 +82,20 @@ namespace HeraAgent.Tests
             finally { if (File.Exists(path)) AssetDatabase.DeleteAsset(path); }
         }
 
+#if UNITY_2022_3
+        [UnityTest]
+        public IEnumerator ActionDiscoveryIsScoped()
+        {
+            var task = ActionDiscoveryIsScopedAsync();
+            while (!task.IsCompleted) yield return null;
+            task.GetAwaiter().GetResult();
+        }
+
+        private async Task ActionDiscoveryIsScopedAsync()
+#else
         [Test]
         public async Task ActionDiscoveryIsScoped()
+#endif
         {
             var response = await CommandRouter.Dispatch("list", new JObject { ["tool"] = "input", ["action"] = "click" }) as SuccessResponse;
             Assert.IsNotNull(response);
@@ -93,8 +107,20 @@ namespace HeraAgent.Tests
             Assert.Less(data.ToString(Newtonsoft.Json.Formatting.None).Length, 8000);
         }
 
+#if UNITY_2022_3
+        [UnityTest]
+        public IEnumerator ActionDiscoveryRejectsUnknownAndUnscopedSelectors()
+        {
+            var task = ActionDiscoveryRejectsUnknownAndUnscopedSelectorsAsync();
+            while (!task.IsCompleted) yield return null;
+            task.GetAwaiter().GetResult();
+        }
+
+        private async Task ActionDiscoveryRejectsUnknownAndUnscopedSelectorsAsync()
+#else
         [Test]
         public async Task ActionDiscoveryRejectsUnknownAndUnscopedSelectors()
+#endif
         {
             var invalid = await CommandRouter.Dispatch("list", new JObject { ["tool"] = "input", ["action"] = "clik" }) as ErrorResponse;
             Assert.AreEqual("UNKNOWN_ACTION", invalid?.code);
@@ -103,8 +129,20 @@ namespace HeraAgent.Tests
             Assert.AreEqual("INVALID_ARGUMENT", unscoped?.code);
         }
 
+#if UNITY_2022_3
+        [UnityTest]
+        public IEnumerator ActionDiscoveryIgnoresNonBooleanSelectors()
+        {
+            var task = ActionDiscoveryIgnoresNonBooleanSelectorsAsync();
+            while (!task.IsCompleted) yield return null;
+            task.GetAwaiter().GetResult();
+        }
+
+        private async Task ActionDiscoveryIgnoresNonBooleanSelectorsAsync()
+#else
         [Test]
         public async Task ActionDiscoveryIgnoresNonBooleanSelectors()
+#endif
         {
             foreach (var selector in new[] { "names", "catalog", "compact" })
             {

@@ -192,6 +192,9 @@ namespace HeraAgent.TestRunner
             {
                 if (cleanedUp) return;
                 cleanedUp = true;
+#if !HERA_TEST_FRAMEWORK_CANCEL_API
+                RunTests.UnmarkActive(runId);
+#endif
                 RunTests.DisposeApi(api, callbacks);
             };
             callbacks = new RunTests.TestCallbacks(
@@ -210,6 +213,9 @@ namespace HeraAgent.TestRunner
             try
             {
                 api.RegisterCallbacks(callbacks);
+#if !HERA_TEST_FRAMEWORK_CANCEL_API
+                RunTests.MarkActive(runId);
+#endif
             }
             catch (System.Exception ex)
             {

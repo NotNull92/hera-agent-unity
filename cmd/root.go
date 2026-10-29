@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/NotNull92/hera-agent-unity/internal/client"
+	"github.com/NotNull92/hera-agent-unity/internal/toolregistry"
 )
 
 var Version = "dev"
@@ -71,6 +72,14 @@ func isHumanCommand(category string) bool {
 type ResponsePrinter struct{}
 
 func operationOutcomeResponse(err error) *client.CommandResponse {
+	var rejected *client.ApprovalRejectedError
+	if errors.As(err, &rejected) {
+		return &rejected.Response
+	}
+	var provider *toolregistry.ProviderError
+	if errors.As(err, &provider) {
+		return &client.CommandResponse{Success: false, Code: provider.Code, Message: provider.Message}
+	}
 	var unknown *client.OperationOutcomeUnknownError
 	var unresponsive *client.TargetUnresponsiveError
 	blocked := errors.As(err, &unresponsive) && unresponsive.State == "blocked_by_dialog"

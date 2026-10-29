@@ -41,8 +41,10 @@ late, not that the Editor is unresponsive. Resume that exact run with a longer
 timeout; this does not send run_tests again:
   hera-agent-unity --project "<full-path>" test --resume <run_id> --timeout 300000
 
-`test cancel` asks the test framework to stop the run and always clears the
-pending record, which is what releases TEST_RUN_ALREADY_RUNNING.
+`test cancel` asks the test framework to stop the run and releases its pending
+record. With test-framework older than 1.4.0, an active run cannot be cancelled:
+it stays pending until completion. Only stale records without an active callback
+in this domain can be released on that version.
 
 For an older connector response without run_id, the CLI falls back to
 test-results-<port>.json. Current connectors also write that legacy file for

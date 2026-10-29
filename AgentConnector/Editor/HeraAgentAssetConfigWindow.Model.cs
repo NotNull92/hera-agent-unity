@@ -52,6 +52,9 @@ namespace HeraAgent.Editor
             // injects the unity-deslop discipline and tool responses point agents
             // at the bundled ui_slop taxonomy. Read at dispatch time by HeraSettings.
             public bool ui_slop_mode;
+#if UNITY_2022_3
+            public bool developer_mode;
+#endif
         }
 
         private const string LoopEngineeringOff = "off";
@@ -61,7 +64,10 @@ namespace HeraAgent.Editor
         private static readonly string[] ConfigFieldNames =
         {
             "version", "defaultCscPath", "defaultDotnetPath", "loopEngineeringMode",
-            "ui_system", "game_feel_ui_mode", "game_feel_mode", "ui_slop_mode"
+            "ui_system", "game_feel_ui_mode", "game_feel_mode", "ui_slop_mode",
+#if UNITY_2022_3
+            "developer_mode",
+#endif
         };
 
         private static readonly string[] AssetFieldNames =

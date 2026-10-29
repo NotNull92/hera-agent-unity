@@ -204,7 +204,11 @@ namespace HeraAgent
         {
             var (eventSystem, _) = ResolveEventSystem();
             var raycasters = new List<object>();
+#if UNITY_6000_6_OR_NEWER
             var allRaycasters = Object.FindObjectsByType<BaseRaycaster>(FindObjectsInactive.Exclude);
+#else
+            var allRaycasters = Object.FindObjectsByType<BaseRaycaster>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+#endif
             foreach (var raycaster in allRaycasters)
             {
                 if (raycaster == null) continue;
