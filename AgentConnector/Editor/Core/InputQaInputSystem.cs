@@ -377,10 +377,11 @@ namespace HeraAgent
                 var changes = new List<Func<ErrorResponse>>(end - start + 1);
                 for (var index = start; index <= end; index++)
                     changes.Add(PrepareSequenceChange(api, steps[index]));
-                await api.ApplyOnNextConfiguredUpdate(() =>
+                await api.ApplyOnNextConfiguredUpdate(canApply =>
                 {
                     foreach (var change in changes)
                     {
+                        if (!canApply()) return;
                         cancellationToken.ThrowIfCancellationRequested();
                         failure = change();
                         if (failure != null) throw new InvalidOperationException(failure.message);
@@ -871,7 +872,7 @@ namespace HeraAgent
                 Action onApplied = null)
             {
                 return ApplyOnNextConfiguredUpdate(
-                    () =>
+                    _ =>
                     {
                         SetButton(control, pressed);
                         onApplied?.Invoke();
@@ -885,7 +886,7 @@ namespace HeraAgent
                 CancellationToken cancellationToken)
             {
                 return ApplyOnNextConfiguredUpdate(
-                    () => SetVector(control, value),
+                    _ => SetVector(control, value),
                     cancellationToken);
             }
 
@@ -934,13 +935,14 @@ namespace HeraAgent
             }
 
             internal Task<InputQaPhysicalSnapshot> ApplyOnNextConfiguredUpdate(
-                Action apply,
+                Action<Func<bool>> apply,
                 CancellationToken cancellationToken)
             {
                 if (cancellationToken.IsCancellationRequested)
                     return Task.FromCanceled<InputQaPhysicalSnapshot>(cancellationToken);
 
-                var source = new TaskCompletionSource<InputQaPhysicalSnapshot>();
+                // State changes can invoke user callbacks: finish ownership bookkeeping before cleanup resumes.
+                var source = new TaskCompletionSource<InputQaPhysicalSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
                 var clock = System.Diagnostics.Stopwatch.StartNew();
                 var context = SynchronizationContext.Current;
                 var sampler = new InputQaRecordingSource(this);
@@ -985,7 +987,7 @@ namespace HeraAgent
                     if (finished || applied || !IsConfiguredUpdate()) return;
                     try
                     {
-                        apply();
+                        apply(() => !finished);
                         applied = true;
                         BeforeUpdate.RemoveEventHandler(null, (Action)Before);
                     }
