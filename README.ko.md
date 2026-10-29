@@ -474,7 +474,11 @@ hera-agent-unity call input --json '{"action":"replay","path":"Library/HeraAgent
 
 키보드·마우스·bounded sequence·입력 녹화 capture·replay는 Play Mode에서 동작합니다. 녹화는 프로젝트 또는 시스템 임시 폴더의 bounded `hera.input-recording/1` JSON을 사용하고, replay는 mutation 전에 파일 전체를 검증한 뒤 sequence 소유권·정리 로직을 재사용합니다. Hera는 런타임에 패키지를 확인하고, 장치를 생성하지 않으며, Play Mode가 끝나면 잡고 있던 control을 해제합니다.
 
+Input System 응답 값은 요청의 마지막 변경을 적용한 입력 업데이트 종료 시점의 플레이어 상태이며, `settle_frames` 동안 보존됩니다. `press`/`click`은 해제 업데이트를 반환하므로 `pressed_after=false`, `down`은 true입니다. 각 변경은 설정된 입력 업데이트를 최대 2000 ms 기다립니다. Manual 모드는 프로젝트 자체의 `InputSystem.Update()` 호출이 필요하며, Hera가 대신 호출하거나 입력 정책을 바꾸지 않습니다. 업데이트가 없으면 `INPUTSYSTEM_INVOCATION_FAILED`, 일시정지·종료 시에는 기존 Play Mode 오류를 반환합니다. 이 브랜치의 구현은 나머지 [검증 게이트](docs/handoffs/scene-save-and-inputsystem-readback-20261029.md)를 대기 중입니다.
+
 ### 반복 Scene 작업 자동화
+
+`scene save`는 변경된 무제 씬에 저장 창을 띄우는 대신 `SCENE_UNSAVED`를 반환합니다. Editor에서 한 번 저장하거나 편집 전에 `scene create <Assets/...unity>`로 생성하세요. 변경 없는 씬은 기존처럼 아무것도 저장하지 않습니다. 명시적인 범용 `menu`/`exec` 호출은 여전히 모달 창을 열 수 있습니다.
 
 AI에게 다음을 묶어서 시킬 수 있습니다.
 

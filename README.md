@@ -472,7 +472,11 @@ hera-agent-unity call input --json '{"action":"replay","path":"Library/HeraAgent
 
 Keyboard, mouse, bounded sequence, recording capture, and replay require Play Mode. Recordings use the bounded `hera.input-recording/1` JSON format under the project or system temp directory; replay validates the complete file before mutation and reuses sequence-owned cleanup. Hera resolves the package at runtime, never creates devices, and releases any held controls when Play Mode exits.
 
+Input System response values describe the player-side state at the end of the input update that applied the request's last change, preserved through `settle_frames`. `press`/`click` report the release update (`pressed_after=false`); `down` reports true. Each change waits up to 2000 ms for its configured update. Manual mode requires your project's own `InputSystem.Update()` pump; Hera does not pump it or change input policy. A missing update returns `INPUTSYSTEM_INVOCATION_FAILED`, while pause/exit use their existing Play Mode errors. This branch's implementation is awaiting the remaining [verification gates](docs/handoffs/scene-save-and-inputsystem-readback-20261029.md).
+
 ### Automate repetitive Scene work
+
+`scene save` rejects a dirty untitled Scene with `SCENE_UNSAVED` instead of opening a Save dialog. Save it once from the Editor, or create it with `scene create <Assets/...unity>` before editing. A clean Scene remains a no-op. Explicit generic `menu`/`exec` calls can still open modal dialogs.
 
 You can ask an agent to:
 
