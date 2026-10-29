@@ -332,9 +332,6 @@ namespace HeraAgent.TestRunner
             {
                 if (cleanedUp) return;
                 cleanedUp = true;
-#if !HERA_TEST_FRAMEWORK_CANCEL_API
-                s_ActiveRuns.Remove(runId);
-#endif
                 DisposeApi(api, callbacks);
             };
 
